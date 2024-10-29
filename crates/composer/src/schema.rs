@@ -230,7 +230,7 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "allow-missing-requirements", default, skip_serializing_if = "Option::is_none")]
     pub allow_missing_requirements: Option<bool>,
 
-    /// This is an object of {\"pattern\": true|false} with packages which are allowed to be loaded as plugins, or true to allow all, false to allow none. Defaults to {} which prompts when an unknown plugin is added
+    /// This is an object of {"pattern": true|false} with packages which are allowed to be loaded as plugins, or true to allow all, false to allow none. Defaults to {} which prompts when an unknown plugin is added
     #[serde(rename = "allow-plugins", default, skip_serializing_if = "Option::is_none")]
     pub allow_plugins: Option<ComposerPackageConfigAllowPlugins>,
 
@@ -238,11 +238,11 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "apcu-autoloader", default, skip_serializing_if = "Option::is_none")]
     pub apcu_autoloader: Option<bool>,
 
-    /// The default archive path when not provided on cli, defaults to \".\"
+    /// The default archive path when not provided on cli, defaults to "."
     #[serde(rename = "archive-dir", default, skip_serializing_if = "Option::is_none")]
     pub archive_dir: Option<String>,
 
-    /// The default archiving format when not provided on cli, defaults to \"tar\"
+    /// The default archiving format when not provided on cli, defaults to "tar"
     #[serde(rename = "archive-format", default, skip_serializing_if = "Option::is_none")]
     pub archive_format: Option<String>,
 
@@ -253,55 +253,55 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "autoloader-suffix", default, skip_serializing_if = "Option::is_none")]
     pub autoloader_suffix: Option<String>,
 
-    /// An object of domain name => bearer authentication token, for example {\"example.com\":\"<token>\"}
+    /// An object of domain name => bearer authentication token, for example {"example.com":"<token>"}
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub bearer: HashMap<String, String>,
 
-    /// The compatibility of the binaries, defaults to \"auto\" (automatically guessed), can be \"full\" (compatible with both Windows and Unix-based systems) and \"proxy\" (only bash-style proxy)
+    /// The compatibility of the binaries, defaults to "auto" (automatically guessed), can be "full" (compatible with both Windows and Unix-based systems) and "proxy" (only bash-style proxy)
     #[serde(rename = "bin-compat", default, skip_serializing_if = "Option::is_none")]
     pub bin_compat: Option<ComposerPackageConfigBinCompat>,
 
-    /// The location where all binaries are linked, defaults to \"vendor/bin\"
+    /// The location where all binaries are linked, defaults to "vendor/bin"
     #[serde(rename = "bin-dir", default, skip_serializing_if = "Option::is_none")]
     pub bin_dir: Option<String>,
 
-    /// An object of domain name => {\"consumer-key\": \"...\", \"consumer-secret\": \"...\"}
+    /// An object of domain name => {"consumer-key": "...", "consumer-secret": "..."}
     #[serde(rename = "bitbucket-oauth", default, skip_serializing_if = "HashMap::is_empty")]
     pub bitbucket_oauth: HashMap<String, ComposerPackageConfigBitbucketOauthValue>,
 
-    /// Defaults to false and can be any of true, false, \"dev\"` or \"no-dev\"`. If set to true, Composer will run the bump command after running the update command. If set to \"dev\" or \"no-dev\" then only the corresponding dependencies will be bumped
+    /// Defaults to false and can be any of true, false, "dev"` or "no-dev"`. If set to true, Composer will run the bump command after running the update command. If set to "dev" or "no-dev" then only the corresponding dependencies will be bumped
     #[serde(rename = "bump-after-update", default, skip_serializing_if = "Option::is_none")]
     pub bump_after_update: Option<ComposerPackageConfigBumpAfterUpdate>,
 
-    /// The location where all caches are located, defaults to \"~/.composer/cache\" on *nix and \"%LOCALAPPDATA%\\Composer\" on windows
+    /// The location where all caches are located, defaults to "~/.composer/cache" on *nix and "%LOCALAPPDATA%\\Composer" on windows
     #[serde(rename = "cache-dir", default, skip_serializing_if = "Option::is_none")]
     pub cache_dir: Option<String>,
 
-    /// The location where files (zip downloads) are cached, defaults to \"{$cache-dir}/files\"
+    /// The location where files (zip downloads) are cached, defaults to "{$cache-dir}/files"
     #[serde(rename = "cache-files-dir", default, skip_serializing_if = "Option::is_none")]
     pub cache_files_dir: Option<String>,
 
-    /// The cache max size for the files cache, defaults to \"300MiB\"
+    /// The cache max size for the files cache, defaults to "300MiB"
     #[serde(rename = "cache-files-maxsize", default, skip_serializing_if = "Option::is_none")]
     pub cache_files_maxsize: Option<ComposerPackageConfigCacheFilesMaxsize>,
 
     /// The cache time-to-live for files, defaults to the value of cache-ttl
     #[serde(rename = "cache-files-ttl", default, skip_serializing_if = "Option::is_none")]
-    pub cache_files_ttl: Option<i64>,
+    pub cache_files_ttl: Option<usize>,
 
     /// Whether to use the Composer cache in read-only mode
     #[serde(rename = "cache-read-only", default, skip_serializing_if = "Option::is_none")]
     pub cache_read_only: Option<bool>,
 
-    /// The location where repo (git/hg repo clones) are cached, defaults to \"{$cache-dir}/repo\"
+    /// The location where repo (git/hg repo clones) are cached, defaults to "{$cache-dir}/repo"
     #[serde(rename = "cache-repo-dir", default, skip_serializing_if = "Option::is_none")]
     pub cache_repo_dir: Option<String>,
 
     /// The default cache time-to-live, defaults to 15552000 (6 months)
     #[serde(rename = "cache-ttl", default, skip_serializing_if = "Option::is_none")]
-    pub cache_ttl: Option<i64>,
+    pub cache_ttl: Option<usize>,
 
-    /// The location where vcs infos (git clones, github api calls, etc. when reading vcs repos) are cached, defaults to \"{$cache-dir}/vcs\"
+    /// The location where vcs infos (git clones, github api calls, etc. when reading vcs repos) are cached, defaults to "{$cache-dir}/vcs"
     #[serde(rename = "cache-vcs-dir", default, skip_serializing_if = "Option::is_none")]
     pub cache_vcs_dir: Option<String>,
 
@@ -317,7 +317,7 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "classmap-authoritative", default, skip_serializing_if = "Option::is_none")]
     pub classmap_authoritative: Option<bool>,
 
-    /// The location where old phar files are stored, defaults to \"$home\" except on XDG Base Directory compliant unixes
+    /// The location where old phar files are stored, defaults to "$home" except on XDG Base Directory compliant unixes
     #[serde(rename = "data-dir", default, skip_serializing_if = "Option::is_none")]
     pub data_dir: Option<String>,
 
@@ -325,11 +325,11 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "disable-tls", default, skip_serializing_if = "Option::is_none")]
     pub disable_tls: Option<bool>,
 
-    /// The default style of handling dirty updates, defaults to false and can be any of true, false or \"stash\"
+    /// The default style of handling dirty updates, defaults to false and can be any of true, false or "stash"
     #[serde(rename = "discard-changes", default, skip_serializing_if = "Option::is_none")]
     pub discard_changes: Option<ComposerPackageConfigDiscardChanges>,
 
-    /// A list of domains to use in github mode. This is used for GitHub Enterprise setups, defaults to [\"github.com\"]
+    /// A list of domains to use in github mode. This is used for GitHub Enterprise setups, defaults to ["github.com"]
     #[serde(rename = "github-domains", default, skip_serializing_if = "Vec::is_empty")]
     pub github_domains: Vec<String>,
 
@@ -337,19 +337,19 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "github-expose-hostname", default, skip_serializing_if = "Option::is_none")]
     pub github_expose_hostname: Option<bool>,
 
-    /// An object of domain name => github API oauth tokens, typically {\"github.com\":\"<token>\"}
+    /// An object of domain name => github API oauth tokens, typically {"github.com":"<token>"}
     #[serde(rename = "github-oauth", default, skip_serializing_if = "HashMap::is_empty")]
     pub github_oauth: HashMap<String, String>,
 
-    /// A list of protocols to use for github.com clones, in priority order, defaults to [\"https\", \"ssh\", \"git\"]
+    /// A list of protocols to use for github.com clones, in priority order, defaults to ["https", "ssh", "git"]
     #[serde(rename = "github-protocols", default, skip_serializing_if = "Vec::is_empty")]
     pub github_protocols: Vec<String>,
 
-    /// A list of domains to use in gitlab mode. This is used for custom GitLab setups, defaults to [\"gitlab.com\"]
+    /// A list of domains to use in gitlab mode. This is used for custom GitLab setups, defaults to ["gitlab.com"]
     #[serde(rename = "gitlab-domains", default, skip_serializing_if = "Vec::is_empty")]
     pub gitlab_domains: Vec<String>,
 
-    /// An object of domain name => gitlab API oauth tokens, typically {\"gitlab.com\":{\"expires-at\":\"<expiration date>\", \"refresh-token\":\"<refresh token>\", \"token\":\"<token>\"}}
+    /// An object of domain name => gitlab API oauth tokens, typically {"gitlab.com":{"expires-at":"<expiration date>", "refresh-token":"<refresh token>", "token":"<token>"}}
     #[serde(rename = "gitlab-oauth", default, skip_serializing_if = "HashMap::is_empty")]
     pub gitlab_oauth: HashMap<String, ComposerPackageConfigGitlabOauthValue>,
 
@@ -357,7 +357,7 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "gitlab-protocol", default, skip_serializing_if = "Option::is_none")]
     pub gitlab_protocol: Option<ComposerPackageConfigGitlabProtocol>,
 
-    /// An object of domain name => gitlab private tokens, typically {\"gitlab.com\":\"<token>\"}, or an object with username and token keys
+    /// An object of domain name => gitlab private tokens, typically {"gitlab.com":"<token>"}, or an object with username and token keys
     #[serde(rename = "gitlab-token", default, skip_serializing_if = "HashMap::is_empty")]
     pub gitlab_token: HashMap<String, ComposerPackageConfigGitlabTokenValue>,
 
@@ -365,7 +365,7 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "htaccess-protect", default, skip_serializing_if = "Option::is_none")]
     pub htaccess_protect: Option<bool>,
 
-    /// An object of domain name => {\"username\": \"...\", \"password\": \"...\"}
+    /// An object of domain name => {"username": "...", "password": "..."}
     #[serde(rename = "http-basic", default, skip_serializing_if = "HashMap::is_empty")]
     pub http_basic: HashMap<String, ComposerPackageConfigHttpBasicValue>,
 
@@ -385,11 +385,11 @@ pub struct ComposerPackageConfig {
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub platform: HashMap<String, ComposerPackageConfigPlatformValue>,
 
-    /// Defaults to \"php-only\" which checks only the PHP version. Setting to true will also check the presence of required PHP extensions. If set to false, Composer will not create and require a platform_check.php file as part of the autoloader bootstrap
+    /// Defaults to "php-only" which checks only the PHP version. Setting to true will also check the presence of required PHP extensions. If set to false, Composer will not create and require a platform_check.php file as part of the autoloader bootstrap
     #[serde(rename = "platform-check", default, skip_serializing_if = "Option::is_none")]
     pub platform_check: Option<ComposerPackageConfigPlatformCheck>,
 
-    /// The install method Composer will prefer to use, defaults to auto and can be any of source, dist, auto, or an object of {\"pattern\": \"preference\"}
+    /// The install method Composer will prefer to use, defaults to auto and can be any of source, dist, auto, or an object of {"pattern": "preference"}
     #[serde(rename = "preferred-install", default, skip_serializing_if = "Option::is_none")]
     pub preferred_install: Option<ComposerPackageConfigPreferredInstall>,
 
@@ -399,9 +399,9 @@ pub struct ComposerPackageConfig {
 
     /// The timeout in seconds for process executions, defaults to 300 (5mins)
     #[serde(rename = "process-timeout", default, skip_serializing_if = "Option::is_none")]
-    pub process_timeout: Option<i64>,
+    pub process_timeout: Option<usize>,
 
-    /// Defaults to `true`. If set to true only HTTPS URLs are allowed to be downloaded via Composer. If you really absolutely need HTTP access to something then you can disable it, but using \"Let's Encrypt\" to get a free SSL certificate is generally a better alternative
+    /// Defaults to `true`. If set to true only HTTPS URLs are allowed to be downloaded via Composer. If you really absolutely need HTTP access to something then you can disable it, but using "Let's Encrypt" to get a free SSL certificate is generally a better alternative
     #[serde(rename = "secure-http", default, skip_serializing_if = "Option::is_none")]
     pub secure_http: Option<bool>,
 
@@ -413,7 +413,7 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "sort-packages", default, skip_serializing_if = "Option::is_none")]
     pub sort_packages: Option<bool>,
 
-    /// What to do after prompting for authentication, one of: true (store), false (do not store) or \"prompt\" (ask every time), defaults to prompt
+    /// What to do after prompting for authentication, one of: true (store), false (do not store) or "prompt" (ask every time), defaults to prompt
     #[serde(rename = "store-auths", default, skip_serializing_if = "Option::is_none")]
     pub store_auths: Option<ComposerPackageConfigStoreAuths>,
 
@@ -425,11 +425,11 @@ pub struct ComposerPackageConfig {
     #[serde(rename = "use-include-path", default, skip_serializing_if = "Option::is_none")]
     pub use_include_path: Option<bool>,
 
-    /// When running Composer in a directory where there is no composer.json, if there is one present in a directory above Composer will by default ask you whether you want to use that directory's composer.json instead. One of: true (always use parent if needed), false (never ask or use it) or \"prompt\" (ask every time), defaults to prompt
+    /// When running Composer in a directory where there is no composer.json, if there is one present in a directory above Composer will by default ask you whether you want to use that directory's composer.json instead. One of: true (always use parent if needed), false (never ask or use it) or "prompt" (ask every time), defaults to prompt
     #[serde(rename = "use-parent-dir", default, skip_serializing_if = "Option::is_none")]
     pub use_parent_dir: Option<ComposerPackageConfigUseParentDir>,
 
-    /// The location where all packages are installed, defaults to \"vendor\"
+    /// The location where all packages are installed, defaults to "vendor"
     #[serde(rename = "vendor-dir", default, skip_serializing_if = "Option::is_none")]
     pub vendor_dir: Option<String>,
 }
@@ -488,7 +488,7 @@ pub struct ComposerPackageConfigBitbucketOauthValue {
 
     /// The generated token's expiration timestamp, this is written by Composer and you should not set it nor modify it
     #[serde(rename = "access-token-expiration", default, skip_serializing_if = "Option::is_none")]
-    pub access_token_expiration: Option<i64>,
+    pub access_token_expiration: Option<isize>,
 
     /// The consumer-key used for OAuth authentication"]
     #[serde(rename = "consumer-key")]
@@ -510,7 +510,7 @@ pub enum ComposerPackageConfigBumpAfterUpdate {
 #[serde(untagged)]
 pub enum ComposerPackageConfigCacheFilesMaxsize {
     String(String),
-    Integer(i64),
+    Integer(usize),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -526,7 +526,7 @@ pub enum ComposerPackageConfigGitlabOauthValue {
     Object {
         /// The expiration date for this GitLab token
         #[serde(rename = "expires-at", default, skip_serializing_if = "Option::is_none")]
-        expires_at: Option<i64>,
+        expires_at: Option<usize>,
 
         /// The refresh token used for GitLab authentication
         #[serde(rename = "refresh-token", default, skip_serializing_if = "Option::is_none")]
@@ -659,7 +659,7 @@ pub struct ComposerPackagePhpExt {
 
     /// This is used to add a prefix to the INI file, e.g. `90-xdebug.ini` which affects the loading order. The priority is a number in the range 10-99 inclusive, with 10 being the highest priority (i.e. will be processed first), and 99 being the lowest priority (i.e. will be processed last). There are two digits so that the files sort correctly on any platform, whether the sorting is natural or not
     #[serde(default = "default_composer_package_php_ext_priority")]
-    pub priority: i64,
+    pub priority: usize,
 
     /// Does this package support non-Thread Safe mode"]
     #[serde(rename = "support-nts", default = "default_composer_package_php_ext_support_nts")]
@@ -877,7 +877,7 @@ pub struct Autoload {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub classmap: Vec<String>,
 
-    /// This is an array of patterns to exclude from autoload classmap generation. (e.g. \"exclude-from-classmap\": [\"/test/\", \"/tests/\", \"/Tests/\"]"]
+    /// This is an array of patterns to exclude from autoload classmap generation. (e.g. "exclude-from-classmap": ["/test/", "/tests/", "/Tests/"]"]
     #[serde(rename = "exclude-from-classmap", default, skip_serializing_if = "Vec::is_empty")]
     pub exclude_from_classmap: Vec<String>,
 
@@ -1258,7 +1258,7 @@ pub enum VcsRepositoryType {
     Svn,
 }
 
-const fn default_composer_package_php_ext_priority() -> i64 {
+const fn default_composer_package_php_ext_priority() -> usize {
     80
 }
 
