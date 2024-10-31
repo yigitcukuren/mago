@@ -1,25 +1,56 @@
 use std::collections::hash_map::Entry;
 
 use ahash::HashMap;
+use clap::Parser;
 
-use fennec_config::Configuration;
 use fennec_fixer::FixPlan;
 use fennec_fixer::SafetyClassification;
 use fennec_interner::ThreadedInterner;
+use fennec_service::config::Configuration;
 use fennec_service::linter::LintService;
+use fennec_service::source::SourceService;
 use fennec_source::SourceIdentifier;
-use fennec_source::SourceManager;
 
-use crate::utils::error::bail;
+use crate::utils::bail;
 
-pub async fn execute(
-    configuration: Configuration,
-    interner: ThreadedInterner,
-    source_manager: SourceManager,
-    safe_classification: SafetyClassification,
-    dry_run: bool,
-) -> i32 {
-    let service = LintService::new(configuration, interner.clone(), source_manager.clone());
+#[derive(Parser, Debug)]
+#[command(
+    name = "fix",
+    about = "Fix lint issues identified during the linting process",
+    long_about = r#"
+Fix lint issues identified during the linting process.
+
+Automatically applies fixes where possible, based on the rules in the `fennec.toml` or the default settings.
+    "#
+)]
+pub struct FixCommand {
+    #[arg(long, short, help = "Apply fixes that are marked as unsafe, including potentially unsafe fixes")]
+    pub r#unsafe: bool,
+    #[arg(long, short, help = "Apply fixes that are marked as potentially unsafe")]
+    pub potentially_unsafe: bool,
+    #[arg(long, short, help = "Run the command without writing any changes to disk")]
+    pub dry_run: bool,
+}
+
+impl FixCommand {
+    pub fn get_safety_classification(&self) -> SafetyClassification {
+        if self.r#unsafe {
+            SafetyClassification::Unsafe
+        } else if self.potentially_unsafe {
+            SafetyClassification::PotentiallyUnsafe
+        } else {
+            SafetyClassification::Safe
+        }
+    }
+}
+
+pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
+    let interner = ThreadedInterner::new();
+
+    let source_service = SourceService::new(interner.clone(), configuration.source);
+    let source_manager = source_service.load().await.unwrap_or_else(bail);
+
+    let service = LintService::new(configuration.linter, interner.clone(), source_manager.clone());
     let issues = service.run().await.unwrap_or_else(bail);
 
     let mut plans: HashMap<SourceIdentifier, Vec<FixPlan>> = HashMap::default();
@@ -36,6 +67,7 @@ pub async fn execute(
         }
     }
 
+    let classification = command.get_safety_classification();
     let mut handles = vec![];
     for mut source_plans in plans.into_iter() {
         handles.push(tokio::spawn({
@@ -50,8 +82,8 @@ pub async fn execute(
                 let source_name = interner.lookup(source.identifier.value());
                 let source_content = interner.lookup(source.content);
 
-                if plan.get_minimum_safety_classification() > safe_classification {
-                    let required = safe_classification.to_string();
+                if plan.get_minimum_safety_classification() > classification {
+                    let required = classification.to_string();
                     let cuurent = plan.get_minimum_safety_classification().to_string();
 
                     fennec_feedback::debug!(
@@ -63,9 +95,9 @@ pub async fn execute(
                 } else {
                     fennec_feedback::info!("fixing issue in `{}` ( {} fix operations )", source_name, plan.len());
 
-                    let code = plan.execute(source_content, safe_classification);
+                    let code = plan.execute(source_content, classification);
 
-                    if dry_run {
+                    if command.dry_run {
                         // todo, print the diff in a pretty way
                         println!("TOO LAZY TO PRETTY PRINT: {:#?}", code);
                     } else if let Some(path) = source.path {

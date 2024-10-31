@@ -602,18 +602,7 @@ checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 name = "fennec"
 version = "0.0.0"
 dependencies = [
- "ahash",
- "clap",
- "fennec-config",
- "fennec-feedback",
- "fennec-fixer",
- "fennec-interner",
- "fennec-reporting",
- "fennec-service",
- "fennec-source",
- "serde",
- "serde_json",
- "tokio",
+ "fennec-cli",
 ]
 
 [[package]]
@@ -644,24 +633,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "fennec-cli"
+version = "0.0.0"
+dependencies = [
+ "ahash",
+ "clap",
+ "fennec-feedback",
+ "fennec-fixer",
+ "fennec-interner",
+ "fennec-reporting",
+ "fennec-service",
+ "fennec-source",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "fennec-composer"
 version = "0.0.0"
 dependencies = [
  "ahash",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "fennec-config"
-version = "0.0.0"
-dependencies = [
- "ahash",
- "config",
- "num_cpus",
- "serde",
- "toml",
- "tracing",
 ]
 
 [[package]]
@@ -850,7 +844,9 @@ dependencies = [
 name = "fennec-service"
 version = "0.0.0"
 dependencies = [
- "fennec-config",
+ "ahash",
+ "async-walkdir",
+ "config",
  "fennec-feedback",
  "fennec-interner",
  "fennec-linter",
@@ -859,21 +855,22 @@ dependencies = [
  "fennec-reporting",
  "fennec-semantics",
  "fennec-source",
+ "futures",
+ "glob-match",
+ "num_cpus",
  "serde",
  "tokio",
+ "toml",
+ "tracing",
 ]
 
 [[package]]
 name = "fennec-source"
 version = "0.0.0"
 dependencies = [
- "async-walkdir",
  "codespan-reporting",
  "dashmap",
- "fennec-config",
  "fennec-interner",
- "futures",
- "glob-match",
  "serde",
  "tokio",
  "tracing",

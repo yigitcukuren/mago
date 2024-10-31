@@ -12,15 +12,12 @@ use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::OnceCell;
 
-use fennec_config::source::SourceConfiguration;
 use fennec_interner::StringIdentifier;
 use fennec_interner::ThreadedInterner;
 
 use crate::error::SourceError;
 
 pub mod error;
-
-mod internal;
 
 /// A unique identifier for a source, consisting of a string identifier and a user-defined flag.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -111,22 +108,6 @@ impl SourceManager {
     /// The new source manager.
     pub fn new(interner: ThreadedInterner) -> Self {
         Self { interner, sources: Arc::new(DashMap::new()) }
-    }
-
-    /// Builds a new source manager by scanning and processing the sources
-    /// as per the given configuration.
-    ///
-    /// # Parameters
-    ///
-    /// - `interner`: The interner to use for source names.
-    /// - `configuration`: The source configuration.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the new source manager or a `SourceError` if
-    /// an error occurred during the build process.
-    pub async fn build(interner: &ThreadedInterner, configuration: &SourceConfiguration) -> Result<Self, SourceError> {
-        internal::build(interner.clone(), configuration).await
     }
 
     /// Inserts a source with the given name and path into the manager.

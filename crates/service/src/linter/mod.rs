@@ -1,5 +1,3 @@
-use fennec_config::linter::LinterLevel;
-use fennec_config::Configuration;
 use fennec_feedback::create_progress_bar;
 use fennec_feedback::remove_progress_bar;
 use fennec_feedback::ProgressBarTheme;
@@ -23,19 +21,22 @@ use fennec_source::error::SourceError;
 use fennec_source::SourceIdentifier;
 use fennec_source::SourceManager;
 
+use crate::linter::config::LinterConfiguration;
+use crate::linter::config::LinterLevel;
 use crate::linter::result::LintResult;
 
+pub mod config;
 pub mod result;
 
 #[derive(Debug)]
 pub struct LintService {
-    configuration: Configuration,
+    configuration: LinterConfiguration,
     interner: ThreadedInterner,
     source_manager: SourceManager,
 }
 
 impl LintService {
-    pub fn new(configuration: Configuration, interner: ThreadedInterner, source_manager: SourceManager) -> Self {
+    pub fn new(configuration: LinterConfiguration, interner: ThreadedInterner, source_manager: SourceManager) -> Self {
         Self { configuration, interner, source_manager }
     }
 
@@ -112,7 +113,7 @@ impl LintService {
     fn initialize_linter(&self) -> Linter {
         let mut settings = Settings::new();
 
-        if let Some(level) = self.configuration.linter.level {
+        if let Some(level) = self.configuration.level {
             settings = match level {
                 LinterLevel::Off => settings.off(),
                 LinterLevel::Help => settings.with_level(Level::Help),
@@ -122,17 +123,17 @@ impl LintService {
             };
         }
 
-        if let Some(external) = self.configuration.linter.external {
+        if let Some(external) = self.configuration.external {
             settings = settings.with_external(external);
         }
 
-        if let Some(default_plugins) = self.configuration.linter.default_plugins {
+        if let Some(default_plugins) = self.configuration.default_plugins {
             settings = settings.with_default_plugins(default_plugins);
         }
 
-        settings = settings.with_plugins(self.configuration.linter.plugins.clone());
+        settings = settings.with_plugins(self.configuration.plugins.clone());
 
-        for rule in &self.configuration.linter.rules {
+        for rule in &self.configuration.rules {
             let mut rule_settings = match rule.level {
                 Some(linter_level) => match linter_level {
                     LinterLevel::Off => RuleSettings::disabled(),

@@ -53,18 +53,7 @@ async-stream = "0.3.6"
 async-walkdir = "2.0.0"
 
 [dependencies]
-fennec-reporting = { path = "crates/reporting" }
-fennec-interner = { path = "crates/interner" }
-fennec-source = { path = "crates/source" }
-fennec-config = { path = "crates/config" }
-fennec-fixer = { path = "crates/fixer" }
-fennec-service = { path = "crates/service" }
-fennec-feedback = { path = "crates/feedback" }
-serde = { workspace = true }
-tokio = { workspace = true }
-clap = { workspace = true }
-serde_json = { workspace = true }
-ahash = { workspace = true }
+fennec-cli = { path = "crates/cli" }
 
 [profile.release]
 opt-level = 3

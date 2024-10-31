@@ -25,7 +25,7 @@ It is inspired by the Rust programming language and its toolchain, and aims to p
 - [x] Semantic Analysis: [`crates/semantics`](crates/semantics)
 - [x] Symbol Table: [`crates/symbol-table`](crates/symbol-table)
 - [x] Linter: [`crates/linter`](crates/linter)
-- [x] Configuration: [`crates/config`](crates/config)
+- [x] Services: [`crates/service`](crates/service)
 - [x] String Case Conversion: [`crates/casing`](crates/casing)
 - [x] Reflections: [`crates/reflection`](crates/reflection)
 - [x] Reflector: [`crates/reflector`](crates/reflector), [`crates/scanner`](crates/scanner)
@@ -40,7 +40,7 @@ It is inspired by the Rust programming language and its toolchain, and aims to p
 
 ### Tooling
 
-- [ ] CLI Tool: [`src/main.rs`](src/main.rs) - In Progress, Basic Functionality Implemented.
+- [x] CLI Tool: [`crates/cli`](crates/cl)
 - [ ] Web Interface
 - [ ] Language Server Protocol
 - [ ] Editor Integration

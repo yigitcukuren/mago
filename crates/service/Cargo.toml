@@ -14,9 +14,16 @@ fennec-source = { path = "../source" }
 fennec-reporting = { path = "../reporting" }
 fennec-semantics = { path = "../semantics" }
 fennec-linter = { path = "../linter" }
-fennec-config = { path = "../config" }
 fennec-reflection = { path = "../reflection" }
 fennec-reflector = { path = "../reflector" }
 fennec-feedback = { path = "../feedback" }
 tokio = { workspace = true }
 serde = { workspace = true }
+ahash = { workspace = true }
+async-walkdir = { workspace = true }
+futures = { workspace = true }
+glob-match = { workspace = true }
+tracing = { workspace = true }
+config = { workspace = true }
+toml = { workspace = true }
+num_cpus = { workspace = true }
