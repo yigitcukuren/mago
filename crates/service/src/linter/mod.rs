@@ -1,5 +1,8 @@
 use fennec_config::linter::LinterLevel;
 use fennec_config::Configuration;
+use fennec_feedback::create_progress_bar;
+use fennec_feedback::remove_progress_bar;
+use fennec_feedback::ProgressBarTheme;
 use fennec_interner::ThreadedInterner;
 use fennec_linter::plugin::best_practices::BestPracticesPlugin;
 use fennec_linter::plugin::comment::CommentPlugin;
@@ -57,21 +60,39 @@ impl LintService {
         source_ids: Vec<SourceIdentifier>,
     ) -> Result<LintResult, SourceError> {
         let mut handles = Vec::with_capacity(source_ids.len());
+
+        let source_pb = create_progress_bar(source_ids.len(), "📂  Loading", ProgressBarTheme::Red);
+        let semantics_pb = create_progress_bar(source_ids.len(), "🔬  Building", ProgressBarTheme::Blue);
+        let lint_pb = create_progress_bar(source_ids.len(), "🧹  Linting", ProgressBarTheme::Cyan);
+
         for source_id in source_ids {
-            let interner = self.interner.clone();
-            let manager = self.source_manager.clone();
-            let linter = linter.clone();
+            handles.push(tokio::spawn({
+                let interner = self.interner.clone();
+                let manager = self.source_manager.clone();
+                let linter = linter.clone();
+                let source_pb = source_pb.clone();
+                let semantics_pb = semantics_pb.clone();
+                let lint_pb = lint_pb.clone();
 
-            handles.push(tokio::spawn(async move {
-                let source = manager.load(source_id).await?;
-                let semantics = Semantics::build(&interner, source);
-                let mut issues = linter.lint(&semantics);
-                issues.extend(semantics.issues);
-                if let Some(error) = &semantics.parse_error {
-                    issues.push(Into::<Issue>::into(error));
+                async move {
+                    // Step 1: load the source
+                    let source = manager.load(source_id).await?;
+                    source_pb.inc(1);
+
+                    // Step 2: build semantics
+                    let semantics = Semantics::build(&interner, source);
+                    semantics_pb.inc(1);
+
+                    // Step 3: Collect issues
+                    let mut issues = linter.lint(&semantics);
+                    issues.extend(semantics.issues);
+                    if let Some(error) = &semantics.parse_error {
+                        issues.push(Into::<Issue>::into(error));
+                    }
+                    lint_pb.inc(1);
+
+                    Result::<_, SourceError>::Ok(issues)
                 }
-
-                Result::<_, SourceError>::Ok(issues)
             }));
         }
 
@@ -79,6 +100,10 @@ impl LintService {
         for handle in handles {
             results.push(handle.await.expect("failed to collect issues. this should never happen.")?);
         }
+
+        remove_progress_bar(source_pb);
+        remove_progress_bar(semantics_pb);
+        remove_progress_bar(lint_pb);
 
         Ok(LintResult::new(IssueCollection::from(results.into_iter().flatten())))
     }
