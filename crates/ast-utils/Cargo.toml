@@ -1,5 +1,5 @@
 [package]
-name = "fennec-node"
+name = "fennec-ast-utils"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,4 +9,4 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-span = { path = "../span" }
+fennec-ast = { path = "../ast" }
