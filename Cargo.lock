@@ -645,7 +645,6 @@ dependencies = [
  "fennec-service",
  "fennec-source",
  "serde",
- "serde_json",
  "tokio",
 ]
 
