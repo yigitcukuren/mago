@@ -697,6 +697,7 @@ dependencies = [
  "fennec-reflection",
  "fennec-semantics",
  "fennec-span",
+ "ordered-float",
 ]
 
 [[package]]
@@ -736,7 +737,6 @@ dependencies = [
  "fennec-fixer",
  "fennec-interner",
  "fennec-names",
- "fennec-parser",
  "fennec-reporting",
  "fennec-semantics",
  "fennec-source",
@@ -790,6 +790,7 @@ dependencies = [
  "fennec-interner",
  "fennec-source",
  "fennec-span",
+ "ordered-float",
  "serde",
 ]
 
