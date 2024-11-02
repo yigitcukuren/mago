@@ -1,4 +1,5 @@
 use fennec_ast::*;
+use fennec_interner::StringIdentifier;
 use fennec_reflection::class_like::ClassLikeReflection;
 use fennec_reflection::r#type::kind::*;
 use fennec_reflection::r#type::*;
@@ -94,8 +95,29 @@ fn build_kind<'i, 'ast>(
         Hint::Object(_) => any_object_kind(),
         Hint::Mixed(_) => mixed_kind(),
         Hint::Iterable(_) => iterable_kind(mixed_kind(), mixed_kind()),
-        Hint::Static(_) => scope.map_or_else(|| mixed_kind(), |scope| static_kind(scope.name)),
-        Hint::Self_(_) => scope.map_or_else(|| mixed_kind(), |scope| self_kind(scope.name)),
-        Hint::Parent(_) => scope.map_or_else(|| mixed_kind(), |scope| parent_kind(scope.name)),
+        Hint::Static(_) => {
+            let scope = match &scope {
+                Some(scope) => context.interner.intern(scope.name.get_key(context.interner)),
+                None => StringIdentifier::empty(),
+            };
+
+            static_kind(scope)
+        }
+        Hint::Self_(_) => {
+            let scope = match &scope {
+                Some(scope) => context.interner.intern(scope.name.get_key(context.interner)),
+                None => StringIdentifier::empty(),
+            };
+
+            self_kind(scope)
+        }
+        Hint::Parent(_) => {
+            let scope = match &scope {
+                Some(scope) => context.interner.intern(scope.name.get_key(context.interner)),
+                None => StringIdentifier::empty(),
+            };
+
+            parent_kind(scope)
+        }
     }
 }

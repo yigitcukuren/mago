@@ -12,6 +12,7 @@ use crate::constant::ConstantReflection;
 use crate::function_like::FunctionLikeReflection;
 use crate::identifier::FunctionLikeName;
 
+pub mod assertion;
 pub mod attribute;
 pub mod class_like;
 pub mod constant;

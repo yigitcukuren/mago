@@ -50,7 +50,7 @@ level = "Off"
 
 [[linter.rules]]
 name = "best-practices/excessive-nesting"
-options = { threshold = 9 }
+threshold = 9
 
 [[linter.rules]]
 name = "comment/no-untagged-todo"
@@ -66,19 +66,19 @@ level = "Off"
 
 [[linter.rules]]
 name = "naming/class"
-options = { psr = false }
+psr = false
 
 [[linter.rules]]
 name = "naming/trait"
-options = { psr = false }
+psr = false
 
 [[linter.rules]]
 name = "naming/interface"
-options = { psr = false }
+psr = false
 
 [[linter.rules]]
 name = "naming/function"
-options = { either = true }
+either = true
 
 [[linter.rules]]
 name = "redundancy/redundant-parentheses"

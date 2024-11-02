@@ -1,3 +1,4 @@
+use fennec_interner::ThreadedInterner;
 use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use serde::Serialize;
@@ -129,18 +130,25 @@ pub enum ObjectTypeKind {
 
     /// A generator type with specified key, value, send, and return types.
     /// For example, `Generator<T, U, V, W>`.
-    ///
-    ///
     Generator { key: Box<TypeKind>, value: Box<TypeKind>, send: Box<TypeKind>, r#return: Box<TypeKind> },
 
     /// The `static` type, representing the class of the called context.
-    Static(ClassLikeName),
+    Static {
+        /// The scope of the `static` type.
+        scope: StringIdentifier,
+    },
 
     /// The `parent` type, representing the parent class in the class hierarchy.
-    Parent(ClassLikeName),
+    Parent {
+        /// The scope of the `parent` type.
+        scope: StringIdentifier,
+    },
 
     /// The `self` type, representing the current class.
-    Self_(ClassLikeName),
+    Self_ {
+        /// The scope of the `self` type.
+        scope: StringIdentifier,
+    },
 }
 
 /// Represents a key in an array shape property.
@@ -335,8 +343,8 @@ pub enum TypeKind {
     /// A conditional type, used for type inference based on a condition.
     /// For example, `T extends U ? V : W`.
     Conditional {
-        /// The template parameter being checked in the condition.
-        parameter: StringIdentifier,
+        /// The type being checked ( usually a generic parameter, or a variable ).
+        parameter: Box<TypeKind>,
 
         /// The type used in the condition to compare against.
         condition: Box<TypeKind>,
@@ -398,12 +406,20 @@ pub enum TypeKind {
     Never,
 
     /// A generic parameter type, representing a type parameter with constraints.
-    GenericParameter { name: StringIdentifier, of: Box<TypeKind> },
+    GenericParameter { name: StringIdentifier, of: Box<TypeKind>, defined_in: StringIdentifier },
+}
+
+impl ArrayShapePropertyKey {
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        match &self {
+            ArrayShapePropertyKey::String(string_identifier) => interner.lookup(*string_identifier).to_owned(),
+            ArrayShapePropertyKey::Integer(i) => i.to_string(),
+        }
+    }
 }
 
 impl TypeKind {
-    /// Determines whether the type is nullable.
-    /// A type is considered nullable if it includes `null` or is `mixed`.
+    #[inline]
     pub fn is_nullable(&self) -> bool {
         match &self {
             TypeKind::Union { kinds } => kinds.iter().any(|k| k.is_nullable()),
@@ -413,6 +429,7 @@ impl TypeKind {
         }
     }
 
+    #[inline]
     pub fn is_object(&self) -> bool {
         match &self {
             TypeKind::Union { kinds } => kinds.iter().all(|k| k.is_object()),
@@ -425,12 +442,340 @@ impl TypeKind {
         }
     }
 
+    #[inline]
+    pub fn is_value(&self) -> bool {
+        matches!(self, TypeKind::Value(_))
+    }
+
+    #[inline]
     pub fn is_templated_as_object(&self) -> bool {
         matches!(self, TypeKind::GenericParameter { of, .. } if of.is_object())
     }
 
+    #[inline]
     pub fn is_generator(&self) -> bool {
         matches!(self, TypeKind::Object(ObjectTypeKind::Generator { .. }))
+    }
+
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.get_key(interner)).collect::<Vec<_>>().join("|"),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.get_key(interner)).collect::<Vec<_>>().join("&"),
+            TypeKind::Scalar(scalar_type_kind) => match &scalar_type_kind {
+                ScalarTypeKind::Bool => "bool".to_string(),
+                ScalarTypeKind::Integer => "int".to_string(),
+                ScalarTypeKind::Float => "float".to_string(),
+                ScalarTypeKind::String => "string".to_string(),
+                ScalarTypeKind::IntegerRange(min, max) => {
+                    let min = match min {
+                        Some(min) => min.to_string(),
+                        None => "min".to_string(),
+                    };
+
+                    let max = match max {
+                        Some(max) => max.to_string(),
+                        None => "max".to_string(),
+                    };
+
+                    format!("int<{}, {}>", min, max)
+                }
+                ScalarTypeKind::PositiveInteger => "positive-int".to_string(),
+                ScalarTypeKind::NonNegativeInteger => "non-negative-int".to_string(),
+                ScalarTypeKind::NegativeInteger => "negative-int".to_string(),
+                ScalarTypeKind::NonPositiveInteger => "non-positive-int".to_string(),
+                ScalarTypeKind::IntegerMask(vec) => {
+                    let vec = vec.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
+
+                    format!("int-mask<{}>", vec)
+                }
+                ScalarTypeKind::IntegerMaskOf(string_identifier, string_identifier1) => {
+                    format!(
+                        "int-mask-of<{}, {}>",
+                        interner.lookup(*string_identifier),
+                        interner.lookup(*string_identifier1)
+                    )
+                }
+                ScalarTypeKind::ClassString(string_identifier) => {
+                    if let Some(string_identifier) = string_identifier {
+                        format!("class-string<{}>", interner.lookup(*string_identifier))
+                    } else {
+                        "class-string".to_string()
+                    }
+                }
+                ScalarTypeKind::TraitString => "trait-string".to_string(),
+                ScalarTypeKind::EnumString => "enum-string".to_string(),
+                ScalarTypeKind::CallableString => "callable-string".to_string(),
+                ScalarTypeKind::NumericString => "numeric-string".to_string(),
+                ScalarTypeKind::LiteralString => "literal-string".to_string(),
+                ScalarTypeKind::LiteralInt => "literal-int".to_string(),
+                ScalarTypeKind::NonEmptyString => "non-empty-string".to_string(),
+                ScalarTypeKind::ArrayKey => "array-key".to_string(),
+                ScalarTypeKind::Numeric => "numeric".to_string(),
+                ScalarTypeKind::Scalar => "scalar".to_string(),
+            },
+            TypeKind::Object(object_type_kind) => match &object_type_kind {
+                ObjectTypeKind::AnyObject => "object".to_string(),
+                ObjectTypeKind::TypedObject { properties } => {
+                    let properties = properties
+                        .iter()
+                        .map(|property| {
+                            let name = interner.lookup(property.name);
+                            let kind = property.kind.get_key(interner);
+
+                            if property.optional {
+                                format!("{}?: {}", name, kind)
+                            } else {
+                                format!("{}: {}", name, kind)
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    format!("object{{{}}}", properties)
+                }
+                ObjectTypeKind::NamedObject { name, type_parameters } => {
+                    let name = interner.lookup(*name);
+
+                    if type_parameters.is_empty() {
+                        name.to_string()
+                    } else {
+                        let type_parameters = type_parameters
+                            .iter()
+                            .map(|type_parameter| type_parameter.get_key(interner))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+
+                        format!("{}<{}>", name, type_parameters)
+                    }
+                }
+                ObjectTypeKind::Generator { key, value, send, r#return } => {
+                    let key = key.get_key(interner);
+                    let value = value.get_key(interner);
+                    let send = send.get_key(interner);
+                    let r#return = r#return.get_key(interner);
+
+                    format!("Generator<{}, {}, {}, {}>", key, value, send, r#return)
+                }
+                ObjectTypeKind::Static { .. } => "static".to_string(),
+                ObjectTypeKind::Parent { .. } => "parent".to_string(),
+                ObjectTypeKind::Self_ { .. } => "self".to_string(),
+            },
+            TypeKind::Array(array_type_kind) => match &array_type_kind {
+                ArrayTypeKind::Array { key, value, .. } => {
+                    let key = key.get_key(interner);
+                    let value = value.get_key(interner);
+
+                    format!("array<{}, {}>", key, value)
+                }
+                ArrayTypeKind::NonEmptyArray { key, value, .. } => {
+                    let key = key.get_key(interner);
+                    let value = value.get_key(interner);
+
+                    format!("non-empty-array<{}, {}>", key, value)
+                }
+                ArrayTypeKind::List { value, .. } => {
+                    let value = value.get_key(interner);
+
+                    format!("list<{}>", value)
+                }
+                ArrayTypeKind::NonEmptyList { value, .. } => {
+                    let value = value.get_key(interner);
+
+                    format!("non-empty-list<{}>", value)
+                }
+                ArrayTypeKind::CallableArray => "callable-array".to_string(),
+                ArrayTypeKind::Shape(array_shape) => {
+                    let mut properties = array_shape
+                        .properties
+                        .iter()
+                        .map(|property| {
+                            let key = property.key.get_key(interner);
+                            let kind = property.kind.get_key(interner);
+
+                            if property.optional {
+                                format!("{}?: {}", key, kind)
+                            } else {
+                                format!("{}: {}", key, kind)
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    if let Some((key, value)) = &array_shape.additional_properties {
+                        if matches!(
+                            (key.as_ref(), value.as_ref()),
+                            (TypeKind::Scalar(ScalarTypeKind::ArrayKey), TypeKind::Mixed)
+                        ) {
+                            properties.push_str(", ...");
+                        } else {
+                            let key = key.get_key(interner);
+                            let value = value.get_key(interner);
+
+                            properties.push_str(&format!(", ...array<{}: {}>", key, value));
+                        }
+                    }
+
+                    format!("array{{{}}}", properties)
+                }
+            },
+            TypeKind::Callable(callable_type_kind) => match &callable_type_kind {
+                CallableTypeKind::Callable { parameters, return_kind } => {
+                    let parameters = parameters
+                        .iter()
+                        .map(|parameter| {
+                            let mut kind = parameter.kind.get_key(interner);
+                            if parameter.optional {
+                                kind.push_str("=");
+                            }
+
+                            if parameter.variadic {
+                                kind.push_str("...");
+                            }
+
+                            kind
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    let return_kind = return_kind.get_key(interner);
+
+                    format!("(callable({}): {})", parameters, return_kind)
+                }
+                CallableTypeKind::PureCallable { parameters, return_kind } => {
+                    let parameters = parameters
+                        .iter()
+                        .map(|parameter| {
+                            let mut kind = parameter.kind.get_key(interner);
+                            if parameter.optional {
+                                kind.push_str("=");
+                            }
+
+                            if parameter.variadic {
+                                kind.push_str("...");
+                            }
+
+                            kind
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    let return_kind = return_kind.get_key(interner);
+
+                    format!("(pure-callable({}): {})", parameters, return_kind)
+                }
+                CallableTypeKind::Closure { parameters, return_kind } => {
+                    let parameters = parameters
+                        .iter()
+                        .map(|parameter| {
+                            let mut kind = parameter.kind.get_key(interner);
+                            if parameter.optional {
+                                kind.push_str("=");
+                            }
+
+                            if parameter.variadic {
+                                kind.push_str("...");
+                            }
+
+                            kind
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    let return_kind = return_kind.get_key(interner);
+
+                    format!("(Closure({}): {})", parameters, return_kind)
+                }
+                CallableTypeKind::PureClosure { parameters, return_kind } => {
+                    let parameters = parameters
+                        .iter()
+                        .map(|parameter| {
+                            let mut kind = parameter.kind.get_key(interner);
+                            if parameter.optional {
+                                kind.push_str("=");
+                            }
+
+                            if parameter.variadic {
+                                kind.push_str("...");
+                            }
+
+                            kind
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    let return_kind = return_kind.get_key(interner);
+
+                    format!("(PureClosure({}): {})", parameters, return_kind)
+                }
+            },
+            TypeKind::Value(value_type_kind) => match &value_type_kind {
+                ValueTypeKind::String { value } => {
+                    format!("\"{}\"", value)
+                }
+                ValueTypeKind::Integer { value } => value.to_string(),
+                ValueTypeKind::Float { value } => value.to_string(),
+                ValueTypeKind::Null => "null".to_string(),
+                ValueTypeKind::True => "true".to_string(),
+                ValueTypeKind::False => "false".to_string(),
+                ValueTypeKind::ClassLikeConstant { class_like, constant } => {
+                    format!("{}::{}", class_like.get_key(interner), interner.lookup(*constant))
+                }
+            },
+            TypeKind::Conditional { parameter, condition, then, otherwise } => {
+                let parameter = parameter.get_key(interner);
+                let condition = condition.get_key(interner);
+                let then = then.get_key(interner);
+                let otherwise = otherwise.get_key(interner);
+
+                format!("{} is {} ? {} : {}", parameter, condition, then, otherwise)
+            }
+            TypeKind::KeyOf { kind } => {
+                let kind = kind.get_key(interner);
+
+                format!("key-of<{}>", kind)
+            }
+            TypeKind::ValueOf { kind } => {
+                let kind = kind.get_key(interner);
+
+                format!("value-of<{}>", kind)
+            }
+            TypeKind::PropertiesOf { kind } => {
+                let kind = kind.get_key(interner);
+
+                format!("properties-of<{}>", kind)
+            }
+            TypeKind::ClassStringMap { key, value_kind } => {
+                let mut template = interner.lookup(key.name).to_owned();
+                for constraint in &key.constraints {
+                    template.push_str(&format!(" of {}", constraint.get_key(interner)));
+                }
+
+                let value_kind = value_kind.get_key(interner);
+
+                format!("class-string-map<{}, {}>", template, value_kind)
+            }
+            TypeKind::Index { base_kind, index_kind } => {
+                let base_kind = base_kind.get_key(interner);
+                let index_kind = index_kind.get_key(interner);
+
+                format!("{}[{}]", base_kind, index_kind)
+            }
+            TypeKind::Variable { name } => interner.lookup(*name).to_owned(),
+            TypeKind::Iterable { key, value } => {
+                let key = key.get_key(interner);
+                let value = value.get_key(interner);
+
+                format!("iterable<{}, {}>", key, value)
+            }
+            TypeKind::Void => "void".to_string(),
+            TypeKind::Resource => "resource".to_string(),
+            TypeKind::ClosedResource => "closed-resource".to_string(),
+            TypeKind::Mixed => "mixed".to_string(),
+            TypeKind::Never => "never".to_string(),
+            TypeKind::GenericParameter { name, defined_in, .. } => {
+                format!("{}:{}", interner.lookup(*name), interner.lookup(*defined_in))
+            }
+        }
     }
 }
 
@@ -583,18 +928,18 @@ pub fn any_object_kind() -> TypeKind {
 }
 
 /// Creates a `TypeKind` representing the `static` type of the given class.
-pub fn static_kind(class_name: ClassLikeName) -> TypeKind {
-    TypeKind::Object(ObjectTypeKind::Static(class_name))
+pub fn static_kind(scope: StringIdentifier) -> TypeKind {
+    TypeKind::Object(ObjectTypeKind::Static { scope })
 }
 
 /// Creates a `TypeKind` representing the `parent` type of the given class.
-pub fn parent_kind(class_name: ClassLikeName) -> TypeKind {
-    TypeKind::Object(ObjectTypeKind::Parent(class_name))
+pub fn parent_kind(scope: StringIdentifier) -> TypeKind {
+    TypeKind::Object(ObjectTypeKind::Parent { scope })
 }
 
 /// Creates a `TypeKind` representing the `self` type of the given class.
-pub fn self_kind(class_name: ClassLikeName) -> TypeKind {
-    TypeKind::Object(ObjectTypeKind::Self_(class_name))
+pub fn self_kind(scope: StringIdentifier) -> TypeKind {
+    TypeKind::Object(ObjectTypeKind::Self_ { scope })
 }
 
 /// Creates a `TypeKind` representing a named object with the given name and type parameters.
@@ -638,14 +983,9 @@ pub fn properties_of_kind(kind: TypeKind) -> TypeKind {
 }
 
 /// Creates a `TypeKind` representing a conditional type.
-pub fn conditional_kind(
-    parameter: StringIdentifier,
-    condition: TypeKind,
-    then: TypeKind,
-    otherwise: TypeKind,
-) -> TypeKind {
+pub fn conditional_kind(parameter: TypeKind, condition: TypeKind, then: TypeKind, otherwise: TypeKind) -> TypeKind {
     TypeKind::Conditional {
-        parameter,
+        parameter: Box::new(parameter),
         condition: Box::new(condition),
         then: Box::new(then),
         otherwise: Box::new(otherwise),

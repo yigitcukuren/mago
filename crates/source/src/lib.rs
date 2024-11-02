@@ -21,7 +21,7 @@ pub mod error;
 
 /// A unique identifier for a source, consisting of a string identifier and a user-defined flag.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub struct SourceIdentifier(StringIdentifier, bool);
+pub struct SourceIdentifier(pub StringIdentifier, pub bool);
 
 /// Represents a source file with an identifier, optional path, content, and line information.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -54,7 +54,7 @@ pub struct SourceManager {
     /// The interner used to store source names.
     interner: ThreadedInterner,
     /// The map of source identifiers to source entries.
-    sources: Arc<DashMap<SourceIdentifier, Arc<SourceEntry>>>,
+    sources: Arc<DashMap<SourceIdentifier, SourceEntry>>,
 }
 
 impl SourceIdentifier {
@@ -129,8 +129,7 @@ impl SourceManager {
             return source_id;
         }
 
-        self.sources
-            .insert(source_id.clone(), Arc::new(SourceEntry { name, path: Some(path), content: OnceCell::new() }));
+        self.sources.insert(source_id.clone(), SourceEntry { name, path: Some(path), content: OnceCell::new() });
 
         source_id
     }
@@ -158,7 +157,7 @@ impl SourceManager {
 
         self.sources.insert(
             source_id.clone(),
-            Arc::new(SourceEntry { name, path: None, content: OnceCell::from((content, size, lines)) }),
+            SourceEntry { name, path: None, content: OnceCell::from((content, size, lines)) },
         );
 
         source_id
@@ -192,52 +191,47 @@ impl SourceManager {
     ///
     /// The source with the given identifier, or an error if the source does not exist, or could not be loaded.
     pub async fn load(&self, source_id: SourceIdentifier) -> Result<Source, SourceError> {
-        if let Some(entry) = self.sources.get(&source_id) {
-            let entry = entry.value();
+        let Some(entry) = self.sources.get(&source_id) else {
+            return Err(SourceError::UnavailableSource(source_id));
+        };
 
-            match entry
-                .content
-                .get_or_try_init(|| async {
-                    let path = entry
-                        .path
-                        .as_ref()
-                        .expect("source entry must contain either content or path");
+        let content = entry.value() .content
+        .get_or_try_init(|| async {
+            let path = entry
+                .path
+                .as_ref()
+                .expect("source entry must contain either content or path");
 
-                std::fs::read(path)
-                        .map(|bytes| match String::from_utf8_lossy(&bytes) {
-                            Cow::Borrowed(str) => str.to_string(),
-                            Cow::Owned(string) => {
-                                tracing::warn!(
-                                    "encountered invalid utf-8 sequence in file {:?}. behavior with non-utf-8 files is undefined and may lead to unexpected results.",
-                                    path,
-                                );
+            std::fs::read(path)
+                .map(|bytes| match String::from_utf8_lossy(&bytes) {
+                    Cow::Borrowed(str) => str.to_string(),
+                    Cow::Owned(string) => {
+                        tracing::warn!(
+                            "encountered invalid utf-8 sequence in file {:?}. behavior with non-utf-8 files is undefined and may lead to unexpected results.",
+                            path,
+                        );
 
-                                string
-                            }
-                        })
-                        .map(|content| {
-                            let lines = line_starts(&content).collect();
-                            let size = content.len();
-                            let content = self.interner.intern(content);
-
-                            (content, size, lines)
-                        })
+                        string
+                    }
                 })
-                .await
-            {
-                Ok((content, size, lines)) => {
-                    Ok(Source {
-                        identifier: source_id,
-                        path: entry.path.clone(),
-                        content: *content,
-                        size: *size,
-                        lines: lines.clone(),
-                    })
-                },
-                Err(err) => Err(SourceError::IOError(err)),
-            }
-        } else {
-            Err(SourceError::UnavailableSource(source_id))
+                .map(|content| {
+                    let lines = line_starts(&content).collect();
+                    let size = content.len();
+                    let content = self.interner.intern(content);
+
+                    (content, size, lines)
+                })
+        }).await;
+
+        match content {
+            Ok((content, size, lines)) => Ok(Source {
+                identifier: source_id,
+                path: entry.path.clone(),
+                content: *content,
+                size: *size,
+                lines: lines.clone(),
+            }),
+            Err(err) => Err(SourceError::IOError(err)),
         }
     }
 

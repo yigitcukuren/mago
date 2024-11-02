@@ -25,7 +25,8 @@ pub struct LinterConfiguration {
 pub struct LinterRuleConfiguration {
     pub name: String,
     pub level: Option<LinterLevel>,
-    pub options: Option<HashMap<String, Value>>,
+    #[serde(flatten, skip_serializing_if = "HashMap::is_empty")]
+    pub options: HashMap<String, Value>,
 }
 
 impl Default for LinterConfiguration {

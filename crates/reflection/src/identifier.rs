@@ -1,3 +1,4 @@
+use fennec_interner::ThreadedInterner;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -48,6 +49,23 @@ impl ClassLikeName {
             ClassLikeName::Enum(name) => Some(name),
             ClassLikeName::Trait(name) => Some(name),
             ClassLikeName::AnonymousClass(_) => None,
+        }
+    }
+
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        match self {
+            ClassLikeName::Class(name)
+            | ClassLikeName::Interface(name)
+            | ClassLikeName::Enum(name)
+            | ClassLikeName::Trait(name) => interner.lookup(name.value).to_string(),
+            ClassLikeName::AnonymousClass(span) => {
+                format!(
+                    "anonymous-class@{}:{}-{}",
+                    interner.lookup(span.start.source.0),
+                    span.start.offset,
+                    span.end.offset
+                )
+            }
         }
     }
 }
