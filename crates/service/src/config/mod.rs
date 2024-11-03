@@ -266,7 +266,6 @@ mod internal {
             let builder = builder
                 .set_default("linter.level", Value::new(None, ValueKind::Nil))?
                 .set_default("linter.default_plugins", Value::new(None, ValueKind::Nil))?
-                .set_default("linter.external", Value::new(None, ValueKind::Nil))?
                 .set_default("linter.plugins", Value::new(None, ValueKind::Array(vec![])))?
                 .set_default("linter.rules", Value::new(None, ValueKind::Array(vec![])))?;
 
