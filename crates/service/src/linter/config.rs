@@ -15,7 +15,6 @@ pub enum LinterLevel {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LinterConfiguration {
     pub level: Option<LinterLevel>,
-    pub external: Option<bool>,
     pub default_plugins: Option<bool>,
     pub plugins: Vec<String>,
     pub rules: Vec<LinterRuleConfiguration>,
@@ -31,6 +30,6 @@ pub struct LinterRuleConfiguration {
 
 impl Default for LinterConfiguration {
     fn default() -> Self {
-        Self { level: None, external: None, default_plugins: None, plugins: Vec::new(), rules: Vec::new() }
+        Self { level: None, default_plugins: None, plugins: Vec::new(), rules: Vec::new() }
     }
 }

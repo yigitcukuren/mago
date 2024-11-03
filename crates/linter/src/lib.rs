@@ -20,8 +20,7 @@ pub mod settings;
 
 #[derive(Debug, Clone)]
 pub struct Linter {
-    pub settings: Settings,
-
+    settings: Settings,
     interner: ThreadedInterner,
     rules: Arc<RwLock<Vec<ConfiguredRule>>>,
 }
@@ -103,12 +102,6 @@ impl Linter {
         tracing::debug!("Linting source `{}`...", source_name);
 
         let mut context = Context::new(&self.interner, &semantics);
-
-        if !self.settings.external && semantics.source.identifier.is_external() {
-            tracing::debug!("Skipping linting of external source `{}`.", source_name);
-
-            return context.take_issue_collection();
-        }
 
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
 

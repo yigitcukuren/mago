@@ -42,20 +42,15 @@ impl LintService {
 
     /// Runs the linting process and returns a stream of issues.
     pub async fn run(&self) -> Result<LintResult, SourceError> {
-        let source_ids = self.source_manager.source_ids();
-
         // Initialize the linter
         let linter = self.initialize_linter();
 
-        // Filter source ids based on linter settings
-        let filter_source_ids = self.filter_semantics(&linter, source_ids);
-
         // Process sources concurrently
-        self.process_sources(linter, filter_source_ids).await
+        self.process_sources(linter, self.source_manager.user_defined_source_ids().collect()).await
     }
 
     #[inline]
-    async fn process_sources(
+    async fn process_sources<'a>(
         &self,
         linter: Linter,
         source_ids: Vec<SourceIdentifier>,
@@ -123,10 +118,6 @@ impl LintService {
             };
         }
 
-        if let Some(external) = self.configuration.external {
-            settings = settings.with_external(external);
-        }
-
         if let Some(default_plugins) = self.configuration.default_plugins {
             settings = settings.with_default_plugins(default_plugins);
         }
@@ -160,18 +151,5 @@ impl LintService {
         linter.add_plugin(SymfonyPlugin);
 
         linter
-    }
-
-    #[inline]
-    fn filter_semantics(
-        &self,
-        linter: &Linter,
-        source_ids: impl Iterator<Item = SourceIdentifier>,
-    ) -> Vec<SourceIdentifier> {
-        if !linter.settings.external {
-            source_ids.filter(|s| !s.is_external()).collect()
-        } else {
-            source_ids.collect()
-        }
     }
 }

@@ -181,6 +181,16 @@ impl SourceManager {
         self.sources.iter().map(|entry| *entry.key())
     }
 
+    /// Retrieve an iterator over all user-defined source identifiers in the manager.
+    pub fn user_defined_source_ids<'a>(&'a self) -> impl Iterator<Item = SourceIdentifier> + 'a {
+        self.sources.iter().filter(|entry| entry.key().is_user_defined()).map(|entry| *entry.key())
+    }
+
+    /// Retrieve an iterator over all external source identifiers in the manager.
+    pub fn external_source_ids<'a>(&'a self) -> impl Iterator<Item = SourceIdentifier> + 'a {
+        self.sources.iter().filter(|entry| entry.key().is_external()).map(|entry| *entry.key())
+    }
+
     /// Retrieve the source with the given identifier from the manager.
     ///
     /// # Parameters

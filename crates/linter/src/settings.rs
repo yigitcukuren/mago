@@ -8,7 +8,6 @@ use fennec_reporting::Level;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Settings {
     pub level: Option<Level>,
-    pub external: bool,
     pub default_plugins: bool,
     pub plugins: Vec<String>,
     pub rules: HashMap<String, RuleSettings>,
@@ -23,13 +22,7 @@ pub struct RuleSettings {
 
 impl Settings {
     pub fn new() -> Self {
-        Self {
-            level: Some(Level::Error),
-            external: false,
-            default_plugins: true,
-            plugins: Vec::new(),
-            rules: HashMap::default(),
-        }
+        Self { level: Some(Level::Error), default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -47,11 +40,6 @@ impl Settings {
 
     pub fn with_level(mut self, level: Level) -> Self {
         self.level = Some(level);
-        self
-    }
-
-    pub fn with_external(mut self, external: bool) -> Self {
-        self.external = external;
         self
     }
 
