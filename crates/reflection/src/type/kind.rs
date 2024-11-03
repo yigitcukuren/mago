@@ -280,7 +280,14 @@ pub enum CallableTypeKind {
 pub enum ValueTypeKind {
     /// A literal string value.
     /// For example, `'foo'`.
-    String { value: StringIdentifier },
+    String {
+        value: StringIdentifier,
+        length: usize,
+        is_uppercase: bool,
+        is_lowercase: bool,
+        is_ascii_lowercase: bool,
+        is_ascii_uppercase: bool,
+    },
 
     /// A literal integer value.
     /// For example, `42`.
@@ -709,7 +716,7 @@ impl TypeKind {
                 }
             },
             TypeKind::Value(value_type_kind) => match &value_type_kind {
-                ValueTypeKind::String { value } => {
+                ValueTypeKind::String { value, .. } => {
                     format!("\"{}\"", value)
                 }
                 ValueTypeKind::Integer { value } => value.to_string(),
@@ -888,8 +895,22 @@ pub fn variable_kind(name: StringIdentifier) -> TypeKind {
 }
 
 /// Creates a `TypeKind` representing a value type for a literal string.
-pub fn value_string_kind(value: StringIdentifier) -> TypeKind {
-    TypeKind::Value(ValueTypeKind::String { value })
+pub fn value_string_kind(
+    value: StringIdentifier,
+    length: usize,
+    is_uppercase: bool,
+    is_ascii_uppercase: bool,
+    is_lowercase: bool,
+    is_ascii_lowercase: bool,
+) -> TypeKind {
+    TypeKind::Value(ValueTypeKind::String {
+        value,
+        length,
+        is_uppercase,
+        is_lowercase,
+        is_ascii_uppercase,
+        is_ascii_lowercase,
+    })
 }
 
 /// Creates a `TypeKind` representing a value type for a literal integer.

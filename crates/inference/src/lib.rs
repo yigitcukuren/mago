@@ -1,3 +1,4 @@
+use fennec_interner::StringIdentifier;
 use ordered_float::OrderedFloat;
 
 use fennec_ast::*;
@@ -29,8 +30,34 @@ fn infere_kind<'i, 'ast>(
         Expression::Literal(literal) => Some(match &literal {
             Literal::String(string) => {
                 let value = interner.lookup(string.value);
+                let value = &value[1..value.len() - 1];
+                let mut length = 0;
+                let mut is_uppercase = true;
+                let mut is_lowercase = true;
+                let mut is_ascii_uppercase = true;
+                let mut is_ascii_lowercase = true;
 
-                value_string_kind(interner.intern(&value[1..value.len() - 1]))
+                for c in value.chars() {
+                    length += 1;
+
+                    is_uppercase = is_uppercase && c.is_uppercase();
+                    is_lowercase = is_lowercase && c.is_lowercase();
+                    is_ascii_uppercase = is_ascii_uppercase && c.is_ascii_uppercase();
+                    is_ascii_lowercase = is_ascii_lowercase && c.is_ascii_lowercase();
+                }
+
+                if length == 0 {
+                    value_string_kind(StringIdentifier::empty(), 0, false, false, false, false)
+                } else {
+                    value_string_kind(
+                        interner.intern(&value[1..value.len() - 1]),
+                        length,
+                        is_uppercase,
+                        is_ascii_uppercase,
+                        is_lowercase,
+                        is_ascii_lowercase,
+                    )
+                }
             }
             Literal::Integer(integer) => {
                 if let Some(value) = integer.value {
