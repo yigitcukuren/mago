@@ -915,6 +915,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "fennec-trinary"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "strum",
+]
+
+[[package]]
+name = "fennec-type-checker"
+version = "0.0.0"
+dependencies = [
+ "ahash",
+ "fennec-ast",
+ "fennec-ast-utils",
+ "fennec-casing",
+ "fennec-docblock",
+ "fennec-fixer",
+ "fennec-interner",
+ "fennec-names",
+ "fennec-reflection",
+ "fennec-reporting",
+ "fennec-semantics",
+ "fennec-source",
+ "fennec-span",
+ "fennec-trinary",
+ "fennec-walker",
+ "regex",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "fennec-walker"
 version = "0.0.0"
 dependencies = [
