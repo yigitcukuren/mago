@@ -77,7 +77,7 @@ pub fn parse_document_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result
 
     let close = utils::expect(stream, T![DocumentEnd])?;
 
-    let value = stream.interner().lookup(close.value);
+    let value = stream.interner().lookup(&close.value);
 
     let mut whitespaces = 0usize;
     let mut tabs = 0usize;

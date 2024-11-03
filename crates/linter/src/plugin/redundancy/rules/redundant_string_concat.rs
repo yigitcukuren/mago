@@ -40,7 +40,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantStringConcatRule {
                 return;
             }
 
-            let dangerous = match context.interner.lookup(right.value)[1..].as_bytes() {
+            let dangerous = match context.interner.lookup(&right.value)[1..].as_bytes() {
                 [b'{', ..] => true,
                 _ => false,
             };

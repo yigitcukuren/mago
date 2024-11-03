@@ -1,7 +1,6 @@
 use fennec_ast::ast::*;
 use fennec_ast::Node;
 use fennec_ast::Program;
-use fennec_interner::StringIdentifier;
 use fennec_interner::ThreadedInterner;
 use fennec_names::Names;
 use fennec_reporting::Issue;
@@ -12,7 +11,7 @@ use fennec_span::Span;
 
 #[derive(Debug)]
 pub struct Context<'a> {
-    interner: &'a ThreadedInterner,
+    pub interner: &'a ThreadedInterner,
     program: &'a Program,
     names: &'a Names,
     issues: IssueCollection,
@@ -32,21 +31,13 @@ impl<'a> Context<'a> {
         self.issues.push(issue);
     }
 
-    pub fn intern(&self, string: impl AsRef<str>) -> StringIdentifier {
-        self.interner.intern(string)
-    }
-
-    pub fn lookup(&self, id: StringIdentifier) -> String {
-        self.interner.lookup(id).to_string()
-    }
-
-    pub fn lookup_name(&self, position: &Position) -> String {
-        self.lookup(self.names.get(position))
+    pub fn lookup_name(&self, position: &Position) -> &'a str {
+        self.interner.lookup(self.names.get(position))
     }
 
     pub fn lookup_hint(&self, hint: &Hint) -> String {
         match hint {
-            Hint::Identifier(identifier) => self.lookup_name(&identifier.span().start),
+            Hint::Identifier(identifier) => self.lookup_name(&identifier.span().start).to_owned(),
             Hint::Parenthesized(parenthesized_hint) => {
                 format!("({})", self.lookup_hint(&parenthesized_hint.hint))
             }
@@ -57,23 +48,23 @@ impl<'a> Context<'a> {
             Hint::Intersection(intersection_hint) => {
                 format!("{}&{}", self.lookup_hint(&intersection_hint.left), self.lookup_hint(&intersection_hint.right))
             }
-            Hint::Null(keyword) => self.lookup(keyword.value),
-            Hint::True(keyword) => self.lookup(keyword.value),
-            Hint::False(keyword) => self.lookup(keyword.value),
-            Hint::Array(keyword) => self.lookup(keyword.value),
-            Hint::Callable(keyword) => self.lookup(keyword.value),
-            Hint::Static(keyword) => self.lookup(keyword.value),
-            Hint::Self_(keyword) => self.lookup(keyword.value),
-            Hint::Parent(keyword) => self.lookup(keyword.value),
-            Hint::Void(identifier) => self.lookup(identifier.value),
-            Hint::Never(identifier) => self.lookup(identifier.value),
-            Hint::Float(identifier) => self.lookup(identifier.value),
-            Hint::Bool(identifier) => self.lookup(identifier.value),
-            Hint::Integer(identifier) => self.lookup(identifier.value),
-            Hint::String(identifier) => self.lookup(identifier.value),
-            Hint::Object(identifier) => self.lookup(identifier.value),
-            Hint::Mixed(identifier) => self.lookup(identifier.value),
-            Hint::Iterable(identifier) => self.lookup(identifier.value),
+            Hint::Null(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::True(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::False(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Array(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Callable(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Static(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Self_(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Parent(keyword) => self.interner.lookup(&keyword.value).to_owned(),
+            Hint::Void(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Never(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Float(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Bool(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Integer(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::String(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Object(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Mixed(identifier) => self.interner.lookup(&identifier.value).to_owned(),
+            Hint::Iterable(identifier) => self.interner.lookup(&identifier.value).to_owned(),
         }
     }
 

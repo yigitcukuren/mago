@@ -8,24 +8,24 @@ use crate::context::LintContext;
 pub fn comment_content<'ast>(trivia: &'ast Trivia, context: &LintContext<'_>) -> Option<String> {
     match trivia.kind {
         TriviaKind::MultiLineComment => {
-            let content = context.lookup(trivia.value);
+            let content = context.lookup(&trivia.value);
             let content = &content[2..content.len() - 2];
 
             Some(remove_star_prefix(content))
         }
         TriviaKind::DocBlockComment => {
-            let content = context.lookup(trivia.value);
+            let content = context.lookup(&trivia.value);
             let content = &content[3..content.len() - 2];
 
             Some(remove_star_prefix(content))
         }
         TriviaKind::SingleLineComment => {
-            let content = context.lookup(trivia.value);
+            let content = context.lookup(&trivia.value);
 
             Some(content[2..].to_string())
         }
         TriviaKind::HashComment => {
-            let content = context.lookup(trivia.value);
+            let content = context.lookup(&trivia.value);
 
             Some(content[1..].to_string())
         }

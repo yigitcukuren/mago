@@ -32,7 +32,7 @@ impl<'a> Walker<LintContext<'a>> for LowercaseHintRule {
         | Hint::Mixed(identifier)
         | Hint::Iterable(identifier) = hint
         {
-            let name = context.interner.lookup(identifier.value);
+            let name = context.interner.lookup(&identifier.value);
             let lowered = name.to_ascii_lowercase();
             if !lowered.eq(&name) {
                 let issue = Issue::new(context.level(), format!("type hint `{}` should be in lowercase", name))

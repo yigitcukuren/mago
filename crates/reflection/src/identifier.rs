@@ -57,11 +57,49 @@ impl ClassLikeName {
             ClassLikeName::Class(name)
             | ClassLikeName::Interface(name)
             | ClassLikeName::Enum(name)
-            | ClassLikeName::Trait(name) => interner.lookup(name.value).to_string(),
+            | ClassLikeName::Trait(name) => interner.lookup(&name.value).to_string(),
             ClassLikeName::AnonymousClass(span) => {
                 format!(
                     "anonymous-class@{}:{}-{}",
-                    interner.lookup(span.start.source.0),
+                    interner.lookup(&span.start.source.0),
+                    span.start.offset,
+                    span.end.offset
+                )
+            }
+        }
+    }
+}
+
+impl ClassLikeMemberName {
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        let class_name = self.class_like.get_key(interner);
+        let member_name = interner.lookup(&self.member.value);
+
+        format!("{}::{}", class_name, member_name)
+    }
+}
+
+impl FunctionLikeName {
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        match self {
+            FunctionLikeName::Function(name) => interner.lookup(&name.value).to_string(),
+            FunctionLikeName::Method(class_like_name, name) => {
+                let class_name = class_like_name.get_key(interner);
+
+                format!("{}::{}", class_name, interner.lookup(&name.value))
+            }
+            FunctionLikeName::PropertyHook(class_like_name, property_name, name) => {
+                let class_name = class_like_name.get_key(interner);
+
+                format!("{}::{}::{}", class_name, interner.lookup(&property_name.value), interner.lookup(&name.value))
+            }
+            FunctionLikeName::Closure(span) => {
+                format!("closure@{}:{}-{}", interner.lookup(&span.start.source.0), span.start.offset, span.end.offset)
+            }
+            FunctionLikeName::ArrowFunction(span) => {
+                format!(
+                    "arrow-function@{}:{}-{}",
+                    interner.lookup(&span.start.source.0),
                     span.start.offset,
                     span.end.offset
                 )

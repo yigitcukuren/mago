@@ -25,29 +25,14 @@ pub enum ScalarTypeKind {
     Bool,
 
     /// The `int` type.
-    Integer,
+    /// The `Option` types represent inclusive minimum and maximum bounds.
+    Integer { min: Option<isize>, max: Option<isize> },
 
     /// The `float` type.
     Float,
 
     /// The `string` type.
     String,
-
-    /// An integer within a specified range, such as `int<1, 10>` or `int<min, max>`.
-    /// The `Option` types represent inclusive minimum and maximum bounds.
-    IntegerRange(Option<isize>, Option<isize>),
-
-    /// A positive integer type, representing integers from `1` to `max`.
-    PositiveInteger,
-
-    /// A non-negative integer type, representing integers from `0` to `max`.
-    NonNegativeInteger,
-
-    /// A negative integer type, representing integers from `min` to `-1`.
-    NegativeInteger,
-
-    /// A non-positive integer type, representing integers from `min` to `0`.
-    NonPositiveInteger,
 
     /// An integer mask, representing a union of integers formed by bitwise OR of the given values.
     /// For example, `int-mask<1, 2, 4>` includes all combinations of these bits set.
@@ -419,7 +404,7 @@ pub enum TypeKind {
 impl ArrayShapePropertyKey {
     pub fn get_key(&self, interner: &ThreadedInterner) -> String {
         match &self {
-            ArrayShapePropertyKey::String(string_identifier) => interner.lookup(*string_identifier).to_owned(),
+            ArrayShapePropertyKey::String(string_identifier) => interner.lookup(string_identifier).to_owned(),
             ArrayShapePropertyKey::Integer(i) => i.to_string(),
         }
     }
@@ -470,26 +455,14 @@ impl TypeKind {
             TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.get_key(interner)).collect::<Vec<_>>().join("&"),
             TypeKind::Scalar(scalar_type_kind) => match &scalar_type_kind {
                 ScalarTypeKind::Bool => "bool".to_string(),
-                ScalarTypeKind::Integer => "int".to_string(),
                 ScalarTypeKind::Float => "float".to_string(),
                 ScalarTypeKind::String => "string".to_string(),
-                ScalarTypeKind::IntegerRange(min, max) => {
-                    let min = match min {
-                        Some(min) => min.to_string(),
-                        None => "min".to_string(),
-                    };
-
-                    let max = match max {
-                        Some(max) => max.to_string(),
-                        None => "max".to_string(),
-                    };
-
-                    format!("int<{}, {}>", min, max)
-                }
-                ScalarTypeKind::PositiveInteger => "positive-int".to_string(),
-                ScalarTypeKind::NonNegativeInteger => "non-negative-int".to_string(),
-                ScalarTypeKind::NegativeInteger => "negative-int".to_string(),
-                ScalarTypeKind::NonPositiveInteger => "non-positive-int".to_string(),
+                ScalarTypeKind::Integer { min, max } => match (min, max) {
+                    (None, None) => "int".to_string(),
+                    (Some(min), None) => format!("int<{}, max>", min),
+                    (None, Some(max)) => format!("int<min, {}>", max),
+                    (Some(min), Some(max)) => format!("int<{}, {}>", min, max),
+                },
                 ScalarTypeKind::IntegerMask(vec) => {
                     let vec = vec.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
 
@@ -498,13 +471,13 @@ impl TypeKind {
                 ScalarTypeKind::IntegerMaskOf(string_identifier, string_identifier1) => {
                     format!(
                         "int-mask-of<{}, {}>",
-                        interner.lookup(*string_identifier),
-                        interner.lookup(*string_identifier1)
+                        interner.lookup(string_identifier),
+                        interner.lookup(string_identifier1)
                     )
                 }
                 ScalarTypeKind::ClassString(string_identifier) => {
                     if let Some(string_identifier) = string_identifier {
-                        format!("class-string<{}>", interner.lookup(*string_identifier))
+                        format!("class-string<{}>", interner.lookup(string_identifier))
                     } else {
                         "class-string".to_string()
                     }
@@ -526,7 +499,7 @@ impl TypeKind {
                     let properties = properties
                         .iter()
                         .map(|property| {
-                            let name = interner.lookup(property.name);
+                            let name = interner.lookup(&property.name);
                             let kind = property.kind.get_key(interner);
 
                             if property.optional {
@@ -541,7 +514,7 @@ impl TypeKind {
                     format!("object{{{}}}", properties)
                 }
                 ObjectTypeKind::NamedObject { name, type_parameters } => {
-                    let name = interner.lookup(*name);
+                    let name = interner.lookup(name);
 
                     if type_parameters.is_empty() {
                         name.to_string()
@@ -725,7 +698,7 @@ impl TypeKind {
                 ValueTypeKind::True => "true".to_string(),
                 ValueTypeKind::False => "false".to_string(),
                 ValueTypeKind::ClassLikeConstant { class_like, constant } => {
-                    format!("{}::{}", class_like.get_key(interner), interner.lookup(*constant))
+                    format!("{}::{}", class_like.get_key(interner), interner.lookup(constant))
                 }
             },
             TypeKind::Conditional { parameter, condition, then, otherwise } => {
@@ -752,7 +725,7 @@ impl TypeKind {
                 format!("properties-of<{}>", kind)
             }
             TypeKind::ClassStringMap { key, value_kind } => {
-                let mut template = interner.lookup(key.name).to_owned();
+                let mut template = interner.lookup(&key.name).to_owned();
                 for constraint in &key.constraints {
                     template.push_str(&format!(" of {}", constraint.get_key(interner)));
                 }
@@ -767,7 +740,7 @@ impl TypeKind {
 
                 format!("{}[{}]", base_kind, index_kind)
             }
-            TypeKind::Variable { name } => interner.lookup(*name).to_owned(),
+            TypeKind::Variable { name } => interner.lookup(name).to_owned(),
             TypeKind::Iterable { key, value } => {
                 let key = key.get_key(interner);
                 let value = value.get_key(interner);
@@ -780,7 +753,7 @@ impl TypeKind {
             TypeKind::Mixed => "mixed".to_string(),
             TypeKind::Never => "never".to_string(),
             TypeKind::GenericParameter { name, defined_in, .. } => {
-                format!("{}:{}", interner.lookup(*name), interner.lookup(*defined_in))
+                format!("{}:{}", interner.lookup(name), interner.lookup(defined_in))
             }
         }
     }
@@ -793,7 +766,31 @@ pub fn bool_kind() -> TypeKind {
 
 /// Creates a `TypeKind` representing the `int` type.
 pub fn integer_kind() -> TypeKind {
-    TypeKind::Scalar(ScalarTypeKind::Integer)
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: None, max: None })
+}
+
+pub fn positive_integer_kind() -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: Some(1), max: None })
+}
+
+pub fn non_negative_integer_kind() -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: Some(0), max: None })
+}
+
+pub fn negative_integer_kind() -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: None, max: Some(-1) })
+}
+
+pub fn non_positive_integer_kind() -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: None, max: Some(0) })
+}
+
+pub fn minimum_integer_kind(min: isize) -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: Some(min), max: None })
+}
+
+pub fn maximum_integer_kind(max: isize) -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: None, max: Some(max) })
 }
 
 /// Creates a `TypeKind` representing the `float` type.

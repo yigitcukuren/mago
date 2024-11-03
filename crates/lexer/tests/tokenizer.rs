@@ -698,7 +698,7 @@ async fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), S
     assert_eq!(expected_kinds, tokens.iter().map(|t| t.kind).collect::<Vec<_>>());
     let mut found = String::new();
     for token in tokens.iter() {
-        found.push_str(interner.lookup(token.value));
+        found.push_str(interner.lookup(&token.value));
     }
 
     assert_eq!(code, found.as_bytes());

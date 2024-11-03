@@ -24,16 +24,16 @@ fn test_interner() {
 
     // Test basic interning and lookup
     let id = interner.intern("hello");
-    assert_eq!(interner.lookup(id), "hello");
+    assert_eq!(interner.lookup(&id), "hello");
 
     let id = interner.intern("hello");
-    assert_eq!(interner.lookup(id), "hello");
+    assert_eq!(interner.lookup(&id), "hello");
 
     let id = interner.intern("world");
-    assert_eq!(interner.lookup(id), "world");
+    assert_eq!(interner.lookup(&id), "world");
 
     let id = interner.intern("hello");
-    assert_eq!(interner.lookup(id), "hello");
+    assert_eq!(interner.lookup(&id), "hello");
 
     assert_eq!(interner.len(), 2);
     assert!(!interner.is_empty());
@@ -65,12 +65,12 @@ fn test_interner_multithreaded() {
     for (index, handle) in handles.into_iter().enumerate() {
         let set = handle.join().unwrap();
 
-        assert_eq!(interner.lookup(set.0), "apple");
-        assert_eq!(interner.lookup(set.1), "banana");
-        assert_eq!(interner.lookup(set.2), "cherry");
-        assert_eq!(interner.lookup(set.3), "coconut");
-        assert_eq!(interner.lookup(set.4), "durian");
-        assert_eq!(interner.lookup(set.5), format!("hello-{}", index));
+        assert_eq!(interner.lookup(&set.0), "apple");
+        assert_eq!(interner.lookup(&set.1), "banana");
+        assert_eq!(interner.lookup(&set.2), "cherry");
+        assert_eq!(interner.lookup(&set.3), "coconut");
+        assert_eq!(interner.lookup(&set.4), "durian");
+        assert_eq!(interner.lookup(&set.5), format!("hello-{}", index));
 
         sets.push((set.0, set.1, set.2, set.3, set.4));
     }

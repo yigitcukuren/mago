@@ -79,7 +79,7 @@ impl SemanticsWalker {
         }
 
         for extended_type in extends.types.iter() {
-            let extended_name = context.lookup(extended_type.value());
+            let extended_name = context.interner.lookup(&extended_type.value());
 
             if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(&extended_name))
                 || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
@@ -129,12 +129,12 @@ impl SemanticsWalker {
         }
 
         for implemented_type in implements.types.iter() {
-            let implemented_name = context.lookup(implemented_type.value());
+            let implemented_name = context.interner.lookup(&implemented_type.value());
 
-            if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(implemented_name.as_str()))
+            if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(implemented_name))
                 || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                     .iter()
-                    .any(|keyword| keyword.eq_ignore_ascii_case(implemented_name.as_str()))
+                    .any(|keyword| keyword.eq_ignore_ascii_case(implemented_name))
             {
                 context.report(
                     Issue::error(format!(
@@ -163,7 +163,7 @@ impl SemanticsWalker {
     ) {
         let first_variable = property.first_variable();
         let first_variable_id = first_variable.name;
-        let first_variable_name = context.lookup(first_variable_id);
+        let first_variable_name = context.interner.lookup(&first_variable_id);
 
         let modifiers = property.modifiers();
         let mut last_final: Option<Span> = None;
@@ -397,7 +397,7 @@ impl SemanticsWalker {
                 for item in plain_property.items.iter() {
                     if let PropertyItem::Concrete(property_concrete_item) = &item {
                         let item_name_id = property_concrete_item.variable.name;
-                        let item_name = context.lookup(item_name_id);
+                        let item_name = context.interner.lookup(&item_name_id);
 
                         if !property_concrete_item.value.is_constant(false) {
                             context.report(
@@ -453,7 +453,7 @@ impl SemanticsWalker {
             }
             Property::Hooked(hooked_property) => {
                 let item_name_id = hooked_property.item.variable().name;
-                let item_name = context.lookup(item_name_id);
+                let item_name = context.interner.lookup(&&item_name_id);
 
                 if let Some(readonly) = last_readonly {
                     context.report(
@@ -498,7 +498,7 @@ impl SemanticsWalker {
 
                 let mut hook_names: Vec<(std::string::String, Span)> = vec![];
                 for hook in hooked_property.hooks.hooks.iter() {
-                    let name = context.lookup(hook.name.value);
+                    let name = context.interner.lookup(&hook.name.value);
                     let lowered_name = name.to_ascii_lowercase();
 
                     if !hook.modifiers.is_empty() {
@@ -549,7 +549,6 @@ impl SemanticsWalker {
                         "set" => {
                             if let Some(parameters) = &hook.parameters {
                                 if parameters.parameters.len() != 1 {
-                                    // migrate to Issue API
                                     context.report(
                                         Issue::error(format!(
                                             "hook `{}` of property `{}::{}` must accept exactly one parameter, found {}",
@@ -572,7 +571,7 @@ impl SemanticsWalker {
                                     );
                                 } else {
                                     let first_parameter = parameters.parameters.first().unwrap();
-                                    let first_parameter_name = context.lookup(first_parameter.variable.name);
+                                    let first_parameter_name = context.interner.lookup(&first_parameter.variable.name);
 
                                     if !first_parameter.hint.is_some() {
                                         context.report(
@@ -1260,7 +1259,7 @@ impl SemanticsWalker {
                     Property::Plain(plain_property) => {
                         for item in plain_property.items.iter() {
                             let item_name_id = item.variable().name;
-                            let item_name = context.lookup(item_name_id);
+                            let item_name = context.interner.lookup(&item_name_id);
 
                             if let Some((is_promoted, _, span)) =
                                 property_names.iter().find(|(_, name, _)| item_name_id.eq(name))
@@ -1297,7 +1296,7 @@ impl SemanticsWalker {
                     Property::Hooked(hooked_property) => {
                         let item_variable = hooked_property.item.variable();
                         let item_name_id = item_variable.name;
-                        let item_name = context.lookup(item_name_id);
+                        let item_name = context.interner.lookup(&item_name_id);
 
                         if let Some((is_promoted, _, span)) =
                             property_names.iter().find(|(_, name, _)| item_name_id.eq(name))
@@ -1333,8 +1332,8 @@ impl SemanticsWalker {
                 },
                 ClassLikeMember::Method(method) => {
                     let method_name_id = method.name.value;
-                    let method_name = context.lookup(method_name_id);
-                    let method_name_lowered_id = context.intern(method_name.to_ascii_lowercase());
+                    let method_name = context.interner.lookup(&method_name_id);
+                    let method_name_lowered_id = context.interner.intern(method_name.to_ascii_lowercase());
 
                     if let Some((previous, _)) =
                         method_names.iter().find(|(_, previous_name)| method_name_lowered_id.eq(previous_name))
@@ -1359,7 +1358,7 @@ impl SemanticsWalker {
                         for parameter in method.parameters.parameters.iter() {
                             if parameter.is_promoted_property() {
                                 let item_name_id = parameter.variable.name;
-                                let item_name = context.lookup(item_name_id);
+                                let item_name = context.interner.lookup(&item_name_id);
 
                                 if let Some((is_promoted, _, span)) =
                                     property_names.iter().find(|(_, name, _)| item_name_id.eq(name))
@@ -1400,7 +1399,7 @@ impl SemanticsWalker {
                 }
                 ClassLikeMember::Constant(class_like_constant) => {
                     for item in class_like_constant.items.iter() {
-                        let item_name = context.lookup(item.name.value);
+                        let item_name = context.interner.lookup(&item.name.value);
 
                         if let Some((is_constant, name, span)) = constant_names.iter().find(|t| t.1.eq(&item_name)) {
                             if *is_constant {
@@ -1439,12 +1438,12 @@ impl SemanticsWalker {
                                 );
                             }
                         } else {
-                            constant_names.push((true, item_name, item.name.span()));
+                            constant_names.push((true, item_name.to_string(), item.name.span()));
                         }
                     }
                 }
                 ClassLikeMember::EnumCase(enum_case) => {
-                    let case_name = context.lookup(enum_case.item.name().value);
+                    let case_name = context.interner.lookup(&enum_case.item.name().value);
 
                     if let Some((is_constant, name, span)) = constant_names.iter().find(|t| t.1.eq(&case_name)) {
                         if *is_constant {
@@ -1485,7 +1484,7 @@ impl SemanticsWalker {
 
                         continue;
                     } else {
-                        constant_names.push((false, case_name.clone(), enum_case.item.name().span()));
+                        constant_names.push((false, case_name.to_string(), enum_case.item.name().span()));
                     }
                 }
                 _ => {}
@@ -1503,7 +1502,7 @@ impl SemanticsWalker {
         context: &mut Context,
     ) {
         let first_item = class_like_constant.first_item();
-        let first_item_name = context.lookup(first_item.name.value);
+        let first_item_name = context.interner.lookup(&first_item.name.value);
 
         let mut last_final: Option<Span> = None;
         let mut last_visibility: Option<Span> = None;
@@ -1511,18 +1510,19 @@ impl SemanticsWalker {
             match modifier {
                 Modifier::Readonly(k) | Modifier::Static(k) | Modifier::Abstract(k) => {
                     context.report(
-                        Issue::error(format!("`{}` modifier is not allowed on constants", context.lookup(k.value),))
-                            .with_annotation(Annotation::primary(modifier.span()))
-                            .with_annotations([
-                                Annotation::secondary(first_item.span()).with_message(format!(
-                                    "{} constant `{}::{}` is declared here",
-                                    class_like_kind, class_like_name, first_item_name
-                                )),
-                                Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is declared here",
-                                    class_like_kind, class_like_fqcn
-                                )),
-                            ]),
+                        Issue::error(format!(
+                            "`{}` modifier is not allowed on constants",
+                            context.interner.lookup(&k.value),
+                        ))
+                        .with_annotation(Annotation::primary(modifier.span()))
+                        .with_annotations([
+                            Annotation::secondary(first_item.span()).with_message(format!(
+                                "{} constant `{}::{}` is declared here",
+                                class_like_kind, class_like_name, first_item_name
+                            )),
+                            Annotation::secondary(class_like_span)
+                                .with_message(format!("{} `{}` is declared here", class_like_kind, class_like_fqcn)),
+                        ]),
                     );
                 }
                 Modifier::Final(_) => {
@@ -1571,7 +1571,7 @@ impl SemanticsWalker {
         }
 
         for item in class_like_constant.items.iter() {
-            let item_name = context.lookup(item.name.value);
+            let item_name = context.interner.lookup(&item.name.value);
 
             if !item.value.is_constant(false) {
                 context.report(
@@ -1650,7 +1650,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
             if let Statement::Declare(declare) = statement {
                 for item in declare.items.iter() {
-                    let name = context.lookup(item.name.value);
+                    let name = context.interner.lookup(&item.name.value);
 
                     if name.eq_ignore_ascii_case(STRICT_TYPES_DECLARE_DIRECTIVE) {
                         context.report(
@@ -1769,7 +1769,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
     fn walk_in_declare<'ast>(&self, declare: &'ast Declare, context: &mut Context<'_>) {
         for item in declare.items.iter() {
-            let name = context.lookup(item.name.value);
+            let name = context.interner.lookup(&item.name.value);
 
             match name.to_ascii_lowercase().as_str() {
                 STRICT_TYPES_DECLARE_DIRECTIVE => {
@@ -1936,7 +1936,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_method<'ast>(&self, method: &'ast Method, context: &mut Context<'_>) {
-        let name = context.lookup(method.name.value);
+        let name = context.interner.lookup(&method.name.value);
         if name != "__construct" {
             self.process_promoted_properties_outside_constructor(&method.parameters, context);
 
@@ -1960,13 +1960,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_class<'ast>(&self, class: &'ast Class, context: &mut Context<'_>) {
-        let class_name = context.lookup(class.name.value);
+        let class_name = context.interner.lookup(&class.name.value);
         let class_fqcn = context.lookup_name(&class.name.span.start);
 
-        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_name.as_str()))
+        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
-                .any(|keyword| keyword.eq_ignore_ascii_case(class_name.as_str()))
+                .any(|keyword| keyword.eq_ignore_ascii_case(class_name))
         {
             context.report(
                 Issue::error(format!("class `{}` name cannot be a reserved keyword", class_name))
@@ -1996,7 +1996,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 Modifier::Public(keyword) | Modifier::Protected(keyword) | Modifier::Private(keyword) => {
-                    let visibility_name = context.lookup(keyword.value);
+                    let visibility_name = context.interner.lookup(&keyword.value);
 
                     context.report(
                         Issue::error(format!(
@@ -2111,7 +2111,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Method(method) => {
-                    let method_name = context.lookup(method.name.value);
+                    let method_name = context.interner.lookup(&method.name.value);
 
                     if !class.modifiers.contains_abstract() && method.modifiers.contains_abstract() {
                         context.report(
@@ -2159,13 +2159,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_interface<'ast>(&self, interface: &'ast Interface, context: &mut Context<'_>) {
-        let interface_name = context.lookup(interface.name.value);
+        let interface_name = context.interner.lookup(&interface.name.value);
         let interface_fqcn = context.lookup_name(&interface.name.span.start);
 
-        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(interface_name.as_str()))
+        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
-                .any(|keyword| keyword.eq_ignore_ascii_case(interface_name.as_str()))
+                .any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
         {
             context.report(
                 Issue::error(format!("interface `{}` name cannot be a reserved keyword", interface_name))
@@ -2222,7 +2222,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 ClassLikeMember::Method(method) => {
                     let method_name_id = method.name.value;
-                    let method_name = context.lookup(method_name_id);
+                    let method_name = context.interner.lookup(&method_name_id);
 
                     let mut visibilities = vec![];
                     for modifier in method.modifiers.iter() {
@@ -2232,7 +2232,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     for visibility in visibilities.iter() {
-                        let visibility_name = context.lookup(visibility.keyword().value);
+                        let visibility_name = context.interner.lookup(&visibility.keyword().value);
 
                         context.report(
                             Issue::error(format!(
@@ -2284,8 +2284,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         method,
                         &method_name,
                         interface.span(),
-                        interface_name.as_str(),
-                        interface_fqcn.as_str(),
+                        interface_name,
+                        interface_fqcn,
                         "interface",
                         true,
                         context,
@@ -2308,7 +2308,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         }
                         Property::Hooked(hooked_property) => {
                             let property_name_id = hooked_property.item.variable().name;
-                            let property_name = context.lookup(property_name_id);
+                            let property_name = context.interner.lookup(&property_name_id);
 
                             let mut found_public = false;
                             let mut visibilities = vec![];
@@ -2323,7 +2323,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             }
 
                             for visibility in visibilities.iter() {
-                                let visibility_name = context.lookup(visibility.keyword().value);
+                                let visibility_name = context.interner.lookup(&visibility.keyword().value);
                                 context.report(
                                     Issue::error(format!(
                                         "interface property `{}::{}` cannot have `{}` visibility modifier",
@@ -2426,7 +2426,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     for visibility in visibilities.iter() {
-                        let visibility_name = context.lookup(visibility.keyword().value);
+                        let visibility_name = context.interner.lookup(&visibility.keyword().value);
 
                         context.report(
                             Issue::error(format!(
@@ -2456,13 +2456,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_trait<'ast>(&self, r#trait: &'ast Trait, context: &mut Context<'_>) {
-        let class_like_name = context.lookup(r#trait.name.value);
+        let class_like_name = context.interner.lookup(&r#trait.name.value);
         let class_like_fqcn = context.lookup_name(&r#trait.name.span.start);
 
-        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_like_name.as_str()))
+        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
-                .any(|keyword| keyword.eq_ignore_ascii_case(class_like_name.as_str()))
+                .any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
         {
             context.report(
                 Issue::error(format!("trait `{}` name cannot be a reserved keyword", class_like_name))
@@ -2489,7 +2489,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Method(method) => {
-                    let method_name = context.lookup(method.name.value);
+                    let method_name = context.interner.lookup(&method.name.value);
 
                     self.process_method(
                         method,
@@ -2529,14 +2529,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_enum<'ast>(&self, r#enum: &'ast Enum, context: &mut Context<'_>) {
-        let enum_name = context.lookup(r#enum.name.value);
+        let enum_name = context.interner.lookup(&r#enum.name.value);
         let enum_fqcn = context.lookup_name(&r#enum.name.span.start);
         let enum_is_backed = r#enum.backing_type_hint.is_some();
 
-        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name.as_str()))
-            || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
-                .iter()
-                .any(|keyword| keyword.eq_ignore_ascii_case(enum_name.as_str()))
+        if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
+            || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
         {
             context.report(
                 Issue::error(format!("enum `{}` name cannot be a reserved keyword", enum_name))
@@ -2575,7 +2573,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &memeber {
                 ClassLikeMember::EnumCase(case) => {
                     let item_name_id = case.item.name().value;
-                    let item_name = context.lookup(item_name_id);
+                    let item_name = context.interner.lookup(&item_name_id);
 
                     match &case.item {
                         EnumCaseItem::Unit(_) => {
@@ -2614,11 +2612,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 ClassLikeMember::Method(method) => {
                     let method_name_id = method.name.value;
-                    let method_name = context.lookup(method_name_id);
+                    let method_name = context.interner.lookup(&method_name_id);
 
-                    if let Some(magic_method) = MAGIC_METHODS
-                        .iter()
-                        .find(|magic_method| magic_method.eq_ignore_ascii_case(method_name.as_str()))
+                    if let Some(magic_method) =
+                        MAGIC_METHODS.iter().find(|magic_method| magic_method.eq_ignore_ascii_case(method_name))
                     {
                         context.report(
                             Issue::error(format!(
@@ -2647,8 +2644,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         method,
                         &method_name,
                         r#enum.span(),
-                        enum_name.as_str(),
-                        enum_fqcn.as_str(),
+                        enum_name,
+                        enum_fqcn,
                         "enum",
                         false,
                         context,
@@ -2707,7 +2704,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 Modifier::Public(keyword) | Modifier::Protected(keyword) | Modifier::Private(keyword) => {
-                    let visibility_name = context.lookup(keyword.value);
+                    let visibility_name = context.interner.lookup(&keyword.value);
 
                     context.report(
                         Issue::error(format!(
@@ -2809,7 +2806,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Method(method) => {
-                    let method_name = context.lookup(method.name.value);
+                    let method_name = context.interner.lookup(&method.name.value);
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                         context.report(
@@ -2864,7 +2861,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
     fn walk_in_function<'ast>(&self, function: &'ast Function, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&function.parameters, context);
 
-        let name = context.lookup(function.name.value);
+        let name = context.interner.lookup(&function.name.value);
         let fqfn = context.lookup_name(&function.name.span.start);
 
         let hint = if let Some(return_hint) = &function.return_type_hint {
@@ -2928,7 +2925,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_attribute<'ast>(&self, attribute: &'ast Attribute, context: &mut Context<'_>) {
-        let name = context.lookup(attribute.name.value());
+        let name = context.interner.lookup(&attribute.name.value());
 
         if let Some(list) = &attribute.arguments {
             for argument in list.arguments.iter() {
@@ -2977,10 +2974,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         // If we reach this point, the label was not found
         // try to see if there is a label with the same name but different case
         // if so, suggest the correct label
-        let going_to = context.lookup(goto.label.value);
+        let going_to = context.interner.lookup(&goto.label.value);
         let mut suggestions = vec![];
         for label in all_labels {
-            let label_name = context.lookup(label.name.value);
+            let label_name = context.interner.lookup(&label.name.value);
             if label_name.eq_ignore_ascii_case(&going_to) {
                 suggestions.push((label_name, label.name.span));
             }
@@ -3154,7 +3151,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         let mut last_optional = None;
         let mut parameters_seen = vec![];
         for parameter in function_like_parameter_list.parameters.iter() {
-            let name = context.lookup(parameter.variable.name);
+            let name = context.interner.lookup(&parameter.variable.name);
             if let Some(prev_span) =
                 parameters_seen.iter().find_map(|(n, s)| if parameter.variable.name.eq(n) { Some(s) } else { None })
             {
@@ -3178,7 +3175,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             Issue::error(format!(
                                 "parameter `{}` cannot have modifier `{}`",
                                 name,
-                                context.lookup(keyword.value)
+                                context.interner.lookup(&keyword.value)
                             ))
                             .with_annotation(Annotation::primary(modifier.span()))
                             .with_annotation(
@@ -3224,7 +3221,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     Issue::error(format!(
                         "parameter `{}` is defined after variadic parameter `{}`",
                         name,
-                        context.lookup(n)
+                        context.interner.lookup(&n)
                     ))
                     .with_annotation(Annotation::primary(parameter.variable.span()))
                     .with_annotation(Annotation::secondary(s).with_message("variadic parameter defined here"))
@@ -3253,21 +3250,23 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
 
             if let Some((name, span)) = last_optional {
-                let current = context.lookup(parameter.variable.name);
+                let current = context.interner.lookup(&parameter.variable.name);
 
                 context.report(
                     Issue::warning(format!(
                         "deprecated: required parameter `{}` after optional parameter `{}`",
                         current,
-                        context.lookup(name)
+                        context.interner.lookup(&name)
                     ))
                     .with_annotation(
                         Annotation::primary(parameter.variable.span())
                             .with_message(format!("required parameter `{}` defined here", current)),
                     )
                     .with_annotation(
-                        Annotation::primary(span)
-                            .with_message(format!("optional parameter `{}` defined here", context.lookup(name))),
+                        Annotation::primary(span).with_message(format!(
+                            "optional parameter `{}` defined here",
+                            context.interner.lookup(&name)
+                        )),
                     )
                     .with_note("the optional parameter will be implicitly treated as required")
                     .with_help("move all optional parameters to the end of the parameter list"),

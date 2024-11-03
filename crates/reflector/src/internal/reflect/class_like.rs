@@ -27,12 +27,12 @@ use super::r#type::reflect_hint;
 pub fn reflect_class<'i, 'ast>(class: &'ast Class, context: &'ast mut Context<'i>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&class.attributes, context),
-        name: ClassLikeName::Class(Name::new(context.semantics.names.get(&class.name), class.name.span)),
+        name: ClassLikeName::Class(Name::new(*context.semantics.names.get(&class.name), class.name.span)),
         inheritance: {
             let mut reflection = InheritanceReflection::default();
             if let Some(extends) = &class.extends {
                 if let Some(first_parent) = extends.types.first() {
-                    let parent = Name::new(context.semantics.names.get(first_parent), first_parent.span());
+                    let parent = Name::new(*context.semantics.names.get(first_parent), first_parent.span());
 
                     reflection.direct_extended_class = Some(parent);
                     reflection.all_extended_classes.insert(parent);
@@ -42,7 +42,7 @@ pub fn reflect_class<'i, 'ast>(class: &'ast Class, context: &'ast mut Context<'i
 
             if let Some(impelemnts) = &class.implements {
                 for interface in impelemnts.types.iter() {
-                    let name = Name::new(context.semantics.names.get(interface), interface.span());
+                    let name = Name::new(*context.semantics.names.get(interface), interface.span());
 
                     reflection.direct_implemented_interfaces.insert(name);
                     reflection.all_implemented_interfaces.insert(name);
@@ -83,7 +83,7 @@ pub fn reflect_anonymous_class<'i, 'ast>(
             let mut reflection = InheritanceReflection::default();
             if let Some(extends) = &class.extends {
                 if let Some(first_parent) = extends.types.first() {
-                    let parent = Name::new(context.semantics.names.get(first_parent), first_parent.span());
+                    let parent = Name::new(*context.semantics.names.get(first_parent), first_parent.span());
 
                     reflection.direct_extended_class = Some(parent);
                     reflection.all_extended_classes.insert(parent);
@@ -93,7 +93,7 @@ pub fn reflect_anonymous_class<'i, 'ast>(
 
             if let Some(impelemnts) = &class.implements {
                 for interface in impelemnts.types.iter() {
-                    let name = Name::new(context.semantics.names.get(interface), interface.span());
+                    let name = Name::new(*context.semantics.names.get(interface), interface.span());
 
                     reflection.direct_implemented_interfaces.insert(name);
                     reflection.all_implemented_interfaces.insert(name);
@@ -126,13 +126,13 @@ pub fn reflect_anonymous_class<'i, 'ast>(
 pub fn reflect_interface<'i, 'ast>(interface: &'ast Interface, context: &'ast mut Context<'i>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&interface.attributes, context),
-        name: ClassLikeName::Interface(Name::new(context.semantics.names.get(&interface.name), interface.name.span)),
+        name: ClassLikeName::Interface(Name::new(*context.semantics.names.get(&interface.name), interface.name.span)),
         inheritance: {
             let mut reflection = InheritanceReflection::default();
 
             if let Some(extends) = &interface.extends {
                 for interface in extends.types.iter() {
-                    let name = Name::new(context.semantics.names.get(interface), interface.span());
+                    let name = Name::new(*context.semantics.names.get(interface), interface.span());
 
                     reflection.direct_extended_interfaces.insert(name);
                     reflection.all_extended_interfaces.insert(name);
@@ -165,7 +165,7 @@ pub fn reflect_interface<'i, 'ast>(interface: &'ast Interface, context: &'ast mu
 pub fn reflect_trait<'i, 'ast>(r#trait: &'ast Trait, context: &'ast mut Context<'i>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&r#trait.attributes, context),
-        name: ClassLikeName::Trait(Name::new(context.semantics.names.get(&r#trait.name), r#trait.name.span)),
+        name: ClassLikeName::Trait(Name::new(*context.semantics.names.get(&r#trait.name), r#trait.name.span)),
         inheritance: InheritanceReflection::default(),
         backing_type: None,
         is_final: false,
@@ -190,13 +190,13 @@ pub fn reflect_trait<'i, 'ast>(r#trait: &'ast Trait, context: &'ast mut Context<
 pub fn reflect_enum<'i, 'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'i>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&r#enum.attributes, context),
-        name: ClassLikeName::Enum(Name::new(context.semantics.names.get(&r#enum.name), r#enum.name.span)),
+        name: ClassLikeName::Enum(Name::new(*context.semantics.names.get(&r#enum.name), r#enum.name.span)),
         inheritance: {
             let mut reflection = InheritanceReflection::default();
 
             if let Some(impelemnts) = &r#enum.implements {
                 for interface in impelemnts.types.iter() {
-                    let name = Name::new(context.semantics.names.get(interface), interface.span());
+                    let name = Name::new(*context.semantics.names.get(interface), interface.span());
 
                     reflection.direct_implemented_interfaces.insert(name);
                     reflection.all_implemented_interfaces.insert(name);
@@ -238,7 +238,7 @@ fn reflect_class_like_members<'i, 'ast>(
         match &member {
             ClassLikeMember::TraitUse(trait_use) => {
                 for trait_name in trait_use.trait_names.iter() {
-                    let name = Name::new(context.semantics.names.get(trait_name), trait_name.span());
+                    let name = Name::new(*context.semantics.names.get(trait_name), trait_name.span());
 
                     reflection.used_traits.insert(name.value);
                     reflection.used_trait_names.insert(name.value, name);
@@ -259,7 +259,7 @@ fn reflect_class_like_members<'i, 'ast>(
                 let (name, meth_ref) = reflect_class_like_method(reflection, method, context);
 
                 // `__construct`, `__clone`, and trait methods are always inheritable
-                let name_value = context.interner.lookup(name.value);
+                let name_value = context.interner.lookup(&name.value);
                 if meth_ref.visibility_reflection.map(|v| !v.is_private()).unwrap_or(true)
                     || name_value.eq_ignore_ascii_case("__construct")
                     || name_value.eq_ignore_ascii_case("__clone")

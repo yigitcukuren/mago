@@ -29,7 +29,7 @@ fn infere_kind<'i, 'ast>(
         Expression::Suppressed(suppressed) => infere_kind(interner, semantics, &suppressed.expression),
         Expression::Literal(literal) => Some(match &literal {
             Literal::String(string) => {
-                let value = interner.lookup(string.value);
+                let value = interner.lookup(&string.value);
                 let value = &value[1..value.len() - 1];
                 let mut length = 0;
                 let mut is_uppercase = true;
@@ -115,7 +115,9 @@ fn infere_kind<'i, 'ast>(
                             ArithmeticPrefixOperator::Minus(_) => Some(value_float_kind(-value)),
                         }
                     }
-                    Some(TypeKind::Scalar(ScalarTypeKind::Integer)) => match &arithmetic_prefix_operation.operator {
+                    Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })) => match &arithmetic_prefix_operation
+                        .operator
+                    {
                         ArithmeticPrefixOperator::Increment(_) | ArithmeticPrefixOperator::Decrement(_) => {
                             Some(integer_kind())
                         }
@@ -270,7 +272,7 @@ fn infere_kind<'i, 'ast>(
                             ArithmeticPostfixOperator::Decrement(_) => Some(value_float_kind(value)),
                         }
                     }
-                    Some(TypeKind::Scalar(ScalarTypeKind::Integer)) => Some(integer_kind()),
+                    Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })) => Some(integer_kind()),
                     Some(TypeKind::Scalar(ScalarTypeKind::Float)) => Some(float_kind()),
                     _ => None,
                 }
@@ -299,7 +301,7 @@ fn infere_kind<'i, 'ast>(
                         let result = !value;
                         Some(value_integer_kind(result))
                     }
-                    Some(TypeKind::Scalar(ScalarTypeKind::Integer)) => Some(integer_kind()),
+                    Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })) => Some(integer_kind()),
                     _ => Some(integer_kind()),
                 }
             }
@@ -494,17 +496,18 @@ fn infer_numeric_operation_type(
     operator: &ArithmeticInfixOperator,
 ) -> Option<TypeKind> {
     match (lhs_kind, rhs_kind) {
-        (Some(TypeKind::Scalar(ScalarTypeKind::Integer)), Some(TypeKind::Scalar(ScalarTypeKind::Integer))) => {
-            match operator {
-                ArithmeticInfixOperator::Modulo(_) => Some(integer_kind()),
-                ArithmeticInfixOperator::Division(_) => Some(union_kind(vec![integer_kind(), float_kind()])),
-                ArithmeticInfixOperator::Exponentiation(_) => Some(union_kind(vec![integer_kind(), float_kind()])),
-                _ => Some(integer_kind()),
-            }
-        }
+        (
+            Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })),
+            Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })),
+        ) => match operator {
+            ArithmeticInfixOperator::Modulo(_) => Some(integer_kind()),
+            ArithmeticInfixOperator::Division(_) => Some(union_kind(vec![integer_kind(), float_kind()])),
+            ArithmeticInfixOperator::Exponentiation(_) => Some(union_kind(vec![integer_kind(), float_kind()])),
+            _ => Some(integer_kind()),
+        },
         (Some(TypeKind::Scalar(ScalarTypeKind::Float)), Some(TypeKind::Scalar(ScalarTypeKind::Float)))
-        | (Some(TypeKind::Scalar(ScalarTypeKind::Integer)), Some(TypeKind::Scalar(ScalarTypeKind::Float)))
-        | (Some(TypeKind::Scalar(ScalarTypeKind::Float)), Some(TypeKind::Scalar(ScalarTypeKind::Integer))) => {
+        | (Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. })), Some(TypeKind::Scalar(ScalarTypeKind::Float)))
+        | (Some(TypeKind::Scalar(ScalarTypeKind::Float)), Some(TypeKind::Scalar(ScalarTypeKind::Integer { .. }))) => {
             Some(float_kind())
         }
         // If either operand is Never, the result is Never

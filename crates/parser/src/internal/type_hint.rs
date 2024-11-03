@@ -53,7 +53,7 @@ pub fn parse_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Hint,
             Hint::Identifier(identifier::parse_identifier(stream)?)
         }
         T![Identifier] => {
-            let value = stream.interner().lookup(token.value);
+            let value = stream.interner().lookup(&token.value);
 
             match value.to_ascii_lowercase().as_str() {
                 "void" => Hint::Void(identifier::parse_local_identifier(stream)?),

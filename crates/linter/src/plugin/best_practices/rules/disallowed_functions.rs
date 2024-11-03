@@ -25,7 +25,7 @@ impl DisallowedFunctionsRule {
         let function_name = if context.is_name_imported(identifier) {
             context.lookup_name(identifier)
         } else {
-            let name = context.interner.lookup(identifier.value());
+            let name = context.interner.lookup(&identifier.value());
 
             if name.starts_with('\\') {
                 &name[1..]

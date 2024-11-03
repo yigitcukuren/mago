@@ -33,7 +33,7 @@ fn build_kind<'i, 'ast>(
     scope: Option<&ClassLikeReflection>,
 ) -> TypeKind {
     match &hint {
-        Hint::Identifier(identifier) => named_object_kind(context.semantics.names.get(identifier), vec![]),
+        Hint::Identifier(identifier) => named_object_kind(*context.semantics.names.get(identifier), vec![]),
         Hint::Parenthesized(parenthesized_hint) => build_kind(parenthesized_hint.hint.as_ref(), context, scope),
         Hint::Nullable(nullable) => match build_kind(nullable.hint.as_ref(), context, scope) {
             TypeKind::Union { mut kinds } => {

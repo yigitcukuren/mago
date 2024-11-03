@@ -284,7 +284,7 @@ mod internal {
             direct_variable: &'ast DirectVariable,
             context: &mut (Vec<VariableReference>, &'a LintContext<'a>),
         ) {
-            let name = context.1.interner.lookup(direct_variable.name);
+            let name = context.1.interner.lookup(&direct_variable.name);
             if !is_predefined_variable(name) {
                 context.0.push(VariableReference::Use(direct_variable.name));
             }
@@ -409,7 +409,7 @@ mod internal {
                     return;
                 };
 
-                let name = context.interner.lookup(variable.name);
+                let name = context.interner.lookup(&variable.name);
                 if !is_predefined_variable(name) {
                     variables.push(VariableReference::Assign(variable.name));
                 }
@@ -458,7 +458,7 @@ mod internal {
             }
             Expression::ArrayAppend(append) => {
                 if let Expression::Variable(Variable::Direct(variable)) = &append.array {
-                    let name = context.interner.lookup(variable.name);
+                    let name = context.interner.lookup(&variable.name);
                     if !is_predefined_variable(name) {
                         variables.push(VariableReference::Use(variable.name));
                     }
@@ -468,7 +468,7 @@ mod internal {
             }
             Expression::ArrayAccess(access) => {
                 if let Expression::Variable(Variable::Direct(variable)) = &access.array {
-                    let name = context.interner.lookup(variable.name);
+                    let name = context.interner.lookup(&variable.name);
                     if !is_predefined_variable(name) {
                         variables.push(VariableReference::Use(variable.name));
                     }

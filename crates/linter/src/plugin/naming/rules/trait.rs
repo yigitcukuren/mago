@@ -23,7 +23,7 @@ impl<'a> Walker<LintContext<'a>> for TraitRule {
     fn walk_in_trait<'ast>(&self, r#trait: &'ast Trait, context: &mut LintContext<'a>) {
         let mut issues = vec![];
 
-        let name = context.lookup(r#trait.name.value);
+        let name = context.lookup(&r#trait.name.value);
         let fqcn = context.lookup_name(&r#trait.name);
 
         if !fennec_casing::is_class_case(&name) {

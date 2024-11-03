@@ -27,7 +27,7 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
             return;
         }
 
-        let function_name = context.lookup(function.name.value);
+        let function_name = context.lookup(&function.name.value);
         let function_fqn = context.lookup_name(&function.name);
 
         context.report(
@@ -77,7 +77,7 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
             return;
         }
 
-        let method_name = context.lookup(method.name.value);
+        let method_name = context.lookup(&method.name.value);
         if "__construct" == method_name || "__destruct" == method_name {
             // constructors and destructors cannot have return types.
             return;

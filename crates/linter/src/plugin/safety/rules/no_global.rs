@@ -38,7 +38,7 @@ impl<'a> Walker<LintContext<'a>> for NoGlobalRule {
     }
 
     fn walk_in_direct_variable<'ast>(&self, direct_variable: &'ast DirectVariable, context: &mut LintContext<'a>) {
-        let name = context.interner.lookup(direct_variable.name);
+        let name = context.interner.lookup(&direct_variable.name);
         if !GLOBALS_VARIABLE.eq(name) {
             return;
         }

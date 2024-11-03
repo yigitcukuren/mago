@@ -61,7 +61,7 @@ impl<'a> LintContext<'a> {
     /// # Panics
     ///
     /// Panics if the identifier is not found in the interner.
-    pub fn lookup(&self, id: StringIdentifier) -> &str {
+    pub fn lookup(&self, id: &StringIdentifier) -> &str {
         self.interner.lookup(id)
     }
 
@@ -73,14 +73,14 @@ impl<'a> LintContext<'a> {
     pub fn lookup_name(&self, position: &impl HasPosition) -> &str {
         let name_id = self.semantics.names.get(&position.position());
 
-        self.lookup(name_id)
+        self.lookup(&name_id)
     }
 
     pub fn lookup_function_name(&self, identifier: &Identifier) -> &str {
         if self.is_name_imported(identifier) {
             self.lookup_name(identifier)
         } else {
-            let name = self.lookup(identifier.value());
+            let name = self.lookup(&identifier.value());
 
             if name.starts_with('\\') {
                 &name[1..]
@@ -116,7 +116,7 @@ impl<'a> LintContext<'a> {
             | Hint::Callable(keyword)
             | Hint::Static(keyword)
             | Hint::Self_(keyword)
-            | Hint::Parent(keyword) => self.lookup(keyword.value).to_string(),
+            | Hint::Parent(keyword) => self.lookup(&keyword.value).to_string(),
             Hint::Void(identifier)
             | Hint::Never(identifier)
             | Hint::Float(identifier)
@@ -125,7 +125,7 @@ impl<'a> LintContext<'a> {
             | Hint::String(identifier)
             | Hint::Object(identifier)
             | Hint::Mixed(identifier)
-            | Hint::Iterable(identifier) => self.lookup(identifier.value).to_string(),
+            | Hint::Iterable(identifier) => self.lookup(&identifier.value).to_string(),
         }
     }
 
@@ -153,7 +153,7 @@ impl<'a> LintContext<'a> {
         let class_like_span = class_like_symbol.span;
         let (class_like_name, class_like_fqcn) = class_like_symbol
             .identifier
-            .map(|i| (self.lookup(i.name).to_string(), self.lookup(i.fully_qualified_name).to_string()))
+            .map(|i| (self.lookup(&i.name).to_string(), self.lookup(&i.fully_qualified_name).to_string()))
             .unwrap_or_else(|| (ANONYMOUS_CLASS_NAME.to_string(), ANONYMOUS_CLASS_NAME.to_string()));
 
         (class_like_kind, class_like_name, class_like_fqcn, class_like_span)

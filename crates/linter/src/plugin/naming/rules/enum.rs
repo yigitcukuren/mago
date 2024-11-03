@@ -21,7 +21,7 @@ impl Rule for EnumRule {
 
 impl<'a> Walker<LintContext<'a>> for EnumRule {
     fn walk_in_enum<'ast>(&self, r#enum: &'ast Enum, context: &mut LintContext<'a>) {
-        let name = context.lookup(r#enum.name.value);
+        let name = context.lookup(&r#enum.name.value);
         let fqcn = context.lookup_name(&r#enum.name);
 
         if !fennec_casing::is_class_case(&name) {

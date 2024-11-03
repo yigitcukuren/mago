@@ -23,7 +23,7 @@ impl<'a> Walker<LintContext<'a>> for ClassRule {
     fn walk_in_class<'ast>(&self, class: &'ast Class, context: &mut LintContext<'a>) {
         let mut issues = vec![];
 
-        let name = context.lookup(class.name.value);
+        let name = context.lookup(&class.name.value);
         let fqcn = context.lookup_name(&class.name);
 
         if !fennec_casing::is_class_case(&name) {

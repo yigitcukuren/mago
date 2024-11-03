@@ -14,7 +14,7 @@ pub mod error;
 mod internal;
 
 pub fn parse_source<'a, 'i>(interner: &'i ThreadedInterner, source: &'a Source) -> (Program, Option<ParseError>) {
-    let content = interner.lookup(source.content);
+    let content = interner.lookup(&source.content);
     let lexer = Lexer::new(interner, Input::new(source.identifier, content.as_bytes()));
 
     construct(interner, lexer)

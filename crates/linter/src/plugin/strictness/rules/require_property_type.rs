@@ -30,7 +30,7 @@ impl<'a> Walker<LintContext<'a>> for RequirePropertyTypeRule {
         let (class_like_kind, class_like_name, class_like_fqcn, class_like_span) =
             context.get_class_like_details(property);
 
-        let variable = context.lookup(property.first_variable().name);
+        let variable = context.lookup(&property.first_variable().name);
 
         context.report(
             Issue::new(

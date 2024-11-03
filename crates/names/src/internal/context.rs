@@ -50,7 +50,7 @@ impl<'a> NameContext<'a> {
     pub fn get_namespaced_identifier(&mut self, identifier: &LocalIdentifier) -> StringIdentifier {
         if let Some(mut namespaced) = self.get_namespace_name() {
             namespaced.push('\\');
-            namespaced.extend(self.interner.lookup(identifier.value).chars());
+            namespaced.extend(self.interner.lookup(&identifier.value).chars());
 
             self.interner.intern(namespaced)
         } else {
@@ -62,7 +62,7 @@ impl<'a> NameContext<'a> {
         let previous_context =
             self.name_resolution_contexts.last().expect("expected there to be at least one name resolution context");
 
-        let namespace_name = self.interner.lookup(namespace);
+        let namespace_name = self.interner.lookup(&namespace);
 
         self.name_resolution_contexts.push(NameResolutionContext {
             namespace_name: namespace_name.to_string(),
@@ -95,10 +95,10 @@ impl<'a> NameContext<'a> {
     }
 
     pub fn add_name(&mut self, kind: NameKind, name_id: StringIdentifier, alias_id: Option<StringIdentifier>) {
-        let name = self.interner.lookup(name_id);
+        let name = self.interner.lookup(&name_id);
 
         let alias = match alias_id {
-            Some(alias_id) => self.interner.lookup(alias_id).to_string(),
+            Some(alias_id) => self.interner.lookup(&alias_id).to_string(),
             None => {
                 if let Some(last_backslash_pos) = name.rfind(|c| c == '\\') {
                     name[last_backslash_pos + 1..].to_string()
@@ -121,7 +121,7 @@ impl<'a> NameContext<'a> {
     }
 
     pub fn resolve_name(&mut self, kind: NameKind, name_id: StringIdentifier) -> (StringIdentifier, bool) {
-        let name = self.interner.lookup(name_id).to_string();
+        let name = self.interner.lookup(&name_id).to_string();
 
         if name.starts_with('\\') {
             let resolve = name[1..].to_string();

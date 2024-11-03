@@ -74,3 +74,25 @@ pub struct FunctionLikeReflection {
     /// Indicate if this function-like entity is populated.
     pub is_populated: bool,
 }
+
+impl FunctionLikeReflection {
+    pub fn is_function(&self) -> bool {
+        matches!(self.name, FunctionLikeName::Function(_))
+    }
+
+    pub fn is_method(&self) -> bool {
+        matches!(self.name, FunctionLikeName::Method(_, _))
+    }
+
+    pub fn is_property_hook(&self) -> bool {
+        matches!(self.name, FunctionLikeName::PropertyHook(_, _, _))
+    }
+
+    pub fn is_closure(&self) -> bool {
+        matches!(self.name, FunctionLikeName::Closure(_))
+    }
+
+    pub fn is_arrow_function(&self) -> bool {
+        matches!(self.name, FunctionLikeName::ArrowFunction(_))
+    }
+}

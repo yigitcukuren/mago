@@ -16,7 +16,7 @@ pub fn reflect_attributes<'i, 'ast>(
     for attribute_list in attribute_lists.iter() {
         for attribute in attribute_list.attributes.iter() {
             let reflection = AttributeReflection {
-                name: Name { value: context.semantics.names.get(&attribute.name), span: attribute.name.span() },
+                name: Name { value: *context.semantics.names.get(&attribute.name), span: attribute.name.span() },
                 arguments: reflect_attribute_arguments(&attribute.arguments, context),
                 span: attribute.span(),
             };

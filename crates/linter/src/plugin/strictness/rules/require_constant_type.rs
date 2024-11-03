@@ -35,7 +35,7 @@ impl<'a> Walker<LintContext<'a>> for RequireConstantTypeRule {
             context.get_class_like_details(class_like_constant);
 
         for item in class_like_constant.items.iter() {
-            let constant_name = context.lookup(item.name.value);
+            let constant_name = context.lookup(&item.name.value);
 
             context.report(
                 Issue::new(

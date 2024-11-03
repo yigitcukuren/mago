@@ -22,7 +22,7 @@ impl Rule for NoRequestVariableRule {
 
 impl<'a> Walker<LintContext<'a>> for NoRequestVariableRule {
     fn walk_in_direct_variable<'ast>(&self, direct_variable: &'ast DirectVariable, context: &mut LintContext<'a>) {
-        let name = context.interner.lookup(direct_variable.name);
+        let name = context.interner.lookup(&direct_variable.name);
         if !REQUEST_VARIABLE.eq(name) {
             return;
         }

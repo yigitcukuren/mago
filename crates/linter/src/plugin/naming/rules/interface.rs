@@ -23,7 +23,7 @@ impl<'a> Walker<LintContext<'a>> for InterfaceRule {
     fn walk_in_interface<'ast>(&self, interface: &'ast Interface, context: &mut LintContext<'a>) {
         let mut issues = vec![];
 
-        let name = context.lookup(interface.name.value);
+        let name = context.lookup(&interface.name.value);
         let fqcn = context.lookup_name(&interface.name);
 
         if !fennec_casing::is_class_case(&name) {

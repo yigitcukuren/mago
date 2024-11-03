@@ -285,11 +285,11 @@ impl<'a> Files<'a> for SourceManager {
     type Source = &'a str;
 
     fn name(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.get(file_id).map(|source| self.interner.lookup(source.identifier.value()))
+        self.get(file_id).map(|source| self.interner.lookup(&source.identifier.value()))
     }
 
     fn source(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.get(file_id).map(|source| self.interner.lookup(source.content))
+        self.get(file_id).map(|source| self.interner.lookup(&source.content))
     }
 
     fn line_index(&self, file_id: SourceIdentifier, byte_index: usize) -> Result<usize, Error> {

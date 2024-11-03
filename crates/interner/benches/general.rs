@@ -74,9 +74,9 @@ fn bench_current_thread_lookup(c: &mut Criterion) {
         let mut i = 0;
         b.iter(|| {
             // Valid identifier
-            black_box(interner.lookup(identifiers[i % size]));
+            black_box(interner.lookup(&identifiers[i % size]));
             // Invalid identifier (assuming higher than any assigned ID)
-            black_box(interner.lookup(fennec_interner::StringIdentifier::new(usize::MAX - i)));
+            black_box(interner.lookup(&fennec_interner::StringIdentifier::new(usize::MAX - i)));
             i += 1;
         });
     });
@@ -155,7 +155,7 @@ fn bench_threaded_interner_single_thread_lookup(c: &mut Criterion) {
     group.bench_function("lookup_valid_ids", |b| {
         let mut i = 0;
         b.iter(|| {
-            black_box(interner.lookup(identifiers[i % size]));
+            black_box(interner.lookup(&identifiers[i % size]));
             i += 1;
         });
     });
@@ -183,7 +183,7 @@ fn bench_threaded_interner_multi_thread_lookup(c: &mut Criterion) {
                 let handle = thread::spawn(move || {
                     let mut i = thread_id;
                     while i < identifiers.len() {
-                        black_box(interner.lookup(identifiers[i]));
+                        black_box(interner.lookup(&identifiers[i]));
                         i += thread_count;
                     }
                 });

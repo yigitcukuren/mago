@@ -128,38 +128,38 @@ impl CodebaseReflection {
     }
 
     /// Checks if a constant with the given name exists.
-    pub fn constant_exists(&self, name: StringIdentifier) -> bool {
+    pub fn constant_exists(&self, name: &StringIdentifier) -> bool {
         self.constant_identifiers.contains_key(&name)
     }
 
     /// Checks if a function with the given name exists.
-    pub fn function_exists(&self, name: StringIdentifier) -> bool {
+    pub fn function_exists(&self, name: &StringIdentifier) -> bool {
         self.function_identifiers.contains_key(&name)
     }
 
     /// Checks if a class with the given name exists.
-    pub fn class_exists(&self, name: StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(&name), Some(ClassLikeName::Class(_)))
+    pub fn class_exists(&self, name: &StringIdentifier) -> bool {
+        matches!(self.class_like_names.get(name), Some(ClassLikeName::Class(_)))
     }
 
     /// Checks if an enum with the given name exists.
-    pub fn enum_exists(&self, name: StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(&name), Some(ClassLikeName::Enum(_)))
+    pub fn enum_exists(&self, name: &StringIdentifier) -> bool {
+        matches!(self.class_like_names.get(name), Some(ClassLikeName::Enum(_)))
     }
 
     /// Checks if an interface with the given name exists.
-    pub fn interface_exists(&self, name: StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(&name), Some(ClassLikeName::Interface(_)))
+    pub fn interface_exists(&self, name: &StringIdentifier) -> bool {
+        matches!(self.class_like_names.get(name), Some(ClassLikeName::Interface(_)))
     }
 
     /// Checks if a trait with the given name exists.
-    pub fn trait_exists(&self, name: StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(&name), Some(ClassLikeName::Trait(_)))
+    pub fn trait_exists(&self, name: &StringIdentifier) -> bool {
+        matches!(self.class_like_names.get(name), Some(ClassLikeName::Trait(_)))
     }
 
     /// Retrieves a constant by name, if it exists.
-    pub fn get_constant(&self, name: StringIdentifier) -> Option<&ConstantReflection> {
-        if let Some(identifier) = self.constant_identifiers.get(&name) {
+    pub fn get_constant(&self, name: &StringIdentifier) -> Option<&ConstantReflection> {
+        if let Some(identifier) = self.constant_identifiers.get(name) {
             self.constant_reflections.get(identifier)
         } else {
             None
@@ -172,8 +172,8 @@ impl CodebaseReflection {
     }
 
     /// Retrieves a function by name, if it exists.
-    pub fn get_function(&self, name: StringIdentifier) -> Option<&FunctionLikeReflection> {
-        if let Some(identifier) = self.function_identifiers.get(&name) {
+    pub fn get_function(&self, name: &StringIdentifier) -> Option<&FunctionLikeReflection> {
+        if let Some(identifier) = self.function_identifiers.get(name) {
             self.function_like_reflections.get(identifier)
         } else {
             None
@@ -214,8 +214,8 @@ impl CodebaseReflection {
     }
 
     /// Retrieves a class by name, if it exists.
-    pub fn get_class(&self, name: StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Class(_)) = self.class_like_names.get(&name) {
+    pub fn get_class(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        if let Some(identifier @ ClassLikeName::Class(_)) = self.class_like_names.get(name) {
             self.class_like_reflections.get(identifier)
         } else {
             None
@@ -223,8 +223,8 @@ impl CodebaseReflection {
     }
 
     /// Retrieves an enum by name, if it exists.
-    pub fn get_enum(&self, name: StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Enum(_)) = self.class_like_names.get(&name) {
+    pub fn get_enum(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        if let Some(identifier @ ClassLikeName::Enum(_)) = self.class_like_names.get(name) {
             self.class_like_reflections.get(identifier)
         } else {
             None
@@ -232,8 +232,8 @@ impl CodebaseReflection {
     }
 
     /// Retrieves an interface by name, if it exists.
-    pub fn get_interface(&self, name: StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Interface(_)) = self.class_like_names.get(&name) {
+    pub fn get_interface(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        if let Some(identifier @ ClassLikeName::Interface(_)) = self.class_like_names.get(name) {
             self.class_like_reflections.get(identifier)
         } else {
             None
@@ -241,8 +241,8 @@ impl CodebaseReflection {
     }
 
     /// Retrieves a trait by name, if it exists.
-    pub fn get_trait(&self, name: StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Trait(_)) = self.class_like_names.get(&name) {
+    pub fn get_trait(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        if let Some(identifier @ ClassLikeName::Trait(_)) = self.class_like_names.get(name) {
             self.class_like_reflections.get(identifier)
         } else {
             None

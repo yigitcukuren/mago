@@ -119,7 +119,7 @@ impl<'a> Walker<LintContext<'a>> for NoFunctionAliasesRule {
         };
 
         // Name used in the code
-        let alias_used_in_code = context.lookup(identifier.value());
+        let alias_used_in_code = context.lookup(&identifier.value());
         // Check if the name is imported
         let is_name_imported = context.is_name_imported(identifier);
         // Resolved name (the actual function it refers to)

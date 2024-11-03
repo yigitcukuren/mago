@@ -42,7 +42,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantLabelRule {
                 continue;
             }
 
-            let label_name = context.interner.lookup(label_id);
+            let label_name = context.interner.lookup(&label_id);
 
             let issue = Issue::new(context.level(), format!("redundant label: `{}`", label_name))
                 .with_annotation(Annotation::primary(label_span))

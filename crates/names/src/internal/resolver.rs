@@ -58,7 +58,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
                     UseType::Const(_) => NameKind::Constant,
                 };
 
-                let prefix = context.interner.lookup(typed_use_item_list.namespace.value()).to_string();
+                let prefix = context.interner.lookup(&typed_use_item_list.namespace.value()).to_string();
 
                 for use_item in typed_use_item_list.items.iter() {
                     let name = use_item.name.value();
@@ -66,7 +66,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
 
                     let mut namespaced = prefix.clone();
                     namespaced.push('\\');
-                    namespaced.extend(context.interner.lookup(name).chars());
+                    namespaced.extend(context.interner.lookup(&name).chars());
 
                     let namespaced_id = context.interner.intern(&namespaced);
 
@@ -74,7 +74,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
                 }
             }
             UseItems::MixedList(mixed_use_item_list) => {
-                let prefix = context.interner.lookup(mixed_use_item_list.namespace.value()).to_string();
+                let prefix = context.interner.lookup(&mixed_use_item_list.namespace.value()).to_string();
 
                 for use_item in mixed_use_item_list.items.iter() {
                     let kind = match &use_item.r#type {
@@ -88,7 +88,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
 
                     let mut namespaced = prefix.clone();
                     namespaced.push('\\');
-                    namespaced.extend(context.interner.lookup(name).chars());
+                    namespaced.extend(context.interner.lookup(&name).chars());
 
                     let namespaced_id = context.interner.intern(&namespaced);
 

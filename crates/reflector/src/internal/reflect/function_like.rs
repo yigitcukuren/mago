@@ -20,7 +20,7 @@ pub fn reflect_function<'i, 'ast>(
     FunctionLikeReflection {
         attribute_reflections: reflect_attributes(&function.attributes, context),
         visibility_reflection: None,
-        name: FunctionLikeName::Function(Name::new(context.semantics.names.get(&function.name), function.name.span)),
+        name: FunctionLikeName::Function(Name::new(*context.semantics.names.get(&function.name), function.name.span)),
         parameter_reflections: reflect_function_like_parameter_list(&function.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(&function.return_type_hint, context, scope),
         returns_by_reference: function.ampersand.is_some(),

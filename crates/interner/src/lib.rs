@@ -109,12 +109,12 @@ impl Interner {
     /// # Panics
     ///
     /// Panics if the identifier is invalid
-    pub fn lookup(&self, identifier: StringIdentifier) -> &str {
+    pub fn lookup(&self, identifier: &StringIdentifier) -> &str {
         if identifier.is_empty() {
             return "";
         }
 
-        self.rodeo.try_resolve(&identifier).expect(
+        self.rodeo.try_resolve(identifier).expect(
             "invalid string identifier; this should never happen unless the identifier is \
                 corrupted or the interner is used incorrectly",
         )
@@ -168,12 +168,12 @@ impl ThreadedInterner {
     /// # Panics
     ///
     /// Panics if the identifier is invalid
-    pub fn lookup(&self, identifier: StringIdentifier) -> &str {
+    pub fn lookup(&self, identifier: &StringIdentifier) -> &str {
         if identifier.is_empty() {
             return "";
         }
 
-        self.rodeo.try_resolve(&identifier).expect(
+        self.rodeo.try_resolve(identifier).expect(
             "invalid string identifier; this should never happen unless the identifier is \
                 corrupted or the interner is used incorrectly",
         )

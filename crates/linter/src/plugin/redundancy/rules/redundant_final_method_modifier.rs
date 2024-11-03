@@ -19,7 +19,7 @@ impl RedundantFinalMethodModifierRule {
         let (class_like_kind, class_like_name, class_like_fqcn, class_like_span) =
             context.get_class_like_details(method);
 
-        let method_name = context.interner.lookup(method.name.value);
+        let method_name = context.interner.lookup(&method.name.value);
 
         let message = if in_enum {
             format!(

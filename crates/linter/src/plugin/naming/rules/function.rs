@@ -21,7 +21,7 @@ impl Rule for FunctionRule {
 
 impl<'a> Walker<LintContext<'a>> for FunctionRule {
     fn walk_in_function<'ast>(&self, function: &'ast Function, context: &mut LintContext) {
-        let name = context.lookup(function.name.value);
+        let name = context.lookup(&function.name.value);
         let fqfn = context.lookup_name(&function.name);
         let camel_case = context.option("camel").and_then(|v| v.as_bool()).unwrap_or(false);
         let either_case = context.option("either").and_then(|v| v.as_bool()).unwrap_or(false);

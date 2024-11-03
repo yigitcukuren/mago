@@ -28,7 +28,7 @@ impl RedudnantClosingTagRule {
         }
 
         if let Statement::Inline(inline) = last_statement {
-            let value = context.interner.lookup(inline.value);
+            let value = context.interner.lookup(&inline.value);
             if value.bytes().all(|b| b.is_ascii_whitespace()) {
                 let Some(Statement::ClosingTag(tag)) = sequence.get(sequence.len() - 2) else {
                     return;

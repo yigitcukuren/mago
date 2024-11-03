@@ -35,7 +35,7 @@ impl<'a> Walker<LintContext<'a>> for RequireStrictTypesRule {
         for statement in program.statements.iter() {
             if let Statement::Declare(declare) = statement {
                 for item in declare.items.iter() {
-                    let name = context.lookup(item.name.value);
+                    let name = context.lookup(&item.name.value);
 
                     if name != STRICT_TYPES_DIRECTIVE {
                         continue;

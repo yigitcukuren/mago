@@ -22,7 +22,7 @@ impl Rule for LowercaseKeywordRule {
 
 impl<'a> Walker<LintContext<'a>> for LowercaseKeywordRule {
     fn walk_in_keyword<'ast>(&self, keyword: &'ast Keyword, context: &mut LintContext<'a>) {
-        let name = context.lookup(keyword.value);
+        let name = context.lookup(&keyword.value);
         let lowered = name.to_ascii_lowercase();
         if !lowered.eq(&name) {
             let issue = Issue::new(context.level(), format!("keyword `{}` should be in lowercase", name))

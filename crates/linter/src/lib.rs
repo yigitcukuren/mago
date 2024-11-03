@@ -97,7 +97,7 @@ impl Linter {
     }
 
     pub fn lint<'a>(&self, semantics: &'a Semantics) -> IssueCollection {
-        let source_name = self.interner.lookup(semantics.source.identifier.value());
+        let source_name = self.interner.lookup(&semantics.source.identifier.value());
 
         tracing::debug!("Linting source `{}`...", source_name);
 

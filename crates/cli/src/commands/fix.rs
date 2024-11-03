@@ -79,8 +79,8 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
 
             async move {
                 let source = source_manager.load(source).await.unwrap_or_else(bail);
-                let source_name = interner.lookup(source.identifier.value());
-                let source_content = interner.lookup(source.content);
+                let source_name = interner.lookup(&source.identifier.value());
+                let source_content = interner.lookup(&source.content);
 
                 if plan.get_minimum_safety_classification() > classification {
                     let required = classification.to_string();

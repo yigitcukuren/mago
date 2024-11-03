@@ -72,12 +72,8 @@ impl Names {
     /// # Panics
     ///
     /// Panics if the name is not found at the given position.
-    pub fn get(&self, position: &impl HasPosition) -> StringIdentifier {
-        return self
-            .names
-            .get(&position.position().offset)
-            .map(|(name, _)| name.clone())
-            .expect("name not found at position");
+    pub fn get(&self, position: &impl HasPosition) -> &StringIdentifier {
+        return self.names.get(&position.position().offset).map(|(name, _)| name).expect("name not found at position");
     }
 
     /// Returns whether the name at the given position was explicitly imported.

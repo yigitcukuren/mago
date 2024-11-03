@@ -31,7 +31,7 @@ impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
             return;
         }
 
-        let parameter_name = context.lookup(function_like_parameter.variable.name);
+        let parameter_name = context.lookup(&function_like_parameter.variable.name);
 
         context.report(
             Issue::new(context.level(), format!("parameter `{}` is missing a type hint", parameter_name))

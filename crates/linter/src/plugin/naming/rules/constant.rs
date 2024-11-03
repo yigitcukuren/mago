@@ -22,7 +22,7 @@ impl Rule for ConstantRule {
 impl<'a> Walker<LintContext<'a>> for ConstantRule {
     fn walk_in_constant<'ast>(&self, constant: &'ast Constant, context: &mut LintContext<'a>) {
         for item in constant.items.iter() {
-            let name = context.lookup(item.name.value);
+            let name = context.lookup(&item.name.value);
             let fqcn = context.lookup_name(&item.name);
             if !fennec_casing::is_constant_case(&name) {
                 context.report(
@@ -51,7 +51,7 @@ impl<'a> Walker<LintContext<'a>> for ConstantRule {
             context.get_class_like_details(class_like_constant);
 
         for item in class_like_constant.items.iter() {
-            let name = context.lookup(item.name.value);
+            let name = context.lookup(&item.name.value);
 
             if !fennec_casing::is_constant_case(&name) {
                 context.report(

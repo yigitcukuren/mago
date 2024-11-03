@@ -17,7 +17,7 @@ pub fn parse_trivia<'i, 'ast>(interner: &'i ThreadedInterner, trivia: &'ast Triv
         return Err(ParseError::InvalidTrivia(trivia.span));
     }
 
-    parse_phpdoc_with_span(interner, interner.lookup(trivia.value), trivia.span)
+    parse_phpdoc_with_span(interner, interner.lookup(&trivia.value), trivia.span)
 }
 
 #[inline]
@@ -80,7 +80,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[0]);
         };
 
-        let content = interner.lookup(*content);
+        let content = interner.lookup(content);
         assert_eq!(content, "This is a simple description.");
         assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This is a simple description.");
 
@@ -98,7 +98,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[0]);
         };
 
-        let content = interner.lookup(*content);
+        let content = interner.lookup(content);
         assert_eq!(content, "This text contains an inline code ");
         assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This text contains an inline code ");
 
@@ -106,7 +106,7 @@ mod tests {
             panic!("Expected TextSegment::InlineCode, got {:?}", text.segments[1]);
         };
 
-        let content = interner.lookup(code.content);
+        let content = interner.lookup(&code.content);
         assert_eq!(content, "echo \"Hello, World!\";");
         assert_eq!(&phpdoc[code.span.start.offset..code.span.end.offset], "`echo \"Hello, World!\";`");
 
@@ -114,7 +114,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[2]);
         };
 
-        let content = interner.lookup(*content);
+        let content = interner.lookup(content);
         assert_eq!(content, ".");
         assert_eq!(&phpdoc[span.start.offset..span.end.offset], ".");
 
@@ -132,7 +132,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[0]);
         };
 
-        let content = interner.lookup(*content);
+        let content = interner.lookup(content);
         assert_eq!(content, "This text contains an inline tag ");
         assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This text contains an inline tag ");
 
@@ -140,8 +140,8 @@ mod tests {
             panic!("Expected TextSegment::InlineTag, got {:?}", text.segments[1]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "see");
         assert_eq!(description, "\\Some\\Class");
         assert_eq!(tag.kind, TagKind::See);
@@ -151,7 +151,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[2]);
         };
 
-        let content = interner.lookup(*content);
+        let content = interner.lookup(content);
         assert_eq!(content, ".");
         assert_eq!(&phpdoc[span.start.offset..span.end.offset], ".");
 
@@ -163,8 +163,8 @@ mod tests {
             panic!("Expected Element::CodeBlock, got {:?}", document.elements[6]);
         };
 
-        let content = interner.lookup(code.content);
-        let directives = code.directives.iter().map(|d| interner.lookup(*d)).collect::<Vec<_>>();
+        let content = interner.lookup(&code.content);
+        let directives = code.directives.iter().map(|d| interner.lookup(d)).collect::<Vec<_>>();
         assert_eq!(directives, &["php"]);
         assert_eq!(content, "echo \"Hello, World!\";");
         assert_eq!(
@@ -180,7 +180,7 @@ mod tests {
             panic!("Expected Element::CodeBlock, got {:?}", document.elements[8]);
         };
 
-        let content = interner.lookup(code.content);
+        let content = interner.lookup(&code.content);
         assert!(code.directives.is_empty());
         assert_eq!(content, "$foo = \"bar\";\necho \"Hello, World!\";\n");
         assert_eq!(
@@ -192,8 +192,8 @@ mod tests {
             panic!("Expected Element::Tag, got {:?}", document.elements[9]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "param");
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "string $foo");
@@ -203,8 +203,8 @@ mod tests {
             panic!("Expected Element::Tag, got {:?}", document.elements[10]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "param");
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "array{\n  bar: string,\n  baz: int\n} $bar");
@@ -217,8 +217,8 @@ mod tests {
             panic!("Expected Element::Tag, got {:?}", document.elements[11]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "return");
         assert_eq!(tag.kind, TagKind::Return);
         assert_eq!(description, "void");
@@ -522,7 +522,7 @@ mod tests {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[0]);
         };
 
-        let content_str = interner.lookup(*content);
+        let content_str = interner.lookup(content);
         assert_eq!(
             content_str,
             "هذا نص باللغة العربية.\n这是一段中文。\nHere are some mathematical symbols: ∑, ∆, π, θ."
@@ -543,7 +543,7 @@ mod tests {
             panic!("Expected Element::Code, got {:?}", document.elements[2]);
         };
 
-        let content_str = interner.lookup(code.content);
+        let content_str = interner.lookup(&code.content);
         let expected_code = "// Arabic comment\necho \"مرحبا بالعالم\";\n// Chinese comment\necho \"你好，世界\";\n// Math symbols in code\n$sum = $a + $b; // ∑";
         assert_eq!(content_str, expected_code);
         assert_eq!(
@@ -561,8 +561,8 @@ mod tests {
             panic!("Expected Element::Tag, got {:?}", document.elements[4]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "param");
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "string $مثال A parameter with an Arabic variable name.");
@@ -576,8 +576,8 @@ mod tests {
             panic!("Expected Element::Tag, got {:?}", document.elements[5]);
         };
 
-        let name = interner.lookup(tag.name);
-        let description = interner.lookup(tag.description);
+        let name = interner.lookup(&tag.name);
+        let description = interner.lookup(&tag.description);
         assert_eq!(name, "return");
         assert_eq!(tag.kind, TagKind::Return);
         assert_eq!(description, "int 返回值是整数类型。");
@@ -606,9 +606,9 @@ mod tests {
             panic!("Expected Element::Annotation, got {:?}", document.elements[0]);
         };
 
-        let name = interner.lookup(annotation.name);
+        let name = interner.lookup(&annotation.name);
         assert_eq!(name, "Event");
-        let arguments = interner.lookup(annotation.arguments.unwrap());
+        let arguments = interner.lookup(&annotation.arguments.unwrap());
         assert_eq!(arguments, "(\"Symfony\\Component\\Workflow\\Event\\CompletedEvent\")");
 
         // Second annotation
@@ -616,9 +616,9 @@ mod tests {
             panic!("Expected Element::Annotation, got {:?}", document.elements[1]);
         };
 
-        let name = interner.lookup(annotation.name);
+        let name = interner.lookup(&annotation.name);
         assert_eq!(name, "AnotherAnnotation");
-        let arguments = interner.lookup(annotation.arguments.unwrap());
+        let arguments = interner.lookup(&annotation.arguments.unwrap());
         let expected_arguments = "({\n    \"key\": \"value\",\n    \"list\": [1, 2, 3]\n})";
         assert_eq!(arguments, expected_arguments);
 
@@ -627,7 +627,7 @@ mod tests {
             panic!("Expected Element::Annotation, got {:?}", document.elements[2]);
         };
 
-        let name = interner.lookup(annotation.name);
+        let name = interner.lookup(&annotation.name);
         assert_eq!(name, "SimpleAnnotation");
         assert!(annotation.arguments.is_none());
     }

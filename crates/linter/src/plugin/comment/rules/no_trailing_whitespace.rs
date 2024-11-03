@@ -30,7 +30,7 @@ impl<'a> Walker<LintContext<'a>> for NoTrailingWhitespaceRule {
         for trivia in program.trivia.iter() {
             if trivia.kind.is_comment() {
                 let comment_span = trivia.span();
-                let value = context.lookup(trivia.value);
+                let value = context.lookup(&trivia.value);
                 let lines = value.lines().collect::<Vec<_>>();
 
                 let mut offset = 0;

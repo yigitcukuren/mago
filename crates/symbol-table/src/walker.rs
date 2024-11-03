@@ -35,9 +35,9 @@ impl SymbolWalker {
 
                 match &scope.identifier {
                     Some(identifier) => {
-                        let member_name = context.interner.lookup(name);
+                        let member_name = context.interner.lookup(&name);
 
-                        let fqcn = context.interner.lookup(identifier.fully_qualified_name);
+                        let fqcn = context.interner.lookup(&identifier.fully_qualified_name);
 
                         // the full name of the property is the fqcn followed by `::` and the name of the member
                         let fqcn = format!("{}::{}", fqcn, member_name);
@@ -52,7 +52,7 @@ impl SymbolWalker {
             }
             _ => match context.get_namespace() {
                 Some(namespace) => {
-                    let symbol_name = context.interner.lookup(name);
+                    let symbol_name = context.interner.lookup(&name);
 
                     let fqcn = format!("{}\\{}", namespace, symbol_name);
 
@@ -105,7 +105,7 @@ impl SymbolWalker {
 impl<'a> MutWalker<Context<'a>> for SymbolWalker {
     fn walk_in_namespace<'ast>(&mut self, namespace: &'ast Namespace, context: &mut Context<'_>) {
         let name = match &namespace.name {
-            Some(name) => context.interner.lookup(name.value()).to_string(),
+            Some(name) => context.interner.lookup(&name.value()).to_string(),
             None => "".to_string(),
         };
 

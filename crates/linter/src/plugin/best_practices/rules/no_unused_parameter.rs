@@ -28,7 +28,7 @@ impl NoUnusedParameterRule {
             return;
         }
 
-        let parameter_name = context.interner.lookup(parameter.variable.name);
+        let parameter_name = context.interner.lookup(&parameter.variable.name);
         if parameter_name.starts_with("$_") {
             return;
         }

@@ -15,18 +15,18 @@ pub fn parse_literal<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Literal
         T![LiteralFloat] => Literal::Float(LiteralFloat {
             span: token.span,
             raw: token.value,
-            value: OrderedFloat(parse_literal_float(stream.interner().lookup(token.value), &token.span.start)),
+            value: OrderedFloat(parse_literal_float(stream.interner().lookup(&token.value), &token.span.start)),
         }),
         T![LiteralInteger] => Literal::Integer(LiteralInteger {
             span: token.span,
             raw: token.value,
-            value: parse_literal_integer(stream.interner().lookup(token.value), &token.span.start),
+            value: parse_literal_integer(stream.interner().lookup(&token.value), &token.span.start),
         }),
         T!["true"] => Literal::True(utils::to_keyword(token)),
         T!["false"] => Literal::False(utils::to_keyword(token)),
         T!["null"] => Literal::Null(utils::to_keyword(token)),
         T![LiteralString] => {
-            let value = stream.interner().lookup(token.value);
+            let value = stream.interner().lookup(&token.value);
 
             let kind =
                 if value.starts_with('"') { LiteralStringKind::DoubleQuoted } else { LiteralStringKind::SingleQuoted };
@@ -34,7 +34,7 @@ pub fn parse_literal<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Literal
             Literal::String(LiteralString { kind, span: token.span, value: token.value })
         }
         T![PartialLiteralString] => {
-            let value = stream.interner().lookup(token.value);
+            let value = stream.interner().lookup(&token.value);
 
             let kind =
                 if value.starts_with('"') { LiteralStringKind::DoubleQuoted } else { LiteralStringKind::SingleQuoted };
