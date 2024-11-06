@@ -17,8 +17,18 @@ impl Trinary {
     }
 
     #[inline(always)]
+    pub fn maybe_true(self) -> bool {
+        self == Trinary::True || self == Trinary::Maybe
+    }
+
+    #[inline(always)]
     pub fn is_false(self) -> bool {
         self == Trinary::False
+    }
+
+    #[inline(always)]
+    pub fn maybe_false(self) -> bool {
+        self == Trinary::False || self == Trinary::Maybe
     }
 
     #[inline(always)]
@@ -39,6 +49,11 @@ impl Trinary {
     #[inline(always)]
     pub fn xor(self, other: Trinary) -> Trinary {
         self ^ other
+    }
+
+    #[inline(always)]
+    pub fn negate(self) -> Trinary {
+        !self
     }
 }
 
@@ -64,6 +79,17 @@ impl From<Option<bool>> for Trinary {
 impl From<Option<Trinary>> for Trinary {
     fn from(value: Option<Trinary>) -> Self {
         value.unwrap_or(Trinary::Maybe)
+    }
+}
+
+impl FromIterator<Trinary> for Trinary {
+    fn from_iter<I: IntoIterator<Item = Trinary>>(iter: I) -> Self {
+        let mut result = Trinary::True;
+        for value in iter {
+            result &= value;
+        }
+
+        result
     }
 }
 
@@ -169,6 +195,30 @@ impl core::ops::BitXor<Option<bool>> for Trinary {
     }
 }
 
+impl core::ops::BitAnd<bool> for Trinary {
+    type Output = Trinary;
+
+    fn bitand(self, other: bool) -> Self::Output {
+        self & Trinary::from(other)
+    }
+}
+
+impl core::ops::BitOr<bool> for Trinary {
+    type Output = Trinary;
+
+    fn bitor(self, other: bool) -> Self::Output {
+        self | Trinary::from(other)
+    }
+}
+
+impl core::ops::BitXor<bool> for Trinary {
+    type Output = Trinary;
+
+    fn bitxor(self, other: bool) -> Self::Output {
+        self ^ Trinary::from(other)
+    }
+}
+
 impl core::ops::BitAndAssign<Option<bool>> for Trinary {
     fn bitand_assign(&mut self, other: Option<bool>) {
         *self = *self & other;
@@ -177,6 +227,18 @@ impl core::ops::BitAndAssign<Option<bool>> for Trinary {
 
 impl core::ops::BitOrAssign<Option<bool>> for Trinary {
     fn bitor_assign(&mut self, other: Option<bool>) {
+        *self = *self | other;
+    }
+}
+
+impl core::ops::BitAndAssign<bool> for Trinary {
+    fn bitand_assign(&mut self, other: bool) {
+        *self = *self & other;
+    }
+}
+
+impl core::ops::BitOrAssign<bool> for Trinary {
+    fn bitor_assign(&mut self, other: bool) {
         *self = *self | other;
     }
 }
