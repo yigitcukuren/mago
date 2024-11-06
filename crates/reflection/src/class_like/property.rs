@@ -14,7 +14,7 @@ use crate::r#type::TypeReflection;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct PropertyDefaultValueReflection {
-    pub inferred_type_reflection: Option<TypeReflection>,
+    pub inferred_type_reflection: TypeReflection,
     pub span: Span,
 }
 

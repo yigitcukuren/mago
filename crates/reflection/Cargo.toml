@@ -12,6 +12,7 @@ workspace = true
 fennec-interner = { path = "../interner" }
 fennec-span = { path = "../span" }
 fennec-source = { path = "../source" }
+fennec-trinary = { path = "../trinary" }
 ahash = { workspace = true }
 serde = { workspace = true }
 ordered-float = { workspace = true }

@@ -20,6 +20,6 @@ pub struct AttributeArgumentListReflection {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum AttributeArgumentReflection {
-    Positional { value_type_reflection: Option<TypeReflection>, span: Span },
-    Named { name: Name, value_type_reflection: Option<TypeReflection>, span: Span },
+    Positional { value_type_reflection: TypeReflection, span: Span },
+    Named { name: Name, value_type_reflection: TypeReflection, span: Span },
 }

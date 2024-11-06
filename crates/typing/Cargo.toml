@@ -1,5 +1,5 @@
 [package]
-name = "fennec-inference"
+name = "fennec-typing"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,10 +9,12 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+ahash = { workspace = true }
 fennec-reflection = { path = "../reflection" }
 fennec-span = { path = "../span" }
 fennec-semantics = { path = "../semantics" }
 fennec-names = { path = "../names" }
 fennec-interner = { path = "../interner" }
+fennec-trinary = { path = "../trinary" }
 fennec-ast = { path = "../ast" }
 ordered-float = { workspace = true }

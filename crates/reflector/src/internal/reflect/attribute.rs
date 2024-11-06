@@ -40,12 +40,12 @@ pub fn reflect_attribute_arguments<'i, 'ast>(
     for argument in argument_list.arguments.iter() {
         arguments.push(match &argument {
             Argument::Positional(arg) => AttributeArgumentReflection::Positional {
-                value_type_reflection: fennec_inference::infere(&context.interner, &context.semantics, &arg.value),
+                value_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &arg.value),
                 span: arg.span(),
             },
             Argument::Named(arg) => AttributeArgumentReflection::Named {
                 name: Name { value: arg.name.value, span: arg.name.span },
-                value_type_reflection: fennec_inference::infere(&context.interner, &context.semantics, &arg.value),
+                value_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &arg.value),
                 span: arg.span(),
             },
         });

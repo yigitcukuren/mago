@@ -16,6 +16,6 @@ fennec-ast-utils = { path = "../ast-utils" }
 fennec-walker = { path = "../walker" }
 fennec-source = { path = "../source" }
 fennec-semantics = { path = "../semantics" }
-fennec-inference = { path = "../inference" }
+fennec-typing = { path = "../typing" }
 fennec-reflection = { path = "../reflection" }
 ahash = { workspace = true }

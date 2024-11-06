@@ -21,7 +21,9 @@ pub fn reflect_function<'i, 'ast>(
         attribute_reflections: reflect_attributes(&function.attributes, context),
         visibility_reflection: None,
         name: FunctionLikeName::Function(Name::new(*context.semantics.names.get(&function.name), function.name.span)),
-        parameter_reflections: reflect_function_like_parameter_list(&function.parameters, context, scope),
+        // TODO: parse docblock to get the template list
+        templates: vec![],
+        parameters: reflect_function_like_parameter_list(&function.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(&function.return_type_hint, context, scope),
         returns_by_reference: function.ampersand.is_some(),
         has_yield: fennec_ast_utils::block_has_yield(&function.body),
@@ -29,6 +31,8 @@ pub fn reflect_function<'i, 'ast>(
         is_anonymous: false,
         is_static: true,
         is_final: true,
+        // TODO: parse docblock to determine if pure
+        is_pure: false,
         is_abstract: false,
         is_overriding: false,
         span: function.span(),
@@ -45,7 +49,9 @@ pub fn reflect_closure<'i, 'ast>(
         attribute_reflections: reflect_attributes(&closure.attributes, context),
         visibility_reflection: None,
         name: FunctionLikeName::Closure(closure.span()),
-        parameter_reflections: reflect_function_like_parameter_list(&closure.parameters, context, scope),
+        // TODO: parse docblock to get the template list
+        templates: vec![],
+        parameters: reflect_function_like_parameter_list(&closure.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(&closure.return_type_hint, context, scope),
         returns_by_reference: closure.ampersand.is_some(),
         has_yield: fennec_ast_utils::block_has_yield(&closure.body),
@@ -53,6 +59,8 @@ pub fn reflect_closure<'i, 'ast>(
         is_anonymous: true,
         is_static: closure.r#static.is_some(),
         is_final: true,
+        // TODO: parse docblock to determine if pure
+        is_pure: false,
         is_abstract: false,
         is_overriding: false,
         span: closure.span(),
@@ -69,7 +77,9 @@ pub fn reflect_arrow_function<'i, 'ast>(
         attribute_reflections: reflect_attributes(&arrow_function.attributes, context),
         visibility_reflection: None,
         name: FunctionLikeName::ArrowFunction(arrow_function.span()),
-        parameter_reflections: reflect_function_like_parameter_list(&arrow_function.parameters, context, scope),
+        // TODO: parse docblock to get the template list
+        templates: vec![],
+        parameters: reflect_function_like_parameter_list(&arrow_function.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(
             &arrow_function.return_type_hint,
             context,
@@ -81,6 +91,8 @@ pub fn reflect_arrow_function<'i, 'ast>(
         is_anonymous: true,
         is_static: arrow_function.r#static.is_some(),
         is_final: true,
+        // TODO: parse docblock to determine if pure
+        is_pure: false,
         is_abstract: false,
         is_overriding: false,
         span: arrow_function.span(),
@@ -114,7 +126,7 @@ pub fn reflect_function_like_parameter<'i, 'ast>(
         is_passed_by_reference: parameter.ampersand.is_some(),
         is_promoted_property: parameter.is_promoted_property(),
         default: parameter.default_value.as_ref().map(|d| FunctionLikeParameterDefaultValueReflection {
-            type_reflection: fennec_inference::infere(&context.interner, &context.semantics, &d.value),
+            type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &d.value),
             span: d.span(),
         }),
     }

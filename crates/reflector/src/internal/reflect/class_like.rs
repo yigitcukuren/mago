@@ -314,7 +314,7 @@ fn reflect_class_like_constant<'i, 'ast>(
                 member: Name::new(item.name.value, item.name.span),
             },
             is_final,
-            inferred_type_reflection: fennec_inference::infere(&context.interner, &context.semantics, &item.value),
+            inferred_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &item.value),
             item_span: item.span(),
             definition_span: constant.span(),
         });
@@ -342,7 +342,7 @@ fn reflect_class_like_enum_case<'i, 'ast>(
                 class_like: class_like.name,
                 member: Name::new(enum_case_backed_item.name.value, enum_case_backed_item.name.span),
             },
-            fennec_inference::infere(&context.interner, &context.semantics, &enum_case_backed_item.value),
+            Some(fennec_typing::infere(&context.interner, &context.semantics, &enum_case_backed_item.value)),
             true,
         ),
     };
@@ -386,7 +386,9 @@ fn reflect_class_like_method<'i, 'ast>(
             attribute_reflections: reflect_attributes(&method.attributes, context),
             visibility_reflection,
             name: FunctionLikeName::Method(class_like.name, name),
-            parameter_reflections: reflect_function_like_parameter_list(&method.parameters, context, Some(class_like)),
+            // TODO: parse docblock to get the template list
+            templates: vec![],
+            parameters: reflect_function_like_parameter_list(&method.parameters, context, Some(class_like)),
             return_type_reflection: reflect_function_like_return_type_hint(
                 &method.return_type_hint,
                 context,
@@ -396,6 +398,8 @@ fn reflect_class_like_method<'i, 'ast>(
             has_yield,
             has_throws,
             is_anonymous: false,
+            // TODO: parse docblock to determine if pure
+            is_pure: false,
             is_static: method.modifiers.contains_static(),
             is_final: class_like.is_final || method.modifiers.contains_final(),
             is_abstract,
@@ -449,7 +453,7 @@ fn reflect_class_like_property<'i, 'ast>(
                             member: Name::new(item.variable.name, item.variable.span),
                         },
                         Some(PropertyDefaultValueReflection {
-                            inferred_type_reflection: fennec_inference::infere(
+                            inferred_type_reflection: fennec_typing::infere(
                                 &context.interner,
                                 context.semantics,
                                 &item.value,
@@ -504,7 +508,7 @@ fn reflect_class_like_property<'i, 'ast>(
                         member: Name::new(item.variable.name, item.variable.span),
                     },
                     Some(PropertyDefaultValueReflection {
-                        inferred_type_reflection: fennec_inference::infere(
+                        inferred_type_reflection: fennec_typing::infere(
                             &context.interner,
                             context.semantics,
                             &item.value,
@@ -547,7 +551,9 @@ fn reflect_class_like_property<'i, 'ast>(
                             FunctionLikeReflection {
                                 attribute_reflections: reflect_attributes(&hook.attributes, context),
                                 name: function_like_name,
-                                parameter_reflections: match hook.parameters.as_ref() {
+                                // TODO: parse docblock to get the template list
+                                templates: vec![],
+                                parameters: match hook.parameters.as_ref() {
                                     Some(parameters) => {
                                         reflect_function_like_parameter_list(&parameters, context, Some(&class_like))
                                     }
@@ -560,6 +566,7 @@ fn reflect_class_like_property<'i, 'ast>(
                                 is_anonymous: false,
                                 is_static: false,
                                 is_final: true,
+                                is_pure: false,
                                 is_abstract: false,
                                 is_overriding: false,
                                 span: hook.span(),

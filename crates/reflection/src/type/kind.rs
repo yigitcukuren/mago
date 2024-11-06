@@ -1,10 +1,13 @@
 use fennec_interner::ThreadedInterner;
+use fennec_span::Span;
+use fennec_trinary::Trinary;
 use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use serde::Serialize;
 
 use fennec_interner::StringIdentifier;
 
+use crate::function_like::FunctionLikeReflection;
 use crate::identifier::ClassLikeName;
 
 /// Represents a template type parameter with a name and a set of constraints.
@@ -106,11 +109,26 @@ pub enum ObjectTypeKind {
     /// A named object with generic type parameters.
     /// For example, `Foo<T, U>` represents an instance of class `Foo` with type parameters `T` and `U`.
     NamedObject {
-        /// The name of the object class.
+        /// The name of the class.
         name: StringIdentifier,
 
         /// The type parameters of the object class.
         type_parameters: Vec<TypeKind>,
+    },
+
+    /// An instance of an anonymous class.
+    AnonymousObject {
+        /// The span of the anonymous class definition in the source code.
+        span: Span,
+    },
+
+    /// An enum case, representing a specific case of an enum.
+    EnumCase {
+        /// The name of the enum.
+        enum_name: StringIdentifier,
+
+        /// The case of the enum.
+        case_name: StringIdentifier,
     },
 
     /// A generator type with specified key, value, send, and return types.
@@ -147,7 +165,7 @@ pub enum ArrayShapePropertyKey {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ArrayShapeProperty {
     /// The key of the property.
-    pub key: ArrayShapePropertyKey,
+    pub key: Option<ArrayShapePropertyKey>,
 
     /// The type of the property.
     pub kind: TypeKind,
@@ -176,19 +194,9 @@ pub enum ArrayTypeKind {
     /// An array with specified key and value types.
     /// For example, `array<string, int>` represents an array with `string` keys and `int` values.
     Array {
-        /// The type of the array keys.
-        key: Box<TypeKind>,
+        /// Indicates whether the array is non-empty.
+        non_empty: bool,
 
-        /// The type of the array values.
-        value: Box<TypeKind>,
-
-        /// The size of the array, if known.
-        known_size: Option<usize>,
-    },
-
-    /// A non-empty array with specified key and value types.
-    /// Ensures the array has at least one element.
-    NonEmptyArray {
         /// The type of the array keys.
         key: Box<TypeKind>,
 
@@ -202,16 +210,9 @@ pub enum ArrayTypeKind {
     /// A list (array with integer keys starting from zero) with a specified value type.
     /// For example, `list<string>` represents a list of strings.
     List {
-        /// The type of the list elements.
-        value: Box<TypeKind>,
+        /// Indicates whether the list is non-empty.
+        non_empty: bool,
 
-        /// The size of the list, if known.
-        known_size: Option<usize>,
-    },
-
-    /// A non-empty list with a specified value type.
-    /// Ensures the list has at least one element.
-    NonEmptyList {
         /// The type of the list elements.
         value: Box<TypeKind>,
 
@@ -245,19 +246,11 @@ pub struct CallableParameter {
 pub enum CallableTypeKind {
     /// A callable type with specified parameters and return type.
     /// For example, `callable(string, int): bool` represents a callable that accepts a `string` and an `int` and returns a `bool`.
-    Callable { parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
-
-    /// A pure callable type, guaranteeing no side effects.
-    /// For example, `pure-callable(string, int): bool`.
-    PureCallable { parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
+    Callable { pure: bool, templates: Vec<Template>, parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
 
     /// A closure type with specified parameters and return type.
     /// For example, `Closure(string, int): bool`.
-    Closure { parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
-
-    /// A pure closure type, guaranteeing no side effects.
-    /// For example, `pure-Closure(string, int): bool`.
-    PureClosure { parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
+    Closure { pure: bool, templates: Vec<Template>, parameters: Vec<CallableParameter>, return_kind: Box<TypeKind> },
 }
 
 /// Represents value types, including literal values and class constants.
@@ -268,10 +261,10 @@ pub enum ValueTypeKind {
     String {
         value: StringIdentifier,
         length: usize,
-        is_uppercase: bool,
-        is_lowercase: bool,
-        is_ascii_lowercase: bool,
-        is_ascii_uppercase: bool,
+        is_uppercase: Trinary,
+        is_lowercase: Trinary,
+        is_ascii_lowercase: Trinary,
+        is_ascii_uppercase: Trinary,
     },
 
     /// A literal integer value.
@@ -392,13 +385,29 @@ pub enum TypeKind {
     ClosedResource,
 
     /// The `mixed` type, representing any type.
-    Mixed,
+    Mixed {
+        /// Whether the `mixed` type is explicit, or inferred from context (e.g., a function with no return type).
+        explicit: bool,
+    },
 
     /// The `never` type, representing a type that never occurs (e.g., functions that always throw exceptions or exit).
     Never,
 
     /// A generic parameter type, representing a type parameter with constraints.
     GenericParameter { name: StringIdentifier, of: Box<TypeKind>, defined_in: StringIdentifier },
+}
+
+impl Template {
+    pub fn get_key(&self, interner: &ThreadedInterner) -> String {
+        let mut key = String::from(interner.lookup(&self.name));
+
+        for constraint in &self.constraints {
+            key.push_str(" of ");
+            key.push_str(&constraint.get_key(interner));
+        }
+
+        key
+    }
 }
 
 impl ArrayShapePropertyKey {
@@ -412,12 +421,30 @@ impl ArrayShapePropertyKey {
 
 impl TypeKind {
     #[inline]
-    pub fn is_nullable(&self) -> bool {
+    pub fn is_nullable(&self) -> Trinary {
         match &self {
-            TypeKind::Union { kinds } => kinds.iter().any(|k| k.is_nullable()),
-            TypeKind::Value(ValueTypeKind::Null) => true,
-            TypeKind::Mixed => true,
-            _ => false,
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_nullable()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_nullable()).collect(),
+            TypeKind::Value(ValueTypeKind::Null) => Trinary::True,
+            TypeKind::Mixed { .. } => Trinary::Maybe,
+            TypeKind::Scalar(_) => Trinary::False,
+            TypeKind::Object(_) => todo!(),
+            TypeKind::Array(_) => todo!(),
+            TypeKind::Callable(_) => todo!(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_nullable() & otherwise.is_nullable(),
+            TypeKind::KeyOf { .. } => Trinary::False,
+            TypeKind::ValueOf { .. } => Trinary::Maybe,
+            TypeKind::PropertiesOf { .. } => Trinary::Maybe,
+            TypeKind::ClassStringMap { .. } => Trinary::False,
+            TypeKind::Index { .. } => Trinary::Maybe,
+            TypeKind::Variable { .. } => Trinary::Maybe,
+            TypeKind::Iterable { .. } => Trinary::False,
+            TypeKind::Void => Trinary::True,
+            TypeKind::Resource => Trinary::False,
+            TypeKind::ClosedResource => Trinary::False,
+            TypeKind::Never => Trinary::False,
+            TypeKind::GenericParameter { of, .. } => of.is_nullable(),
+            TypeKind::Value(_) => Trinary::False,
         }
     }
 
@@ -427,10 +454,231 @@ impl TypeKind {
             TypeKind::Union { kinds } => kinds.iter().all(|k| k.is_object()),
             TypeKind::Intersection { kinds } => kinds.iter().any(|k| k.is_object()),
             TypeKind::Conditional { then, otherwise, .. } => then.is_object() && otherwise.is_object(),
-            TypeKind::Callable(CallableTypeKind::Closure { .. } | CallableTypeKind::PureClosure { .. }) => true,
+            TypeKind::Callable(CallableTypeKind::Closure { .. }) => true,
             TypeKind::GenericParameter { of, .. } => of.is_object(),
             TypeKind::Object(_) => true,
             _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_resource(&self) -> bool {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().all(|k| k.is_resource()),
+            TypeKind::Intersection { kinds } => kinds.iter().any(|k| k.is_resource()),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_resource() && otherwise.is_resource(),
+            TypeKind::Resource | TypeKind::ClosedResource => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_array(&self) -> bool {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().all(|k| k.is_array()),
+            TypeKind::Intersection { kinds } => kinds.iter().any(|k| k.is_array()),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_array() && otherwise.is_array(),
+            TypeKind::Array(_) => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    pub fn is_bool(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_bool()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_bool()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_bool().and(otherwise.is_bool()),
+            TypeKind::Value(ValueTypeKind::True)
+            | TypeKind::Value(ValueTypeKind::False)
+            | TypeKind::Scalar(ScalarTypeKind::Bool) => Trinary::True,
+            TypeKind::Value(ValueTypeKind::ClassLikeConstant { .. }) => Trinary::Maybe,
+            TypeKind::GenericParameter { of, .. } => of.is_bool(),
+            _ => Trinary::False,
+        }
+    }
+
+    #[inline]
+    pub fn is_truthy(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_truthy()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_truthy()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_truthy().and(otherwise.is_truthy()),
+            TypeKind::Array(array_kind) => match array_kind {
+                ArrayTypeKind::Array { non_empty, known_size, .. }
+                    if *non_empty || known_size.map(|s| s > 0).unwrap_or(false) =>
+                {
+                    Trinary::True
+                }
+                ArrayTypeKind::List { non_empty, known_size, .. }
+                    if *non_empty || known_size.map(|s| s > 0).unwrap_or(false) =>
+                {
+                    Trinary::True
+                }
+                ArrayTypeKind::CallableArray => Trinary::True,
+                ArrayTypeKind::Shape(array_shape) => Trinary::from(!array_shape.properties.is_empty()),
+                _ => Trinary::Maybe,
+            },
+            TypeKind::Scalar(scalar_type_kind) => match scalar_type_kind {
+                ScalarTypeKind::Bool => Trinary::Maybe,
+                ScalarTypeKind::Integer { min, max } => {
+                    if min.map(|m| m > 0).unwrap_or(false) {
+                        Trinary::True
+                    } else if max.map(|m| m < 0).unwrap_or(false) {
+                        Trinary::False
+                    } else {
+                        Trinary::Maybe
+                    }
+                }
+                ScalarTypeKind::Float => Trinary::Maybe,
+                ScalarTypeKind::String => Trinary::Maybe,
+                ScalarTypeKind::IntegerMask(bits) => {
+                    if bits.iter().all(|b| *b > 0) {
+                        Trinary::True
+                    } else if bits.iter().all(|b| *b < 0) {
+                        Trinary::False
+                    } else {
+                        Trinary::Maybe
+                    }
+                }
+                ScalarTypeKind::IntegerMaskOf(_, _) => Trinary::Maybe,
+                ScalarTypeKind::ClassString(_)
+                | ScalarTypeKind::TraitString
+                | ScalarTypeKind::EnumString
+                | ScalarTypeKind::CallableString => Trinary::True,
+                ScalarTypeKind::NumericString => Trinary::Maybe, // `"0"` is a numeric string, but falsy
+                ScalarTypeKind::LiteralString => Trinary::Maybe,
+                ScalarTypeKind::LiteralInt => Trinary::Maybe,
+                ScalarTypeKind::NonEmptyString => Trinary::Maybe, // `"0"` is a non-empty string, but falsy
+                ScalarTypeKind::ArrayKey => Trinary::Maybe,
+                ScalarTypeKind::Numeric => Trinary::Maybe,
+                ScalarTypeKind::Scalar => Trinary::Maybe,
+            },
+            TypeKind::Object(_) => Trinary::True,
+            TypeKind::Callable(_) => Trinary::True,
+            TypeKind::Value(value_type_kind) => match &value_type_kind {
+                ValueTypeKind::String { .. } => Trinary::Maybe,
+                ValueTypeKind::Integer { value } => {
+                    if *value > 0 {
+                        Trinary::True
+                    } else {
+                        Trinary::False
+                    }
+                }
+                ValueTypeKind::Float { value } => {
+                    if *value > OrderedFloat(0.0) {
+                        Trinary::True
+                    } else {
+                        Trinary::False
+                    }
+                }
+                ValueTypeKind::Null => Trinary::False,
+                ValueTypeKind::True => Trinary::True,
+                ValueTypeKind::False => Trinary::False,
+                ValueTypeKind::ClassLikeConstant { .. } => Trinary::Maybe,
+            },
+            TypeKind::Variable { .. } => Trinary::Maybe,
+            TypeKind::Iterable { .. } => Trinary::Maybe,
+            TypeKind::Void => Trinary::False,
+            TypeKind::Resource => Trinary::True,
+            TypeKind::ClosedResource => Trinary::True,
+            TypeKind::Never => Trinary::False,
+            TypeKind::GenericParameter { of, .. } => of.is_truthy(),
+            _ => Trinary::Maybe,
+        }
+    }
+
+    #[inline]
+    pub fn is_falsy(&self) -> Trinary {
+        self.is_truthy().negate()
+    }
+
+    #[inline]
+    pub fn is_float(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_float()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_float()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_float().and(otherwise.is_float()),
+            TypeKind::Scalar(scalar_type_kind) => match scalar_type_kind {
+                ScalarTypeKind::Float => Trinary::True,
+                ScalarTypeKind::Integer { .. } => Trinary::False,
+                ScalarTypeKind::IntegerMask(_) => Trinary::False,
+                ScalarTypeKind::IntegerMaskOf(_, _) => Trinary::False,
+                ScalarTypeKind::Numeric => Trinary::Maybe,
+                _ => Trinary::False,
+            },
+            TypeKind::Value(ValueTypeKind::Float { .. }) => Trinary::True,
+            TypeKind::Value(ValueTypeKind::ClassLikeConstant { .. }) => Trinary::Maybe,
+            _ => Trinary::False,
+        }
+    }
+
+    #[inline]
+    pub fn is_integer(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_integer()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_integer()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_integer().and(otherwise.is_integer()),
+            TypeKind::Scalar(scalar_type_kind) => match scalar_type_kind {
+                ScalarTypeKind::Integer { .. } => Trinary::True,
+                ScalarTypeKind::IntegerMask(_) => Trinary::True,
+                ScalarTypeKind::IntegerMaskOf(_, _) => Trinary::True,
+                ScalarTypeKind::LiteralInt => Trinary::True,
+                ScalarTypeKind::Numeric => Trinary::Maybe,
+                ScalarTypeKind::ArrayKey => Trinary::Maybe,
+                _ => Trinary::False,
+            },
+            TypeKind::Value(ValueTypeKind::Integer { .. }) => Trinary::True,
+            TypeKind::Value(ValueTypeKind::ClassLikeConstant { .. }) => Trinary::Maybe,
+            _ => Trinary::False,
+        }
+    }
+
+    #[inline]
+    pub fn is_string(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_string()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_string()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => then.is_string().and(otherwise.is_string()),
+            TypeKind::Scalar(scalar_type_kind) => match scalar_type_kind {
+                ScalarTypeKind::String => Trinary::True,
+                ScalarTypeKind::ClassString(_) => Trinary::True,
+                ScalarTypeKind::TraitString => Trinary::True,
+                ScalarTypeKind::EnumString => Trinary::True,
+                ScalarTypeKind::CallableString => Trinary::True,
+                ScalarTypeKind::NumericString => Trinary::True,
+                ScalarTypeKind::LiteralString => Trinary::True,
+                ScalarTypeKind::NonEmptyString => Trinary::True,
+                _ => Trinary::False,
+            },
+            TypeKind::Value(ValueTypeKind::String { .. }) => Trinary::True,
+            TypeKind::Value(ValueTypeKind::ClassLikeConstant { .. }) => Trinary::Maybe,
+            _ => Trinary::False,
+        }
+    }
+
+    #[inline]
+    pub fn is_non_empty_string(&self) -> Trinary {
+        match &self {
+            TypeKind::Union { kinds } => kinds.iter().map(|k| k.is_non_empty_string()).collect(),
+            TypeKind::Intersection { kinds } => kinds.iter().map(|k| k.is_non_empty_string()).collect(),
+            TypeKind::Conditional { then, otherwise, .. } => {
+                then.is_non_empty_string().and(otherwise.is_non_empty_string())
+            }
+            TypeKind::Scalar(scalar_type_kind) => match scalar_type_kind {
+                ScalarTypeKind::String => Trinary::Maybe,
+                ScalarTypeKind::ClassString(_) => Trinary::True,
+                ScalarTypeKind::TraitString => Trinary::True,
+                ScalarTypeKind::EnumString => Trinary::True,
+                ScalarTypeKind::CallableString => Trinary::True,
+                ScalarTypeKind::NumericString => Trinary::True,
+                ScalarTypeKind::LiteralString => Trinary::Maybe,
+                ScalarTypeKind::NonEmptyString => Trinary::True,
+                _ => Trinary::False,
+            },
+            TypeKind::Value(ValueTypeKind::String { length, .. }) => (*length > 0).into(),
+            TypeKind::Value(ValueTypeKind::ClassLikeConstant { .. }) => Trinary::Maybe,
+            _ => Trinary::False,
         }
     }
 
@@ -528,6 +776,14 @@ impl TypeKind {
                         format!("{}<{}>", name, type_parameters)
                     }
                 }
+                ObjectTypeKind::AnonymousObject { span } => {
+                    format!(
+                        "anonymous-class@{}:{}-{}",
+                        interner.lookup(&span.start.source.0),
+                        span.start.offset,
+                        span.end.offset
+                    )
+                }
                 ObjectTypeKind::Generator { key, value, send, r#return } => {
                     let key = key.get_key(interner);
                     let value = value.get_key(interner);
@@ -539,29 +795,32 @@ impl TypeKind {
                 ObjectTypeKind::Static { .. } => "static".to_string(),
                 ObjectTypeKind::Parent { .. } => "parent".to_string(),
                 ObjectTypeKind::Self_ { .. } => "self".to_string(),
+                ObjectTypeKind::EnumCase { enum_name: name, case_name: case } => {
+                    let name = interner.lookup(name);
+                    let case = interner.lookup(case);
+
+                    format!("enum({}::{})", name, case)
+                }
             },
             TypeKind::Array(array_type_kind) => match &array_type_kind {
-                ArrayTypeKind::Array { key, value, .. } => {
+                ArrayTypeKind::Array { non_empty, key, value, .. } => {
                     let key = key.get_key(interner);
                     let value = value.get_key(interner);
 
-                    format!("array<{}, {}>", key, value)
+                    if *non_empty {
+                        format!("non-empty-array<{}, {}>", key, value)
+                    } else {
+                        format!("array<{}, {}>", key, value)
+                    }
                 }
-                ArrayTypeKind::NonEmptyArray { key, value, .. } => {
-                    let key = key.get_key(interner);
+                ArrayTypeKind::List { non_empty, value, .. } => {
                     let value = value.get_key(interner);
 
-                    format!("non-empty-array<{}, {}>", key, value)
-                }
-                ArrayTypeKind::List { value, .. } => {
-                    let value = value.get_key(interner);
-
-                    format!("list<{}>", value)
-                }
-                ArrayTypeKind::NonEmptyList { value, .. } => {
-                    let value = value.get_key(interner);
-
-                    format!("non-empty-list<{}>", value)
+                    if *non_empty {
+                        format!("non-empty-list<{}>", value)
+                    } else {
+                        format!("list<{}>", value)
+                    }
                 }
                 ArrayTypeKind::CallableArray => "callable-array".to_string(),
                 ArrayTypeKind::Shape(array_shape) => {
@@ -569,13 +828,18 @@ impl TypeKind {
                         .properties
                         .iter()
                         .map(|property| {
-                            let key = property.key.get_key(interner);
                             let kind = property.kind.get_key(interner);
 
-                            if property.optional {
-                                format!("{}?: {}", key, kind)
+                            if let Some(key) = property.key.as_ref() {
+                                let key = key.get_key(interner);
+
+                                if property.optional {
+                                    format!("{}?: {}", key, kind)
+                                } else {
+                                    format!("{}: {}", key, kind)
+                                }
                             } else {
-                                format!("{}: {}", key, kind)
+                                kind
                             }
                         })
                         .collect::<Vec<_>>()
@@ -584,7 +848,7 @@ impl TypeKind {
                     if let Some((key, value)) = &array_shape.additional_properties {
                         if matches!(
                             (key.as_ref(), value.as_ref()),
-                            (TypeKind::Scalar(ScalarTypeKind::ArrayKey), TypeKind::Mixed)
+                            (TypeKind::Scalar(ScalarTypeKind::ArrayKey), TypeKind::Mixed { .. })
                         ) {
                             properties.push_str(", ...");
                         } else {
@@ -599,7 +863,7 @@ impl TypeKind {
                 }
             },
             TypeKind::Callable(callable_type_kind) => match &callable_type_kind {
-                CallableTypeKind::Callable { parameters, return_kind } => {
+                CallableTypeKind::Callable { pure, templates, parameters, return_kind } => {
                     let parameters = parameters
                         .iter()
                         .map(|parameter| {
@@ -619,9 +883,17 @@ impl TypeKind {
 
                     let return_kind = return_kind.get_key(interner);
 
-                    format!("(callable({}): {})", parameters, return_kind)
+                    let templates =
+                        templates.iter().map(|template| template.get_key(interner)).collect::<Vec<_>>().join(", ");
+                    let templates = if !templates.is_empty() { format!("<{}>", templates) } else { "".to_string() };
+
+                    if *pure {
+                        format!("(pure-callable{}({}): {})", templates, parameters, return_kind)
+                    } else {
+                        format!("(callable{}({}): {})", templates, parameters, return_kind)
+                    }
                 }
-                CallableTypeKind::PureCallable { parameters, return_kind } => {
+                CallableTypeKind::Closure { pure, templates, parameters, return_kind } => {
                     let parameters = parameters
                         .iter()
                         .map(|parameter| {
@@ -641,51 +913,15 @@ impl TypeKind {
 
                     let return_kind = return_kind.get_key(interner);
 
-                    format!("(pure-callable({}): {})", parameters, return_kind)
-                }
-                CallableTypeKind::Closure { parameters, return_kind } => {
-                    let parameters = parameters
-                        .iter()
-                        .map(|parameter| {
-                            let mut kind = parameter.kind.get_key(interner);
-                            if parameter.optional {
-                                kind.push_str("=");
-                            }
+                    let templates =
+                        templates.iter().map(|template| template.get_key(interner)).collect::<Vec<_>>().join(", ");
+                    let templates = if !templates.is_empty() { format!("<{}>", templates) } else { "".to_string() };
 
-                            if parameter.variadic {
-                                kind.push_str("...");
-                            }
-
-                            kind
-                        })
-                        .collect::<Vec<_>>()
-                        .join(", ");
-
-                    let return_kind = return_kind.get_key(interner);
-
-                    format!("(Closure({}): {})", parameters, return_kind)
-                }
-                CallableTypeKind::PureClosure { parameters, return_kind } => {
-                    let parameters = parameters
-                        .iter()
-                        .map(|parameter| {
-                            let mut kind = parameter.kind.get_key(interner);
-                            if parameter.optional {
-                                kind.push_str("=");
-                            }
-
-                            if parameter.variadic {
-                                kind.push_str("...");
-                            }
-
-                            kind
-                        })
-                        .collect::<Vec<_>>()
-                        .join(", ");
-
-                    let return_kind = return_kind.get_key(interner);
-
-                    format!("(PureClosure({}): {})", parameters, return_kind)
+                    if *pure {
+                        format!("(pure-Closure{}({}): {})", templates, parameters, return_kind)
+                    } else {
+                        format!("(Closure{}({}): {})", templates, parameters, return_kind)
+                    }
                 }
             },
             TypeKind::Value(value_type_kind) => match &value_type_kind {
@@ -750,7 +986,13 @@ impl TypeKind {
             TypeKind::Void => "void".to_string(),
             TypeKind::Resource => "resource".to_string(),
             TypeKind::ClosedResource => "closed-resource".to_string(),
-            TypeKind::Mixed => "mixed".to_string(),
+            TypeKind::Mixed { explicit } => {
+                if *explicit {
+                    "mixed".to_string()
+                } else {
+                    "unknown".to_string()
+                }
+            }
             TypeKind::Never => "never".to_string(),
             TypeKind::GenericParameter { name, defined_in, .. } => {
                 format!("{}:{}", interner.lookup(name), interner.lookup(defined_in))
@@ -793,6 +1035,10 @@ pub fn maximum_integer_kind(max: isize) -> TypeKind {
     TypeKind::Scalar(ScalarTypeKind::Integer { min: None, max: Some(max) })
 }
 
+pub fn integer_range_kind(min: isize, max: isize) -> TypeKind {
+    TypeKind::Scalar(ScalarTypeKind::Integer { min: Some(min), max: Some(max) })
+}
+
 /// Creates a `TypeKind` representing the `float` type.
 pub fn float_kind() -> TypeKind {
     TypeKind::Scalar(ScalarTypeKind::Float)
@@ -810,30 +1056,34 @@ pub fn non_empty_string_kind() -> TypeKind {
 
 /// Creates a `TypeKind` representing a list of the given type.
 pub fn list_kind(value: TypeKind, known_size: Option<usize>) -> TypeKind {
-    TypeKind::Array(ArrayTypeKind::List { value: Box::new(value), known_size })
+    TypeKind::Array(ArrayTypeKind::List { non_empty: false, value: Box::new(value), known_size })
 }
 
 /// Creates a `TypeKind` representing an array with the given key and value types.
 pub fn array_kind(key: TypeKind, value: TypeKind, known_size: Option<usize>) -> TypeKind {
-    TypeKind::Array(ArrayTypeKind::Array { key: Box::new(key), value: Box::new(value), known_size })
+    TypeKind::Array(ArrayTypeKind::Array { non_empty: false, key: Box::new(key), value: Box::new(value), known_size })
 }
 
 /// Creates a `TypeKind` representing a non-empty list of the given type.
 pub fn non_empty_list_kind(value: TypeKind, known_size: Option<usize>) -> TypeKind {
-    TypeKind::Array(ArrayTypeKind::NonEmptyList { value: Box::new(value), known_size })
+    TypeKind::Array(ArrayTypeKind::List { non_empty: true, value: Box::new(value), known_size })
 }
 
 /// Creates a `TypeKind` representing a non-empty array with the given key and value types.
 pub fn non_empty_array_kind(key: TypeKind, value: TypeKind, known_size: Option<usize>) -> TypeKind {
-    TypeKind::Array(ArrayTypeKind::NonEmptyArray { key: Box::new(key), value: Box::new(value), known_size })
+    TypeKind::Array(ArrayTypeKind::Array { non_empty: true, key: Box::new(key), value: Box::new(value), known_size })
+}
+
+pub fn indexed_shape_property(kind: TypeKind, optional: bool) -> ArrayShapeProperty {
+    ArrayShapeProperty { key: None, kind, optional }
 }
 
 pub fn string_shape_property(key: StringIdentifier, kind: TypeKind, optional: bool) -> ArrayShapeProperty {
-    ArrayShapeProperty { key: ArrayShapePropertyKey::String(key), kind, optional }
+    ArrayShapeProperty { key: Some(ArrayShapePropertyKey::String(key)), kind, optional }
 }
 
 pub fn integer_shape_property(key: isize, kind: TypeKind, optional: bool) -> ArrayShapeProperty {
-    ArrayShapeProperty { key: ArrayShapePropertyKey::Integer(key), kind, optional }
+    ArrayShapeProperty { key: Some(ArrayShapePropertyKey::Integer(key)), kind, optional }
 }
 
 pub fn array_shape_kind(
@@ -847,8 +1097,8 @@ pub fn array_shape_kind(
 }
 
 /// Creates a `TypeKind` representing the `mixed` type.
-pub fn mixed_kind() -> TypeKind {
-    TypeKind::Mixed
+pub fn mixed_kind(explicit: bool) -> TypeKind {
+    TypeKind::Mixed { explicit }
 }
 
 /// Creates a `TypeKind` representing a union of the given types.
@@ -866,24 +1116,36 @@ pub fn callable_parameter(kind: TypeKind, optional: bool, variadic: bool) -> Cal
     CallableParameter { kind, optional, variadic }
 }
 
-/// Creates a `TypeKind` representing a callable type with the given parameters and return type.
-pub fn callable_kind(parameters: Vec<CallableParameter>, return_kind: TypeKind) -> TypeKind {
-    TypeKind::Callable(CallableTypeKind::Callable { parameters, return_kind: Box::new(return_kind) })
+/// Creates a `TypeKind` representing a callable typewith an unknown number of parameters and
+/// an implicit mixed return type.
+pub fn any_callable_kind() -> TypeKind {
+    callable_kind(false, vec![], vec![callable_parameter(mixed_kind(false), true, true)], mixed_kind(false))
 }
 
-/// Creates a `TypeKind` representing a pure callable type with the given parameters and return type.
-pub fn pure_callable_kind(parameters: Vec<CallableParameter>, return_kind: TypeKind) -> TypeKind {
-    TypeKind::Callable(CallableTypeKind::PureCallable { parameters, return_kind: Box::new(return_kind) })
+/// Creates a `TypeKind` representing a callable type with the given parameters and return type.
+pub fn callable_kind(
+    pure: bool,
+    templates: Vec<Template>,
+    parameters: Vec<CallableParameter>,
+    return_kind: TypeKind,
+) -> TypeKind {
+    TypeKind::Callable(CallableTypeKind::Callable { pure, templates, parameters, return_kind: Box::new(return_kind) })
+}
+
+/// Creates a `TypeKind` representing a closure type with an unknown number of parameters and
+/// an implicit mixed return type.
+pub fn any_closure_kind() -> TypeKind {
+    closure_kind(false, vec![], vec![callable_parameter(mixed_kind(false), true, true)], mixed_kind(false))
 }
 
 /// Creates a `TypeKind` representing a closure type with the given parameters and return type.
-pub fn closure_kind(parameters: Vec<CallableParameter>, return_kind: TypeKind) -> TypeKind {
-    TypeKind::Callable(CallableTypeKind::Closure { parameters, return_kind: Box::new(return_kind) })
-}
-
-/// Creates a `TypeKind` representing a pure closure type with the given parameters and return type.
-pub fn pure_closure_kind(parameters: Vec<CallableParameter>, return_kind: TypeKind) -> TypeKind {
-    TypeKind::Callable(CallableTypeKind::PureClosure { parameters, return_kind: Box::new(return_kind) })
+pub fn closure_kind(
+    pure: bool,
+    templates: Vec<Template>,
+    parameters: Vec<CallableParameter>,
+    return_kind: TypeKind,
+) -> TypeKind {
+    TypeKind::Callable(CallableTypeKind::Closure { pure, templates, parameters, return_kind: Box::new(return_kind) })
 }
 
 /// Creates a `TypeKind` representing a variable type with the given name.
@@ -895,10 +1157,10 @@ pub fn variable_kind(name: StringIdentifier) -> TypeKind {
 pub fn value_string_kind(
     value: StringIdentifier,
     length: usize,
-    is_uppercase: bool,
-    is_ascii_uppercase: bool,
-    is_lowercase: bool,
-    is_ascii_lowercase: bool,
+    is_uppercase: Trinary,
+    is_ascii_uppercase: Trinary,
+    is_lowercase: Trinary,
+    is_ascii_lowercase: Trinary,
 ) -> TypeKind {
     TypeKind::Value(ValueTypeKind::String {
         value,
@@ -965,6 +1227,15 @@ pub fn named_object_kind(name: StringIdentifier, type_parameters: Vec<TypeKind>)
     TypeKind::Object(ObjectTypeKind::NamedObject { name, type_parameters })
 }
 
+/// Creates a `TypeKind` representing an instance of an object with the given name and type parameters.
+pub fn anonymous_object_kind(span: Span) -> TypeKind {
+    TypeKind::Object(ObjectTypeKind::AnonymousObject { span })
+}
+
+pub fn enum_case_kind(enum_name: StringIdentifier, case_name: StringIdentifier) -> TypeKind {
+    TypeKind::Object(ObjectTypeKind::EnumCase { enum_name, case_name })
+}
+
 /// Creates a `TypeKind` representing the `void` type.
 pub fn void_kind() -> TypeKind {
     TypeKind::Void
@@ -1023,4 +1294,31 @@ pub fn index_kind(base_kind: TypeKind, index_kind: TypeKind) -> TypeKind {
 /// Creates a `TypeKind` representing an array-key type.
 pub fn array_key_kind() -> TypeKind {
     TypeKind::Scalar(ScalarTypeKind::ArrayKey)
+}
+
+impl From<&FunctionLikeReflection> for TypeKind {
+    fn from(reflection: &FunctionLikeReflection) -> Self {
+        let parameters: Vec<_> = reflection
+            .parameters
+            .iter()
+            .map(|parameter| CallableParameter {
+                optional: parameter.default.is_some(),
+                kind: parameter.type_reflection.as_ref().map(|r| r.kind.clone()).unwrap_or_else(|| mixed_kind(false)),
+                variadic: parameter.is_variadic,
+            })
+            .collect();
+
+        let return_kind = reflection
+            .return_type_reflection
+            .as_ref()
+            .map(|r| r.type_reflection.kind.clone())
+            .unwrap_or_else(|| mixed_kind(false));
+
+        TypeKind::Callable(CallableTypeKind::Closure {
+            pure: reflection.is_pure,
+            templates: reflection.templates.clone(),
+            parameters,
+            return_kind: Box::new(return_kind),
+        })
+    }
 }

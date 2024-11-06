@@ -8,6 +8,7 @@ use crate::class_like::member::ClassLikeMemberVisibilityReflection;
 use crate::function_like::parameter::FunctionLikeParameterReflection;
 use crate::function_like::r#return::FunctionLikeReturnTypeReflection;
 use crate::identifier::FunctionLikeName;
+use crate::r#type::kind::Template;
 
 pub mod parameter;
 pub mod r#return;
@@ -27,8 +28,11 @@ pub struct FunctionLikeReflection {
     /// The unique identifier for this function or method.
     pub name: FunctionLikeName,
 
+    /// The list of templates accepted by this function or method.
+    pub templates: Vec<Template>,
+
     /// The list of parameters accepted by this function or method, including their types and attributes.
-    pub parameter_reflections: Vec<FunctionLikeParameterReflection>,
+    pub parameters: Vec<FunctionLikeParameterReflection>,
 
     /// The return type of this function or method, if specified.
     pub return_type_reflection: Option<FunctionLikeReturnTypeReflection>,
@@ -61,6 +65,9 @@ pub struct FunctionLikeReflection {
     ///
     /// Always `false` for functions, arrow functions, and closures. For methods, it depends on the declaration.
     pub is_abstract: bool,
+
+    /// Indicates if this function or method is pure.
+    pub is_pure: bool,
 
     /// Flags if this function or method overrides a method from a parent class.
     ///

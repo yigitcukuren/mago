@@ -688,19 +688,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fennec-inference"
-version = "0.0.0"
-dependencies = [
- "fennec-ast",
- "fennec-interner",
- "fennec-names",
- "fennec-reflection",
- "fennec-semantics",
- "fennec-span",
- "ordered-float",
-]
-
-[[package]]
 name = "fennec-interner"
 version = "0.0.0"
 dependencies = [
@@ -790,6 +777,7 @@ dependencies = [
  "fennec-interner",
  "fennec-source",
  "fennec-span",
+ "fennec-trinary",
  "ordered-float",
  "serde",
 ]
@@ -801,12 +789,12 @@ dependencies = [
  "ahash",
  "fennec-ast",
  "fennec-ast-utils",
- "fennec-inference",
  "fennec-interner",
  "fennec-reflection",
  "fennec-semantics",
  "fennec-source",
  "fennec-span",
+ "fennec-typing",
  "fennec-walker",
 ]
 
@@ -944,6 +932,21 @@ dependencies = [
  "regex",
  "serde",
  "tracing",
+]
+
+[[package]]
+name = "fennec-typing"
+version = "0.0.0"
+dependencies = [
+ "ahash",
+ "fennec-ast",
+ "fennec-interner",
+ "fennec-names",
+ "fennec-reflection",
+ "fennec-semantics",
+ "fennec-span",
+ "fennec-trinary",
+ "ordered-float",
 ]
 
 [[package]]

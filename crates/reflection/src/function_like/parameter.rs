@@ -11,9 +11,9 @@ use crate::r#type::TypeReflection;
 /// and the source code span where it is defined.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct FunctionLikeParameterDefaultValueReflection {
-    /// The inferred type of the default value, if applicable.
-    /// This type may be determined based on the default value itself.
-    pub type_reflection: Option<TypeReflection>,
+    /// The inferred type of the default value.
+    /// This type is determined based on the default value itself.
+    pub type_reflection: TypeReflection,
 
     /// The span in the source code where the default value is located.
     pub span: Span,

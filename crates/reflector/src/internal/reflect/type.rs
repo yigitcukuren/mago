@@ -84,8 +84,8 @@ fn build_kind<'i, 'ast>(
         Hint::Null(_) => null_kind(),
         Hint::True(_) => true_kind(),
         Hint::False(_) => false_kind(),
-        Hint::Array(_) => array_kind(array_key_kind(), mixed_kind(), None),
-        Hint::Callable(_) => callable_kind(vec![callable_parameter(mixed_kind(), false, true)], mixed_kind()),
+        Hint::Array(_) => array_kind(array_key_kind(), mixed_kind(true), None),
+        Hint::Callable(_) => any_callable_kind(),
         Hint::Void(_) => void_kind(),
         Hint::Never(_) => never_kind(),
         Hint::Float(_) => float_kind(),
@@ -93,8 +93,8 @@ fn build_kind<'i, 'ast>(
         Hint::Integer(_) => integer_kind(),
         Hint::String(_) => string_kind(),
         Hint::Object(_) => any_object_kind(),
-        Hint::Mixed(_) => mixed_kind(),
-        Hint::Iterable(_) => iterable_kind(mixed_kind(), mixed_kind()),
+        Hint::Mixed(_) => mixed_kind(true),
+        Hint::Iterable(_) => iterable_kind(mixed_kind(true), mixed_kind(true)),
         Hint::Static(_) => {
             let scope = match &scope {
                 Some(scope) => context.interner.intern(scope.name.get_key(context.interner)),

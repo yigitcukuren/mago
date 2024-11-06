@@ -14,7 +14,7 @@ pub struct ClassLikeConstantReflection {
     pub visibility_reflection: Option<ClassLikeMemberVisibilityReflection>,
     pub name: ClassLikeMemberName,
     pub type_reflection: Option<TypeReflection>,
-    pub inferred_type_reflection: Option<TypeReflection>,
+    pub inferred_type_reflection: TypeReflection,
     pub is_final: bool,
     pub item_span: Span,
     pub definition_span: Span,

@@ -6,6 +6,10 @@ use fennec_reflection::CodebaseReflection;
 
 #[inline(always)]
 pub fn populate(interner: &ThreadedInterner, codebase: &mut CodebaseReflection) {
+    if codebase.populated {
+        return;
+    }
+
     let new_class_like_names = codebase
         .class_like_reflections
         .iter()
@@ -53,6 +57,7 @@ pub fn populate(interner: &ThreadedInterner, codebase: &mut CodebaseReflection) 
 
     codebase.all_classlike_descendants.shrink_to_fit();
     codebase.direct_classlike_descendants.shrink_to_fit();
+    codebase.populated = true;
 }
 
 #[inline]

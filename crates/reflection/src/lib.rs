@@ -33,12 +33,14 @@ pub struct CodebaseReflection {
 
     pub direct_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
     pub all_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
+
+    pub populated: bool,
 }
 
 impl CodebaseReflection {
     /// Creates a new, empty `CodebaseReflection`.
     pub fn new() -> Self {
-        Self::default()
+        Self { populated: false, ..Default::default() }
     }
 
     /// Registers a new constant in the codebase.
@@ -211,6 +213,15 @@ impl CodebaseReflection {
     /// Retrieves a class-like entity by its identifier, if it exists.
     pub fn get_class_like(&self, identifier: ClassLikeName) -> Option<&ClassLikeReflection> {
         self.class_like_reflections.get(&identifier)
+    }
+
+    /// Retrieves a class-like entity by its name, if it exists.
+    pub fn get_named_class_like(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        if let Some(identifier) = self.class_like_names.get(name) {
+            self.class_like_reflections.get(identifier)
+        } else {
+            None
+        }
     }
 
     /// Retrieves a class by name, if it exists.
