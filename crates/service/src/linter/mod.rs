@@ -23,10 +23,8 @@ use fennec_source::SourceManager;
 
 use crate::linter::config::LinterConfiguration;
 use crate::linter::config::LinterLevel;
-use crate::linter::result::LintResult;
 
 pub mod config;
-pub mod result;
 
 #[derive(Debug)]
 pub struct LintService {
@@ -41,7 +39,7 @@ impl LintService {
     }
 
     /// Runs the linting process and returns a stream of issues.
-    pub async fn run(&self) -> Result<LintResult, SourceError> {
+    pub async fn run(&self) -> Result<IssueCollection, SourceError> {
         // Initialize the linter
         let linter = self.initialize_linter();
 
@@ -54,7 +52,7 @@ impl LintService {
         &self,
         linter: Linter,
         source_ids: Vec<SourceIdentifier>,
-    ) -> Result<LintResult, SourceError> {
+    ) -> Result<IssueCollection, SourceError> {
         let mut handles = Vec::with_capacity(source_ids.len());
 
         let source_pb = create_progress_bar(source_ids.len(), "📂  Loading", ProgressBarTheme::Red);
@@ -101,7 +99,7 @@ impl LintService {
         remove_progress_bar(semantics_pb);
         remove_progress_bar(lint_pb);
 
-        Ok(LintResult::new(IssueCollection::from(results.into_iter().flatten())))
+        Ok(IssueCollection::from(results.into_iter().flatten()))
     }
 
     #[inline]

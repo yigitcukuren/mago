@@ -403,6 +403,10 @@ impl IssueCollection {
         self.issues.iter_mut().map(|issue| issue.take_suggestions()).flatten()
     }
 
+    pub fn only_fixable(self) -> impl Iterator<Item = Issue> {
+        self.issues.into_iter().filter(|issue| !issue.suggestions.is_empty())
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Issue> {
         self.issues.iter()
     }
