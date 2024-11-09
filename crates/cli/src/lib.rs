@@ -1,11 +1,11 @@
 use std::process::exit;
 
 use clap::Parser;
+use tokio::runtime::Builder;
 
 use fennec_feedback::initialize_logger;
 use fennec_feedback::LevelFilter;
 use fennec_service::config::Configuration;
-use tokio::runtime::Builder;
 
 use crate::commands::FennecCommand;
 use crate::utils::bail;

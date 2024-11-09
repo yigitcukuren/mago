@@ -1,5 +1,7 @@
+use std::collections::hash_map::Entry;
 use std::iter::Once;
 
+use ahash::HashMap;
 use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::diagnostic::Label;
 use codespan_reporting::diagnostic::LabelStyle;
@@ -409,6 +411,24 @@ impl IssueCollection {
 
     pub fn iter(&self) -> impl Iterator<Item = &Issue> {
         self.issues.iter()
+    }
+
+    pub fn to_fix_plans(self) -> HashMap<SourceIdentifier, FixPlan> {
+        let mut plans: HashMap<SourceIdentifier, FixPlan> = HashMap::default();
+        for issue in self.issues.into_iter().filter(|issue| !issue.suggestions.is_empty()) {
+            for suggestion in issue.suggestions.into_iter() {
+                match plans.entry(suggestion.0) {
+                    Entry::Occupied(mut occupied_entry) => {
+                        occupied_entry.get_mut().merge(suggestion.1);
+                    }
+                    Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(suggestion.1);
+                    }
+                }
+            }
+        }
+
+        plans
     }
 }
 

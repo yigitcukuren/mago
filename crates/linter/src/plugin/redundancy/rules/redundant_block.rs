@@ -21,8 +21,8 @@ impl RedundantBlockRule {
             .with_help("remove the redundant outer braces");
 
         context.report_with_fix(issue, |plan| {
-            plan.delete(block.left_brace.to_range(), SafetyClassification::Safe)
-                .delete(block.right_brace.to_range(), SafetyClassification::Safe)
+            plan.delete(block.left_brace.to_range(), SafetyClassification::Safe);
+            plan.delete(block.right_brace.to_range(), SafetyClassification::Safe);
         });
     }
 }

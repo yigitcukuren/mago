@@ -22,8 +22,8 @@ impl RedundantParenthesesRule {
             .with_help("remove the redundant inner parentheses");
 
         context.report_with_fix(issue, |plan| {
-            plan.delete(parenthesized.left_parenthesis.to_range(), SafetyClassification::Safe)
-                .delete(parenthesized.right_parenthesis.to_range(), SafetyClassification::Safe)
+            plan.delete(parenthesized.left_parenthesis.to_range(), SafetyClassification::Safe);
+            plan.delete(parenthesized.right_parenthesis.to_range(), SafetyClassification::Safe);
         });
     }
 }

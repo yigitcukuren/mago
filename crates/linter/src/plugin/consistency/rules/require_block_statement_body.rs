@@ -26,13 +26,10 @@ impl RequireBlockStatementBodyRule {
 
         context.report_with_fix(issue, |plan| {
             if matches!(statement, Statement::Noop(_)) {
-                plan.replace(statement.span().to_range(), "{}", SafetyClassification::Safe)
+                plan.replace(statement.span().to_range(), "{}", SafetyClassification::Safe);
             } else {
-                plan.insert(statement.span().start.offset, "{", SafetyClassification::Safe).insert(
-                    statement.span().end.offset,
-                    "}",
-                    SafetyClassification::Safe,
-                )
+                plan.insert(statement.span().start.offset, "{", SafetyClassification::Safe);
+                plan.insert(statement.span().end.offset, "}", SafetyClassification::Safe);
             }
         });
     }

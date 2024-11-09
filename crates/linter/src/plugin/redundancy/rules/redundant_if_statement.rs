@@ -44,34 +44,31 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
                 .with_help("remove the unnecessary `if` statement and execute its body directly.");
 
             context.report_with_fix(issue, |plan| {
-                let mut plan =
-                    plan.delete(r#if.r#if.span.join(r#if.right_parenthesis).to_range(), SafetyClassification::Safe);
+                plan.delete(r#if.r#if.span.join(r#if.right_parenthesis).to_range(), SafetyClassification::Safe);
 
                 match &r#if.body {
                     IfBody::Statement(if_statement_body) => {
                         for clause in if_statement_body.else_if_clauses.iter() {
-                            plan = plan.delete(clause.span().to_range(), SafetyClassification::Safe);
+                            plan.delete(clause.span().to_range(), SafetyClassification::Safe);
                         }
 
                         if let Some(else_clause) = &if_statement_body.else_clause {
-                            plan = plan.delete(else_clause.span().to_range(), SafetyClassification::Safe);
+                            plan.delete(else_clause.span().to_range(), SafetyClassification::Safe);
                         }
-
-                        plan
                     }
                     IfBody::ColonDelimited(if_colon_delimited_body) => {
-                        plan = plan.delete(if_colon_delimited_body.colon.to_range(), SafetyClassification::Safe);
+                        plan.delete(if_colon_delimited_body.colon.to_range(), SafetyClassification::Safe);
 
                         for clause in if_colon_delimited_body.else_if_clauses.iter() {
-                            plan = plan.delete(clause.span().to_range(), SafetyClassification::Safe);
+                            plan.delete(clause.span().to_range(), SafetyClassification::Safe);
                         }
 
                         if let Some(else_clause) = &if_colon_delimited_body.else_clause {
-                            plan = plan.delete(else_clause.span().to_range(), SafetyClassification::Safe);
+                            plan.delete(else_clause.span().to_range(), SafetyClassification::Safe);
                         }
 
-                        plan.delete(if_colon_delimited_body.endif.span().to_range(), SafetyClassification::Safe)
-                            .delete(if_colon_delimited_body.terminator.span().to_range(), SafetyClassification::Safe)
+                        plan.delete(if_colon_delimited_body.endif.span().to_range(), SafetyClassification::Safe);
+                        plan.delete(if_colon_delimited_body.terminator.span().to_range(), SafetyClassification::Safe);
                     }
                 }
             });
@@ -137,29 +134,29 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
                     if let Some(else_if_clause) = if_statement_body.else_if_clauses.first() {
                         let span = r#if.r#if.span.join(else_if_clause.elseif.span());
 
-                        plan.delete(span.start.offset..(span.end.offset - 2), SafetyClassification::Safe)
+                        plan.delete(span.start.offset..(span.end.offset - 2), SafetyClassification::Safe);
                     } else if let Some(else_clause) = &if_statement_body.else_clause {
                         let span = r#if.r#if.span.join(else_clause.r#else.span());
 
-                        plan.delete(span.to_range(), SafetyClassification::Safe)
+                        plan.delete(span.to_range(), SafetyClassification::Safe);
                     } else {
-                        plan.delete(r#if.span().to_range(), SafetyClassification::Safe)
+                        plan.delete(r#if.span().to_range(), SafetyClassification::Safe);
                     }
                 }
                 IfBody::ColonDelimited(if_colon_delimited_body) => {
                     if let Some(else_if_clause) = if_colon_delimited_body.else_if_clauses.first() {
                         let span = r#if.r#if.span.join(else_if_clause.elseif.span());
 
-                        plan.delete(span.start.offset..(span.end.offset - 2), SafetyClassification::Safe)
+                        plan.delete(span.start.offset..(span.end.offset - 2), SafetyClassification::Safe);
                     } else if let Some(else_clause) = &if_colon_delimited_body.else_clause {
                         plan.delete(
                             r#if.r#if.span.join(else_clause.colon.span()).to_range(),
                             SafetyClassification::Safe,
-                        )
-                        .delete(if_colon_delimited_body.endif.span().to_range(), SafetyClassification::Safe)
-                        .delete(if_colon_delimited_body.terminator.span().to_range(), SafetyClassification::Safe)
+                        );
+                        plan.delete(if_colon_delimited_body.endif.span().to_range(), SafetyClassification::Safe);
+                        plan.delete(if_colon_delimited_body.terminator.span().to_range(), SafetyClassification::Safe);
                     } else {
-                        plan.delete(r#if.span().to_range(), SafetyClassification::Safe)
+                        plan.delete(r#if.span().to_range(), SafetyClassification::Safe);
                     }
                 }
             });

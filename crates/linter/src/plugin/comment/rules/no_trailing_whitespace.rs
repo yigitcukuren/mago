@@ -57,10 +57,12 @@ impl<'a> Walker<LintContext<'a>> for NoTrailingWhitespaceRule {
                                 ])
                                 .with_note("trailing whitespaces can cause unnecessary diffs and formatting issues.")
                                 .with_help("remove the extra whitespace.")
-                                .with_suggestion(
-                                    whitespace_span.source(),
-                                    FixPlan::new().delete(whitespace_span.to_range(), SafetyClassification::Safe),
-                                ),
+                                .with_suggestion(whitespace_span.source(), {
+                                    let mut plan = FixPlan::new();
+
+                                    plan.delete(whitespace_span.to_range(), SafetyClassification::Safe);
+                                    plan
+                                }),
                         );
                     }
 

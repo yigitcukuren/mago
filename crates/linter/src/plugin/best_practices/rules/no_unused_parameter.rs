@@ -46,7 +46,7 @@ impl NoUnusedParameterRule {
                 parameter.variable.span().start.offset + 1, // skip the leading `$`
                 "_",
                 SafetyClassification::PotentiallyUnsafe,
-            )
+            );
         });
     }
 }

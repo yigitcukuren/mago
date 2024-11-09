@@ -135,9 +135,12 @@ impl<'a> LintContext<'a> {
 
     pub fn report_with_fix<F>(&mut self, issue: Issue, f: F)
     where
-        F: FnOnce(FixPlan) -> FixPlan,
+        F: FnOnce(&mut FixPlan),
     {
-        let issue = issue.with_suggestion(self.semantics.source.identifier, f(FixPlan::new()));
+        let mut plan = FixPlan::new();
+        f(&mut plan);
+
+        let issue = issue.with_suggestion(self.semantics.source.identifier, plan);
 
         self.report(issue);
     }

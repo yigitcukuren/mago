@@ -1,5 +1,4 @@
 use fennec_ast::*;
-use fennec_fixer::FixPlan;
 use fennec_fixer::SafetyClassification;
 use fennec_reporting::*;
 use fennec_span::*;
@@ -30,15 +29,13 @@ impl<'a> Walker<LintContext<'a>> for NoShellStyleRule {
                 let comment_span = trivia.span();
                 let comment_pos = comment_span.start;
 
-                context.report(
-                    Issue::new(context.level(), "shell-style comments ('#') are not allowed.")
-                        .with_annotation(Annotation::primary(comment_span).with_message("shell-style comment here"))
-                        .with_help("consider using double slash comments ('//') instead.")
-                        .with_suggestion(
-                            comment_pos.source,
-                            FixPlan::new().replace(comment_pos.range_for(1), "//", SafetyClassification::Safe),
-                        ),
-                );
+                let issue = Issue::new(context.level(), "shell-style comments ('#') are not allowed.")
+                    .with_annotation(Annotation::primary(comment_span).with_message("shell-style comment here"))
+                    .with_help("consider using double slash comments ('//') instead.");
+
+                context.report_with_fix(issue, |plan| {
+                    plan.replace(comment_pos.range_for(1), "//", SafetyClassification::Safe);
+                });
             }
         }
     }

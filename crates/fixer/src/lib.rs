@@ -93,7 +93,7 @@ pub enum FixOperation {
 /// unwanted parts. The operations are ordered and will be applied sequentially to the content.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct FixPlan {
-    /// A vector of `FixOperation` instances that describe the specific changes to be made.
+    /// A SET of `FixOperation` instances that describe the specific changes to be made.
     operations: Vec<FixOperation>,
 }
 
@@ -171,7 +171,7 @@ impl ChangeSet {
     ///
     /// assert_eq!(change_set.get_original(), "Hello World");
     /// ```
-    #[inline(always)]
+    #[inline]
     pub fn get_original(&self) -> String {
         let mut result = String::new();
         for change in &self.changes {
@@ -210,7 +210,7 @@ impl ChangeSet {
     ///
     /// assert_eq!(change_set.get_fixed(), "Hello Rustaceans");
     /// ```
-    #[inline(always)]
+    #[inline]
     pub fn get_fixed(&self) -> String {
         let mut result = String::new();
         for change in &self.changes {
@@ -244,19 +244,13 @@ impl ChangeSet {
     }
 }
 
-impl IntoIterator for ChangeSet {
-    type Item = Change;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.changes.into_iter()
-    }
-}
-
-impl FromIterator<Change> for ChangeSet {
-    fn from_iter<T: IntoIterator<Item = Change>>(iter: T) -> Self {
-        let changes = iter.into_iter().collect();
-        ChangeSet { changes }
+impl FixOperation {
+    pub fn get_safety_classification(&self) -> SafetyClassification {
+        match self {
+            FixOperation::Insert { safety_classification, .. } => *safety_classification,
+            FixOperation::Replace { safety_classification, .. } => *safety_classification,
+            FixOperation::Delete { safety_classification, .. } => *safety_classification,
+        }
     }
 }
 
@@ -269,7 +263,7 @@ impl FixPlan {
     /// # Returns
     /// A new `FixPlan` instance with no operations.
     pub fn new() -> Self {
-        Self { operations: Vec::new() }
+        Self { operations: Vec::default() }
     }
 
     /// Adds a custom `FixOperation` to the plan.
@@ -283,10 +277,8 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance with the new operation added.
-    pub fn operation(mut self, operation: FixOperation) -> Self {
+    pub fn operation(&mut self, operation: FixOperation) {
         self.operations.push(operation);
-
-        self
     }
 
     /// Adds an insertion operation to the plan.
@@ -303,10 +295,8 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn insert(mut self, offset: usize, text: impl Into<String>, safety: SafetyClassification) -> Self {
-        self.operations.push(FixOperation::Insert { offset, text: text.into(), safety_classification: safety });
-
-        self
+    pub fn insert(&mut self, offset: usize, text: impl Into<String>, safety: SafetyClassification) {
+        self.operation(FixOperation::Insert { offset, text: text.into(), safety_classification: safety })
     }
 
     /// Adds a replacement operation to the plan.
@@ -323,10 +313,8 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn replace(mut self, range: Range<usize>, text: impl Into<String>, safety: SafetyClassification) -> Self {
-        self.operations.push(FixOperation::Replace { range, text: text.into(), safety_classification: safety });
-
-        self
+    pub fn replace(&mut self, range: Range<usize>, text: impl Into<String>, safety: SafetyClassification) {
+        self.operation(FixOperation::Replace { range, text: text.into(), safety_classification: safety })
     }
 
     /// Adds a deletion operation to the plan.
@@ -342,10 +330,8 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn delete(mut self, range: Range<usize>, safety: SafetyClassification) -> Self {
-        self.operations.push(FixOperation::Delete { range, safety_classification: safety });
-
-        self
+    pub fn delete(&mut self, range: Range<usize>, safety: SafetyClassification) {
+        self.operation(FixOperation::Delete { range, safety_classification: safety })
     }
 
     /// Merges another `FixPlan` into this one.
@@ -357,7 +343,9 @@ impl FixPlan {
     ///
     /// * `other` - The other `FixPlan` to merge.
     pub fn merge(&mut self, other: FixPlan) {
-        self.operations.extend(other.operations);
+        for op in other.operations {
+            self.operation(op);
+        }
     }
 
     /// Determines the minimum safety classification across all operations in the plan.
@@ -369,7 +357,7 @@ impl FixPlan {
     /// # Returns
     ///
     /// The minimum `SafetyClassification` of all operations.
-    #[inline(always)]
+    #[inline]
     pub fn get_minimum_safety_classification(&self) -> SafetyClassification {
         self.operations
             .iter()
@@ -380,6 +368,18 @@ impl FixPlan {
             })
             .min()
             .unwrap_or(SafetyClassification::Safe)
+    }
+
+    #[inline]
+    pub fn to_minimum_safety_classification(&self, safety: SafetyClassification) -> Self {
+        let min_safety = self.get_minimum_safety_classification();
+        if min_safety > safety {
+            return Self::new();
+        }
+
+        Self {
+            operations: self.operations.iter().filter(|op| op.get_safety_classification() <= safety).cloned().collect(),
+        }
     }
 
     /// Determines whether the plan is empty.
@@ -407,48 +407,25 @@ impl FixPlan {
     /// # Returns
     ///
     /// A `ChangeSet` object representing the changes made to the content.
-    #[inline(always)]
-    pub fn execute(&self, content: &str, max_safety_classification: SafetyClassification) -> ChangeSet {
+    #[inline]
+    pub fn execute(&self, content: &str) -> ChangeSet {
         let mut operations = self.operations.clone();
+
+        fix_overlapping_operations(&mut operations);
 
         let content_len = content.len();
 
-        // Filter out operations with safety classifications above the maximum
-        // and adjust out-of-bounds operations
+        // Adjust out-of-bounds operations
         operations = operations
             .into_iter()
             .filter_map(|op| match op {
                 FixOperation::Insert { offset, text, safety_classification } => {
-                    if safety_classification > max_safety_classification {
-                        tracing::trace!(
-                            "skipping unsafe insert operation at offset {} `{}` ( {} > {})",
-                            offset,
-                            text,
-                            safety_classification,
-                            max_safety_classification
-                        );
+                    let adjusted_offset = offset.min(content_len);
 
-                        // Skip unsafe operations
-                        None
-                    } else {
-                        let adjusted_offset = offset.min(content_len);
-
-                        Some(FixOperation::Insert { offset: adjusted_offset, text, safety_classification })
-                    }
+                    Some(FixOperation::Insert { offset: adjusted_offset, text, safety_classification })
                 }
                 FixOperation::Replace { range, text, safety_classification } => {
-                    if safety_classification > max_safety_classification {
-                        tracing::trace!(
-                            "skipping unsafe replace operation at range {:?} `{}` ( {} > {})",
-                            range,
-                            text,
-                            safety_classification,
-                            max_safety_classification
-                        );
-
-                        // Skip unsafe operations
-                        None
-                    } else if range.start == range.end {
+                    if range.start == range.end {
                         // Empty range, treat as insert
                         let adjusted_offset = range.start.min(content_len);
 
@@ -465,17 +442,7 @@ impl FixPlan {
                     }
                 }
                 FixOperation::Delete { range, safety_classification } => {
-                    if safety_classification > max_safety_classification {
-                        tracing::trace!(
-                            "skipping unsafe delete operation at range {:?} ( {} > {})",
-                            range,
-                            safety_classification,
-                            max_safety_classification
-                        );
-
-                        // Skip unsafe operations
-                        None
-                    } else if range.start >= content_len || range.start >= range.end {
+                    if range.start >= content_len || range.start >= range.end {
                         tracing::trace!("skipping invalid delete operation at range {:?}", range);
 
                         // Ignore out-of-bounds or invalid ranges
@@ -487,7 +454,7 @@ impl FixPlan {
                     }
                 }
             })
-            .collect();
+            .collect::<Vec<_>>();
 
         // Sort operations by start position
         operations.sort_by_key(|op| match op {
@@ -577,6 +544,22 @@ impl IntoIterator for FixPlan {
     }
 }
 
+impl IntoIterator for ChangeSet {
+    type Item = Change;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.changes.into_iter()
+    }
+}
+
+impl FromIterator<Change> for ChangeSet {
+    fn from_iter<T: IntoIterator<Item = Change>>(iter: T) -> Self {
+        let changes = iter.into_iter().collect();
+        ChangeSet { changes }
+    }
+}
+
 impl FromIterator<FixOperation> for FixPlan {
     fn from_iter<T: IntoIterator<Item = FixOperation>>(iter: T) -> Self {
         let operations = iter.into_iter().collect();
@@ -590,6 +573,68 @@ impl FromIterator<FixPlan> for FixPlan {
 
         FixPlan { operations }
     }
+}
+fn fix_overlapping_operations(operations: &mut Vec<FixOperation>) {
+    let mut filtered_operations = Vec::new();
+
+    for op in operations.iter() {
+        match op {
+            FixOperation::Delete { range, .. } => {
+                let mut should_add = true;
+                filtered_operations.retain(|existing_op| {
+                    match existing_op {
+                        FixOperation::Delete { range: existing_range, .. } => {
+                            if existing_range.contains(&range.start) && existing_range.contains(&(range.end - 1)) {
+                                // `op` is entirely within `existing_op`'s range
+                                should_add = false;
+                                return true;
+                            } else if range.contains(&existing_range.start) && range.contains(&(existing_range.end - 1))
+                            {
+                                // `existing_op` is entirely within `op`'s range, so remove it
+                                return false;
+                            }
+                            true
+                        }
+                        FixOperation::Replace { range: replace_range, .. } => {
+                            if range.start <= replace_range.start && range.end >= replace_range.end {
+                                // `Delete` operation completely covers `Replace` range, remove `Replace`
+                                return false;
+                            }
+                            if range.start <= replace_range.end && range.end > replace_range.start {
+                                // `Replace` falls within a `Delete`, ignore `Replace`
+                                return false;
+                            }
+                            true
+                        }
+                        _ => true,
+                    }
+                });
+
+                if should_add {
+                    filtered_operations.push(op.clone());
+                }
+            }
+            FixOperation::Replace { range, .. } => {
+                let mut should_add = true;
+                for existing_op in &filtered_operations {
+                    if let FixOperation::Delete { range: delete_range, .. } = existing_op {
+                        if delete_range.start <= range.start && delete_range.end >= range.end {
+                            // `Replace` falls within a `Delete`, so ignore `Replace`
+                            should_add = false;
+                            break;
+                        }
+                    }
+                }
+                if should_add {
+                    filtered_operations.push(op.clone());
+                }
+            }
+            _ => filtered_operations.push(op.clone()),
+        }
+    }
+
+    // Replace original operations with filtered ones
+    *operations = filtered_operations;
 }
 
 #[cfg(test)]
@@ -606,20 +651,22 @@ mod tests {
         let expected_potentially_unsafe = "$a = ($b * $c);";
         let expected_unsafe = "$a = ((int) $b * (int) $c);";
 
-        let fix = FixPlan::new()
-            .delete(5..6, SafetyClassification::Safe) // remove the `(` before $b
-            .delete(8..9, SafetyClassification::Safe) // remove the `)` after $b
-            .insert(6, "(int) ", SafetyClassification::Unsafe) // insert `(int) ` before $b
-            .replace(10..11, "*", SafetyClassification::Safe) // replace `+` with `*`
-            .delete(12..13, SafetyClassification::Safe) // remove the `(` before $c
-            .insert(13, "(int) ", SafetyClassification::Unsafe) // insert `(int) ` before $c
-            .delete(15..16, SafetyClassification::Safe) // remove the `)` after $c
-            .insert(5, "(", SafetyClassification::PotentiallyUnsafe) // insert the outer `(` before $b
-            .insert(16, ")", SafetyClassification::PotentiallyUnsafe); // insert the outer `)` after $c
+        let mut fix = FixPlan::new();
 
-        let safe_result = fix.execute(content, SafetyClassification::Safe);
-        let potentially_unsafe_result = fix.execute(content, SafetyClassification::PotentiallyUnsafe);
-        let unsafe_result = fix.execute(content, SafetyClassification::Unsafe);
+        fix.delete(5..6, SafetyClassification::Safe); // remove the `(` before $b
+        fix.delete(8..9, SafetyClassification::Safe); // remove the `)` after $b
+        fix.insert(6, "(int) ", SafetyClassification::Unsafe); // insert `(int) ` before $b
+        fix.replace(10..11, "*", SafetyClassification::Safe); // replace `+` with `*`
+        fix.delete(12..13, SafetyClassification::Safe); // remove the `(` before $c
+        fix.insert(13, "(int) ", SafetyClassification::Unsafe); // insert `(int) ` before $c
+        fix.delete(15..16, SafetyClassification::Safe); // remove the `)` after $c
+        fix.insert(5, "(", SafetyClassification::PotentiallyUnsafe); // insert the outer `(` before $b
+        fix.insert(16, ")", SafetyClassification::PotentiallyUnsafe); // insert the outer `)` after $c
+
+        let safe_result = fix.to_minimum_safety_classification(SafetyClassification::Safe).execute(content);
+        let potentially_unsafe_result =
+            fix.to_minimum_safety_classification(SafetyClassification::PotentiallyUnsafe).execute(content);
+        let unsafe_result = fix.to_minimum_safety_classification(SafetyClassification::Unsafe).execute(content);
 
         assert_eq!(safe_result.get_fixed(), expected_safe);
         assert_eq!(potentially_unsafe_result.get_fixed(), expected_potentially_unsafe);
@@ -648,8 +695,9 @@ mod tests {
     fn test_insert_within_bounds() {
         // Insert at a valid position within the content
         let content = "Hello World";
-        let fixes = FixPlan::new().insert(6, "Beautiful ", SafetyClassification::Safe);
-        let result = fixes.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.insert(6, "Beautiful ", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello Beautiful World");
     }
 
@@ -657,8 +705,9 @@ mod tests {
     fn test_insert_at_end() {
         // Insert at an offset equal to content length
         let content = "Hello";
-        let fix = FixPlan::new().insert(5, " World", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.insert(5, " World", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello World");
     }
 
@@ -666,8 +715,9 @@ mod tests {
     fn test_insert_beyond_bounds() {
         // Insert at an offset beyond content length
         let content = "Hello";
-        let fix = FixPlan::new().insert(100, " World", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.insert(100, " World", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello World"); // Inserted at the end
     }
 
@@ -675,8 +725,9 @@ mod tests {
     fn test_delete_within_bounds() {
         // Delete a valid range within the content
         let content = "Hello Beautiful World";
-        let fix = FixPlan::new().delete(6..16, SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(6..16, SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello World");
     }
 
@@ -684,8 +735,9 @@ mod tests {
     fn test_delete_beyond_bounds() {
         // Delete a range that is partially out of bounds
         let content = "Hello World";
-        let fix = FixPlan::new().delete(6..100, SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(6..100, SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello "); // Deleted from offset 6 to end
     }
 
@@ -693,8 +745,9 @@ mod tests {
     fn test_delete_out_of_bounds() {
         // Delete a range completely out of bounds
         let content = "Hello";
-        let fix = FixPlan::new().delete(10..20, SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(10..20, SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello"); // No changes
     }
 
@@ -702,8 +755,9 @@ mod tests {
     fn test_replace_within_bounds() {
         // Replace a valid range within the content
         let content = "Hello World";
-        let fix = FixPlan::new().replace(6..11, "Rust", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.replace(6..11, "Rust", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello Rust");
     }
 
@@ -711,17 +765,33 @@ mod tests {
     fn test_replace_beyond_bounds() {
         // Replace a range that is partially out of bounds
         let content = "Hello World";
-        let fix = FixPlan::new().replace(6..100, "Rustaceans", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.replace(6..100, "Rustaceans", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello Rustaceans"); // Replaced from offset 6 to end
+    }
+
+    #[test]
+    fn test_overlapping_deletes() {
+        let content = "Hello World";
+        let mut fix = FixPlan::new();
+        fix.delete(3..9, SafetyClassification::Safe);
+        fix.delete(4..8, SafetyClassification::Safe);
+        fix.delete(5..7, SafetyClassification::Safe);
+        fix.replace(5..7, "xx", SafetyClassification::Safe);
+        fix.delete(10..11, SafetyClassification::Safe);
+        let result = fix.execute(content);
+        assert_eq!(result.get_fixed(), "Hell");
     }
 
     #[test]
     fn test_replace_out_of_bounds() {
         // Replace a range completely out of bounds
         let content = "Hello";
-        let fix = FixPlan::new().replace(10..20, "Hi", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.replace(10..20, "Hi", SafetyClassification::Safe);
+
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello"); // No changes
     }
 
@@ -729,10 +799,10 @@ mod tests {
     fn test_overlapping_operations() {
         // Overlapping delete and replace operations
         let content = "The quick brown fox jumps over the lazy dog.";
-        let fix = FixPlan::new()
-            .delete(10..19, SafetyClassification::Safe) // Delete "brown fox"
-            .replace(16..19, "cat", SafetyClassification::Safe); // Replace "fox" (which is partially deleted)
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(10..19, SafetyClassification::Safe); // Delete "brown fox"
+        fix.replace(16..19, "cat", SafetyClassification::Safe); // Replace "fox" (which is partially deleted)
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "The quick cat jumps over the lazy dog.");
         // "brown fox" deleted, "cat" inserted
     }
@@ -741,8 +811,9 @@ mod tests {
     fn test_insert_at_zero() {
         // Insert at the beginning of the content
         let content = "World";
-        let fix = FixPlan::new().insert(0, "Hello ", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.insert(0, "Hello ", SafetyClassification::Safe);
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello World");
     }
 
@@ -750,8 +821,10 @@ mod tests {
     fn test_empty_content_insert() {
         // Insert into empty content
         let content = "";
-        let fix = FixPlan::new().insert(0, "Hello World", SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.insert(0, "Hello World", SafetyClassification::Safe);
+
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello World");
     }
 
@@ -759,8 +832,10 @@ mod tests {
     fn test_empty_content_delete() {
         // Attempt to delete from empty content
         let content = "";
-        let fix = FixPlan::new().delete(0..10, SafetyClassification::Safe);
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(0..10, SafetyClassification::Safe);
+
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), ""); // No changes
     }
 
@@ -768,12 +843,13 @@ mod tests {
     fn test_multiple_operations_ordering() {
         // Multiple operations affecting ordering
         let content = "abcdef";
-        let fix = FixPlan::new()
-            .delete(2..4, SafetyClassification::Safe) // Delete "cd"
-            .insert(2, "XY", SafetyClassification::Safe) // Insert "XY" at position 2
-            .replace(0..2, "12", SafetyClassification::Safe) // Replace "ab" with "12"
-            .insert(6, "34", SafetyClassification::Safe); // Insert "34" at the end (after fix)
-        let result = fix.execute(content, SafetyClassification::Safe);
+        let mut fix = FixPlan::new();
+        fix.delete(2..4, SafetyClassification::Safe); // Delete "cd"
+        fix.insert(2, "XY", SafetyClassification::Safe); // Insert "XY" at position 2
+        fix.replace(0..2, "12", SafetyClassification::Safe); // Replace "ab" with "12"
+        fix.insert(6, "34", SafetyClassification::Safe); // Insert "34" at the end (after fix)
+
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "12XYef34");
     }
 
@@ -781,12 +857,13 @@ mod tests {
     fn test_operations_with_invalid_ranges() {
         // Operations with invalid ranges (start >= end)
         let content = "Hello World";
-        let fix = FixPlan::new()
-            .delete(5..3, SafetyClassification::Safe) // Invalid range
-            .replace(8..8, "Test", SafetyClassification::Safe) // Empty range, treated as insert
-            .insert(6, "Beautiful ", SafetyClassification::Safe); // Valid insert
+        let mut fix = FixPlan::new();
 
-        let result = fix.execute(content, SafetyClassification::Safe);
+        fix.delete(5..3, SafetyClassification::Safe); // Invalid range
+        fix.replace(8..8, "Test", SafetyClassification::Safe); // Empty range, treated as insert
+        fix.insert(6, "Beautiful ", SafetyClassification::Safe); // Valid insert
+
+        let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello Beautiful WoTestrld"); // Only the insert is applied
     }
 }

@@ -802,6 +802,7 @@ dependencies = [
 name = "fennec-reporting"
 version = "0.0.0"
 dependencies = [
+ "ahash",
  "codespan-reporting",
  "fennec-fixer",
  "fennec-source",

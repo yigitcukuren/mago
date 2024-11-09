@@ -40,8 +40,8 @@ impl RedudnantClosingTagRule {
                     .with_help("remove the redundant closing tag.");
 
                 context.report_with_fix(issue, |plan| {
-                    plan.delete(inline.span().to_range(), SafetyClassification::Safe)
-                        .delete(tag.span().to_range(), SafetyClassification::Safe)
+                    plan.delete(inline.span().to_range(), SafetyClassification::Safe);
+                    plan.delete(tag.span().to_range(), SafetyClassification::Safe);
                 });
             }
         }

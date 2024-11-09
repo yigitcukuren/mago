@@ -9,9 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+ahash = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+codespan-reporting = { workspace = true }
 fennec-span = { path = "../span" }
 fennec-source = { path = "../source" }
 fennec-fixer = { path = "../fixer" }
-codespan-reporting = { workspace = true }
-serde = { workspace = true }
-tokio = { workspace = true }
