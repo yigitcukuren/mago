@@ -89,18 +89,23 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
         Self { inner: vec![], tokens: vec![] }
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
+    #[inline]
     pub fn get(&self, index: usize) -> Option<&T> {
         self.inner.get(index)
     }
 
+    #[inline]
+    #[must_use]
     pub fn first(&self) -> Option<&T> {
         self.inner.first()
     }
@@ -153,6 +158,18 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
         self.inner.iter()
     }
 
+    /// Returns an iterator over the sequence, where each item includes
+    /// the index of the element, the element and the token following it.
+    /// The token is `None` only for the last element if it has no trailing token.
+    pub fn iter_with_tokens(&self) -> impl Iterator<Item = (usize, &T, Option<&Token>)> {
+        self.inner.iter().enumerate().map(move |(i, item)| {
+            let token = self.tokens.get(i);
+
+            (i, item, token)
+        })
+    }
+
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
         self.inner.as_slice()
     }

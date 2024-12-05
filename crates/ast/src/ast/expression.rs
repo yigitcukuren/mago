@@ -47,6 +47,7 @@ use crate::ast::string::CompositeString;
 use crate::ast::string::StringPart;
 use crate::ast::throw::Throw;
 use crate::ast::variable::Variable;
+use crate::node::NodeKind;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct Parenthesized {
@@ -248,6 +249,98 @@ impl Expression {
                 CompositeString::ShellExecute(_) => false,
             },
             _ => false,
+        }
+    }
+
+    pub fn is_binary(&self) -> bool {
+        match &self {
+            Expression::ArithmeticOperation(arithmetic) => {
+                matches!(arithmetic.as_ref(), ArithmeticOperation::Infix(_))
+            }
+            Expression::BitwiseOperation(bitwise) => {
+                matches!(bitwise.as_ref(), BitwiseOperation::Infix(_))
+            }
+            Expression::LogicalOperation(logical) => {
+                matches!(logical.as_ref(), LogicalOperation::Infix(_))
+            }
+            Expression::ComparisonOperation(_) => true,
+            Expression::ConcatOperation(_) => true,
+            Expression::CoalesceOperation(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_unary(&self) -> bool {
+        match &self {
+            Expression::Suppressed(_) => true,
+            Expression::Referenced(_) => true,
+            Expression::ArithmeticOperation(arithmetic) => {
+                matches!(arithmetic.as_ref(), ArithmeticOperation::Prefix(_))
+            }
+            Expression::BitwiseOperation(bitwise) => {
+                matches!(bitwise.as_ref(), BitwiseOperation::Prefix(_))
+            }
+            Expression::LogicalOperation(logical) => {
+                matches!(logical.as_ref(), LogicalOperation::Prefix(_))
+            }
+            _ => false,
+        }
+    }
+
+    pub fn is_literal(&self) -> bool {
+        matches!(self, Expression::Literal(_))
+    }
+
+    pub fn is_string_literal(&self) -> bool {
+        match &self {
+            Expression::Literal(literal) => match literal {
+                Literal::String(_) => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    pub fn node_kind(&self) -> NodeKind {
+        match &self {
+            Expression::Parenthesized(_) => NodeKind::Parenthesized,
+            Expression::Referenced(_) => NodeKind::Referenced,
+            Expression::Suppressed(_) => NodeKind::Suppressed,
+            Expression::Literal(_) => NodeKind::Literal,
+            Expression::CompositeString(_) => NodeKind::CompositeString,
+            Expression::ArithmeticOperation(_) => NodeKind::ArithmeticOperation,
+            Expression::AssignmentOperation(_) => NodeKind::AssignmentOperation,
+            Expression::BitwiseOperation(_) => NodeKind::BitwiseOperation,
+            Expression::ComparisonOperation(_) => NodeKind::ComparisonOperation,
+            Expression::LogicalOperation(_) => NodeKind::LogicalOperation,
+            Expression::CastOperation(_) => NodeKind::CastOperation,
+            Expression::TernaryOperation(_) => NodeKind::TernaryOperation,
+            Expression::CoalesceOperation(_) => NodeKind::CoalesceOperation,
+            Expression::ConcatOperation(_) => NodeKind::ConcatOperation,
+            Expression::InstanceofOperation(_) => NodeKind::InstanceofOperation,
+            Expression::Array(_) => NodeKind::Array,
+            Expression::LegacyArray(_) => NodeKind::LegacyArray,
+            Expression::List(_) => NodeKind::List,
+            Expression::ArrayAccess(_) => NodeKind::ArrayAccess,
+            Expression::ArrayAppend(_) => NodeKind::ArrayAppend,
+            Expression::AnonymousClass(_) => NodeKind::AnonymousClass,
+            Expression::Closure(_) => NodeKind::Closure,
+            Expression::ArrowFunction(_) => NodeKind::ArrowFunction,
+            Expression::Variable(_) => NodeKind::Variable,
+            Expression::Identifier(_) => NodeKind::Identifier,
+            Expression::Match(_) => NodeKind::Match,
+            Expression::Yield(_) => NodeKind::Yield,
+            Expression::Construct(_) => NodeKind::Construct,
+            Expression::Throw(_) => NodeKind::Throw,
+            Expression::Clone(_) => NodeKind::Clone,
+            Expression::Call(_) => NodeKind::Call,
+            Expression::Access(_) => NodeKind::Access,
+            Expression::ClosureCreation(_) => NodeKind::ClosureCreation,
+            Expression::Instantiation(_) => NodeKind::Instantiation,
+            Expression::MagicConstant(_) => NodeKind::MagicConstant,
+            Expression::Parent(_) => NodeKind::Keyword,
+            Expression::Static(_) => NodeKind::Keyword,
+            Expression::Self_(_) => NodeKind::Keyword,
         }
     }
 }
