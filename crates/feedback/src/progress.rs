@@ -5,7 +5,7 @@ use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 
 /// A global multi-progress bar that allows managing multiple progress bars concurrently.
-pub static GLOBAL_PROGRESS_MANAGER: LazyLock<MultiProgress> = LazyLock::new(|| MultiProgress::new());
+pub static GLOBAL_PROGRESS_MANAGER: LazyLock<MultiProgress> = LazyLock::new(MultiProgress::new);
 
 /// Creates a new progress bar with the specified length and theme.
 ///

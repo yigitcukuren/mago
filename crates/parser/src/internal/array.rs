@@ -7,7 +7,7 @@ use crate::internal::expression::parse_expression;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_array<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Array, ParseError> {
+pub fn parse_array(stream: &mut TokenStream<'_, '_>) -> Result<Array, ParseError> {
     Ok(Array {
         left_bracket: utils::expect_span(stream, T!["["])?,
         elements: {
@@ -35,7 +35,7 @@ pub fn parse_array<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Array, Pa
     })
 }
 
-pub fn parse_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<List, ParseError> {
+pub fn parse_list(stream: &mut TokenStream<'_, '_>) -> Result<List, ParseError> {
     Ok(List {
         list: utils::expect_keyword(stream, T!["list"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -63,7 +63,7 @@ pub fn parse_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<List, Pars
     })
 }
 
-pub fn parse_legacy_array<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<LegacyArray, ParseError> {
+pub fn parse_legacy_array(stream: &mut TokenStream<'_, '_>) -> Result<LegacyArray, ParseError> {
     Ok(LegacyArray {
         array: utils::expect_keyword(stream, T!["array"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -91,7 +91,7 @@ pub fn parse_legacy_array<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Le
     })
 }
 
-pub fn parse_array_element<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ArrayElement, ParseError> {
+pub fn parse_array_element(stream: &mut TokenStream<'_, '_>) -> Result<ArrayElement, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["..."]) => {
             let ellipsis = utils::expect_any(stream)?.span;

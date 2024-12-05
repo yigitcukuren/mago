@@ -60,10 +60,7 @@ pub struct Binary {
 impl BinaryOperator {
     #[inline]
     pub const fn is_constant(&self) -> bool {
-        match self {
-            Self::Elvis(_) | Self::Instanceof(_) => false,
-            _ => true,
-        }
+        !matches!(self, Self::Elvis(_) | Self::Instanceof(_))
     }
 
     #[inline]
@@ -180,39 +177,39 @@ impl BinaryOperator {
 
     #[inline]
     pub fn is_same_as(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Addition(_), Self::Addition(_)) => true,
-            (Self::Subtraction(_), Self::Subtraction(_)) => true,
-            (Self::Multiplication(_), Self::Multiplication(_)) => true,
-            (Self::Division(_), Self::Division(_)) => true,
-            (Self::Modulo(_), Self::Modulo(_)) => true,
-            (Self::Exponentiation(_), Self::Exponentiation(_)) => true,
-            (Self::BitwiseAnd(_), Self::BitwiseAnd(_)) => true,
-            (Self::BitwiseOr(_), Self::BitwiseOr(_)) => true,
-            (Self::BitwiseXor(_), Self::BitwiseXor(_)) => true,
-            (Self::LeftShift(_), Self::LeftShift(_)) => true,
-            (Self::RightShift(_), Self::RightShift(_)) => true,
-            (Self::NullCoalesce(_), Self::NullCoalesce(_)) => true,
-            (Self::Equal(_), Self::Equal(_)) => true,
-            (Self::NotEqual(_), Self::NotEqual(_)) => true,
-            (Self::Identical(_), Self::Identical(_)) => true,
-            (Self::NotIdentical(_), Self::NotIdentical(_)) => true,
-            (Self::AngledNotEqual(_), Self::AngledNotEqual(_)) => true,
-            (Self::LessThan(_), Self::LessThan(_)) => true,
-            (Self::LessThanOrEqual(_), Self::LessThanOrEqual(_)) => true,
-            (Self::GreaterThan(_), Self::GreaterThan(_)) => true,
-            (Self::GreaterThanOrEqual(_), Self::GreaterThanOrEqual(_)) => true,
-            (Self::Spaceship(_), Self::Spaceship(_)) => true,
-            (Self::StringConcat(_), Self::StringConcat(_)) => true,
-            (Self::Instanceof(_), Self::Instanceof(_)) => true,
-            (Self::And(_), Self::And(_)) => true,
-            (Self::Or(_), Self::Or(_)) => true,
-            (Self::LowAnd(_), Self::LowAnd(_)) => true,
-            (Self::LowOr(_), Self::LowOr(_)) => true,
-            (Self::LowXor(_), Self::LowXor(_)) => true,
-            (Self::Elvis(_), Self::Elvis(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::Addition(_), Self::Addition(_))
+                | (Self::Subtraction(_), Self::Subtraction(_))
+                | (Self::Multiplication(_), Self::Multiplication(_))
+                | (Self::Division(_), Self::Division(_))
+                | (Self::Modulo(_), Self::Modulo(_))
+                | (Self::Exponentiation(_), Self::Exponentiation(_))
+                | (Self::BitwiseAnd(_), Self::BitwiseAnd(_))
+                | (Self::BitwiseOr(_), Self::BitwiseOr(_))
+                | (Self::BitwiseXor(_), Self::BitwiseXor(_))
+                | (Self::LeftShift(_), Self::LeftShift(_))
+                | (Self::RightShift(_), Self::RightShift(_))
+                | (Self::NullCoalesce(_), Self::NullCoalesce(_))
+                | (Self::Equal(_), Self::Equal(_))
+                | (Self::NotEqual(_), Self::NotEqual(_))
+                | (Self::Identical(_), Self::Identical(_))
+                | (Self::NotIdentical(_), Self::NotIdentical(_))
+                | (Self::AngledNotEqual(_), Self::AngledNotEqual(_))
+                | (Self::LessThan(_), Self::LessThan(_))
+                | (Self::LessThanOrEqual(_), Self::LessThanOrEqual(_))
+                | (Self::GreaterThan(_), Self::GreaterThan(_))
+                | (Self::GreaterThanOrEqual(_), Self::GreaterThanOrEqual(_))
+                | (Self::Spaceship(_), Self::Spaceship(_))
+                | (Self::StringConcat(_), Self::StringConcat(_))
+                | (Self::Instanceof(_), Self::Instanceof(_))
+                | (Self::And(_), Self::And(_))
+                | (Self::Or(_), Self::Or(_))
+                | (Self::LowAnd(_), Self::LowAnd(_))
+                | (Self::LowOr(_), Self::LowOr(_))
+                | (Self::LowXor(_), Self::LowXor(_))
+                | (Self::Elvis(_), Self::Elvis(_))
+        )
     }
 }
 

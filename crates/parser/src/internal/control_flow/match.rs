@@ -7,7 +7,7 @@ use crate::internal::expression::parse_expression;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_match<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Match, ParseError> {
+pub fn parse_match(stream: &mut TokenStream<'_, '_>) -> Result<Match, ParseError> {
     Ok(Match {
         r#match: utils::expect_keyword(stream, T!["match"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -40,14 +40,14 @@ pub fn parse_match<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Match, Pa
     })
 }
 
-pub fn parse_match_arm<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<MatchArm, ParseError> {
+pub fn parse_match_arm(stream: &mut TokenStream<'_, '_>) -> Result<MatchArm, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T!["default"] => MatchArm::Default(parse_match_default_arm(stream)?),
         _ => MatchArm::Expression(parse_match_expression_arm(stream)?),
     })
 }
 
-pub fn parse_match_expression_arm<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<MatchExpressionArm, ParseError> {
+pub fn parse_match_expression_arm(stream: &mut TokenStream<'_, '_>) -> Result<MatchExpressionArm, ParseError> {
     Ok(MatchExpressionArm {
         conditions: {
             let mut conditions = vec![];
@@ -76,7 +76,7 @@ pub fn parse_match_expression_arm<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> R
     })
 }
 
-pub fn parse_match_default_arm<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<MatchDefaultArm, ParseError> {
+pub fn parse_match_default_arm(stream: &mut TokenStream<'_, '_>) -> Result<MatchDefaultArm, ParseError> {
     Ok(MatchDefaultArm {
         default: utils::expect_keyword(stream, T!["default"])?,
         arrow: utils::expect_span(stream, T!["=>"])?,

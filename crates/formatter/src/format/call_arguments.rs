@@ -399,11 +399,11 @@ fn is_simple_call_argument<'a>(node: &'a Expression, depth: usize) -> bool {
     }
 }
 
-fn could_expand_argument_value<'a>(argument_value: &'a Expression, arrow_chain_recursion: bool) -> bool {
+fn could_expand_argument_value(argument_value: &Expression, arrow_chain_recursion: bool) -> bool {
     match argument_value {
-        Expression::Array(expr) => expr.elements.len() > 0,
-        Expression::LegacyArray(expr) => expr.elements.len() > 0,
-        Expression::List(expr) => expr.elements.len() > 0,
+        Expression::Array(expr) => !expr.elements.is_empty(),
+        Expression::LegacyArray(expr) => !expr.elements.is_empty(),
+        Expression::List(expr) => !expr.elements.is_empty(),
         Expression::Closure(_) => true,
         Expression::Binary(operation) => could_expand_argument_value(&operation.lhs, arrow_chain_recursion),
         Expression::ArrowFunction(arrow_function) => match &arrow_function.expression {

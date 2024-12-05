@@ -12,9 +12,9 @@ use crate::internal::reflect::attribute::reflect_attributes;
 use crate::internal::reflect::r#type::maybe_reflect_hint;
 use crate::internal::reflect::r#type::reflect_hint;
 
-pub fn reflect_function<'i, 'ast>(
+pub fn reflect_function<'ast>(
     function: &'ast Function,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> FunctionLikeReflection {
     FunctionLikeReflection {
@@ -40,9 +40,9 @@ pub fn reflect_function<'i, 'ast>(
     }
 }
 
-pub fn reflect_closure<'i, 'ast>(
+pub fn reflect_closure<'ast>(
     closure: &'ast Closure,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> FunctionLikeReflection {
     FunctionLikeReflection {
@@ -68,9 +68,9 @@ pub fn reflect_closure<'i, 'ast>(
     }
 }
 
-pub fn reflect_arrow_function<'i, 'ast>(
+pub fn reflect_arrow_function<'ast>(
     arrow_function: &'ast ArrowFunction,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> FunctionLikeReflection {
     FunctionLikeReflection {
@@ -100,9 +100,9 @@ pub fn reflect_arrow_function<'i, 'ast>(
     }
 }
 
-pub fn reflect_function_like_parameter_list<'i, 'ast>(
+pub fn reflect_function_like_parameter_list<'ast>(
     parameter_list: &'ast FunctionLikeParameterList,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> Vec<FunctionLikeParameterReflection> {
     let mut parameters = vec![];
@@ -113,9 +113,9 @@ pub fn reflect_function_like_parameter_list<'i, 'ast>(
     parameters
 }
 
-pub fn reflect_function_like_parameter<'i, 'ast>(
+pub fn reflect_function_like_parameter<'ast>(
     parameter: &'ast FunctionLikeParameter,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> FunctionLikeParameterReflection {
     FunctionLikeParameterReflection {
@@ -126,15 +126,15 @@ pub fn reflect_function_like_parameter<'i, 'ast>(
         is_passed_by_reference: parameter.ampersand.is_some(),
         is_promoted_property: parameter.is_promoted_property(),
         default: parameter.default_value.as_ref().map(|d| FunctionLikeParameterDefaultValueReflection {
-            type_reflection: fennec_typing::infere(context.interner, &context.semantics, &d.value),
+            type_reflection: fennec_typing::infere(context.interner, context.semantics, &d.value),
             span: d.span(),
         }),
     }
 }
 
-pub fn reflect_function_like_return_type_hint<'i, 'ast>(
+pub fn reflect_function_like_return_type_hint<'ast>(
     return_type_hint: &'ast Option<FunctionLikeReturnTypeHint>,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> Option<FunctionLikeReturnTypeReflection> {
     let Some(return_type_hint) = return_type_hint else {

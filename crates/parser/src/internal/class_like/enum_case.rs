@@ -9,8 +9,8 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_enum_case_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_enum_case_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<EnumCase, ParseError> {
     Ok(EnumCase {
@@ -21,7 +21,7 @@ pub fn parse_enum_case_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_enum_case_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<EnumCaseItem, ParseError> {
+pub fn parse_enum_case_item(stream: &mut TokenStream<'_, '_>) -> Result<EnumCaseItem, ParseError> {
     let name = parse_local_identifier(stream)?;
 
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {

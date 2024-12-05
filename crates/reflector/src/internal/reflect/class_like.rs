@@ -24,7 +24,7 @@ use super::function_like::reflect_function_like_return_type_hint;
 use super::r#type::maybe_reflect_hint;
 use super::r#type::reflect_hint;
 
-pub fn reflect_class<'i, 'ast>(class: &'ast Class, context: &'ast mut Context<'i>) -> ClassLikeReflection {
+pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&class.attributes, context),
         name: ClassLikeName::Class(Name::new(*context.semantics.names.get(&class.name), class.name.span)),
@@ -72,9 +72,9 @@ pub fn reflect_class<'i, 'ast>(class: &'ast Class, context: &'ast mut Context<'i
     reflection
 }
 
-pub fn reflect_anonymous_class<'i, 'ast>(
+pub fn reflect_anonymous_class<'ast>(
     class: &'ast AnonymousClass,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&class.attributes, context),
@@ -123,7 +123,7 @@ pub fn reflect_anonymous_class<'i, 'ast>(
     reflection
 }
 
-pub fn reflect_interface<'i, 'ast>(interface: &'ast Interface, context: &'ast mut Context<'i>) -> ClassLikeReflection {
+pub fn reflect_interface<'ast>(interface: &'ast Interface, context: &'ast mut Context<'_>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&interface.attributes, context),
         name: ClassLikeName::Interface(Name::new(*context.semantics.names.get(&interface.name), interface.name.span)),
@@ -162,7 +162,7 @@ pub fn reflect_interface<'i, 'ast>(interface: &'ast Interface, context: &'ast mu
     reflection
 }
 
-pub fn reflect_trait<'i, 'ast>(r#trait: &'ast Trait, context: &'ast mut Context<'i>) -> ClassLikeReflection {
+pub fn reflect_trait<'ast>(r#trait: &'ast Trait, context: &'ast mut Context<'_>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&r#trait.attributes, context),
         name: ClassLikeName::Trait(Name::new(*context.semantics.names.get(&r#trait.name), r#trait.name.span)),
@@ -187,7 +187,7 @@ pub fn reflect_trait<'i, 'ast>(r#trait: &'ast Trait, context: &'ast mut Context<
     reflection
 }
 
-pub fn reflect_enum<'i, 'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'i>) -> ClassLikeReflection {
+pub fn reflect_enum<'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'_>) -> ClassLikeReflection {
     let mut reflection = ClassLikeReflection {
         attribute_reflections: reflect_attributes(&r#enum.attributes, context),
         name: ClassLikeName::Enum(Name::new(*context.semantics.names.get(&r#enum.name), r#enum.name.span)),
@@ -206,10 +206,10 @@ pub fn reflect_enum<'i, 'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'i>
 
             reflection
         },
-        backing_type: match &r#enum.backing_type_hint {
-            Some(backing_type_hint) => Some(reflect_hint(&backing_type_hint.hint, context, None)),
-            None => None,
-        },
+        backing_type: r#enum
+            .backing_type_hint
+            .as_ref()
+            .map(|backing_type_hint| reflect_hint(&backing_type_hint.hint, context, None)),
         is_final: true,
         is_readonly: true,
         is_abstract: false,
@@ -229,10 +229,10 @@ pub fn reflect_enum<'i, 'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'i>
     reflection
 }
 
-fn reflect_class_like_members<'i, 'ast>(
+fn reflect_class_like_members<'ast>(
     reflection: &mut ClassLikeReflection,
     members: &'ast Sequence<ClassLikeMember>,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) {
     for member in members.iter() {
         match &member {
@@ -284,22 +284,20 @@ fn reflect_class_like_members<'i, 'ast>(
     }
 }
 
-fn reflect_class_like_constant<'i, 'ast>(
+fn reflect_class_like_constant<'ast>(
     class_like: &mut ClassLikeReflection,
     constant: &'ast ClassLikeConstant,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> Vec<ClassLikeConstantReflection> {
     let attribute_reflections = reflect_attributes(&constant.attributes, context);
     let visibility_reflection = if let Some(m) = constant.modifiers.get_public() {
         Some(ClassLikeMemberVisibilityReflection::Public { span: m.span() })
     } else if let Some(m) = constant.modifiers.get_protected() {
         Some(ClassLikeMemberVisibilityReflection::Protected { span: m.span() })
-    } else if let Some(m) = constant.modifiers.get_private() {
-        Some(ClassLikeMemberVisibilityReflection::Private { span: m.span() })
     } else {
-        None
+        constant.modifiers.get_private().map(|m| ClassLikeMemberVisibilityReflection::Private { span: m.span() })
     };
-    let type_reflection = maybe_reflect_hint(&constant.hint, context, Some(&class_like));
+    let type_reflection = maybe_reflect_hint(&constant.hint, context, Some(class_like));
     let is_final = constant.modifiers.contains_final();
 
     let mut reflections = vec![];
@@ -314,7 +312,7 @@ fn reflect_class_like_constant<'i, 'ast>(
                 member: Name::new(item.name.value, item.name.span),
             },
             is_final,
-            inferred_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &item.value),
+            inferred_type_reflection: fennec_typing::infere(context.interner, context.semantics, &item.value),
             item_span: item.span(),
             definition_span: constant.span(),
         });
@@ -323,10 +321,10 @@ fn reflect_class_like_constant<'i, 'ast>(
     reflections
 }
 
-fn reflect_class_like_enum_case<'i, 'ast>(
+fn reflect_class_like_enum_case<'ast>(
     class_like: &mut ClassLikeReflection,
     case: &'ast EnumCase,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> EnumCaseReflection {
     let (identifier, type_reflection, is_backed) = match &case.item {
         EnumCaseItem::Unit(enum_case_unit_item) => (
@@ -342,7 +340,7 @@ fn reflect_class_like_enum_case<'i, 'ast>(
                 class_like: class_like.name,
                 member: Name::new(enum_case_backed_item.name.value, enum_case_backed_item.name.span),
             },
-            Some(fennec_typing::infere(&context.interner, &context.semantics, &enum_case_backed_item.value)),
+            Some(fennec_typing::infere(context.interner, context.semantics, &enum_case_backed_item.value)),
             true,
         ),
     };
@@ -356,17 +354,17 @@ fn reflect_class_like_enum_case<'i, 'ast>(
     }
 }
 
-fn reflect_class_like_method<'i, 'ast>(
+fn reflect_class_like_method<'ast>(
     class_like: &mut ClassLikeReflection,
     method: &'ast Method,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> (Name, FunctionLikeReflection) {
     let name = Name::new(method.name.value, method.name.span);
 
     let (has_yield, has_throws, is_abstract) = match &method.body {
         MethodBody::Abstract(_) => (false, false, true),
         MethodBody::Concrete(block) => {
-            (fennec_ast_utils::block_has_yield(&block), fennec_ast_utils::block_has_throws(&block), false)
+            (fennec_ast_utils::block_has_yield(block), fennec_ast_utils::block_has_throws(block), false)
         }
     };
 
@@ -374,10 +372,8 @@ fn reflect_class_like_method<'i, 'ast>(
         Some(ClassLikeMemberVisibilityReflection::Public { span: m.span() })
     } else if let Some(m) = method.modifiers.get_protected() {
         Some(ClassLikeMemberVisibilityReflection::Protected { span: m.span() })
-    } else if let Some(m) = method.modifiers.get_private() {
-        Some(ClassLikeMemberVisibilityReflection::Private { span: m.span() })
     } else {
-        None
+        method.modifiers.get_private().map(|m| ClassLikeMemberVisibilityReflection::Private { span: m.span() })
     };
 
     (
@@ -410,10 +406,10 @@ fn reflect_class_like_method<'i, 'ast>(
     )
 }
 
-fn reflect_class_like_property<'i, 'ast>(
+fn reflect_class_like_property<'ast>(
     class_like: &mut ClassLikeReflection,
     property: &'ast Property,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> Vec<PropertyReflection> {
     let mut reflections = vec![];
 
@@ -424,15 +420,16 @@ fn reflect_class_like_property<'i, 'ast>(
                 Some(ClassLikeMemberVisibilityReflection::Public { span: m.span() })
             } else if let Some(m) = plain_property.modifiers.get_protected() {
                 Some(ClassLikeMemberVisibilityReflection::Protected { span: m.span() })
-            } else if let Some(m) = plain_property.modifiers.get_private() {
-                Some(ClassLikeMemberVisibilityReflection::Private { span: m.span() })
             } else {
-                None
+                plain_property
+                    .modifiers
+                    .get_private()
+                    .map(|m| ClassLikeMemberVisibilityReflection::Private { span: m.span() })
             };
 
             // TODO(azjezz): take `(set)` modifiers into account.
             let write_visibility_reflection = read_visibility_reflection;
-            let type_reflection = maybe_reflect_hint(&plain_property.hint, context, Some(&class_like));
+            let type_reflection = maybe_reflect_hint(&plain_property.hint, context, Some(class_like));
             let is_readonly = class_like.is_readonly || plain_property.modifiers.contains_readonly();
             let is_final = class_like.is_final || plain_property.modifiers.contains_final();
             let is_static = plain_property.modifiers.contains_static();
@@ -453,7 +450,7 @@ fn reflect_class_like_property<'i, 'ast>(
                         },
                         Some(PropertyDefaultValueReflection {
                             inferred_type_reflection: fennec_typing::infere(
-                                &context.interner,
+                                context.interner,
                                 context.semantics,
                                 &item.value,
                             ),
@@ -484,14 +481,15 @@ fn reflect_class_like_property<'i, 'ast>(
                 Some(ClassLikeMemberVisibilityReflection::Public { span: m.span() })
             } else if let Some(m) = hooked_property.modifiers.get_protected() {
                 Some(ClassLikeMemberVisibilityReflection::Protected { span: m.span() })
-            } else if let Some(m) = hooked_property.modifiers.get_private() {
-                Some(ClassLikeMemberVisibilityReflection::Private { span: m.span() })
             } else {
-                None
+                hooked_property
+                    .modifiers
+                    .get_private()
+                    .map(|m| ClassLikeMemberVisibilityReflection::Private { span: m.span() })
             };
 
             // TODO(azjezz): take `(set)` modifiers into account.
-            let write_visibility_reflection = read_visibility_reflection.clone();
+            let write_visibility_reflection = read_visibility_reflection;
 
             let (name, default_value_reflection) = match &hooked_property.item {
                 PropertyItem::Abstract(item) => (
@@ -522,7 +520,7 @@ fn reflect_class_like_property<'i, 'ast>(
                 read_visibility_reflection,
                 write_visibility_reflection,
                 name,
-                type_reflection: maybe_reflect_hint(&hooked_property.hint, context, Some(&class_like)),
+                type_reflection: maybe_reflect_hint(&hooked_property.hint, context, Some(class_like)),
                 default_value_reflection,
                 hooks: {
                     let mut map = HashMap::default();
@@ -554,7 +552,7 @@ fn reflect_class_like_property<'i, 'ast>(
                                 templates: vec![],
                                 parameters: match hook.parameters.as_ref() {
                                     Some(parameters) => {
-                                        reflect_function_like_parameter_list(parameters, context, Some(&class_like))
+                                        reflect_function_like_parameter_list(parameters, context, Some(class_like))
                                     }
                                     None => vec![],
                                 },

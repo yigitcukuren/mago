@@ -309,7 +309,7 @@ fn inherit_methods_from_parent(reflection: &mut ClassLikeReflection, parent_refl
             map.extend(parent_reflection.methods.overriden_members.get(method_name).cloned().unwrap_or_default())
         }
 
-        if let Some(_) = reflection.methods.declaring_members.get(method_name) {
+        if reflection.methods.declaring_members.contains_key(method_name) {
             continue;
         }
 

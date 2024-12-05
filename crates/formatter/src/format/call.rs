@@ -14,34 +14,21 @@ pub(super) struct MethodChain<'a> {
     pub calls: Vec<CallLikeNode<'a>>,
 }
 
-pub(super) fn collect_method_call_chain<'a>(expr: &'a Expression) -> Option<MethodChain<'a>> {
+pub(super) fn collect_method_call_chain(expr: &Expression) -> Option<MethodChain<'_>> {
     let mut calls = Vec::new();
     let mut current_expr = expr;
 
-    loop {
-        match current_expr {
-            Expression::Call(call) => {
-                calls.push(CallLikeNode::Call(call));
+    while let Expression::Call(call) = current_expr {
+        calls.push(CallLikeNode::Call(call));
 
-                match call {
-                    Call::Method(method_call) => {
-                        current_expr = method_call.object.as_ref();
-                    }
-                    Call::NullSafeMethod(null_safe_method_call) => {
-                        current_expr = null_safe_method_call.object.as_ref();
-                    }
-                    Call::StaticMethod(static_method_call) => {
-                        current_expr = static_method_call.class.as_ref();
-                    }
-                    _ => {
-                        break;
-                    }
-                }
-            }
+        current_expr = match call {
+            Call::Method(method_call) => method_call.object.as_ref(),
+            Call::NullSafeMethod(null_safe_method_call) => null_safe_method_call.object.as_ref(),
+            Call::StaticMethod(static_method_call) => static_method_call.class.as_ref(),
             _ => {
                 break;
             }
-        }
+        };
     }
 
     if calls.is_empty() {

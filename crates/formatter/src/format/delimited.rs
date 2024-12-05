@@ -51,7 +51,7 @@ impl Delimiter {
         }
     }
 
-    pub fn is_already_broken<'a>(&self, f: &Formatter<'a>) -> bool {
+    pub fn is_already_broken(&self, f: &Formatter<'_>) -> bool {
         let (left_delimiter, right_delimiter) = self.spans();
 
         let starting_line = f.source.line_number(left_delimiter.start.offset);

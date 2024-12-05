@@ -49,10 +49,7 @@ impl<'a> ArrayLike<'a> {
 
     #[inline]
     const fn uses_parenthesis(&self) -> bool {
-        match self {
-            Self::List(_) | Self::LegacyArray(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::List(_) | Self::LegacyArray(_))
     }
 
     fn prefix(&self, f: &mut Formatter<'a>) -> Option<Document<'a>> {
@@ -157,38 +154,32 @@ fn inline_single_element<'a>(f: &mut Formatter<'a>, array_like: &ArrayLike<'a>) 
     }
 
     let elements = array_like.elements();
-    let Some(first_element) = elements.first() else {
-        return None;
-    };
+    let first_element = elements.first()?;
 
     match first_element {
         ArrayElement::KeyValue(element) => {
-            if !element.key.is_literal() && !is_string_word_type(&element.key) {
-                return None;
-            }
-
-            if should_hug_expression(f, &element.value) {
-                return Some(first_element.format(f));
+            if (element.key.is_literal() || is_string_word_type(&element.key))
+                && should_hug_expression(f, &element.value)
+            {
+                Some(first_element.format(f))
             } else {
-                return None;
+                None
             }
         }
         ArrayElement::Value(element) => {
             if should_hug_expression(f, &element.value) {
-                return Some(first_element.format(f));
+                Some(first_element.format(f))
             } else {
-                return None;
+                None
             }
         }
         ArrayElement::Variadic(element) => {
             if should_hug_expression(f, &element.value) {
-                return Some(first_element.format(f));
+                Some(first_element.format(f))
             } else {
-                return None;
+                None
             }
         }
-        ArrayElement::Missing(_) => {
-            return None;
-        }
+        ArrayElement::Missing(_) => None,
     }
 }

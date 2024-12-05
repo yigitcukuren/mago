@@ -39,7 +39,7 @@ impl std::fmt::Display for ParseError {
                 let expected = expected.iter().map(|kind| kind.to_string()).collect::<Vec<_>>().join("`, `");
 
                 if expected.is_empty() {
-                    format!("unexpected end of file")
+                    "unexpected end of file".to_string()
                 } else if expected.len() == 1 {
                     format!("expected `{}` before end of file", expected)
                 } else {
@@ -84,8 +84,8 @@ impl From<SyntaxError> for ParseError {
     }
 }
 
-impl Into<Issue> for &ParseError {
-    fn into(self) -> Issue {
-        Issue::error(self.to_string()).with_annotation(Annotation::primary(self.span()))
+impl From<&ParseError> for Issue {
+    fn from(val: &ParseError) -> Self {
+        Issue::error(val.to_string()).with_annotation(Annotation::primary(val.span()))
     }
 }

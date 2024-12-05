@@ -121,29 +121,29 @@ impl UnaryPrefixOperator {
 
     #[inline]
     pub const fn is_same_as(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::ErrorControl(_), Self::ErrorControl(_)) => true,
-            (Self::Reference(_), Self::Reference(_)) => true,
-            (Self::ArrayCast(_, _), Self::ArrayCast(_, _)) => true,
-            (Self::BoolCast(_, _), Self::BoolCast(_, _)) => true,
-            (Self::BooleanCast(_, _), Self::BooleanCast(_, _)) => true,
-            (Self::DoubleCast(_, _), Self::DoubleCast(_, _)) => true,
-            (Self::RealCast(_, _), Self::RealCast(_, _)) => true,
-            (Self::FloatCast(_, _), Self::FloatCast(_, _)) => true,
-            (Self::IntCast(_, _), Self::IntCast(_, _)) => true,
-            (Self::IntegerCast(_, _), Self::IntegerCast(_, _)) => true,
-            (Self::ObjectCast(_, _), Self::ObjectCast(_, _)) => true,
-            (Self::UnsetCast(_, _), Self::UnsetCast(_, _)) => true,
-            (Self::StringCast(_, _), Self::StringCast(_, _)) => true,
-            (Self::BinaryCast(_, _), Self::BinaryCast(_, _)) => true,
-            (Self::BitwiseNot(_), Self::BitwiseNot(_)) => true,
-            (Self::Not(_), Self::Not(_)) => true,
-            (Self::PreIncrement(_), Self::PreIncrement(_)) => true,
-            (Self::PreDecrement(_), Self::PreDecrement(_)) => true,
-            (Self::Plus(_), Self::Plus(_)) => true,
-            (Self::Negation(_), Self::Negation(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::ErrorControl(_), Self::ErrorControl(_))
+                | (Self::Reference(_), Self::Reference(_))
+                | (Self::ArrayCast(_, _), Self::ArrayCast(_, _))
+                | (Self::BoolCast(_, _), Self::BoolCast(_, _))
+                | (Self::BooleanCast(_, _), Self::BooleanCast(_, _))
+                | (Self::DoubleCast(_, _), Self::DoubleCast(_, _))
+                | (Self::RealCast(_, _), Self::RealCast(_, _))
+                | (Self::FloatCast(_, _), Self::FloatCast(_, _))
+                | (Self::IntCast(_, _), Self::IntCast(_, _))
+                | (Self::IntegerCast(_, _), Self::IntegerCast(_, _))
+                | (Self::ObjectCast(_, _), Self::ObjectCast(_, _))
+                | (Self::UnsetCast(_, _), Self::UnsetCast(_, _))
+                | (Self::StringCast(_, _), Self::StringCast(_, _))
+                | (Self::BinaryCast(_, _), Self::BinaryCast(_, _))
+                | (Self::BitwiseNot(_), Self::BitwiseNot(_))
+                | (Self::Not(_), Self::Not(_))
+                | (Self::PreIncrement(_), Self::PreIncrement(_))
+                | (Self::PreDecrement(_), Self::PreDecrement(_))
+                | (Self::Plus(_), Self::Plus(_))
+                | (Self::Negation(_), Self::Negation(_))
+        )
     }
 }
 
@@ -165,11 +165,10 @@ impl UnaryPostfixOperator {
 
     #[inline]
     pub const fn is_same_as(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::PostIncrement(_), Self::PostIncrement(_)) => true,
-            (Self::PostDecrement(_), Self::PostDecrement(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::PostIncrement(_), Self::PostIncrement(_)) | (Self::PostDecrement(_), Self::PostDecrement(_))
+        )
     }
 }
 

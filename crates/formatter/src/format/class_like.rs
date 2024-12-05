@@ -8,26 +8,20 @@ use fennec_ast::TraitUse;
 use fennec_span::HasSpan;
 use fennec_span::Span;
 
-use crate::array;
-use crate::default_line;
 use crate::document::Document;
+use crate::document::Group;
+use crate::document::Line;
 use crate::format::Format;
-use crate::group;
-use crate::group_break;
-use crate::hardline;
-use crate::indent;
 use crate::settings::BraceStyle;
-use crate::softline;
-use crate::token;
 use crate::Formatter;
 
 pub fn print_class_like_body<'a>(
     f: &mut Formatter<'a>,
-    left_brace: &'a Span,
+    _left_brace: &'a Span,
     class_like_members: &'a Sequence<ClassLikeMember>,
-    right_brace: &'a Span,
+    _right_brace: &'a Span,
 ) -> Document<'a> {
-    let open = token!(f, *left_brace, "{");
+    let open = Document::String("{");
 
     let mut parts = vec![];
 
@@ -55,7 +49,7 @@ pub fn print_class_like_body<'a>(
             .collect(),
     ) {
         if !parts.is_empty() {
-            parts.push(softline!());
+            parts.push(Document::Line(Line::hardline()));
         }
 
         parts.push(constants);
@@ -72,7 +66,7 @@ pub fn print_class_like_body<'a>(
             .collect(),
     ) {
         if !parts.is_empty() {
-            parts.push(softline!());
+            parts.push(Document::Line(Line::hardline()));
         }
 
         parts.push(enum_cases);
@@ -97,7 +91,7 @@ pub fn print_class_like_body<'a>(
 
         if let Some(properties) = print_class_like_properties(f, static_properties) {
             if !parts.is_empty() {
-                parts.push(softline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(properties);
@@ -105,14 +99,14 @@ pub fn print_class_like_body<'a>(
 
         if let Some(properties) = print_class_like_properties(f, non_static_properties) {
             if !parts.is_empty() {
-                parts.push(softline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(properties);
         }
     } else if let Some(properties) = print_class_like_properties(f, properties.collect()) {
         if !parts.is_empty() {
-            parts.push(softline!());
+            parts.push(Document::Line(Line::hardline()));
         }
 
         parts.push(properties);
@@ -137,7 +131,7 @@ pub fn print_class_like_body<'a>(
 
         if let Some(methods) = print_class_like_methods(f, static_methods) {
             if !parts.is_empty() {
-                parts.push(softline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(methods);
@@ -145,14 +139,14 @@ pub fn print_class_like_body<'a>(
 
         if let Some(methods) = print_class_like_methods(f, non_static_methods) {
             if !parts.is_empty() {
-                parts.push(softline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(methods);
         }
     } else if let Some(methods) = print_class_like_methods(f, methods.collect()) {
         if !parts.is_empty() {
-            parts.push(softline!());
+            parts.push(Document::Line(Line::hardline()));
         }
 
         parts.push(methods);
@@ -160,21 +154,21 @@ pub fn print_class_like_body<'a>(
 
     if parts.is_empty() {
         return match f.settings.classlike_brace_style {
-            BraceStyle::SameLine => {
-                group!(open, token!(f, *right_brace, "}"))
-            }
+            BraceStyle::SameLine => Document::Group(Group::new(vec![open, Document::String("}")])),
             BraceStyle::NextLine => {
-                let mut parts = vec![];
-                parts.push(open);
-                parts.extend(hardline!());
-                parts.push(token!(f, *right_brace, "}"));
-
-                group!(@parts)
+                Document::Group(Group::new(vec![open, Document::Line(Line::hardline()), Document::String("}")]))
             }
         };
     }
 
-    group!(open, indent!(array!(softline!(), group_break!(@parts))), default_line!(), token!(f, *right_brace, "}"))
+    parts.insert(0, Document::Line(Line::hardline()));
+
+    Document::Group(Group::new(vec![
+        open,
+        Document::Indent(parts),
+        Document::Line(Line::hardline()),
+        Document::String("}"),
+    ]))
 }
 
 fn print_class_like_trait_uses<'a>(f: &mut Formatter<'a>, trait_uses: Vec<&'a TraitUse>) -> Option<Document<'a>> {
@@ -322,13 +316,13 @@ fn print_formatted_members<'a>(f: &mut Formatter<'a>, docs: Vec<(Span, Document<
         parts.push(doc);
 
         if i != (len - 1) {
-            parts.push(softline!());
+            parts.push(Document::Line(Line::hardline()));
         }
 
         if f.is_next_line_empty(node) {
-            parts.extend(hardline!());
+            parts.push(Document::Line(Line::hardline()));
         }
     }
 
-    array!(@parts)
+    Document::Array(parts)
 }

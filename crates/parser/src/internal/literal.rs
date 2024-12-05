@@ -8,7 +8,7 @@ use crate::error::ParseError;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_literal<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Literal, ParseError> {
+pub fn parse_literal(stream: &mut TokenStream<'_, '_>) -> Result<Literal, ParseError> {
     let token = utils::expect_any(stream)?;
 
     Ok(match &token.kind {
@@ -54,17 +54,21 @@ pub fn parse_literal<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Literal
 fn parse_literal_float(value: &str, at: &Position) -> f64 {
     let source = value.replace("_", "");
 
-    source.parse::<f64>().expect(&format!("failed to parse float `{}` at {}; this should never happen.", source, at))
+    source
+        .parse::<f64>()
+        .unwrap_or_else(|_| panic!("failed to parse float `{}` at {}; this should never happen.", source, at))
 }
 
 fn parse_literal_integer(value: &str, at: &Position) -> Option<u64> {
     let source = value.replace("_", "");
 
     Some(match source.as_bytes() {
-        [b'0', b'x' | b'X', ..] => u64::from_str_radix(&source.as_str()[2..], 16)
-            .expect(&format!("failed to parse hex integer `{}` at `{}`; this should never happen.", source, at)),
-        [b'0', b'o' | b'O', ..] => u64::from_str_radix(&source.as_str()[2..], 8)
-            .expect(&format!("failed to parse octal integer `{}` at `{}`; this should never happen.", source, at)),
+        [b'0', b'x' | b'X', ..] => u64::from_str_radix(&source.as_str()[2..], 16).unwrap_or_else(|_| {
+            panic!("failed to parse hex integer `{}` at `{}`; this should never happen.", source, at)
+        }),
+        [b'0', b'o' | b'O', ..] => u64::from_str_radix(&source.as_str()[2..], 8).unwrap_or_else(|_| {
+            panic!("failed to parse octal integer `{}` at `{}`; this should never happen.", source, at)
+        }),
         _ => return source.parse::<u64>().ok(),
     })
 }

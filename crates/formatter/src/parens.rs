@@ -176,7 +176,7 @@ impl<'a> Formatter<'a> {
             return true;
         }
 
-        if operator.is_arithmetic() && parent_operator.is_arithmetic() && !operator.is_same_as(&parent_operator) {
+        if operator.is_arithmetic() && parent_operator.is_arithmetic() && !operator.is_same_as(parent_operator) {
             return true;
         }
 

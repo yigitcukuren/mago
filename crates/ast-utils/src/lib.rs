@@ -1,7 +1,7 @@
 use fennec_ast::*;
 
 #[inline]
-pub fn find_returns_in_block<'ast>(block: &'ast Block) -> Vec<&'ast Return> {
+pub fn find_returns_in_block(block: &Block) -> Vec<&Return> {
     let mut returns = vec![];
 
     for statement in block.statements.iter() {
@@ -12,7 +12,7 @@ pub fn find_returns_in_block<'ast>(block: &'ast Block) -> Vec<&'ast Return> {
 }
 
 #[inline]
-pub fn find_returns_in_statement<'ast>(statement: &'ast Statement) -> Vec<&'ast Return> {
+pub fn find_returns_in_statement(statement: &Statement) -> Vec<&Return> {
     let mut returns = vec![];
 
     match statement {
@@ -129,7 +129,7 @@ pub fn find_returns_in_statement<'ast>(statement: &'ast Statement) -> Vec<&'ast 
 }
 
 #[inline]
-pub fn block_has_yield<'ast>(block: &'ast Block) -> bool {
+pub fn block_has_yield(block: &Block) -> bool {
     for statement in block.statements.iter() {
         if statement_has_yield(statement) {
             return true;
@@ -140,7 +140,7 @@ pub fn block_has_yield<'ast>(block: &'ast Block) -> bool {
 }
 
 #[inline]
-pub fn statement_has_yield<'ast>(statement: &'ast Statement) -> bool {
+pub fn statement_has_yield(statement: &Statement) -> bool {
     return match statement {
         Statement::Namespace(namespace) => {
             for statement in namespace.statements().iter() {
@@ -174,19 +174,19 @@ pub fn statement_has_yield<'ast>(statement: &'ast Statement) -> bool {
         Statement::Foreach(foreach) => match &foreach.body {
             ForeachBody::Statement(statement) => statement_has_yield(statement),
             ForeachBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_yield(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_yield)
             }
         },
         Statement::For(r#for) => match &r#for.body {
             ForBody::Statement(statement) => statement_has_yield(statement),
             ForBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_yield(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_yield)
             }
         },
         Statement::While(r#while) => match &r#while.body {
             WhileBody::Statement(statement) => statement_has_yield(statement),
             WhileBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_yield(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_yield)
             }
         },
         Statement::DoWhile(do_while) => statement_has_yield(&do_while.statement),
@@ -238,18 +238,18 @@ pub fn statement_has_yield<'ast>(statement: &'ast Statement) -> bool {
                 false
             }
             IfBody::ColonDelimited(if_colon_delimited_body) => {
-                if if_colon_delimited_body.statements.iter().any(|statement| statement_has_yield(statement)) {
+                if if_colon_delimited_body.statements.iter().any(statement_has_yield) {
                     return true;
                 }
 
                 for else_if in if_colon_delimited_body.else_if_clauses.iter() {
-                    if else_if.statements.iter().any(|statement| statement_has_yield(statement)) {
+                    if else_if.statements.iter().any(statement_has_yield) {
                         return true;
                     }
                 }
 
                 if let Some(else_clause) = &if_colon_delimited_body.else_clause {
-                    if else_clause.statements.iter().any(|statement| statement_has_yield(statement)) {
+                    if else_clause.statements.iter().any(statement_has_yield) {
                         return true;
                     }
                 }
@@ -263,7 +263,7 @@ pub fn statement_has_yield<'ast>(statement: &'ast Statement) -> bool {
 }
 
 #[inline]
-pub fn expression_has_yield<'ast>(expression: &'ast Expression) -> bool {
+pub fn expression_has_yield(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => expression_has_yield(&parenthesized.expression),
         Expression::Literal(_) => false,
@@ -434,7 +434,7 @@ pub fn expression_has_yield<'ast>(expression: &'ast Expression) -> bool {
 }
 
 #[inline]
-pub fn block_has_throws<'ast>(block: &'ast Block) -> bool {
+pub fn block_has_throws(block: &Block) -> bool {
     for statement in block.statements.iter() {
         if statement_has_throws(statement) {
             return true;
@@ -445,7 +445,7 @@ pub fn block_has_throws<'ast>(block: &'ast Block) -> bool {
 }
 
 #[inline]
-pub fn statement_has_throws<'ast>(statement: &'ast Statement) -> bool {
+pub fn statement_has_throws(statement: &Statement) -> bool {
     return match statement {
         Statement::Namespace(namespace) => {
             for statement in namespace.statements().iter() {
@@ -479,19 +479,19 @@ pub fn statement_has_throws<'ast>(statement: &'ast Statement) -> bool {
         Statement::Foreach(foreach) => match &foreach.body {
             ForeachBody::Statement(statement) => statement_has_throws(statement),
             ForeachBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_throws(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_throws)
             }
         },
         Statement::For(r#for) => match &r#for.body {
             ForBody::Statement(statement) => statement_has_throws(statement),
             ForBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_throws(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_throws)
             }
         },
         Statement::While(r#while) => match &r#while.body {
             WhileBody::Statement(statement) => statement_has_throws(statement),
             WhileBody::ColonDelimited(foreach_colon_delimited_body) => {
-                foreach_colon_delimited_body.statements.iter().any(|statement| statement_has_throws(statement))
+                foreach_colon_delimited_body.statements.iter().any(statement_has_throws)
             }
         },
         Statement::DoWhile(do_while) => statement_has_throws(&do_while.statement),
@@ -543,18 +543,18 @@ pub fn statement_has_throws<'ast>(statement: &'ast Statement) -> bool {
                 false
             }
             IfBody::ColonDelimited(if_colon_delimited_body) => {
-                if if_colon_delimited_body.statements.iter().any(|statement| statement_has_throws(statement)) {
+                if if_colon_delimited_body.statements.iter().any(statement_has_throws) {
                     return true;
                 }
 
                 for else_if in if_colon_delimited_body.else_if_clauses.iter() {
-                    if else_if.statements.iter().any(|statement| statement_has_throws(statement)) {
+                    if else_if.statements.iter().any(statement_has_throws) {
                         return true;
                     }
                 }
 
                 if let Some(else_clause) = &if_colon_delimited_body.else_clause {
-                    if else_clause.statements.iter().any(|statement| statement_has_throws(statement)) {
+                    if else_clause.statements.iter().any(statement_has_throws) {
                         return true;
                     }
                 }
@@ -568,7 +568,7 @@ pub fn statement_has_throws<'ast>(statement: &'ast Statement) -> bool {
 }
 
 #[inline]
-pub fn expression_has_throws<'ast>(expression: &'ast Expression) -> bool {
+pub fn expression_has_throws(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => expression_has_throws(&parenthesized.expression),
         Expression::Literal(_) => false,
@@ -757,7 +757,7 @@ pub fn expression_has_throws<'ast>(expression: &'ast Expression) -> bool {
 ///
 /// If no assignment operation is found, it will return `None`.
 #[inline]
-pub fn get_assignment_from_expression<'ast>(expression: &'ast Expression) -> Option<&'ast Assignment> {
+pub fn get_assignment_from_expression(expression: &Expression) -> Option<&Assignment> {
     match &expression {
         Expression::AssignmentOperation(assignment_operation) => Some(assignment_operation),
         Expression::Parenthesized(parenthesized) => get_assignment_from_expression(&parenthesized.expression),
@@ -998,10 +998,7 @@ pub fn get_assignment_from_expression<'ast>(expression: &'ast Expression) -> Opt
 pub fn is_truthy(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => is_truthy(&parenthesized.expression),
-        Expression::Literal(literal) => match &literal {
-            Literal::True(_) => true,
-            _ => false,
-        },
+        Expression::Literal(Literal::True(_)) => true,
         Expression::AnonymousClass(_) => true,
         Expression::Closure(_) => true,
         Expression::ArrowFunction(_) => true,
@@ -1038,10 +1035,7 @@ pub fn is_truthy(expression: &Expression) -> bool {
 pub fn is_falsy(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => is_falsy(&parenthesized.expression),
-        Expression::Literal(literal) => match &literal {
-            Literal::False(_) | Literal::Null(_) => true,
-            _ => false,
-        },
+        Expression::Literal(Literal::False(_) | Literal::Null(_)) => true,
         Expression::Array(array) => array.elements.is_empty(),
         Expression::LegacyArray(array) => array.elements.is_empty(),
         Expression::AssignmentOperation(assignment) => is_falsy(&assignment.rhs),
@@ -1064,14 +1058,14 @@ pub fn is_falsy(expression: &Expression) -> bool {
 
 /// Determine if a statement contains only definitions.
 #[inline]
-pub fn statement_contains_only_definitions<'ast>(statement: &'ast Statement) -> bool {
-    let (definitions, statements) = get_statement_stats(&statement);
+pub fn statement_contains_only_definitions(statement: &Statement) -> bool {
+    let (definitions, statements) = get_statement_stats(statement);
 
     definitions != 0 && statements == 0
 }
 
 #[inline]
-pub fn statement_sequence_contains_only_definitions<'ast>(statement: &'ast Sequence<Statement>) -> bool {
+pub fn statement_sequence_contains_only_definitions(statement: &Sequence<Statement>) -> bool {
     let mut definitions = 0;
     let mut statements = 0;
     for statement in statement.iter() {
@@ -1085,7 +1079,7 @@ pub fn statement_sequence_contains_only_definitions<'ast>(statement: &'ast Seque
 }
 
 #[inline]
-fn get_statement_stats<'ast>(statement: &'ast Statement) -> (usize, usize) {
+fn get_statement_stats(statement: &Statement) -> (usize, usize) {
     let mut total_definitions = 0;
     let mut total_statements = 0;
 

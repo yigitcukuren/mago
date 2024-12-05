@@ -306,7 +306,7 @@ impl HasSpan for HookedProperty {
             return Span::between(type_hint.span(), self.hooks.span());
         }
 
-        return Span::between(self.item.span(), self.hooks.span());
+        Span::between(self.item.span(), self.hooks.span())
     }
 }
 
@@ -347,8 +347,8 @@ impl HasSpan for PropertyHook {
             return Span::between(modifier.span(), self.body.span());
         }
 
-        if let Some(ampersand) = &self.ampersand {
-            return Span::between(ampersand.clone(), self.body.span());
+        if let Some(ampersand) = self.ampersand {
+            return Span::between(ampersand, self.body.span());
         }
 
         Span::between(self.name.span(), self.body.span())

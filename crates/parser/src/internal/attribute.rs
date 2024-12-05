@@ -9,9 +9,7 @@ use crate::internal::identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_attribute_list_sequence<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<Sequence<AttributeList>, ParseError> {
+pub fn parse_attribute_list_sequence(stream: &mut TokenStream<'_, '_>) -> Result<Sequence<AttributeList>, ParseError> {
     let mut inner = Vec::new();
     loop {
         let next = utils::peek(stream)?;
@@ -25,7 +23,7 @@ pub fn parse_attribute_list_sequence<'a, 'i>(
     Ok(Sequence::new(inner))
 }
 
-pub fn parse_attribute_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<AttributeList, ParseError> {
+pub fn parse_attribute_list(stream: &mut TokenStream<'_, '_>) -> Result<AttributeList, ParseError> {
     Ok(AttributeList {
         hash_left_bracket: utils::expect_span(stream, T!["#["])?,
         attributes: {
@@ -53,7 +51,7 @@ pub fn parse_attribute_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<
     })
 }
 
-pub fn parse_attribute<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Attribute, ParseError> {
+pub fn parse_attribute(stream: &mut TokenStream<'_, '_>) -> Result<Attribute, ParseError> {
     Ok(Attribute {
         name: identifier::parse_identifier(stream)?,
         arguments: argument::parse_optional_argument_list(stream)?,

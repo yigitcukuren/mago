@@ -41,7 +41,7 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::unset::parse_unset;
 use crate::internal::utils;
 
-pub fn parse_statement<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Statement, ParseError> {
+pub fn parse_statement(stream: &mut TokenStream<'_, '_>) -> Result<Statement, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T![InlineText | InlineShebang] => Statement::Inline(parse_inline(stream)?),
         T!["<?php"] | T!["<?="] | T!["<?"] => Statement::OpeningTag(parse_opening_tag(stream)?),
@@ -146,8 +146,8 @@ pub fn parse_statement<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<State
     })
 }
 
-fn parse_closure_or_function<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+fn parse_closure_or_function(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Statement, ParseError> {
     Ok(match (utils::maybe_peek_nth(stream, 1)?.map(|t| t.kind), utils::maybe_peek_nth(stream, 2)?.map(|t| t.kind)) {

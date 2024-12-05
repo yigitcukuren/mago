@@ -21,13 +21,13 @@ impl ReflectionWalker {
 }
 
 impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
-    fn walk_in_function<'ast>(&mut self, function: &'ast Function, context: &mut Context<'_>) {
+    fn walk_in_function(&mut self, function: &Function, context: &mut Context<'_>) {
         let reflection = reflect_function(function, context, self.scope.last());
 
         self.reflection.register_function_like(reflection);
     }
 
-    fn walk_in_anonymous_class<'ast>(&mut self, anonymous_class: &'ast AnonymousClass, context: &mut Context<'_>) {
+    fn walk_in_anonymous_class(&mut self, anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         self.scope.push(reflect_anonymous_class(anonymous_class, context));
     }
 
@@ -39,7 +39,7 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_class_like(reflection);
     }
 
-    fn walk_in_class<'ast>(&mut self, class: &'ast Class, context: &mut Context<'_>) {
+    fn walk_in_class(&mut self, class: &Class, context: &mut Context<'_>) {
         self.scope.push(reflect_class(class, context));
     }
 
@@ -51,7 +51,7 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_class_like(reflection);
     }
 
-    fn walk_in_trait<'ast>(&mut self, r#trait: &'ast Trait, context: &mut Context<'_>) {
+    fn walk_in_trait(&mut self, r#trait: &Trait, context: &mut Context<'_>) {
         self.scope.push(reflect_trait(r#trait, context));
     }
 
@@ -63,7 +63,7 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_class_like(reflection);
     }
 
-    fn walk_in_enum<'ast>(&mut self, r#enum: &'ast Enum, context: &mut Context<'_>) {
+    fn walk_in_enum(&mut self, r#enum: &Enum, context: &mut Context<'_>) {
         self.scope.push(reflect_enum(r#enum, context));
     }
 
@@ -75,7 +75,7 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_class_like(reflection);
     }
 
-    fn walk_in_interface<'ast>(&mut self, interface: &'ast Interface, context: &mut Context<'_>) {
+    fn walk_in_interface(&mut self, interface: &Interface, context: &mut Context<'_>) {
         self.scope.push(reflect_interface(interface, context));
     }
 
@@ -87,19 +87,19 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_class_like(reflection);
     }
 
-    fn walk_in_closure<'ast>(&mut self, closure: &'ast Closure, context: &mut Context<'_>) {
+    fn walk_in_closure(&mut self, closure: &Closure, context: &mut Context<'_>) {
         let reflection = reflect_closure(closure, context, self.scope.last());
 
         self.reflection.register_function_like(reflection);
     }
 
-    fn walk_in_arrow_function<'ast>(&mut self, arrow_function: &'ast ArrowFunction, context: &mut Context<'_>) {
+    fn walk_in_arrow_function(&mut self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let reflection = reflect_arrow_function(arrow_function, context, self.scope.last());
 
         self.reflection.register_function_like(reflection);
     }
 
-    fn walk_constant<'ast>(&mut self, constant: &'ast Constant, context: &mut Context<'_>) {
+    fn walk_constant(&mut self, constant: &Constant, context: &mut Context<'_>) {
         let reflections = reflect_constant(constant, context);
 
         for reflection in reflections {

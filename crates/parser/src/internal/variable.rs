@@ -6,7 +6,7 @@ use crate::internal::expression;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Variable, ParseError> {
+pub fn parse_variable(stream: &mut TokenStream<'_, '_>) -> Result<Variable, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match &token.kind {
@@ -17,13 +17,13 @@ pub fn parse_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Variab
     })
 }
 
-pub fn parse_direct_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<DirectVariable, ParseError> {
+pub fn parse_direct_variable(stream: &mut TokenStream<'_, '_>) -> Result<DirectVariable, ParseError> {
     let token = utils::expect(stream, T!["$variable"])?;
 
     Ok(DirectVariable { span: token.span, name: token.value })
 }
 
-pub fn parse_indirect_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<IndirectVariable, ParseError> {
+pub fn parse_indirect_variable(stream: &mut TokenStream<'_, '_>) -> Result<IndirectVariable, ParseError> {
     Ok(IndirectVariable {
         dollar_left_brace: utils::expect_span(stream, T!["${"])?,
         expression: Box::new(expression::parse_expression(stream)?),
@@ -31,6 +31,6 @@ pub fn parse_indirect_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Resu
     })
 }
 
-pub fn parse_nested_variable<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<NestedVariable, ParseError> {
+pub fn parse_nested_variable(stream: &mut TokenStream<'_, '_>) -> Result<NestedVariable, ParseError> {
     Ok(NestedVariable { dollar: utils::expect_span(stream, T!["$"])?, variable: Box::new(parse_variable(stream)?) })
 }

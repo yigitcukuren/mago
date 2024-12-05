@@ -9,7 +9,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_if<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<If, ParseError> {
+pub fn parse_if(stream: &mut TokenStream<'_, '_>) -> Result<If, ParseError> {
     Ok(If {
         r#if: utils::expect_keyword(stream, T!["if"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -19,14 +19,14 @@ pub fn parse_if<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<If, ParseErr
     })
 }
 
-pub fn parse_if_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<IfBody, ParseError> {
+pub fn parse_if_body(stream: &mut TokenStream<'_, '_>) -> Result<IfBody, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T![":"] => IfBody::ColonDelimited(parse_if_colon_delimited_body(stream)?),
         _ => IfBody::Statement(parse_if_statement_body(stream)?),
     })
 }
 
-pub fn parse_if_statement_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<IfStatementBody, ParseError> {
+pub fn parse_if_statement_body(stream: &mut TokenStream<'_, '_>) -> Result<IfStatementBody, ParseError> {
     Ok(IfStatementBody {
         statement: parse_statement(stream)?,
         else_if_clauses: {
@@ -41,8 +41,8 @@ pub fn parse_if_statement_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Resu
     })
 }
 
-pub fn parse_optional_if_statement_body_else_if_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_if_statement_body_else_if_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<IfStatementBodyElseIfClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["elseif"]) => Some(parse_if_statement_body_else_if_clause(stream)?),
@@ -50,8 +50,8 @@ pub fn parse_optional_if_statement_body_else_if_clause<'a, 'i>(
     })
 }
 
-pub fn parse_if_statement_body_else_if_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_if_statement_body_else_if_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<IfStatementBodyElseIfClause, ParseError> {
     Ok(IfStatementBodyElseIfClause {
         elseif: utils::expect_keyword(stream, T!["elseif"])?,
@@ -62,8 +62,8 @@ pub fn parse_if_statement_body_else_if_clause<'a, 'i>(
     })
 }
 
-pub fn parse_optional_if_statement_body_else_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_if_statement_body_else_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<IfStatementBodyElseClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["else"]) => Some(parse_if_statement_body_else_clause(stream)?),
@@ -71,8 +71,8 @@ pub fn parse_optional_if_statement_body_else_clause<'a, 'i>(
     })
 }
 
-pub fn parse_if_statement_body_else_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_if_statement_body_else_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<IfStatementBodyElseClause, ParseError> {
     Ok(IfStatementBodyElseClause {
         r#else: utils::expect_keyword(stream, T!["else"])?,
@@ -80,9 +80,7 @@ pub fn parse_if_statement_body_else_clause<'a, 'i>(
     })
 }
 
-pub fn parse_if_colon_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<IfColonDelimitedBody, ParseError> {
+pub fn parse_if_colon_delimited_body(stream: &mut TokenStream<'_, '_>) -> Result<IfColonDelimitedBody, ParseError> {
     Ok(IfColonDelimitedBody {
         colon: utils::expect_span(stream, T![":"])?,
         statements: {
@@ -111,8 +109,8 @@ pub fn parse_if_colon_delimited_body<'a, 'i>(
     })
 }
 
-pub fn parse_optional_if_colon_delimited_body_else_if_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_if_colon_delimited_body_else_if_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<IfColonDelimitedBodyElseIfClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["elseif"]) => Some(parse_if_colon_delimited_body_else_if_clause(stream)?),
@@ -120,8 +118,8 @@ pub fn parse_optional_if_colon_delimited_body_else_if_clause<'a, 'i>(
     })
 }
 
-pub fn parse_if_colon_delimited_body_else_if_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_if_colon_delimited_body_else_if_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<IfColonDelimitedBodyElseIfClause, ParseError> {
     Ok(IfColonDelimitedBodyElseIfClause {
         r#elseif: utils::expect_keyword(stream, T!["elseif"])?,
@@ -144,8 +142,8 @@ pub fn parse_if_colon_delimited_body_else_if_clause<'a, 'i>(
     })
 }
 
-pub fn parse_optional_if_colon_delimited_body_else_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_if_colon_delimited_body_else_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<IfColonDelimitedBodyElseClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["else"]) => Some(parse_if_colon_delimited_body_else_clause(stream)?),
@@ -153,8 +151,8 @@ pub fn parse_optional_if_colon_delimited_body_else_clause<'a, 'i>(
     })
 }
 
-pub fn parse_if_colon_delimited_body_else_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_if_colon_delimited_body_else_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<IfColonDelimitedBodyElseClause, ParseError> {
     Ok(IfColonDelimitedBodyElseClause {
         r#else: utils::expect_keyword(stream, T!["else"])?,

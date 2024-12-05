@@ -6,7 +6,7 @@ use crate::internal::identifier::parse_local_identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_magic_constant<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<MagicConstant, ParseError> {
+pub fn parse_magic_constant(stream: &mut TokenStream<'_, '_>) -> Result<MagicConstant, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match token.kind {

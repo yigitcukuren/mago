@@ -10,7 +10,7 @@ use crate::internal::expression::parse_expression;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<CompositeString, ParseError> {
+pub fn parse_string(stream: &mut TokenStream<'_, '_>) -> Result<CompositeString, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match token.kind {
@@ -32,7 +32,7 @@ pub fn parse_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Composit
     })
 }
 
-pub fn parse_interpolated_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<InterpolatedString, ParseError> {
+pub fn parse_interpolated_string(stream: &mut TokenStream<'_, '_>) -> Result<InterpolatedString, ParseError> {
     let left_double_quote = utils::expect_span(stream, T!["\""])?;
     let mut parts = vec![];
     while let Some(part) = parse_optional_string_part(stream, T!["\""])? {
@@ -44,7 +44,7 @@ pub fn parse_interpolated_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Re
     Ok(InterpolatedString { left_double_quote, parts: Sequence::new(parts), right_double_quote })
 }
 
-pub fn parse_shell_execute_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ShellExecuteString, ParseError> {
+pub fn parse_shell_execute_string(stream: &mut TokenStream<'_, '_>) -> Result<ShellExecuteString, ParseError> {
     let left_backtick = utils::expect_span(stream, T!["`"])?;
     let mut parts = vec![];
     while let Some(part) = parse_optional_string_part(stream, T!["`"])? {
@@ -56,7 +56,7 @@ pub fn parse_shell_execute_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> R
     Ok(ShellExecuteString { left_backtick, parts: Sequence::new(parts), right_backtick })
 }
 
-pub fn parse_document_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<DocumentString, ParseError> {
+pub fn parse_document_string(stream: &mut TokenStream<'_, '_>) -> Result<DocumentString, ParseError> {
     let current = utils::expect_any(stream)?;
     let (open, kind) = match current.kind {
         TokenKind::DocumentStart(DocumentKind::Heredoc) => (current.span, AstDocumentKind::Heredoc),
@@ -111,8 +111,8 @@ pub fn parse_document_string<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result
     Ok(DocumentString { open, kind, indentation, parts: Sequence::new(parts), label, close: close.span })
 }
 
-pub fn parse_optional_string_part<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_string_part(
+    stream: &mut TokenStream<'_, '_>,
     closing_kind: TokenKind,
 ) -> Result<Option<StringPart>, ParseError> {
     Ok(match utils::peek(stream)?.kind {
@@ -126,8 +126,8 @@ pub fn parse_optional_string_part<'a, 'i>(
         _ => Some(StringPart::Expression(Box::new(parse_expression(stream)?))),
     })
 }
-pub fn parse_braced_expression_string_part<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_braced_expression_string_part(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<BracedExpressionStringPart, ParseError> {
     let left_brace = utils::expect_span(stream, T!["{"])?;
     let expression = Box::new(parse_expression(stream)?);

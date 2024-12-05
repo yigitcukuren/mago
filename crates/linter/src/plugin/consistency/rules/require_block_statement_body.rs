@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RequireBlockStatementBodyRule;
 
 impl RequireBlockStatementBodyRule {
-    fn report<'ast>(&self, r#loop: &impl HasSpan, statement: &'ast Statement, context: &mut LintContext<'_>) {
+    fn report(&self, r#loop: &impl HasSpan, statement: &Statement, context: &mut LintContext<'_>) {
         if matches!(statement, Statement::Block(_)) {
             return;
         }

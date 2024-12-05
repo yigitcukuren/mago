@@ -2,24 +2,19 @@ use fennec_ast::*;
 use fennec_span::HasSpan;
 use fennec_span::Span;
 
-use crate::array;
 use crate::comment::CommentFlags;
 use crate::document::Document;
 use crate::document::Line;
 use crate::format::statement::print_statement_sequence;
-use crate::format::BraceStyle;
 use crate::format::Format;
-use crate::group;
-use crate::indent;
+use crate::settings::BraceStyle;
 use crate::settings::StaticVisibilityOrder;
-use crate::static_str;
-use crate::token;
 use crate::Formatter;
 
 use super::Group;
 
-pub(super) fn has_new_line_in_range<'a>(text: &'a str, start: usize, end: usize) -> bool {
-    text[(start as usize)..(end as usize)].contains('\n')
+pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> bool {
+    text[start..end].contains('\n')
 }
 
 /// Determines whether an expression can be "hugged" within brackets without line breaks.
@@ -86,7 +81,7 @@ pub(super) fn should_hug_expression<'a>(f: &Formatter<'a>, expression: &'a Expre
     )
 }
 
-pub(super) fn is_string_word_type<'a>(node: &'a Expression) -> bool {
+pub(super) fn is_string_word_type(node: &Expression) -> bool {
     match node {
         Expression::Static(_) | Expression::Parent(_) | Expression::Self_(_) => true,
         Expression::MagicConstant(_) => true,
@@ -106,7 +101,7 @@ pub(super) fn print_token_with_indented_leading_comments<'a>(
 ) -> Document<'a> {
     let mut parts = vec![];
     if let Some(leading_comments) = f.print_leading_comments(span) {
-        parts.push(indent!(Document::Line(Line::hardline()), leading_comments));
+        parts.push(Document::Indent(vec![Document::Line(Line::hardline()), leading_comments]));
 
         should_break = true;
     }
@@ -116,12 +111,12 @@ pub(super) fn print_token_with_indented_leading_comments<'a>(
         parts.push(Document::BreakParent);
     }
 
-    parts.push(static_str!(value));
+    parts.push(Document::String(value));
     if let Some(trailing_comments) = f.print_trailing_comments(span) {
         parts.push(trailing_comments);
     }
 
-    group!(@parts)
+    Document::Group(Group::new(parts))
 }
 
 pub(super) fn print_colon_delimited_body<'a>(
@@ -131,9 +126,9 @@ pub(super) fn print_colon_delimited_body<'a>(
     end_keyword: &'a Keyword,
     terminator: &'a Terminator,
 ) -> Document<'a> {
-    let mut parts = vec![token!(f, *colon, ":")];
+    let mut parts = vec![Document::String(":")];
 
-    let mut statements = print_statement_sequence(f, &statements);
+    let mut statements = print_statement_sequence(f, statements);
     if !statements.is_empty() {
         statements.insert(0, Document::Line(Line::hardline()));
 
@@ -217,13 +212,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
 
     // if there is a single attribute list, we can inline it
     if !has_new_line && f.settings.inline_single_attribute_group && lists.len() == 1 {
-        let attribute_list = lists.remove(0);
-
-        let mut parts = vec![];
-        parts.push(attribute_list);
-        parts.push(Document::Line(Line::default()));
-
-        return Some(group!(@parts));
+        return Some(Document::Group(Group::new(vec![lists.remove(0), Document::Line(Line::default())])));
     }
 
     let mut parts = vec![];
@@ -237,7 +226,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
 
 pub(super) fn print_clause<'a>(f: &mut Formatter<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {
     let clause = node.format(f);
-    let clause = adjust_clause(f, &node, clause, force_space);
+    let clause = adjust_clause(f, node, clause, force_space);
 
     clause
 }
@@ -277,8 +266,8 @@ pub(super) fn adjust_clause<'a>(
             is_block = true;
 
             match f.settings.control_brace_style {
-                BraceStyle::SameLine => array!(Document::space(), clause),
-                BraceStyle::NextLine => array!(Document::Line(Line::default()), clause),
+                BraceStyle::SameLine => Document::Array(vec![Document::space(), clause]),
+                BraceStyle::NextLine => Document::Array(vec![Document::Line(Line::default()), clause]),
             }
         }
         _ => {

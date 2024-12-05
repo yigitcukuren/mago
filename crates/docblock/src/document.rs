@@ -296,27 +296,27 @@ impl TagKind {
     }
 
     pub fn is_repeatable(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::Author
-            | Self::Deprecated
-            | Self::Example
-            | Self::Ignore
-            | Self::Link
-            | Self::Method
-            | Self::Mixin
-            | Self::Package
-            | Self::Param
-            | Self::Property
-            | Self::PropertyRead
-            | Self::PropertyWrite
-            | Self::Return
-            | Self::See
-            | Self::Since
-            | Self::Throws
-            | Self::Uses
-            | Self::Var => true,
-            _ => false,
-        }
+                | Self::Deprecated
+                | Self::Example
+                | Self::Ignore
+                | Self::Link
+                | Self::Method
+                | Self::Mixin
+                | Self::Package
+                | Self::Param
+                | Self::Property
+                | Self::PropertyRead
+                | Self::PropertyWrite
+                | Self::Return
+                | Self::See
+                | Self::Since
+                | Self::Throws
+                | Self::Uses
+                | Self::Var
+        )
     }
 }
 

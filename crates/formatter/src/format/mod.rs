@@ -3,8 +3,6 @@ use fennec_span::HasSpan;
 use misc::print_colon_delimited_body;
 use parameters::print_function_like_parameters;
 
-use crate::array;
-use crate::default_line;
 use crate::document::*;
 use crate::format::assignment::print_assignment;
 use crate::format::assignment::AssignmentLikeNode;
@@ -17,14 +15,7 @@ use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_modifiers;
 use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::statement::print_statement_sequence;
-use crate::group;
-use crate::hardline;
-use crate::if_break;
-use crate::indent;
-use crate::indent_if_break;
 use crate::settings::*;
-use crate::static_str;
-use crate::token;
 use crate::wrap;
 use crate::Formatter;
 
@@ -81,7 +72,7 @@ impl<'a> Format<'a> for Program {
             parts.push(Document::Line(Line::hardline()));
             if f.settings.include_closing_tag {
                 parts.push(Document::Line(Line::hardline()));
-                parts.push(static_str!("?>"));
+                parts.push(Document::String("?>"));
                 parts.push(Document::Line(Line::hardline()));
             }
         }
@@ -178,7 +169,7 @@ impl<'a> Format<'a> for ClosingTag {
 
         wrap!(f, self, ClosingTag, {
             let last_index = self.span.end.offset;
-            if let None = f.skip_spaces_and_new_lines(Some(last_index), false) {
+            if f.skip_spaces_and_new_lines(Some(last_index), false).is_none() {
                 if !f.settings.include_closing_tag {
                     f.scripting_mode = true;
 
@@ -274,8 +265,8 @@ impl<'a> Format<'a> for Namespace {
             match &self.body {
                 NamespaceBody::Implicit(namespace_implicit_body) => {
                     parts.push(namespace_implicit_body.terminator.format(f));
-                    parts.extend(hardline!());
-                    parts.extend(hardline!());
+                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hardline()));
 
                     parts.extend(print_statement_sequence(f, &namespace_implicit_body.statements));
                 }
@@ -304,19 +295,19 @@ impl<'a> Format<'a> for Identifier {
 
 impl<'a> Format<'a> for LocalIdentifier {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, LocalIdentifier, { static_str!(f.lookup(&self.value)) })
+        wrap!(f, self, LocalIdentifier, { Document::String(f.lookup(&self.value)) })
     }
 }
 
 impl<'a> Format<'a> for QualifiedIdentifier {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, QualifiedIdentifier, { static_str!(f.lookup(&self.value)) })
+        wrap!(f, self, QualifiedIdentifier, { Document::String(f.lookup(&self.value)) })
     }
 }
 
 impl<'a> Format<'a> for FullyQualifiedIdentifier {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, FullyQualifiedIdentifier, { static_str!(f.lookup(&self.value)) })
+        wrap!(f, self, FullyQualifiedIdentifier, { Document::String(f.lookup(&self.value)) })
     }
 }
 
@@ -342,7 +333,7 @@ impl<'a> Format<'a> for Use {
 
             parts.push(self.terminator.format(f));
 
-            array!(@parts)
+            Document::Array(parts)
         })
     }
 }
@@ -357,7 +348,7 @@ impl<'a> Format<'a> for UseItem {
                 parts.push(alias.format(f));
             }
 
-            group!(@parts, with_break: false)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -377,17 +368,21 @@ impl<'a> Format<'a> for TypedUseItemList {
                 self.r#type.format(f),
                 Document::space(),
                 self.namespace.format(f),
-                token!(f, self.namespace_separator, "\\"),
-                token!(f, self.left_brace, "{"),
+                Document::String("\\"),
+                Document::String("{"),
             ];
             for item in self.items.iter() {
-                parts.push(indent!(default_line!(), item.format(f), static_str!(",")));
+                parts.push(Document::Indent(vec![
+                    Document::Line(Line::default()),
+                    item.format(f),
+                    Document::String(","),
+                ]));
             }
 
-            parts.push(default_line!());
-            parts.push(token!(f, self.right_brace, "}"));
+            parts.push(Document::Line(Line::default()));
+            parts.push(Document::String("}"));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -395,20 +390,20 @@ impl<'a> Format<'a> for TypedUseItemList {
 impl<'a> Format<'a> for MixedUseItemList {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, MixedUseItemList, {
-            let mut parts = vec![
-                self.namespace.format(f),
-                token!(f, self.namespace_separator, "\\"),
-                token!(f, self.left_brace, "{"),
-            ];
+            let mut parts = vec![self.namespace.format(f), Document::String("\\"), Document::String("{")];
 
             for item in self.items.iter() {
-                parts.push(indent!(default_line!(), item.format(f), static_str!(",")));
+                parts.push(Document::Indent(vec![
+                    Document::Line(Line::default()),
+                    item.format(f),
+                    Document::String(","),
+                ]));
             }
 
-            parts.push(default_line!());
-            parts.push(token!(f, self.right_brace, "}"));
+            parts.push(Document::Line(Line::default()));
+            parts.push(Document::String("}"));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -417,7 +412,7 @@ impl<'a> Format<'a> for MaybeTypedUseItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, MaybeTypedUseItem, {
             match &self.r#type {
-                Some(t) => group!(t.format(f), Document::space(), self.item.format(f)),
+                Some(t) => Document::Group(Group::new(vec![t.format(f), Document::space(), self.item.format(f)])),
                 None => self.item.format(f),
             }
         })
@@ -427,11 +422,11 @@ impl<'a> Format<'a> for MaybeTypedUseItem {
 impl<'a> Format<'a> for TypedUseItemSequence {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TypedUseItemSequence, {
-            array![
+            Document::Array(vec![
                 self.r#type.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-            ]
+            ])
         })
     }
 }
@@ -439,13 +434,7 @@ impl<'a> Format<'a> for TypedUseItemSequence {
 impl<'a> Format<'a> for UseItemAlias {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, UseItemAlias, {
-            let mut parts = vec![];
-
-            parts.push(self.r#as.format(f));
-            parts.push(Document::space());
-            parts.push(self.identifier.format(f));
-
-            group!(@parts)
+            Document::Group(Group::new(vec![self.r#as.format(f), Document::space(), self.identifier.format(f)]))
         })
     }
 }
@@ -464,12 +453,12 @@ impl<'a> Format<'a> for UseType {
 impl<'a> Format<'a> for TraitUse {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUse, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#use.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.trait_names),
                 self.specification.format(f),
-            )
+            ]))
         })
     }
 }
@@ -479,7 +468,7 @@ impl<'a> Format<'a> for TraitUseSpecification {
         wrap!(f, self, TraitUseSpecification, {
             match self {
                 TraitUseSpecification::Abstract(s) => s.format(f),
-                TraitUseSpecification::Concrete(s) => array!(Document::space(), s.format(f)),
+                TraitUseSpecification::Concrete(s) => Document::Array(vec![Document::space(), s.format(f)]),
             }
         })
     }
@@ -524,7 +513,11 @@ impl<'a> Format<'a> for TraitUseMethodReference {
 impl<'a> Format<'a> for TraitUseAbsoluteMethodReference {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUseAbsoluteMethodReference, {
-            group!(self.trait_name.format(f), token!(f, self.double_colon, "::"), self.method_name.format(f))
+            Document::Group(Group::new(vec![
+                self.trait_name.format(f),
+                Document::String("::"),
+                self.method_name.format(f),
+            ]))
         })
     }
 }
@@ -532,14 +525,14 @@ impl<'a> Format<'a> for TraitUseAbsoluteMethodReference {
 impl<'a> Format<'a> for TraitUsePrecedenceAdaptation {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUsePrecedenceAdaptation, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.method_reference.format(f),
                 Document::space(),
                 self.insteadof.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.trait_names),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -561,7 +554,7 @@ impl<'a> Format<'a> for TraitUseAliasAdaptation {
 
             parts.push(self.terminator.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -572,7 +565,7 @@ impl<'a> Format<'a> for ClassLikeConstant {
             let mut parts = vec![];
             for attribute_list in self.attributes.iter() {
                 parts.push(attribute_list.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.extend(print_modifiers(f, &self.modifiers));
@@ -583,7 +576,7 @@ impl<'a> Format<'a> for ClassLikeConstant {
                 parts.push(Document::space());
             }
 
-            let prefix = array!(@parts);
+            let prefix = Document::Array(parts);
 
             if f.settings.split_multi_declare {
                 let items = self.items.iter().map(|i| i.format(f)).collect::<Vec<_>>();
@@ -592,19 +585,19 @@ impl<'a> Format<'a> for ClassLikeConstant {
                 let mut constants = vec![];
                 let last = items.len() - 1;
                 for (i, item) in items.into_iter().enumerate() {
-                    constants.push(group!(prefix.clone(), item, terminator.clone()));
+                    constants.push(Document::Group(Group::new(vec![prefix.clone(), item, terminator.clone()])));
                     if i != last {
-                        constants.extend(hardline!());
+                        constants.push(Document::Line(Line::hardline()));
                     }
                 }
 
-                array!(@constants)
+                Document::Array(constants)
             } else {
-                group!(
+                Document::Group(Group::new(vec![
                     prefix,
                     TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
                     self.terminator.format(f),
-                )
+                ]))
             }
         })
     }
@@ -614,7 +607,7 @@ impl<'a> Format<'a> for ClassLikeConstantItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ClassLikeConstantItem, {
             let lhs = self.name.format(f);
-            let operator = token!(f, self.equals, "=");
+            let operator = Document::String("=");
 
             print_assignment(f, AssignmentLikeNode::ClassLikeConstantItem(self), lhs, operator, &self.value)
         })
@@ -627,7 +620,7 @@ impl<'a> Format<'a> for EnumCase {
             let mut parts = vec![];
             for attribute_list in self.attributes.iter() {
                 parts.push(attribute_list.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(self.case.format(f));
@@ -635,7 +628,7 @@ impl<'a> Format<'a> for EnumCase {
             parts.push(self.item.format(f));
             parts.push(self.terminator.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -661,7 +654,7 @@ impl<'a> Format<'a> for EnumCaseBackedItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, EnumCaseBackedItem, {
             let lhs = self.name.format(f);
-            let operator = token!(f, self.equals, "=");
+            let operator = Document::String("=");
 
             print_assignment(f, AssignmentLikeNode::EnumCaseBackedItem(self), lhs, operator, &self.value)
         })
@@ -685,7 +678,7 @@ impl<'a> Format<'a> for PlainProperty {
             let mut parts = vec![];
             for attribute_list in self.attributes.iter() {
                 parts.push(attribute_list.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             if let Some(var) = &self.var {
@@ -700,26 +693,26 @@ impl<'a> Format<'a> for PlainProperty {
                 parts.push(Document::space());
             }
 
-            let prefix = array!(@parts);
+            let prefix = Document::Array(parts);
             if f.settings.split_multi_declare {
                 let items = self.items.iter().map(|i| i.format(f)).collect::<Vec<_>>();
                 let terminator = self.terminator.format(f);
                 let mut properties = vec![];
                 let last = items.len() - 1;
                 for (i, item) in items.into_iter().enumerate() {
-                    properties.push(group!(prefix.clone(), item, terminator.clone()));
+                    properties.push(Document::Group(Group::new(vec![prefix.clone(), item, terminator.clone()])));
                     if i != last {
-                        properties.extend(hardline!());
+                        properties.push(Document::Line(Line::hardline()));
                     }
                 }
 
-                array!(@properties)
+                Document::Array(properties)
             } else {
-                group!(
+                Document::Group(Group::new(vec![
                     prefix,
                     TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
                     self.terminator.format(f),
-                )
+                ]))
             }
         })
     }
@@ -731,7 +724,7 @@ impl<'a> Format<'a> for HookedProperty {
             let mut parts = vec![];
             for attribute_list in self.attributes.iter() {
                 parts.push(attribute_list.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             if let Some(var) = &self.var {
@@ -750,7 +743,7 @@ impl<'a> Format<'a> for HookedProperty {
             parts.push(Document::space());
             parts.push(self.hooks.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -776,7 +769,7 @@ impl<'a> Format<'a> for PropertyConcreteItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PropertyConcreteItem, {
             let lhs = self.variable.format(f);
-            let operator = token!(f, self.equals, "=");
+            let operator = Document::String("=");
 
             print_assignment(f, AssignmentLikeNode::PropertyConcreteItem(self), lhs, operator, &self.value)
         })
@@ -789,15 +782,15 @@ impl<'a> Format<'a> for Method {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let mut signature = vec![];
             signature.extend(print_modifiers(f, &self.modifiers));
             signature.push(self.function.format(f));
             signature.push(Document::space());
-            if let Some(ampersand) = self.ampersand {
-                signature.push(token!(f, ampersand, "&"));
+            if self.ampersand.is_some() {
+                signature.push(Document::String("&"));
             }
 
             signature.push(self.name.format(f));
@@ -806,21 +799,26 @@ impl<'a> Format<'a> for Method {
                 signature.push(return_type.format(f));
             }
 
-            let (signature_id, signature_document) = group!(f, @signature);
+            let signature_id = f.next_id();
+            let signature_document = Document::Group(Group::new(signature).with_id(signature_id));
 
             let mut body = vec![];
             if let MethodBody::Concrete(_) = self.body {
                 body.push(match f.settings.method_brace_style {
                     BraceStyle::SameLine => Document::space(),
-                    BraceStyle::NextLine => {
-                        if_break!(Document::space(), Document::Line(Line::hardline()), Some(signature_id))
-                    }
+                    BraceStyle::NextLine => Document::IfBreak(
+                        IfBreak::new(Document::space(), Document::Line(Line::hardline())).with_id(signature_id),
+                    ),
                 });
             }
 
             body.push(self.body.format(f));
 
-            group!(group!(@attributes), signature_document, group!(@body), Document::BreakParent)
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                signature_document,
+                Document::Group(Group::new(body)),
+            ]))
         })
     }
 }
@@ -838,7 +836,7 @@ impl<'a> Format<'a> for MethodBody {
 
 impl<'a> Format<'a> for MethodAbstractBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, MethodAbstractBody, { static_str!(";") })
+        wrap!(f, self, MethodAbstractBody, { Document::String(";") })
     }
 }
 
@@ -852,7 +850,7 @@ impl<'a> Format<'a> for Keyword {
                 CasingStyle::Uppercase => f.as_str(value.to_ascii_uppercase()),
             };
 
-            static_str!(value)
+            Document::String(value)
         })
     }
 }
@@ -861,7 +859,7 @@ impl<'a> Format<'a> for Terminator {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Terminator, {
             match self {
-                Terminator::Semicolon(_) | Terminator::TagPair(_, _) => static_str!(";"),
+                Terminator::Semicolon(_) | Terminator::TagPair(_, _) => Document::String(";"),
                 Terminator::ClosingTag(t) => t.format(f),
             }
         })
@@ -870,7 +868,9 @@ impl<'a> Format<'a> for Terminator {
 
 impl<'a> Format<'a> for ExpressionStatement {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, ExpressionStatement, { array![self.expression.format(f), self.terminator.format(f)] })
+        wrap!(f, self, ExpressionStatement, {
+            Document::Array(vec![self.expression.format(f), self.terminator.format(f)])
+        })
     }
 }
 
@@ -922,27 +922,35 @@ impl<'a> Format<'a> for Interface {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let signature = vec![
                 self.interface.format(f),
                 Document::space(),
                 self.name.format(f),
-                if let Some(e) = &self.extends { array!(Document::space(), e.format(f)) } else { Document::empty() },
+                if let Some(e) = &self.extends {
+                    Document::Array(vec![Document::space(), e.format(f)])
+                } else {
+                    Document::empty()
+                },
             ];
 
             let body = vec![
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
                     BraceStyle::NextLine => {
-                        array!(@hardline!())
+                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
                     }
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
 
-            group!(group!(@attributes), group!( @signature), group!(@body), Document::BreakParent)
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                Document::Group(Group::new(signature)),
+                Document::Group(Group::new(body)),
+            ]))
         })
     }
 }
@@ -950,7 +958,7 @@ impl<'a> Format<'a> for Interface {
 impl<'a> Format<'a> for EnumBackingTypeHint {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, EnumBackingTypeHint, {
-            group!(token!(f, self.colon, ":"), Document::space(), self.hint.format(f),)
+            Document::Group(Group::new(vec![Document::String(":"), Document::space(), self.hint.format(f)]))
         })
     }
 }
@@ -961,7 +969,7 @@ impl<'a> Format<'a> for Class {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let mut signature = print_modifiers(f, &self.modifiers);
@@ -983,13 +991,17 @@ impl<'a> Format<'a> for Class {
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
                     BraceStyle::NextLine => {
-                        array!(@hardline!())
+                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
                     }
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
 
-            group!(group!(@attributes), group!(@signature), group!(@body), Document::BreakParent)
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                Document::Group(Group::new(signature)),
+                Document::Group(Group::new(body)),
+            ]))
         })
     }
 }
@@ -1000,7 +1012,7 @@ impl<'a> Format<'a> for Trait {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let signature = vec![self.r#trait.format(f), Document::space(), self.name.format(f)];
@@ -1008,13 +1020,17 @@ impl<'a> Format<'a> for Trait {
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
                     BraceStyle::NextLine => {
-                        array!(@hardline!())
+                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
                     }
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
 
-            group!(group!(@attributes), group!(@signature), group!(@body), Document::BreakParent)
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                Document::Group(Group::new(signature)),
+                Document::Group(Group::new(body)),
+            ]))
         })
     }
 }
@@ -1025,7 +1041,7 @@ impl<'a> Format<'a> for Enum {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let signature = vec![
@@ -1038,20 +1054,28 @@ impl<'a> Format<'a> for Enum {
                 } else {
                     Document::empty()
                 },
-                if let Some(i) = &self.implements { array!(Document::space(), i.format(f)) } else { Document::empty() },
+                if let Some(i) = &self.implements {
+                    Document::Array(vec![Document::space(), i.format(f)])
+                } else {
+                    Document::empty()
+                },
             ];
 
             let body = vec![
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
                     BraceStyle::NextLine => {
-                        array!(@hardline!())
+                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
                     }
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
 
-            group!(group!(@attributes), group!(@signature), group!(@body), Document::BreakParent)
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                Document::Group(Group::new(signature)),
+                Document::Group(Group::new(body)),
+            ]))
         })
     }
 }
@@ -1069,7 +1093,7 @@ impl<'a> Format<'a> for Return {
 
             parts.push(self.terminator.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1083,12 +1107,12 @@ impl<'a> Format<'a> for Block {
 impl<'a> Format<'a> for Echo {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Echo, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.echo.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.values),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1097,7 +1121,7 @@ impl<'a> Format<'a> for ConstantItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ConstantItem, {
             let lhs = self.name.format(f);
-            let operator = token!(f, self.equals, "=");
+            let operator = Document::String("=");
 
             print_assignment(f, AssignmentLikeNode::ConstantItem(self), lhs, operator, &self.value)
         })
@@ -1107,12 +1131,12 @@ impl<'a> Format<'a> for ConstantItem {
 impl<'a> Format<'a> for Constant {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Constant, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#const.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1127,30 +1151,30 @@ impl<'a> Format<'a> for Hint {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Hint, {
             let k = |v: &str| match f.settings.keyword_case {
-                CasingStyle::Lowercase => static_str!(f.as_str(v.to_ascii_lowercase())),
-                CasingStyle::Uppercase => static_str!(f.as_str(v.to_ascii_uppercase())),
+                CasingStyle::Lowercase => Document::String(f.as_str(v.to_ascii_lowercase())),
+                CasingStyle::Uppercase => Document::String(f.as_str(v.to_ascii_uppercase())),
             };
 
             match self {
                 Hint::Identifier(identifier) => identifier.format(f),
                 Hint::Parenthesized(parenthesized_hint) => {
                     let spacing = if f.settings.type_spacing > 0 {
-                        static_str!(f.as_str(" ".repeat(f.settings.type_spacing)))
+                        Document::String(f.as_str(" ".repeat(f.settings.type_spacing)))
                     } else {
                         Document::empty()
                     };
 
-                    group!(
-                        token!(f, parenthesized_hint.left_parenthesis, "("),
+                    Document::Group(Group::new(vec![
+                        Document::String("("),
                         spacing.clone(),
                         parenthesized_hint.hint.format(f),
                         spacing,
-                        token!(f, parenthesized_hint.right_parenthesis, ")")
-                    )
+                        Document::String(")"),
+                    ]))
                 }
                 Hint::Nullable(nullable_hint) => {
                     let spacing = if f.settings.type_spacing > 0 {
-                        static_str!(f.as_str(" ".repeat(f.settings.type_spacing)))
+                        Document::String(f.as_str(" ".repeat(f.settings.type_spacing)))
                     } else {
                         Document::empty()
                     };
@@ -1164,33 +1188,33 @@ impl<'a> Format<'a> for Hint {
                         ));
 
                     if force_long_syntax {
-                        return group!(
+                        return Document::Group(Group::new(vec![
                             k("null"),
                             spacing.clone(),
-                            token!(f, nullable_hint.question_mark, "|"),
+                            Document::String("|"),
                             spacing,
-                            nullable_hint.hint.format(f)
-                        );
+                            nullable_hint.hint.format(f),
+                        ]));
                     }
 
                     match f.settings.null_type_hint {
-                        NullTypeHint::NullPipe => {
-                            group!(
-                                k("null"),
-                                spacing.clone(),
-                                token!(f, nullable_hint.question_mark, "|"),
-                                spacing,
-                                nullable_hint.hint.format(f)
-                            )
-                        }
-                        NullTypeHint::Question => {
-                            group!(token!(f, nullable_hint.question_mark, "?"), spacing, nullable_hint.hint.format(f))
-                        }
+                        NullTypeHint::NullPipe => Document::Group(Group::new(vec![
+                            k("null"),
+                            spacing.clone(),
+                            Document::String("|"),
+                            spacing,
+                            nullable_hint.hint.format(f),
+                        ])),
+                        NullTypeHint::Question => Document::Group(Group::new(vec![
+                            Document::String("?"),
+                            spacing,
+                            nullable_hint.hint.format(f),
+                        ])),
                     }
                 }
                 Hint::Union(union_hint) => {
                     let spacing = if f.settings.type_spacing > 0 {
-                        static_str!(f.as_str(" ".repeat(f.settings.type_spacing)))
+                        Document::String(f.as_str(" ".repeat(f.settings.type_spacing)))
                     } else {
                         Document::empty()
                     };
@@ -1208,39 +1232,47 @@ impl<'a> Format<'a> for Hint {
                     if !force_long_syntax {
                         if let Hint::Null(_) = union_hint.left.as_ref() {
                             if f.settings.null_type_hint.is_question() {
-                                return group!(token!(f, union_hint.pipe, "?"), spacing, union_hint.right.format(f));
+                                return Document::Group(Group::new(vec![
+                                    Document::String("?"),
+                                    spacing,
+                                    union_hint.right.format(f),
+                                ]));
                             }
                         }
 
                         if let Hint::Null(_) = union_hint.right.as_ref() {
                             if f.settings.null_type_hint.is_question() {
-                                return group!(token!(f, union_hint.pipe, "?"), spacing, union_hint.left.format(f));
+                                return Document::Group(Group::new(vec![
+                                    Document::String("?"),
+                                    spacing,
+                                    union_hint.left.format(f),
+                                ]));
                             }
                         }
                     }
 
-                    group!(
+                    Document::Group(Group::new(vec![
                         union_hint.left.format(f),
                         spacing.clone(),
-                        token!(f, union_hint.pipe, "|"),
+                        Document::String("|"),
                         spacing,
                         union_hint.right.format(f),
-                    )
+                    ]))
                 }
                 Hint::Intersection(intersection_hint) => {
                     let spacing = if f.settings.type_spacing > 0 {
-                        static_str!(f.as_str(" ".repeat(f.settings.type_spacing)))
+                        Document::String(f.as_str(" ".repeat(f.settings.type_spacing)))
                     } else {
                         Document::empty()
                     };
 
-                    group!(
+                    Document::Group(Group::new(vec![
                         intersection_hint.left.format(f),
                         spacing.clone(),
-                        token!(f, intersection_hint.ampersand, "&"),
+                        Document::String("&"),
                         spacing,
                         intersection_hint.right.format(f),
-                    )
+                    ]))
                 }
                 Hint::Null(_) => k("null"),
                 Hint::True(_) => k("true"),
@@ -1295,20 +1327,20 @@ impl<'a> Format<'a> for AttributeList {
 
 impl<'a> Format<'a> for PropertyHookAbstractBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, PropertyHookAbstractBody, { token!(f, self.semicolon, ";") })
+        wrap!(f, self, PropertyHookAbstractBody, { Document::String(";") })
     }
 }
 
 impl<'a> Format<'a> for PropertyHookConcreteBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PropertyHookConcreteBody, {
-            group!(
+            Document::Group(Group::new(vec![
                 Document::space(),
                 match self {
                     PropertyHookConcreteBody::Block(b) => b.format(f),
                     PropertyHookConcreteBody::Expression(b) => b.format(f),
-                }
-            )
+                },
+            ]))
         })
     }
 }
@@ -1316,12 +1348,12 @@ impl<'a> Format<'a> for PropertyHookConcreteBody {
 impl<'a> Format<'a> for PropertyHookConcreteExpressionBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PropertyHookConcreteExpressionBody, {
-            group!(
-                token!(f, self.arrow, "=>"),
+            Document::Group(Group::new(vec![
+                Document::String("=>"),
                 Document::space(),
                 self.expression.format(f),
-                token!(f, self.semicolon, ";")
-            )
+                Document::String(";"),
+            ]))
         })
     }
 }
@@ -1343,12 +1375,12 @@ impl<'a> Format<'a> for PropertyHook {
             let mut parts = vec![];
             for attribute_list in self.attributes.iter() {
                 parts.push(attribute_list.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.extend(print_modifiers(f, &self.modifiers));
-            if let Some(ampersand) = self.ampersand {
-                parts.push(token!(f, ampersand, "&"));
+            if self.ampersand.is_some() {
+                parts.push(Document::String("&"));
             }
 
             parts.push(self.name.format(f));
@@ -1358,7 +1390,7 @@ impl<'a> Format<'a> for PropertyHook {
 
             parts.push(self.body.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1366,15 +1398,15 @@ impl<'a> Format<'a> for PropertyHook {
 impl<'a> Format<'a> for PropertyHookList {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PropertyHookList, {
-            let mut parts = vec![token!(f, self.left_brace, "{")];
+            let mut parts = vec![Document::String("{")];
             for hook in self.hooks.iter() {
-                parts.push(indent!(default_line!(), hook.format(f)));
+                parts.push(Document::Indent(vec![Document::Line(Line::default()), hook.format(f)]));
             }
 
-            parts.push(default_line!());
-            parts.push(token!(f, self.right_brace, "}"));
+            parts.push(Document::Line(Line::default()));
+            parts.push(Document::String("}"));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1382,11 +1414,7 @@ impl<'a> Format<'a> for PropertyHookList {
 impl<'a> Format<'a> for FunctionLikeParameterDefaultValue {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, FunctionLikeParameterDefaultValue, {
-            group!(
-                token!(f, self.equals, "="),
-                if_break!(default_line!(), Document::space()),
-                indent_if_break!(self.value.format(f)),
-            )
+            Document::Group(Group::new(vec![Document::String("= "), self.value.format(f)]))
         })
     }
 }
@@ -1424,7 +1452,7 @@ impl<'a> Format<'a> for FunctionLikeParameter {
                 parts.push(hooks.format(f));
             }
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1438,7 +1466,7 @@ impl<'a> Format<'a> for FunctionLikeParameterList {
 impl<'a> Format<'a> for FunctionLikeReturnTypeHint {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, FunctionLikeReturnTypeHint, {
-            group!(token!(f, self.colon, ":"), Document::space(), self.hint.format(f))
+            Document::Group(Group::new(vec![Document::String(":"), Document::space(), self.hint.format(f)]))
         })
     }
 }
@@ -1449,14 +1477,14 @@ impl<'a> Format<'a> for Function {
             let mut attributes = vec![];
             for attribute_list in self.attributes.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.extend(hardline!());
+                attributes.push(Document::Line(Line::hardline()));
             }
 
             let mut signature = vec![];
             signature.push(self.function.format(f));
             signature.push(Document::space());
-            if let Some(ampersand) = self.ampersand {
-                signature.push(token!(f, ampersand, "&"));
+            if self.ampersand.is_some() {
+                signature.push(Document::String("&"));
             }
 
             signature.push(self.name.format(f));
@@ -1465,18 +1493,26 @@ impl<'a> Format<'a> for Function {
                 signature.push(return_type.format(f));
             }
 
-            let (signature_id, signature_document) = group!(f, @signature);
+            let signature_id = f.next_id();
+            let signature_document = Document::Group(Group::new(signature).with_id(signature_id));
 
-            let mut body = vec![];
-            body.push(match f.settings.function_brace_style {
-                BraceStyle::SameLine => Document::space(),
-                BraceStyle::NextLine => {
-                    if_break!(Document::space(), array!(@hardline!()), Some(signature_id))
-                }
-            });
-            body.push(self.body.format(f));
-
-            group!(group!(@attributes), signature_document, group!(@body))
+            Document::Group(Group::new(vec![
+                Document::Group(Group::new(attributes)),
+                signature_document,
+                Document::Group(Group::new(vec![
+                    match f.settings.function_brace_style {
+                        BraceStyle::SameLine => Document::space(),
+                        BraceStyle::NextLine => Document::IfBreak(
+                            IfBreak::new(
+                                Document::space(),
+                                Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent]),
+                            )
+                            .with_id(signature_id),
+                        ),
+                    },
+                    self.body.format(f),
+                ])),
+            ]))
         })
     }
 }
@@ -1496,7 +1532,7 @@ impl<'a> Format<'a> for Try {
                 parts.push(clause.format(f));
             }
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1510,34 +1546,36 @@ impl<'a> Format<'a> for TryCatchClause {
                 context.push(variable.format(f));
             }
 
-            group!(
+            Document::Group(Group::new(vec![
                 self.catch.format(f),
                 Document::space(),
-                token!(f, self.left_parenthesis, "("),
-                group!(@context),
-                token!(f, self.right_parenthesis, ")"),
+                Document::String("("),
+                Document::Group(Group::new(context)),
+                Document::String(")"),
                 Document::space(),
                 self.block.format(f),
-            )
+            ]))
         })
     }
 }
 
 impl<'a> Format<'a> for TryFinallyClause {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, TryFinallyClause, { group!(self.finally.format(f), Document::space(), self.block.format(f)) })
+        wrap!(f, self, TryFinallyClause, {
+            Document::Group(Group::new(vec![self.finally.format(f), Document::space(), self.block.format(f)]))
+        })
     }
 }
 
 impl<'a> Format<'a> for Global {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Global, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.global.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.variables),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1551,13 +1589,13 @@ impl<'a> Format<'a> for StaticAbstractItem {
 impl<'a> Format<'a> for StaticConcreteItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, StaticConcreteItem, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.variable.format(f),
                 Document::space(),
-                token!(f, self.equals, "="),
+                Document::String("="),
                 Document::space(),
                 self.value.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1576,12 +1614,12 @@ impl<'a> Format<'a> for StaticItem {
 impl<'a> Format<'a> for Static {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Static, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#static.format(f),
                 Document::space(),
                 TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1592,11 +1630,11 @@ impl<'a> Format<'a> for Unset {
             let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
             let formatter = TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false);
 
-            group!(
+            Document::Group(Group::new(vec![
                 self.unset.format(f),
                 formatter.format_with_delimiter(f, &self.values, delimiter, false),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -1604,14 +1642,19 @@ impl<'a> Format<'a> for Unset {
 impl<'a> Format<'a> for Goto {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Goto, {
-            group!(self.goto.format(f), Document::space(), self.label.format(f), self.terminator.format(f))
+            Document::Group(Group::new(vec![
+                self.goto.format(f),
+                Document::space(),
+                self.label.format(f),
+                self.terminator.format(f),
+            ]))
         })
     }
 }
 
 impl<'a> Format<'a> for Label {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, Label, { group!(self.name.format(f), token!(f, self.colon, ":")) })
+        wrap!(f, self, Label, { Document::Group(Group::new(vec![self.name.format(f), Document::String(":")])) })
     }
 }
 
@@ -1620,12 +1663,12 @@ impl<'a> Format<'a> for HaltCompiler {
         f.scripting_mode = false;
 
         wrap!(f, self, HaltCompiler, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.halt_compiler.format(f),
-                token!(f, self.left_parenthesis, "("),
-                token!(f, self.right_parenthesis, ")"),
+                Document::String("("),
+                Document::String(")"),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }

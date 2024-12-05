@@ -51,9 +51,7 @@ impl<'a, 'i> TokenStream<'a, 'i> {
                 }
             }
             Ok(None) => None,
-            Err(error) => {
-                return Some(Err(error));
-            }
+            Err(error) => Some(Err(error)),
         }
     }
 
@@ -65,10 +63,7 @@ impl<'a, 'i> TokenStream<'a, 'i> {
 
     #[inline]
     pub fn has_reached_eof(&mut self) -> Result<bool, SyntaxError> {
-        return Ok(match self.fill_buffer(1)? {
-            Some(_) => false,
-            None => true,
-        });
+        Ok(self.fill_buffer(1)?.is_none())
     }
 
     /// Peeks at the next token in the input source code without consuming it.

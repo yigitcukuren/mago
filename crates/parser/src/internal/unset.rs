@@ -8,7 +8,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_unset<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Unset, ParseError> {
+pub fn parse_unset(stream: &mut TokenStream<'_, '_>) -> Result<Unset, ParseError> {
     let unset = utils::expect_keyword(stream, T!["unset"])?;
     let left_parenthesis = utils::expect_span(stream, T!["("])?;
 

@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedundantFinalMethodModifierRule;
 
 impl RedundantFinalMethodModifierRule {
-    fn report<'ast>(&self, method: &'ast Method, context: &mut LintContext<'_>, in_enum: bool) {
+    fn report(&self, method: &Method, context: &mut LintContext<'_>, in_enum: bool) {
         let Some(final_modifier) = method.modifiers.get_final() else {
             return;
         };

@@ -37,7 +37,7 @@ impl Names {
     /// # Returns
     ///
     /// A `Names` instance containing the resolved names.
-    pub fn resolve<'ast, 'a>(interner: &'a ThreadedInterner, program: &'ast Program) -> Self {
+    pub fn resolve(interner: &ThreadedInterner, program: &Program) -> Self {
         let mut resolver: NameResolver = NameResolver::new();
         let mut context: NameContext = NameContext::new(interner);
 
@@ -56,7 +56,7 @@ impl Names {
     ///
     /// `true` if a name is resolved at the given position, `false` otherwise.
     pub fn contains(&self, position: &Position) -> bool {
-        return self.names.contains_key(&position.offset);
+        self.names.contains_key(&position.offset)
     }
 
     /// Gets the resolved name at the given position.

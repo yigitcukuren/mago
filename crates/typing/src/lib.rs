@@ -21,8 +21,8 @@ pub mod resolver;
 /// - `expression`: The expression to analyze.
 ///
 /// Returns a `TypeReflection` with the inferred type kind and span of the expression.
-pub fn infere<'i, 'ast>(
-    interner: &'i ThreadedInterner,
+pub fn infere<'ast>(
+    interner: &ThreadedInterner,
     semantics: &'ast Semantics,
     expression: &'ast Expression,
 ) -> TypeReflection {
@@ -38,8 +38,8 @@ pub fn infere<'i, 'ast>(
 /// - `expression`: The expression to infer.
 ///
 /// Returns a `TypeKind` that represents the initial inferred type of the expression.
-pub fn infere_kind<'i, 'ast>(
-    interner: &'i ThreadedInterner,
+pub fn infere_kind<'ast>(
+    interner: &ThreadedInterner,
     semantics: &'ast Semantics,
     expression: &'ast Expression,
 ) -> TypeKind {
@@ -58,8 +58,8 @@ pub fn infere_kind<'i, 'ast>(
 ///
 /// Returns a `TypeKind` that represents the resolved type of the expression,
 /// taking into account any known codebase types.
-pub fn resolve_kind<'i, 'ast>(
-    interner: &'i ThreadedInterner,
+pub fn resolve_kind<'ast>(
+    interner: &ThreadedInterner,
     semantics: &'ast Semantics,
     codebase: &'ast CodebaseReflection,
     expression: &'ast Expression,

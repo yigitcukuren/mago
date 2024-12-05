@@ -43,7 +43,11 @@ impl ClassLikeConstant {
 
 impl HasSpan for ClassLikeConstant {
     fn span(&self) -> Span {
-        self.r#const.span().join(self.terminator.span())
+        if let Some(modifier) = self.modifiers.first() {
+            modifier.span().join(self.terminator.span())
+        } else {
+            self.r#const.span().join(self.terminator.span())
+        }
     }
 }
 

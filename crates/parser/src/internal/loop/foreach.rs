@@ -9,7 +9,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_foreach<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Foreach, ParseError> {
+pub fn parse_foreach(stream: &mut TokenStream<'_, '_>) -> Result<Foreach, ParseError> {
     Ok(Foreach {
         foreach: utils::expect_keyword(stream, T!["foreach"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -21,7 +21,7 @@ pub fn parse_foreach<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Foreach
     })
 }
 
-pub fn parse_foreach_target<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ForeachTarget, ParseError> {
+pub fn parse_foreach_target(stream: &mut TokenStream<'_, '_>) -> Result<ForeachTarget, ParseError> {
     let key_or_value = parse_expression(stream)?;
 
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
@@ -34,15 +34,15 @@ pub fn parse_foreach_target<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<
     })
 }
 
-pub fn parse_foreach_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ForeachBody, ParseError> {
+pub fn parse_foreach_body(stream: &mut TokenStream<'_, '_>) -> Result<ForeachBody, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T![":"] => ForeachBody::ColonDelimited(parse_foreach_colon_delimited_body(stream)?),
         _ => ForeachBody::Statement(parse_statement(stream)?),
     })
 }
 
-pub fn parse_foreach_colon_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_foreach_colon_delimited_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<ForeachColonDelimitedBody, ParseError> {
     Ok(ForeachColonDelimitedBody {
         colon: utils::expect_span(stream, T![":"])?,

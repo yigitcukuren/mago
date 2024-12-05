@@ -136,16 +136,16 @@ where
         | UnaryPrefixOperator::RealCast(_, _)
         | UnaryPrefixOperator::FloatCast(_, _) => {
             if value_kind.is_float().is_true() {
-                return value_kind;
+                value_kind
             } else {
-                return float_kind();
+                float_kind()
             }
         }
         UnaryPrefixOperator::IntCast(_, _) | UnaryPrefixOperator::IntegerCast(_, _) => {
             if value_kind.is_integer().is_true() {
-                return value_kind;
+                value_kind
             } else {
-                return integer_kind();
+                integer_kind()
             }
         }
         UnaryPrefixOperator::ObjectCast(_, _) => {
@@ -396,11 +396,11 @@ where
 
                 let cmp_result = left_kind.partial_cmp(&right_kind).unwrap_or(std::cmp::Ordering::Equal);
 
-                return value_integer_kind(match cmp_result {
+                value_integer_kind(match cmp_result {
                     std::cmp::Ordering::Less => -1,
                     std::cmp::Ordering::Equal => 0,
                     std::cmp::Ordering::Greater => 1,
-                });
+                })
             } else {
                 integer_range_kind(-1, 1)
             }
@@ -707,7 +707,7 @@ where
                     }
                 }
                 // One or both operands are not literals
-                _ => resolve_numeric_operation_kind(interner, left_kind, right_kind, &operator),
+                _ => resolve_numeric_operation_kind(interner, left_kind, right_kind, operator),
             }
         }
         BinaryOperator::Instanceof(_) => bool_kind(),
@@ -803,11 +803,11 @@ where
     }
 
     if !has_key_value_pairs {
-        return non_empty_list_kind(value_kind, Some(known_size));
+        non_empty_list_kind(value_kind, Some(known_size))
     } else {
         let key_kind = if key_kinds.len() == 1 { key_kinds.swap_remove(0) } else { union_kind(key_kinds) };
 
-        return non_empty_array_kind(key_kind, value_kind, Some(known_size));
+        non_empty_array_kind(key_kind, value_kind, Some(known_size))
     }
 }
 
@@ -940,13 +940,13 @@ pub fn resolve_numeric_operation_kind(
 
 #[inline]
 pub fn can_extract_literal_value(kind: &TypeKind) -> bool {
-    match kind {
+    matches!(
+        kind,
         TypeKind::Value(ValueTypeKind::Integer { .. })
-        | TypeKind::Value(ValueTypeKind::Float { .. })
-        | TypeKind::Value(ValueTypeKind::True)
-        | TypeKind::Value(ValueTypeKind::False) => true,
-        _ => false,
-    }
+            | TypeKind::Value(ValueTypeKind::Float { .. })
+            | TypeKind::Value(ValueTypeKind::True)
+            | TypeKind::Value(ValueTypeKind::False)
+    )
 }
 
 #[inline]
@@ -963,7 +963,7 @@ pub fn extract_literal_value(kind: &TypeKind) -> OrderedFloat<f64> {
 #[inline]
 fn is_gmp_or_bcmath_number(interner: &ThreadedInterner, kind: &TypeKind) -> bool {
     if let TypeKind::Object(ObjectTypeKind::NamedObject { name, .. }) = kind {
-        let class = interner.lookup(&name);
+        let class = interner.lookup(name);
 
         class.eq_ignore_ascii_case("gmp") || class.eq_ignore_ascii_case("bcmath\\number")
     } else {

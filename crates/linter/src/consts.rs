@@ -1,9 +1,9 @@
-pub const ANONYMOUS_CLASS_NAME: &'static str = "class@anonymous";
+pub const ANONYMOUS_CLASS_NAME: &str = "class@anonymous";
 
 /// List of all PHP extensions and their functions.
 ///
 /// This list is not exhaustive and may not be up-to-date.
-pub const EXTENSION_FUNCTIONS: [(&'static str, &'static [&'static str]); 48] = [
+pub const EXTENSION_FUNCTIONS: [(&str, &[&str]); 48] = [
     (
         "Core",
         &[

@@ -17,8 +17,8 @@ use crate::internal::type_hint::parse_optional_type_hint;
 use crate::internal::utils;
 use crate::internal::variable::parse_direct_variable;
 
-pub fn parse_property_with_attributes_and_modifiers<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_property_with_attributes_and_modifiers(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
     modifiers: Sequence<Modifier>,
 ) -> Result<Property, ParseError> {
@@ -70,7 +70,7 @@ pub fn parse_property_with_attributes_and_modifiers<'a, 'i>(
     }))
 }
 
-pub fn parse_property_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<PropertyItem, ParseError> {
+pub fn parse_property_item(stream: &mut TokenStream<'_, '_>) -> Result<PropertyItem, ParseError> {
     let next = utils::maybe_peek_nth(stream, 1)?;
 
     Ok(match next.map(|t| t.kind) {
@@ -79,15 +79,11 @@ pub fn parse_property_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<P
     })
 }
 
-pub fn parse_property_abstract_item<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<PropertyAbstractItem, ParseError> {
+pub fn parse_property_abstract_item(stream: &mut TokenStream<'_, '_>) -> Result<PropertyAbstractItem, ParseError> {
     Ok(PropertyAbstractItem { variable: parse_direct_variable(stream)? })
 }
 
-pub fn parse_property_concrete_item<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<PropertyConcreteItem, ParseError> {
+pub fn parse_property_concrete_item(stream: &mut TokenStream<'_, '_>) -> Result<PropertyConcreteItem, ParseError> {
     Ok(PropertyConcreteItem {
         variable: parse_direct_variable(stream)?,
         equals: utils::expect_span(stream, T!["="])?,
@@ -95,8 +91,8 @@ pub fn parse_property_concrete_item<'a, 'i>(
     })
 }
 
-pub fn parse_optional_property_hook_list<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_property_hook_list(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<PropertyHookList>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["{"]) => Some(parse_property_hook_list(stream)?),
@@ -104,7 +100,7 @@ pub fn parse_optional_property_hook_list<'a, 'i>(
     })
 }
 
-pub fn parse_property_hook_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<PropertyHookList, ParseError> {
+pub fn parse_property_hook_list(stream: &mut TokenStream<'_, '_>) -> Result<PropertyHookList, ParseError> {
     Ok(PropertyHookList {
         left_brace: utils::expect_span(stream, T!["{"])?,
         hooks: {
@@ -125,7 +121,7 @@ pub fn parse_property_hook_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Res
     })
 }
 
-pub fn parse_property_hook<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<PropertyHook, ParseError> {
+pub fn parse_property_hook(stream: &mut TokenStream<'_, '_>) -> Result<PropertyHook, ParseError> {
     Ok(PropertyHook {
         attributes: attribute::parse_attribute_list_sequence(stream)?,
         ampersand: utils::maybe_expect(stream, T!["&"])?.map(|t| t.span),
@@ -136,7 +132,7 @@ pub fn parse_property_hook<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<P
     })
 }
 
-pub fn parse_property_hook_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<PropertyHookBody, ParseError> {
+pub fn parse_property_hook_body(stream: &mut TokenStream<'_, '_>) -> Result<PropertyHookBody, ParseError> {
     let next = utils::peek(stream)?;
 
     Ok(match next.kind {
@@ -146,14 +142,14 @@ pub fn parse_property_hook_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Res
     })
 }
 
-pub fn parse_property_hook_abstract_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_property_hook_abstract_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<PropertyHookAbstractBody, ParseError> {
     Ok(PropertyHookAbstractBody { semicolon: utils::expect_span(stream, T![";"])? })
 }
 
-pub fn parse_property_hook_concrete_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_property_hook_concrete_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<PropertyHookConcreteBody, ParseError> {
     let next = utils::peek(stream)?;
 
@@ -164,8 +160,8 @@ pub fn parse_property_hook_concrete_body<'a, 'i>(
     })
 }
 
-pub fn parse_property_hook_concrete_expression_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_property_hook_concrete_expression_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<PropertyHookConcreteExpressionBody, ParseError> {
     Ok(PropertyHookConcreteExpressionBody {
         arrow: utils::expect_span(stream, T!["=>"])?,

@@ -11,8 +11,8 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 use crate::internal::variable::parse_direct_variable;
 
-pub fn parse_closure_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_closure_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Closure, ParseError> {
     Ok(Closure {
@@ -27,8 +27,8 @@ pub fn parse_closure_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_optional_closure_use_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_closure_use_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<ClosureUseClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["use"]) => Some(parse_closure_use_clause(stream)?),
@@ -36,7 +36,7 @@ pub fn parse_optional_closure_use_clause<'a, 'i>(
     })
 }
 
-pub fn parse_closure_use_clause<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ClosureUseClause, ParseError> {
+pub fn parse_closure_use_clause(stream: &mut TokenStream<'_, '_>) -> Result<ClosureUseClause, ParseError> {
     Ok(ClosureUseClause {
         r#use: utils::expect_keyword(stream, T!["use"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -65,8 +65,8 @@ pub fn parse_closure_use_clause<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Res
     })
 }
 
-pub fn parse_closure_use_clause_variable<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_closure_use_clause_variable(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<ClosureUseClauseVariable, ParseError> {
     Ok(ClosureUseClauseVariable {
         ampersand: utils::maybe_expect(stream, T!["&"])?.map(|t| t.span),

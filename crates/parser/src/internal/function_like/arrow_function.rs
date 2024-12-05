@@ -9,8 +9,8 @@ use crate::internal::function_like::r#return::parse_optional_function_like_retur
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_arrow_function_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_arrow_function_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<ArrowFunction, ParseError> {
     Ok(ArrowFunction {

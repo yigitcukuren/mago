@@ -20,7 +20,7 @@ mod populator;
 ///
 /// A reflection result containing the reflection of the codebase and any issues found during reflection.
 #[inline]
-pub fn reflect<'i, 'ast>(interner: &'i ThreadedInterner, semantics: &'ast Semantics) -> CodebaseReflection {
+pub fn reflect(interner: &ThreadedInterner, semantics: &Semantics) -> CodebaseReflection {
     let mut walker = ReflectionWalker::new();
 
     let mut context = Context::new(interner, semantics);
@@ -78,6 +78,6 @@ pub fn merge(mut reflection: CodebaseReflection, other_reflection: CodebaseRefle
 /// This function is useful for supplementing a `ReflectionResult` with more comprehensive
 /// information after initial reflection or to populate unresolved details.
 #[inline]
-pub fn populate<'i, 'r>(interner: &'i ThreadedInterner, reflection: &'r mut CodebaseReflection) {
+pub fn populate(interner: &ThreadedInterner, reflection: &mut CodebaseReflection) {
     populator::populate(interner, reflection);
 }

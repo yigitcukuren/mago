@@ -32,12 +32,12 @@ macro_rules! generate_ast_walker {
             $(
                 paste::paste! {
                     #[inline(always)]
-                    fn [<walk_in_ $var_name>]<'ast>(&mut self, [<_$var_name>]: &'ast $node_type, _context: &mut C) {
+                    fn [<walk_in_ $var_name>](&mut self, [<_$var_name>]: &$node_type, _context: &mut C) {
                         // Do nothing by default
                     }
 
                     #[inline(always)]
-                    fn [<walk_ $var_name>]<'ast>(&mut self, $var_name: &'ast $node_type, $context: &mut C) {
+                    fn [<walk_ $var_name>](&mut self, $var_name: &$node_type, $context: &mut C) {
                         let $walker = self;
 
                         $walker.[<walk_in_ $var_name>]($var_name, $context);
@@ -46,7 +46,7 @@ macro_rules! generate_ast_walker {
                     }
 
                     #[inline(always)]
-                    fn [<walk_out_ $var_name>]<'ast>(&mut self, [<_$var_name>]: &'ast $node_type, _context: &mut C) {
+                    fn [<walk_out_ $var_name>](&mut self, [<_$var_name>]: &$node_type, _context: &mut C) {
                         // Do nothing by default
                     }
                 }
@@ -61,12 +61,12 @@ macro_rules! generate_ast_walker {
             $(
                 paste::paste! {
                     #[inline(always)]
-                    fn [<walk_in_ $var_name>]<'ast>(&self, [<_$var_name>]: &'ast $node_type, _context: &mut C) {
+                    fn [<walk_in_ $var_name>](&self, [<_$var_name>]: &$node_type, _context: &mut C) {
                         // Do nothing by default
                     }
 
                     #[inline(always)]
-                    fn [<walk_ $var_name>]<'ast>(&self, $var_name: &'ast $node_type, $context: &mut C) {
+                    fn [<walk_ $var_name>](&self, $var_name: &$node_type, $context: &mut C) {
                         let $walker = self;
 
                         $walker.[<walk_in_ $var_name>]($var_name, $context);
@@ -75,7 +75,7 @@ macro_rules! generate_ast_walker {
                     }
 
                     #[inline(always)]
-                    fn [<walk_out_ $var_name>]<'ast>(&self, [<_$var_name>]: &'ast $node_type, _context: &mut C) {
+                    fn [<walk_out_ $var_name>](&self, [<_$var_name>]: &$node_type, _context: &mut C) {
                         // Do nothing by default
                     }
                 }
@@ -85,7 +85,7 @@ macro_rules! generate_ast_walker {
         $(
             paste::paste! {
                 #[inline(always)]
-                pub fn [<walk_ $var_name _mut>]<'ast, W, C>($walker: &mut W, $var_name: &'ast $node_type, $context: &mut C)
+                pub fn [<walk_ $var_name _mut>]<W, C>($walker: &mut W, $var_name: &$node_type, $context: &mut C)
                     where
                         W: MutWalker<C>
                 {
@@ -96,7 +96,7 @@ macro_rules! generate_ast_walker {
 
 
                 #[inline(always)]
-                pub fn [<walk_ $var_name>]<'ast, W, C>($walker: &W, $var_name: &'ast $node_type, $context: &mut C)
+                pub fn [<walk_ $var_name>]<W, C>($walker: &W, $var_name: &$node_type, $context: &mut C)
                     where
                         W: Walker<C>
                 {
@@ -979,15 +979,15 @@ generate_ast_walker! {
         walker.walk_keyword(&r#for.r#for, context);
 
         for initialization in r#for.initializations.iter() {
-            walker.walk_expression(&initialization, context);
+            walker.walk_expression(initialization, context);
         }
 
         for condition in r#for.conditions.iter() {
-            walker.walk_expression(&condition, context);
+            walker.walk_expression(condition, context);
         }
 
         for increment in r#for.increments.iter() {
-            walker.walk_expression(&increment, context);
+            walker.walk_expression(increment, context);
         }
 
         walker.walk_for_body(&r#for.body, context);
@@ -1285,14 +1285,14 @@ generate_ast_walker! {
 
     Expression as expression => {
         match &expression {
-            Expression::Parenthesized(parenthesized) => walker.walk_parenthesized(&parenthesized, context),
+            Expression::Parenthesized(parenthesized) => walker.walk_parenthesized(parenthesized, context),
             Expression::Binary(expr) => walker.walk_binary(expr, context),
             Expression::UnaryPrefix(operation) => walker.walk_unary_prefix(operation, context),
             Expression::UnaryPostfix(operation) => walker.walk_unary_postfix(operation, context),
             Expression::Literal(literal) => walker.walk_literal_expression(literal, context),
             Expression::CompositeString(string) => walker.walk_composite_string(string, context),
             Expression::AssignmentOperation(assignment) => {
-                walker.walk_assignment(&assignment, context)
+                walker.walk_assignment(assignment, context)
             }
             Expression::Conditional(conditional) => {
                 walker.walk_conditional(conditional, context)
@@ -1675,7 +1675,7 @@ generate_ast_walker! {
 
     MatchExpressionArm as match_expression_arm => {
         for condition in match_expression_arm.conditions.iter() {
-            walker.walk_expression(&condition, context);
+            walker.walk_expression(condition, context);
         }
 
         walker.walk_expression(&match_expression_arm.expression, context);
@@ -1938,13 +1938,13 @@ generate_ast_walker! {
     ClosureCreation as closure_creation => {
         match closure_creation {
             ClosureCreation::Function(function_closure_creation) => {
-                walker.walk_function_closure_creation(&function_closure_creation, context);
+                walker.walk_function_closure_creation(function_closure_creation, context);
             }
             ClosureCreation::Method(method_closure_creation) => {
-                walker.walk_method_closure_creation(&method_closure_creation, context);
+                walker.walk_method_closure_creation(method_closure_creation, context);
             }
             ClosureCreation::StaticMethod(static_method_closure_creation) => {
-                walker.walk_static_method_closure_creation(&static_method_closure_creation, context);
+                walker.walk_static_method_closure_creation(static_method_closure_creation, context);
             }
         }
     }
@@ -1984,7 +1984,7 @@ generate_ast_walker! {
     }
 
     MagicConstant as magic_constant => {
-        walker.walk_local_identifier(&magic_constant.value(), context);
+        walker.walk_local_identifier(magic_constant.value(), context);
     }
 
     Hint as hint => {

@@ -175,26 +175,27 @@ impl<T: HasSpan> HasSpan for Box<T> {
     }
 }
 
-impl Into<usize> for Position {
-    fn into(self) -> usize {
-        self.offset
+impl From<Position> for usize {
+    fn from(position: Position) -> usize {
+        position.offset
     }
 }
 
-impl Into<usize> for &Position {
-    fn into(self) -> usize {
-        self.offset
+impl From<&Position> for usize {
+    fn from(position: &Position) -> usize {
+        position.offset
     }
 }
 
-impl Into<Range<usize>> for Span {
-    fn into(self) -> Range<usize> {
-        Range { start: self.start.into(), end: self.end.into() }
+impl From<Span> for Range<usize> {
+    fn from(span: Span) -> Range<usize> {
+        Range { start: span.start.into(), end: span.end.into() }
     }
 }
-impl Into<Range<usize>> for &Span {
-    fn into(self) -> Range<usize> {
-        Range { start: self.start.into(), end: self.end.into() }
+
+impl From<&Span> for Range<usize> {
+    fn from(span: &Span) -> Range<usize> {
+        Range { start: span.start.into(), end: span.end.into() }
     }
 }
 
@@ -210,26 +211,26 @@ impl std::fmt::Display for Span {
     }
 }
 
-impl Into<SourceIdentifier> for Position {
-    fn into(self) -> SourceIdentifier {
-        self.source
+impl From<Position> for SourceIdentifier {
+    fn from(position: Position) -> SourceIdentifier {
+        position.source
     }
 }
 
-impl Into<SourceIdentifier> for &Position {
-    fn into(self) -> SourceIdentifier {
-        self.source
+impl From<&Position> for SourceIdentifier {
+    fn from(position: &Position) -> SourceIdentifier {
+        position.source
     }
 }
 
-impl Into<SourceIdentifier> for Span {
-    fn into(self) -> SourceIdentifier {
-        self.start.source
+impl From<Span> for SourceIdentifier {
+    fn from(span: Span) -> SourceIdentifier {
+        span.start.source
     }
 }
 
-impl Into<SourceIdentifier> for &Span {
-    fn into(self) -> SourceIdentifier {
-        self.start.source
+impl From<&Span> for SourceIdentifier {
+    fn from(span: &Span) -> SourceIdentifier {
+        span.start.source
     }
 }

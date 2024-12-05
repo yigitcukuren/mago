@@ -8,7 +8,7 @@ use crate::internal::expression::parse_expression_with_precedence;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_instantiation<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Instantiation, ParseError> {
+pub fn parse_instantiation(stream: &mut TokenStream<'_, '_>) -> Result<Instantiation, ParseError> {
     let new = utils::expect_keyword(stream, T!["new"])?;
     let class = parse_expression_with_precedence(stream, Precedence::New)?;
     let arguments = parse_optional_argument_list(stream)?;

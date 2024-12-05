@@ -57,11 +57,7 @@ pub fn is_predefined_variable(name: &str) -> bool {
 /// ```
 ///
 /// This function will return true when called with `baz` as the function name.
-pub fn potentially_contains_function_call<'ast>(
-    block: &'ast Block,
-    function_name: &str,
-    context: &LintContext<'_>,
-) -> bool {
+pub fn potentially_contains_function_call(block: &Block, function_name: &str, context: &LintContext<'_>) -> bool {
     use crate::plugin::best_practices::rules::utils::internal::FunctionCallWalker;
 
     let mut context = (false, context);
@@ -74,8 +70,8 @@ pub fn potentially_contains_function_call<'ast>(
 /// A helper function that determines if an expression potentially contains a function call with the given name.
 ///
 /// This function is similar to `potentially_contains_function_call` but it works on expressions instead of blocks.
-pub fn expression_potentially_contains_function_call<'ast>(
-    expression: &'ast Expression,
+pub fn expression_potentially_contains_function_call(
+    expression: &Expression,
     function_name: &str,
     context: &LintContext<'_>,
 ) -> bool {
@@ -89,8 +85,8 @@ pub fn expression_potentially_contains_function_call<'ast>(
 }
 
 /// Determine if the expression uses the given variable.
-pub fn is_variable_used_in_expression<'ast>(
-    expression: &'ast Expression,
+pub fn is_variable_used_in_expression(
+    expression: &Expression,
     context: &LintContext<'_>,
     variable: StringIdentifier,
 ) -> bool {
@@ -133,7 +129,7 @@ pub fn is_variable_used_in_expression<'ast>(
 }
 
 /// Given a block, get all the variable names that are used in the block before they are declared.
-pub fn get_foreign_variable_names<'ast>(block: &'ast Block, context: &LintContext<'_>) -> Vec<StringIdentifier> {
+pub fn get_foreign_variable_names(block: &Block, context: &LintContext<'_>) -> Vec<StringIdentifier> {
     use crate::plugin::best_practices::rules::utils::internal::VariableReference;
     use crate::plugin::best_practices::rules::utils::internal::VariableWalker;
 
@@ -194,7 +190,7 @@ mod internal {
             foreach_value_target: &'ast ForeachValueTarget,
             context: &mut (Vec<VariableReference>, &'a LintContext<'a>),
         ) {
-            scan_expression_for_assignment(&foreach_value_target.value, &context.1, &mut context.0);
+            scan_expression_for_assignment(&foreach_value_target.value, context.1, &mut context.0);
         }
 
         fn walk_in_foreach_key_value_target<'ast>(
@@ -202,8 +198,8 @@ mod internal {
             foreach_key_value_target: &'ast ForeachKeyValueTarget,
             context: &mut (Vec<VariableReference>, &'a LintContext<'a>),
         ) {
-            scan_expression_for_assignment(&foreach_key_value_target.key, &context.1, &mut context.0);
-            scan_expression_for_assignment(&foreach_key_value_target.value, &context.1, &mut context.0);
+            scan_expression_for_assignment(&foreach_key_value_target.key, context.1, &mut context.0);
+            scan_expression_for_assignment(&foreach_key_value_target.value, context.1, &mut context.0);
         }
 
         fn walk_in_try_catch_clause<'ast>(
@@ -398,8 +394,8 @@ mod internal {
         fn walk_anonymous_class<'ast>(&self, _: &'ast AnonymousClass, _: &mut (bool, &'a LintContext<'a>)) {}
     }
 
-    fn scan_expression_for_assignment<'ast>(
-        expression: &'ast Expression,
+    fn scan_expression_for_assignment(
+        expression: &Expression,
         context: &LintContext<'_>,
         variables: &mut Vec<VariableReference>,
     ) {

@@ -5,7 +5,7 @@ use fennec_span::*;
 
 use crate::internal::context::Context;
 
-pub fn reflect_constant<'i, 'ast>(constant: &'ast Constant, context: &'ast mut Context<'i>) -> Vec<ConstantReflection> {
+pub fn reflect_constant<'ast>(constant: &'ast Constant, context: &'ast mut Context<'_>) -> Vec<ConstantReflection> {
     let mut reflections = vec![];
     for item in constant.items.iter() {
         let name = context.semantics.names.get(&item.name);

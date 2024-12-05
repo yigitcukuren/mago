@@ -52,12 +52,12 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
         }
     }
 
-    pub fn resolve<'ast>(&self, expression: &'ast Expression) -> TypeKind {
+    pub fn resolve(&self, expression: &Expression) -> TypeKind {
         match expression {
             Expression::Parenthesized(parenthesized) => self.resolve(&parenthesized.expression),
-            Expression::Binary(operation) => get_binary_operation_kind(&self.interner, operation, |e| self.resolve(e)),
+            Expression::Binary(operation) => get_binary_operation_kind(self.interner, operation, |e| self.resolve(e)),
             Expression::UnaryPrefix(operation) => {
-                get_unary_prefix_operation_kind(&self.interner, operation, |e| self.resolve(e))
+                get_unary_prefix_operation_kind(self.interner, operation, |e| self.resolve(e))
             }
             Expression::UnaryPostfix(operation) => get_unary_postfix_operation_kind(operation, |e| self.resolve(e)),
             Expression::Literal(literal) => get_literal_kind(self.interner, literal),
@@ -138,7 +138,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                 Call::Function(function_call) => {
                     if let Some(codebase) = self.codebase {
                         if let Expression::Identifier(identifier) = function_call.function.as_ref() {
-                            let (full_name, short_name) = resolve_name(&self.interner, identifier.value());
+                            let (full_name, short_name) = resolve_name(self.interner, identifier.value());
 
                             if let Some(function) = codebase.get_function(&full_name) {
                                 return function.return_type_reflection.as_ref().map_or_else(
@@ -472,7 +472,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         };
 
                         let class_name = self.semantics.names.get(class_name);
-                        let Some(class_reflection) = codebase.get_class(&class_name) else {
+                        let Some(class_reflection) = codebase.get_class(class_name) else {
                             return any_closure_kind();
                         };
 
@@ -494,7 +494,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     return any_object_kind();
                 };
 
-                let (class_name, _) = resolve_name(&self.interner, class_name.value());
+                let (class_name, _) = resolve_name(self.interner, class_name.value());
 
                 TypeKind::Object(ObjectTypeKind::NamedObject { name: class_name, type_parameters: vec![] })
             }
@@ -508,7 +508,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     if let Some(file) = &self.semantics.source.path {
                         let file_id = self.interner.intern(file.to_string_lossy());
 
-                        get_literal_string_value_kind(&self.interner, file_id, false)
+                        get_literal_string_value_kind(self.interner, file_id, false)
                     } else {
                         non_empty_string_kind()
                     }
@@ -517,7 +517,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     if let Some(directory) = self.semantics.source.path.as_ref().and_then(|p| p.parent()) {
                         let directory_id = self.interner.intern(directory.to_string_lossy());
 
-                        get_literal_string_value_kind(&self.interner, directory_id, false)
+                        get_literal_string_value_kind(self.interner, directory_id, false)
                     } else {
                         non_empty_string_kind()
                     }

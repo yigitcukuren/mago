@@ -12,7 +12,7 @@ pub mod document;
 pub mod error;
 
 #[inline]
-pub fn parse_trivia<'i, 'ast>(interner: &'i ThreadedInterner, trivia: &'ast Trivia) -> Result<Document, ParseError> {
+pub fn parse_trivia(interner: &ThreadedInterner, trivia: &Trivia) -> Result<Document, ParseError> {
     if TriviaKind::DocBlockComment != trivia.kind {
         return Err(ParseError::InvalidTrivia(trivia.span));
     }
@@ -21,11 +21,7 @@ pub fn parse_trivia<'i, 'ast>(interner: &'i ThreadedInterner, trivia: &'ast Triv
 }
 
 #[inline]
-pub fn parse_phpdoc_with_span<'i, 'a>(
-    interner: &'i ThreadedInterner,
-    content: &'a str,
-    span: Span,
-) -> Result<Document, ParseError> {
+pub fn parse_phpdoc_with_span(interner: &ThreadedInterner, content: &str, span: Span) -> Result<Document, ParseError> {
     let tokens = internal::lexer::tokenize(content, span)?;
 
     internal::parser::parse_document(tokens.as_slice(), interner)

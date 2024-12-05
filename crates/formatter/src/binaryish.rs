@@ -27,12 +27,10 @@ pub fn should_flatten<'a>(operator: &'a BinaryOperator, parent_op: &'a BinaryOpe
         }
     }
 
-    if operator.is_bitwise() && parent_op.is_bitwise() {
-        if operator.is_bit_shift() || parent_op.is_bit_shift() {
-            return false;
-        }
+    if operator.is_bitwise() && parent_op.is_bitwise() && (operator.is_bit_shift() || parent_op.is_bit_shift()) {
+        return false;
     }
 
     // Flatten if operators are the same
-    return operator.is_same_as(parent_op);
+    operator.is_same_as(parent_op)
 }

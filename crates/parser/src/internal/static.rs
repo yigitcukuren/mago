@@ -9,7 +9,7 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 use crate::internal::variable::parse_direct_variable;
 
-pub fn parse_static<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Static, ParseError> {
+pub fn parse_static(stream: &mut TokenStream<'_, '_>) -> Result<Static, ParseError> {
     let r#static = utils::expect_keyword(stream, T!["static"])?;
     let items = {
         let mut items = vec![];
@@ -39,7 +39,7 @@ pub fn parse_static<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Static, 
     Ok(Static { r#static, items, terminator })
 }
 
-pub fn parse_static_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<StaticItem, ParseError> {
+pub fn parse_static_item(stream: &mut TokenStream<'_, '_>) -> Result<StaticItem, ParseError> {
     let variable = parse_direct_variable(stream)?;
 
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {

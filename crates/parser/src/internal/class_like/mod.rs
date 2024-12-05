@@ -22,8 +22,8 @@ pub mod method;
 pub mod property;
 pub mod trait_use;
 
-pub fn parse_interface_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_interface_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Interface, ParseError> {
     Ok(Interface {
@@ -48,8 +48,8 @@ pub fn parse_interface_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_class_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_class_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Class, ParseError> {
     let modifiers = parse_modifier_sequence(stream)?;
@@ -57,8 +57,8 @@ pub fn parse_class_with_attributes<'a, 'i>(
     parse_class_with_attributes_and_modifiers(stream, attributes, modifiers)
 }
 
-pub fn parse_class_with_attributes_and_modifiers<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_class_with_attributes_and_modifiers(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
     modifiers: Sequence<Modifier>,
 ) -> Result<Class, ParseError> {
@@ -86,7 +86,7 @@ pub fn parse_class_with_attributes_and_modifiers<'a, 'i>(
     })
 }
 
-pub fn parse_anonymous_class<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<AnonymousClass, ParseError> {
+pub fn parse_anonymous_class(stream: &mut TokenStream<'_, '_>) -> Result<AnonymousClass, ParseError> {
     Ok(AnonymousClass {
         new: utils::expect_keyword(stream, T!["new"])?,
         attributes: parse_attribute_list_sequence(stream)?,
@@ -112,8 +112,8 @@ pub fn parse_anonymous_class<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result
     })
 }
 
-pub fn parse_trait_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_trait_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Trait, ParseError> {
     Ok(Trait {
@@ -136,8 +136,8 @@ pub fn parse_trait_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_enum_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_enum_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Enum, ParseError> {
     Ok(Enum {
@@ -162,8 +162,8 @@ pub fn parse_enum_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_optional_enum_backing_type_hint<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_enum_backing_type_hint(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<EnumBackingTypeHint>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T![":"]) => {

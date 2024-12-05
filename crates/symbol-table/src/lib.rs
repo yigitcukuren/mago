@@ -25,8 +25,7 @@ pub mod table;
 /// A symbol table containing all the symbols in the program.
 pub fn get_symbols(interner: &ThreadedInterner, program: &Program) -> SymbolTable {
     let mut walker = SymbolWalker::new();
-
-    let mut context = Context::new(&interner);
+    let mut context = Context::new(interner);
 
     walker.walk_program(program, &mut context);
 

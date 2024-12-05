@@ -8,7 +8,7 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 use crate::internal::variable::parse_variable;
 
-pub fn parse_global<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Global, ParseError> {
+pub fn parse_global(stream: &mut TokenStream<'_, '_>) -> Result<Global, ParseError> {
     Ok(Global {
         global: utils::expect_keyword(stream, T!["global"])?,
         variables: {

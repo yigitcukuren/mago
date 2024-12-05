@@ -1,11 +1,11 @@
-use fennec_interner::ThreadedInterner;
-use fennec_span::Span;
-use fennec_trinary::Trinary;
 use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use serde::Serialize;
 
 use fennec_interner::StringIdentifier;
+use fennec_interner::ThreadedInterner;
+use fennec_span::Span;
+use fennec_trinary::Trinary;
 
 use crate::function_like::FunctionLikeReflection;
 use crate::identifier::ClassLikeName;
@@ -869,7 +869,7 @@ impl TypeKind {
                         .map(|parameter| {
                             let mut kind = parameter.kind.get_key(interner);
                             if parameter.optional {
-                                kind.push_str("=");
+                                kind.push('=');
                             }
 
                             if parameter.variadic {
@@ -899,7 +899,7 @@ impl TypeKind {
                         .map(|parameter| {
                             let mut kind = parameter.kind.get_key(interner);
                             if parameter.optional {
-                                kind.push_str("=");
+                                kind.push('=');
                             }
 
                             if parameter.variadic {

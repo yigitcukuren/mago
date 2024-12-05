@@ -8,7 +8,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_echo<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Echo, ParseError> {
+pub fn parse_echo(stream: &mut TokenStream<'_, '_>) -> Result<Echo, ParseError> {
     Ok(Echo {
         echo: utils::expect_keyword(stream, T!["echo"])?,
         values: {

@@ -5,7 +5,7 @@ use fennec_walker::Walker;
 use crate::context::LintContext;
 use crate::rule::Rule;
 
-const REQUEST_VARIABLE: &'static str = "$_REQUEST";
+const REQUEST_VARIABLE: &str = "$_REQUEST";
 
 #[derive(Clone, Debug)]
 pub struct NoRequestVariableRule;

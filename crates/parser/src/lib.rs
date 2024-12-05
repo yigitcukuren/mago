@@ -13,20 +13,20 @@ pub mod error;
 
 mod internal;
 
-pub fn parse_source<'a, 'i>(interner: &'i ThreadedInterner, source: &'a Source) -> (Program, Option<ParseError>) {
+pub fn parse_source(interner: &ThreadedInterner, source: &Source) -> (Program, Option<ParseError>) {
     let content = interner.lookup(&source.content);
     let lexer = Lexer::new(interner, Input::new(source.identifier, content.as_bytes()));
 
     construct(interner, lexer)
 }
 
-pub fn parse<'a, 'i>(interner: &'i ThreadedInterner, input: Input<'a>) -> (Program, Option<ParseError>) {
+pub fn parse(interner: &ThreadedInterner, input: Input<'_>) -> (Program, Option<ParseError>) {
     let lexer = Lexer::new(interner, input);
 
     construct(interner, lexer)
 }
 
-fn construct<'a, 'i>(interner: &'i ThreadedInterner, lexer: Lexer<'a, 'i>) -> (Program, Option<ParseError>) {
+fn construct<'i>(interner: &'i ThreadedInterner, lexer: Lexer<'_, 'i>) -> (Program, Option<ParseError>) {
     let mut stream = TokenStream::new(interner, lexer);
 
     let mut error = None;

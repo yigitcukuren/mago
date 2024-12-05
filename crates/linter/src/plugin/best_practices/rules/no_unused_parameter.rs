@@ -17,9 +17,9 @@ const FUNC_GET_ARGS: &str = "func_get_args";
 pub struct NoUnusedParameterRule;
 
 impl NoUnusedParameterRule {
-    fn report<'ast>(
+    fn report(
         &self,
-        parameter: &'ast FunctionLikeParameter,
+        parameter: &FunctionLikeParameter,
         function_like: &impl HasSpan,
         context: &mut LintContext,
         kind: &'static str,

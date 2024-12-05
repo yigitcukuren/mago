@@ -11,7 +11,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_declare<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Declare, ParseError> {
+pub fn parse_declare(stream: &mut TokenStream<'_, '_>) -> Result<Declare, ParseError> {
     Ok(Declare {
         declare: utils::expect_keyword(stream, T!["declare"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -41,7 +41,7 @@ pub fn parse_declare<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Declare
     })
 }
 
-pub fn parse_declare_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<DeclareItem, ParseError> {
+pub fn parse_declare_item(stream: &mut TokenStream<'_, '_>) -> Result<DeclareItem, ParseError> {
     Ok(DeclareItem {
         name: parse_local_identifier(stream)?,
         equal: utils::expect_span(stream, T!["="])?,
@@ -49,7 +49,7 @@ pub fn parse_declare_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<De
     })
 }
 
-pub fn parse_declare_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<DeclareBody, ParseError> {
+pub fn parse_declare_body(stream: &mut TokenStream<'_, '_>) -> Result<DeclareBody, ParseError> {
     let next = utils::peek(stream)?;
 
     Ok(match next.kind {
@@ -58,8 +58,8 @@ pub fn parse_declare_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<De
     })
 }
 
-pub fn parse_declare_colon_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_declare_colon_delimited_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<DeclareColonDelimitedBody, ParseError> {
     Ok(DeclareColonDelimitedBody {
         colon: utils::expect_span(stream, T![":"])?,

@@ -50,7 +50,7 @@ impl<'a> NameContext<'a> {
     pub fn get_namespaced_identifier(&mut self, identifier: &LocalIdentifier) -> StringIdentifier {
         if let Some(mut namespaced) = self.get_namespace_name() {
             namespaced.push('\\');
-            namespaced.extend(self.interner.lookup(&identifier.value).chars());
+            namespaced.push_str(self.interner.lookup(&identifier.value));
 
             self.interner.intern(namespaced)
         } else {
@@ -73,7 +73,7 @@ impl<'a> NameContext<'a> {
 
         self.namespace_name = Some(if let Some(mut previous_namespace) = self.namespace_name.clone() {
             previous_namespace.push('\\');
-            previous_namespace.extend(namespace_name.chars());
+            previous_namespace.push_str(namespace_name);
 
             previous_namespace
         } else {
@@ -87,11 +87,8 @@ impl<'a> NameContext<'a> {
         }
 
         self.name_resolution_contexts.pop();
-        self.namespace_name = if let Some(last_context) = self.name_resolution_contexts.last() {
-            Some(last_context.namespace_name.clone())
-        } else {
-            None
-        };
+        self.namespace_name =
+            self.name_resolution_contexts.last().map(|last_context| last_context.namespace_name.clone());
     }
 
     pub fn add_name(&mut self, kind: NameKind, name_id: StringIdentifier, alias_id: Option<StringIdentifier>) {
@@ -100,7 +97,7 @@ impl<'a> NameContext<'a> {
         let alias = match alias_id {
             Some(alias_id) => self.interner.lookup(&alias_id).to_string(),
             None => {
-                if let Some(last_backslash_pos) = name.rfind(|c| c == '\\') {
+                if let Some(last_backslash_pos) = name.rfind('\\') {
                     name[last_backslash_pos + 1..].to_string()
                 } else {
                     name.to_string()
@@ -123,10 +120,8 @@ impl<'a> NameContext<'a> {
     pub fn resolve_name(&mut self, kind: NameKind, name_id: StringIdentifier) -> (StringIdentifier, bool) {
         let name = self.interner.lookup(&name_id).to_string();
 
-        if name.starts_with('\\') {
-            let resolve = name[1..].to_string();
-
-            return (self.interner.intern(resolve), true);
+        if let Some(stripped) = name.strip_prefix('\\') {
+            return (self.interner.intern(stripped), true);
         }
 
         if let Some(alias) = self.resolve_alias(kind, name.as_str()) {
@@ -151,7 +146,7 @@ impl<'a> NameContext<'a> {
             .last()
             .expect("expected there to be at least one resolution context in the context");
 
-        let parts = name.split(|c| c == '\\').collect::<Vec<_>>();
+        let parts = name.split('\\').collect::<Vec<_>>();
         let first_part = parts.first().expect("expected there to be at least one part in the name");
 
         if parts.len() > 1 {

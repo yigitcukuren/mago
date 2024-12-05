@@ -129,7 +129,7 @@ impl SourceManager {
             return source_id;
         }
 
-        self.sources.insert(source_id.clone(), SourceEntry { name, path: Some(path), content: OnceCell::new() });
+        self.sources.insert(source_id, SourceEntry { name, path: Some(path), content: OnceCell::new() });
 
         source_id
     }
@@ -147,7 +147,7 @@ impl SourceManager {
     /// The identifier of the inserted source.
     pub fn insert_content(&mut self, name: String, content: String, user_defined: bool) -> SourceIdentifier {
         if let Some(entry) = self.sources.iter().find(|entry| entry.name == name) {
-            return entry.key().clone();
+            return *entry.key();
         }
 
         let source_id = SourceIdentifier(self.interner.intern(&name), user_defined);
@@ -155,10 +155,8 @@ impl SourceManager {
         let size = content.len();
         let content = self.interner.intern(content);
 
-        self.sources.insert(
-            source_id.clone(),
-            SourceEntry { name, path: None, content: OnceCell::from((content, size, lines)) },
-        );
+        self.sources
+            .insert(source_id, SourceEntry { name, path: None, content: OnceCell::from((content, size, lines)) });
 
         source_id
     }
@@ -177,17 +175,17 @@ impl SourceManager {
     }
 
     /// Retrieve an iterator over all source identifiers in the manager.
-    pub fn source_ids<'a>(&'a self) -> impl Iterator<Item = SourceIdentifier> + 'a {
+    pub fn source_ids(&self) -> impl Iterator<Item = SourceIdentifier> + '_ {
         self.sources.iter().map(|entry| *entry.key())
     }
 
     /// Retrieve an iterator over all user-defined source identifiers in the manager.
-    pub fn user_defined_source_ids<'a>(&'a self) -> impl Iterator<Item = SourceIdentifier> + 'a {
+    pub fn user_defined_source_ids(&self) -> impl Iterator<Item = SourceIdentifier> + '_ {
         self.sources.iter().filter(|entry| entry.key().is_user_defined()).map(|entry| *entry.key())
     }
 
     /// Retrieve an iterator over all external source identifiers in the manager.
-    pub fn external_source_ids<'a>(&'a self) -> impl Iterator<Item = SourceIdentifier> + 'a {
+    pub fn external_source_ids(&self) -> impl Iterator<Item = SourceIdentifier> + '_ {
         self.sources.iter().filter(|entry| entry.key().is_external()).map(|entry| *entry.key())
     }
 

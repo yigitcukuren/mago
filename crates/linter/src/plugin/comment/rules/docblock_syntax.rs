@@ -26,7 +26,7 @@ impl<'a> Walker<LintContext<'a>> for DocblockSyntaxRule {
     fn walk_program<'ast>(&self, program: &'ast Program, context: &mut LintContext<'a>) {
         for trivia in program.trivia.iter() {
             if let TriviaKind::DocBlockComment = trivia.kind {
-                let Err(parse_error) = fennec_docblock::parse_trivia(&context.interner, trivia) else {
+                let Err(parse_error) = fennec_docblock::parse_trivia(context.interner, trivia) else {
                     continue;
                 };
 

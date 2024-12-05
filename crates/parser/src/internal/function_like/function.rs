@@ -10,8 +10,8 @@ use crate::internal::identifier::parse_local_identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_function_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_function_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<Function, ParseError> {
     Ok(Function {

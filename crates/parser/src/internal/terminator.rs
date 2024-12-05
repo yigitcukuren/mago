@@ -6,14 +6,14 @@ use crate::internal::tag::parse_opening_tag;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_optional_terminator<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Option<Terminator>, ParseError> {
+pub fn parse_optional_terminator(stream: &mut TokenStream<'_, '_>) -> Result<Option<Terminator>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T![";" | "?>"]) => Some(parse_terminator(stream)?),
         _ => None,
     })
 }
 
-pub fn parse_terminator<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Terminator, ParseError> {
+pub fn parse_terminator(stream: &mut TokenStream<'_, '_>) -> Result<Terminator, ParseError> {
     let token = utils::expect_one_of(stream, T![";", "?>"])?;
 
     match token.kind {

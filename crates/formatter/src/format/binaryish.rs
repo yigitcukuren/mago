@@ -33,7 +33,7 @@ pub(super) fn print_binaryish_expression<'a>(
         BinaryOperator::LowAnd(keyword) => keyword.format(f),
         BinaryOperator::LowOr(keyword) => keyword.format(f),
         BinaryOperator::LowXor(keyword) => keyword.format(f),
-        _ => Document::String(operator.as_str(&f.interner)),
+        _ => Document::String(operator.as_str(f.interner)),
     };
     let rhs = right.format(f);
 
@@ -85,7 +85,7 @@ pub(super) fn print_binaryish_expression<'a>(
     }
 }
 
-pub(super) fn should_inline_logical_or_coalesce_expression<'a>(expression: &'a Expression) -> bool {
+pub(super) fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
     let rhs = match expression {
         Expression::Binary(operation) => {
             if !operation.operator.is_logical() && !operation.operator.is_null_coalesce() {
@@ -98,7 +98,7 @@ pub(super) fn should_inline_logical_or_coalesce_expression<'a>(expression: &'a E
     };
 
     if let Expression::Array(array) = rhs {
-        if array.elements.len() > 0 {
+        if !array.elements.is_empty() {
             return true;
         }
 
@@ -106,7 +106,7 @@ pub(super) fn should_inline_logical_or_coalesce_expression<'a>(expression: &'a E
     }
 
     if let Expression::List(list) = rhs {
-        if list.elements.len() > 0 {
+        if !list.elements.is_empty() {
             return true;
         }
 
@@ -114,7 +114,7 @@ pub(super) fn should_inline_logical_or_coalesce_expression<'a>(expression: &'a E
     }
 
     if let Expression::LegacyArray(legacy_array) = rhs {
-        if legacy_array.elements.len() > 0 {
+        if !legacy_array.elements.is_empty() {
             return true;
         }
 

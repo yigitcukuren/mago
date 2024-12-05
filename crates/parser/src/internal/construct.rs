@@ -10,7 +10,7 @@ use crate::internal::expression::parse_expression_with_precedence;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_construct<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Construct, ParseError> {
+pub fn parse_construct(stream: &mut TokenStream<'_, '_>) -> Result<Construct, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match token.kind {

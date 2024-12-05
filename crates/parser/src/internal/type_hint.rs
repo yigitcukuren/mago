@@ -6,8 +6,8 @@ use crate::internal::identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn is_at_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<bool, ParseError> {
-    return Ok(matches!(
+pub fn is_at_type_hint(stream: &mut TokenStream<'_, '_>) -> Result<bool, ParseError> {
+    Ok(matches!(
         utils::peek(stream)?.kind,
         T!["?"
             | "("
@@ -24,10 +24,10 @@ pub fn is_at_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<bool,
             | Identifier
             | QualifiedIdentifier
             | FullyQualifiedIdentifier]
-    ));
+    ))
 }
 
-pub fn parse_optional_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Option<Hint>, ParseError> {
+pub fn parse_optional_type_hint(stream: &mut TokenStream<'_, '_>) -> Result<Option<Hint>, ParseError> {
     if is_at_type_hint(stream)? {
         Ok(Some(parse_type_hint(stream)?))
     } else {
@@ -35,7 +35,7 @@ pub fn parse_optional_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Res
     }
 }
 
-pub fn parse_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Hint, ParseError> {
+pub fn parse_type_hint(stream: &mut TokenStream<'_, '_>) -> Result<Hint, ParseError> {
     let token = utils::peek(stream)?;
 
     let hint = match &token.kind {
@@ -117,15 +117,13 @@ pub fn parse_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Hint,
     })
 }
 
-pub fn parse_nullable_type_hint<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<NullableHint, ParseError> {
+pub fn parse_nullable_type_hint(stream: &mut TokenStream<'_, '_>) -> Result<NullableHint, ParseError> {
     let question_mark = utils::expect(stream, T!["?"])?.span;
 
     Ok(NullableHint { question_mark, hint: Box::new(parse_type_hint(stream)?) })
 }
 
-pub fn parse_parenthesized_type_hint<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<ParenthesizedHint, ParseError> {
+pub fn parse_parenthesized_type_hint(stream: &mut TokenStream<'_, '_>) -> Result<ParenthesizedHint, ParseError> {
     let left_parenthesis = utils::expect(stream, T!["("])?.span;
     let hint = Box::new(parse_type_hint(stream)?);
     let right_parenthesis = utils::expect(stream, T![")"])?.span;

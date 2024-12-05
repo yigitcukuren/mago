@@ -69,10 +69,10 @@ impl<'a> Walker<LintContext<'a>> for RedundantMethodOverrideRule {
     }
 }
 
-fn matches_method<'ast>(
+fn matches_method(
     method_name: &StringIdentifier,
     parameters: &[(bool, StringIdentifier)],
-    expression: &'ast Expression,
+    expression: &Expression,
 ) -> bool {
     let Expression::Call(Call::StaticMethod(StaticMethodCall { class, method, arguments, .. })) = expression else {
         return false;

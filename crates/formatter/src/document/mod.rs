@@ -1,6 +1,5 @@
 use std::fmt;
 
-use serde;
 use serde::Serialize;
 
 use crate::document::group::GroupIdentifier;
@@ -132,14 +131,14 @@ impl<'a> Fill<'a> {
     }
 
     pub fn drain_out_pair(&mut self) -> (Option<Document<'a>>, Option<Document<'a>>) {
-        let content = if self.parts.len() > 0 { Some(self.parts.remove(0)) } else { None };
-        let whitespace = if self.parts.len() > 0 { Some(self.parts.remove(0)) } else { None };
+        let content = if !self.parts.is_empty() { Some(self.parts.remove(0)) } else { None };
+        let whitespace = if !self.parts.is_empty() { Some(self.parts.remove(0)) } else { None };
 
         (content, whitespace)
     }
 
     pub fn dequeue(&mut self) -> Option<Document<'a>> {
-        if self.parts.len() > 0 {
+        if !self.parts.is_empty() {
             Some(self.parts.remove(0))
         } else {
             None

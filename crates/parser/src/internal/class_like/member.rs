@@ -18,7 +18,7 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 use crate::internal::variable;
 
-pub fn parse_classlike_memeber<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ClassLikeMember, ParseError> {
+pub fn parse_classlike_memeber(stream: &mut TokenStream<'_, '_>) -> Result<ClassLikeMember, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T!["#["] => {
             let attributes = parse_attribute_list_sequence(stream)?;
@@ -50,8 +50,8 @@ pub fn parse_classlike_memeber<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Resu
     })
 }
 
-pub fn parse_classlike_memeber_with_attributes<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_classlike_memeber_with_attributes(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
 ) -> Result<ClassLikeMember, ParseError> {
     Ok(match utils::peek(stream)?.kind {
@@ -77,8 +77,8 @@ pub fn parse_classlike_memeber_with_attributes<'a, 'i>(
     })
 }
 
-pub fn parse_classlike_memeber_with_attributes_and_modifiers<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_classlike_memeber_with_attributes_and_modifiers(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
     modifiers: Sequence<Modifier>,
 ) -> Result<ClassLikeMember, ParseError> {
@@ -93,8 +93,8 @@ pub fn parse_classlike_memeber_with_attributes_and_modifiers<'a, 'i>(
     })
 }
 
-pub fn parse_classlike_memeber_selector<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_classlike_memeber_selector(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<ClassLikeMemberSelector, ParseError> {
     let token = utils::peek(stream)?;
 
@@ -105,15 +105,15 @@ pub fn parse_classlike_memeber_selector<'a, 'i>(
             expression: Box::new(expression::parse_expression(stream)?),
             right_brace: utils::expect_span(stream, T!["}"])?,
         }),
-        kind @ _ if kind.is_identifier_maybe_reserved() => {
+        kind if kind.is_identifier_maybe_reserved() => {
             ClassLikeMemberSelector::Identifier(identifier::parse_local_identifier(stream)?)
         }
         _ => return Err(utils::unexpected(stream, Some(token), T!["$variable", "${", "$", "{", Identifier])),
     })
 }
 
-pub fn parse_classlike_constant_selector_or_variable<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_classlike_constant_selector_or_variable(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Either<ClassLikeConstantSelector, Variable>, ParseError> {
     let token = utils::peek(stream)?;
 
@@ -124,7 +124,7 @@ pub fn parse_classlike_constant_selector_or_variable<'a, 'i>(
             expression: Box::new(expression::parse_expression(stream)?),
             right_brace: utils::expect_span(stream, T!["}"])?,
         })),
-        kind @ _ if kind.is_identifier_maybe_reserved() => {
+        kind if kind.is_identifier_maybe_reserved() => {
             Either::Left(ClassLikeConstantSelector::Identifier(identifier::parse_local_identifier(stream)?))
         }
         _ => return Err(utils::unexpected(stream, Some(token), T!["$variable", "${", "$", "{", Identifier])),

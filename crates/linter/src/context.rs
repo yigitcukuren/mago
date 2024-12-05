@@ -73,7 +73,7 @@ impl<'a> LintContext<'a> {
     pub fn lookup_name(&self, position: &impl HasPosition) -> &str {
         let name_id = self.semantics.names.get(&position.position());
 
-        self.lookup(&name_id)
+        self.lookup(name_id)
     }
 
     pub fn lookup_function_name(&self, identifier: &Identifier) -> &str {

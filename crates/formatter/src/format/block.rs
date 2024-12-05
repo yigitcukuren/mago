@@ -45,18 +45,16 @@ pub(super) fn print_block<'a>(
     let mut contents = vec![];
     contents.push(Document::String("{"));
     let has_body = stmts.iter().any(|stmt| !matches!(stmt, Statement::Noop(_)));
-    let should_break;
-    if has_body {
+    let should_break = if has_body {
         let mut statements = statement::print_statement_sequence(f, stmts);
         statements.insert(0, Document::Line(Line::hardline()));
         contents.push(Document::Indent(statements));
-
-        should_break = true;
+        true
     } else {
         let parent = f.parent_node();
         // in case the block is empty, we still want to add a new line
         // in some cases.
-        should_break = match &parent {
+        match &parent {
             // functions, closures, and methods
             Node::Function(_) | Node::MethodBody(_) | Node::PropertyHookConcreteBody(_) => true,
             // try, catch, finally
@@ -80,7 +78,7 @@ pub(super) fn print_block<'a>(
                 }
             }
             _ => false,
-        };
+        }
     };
 
     if let Some(comments) = f.print_dangling_comments(left_brace.join(*right_brace), true) {

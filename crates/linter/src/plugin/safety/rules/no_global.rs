@@ -6,7 +6,7 @@ use fennec_walker::Walker;
 use crate::context::LintContext;
 use crate::rule::Rule;
 
-const GLOBALS_VARIABLE: &'static str = "$GLOBALS";
+const GLOBALS_VARIABLE: &str = "$GLOBALS";
 
 #[derive(Clone, Debug)]
 pub struct NoGlobalRule;

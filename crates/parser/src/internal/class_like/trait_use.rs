@@ -11,7 +11,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_trait_use<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<TraitUse, ParseError> {
+pub fn parse_trait_use(stream: &mut TokenStream<'_, '_>) -> Result<TraitUse, ParseError> {
     Ok(TraitUse {
         r#use: utils::expect_keyword(stream, T!["use"])?,
         trait_names: {
@@ -41,9 +41,7 @@ pub fn parse_trait_use<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Trait
     })
 }
 
-pub fn parse_trait_use_specification<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<TraitUseSpecification, ParseError> {
+pub fn parse_trait_use_specification(stream: &mut TokenStream<'_, '_>) -> Result<TraitUseSpecification, ParseError> {
     let next = utils::peek(stream)?;
     Ok(match next.kind {
         T![";" | "?>"] => TraitUseSpecification::Abstract(TraitUseAbstractSpecification(parse_terminator(stream)?)),
@@ -66,7 +64,7 @@ pub fn parse_trait_use_specification<'a, 'i>(
     })
 }
 
-pub fn parse_trait_use_adaptation<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<TraitUseAdaptation, ParseError> {
+pub fn parse_trait_use_adaptation(stream: &mut TokenStream<'_, '_>) -> Result<TraitUseAdaptation, ParseError> {
     Ok(match parse_trait_use_method_reference(stream)? {
         TraitUseMethodReference::Absolute(reference) => {
             let next = utils::peek(stream)?;
@@ -126,8 +124,8 @@ pub fn parse_trait_use_adaptation<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> R
     })
 }
 
-pub fn parse_trait_use_method_reference<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_trait_use_method_reference(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<TraitUseMethodReference, ParseError> {
     Ok(match utils::maybe_peek_nth(stream, 1)?.map(|t| t.kind) {
         Some(T!["::"]) => TraitUseMethodReference::Absolute(parse_trait_use_absolute_method_reference(stream)?),
@@ -135,8 +133,8 @@ pub fn parse_trait_use_method_reference<'a, 'i>(
     })
 }
 
-pub fn parse_trait_use_absolute_method_reference<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_trait_use_absolute_method_reference(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<TraitUseAbsoluteMethodReference, ParseError> {
     Ok(TraitUseAbsoluteMethodReference {
         trait_name: parse_identifier(stream)?,

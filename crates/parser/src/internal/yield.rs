@@ -7,7 +7,7 @@ use crate::internal::expression::parse_expression_with_precedence;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_yield<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Yield, ParseError> {
+pub fn parse_yield(stream: &mut TokenStream<'_, '_>) -> Result<Yield, ParseError> {
     let r#yield = utils::expect_keyword(stream, T!["yield"])?;
 
     Ok(match utils::peek(stream)?.kind {

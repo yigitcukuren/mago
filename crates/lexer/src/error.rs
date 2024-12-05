@@ -38,11 +38,11 @@ impl std::fmt::Display for SyntaxError {
 
 impl std::error::Error for SyntaxError {}
 
-impl Into<Issue> for SyntaxError {
-    fn into(self) -> Issue {
-        let position = self.position();
+impl From<SyntaxError> for Issue {
+    fn from(error: SyntaxError) -> Issue {
+        let position = error.position();
         let span = Span::new(position, Position { offset: position.offset + 1, ..position });
 
-        Issue::error(self.to_string()).with_annotation(Annotation::primary(span))
+        Issue::error(error.to_string()).with_annotation(Annotation::primary(span))
     }
 }

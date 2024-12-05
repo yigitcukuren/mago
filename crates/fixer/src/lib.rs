@@ -91,7 +91,7 @@ pub enum FixOperation {
 /// A `FixPlan` contains multiple operations that describe how to modify a string of code.
 /// The operations can include inserting new content, replacing old content, or deleting
 /// unwanted parts. The operations are ordered and will be applied sequentially to the content.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct FixPlan {
     /// A SET of `FixOperation` instances that describe the specific changes to be made.
     operations: Vec<FixOperation>,

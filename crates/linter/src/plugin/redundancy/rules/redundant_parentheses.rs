@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedundantParenthesesRule;
 
 impl RedundantParenthesesRule {
-    fn report<'ast>(&self, parenthesized: &'ast Parenthesized, context: &mut LintContext<'_>) {
+    fn report(&self, parenthesized: &Parenthesized, context: &mut LintContext<'_>) {
         let issue = Issue::new(context.level(), "redundant parentheses")
             .with_annotations([
                 Annotation::primary(parenthesized.left_parenthesis),

@@ -10,7 +10,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_switch<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Switch, ParseError> {
+pub fn parse_switch(stream: &mut TokenStream<'_, '_>) -> Result<Switch, ParseError> {
     let switch = utils::expect_keyword(stream, T!["switch"])?;
     let left_parenthesis = utils::expect_span(stream, T!["("])?;
     let expression = parse_expression(stream)?;
@@ -20,7 +20,7 @@ pub fn parse_switch<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Switch, 
     Ok(Switch { switch, left_parenthesis, expression, right_parenthesis, body })
 }
 
-pub fn parse_switch_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<SwitchBody, ParseError> {
+pub fn parse_switch_body(stream: &mut TokenStream<'_, '_>) -> Result<SwitchBody, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match token.kind {
@@ -32,8 +32,8 @@ pub fn parse_switch_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Swi
     })
 }
 
-pub fn parse_switch_brace_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_switch_brace_delimited_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<SwitchBraceDelimitedBody, ParseError> {
     let left_brace = utils::expect_span(stream, T!["{"])?;
     let optional_terminator = parse_optional_terminator(stream)?;
@@ -43,8 +43,8 @@ pub fn parse_switch_brace_delimited_body<'a, 'i>(
     Ok(SwitchBraceDelimitedBody { left_brace, optional_terminator, cases, right_brace })
 }
 
-pub fn parse_switch_colon_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_switch_colon_delimited_body(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<SwitchColonDelimitedBody, ParseError> {
     Ok(SwitchColonDelimitedBody {
         colon: utils::expect_span(stream, T![":"])?,
@@ -55,7 +55,7 @@ pub fn parse_switch_colon_delimited_body<'a, 'i>(
     })
 }
 
-pub fn parse_switch_cases<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Sequence<SwitchCase>, ParseError> {
+pub fn parse_switch_cases(stream: &mut TokenStream<'_, '_>) -> Result<Sequence<SwitchCase>, ParseError> {
     let mut cases = vec![];
     loop {
         if matches!(utils::peek(stream)?.kind, T!["endswitch" | "}"]) {
@@ -68,16 +68,14 @@ pub fn parse_switch_cases<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Se
     Ok(Sequence::new(cases))
 }
 
-pub fn parse_switch_case<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<SwitchCase, ParseError> {
+pub fn parse_switch_case(stream: &mut TokenStream<'_, '_>) -> Result<SwitchCase, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T!["default"] => SwitchCase::Default(parse_switch_default_case(stream)?),
         _ => SwitchCase::Expression(parse_switch_expression_case(stream)?),
     })
 }
 
-pub fn parse_switch_expression_case<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<SwitchExpressionCase, ParseError> {
+pub fn parse_switch_expression_case(stream: &mut TokenStream<'_, '_>) -> Result<SwitchExpressionCase, ParseError> {
     Ok(SwitchExpressionCase {
         case: utils::expect_keyword(stream, T!["case"])?,
         expression: parse_expression(stream)?,
@@ -86,7 +84,7 @@ pub fn parse_switch_expression_case<'a, 'i>(
     })
 }
 
-pub fn parse_switch_default_case<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<SwitchDefaultCase, ParseError> {
+pub fn parse_switch_default_case(stream: &mut TokenStream<'_, '_>) -> Result<SwitchDefaultCase, ParseError> {
     Ok(SwitchDefaultCase {
         default: utils::expect_keyword(stream, T!["default"])?,
         separator: parse_switch_case_separator(stream)?,
@@ -94,7 +92,7 @@ pub fn parse_switch_default_case<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Re
     })
 }
 
-pub fn parse_switch_statements<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Sequence<Statement>, ParseError> {
+pub fn parse_switch_statements(stream: &mut TokenStream<'_, '_>) -> Result<Sequence<Statement>, ParseError> {
     let mut statements = vec![];
     loop {
         if matches!(utils::peek(stream)?.kind, T!["case" | "default" | "endswitch" | "}"]) {
@@ -107,9 +105,7 @@ pub fn parse_switch_statements<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Resu
     Ok(Sequence::new(statements))
 }
 
-pub fn parse_switch_case_separator<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<SwitchCaseSeparator, ParseError> {
+pub fn parse_switch_case_separator(stream: &mut TokenStream<'_, '_>) -> Result<SwitchCaseSeparator, ParseError> {
     let token = utils::expect_one_of(stream, T![":", ";"])?;
 
     Ok(match token.kind {

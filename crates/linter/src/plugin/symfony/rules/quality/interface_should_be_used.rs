@@ -52,7 +52,7 @@ impl<'a> Walker<LintContext<'a>> for InterfaceShouldBeUsed {
     }
 }
 
-const IMPLEMENTATION_TO_INTERFACE: [(&'static str, &'static str); 3] = [
+const IMPLEMENTATION_TO_INTERFACE: [(&str, &str); 3] = [
     ("Symfony\\Component\\Serializer\\Serializer", "Symfony\\Component\\Serializer\\SerializerInterface"),
     (
         "Symfony\\'Component\\Serializer\\Encoder\\JsonEncode",

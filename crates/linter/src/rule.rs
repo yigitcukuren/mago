@@ -48,7 +48,7 @@ pub trait Rule: for<'a> Walker<LintContext<'a>> + Send + Sync + Debug {
     /// * `program` - The abstract syntax tree (AST) of the program to be linted.
     /// * `configuration` - The configuration for this specific rule.
     /// * `context` - The context for the linting process, which may contain shared state.
-    fn lint<'ast>(&self, program: &'ast Program, context: &mut LintContext<'_>) {
+    fn lint(&self, program: &Program, context: &mut LintContext<'_>) {
         if !program.source.is_user_defined() {
             // Skip linting for non-user-defined programs by default
             //

@@ -83,7 +83,7 @@ impl Semantics {
     /// 2. **Name Resolution**: Resolves all the names in the AST, linking identifiers to their declarations.
     /// 3. **Symbol Table Construction**: Builds a symbol table containing all the symbols (classes, functions, constants, etc.) defined in the source code.
     /// 4. **Semantic Analysis**: Checks the AST for semantic correctness, such as type checking, scope rules, etc., and collects any issues.
-    pub fn build<'i>(interner: &'i ThreadedInterner, source: Source) -> Self {
+    pub fn build(interner: &ThreadedInterner, source: Source) -> Self {
         // Parse the source code into an AST.
         // The parser returns a tuple containing the AST and an optional parse error.
         let (program, parse_error) = fennec_parser::parse_source(interner, &source);

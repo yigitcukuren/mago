@@ -1,24 +1,24 @@
-pub const ANONYMOUS_CLASS_NAME: &'static str = "class@anonymous";
+pub const ANONYMOUS_CLASS_NAME: &str = "class@anonymous";
 
-pub const CONSTRUCTOR_MAGIC_METHOD: &'static str = "__construct";
-pub const DESTRUCTOR_MAGIC_METHOD: &'static str = "__destruct";
-pub const CLONE_MAGIC_METHOD: &'static str = "__clone";
-pub const CALL_MAGIC_METHOD: &'static str = "__call";
-pub const CALL_STATIC_MAGIC_METHOD: &'static str = "__callStatic";
-pub const GET_MAGIC_METHOD: &'static str = "__get";
-pub const SET_MAGIC_METHOD: &'static str = "__set";
-pub const ISSET_MAGIC_METHOD: &'static str = "__isset";
-pub const UNSET_MAGIC_METHOD: &'static str = "__unset";
-pub const SLEEP_MAGIC_METHOD: &'static str = "__sleep";
-pub const WAKEUP_MAGIC_METHOD: &'static str = "__wakeup";
-pub const SERIALIZE_MAGIC_METHOD: &'static str = "__serialize";
-pub const UNSERIALIZE_MAGIC_METHOD: &'static str = "__unserialize";
-pub const TO_STRING_MAGIC_METHOD: &'static str = "__toString";
-pub const INVOKE_MAGIC_METHOD: &'static str = "__invoke";
-pub const SET_STATE_MAGIC_METHOD: &'static str = "__set_state";
-pub const DEBUG_INFO_MAGIC_METHOD: &'static str = "__debugInfo";
+pub const CONSTRUCTOR_MAGIC_METHOD: &str = "__construct";
+pub const DESTRUCTOR_MAGIC_METHOD: &str = "__destruct";
+pub const CLONE_MAGIC_METHOD: &str = "__clone";
+pub const CALL_MAGIC_METHOD: &str = "__call";
+pub const CALL_STATIC_MAGIC_METHOD: &str = "__callStatic";
+pub const GET_MAGIC_METHOD: &str = "__get";
+pub const SET_MAGIC_METHOD: &str = "__set";
+pub const ISSET_MAGIC_METHOD: &str = "__isset";
+pub const UNSET_MAGIC_METHOD: &str = "__unset";
+pub const SLEEP_MAGIC_METHOD: &str = "__sleep";
+pub const WAKEUP_MAGIC_METHOD: &str = "__wakeup";
+pub const SERIALIZE_MAGIC_METHOD: &str = "__serialize";
+pub const UNSERIALIZE_MAGIC_METHOD: &str = "__unserialize";
+pub const TO_STRING_MAGIC_METHOD: &str = "__toString";
+pub const INVOKE_MAGIC_METHOD: &str = "__invoke";
+pub const SET_STATE_MAGIC_METHOD: &str = "__set_state";
+pub const DEBUG_INFO_MAGIC_METHOD: &str = "__debugInfo";
 
-pub const MAGIC_METHODS: &[&'static str] = &[
+pub const MAGIC_METHODS: &[&str] = &[
     CONSTRUCTOR_MAGIC_METHOD,
     DESTRUCTOR_MAGIC_METHOD,
     CLONE_MAGIC_METHOD,

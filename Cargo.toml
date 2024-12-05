@@ -14,12 +14,10 @@ package.version = "0.0.0"
 members = ["crates/*"]
 
 [workspace.lints.clippy]
-# we want to keep needless lifetimes as they make the code more readable.
-needless_lifetimes = { level = "allow" }
-# same as above
-redundant_static_lifetimes = { level = "allow" }
 borrow_interior_mutable_const = { level = "allow" }
 declare_interior_mutable_const = { level = "allow" }
+# ast nodes are large enums, we want to keep them as is ( for now )
+large_enum_variant = { level = "allow" }
 
 [workspace.dependencies]
 dashmap = { version = "6.1.0" }
@@ -29,7 +27,7 @@ serde_json = { version = "1.0.128" }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.39.3", features = ["rt", "rt-multi-thread", "time"] }
 strum = { version = "0.26", features = ["derive"] }
-ordered-float = { version = "4.0", default-features = false }
+ordered-float = { version = "4.0", default-features = false, features = ["serde"] }
 pretty_assertions = { version = "1.4.1" }
 either = { version = "1.13.0" }
 codespan-reporting = { version = "0.11.1", features = ["serde", "serialization"] }

@@ -11,8 +11,8 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::type_hint::parse_type_hint;
 use crate::internal::utils;
 
-pub fn parse_class_like_constant_with_attributes_and_modifiers<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_class_like_constant_with_attributes_and_modifiers(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
     modifiers: Sequence<Modifier>,
 ) -> Result<ClassLikeConstant, ParseError> {
@@ -48,7 +48,7 @@ pub fn parse_class_like_constant_with_attributes_and_modifiers<'a, 'i>(
     })
 }
 
-pub fn parse_constant_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ClassLikeConstantItem, ParseError> {
+pub fn parse_constant_item(stream: &mut TokenStream<'_, '_>) -> Result<ClassLikeConstantItem, ParseError> {
     Ok(ClassLikeConstantItem {
         name: parse_local_identifier(stream)?,
         equals: utils::expect_span(stream, T!["="])?,

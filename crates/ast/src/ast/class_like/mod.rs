@@ -198,7 +198,7 @@ impl HasSpan for Class {
 
 impl HasSpan for AnonymousClass {
     fn span(&self) -> Span {
-        return self.new.span().join(self.right_brace);
+        self.new.span().join(self.right_brace)
     }
 }
 

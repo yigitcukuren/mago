@@ -30,22 +30,17 @@ use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 use crate::internal::variable;
 
-pub fn parse_expression<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Expression, ParseError> {
+pub fn parse_expression(stream: &mut TokenStream<'_, '_>) -> Result<Expression, ParseError> {
     parse_expression_with_precedence(stream, Precedence::Lowest)
 }
 
-pub fn parse_expression_with_precedence<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_expression_with_precedence(
+    stream: &mut TokenStream<'_, '_>,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
     let mut left = parse_lhs_expression(stream)?;
 
-    loop {
-        let next = match utils::maybe_peek(stream)? {
-            Some(peek) => peek,
-            None => break,
-        };
-
+    while let Some(next) = utils::maybe_peek(stream)? {
         // Stop parsing if the next token is a terminator.
         if matches!(next.kind, T![";" | "?>"]) {
             break;
@@ -66,11 +61,8 @@ pub fn parse_expression_with_precedence<'a, 'i>(
             }
 
             if infix_precedence == precedence {
-                match infix_precedence.associativity() {
-                    Some(Associativity::Left) => {
-                        break;
-                    }
-                    _ => {}
+                if let Some(Associativity::Left) = infix_precedence.associativity() {
+                    break;
                 }
             }
 
@@ -84,7 +76,7 @@ pub fn parse_expression_with_precedence<'a, 'i>(
 }
 
 #[inline(always)]
-fn parse_lhs_expression<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Expression, ParseError> {
+fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>) -> Result<Expression, ParseError> {
     let token = utils::peek(stream)?;
     let next = utils::maybe_peek_nth(stream, 1)?.map(|t| t.kind);
 
@@ -145,8 +137,8 @@ fn parse_lhs_expression<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Expr
     })
 }
 
-fn parse_arrow_function_or_closure<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+fn parse_arrow_function_or_closure(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Either<ArrowFunction, Closure>, ParseError> {
     let attributes = attribute::parse_attribute_list_sequence(stream)?;
 
@@ -164,8 +156,8 @@ fn parse_arrow_function_or_closure<'a, 'i>(
     })
 }
 
-fn parse_postfix_expression<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+fn parse_postfix_expression(
+    stream: &mut TokenStream<'_, '_>,
     lhs: Expression,
     precedence: Precedence,
 ) -> Result<Expression, ParseError> {
@@ -333,7 +325,7 @@ fn parse_postfix_expression<'a, 'i>(
     })
 }
 
-fn parse_infix_expression<'a, 'i>(stream: &mut TokenStream<'a, 'i>, lhs: Expression) -> Result<Expression, ParseError> {
+fn parse_infix_expression(stream: &mut TokenStream<'_, '_>, lhs: Expression) -> Result<Expression, ParseError> {
     let operator = utils::peek(stream)?;
 
     Ok(match operator.kind {

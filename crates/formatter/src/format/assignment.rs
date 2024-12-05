@@ -182,7 +182,7 @@ fn choose_layout<'a, 'b>(
     Layout::Fluid
 }
 
-fn is_assignment<'a>(expression: &'a Expression) -> bool {
+fn is_assignment(expression: &Expression) -> bool {
     matches!(expression, Expression::AssignmentOperation(_))
 }
 
@@ -190,7 +190,7 @@ fn is_assignment<'a>(expression: &'a Expression) -> bool {
 ///
 /// A destruction assignment is considered complex if it has more than two elements
 ///  and at least one of them is a key-value pair.
-fn is_complex_destructuring<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode<'a>) -> bool {
+fn is_complex_destructuring(assignment_like_node: &AssignmentLikeNode<'_>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
             let elements = match assignment.lhs.as_ref() {
@@ -208,7 +208,7 @@ fn is_complex_destructuring<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode
     }
 }
 
-fn is_arrow_function_variable_declarator<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode<'a>) -> bool {
+fn is_arrow_function_variable_declarator(assignment_like_node: &AssignmentLikeNode<'_>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
             matches!(
@@ -222,10 +222,7 @@ fn is_arrow_function_variable_declarator<'a, 'b>(assignment_like_node: &'b Assig
 
 const MIN_OVERLAP_FOR_BREAK: usize = 3;
 
-fn is_property_like_with_short_key<'a, 'b>(
-    f: &Formatter<'a>,
-    assignment_like_node: &'b AssignmentLikeNode<'a>,
-) -> bool {
+fn is_property_like_with_short_key<'a>(f: &Formatter<'a>, assignment_like_node: &AssignmentLikeNode<'a>) -> bool {
     let width = match assignment_like_node {
         AssignmentLikeNode::ClassLikeConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
         AssignmentLikeNode::ConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
@@ -234,20 +231,8 @@ fn is_property_like_with_short_key<'a, 'b>(
         }
         AssignmentLikeNode::PropertyConcreteItem(property_item) => f.lookup(&property_item.variable.name).len(),
         AssignmentLikeNode::KeyValueArrayElement(element) => match element.key.as_ref() {
-            Expression::Variable(variable) => {
-                if let Variable::Direct(variable) = variable {
-                    f.lookup(&variable.name).len()
-                } else {
-                    return false;
-                }
-            }
-            Expression::Identifier(identifier) => {
-                if let Identifier::Local(local_identifier) = identifier {
-                    f.lookup(&local_identifier.value).len()
-                } else {
-                    return false;
-                }
-            }
+            Expression::Variable(Variable::Direct(variable)) => f.lookup(&variable.name).len(),
+            Expression::Identifier(Identifier::Local(local_identifier)) => f.lookup(&local_identifier.value).len(),
             Expression::Literal(Literal::String(string_literal)) => f.lookup(&string_literal.value).len(),
             _ => {
                 return false;
@@ -267,7 +252,7 @@ fn is_property_like_with_short_key<'a, 'b>(
 }
 
 /// <https://github.com/prettier/prettier/blob/eebf0e4b5ec8ac24393c56ced4b4819d4c551f31/src/language-js/print/assignment.js#L182>
-fn should_break_after_operator<'a, 'b>(f: &Formatter<'a>, rhs_expression: &'a Expression, has_short_key: bool) -> bool {
+fn should_break_after_operator<'a>(f: &Formatter<'a>, rhs_expression: &'a Expression, has_short_key: bool) -> bool {
     if rhs_expression.is_binary() && !should_inline_logical_or_coalesce_expression(rhs_expression) {
         return true;
     }
@@ -277,7 +262,7 @@ fn should_break_after_operator<'a, 'b>(f: &Formatter<'a>, rhs_expression: &'a Ex
             if let BinaryOperator::Elvis(_) = operation.operator {
                 let condition = operation.lhs.as_ref();
 
-                return condition.is_binary() && !should_inline_logical_or_coalesce_expression(&condition);
+                return condition.is_binary() && !should_inline_logical_or_coalesce_expression(condition);
             }
         }
         Expression::Conditional(conditional) => {
@@ -285,7 +270,7 @@ fn should_break_after_operator<'a, 'b>(f: &Formatter<'a>, rhs_expression: &'a Ex
                 && !should_inline_logical_or_coalesce_expression(&conditional.condition);
         }
         Expression::AnonymousClass(anonymous_class) => {
-            if anonymous_class.attributes.len() > 0 {
+            if !anonymous_class.attributes.is_empty() {
                 return true;
             }
         }
@@ -408,23 +393,23 @@ fn is_lone_short_argument<'a>(f: &Formatter<'a>, argument_value: &'a Expression)
     let threshold: usize = (print_width as f32 * LONE_SHORT_ARGUMENT_THRESHOLD_RATE).ceil() as usize;
 
     match argument_value {
-        Expression::Static(_) | Expression::Self_(_) | Expression::Parent(_) => true,
-        Expression::Variable(variable) => match variable {
-            Variable::Direct(direct_variable) => {
-                let name = f.lookup(&direct_variable.name);
+        Expression::Literal(
+            Literal::False(_) | Literal::True(_) | Literal::Null(_) | Literal::Integer(_) | Literal::Float(_),
+        )
+        | Expression::Static(_)
+        | Expression::Self_(_)
+        | Expression::Parent(_)
+        | Expression::MagicConstant(_) => true,
+        Expression::Variable(Variable::Direct(direct_variable)) => {
+            let name = f.lookup(&direct_variable.name);
 
-                name.len() <= threshold
-            }
-            _ => false,
-        },
-        Expression::Identifier(identifier) => match identifier {
-            Identifier::Local(local_identifier) => {
-                let name = f.lookup(&local_identifier.value);
+            name.len() <= threshold
+        }
+        Expression::Identifier(Identifier::Local(local_identifier)) => {
+            let name = f.lookup(&local_identifier.value);
 
-                name.len() <= threshold
-            }
-            _ => false,
-        },
+            name.len() <= threshold
+        }
         Expression::UnaryPrefix(unary) if !unary.operator.is_cast() => is_lone_short_argument(f, &unary.operand),
         _ => false,
     }

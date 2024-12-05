@@ -8,9 +8,7 @@ use crate::internal::identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_optional_argument_list<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<Option<ArgumentList>, ParseError> {
+pub fn parse_optional_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<Option<ArgumentList>, ParseError> {
     let next = utils::peek(stream)?;
     if next.kind == T!["("] {
         Ok(Some(parse_argument_list(stream)?))
@@ -19,7 +17,7 @@ pub fn parse_optional_argument_list<'a, 'i>(
     }
 }
 
-pub fn parse_argument_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ArgumentList, ParseError> {
+pub fn parse_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<ArgumentList, ParseError> {
     Ok(ArgumentList {
         left_parenthesis: utils::expect_span(stream, T!["("])?,
         arguments: {
@@ -47,7 +45,7 @@ pub fn parse_argument_list<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<A
     })
 }
 
-pub fn parse_argument<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Argument, ParseError> {
+pub fn parse_argument(stream: &mut TokenStream<'_, '_>) -> Result<Argument, ParseError> {
     let token = utils::peek(stream)?;
 
     if token.kind.is_identifier_maybe_reserved()

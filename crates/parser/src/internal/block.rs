@@ -7,7 +7,7 @@ use crate::internal::statement::parse_statement;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_block<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Block, ParseError> {
+pub fn parse_block(stream: &mut TokenStream<'_, '_>) -> Result<Block, ParseError> {
     Ok(Block {
         left_brace: utils::expect_span(stream, T!["{"])?,
         statements: {

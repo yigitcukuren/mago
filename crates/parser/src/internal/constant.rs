@@ -9,7 +9,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_constant<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Constant, ParseError> {
+pub fn parse_constant(stream: &mut TokenStream<'_, '_>) -> Result<Constant, ParseError> {
     Ok(Constant {
         r#const: utils::expect_keyword(stream, T!["const"])?,
         items: {
@@ -36,7 +36,7 @@ pub fn parse_constant<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Consta
     })
 }
 
-pub fn parse_constant_item<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ConstantItem, ParseError> {
+pub fn parse_constant_item(stream: &mut TokenStream<'_, '_>) -> Result<ConstantItem, ParseError> {
     Ok(ConstantItem {
         name: parse_local_identifier(stream)?,
         equals: utils::expect_span(stream, T!["="])?,

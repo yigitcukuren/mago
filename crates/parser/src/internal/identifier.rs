@@ -5,7 +5,7 @@ use crate::error::ParseError;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_identifier<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Identifier, ParseError> {
+pub fn parse_identifier(stream: &mut TokenStream<'_, '_>) -> Result<Identifier, ParseError> {
     let token = utils::peek(stream)?;
 
     Ok(match &token.kind {
@@ -15,7 +15,7 @@ pub fn parse_identifier<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Iden
     })
 }
 
-pub fn parse_local_identifier<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<LocalIdentifier, ParseError> {
+pub fn parse_local_identifier(stream: &mut TokenStream<'_, '_>) -> Result<LocalIdentifier, ParseError> {
     let token = utils::expect_any(stream)?;
 
     if !token.kind.is_identifier_maybe_reserved() {
@@ -25,14 +25,14 @@ pub fn parse_local_identifier<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Resul
     Ok(LocalIdentifier { span: token.span, value: token.value })
 }
 
-pub fn parse_qualified_identifier<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<QualifiedIdentifier, ParseError> {
+pub fn parse_qualified_identifier(stream: &mut TokenStream<'_, '_>) -> Result<QualifiedIdentifier, ParseError> {
     let token = utils::expect(stream, T![QualifiedIdentifier])?;
 
     Ok(QualifiedIdentifier { span: token.span, value: token.value })
 }
 
-pub fn parse_fully_qualified_identifier<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_fully_qualified_identifier(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<FullyQualifiedIdentifier, ParseError> {
     let token = utils::expect(stream, T![FullyQualifiedIdentifier])?;
 

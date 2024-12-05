@@ -1,16 +1,19 @@
+use std::collections::hash_map::Entry;
+
 use ahash::HashMap;
 use ahash::HashSet;
-use fennec_interner::StringIdentifier;
-use fennec_span::HasPosition;
-use identifier::ClassLikeName;
-use identifier::Name;
 use serde::Deserialize;
 use serde::Serialize;
+
+use fennec_interner::StringIdentifier;
+use fennec_span::HasPosition;
 
 use crate::class_like::ClassLikeReflection;
 use crate::constant::ConstantReflection;
 use crate::function_like::FunctionLikeReflection;
+use crate::identifier::ClassLikeName;
 use crate::identifier::FunctionLikeName;
+use crate::identifier::Name;
 
 pub mod assertion;
 pub mod attribute;
@@ -68,10 +71,10 @@ impl CodebaseReflection {
         let mut exists = false;
 
         if let FunctionLikeName::Function(id) = function_like.name {
-            if self.function_identifiers.contains_key(&id.value) {
-                exists = true;
+            if let Entry::Vacant(e) = self.function_identifiers.entry(id.value) {
+                e.insert(function_like.name);
             } else {
-                self.function_identifiers.insert(id.value, function_like.name);
+                exists = true;
             }
         }
 
@@ -92,31 +95,31 @@ impl CodebaseReflection {
 
         match class_like.name {
             ClassLikeName::Class(identifier) => {
-                if self.class_like_names.contains_key(&identifier.value) {
-                    exists = true;
+                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.value) {
+                    e.insert(class_like.name);
                 } else {
-                    self.class_like_names.insert(identifier.value, class_like.name);
+                    exists = true;
                 }
             }
             ClassLikeName::Enum(identifier) => {
-                if self.class_like_names.contains_key(&identifier.value) {
-                    exists = true;
+                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.value) {
+                    e.insert(class_like.name);
                 } else {
-                    self.class_like_names.insert(identifier.value, class_like.name);
+                    exists = true;
                 }
             }
             ClassLikeName::Interface(identifier) => {
-                if self.class_like_names.contains_key(&identifier.value) {
-                    exists = true;
+                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.value) {
+                    e.insert(class_like.name);
                 } else {
-                    self.class_like_names.insert(identifier.value, class_like.name);
+                    exists = true;
                 }
             }
             ClassLikeName::Trait(identifier) => {
-                if self.class_like_names.contains_key(&identifier.value) {
-                    exists = true;
+                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.value) {
+                    e.insert(class_like.name);
                 } else {
-                    self.class_like_names.insert(identifier.value, class_like.name);
+                    exists = true;
                 }
             }
             _ => {}

@@ -10,8 +10,8 @@ use crate::internal::identifier::parse_local_identifier;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_method_with_attributes_and_modifiers<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_method_with_attributes_and_modifiers(
+    stream: &mut TokenStream<'_, '_>,
     attributes: Sequence<AttributeList>,
     modifiers: Sequence<Modifier>,
 ) -> Result<Method, ParseError> {
@@ -27,7 +27,7 @@ pub fn parse_method_with_attributes_and_modifiers<'a, 'i>(
     })
 }
 
-pub fn parse_method_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<MethodBody, ParseError> {
+pub fn parse_method_body(stream: &mut TokenStream<'_, '_>) -> Result<MethodBody, ParseError> {
     let next = utils::maybe_peek(stream)?;
     Ok(match next.map(|t| t.kind) {
         Some(T![";"]) => MethodBody::Abstract(MethodAbstractBody { semicolon: utils::expect_any(stream)?.span }),

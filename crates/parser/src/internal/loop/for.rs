@@ -10,7 +10,7 @@ use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_for<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<For, ParseError> {
+pub fn parse_for(stream: &mut TokenStream<'_, '_>) -> Result<For, ParseError> {
     Ok(For {
         r#for: utils::expect_keyword(stream, T!["for"])?,
         left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -87,16 +87,14 @@ pub fn parse_for<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<For, ParseE
     })
 }
 
-pub fn parse_for_body<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<ForBody, ParseError> {
+pub fn parse_for_body(stream: &mut TokenStream<'_, '_>) -> Result<ForBody, ParseError> {
     Ok(match utils::peek(stream)?.kind {
         T![":"] => ForBody::ColonDelimited(parse_for_colon_delimited_body(stream)?),
         _ => ForBody::Statement(parse_statement(stream)?),
     })
 }
 
-pub fn parse_for_colon_delimited_body<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<ForColonDelimitedBody, ParseError> {
+pub fn parse_for_colon_delimited_body(stream: &mut TokenStream<'_, '_>) -> Result<ForColonDelimitedBody, ParseError> {
     Ok(ForColonDelimitedBody {
         colon: utils::expect_span(stream, T![":"])?,
         statements: {

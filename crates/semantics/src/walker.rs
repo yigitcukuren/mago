@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use fennec_ast::ast::*;
 use fennec_ast::*;
 use fennec_interner::StringIdentifier;
@@ -81,10 +83,10 @@ impl SemanticsWalker {
         for extended_type in extends.types.iter() {
             let extended_name = context.interner.lookup(&extended_type.value());
 
-            if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(&extended_name))
+            if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(extended_name))
                 || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                     .iter()
-                    .any(|keyword| keyword.eq_ignore_ascii_case(&extended_name))
+                    .any(|keyword| keyword.eq_ignore_ascii_case(extended_name))
             {
                 context.report(
                     Issue::error(format!(
@@ -453,7 +455,7 @@ impl SemanticsWalker {
             }
             Property::Hooked(hooked_property) => {
                 let item_name_id = hooked_property.item.variable().name;
-                let item_name = context.interner.lookup(&&item_name_id);
+                let item_name = context.interner.lookup(&item_name_id);
 
                 if let Some(readonly) = last_readonly {
                     context.report(
@@ -573,7 +575,7 @@ impl SemanticsWalker {
                                     let first_parameter = parameters.parameters.first().unwrap();
                                     let first_parameter_name = context.interner.lookup(&first_parameter.variable.name);
 
-                                    if !first_parameter.hint.is_some() {
+                                    if first_parameter.hint.is_none() {
                                         context.report(
                                             Issue::error(format!(
                                                 "parameter `{}` of hook `{}::{}::{}` must contain a type hint",
@@ -1240,9 +1242,9 @@ impl SemanticsWalker {
     }
 
     #[inline(always)]
-    fn process_members<'ast>(
+    fn process_members(
         &self,
-        members: &'ast Sequence<ClassLikeMember>,
+        members: &Sequence<ClassLikeMember>,
         class_like_span: Span,
         class_like_kind: &str,
         class_like_name: &str,
@@ -1610,23 +1612,23 @@ impl SemanticsWalker {
 }
 
 impl Walker<Context<'_>> for SemanticsWalker {
-    fn walk_in_statement<'ast>(&self, statement: &'ast Statement, context: &mut Context<'_>) {
+    fn walk_in_statement(&self, statement: &Statement, context: &mut Context<'_>) {
         context.push_ancestor(statement.span());
     }
 
-    fn walk_in_expression<'ast>(&self, expression: &'ast Expression, context: &mut Context<'_>) {
+    fn walk_in_expression(&self, expression: &Expression, context: &mut Context<'_>) {
         context.push_ancestor(expression.span());
     }
 
-    fn walk_out_statement<'ast>(&self, _statement: &'ast Statement, context: &mut Context<'_>) {
+    fn walk_out_statement(&self, _statement: &Statement, context: &mut Context<'_>) {
         context.pop_ancestor();
     }
 
-    fn walk_out_expression<'ast>(&self, _expression: &'ast Expression, context: &mut Context<'_>) {
+    fn walk_out_expression(&self, _expression: &Expression, context: &mut Context<'_>) {
         context.pop_ancestor();
     }
 
-    fn walk_in_program<'ast>(&self, program: &'ast Program, context: &mut Context<'_>) {
+    fn walk_in_program(&self, program: &Program, context: &mut Context<'_>) {
         let mut index = 0;
         let mut before = vec![];
 
@@ -1759,7 +1761,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_short_opening_tag<'ast>(&self, short_opening_tag: &'ast ShortOpeningTag, context: &mut Context<'_>) {
+    fn walk_in_short_opening_tag(&self, short_opening_tag: &ShortOpeningTag, context: &mut Context<'_>) {
         context.report(
             Issue::error("short opening tag `<?` is no longer supported")
                 .with_annotation(Annotation::primary(short_opening_tag.span()))
@@ -1767,7 +1769,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         );
     }
 
-    fn walk_in_declare<'ast>(&self, declare: &'ast Declare, context: &mut Context<'_>) {
+    fn walk_in_declare(&self, declare: &Declare, context: &mut Context<'_>) {
         for item in declare.items.iter() {
             let name = context.interner.lookup(&item.name.value);
 
@@ -1829,7 +1831,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_namespace<'ast>(&self, namespace: &'ast Namespace, context: &mut Context<'_>) {
+    fn walk_in_namespace(&self, namespace: &Namespace, context: &mut Context<'_>) {
         if context.get_ancestors_len() > 2 {
             // get the span of the parent, and label it.
             let parent = context.get_ancestor(context.get_ancestors_len() - 2);
@@ -1845,7 +1847,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_hint<'ast>(&self, hint: &'ast Hint, context: &mut Context<'_>) {
+    fn walk_in_hint(&self, hint: &Hint, context: &mut Context<'_>) {
         match hint {
             Hint::Parenthesized(parenthesized_hint) => {
                 if !parenthesized_hint.hint.is_parenthesizable() {
@@ -1914,7 +1916,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_try<'ast>(&self, r#try: &'ast Try, context: &mut Context<'_>) {
+    fn walk_in_try(&self, r#try: &Try, context: &mut Context<'_>) {
         if r#try.catch_clauses.is_empty() && r#try.finally_clause.is_none() {
             context.report(
                 Issue::error("cannot use `try` without a `catch` or `finally`")
@@ -1929,13 +1931,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_property_hook<'ast>(&self, property_hook: &'ast PropertyHook, context: &mut Context<'_>) {
+    fn walk_in_property_hook(&self, property_hook: &PropertyHook, context: &mut Context<'_>) {
         if let Some(parameter_list) = &property_hook.parameters {
             self.process_promoted_properties_outside_constructor(parameter_list, context);
         }
     }
 
-    fn walk_in_method<'ast>(&self, method: &'ast Method, context: &mut Context<'_>) {
+    fn walk_in_method(&self, method: &Method, context: &mut Context<'_>) {
         let name = context.interner.lookup(&method.name.value);
         if name != "__construct" {
             self.process_promoted_properties_outside_constructor(&method.parameters, context);
@@ -1959,7 +1961,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_class<'ast>(&self, class: &'ast Class, context: &mut Context<'_>) {
+    fn walk_in_class(&self, class: &Class, context: &mut Context<'_>) {
         let class_name = context.interner.lookup(&class.name.value);
         let class_fqcn = context.lookup_name(&class.name.span.start);
 
@@ -2131,7 +2133,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     self.process_method(
                         method,
-                        &method_name,
+                        method_name,
                         class.span(),
                         class_name,
                         class_fqcn,
@@ -2151,7 +2153,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_interface<'ast>(&self, interface: &'ast Interface, context: &mut Context<'_>) {
+    fn walk_in_interface(&self, interface: &Interface, context: &mut Context<'_>) {
         let interface_name = context.interner.lookup(&interface.name.value);
         let interface_fqcn = context.lookup_name(&interface.name.span.start);
 
@@ -2175,8 +2177,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 extends,
                 interface.span(),
                 "interface",
-                &interface_name,
-                &interface_fqcn,
+                interface_name,
+                interface_fqcn,
                 false,
                 context,
             );
@@ -2186,8 +2188,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
             &interface.members,
             interface.span(),
             "interface",
-            &interface_name,
-            &interface_fqcn,
+            interface_name,
+            interface_fqcn,
             context,
         );
 
@@ -2275,7 +2277,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     self.process_method(
                         method,
-                        &method_name,
+                        method_name,
                         interface.span(),
                         interface_name,
                         interface_fqcn,
@@ -2404,8 +2406,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         property,
                         interface.span(),
                         "interface",
-                        &interface_name,
-                        &interface_fqcn,
+                        interface_name,
+                        interface_fqcn,
                         true,
                         context,
                     );
@@ -2439,8 +2441,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         class_like_constant,
                         interface.span(),
                         "interface",
-                        &interface_name,
-                        &interface_fqcn,
+                        interface_name,
+                        interface_fqcn,
                         context,
                     );
                 }
@@ -2448,7 +2450,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_trait<'ast>(&self, r#trait: &'ast Trait, context: &mut Context<'_>) {
+    fn walk_in_trait(&self, r#trait: &Trait, context: &mut Context<'_>) {
         let class_like_name = context.interner.lookup(&r#trait.name.value);
         let class_like_fqcn = context.lookup_name(&r#trait.name.span.start);
 
@@ -2467,7 +2469,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             );
         }
 
-        self.process_members(&r#trait.members, r#trait.span(), &class_like_name, &class_like_fqcn, "trait", context);
+        self.process_members(&r#trait.members, r#trait.span(), class_like_name, class_like_fqcn, "trait", context);
 
         for member in r#trait.members.iter() {
             match &member {
@@ -2486,10 +2488,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     self.process_method(
                         method,
-                        &method_name,
+                        method_name,
                         r#trait.span(),
-                        &class_like_name,
-                        &class_like_fqcn,
+                        class_like_name,
+                        class_like_fqcn,
                         "trait",
                         false,
                         context,
@@ -2500,8 +2502,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         property,
                         r#trait.span(),
                         "trait",
-                        &class_like_name,
-                        &class_like_fqcn,
+                        class_like_name,
+                        class_like_fqcn,
                         false,
                         context,
                     );
@@ -2511,8 +2513,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         class_like_constant,
                         r#trait.span(),
                         "trait",
-                        &class_like_name,
-                        &class_like_fqcn,
+                        class_like_name,
+                        class_like_fqcn,
                         context,
                     );
                 }
@@ -2521,7 +2523,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_enum<'ast>(&self, r#enum: &'ast Enum, context: &mut Context<'_>) {
+    fn walk_in_enum(&self, r#enum: &Enum, context: &mut Context<'_>) {
         let enum_name = context.interner.lookup(&r#enum.name.value);
         let enum_fqcn = context.lookup_name(&r#enum.name.span.start);
         let enum_is_backed = r#enum.backing_type_hint.is_some();
@@ -2557,10 +2559,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
 
         if let Some(implements) = &r#enum.implements {
-            self.process_implements(implements, r#enum.span(), "enum", &enum_name, &enum_fqcn, true, context);
+            self.process_implements(implements, r#enum.span(), "enum", enum_name, enum_fqcn, true, context);
         }
 
-        self.process_members(&r#enum.members, r#enum.span(), &enum_name, &enum_fqcn, "enum", context);
+        self.process_members(&r#enum.members, r#enum.span(), enum_name, enum_fqcn, "enum", context);
 
         for memeber in r#enum.members.iter() {
             match &memeber {
@@ -2635,7 +2637,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     self.process_method(
                         method,
-                        &method_name,
+                        method_name,
                         r#enum.span(),
                         enum_name,
                         enum_fqcn,
@@ -2651,15 +2653,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             .with_annotation(Annotation::secondary(r#enum.span())),
                     );
 
-                    self.process_property(property, r#enum.span(), "enum", &enum_name, &enum_fqcn, false, context);
+                    self.process_property(property, r#enum.span(), "enum", enum_name, enum_fqcn, false, context);
                 }
                 ClassLikeMember::Constant(class_like_constant) => {
                     self.process_class_like_constant(
                         class_like_constant,
                         r#enum.span(),
                         "enum",
-                        &enum_name,
-                        &enum_fqcn,
+                        enum_name,
+                        enum_fqcn,
                         context,
                     );
                 }
@@ -2668,7 +2670,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_anonymous_class<'ast>(&self, anonymous_class: &'ast AnonymousClass, context: &mut Context<'_>) {
+    fn walk_in_anonymous_class(&self, anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         let mut last_final = None;
         let mut last_readonly = None;
 
@@ -2781,8 +2783,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
             &anonymous_class.members,
             anonymous_class.span(),
             "class",
-            &ANONYMOUS_CLASS_NAME,
-            &ANONYMOUS_CLASS_NAME,
+            ANONYMOUS_CLASS_NAME,
+            ANONYMOUS_CLASS_NAME,
             context,
         );
 
@@ -2816,7 +2818,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     self.process_method(
                         method,
-                        &method_name,
+                        method_name,
                         anonymous_class.span(),
                         ANONYMOUS_CLASS_NAME,
                         ANONYMOUS_CLASS_NAME,
@@ -2851,7 +2853,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_function<'ast>(&self, function: &'ast Function, context: &mut Context<'_>) {
+    fn walk_in_function(&self, function: &Function, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&function.parameters, context);
 
         let name = context.interner.lookup(&function.name.value);
@@ -2897,7 +2899,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
             }
-            _ if !returns_generator(context, &function.body, &hint) => {
+            _ if !returns_generator(context, &function.body, hint) => {
                 for r#return in returns {
                     if r#return.value.is_none() {
                         context.report(
@@ -2917,7 +2919,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_attribute<'ast>(&self, attribute: &'ast Attribute, context: &mut Context<'_>) {
+    fn walk_in_attribute(&self, attribute: &Attribute, context: &mut Context<'_>) {
         let name = context.interner.lookup(&attribute.name.value());
 
         if let Some(list) = &attribute.arguments {
@@ -2956,7 +2958,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_goto<'ast>(&self, goto: &'ast Goto, context: &mut Context<'_>) {
+    fn walk_in_goto(&self, goto: &Goto, context: &mut Context<'_>) {
         let all_labels =
             context.program().filter_map(|node| if let Node::Label(label) = node { Some(*label) } else { None });
 
@@ -2971,7 +2973,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         let mut suggestions = vec![];
         for label in all_labels {
             let label_name = context.interner.lookup(&label.name.value);
-            if label_name.eq_ignore_ascii_case(&going_to) {
+            if label_name.eq_ignore_ascii_case(going_to) {
                 suggestions.push((label_name, label.name.span));
             }
         }
@@ -2995,7 +2997,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         context.report(issue);
     }
 
-    fn walk_in_argument_list<'ast>(&self, argument_list: &'ast ArgumentList, context: &mut Context<'_>) {
+    fn walk_in_argument_list(&self, argument_list: &ArgumentList, context: &mut Context<'_>) {
         let mut last_named_argument: Option<Span> = None;
         let mut last_unpacking: Option<Span> = None;
 
@@ -3057,7 +3059,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_closure<'ast>(&self, closure: &'ast Closure, context: &mut Context<'_>) {
+    fn walk_in_closure(&self, closure: &Closure, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&closure.parameters, context);
 
         let hint = if let Some(return_hint) = &closure.return_type_hint {
@@ -3095,7 +3097,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
             }
-            _ if !returns_generator(context, &closure.body, &hint) => {
+            _ if !returns_generator(context, &closure.body, hint) => {
                 for r#return in returns {
                     if r#return.value.is_none() {
                         context.report(
@@ -3114,7 +3116,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_arrow_function<'ast>(&self, arrow_function: &'ast ArrowFunction, context: &mut Context<'_>) {
+    fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&arrow_function.parameters, context);
 
         if let Some(return_hint) = &arrow_function.return_type_hint {
@@ -3134,9 +3136,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_function_like_parameter_list<'ast>(
+    fn walk_in_function_like_parameter_list(
         &self,
-        function_like_parameter_list: &'ast FunctionLikeParameterList,
+        function_like_parameter_list: &FunctionLikeParameterList,
 
         context: &mut Context<'_>,
     ) {
@@ -3153,10 +3155,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         .with_annotation(Annotation::primary(parameter.variable.span()))
                         .with_annotation(Annotation::secondary(*prev_span).with_message("previously defined here")),
                 );
-            } else {
-                if !parameter.is_promoted_property() {
-                    parameters_seen.push((parameter.variable.name, parameter.variable.span()));
-                }
+            } else if !parameter.is_promoted_property() {
+                parameters_seen.push((parameter.variable.name, parameter.variable.span()));
             }
 
             let mut last_readonly = None;
@@ -3283,7 +3283,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_match<'ast>(&self, r#match: &'ast Match, context: &mut Context<'_>) {
+    fn walk_in_match(&self, r#match: &Match, context: &mut Context<'_>) {
         let mut last_default: Option<Span> = None;
 
         for arm in r#match.arms.iter() {
@@ -3305,7 +3305,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_switch<'ast>(&self, switch: &'ast Switch, context: &mut Context<'_>) {
+    fn walk_in_switch(&self, switch: &Switch, context: &mut Context<'_>) {
         let mut last_default: Option<Span> = None;
 
         let cases = match &switch.body {
@@ -3342,7 +3342,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 /// 3. Whether the magic method has to be public.
 /// 4. Whether the magic method has to be static.
 /// 5. Whether the magic method can contain a return type.
-const MAGIC_METHOD_SEMANTICS: &[(&'static str, Option<usize>, bool, bool, bool)] = &[
+const MAGIC_METHOD_SEMANTICS: &[(&str, Option<usize>, bool, bool, bool)] = &[
     (CONSTRUCTOR_MAGIC_METHOD, None, false, false, false),
     (DESTRUCTOR_MAGIC_METHOD, None, false, false, false),
     (CLONE_MAGIC_METHOD, None, false, false, true),
@@ -3362,7 +3362,7 @@ const MAGIC_METHOD_SEMANTICS: &[(&'static str, Option<usize>, bool, bool, bool)]
     (DEBUG_INFO_MAGIC_METHOD, Some(0), true, false, true),
 ];
 
-fn returns_generator<'ast, 'a>(context: &mut Context<'a>, block: &'ast Block, hint: &'ast Hint) -> bool {
+fn returns_generator<'ast>(context: &mut Context<'_>, block: &'ast Block, hint: &'ast Hint) -> bool {
     if hint_contains_generator(context, hint) {
         return true;
     }
@@ -3370,7 +3370,7 @@ fn returns_generator<'ast, 'a>(context: &mut Context<'a>, block: &'ast Block, hi
     fennec_ast_utils::block_has_yield(block)
 }
 
-fn hint_contains_generator<'ast, 'a>(context: &mut Context<'a>, hint: &'ast Hint) -> bool {
+fn hint_contains_generator(context: &mut Context<'_>, hint: &Hint) -> bool {
     match hint {
         Hint::Identifier(identifier) => {
             let symbol = context.lookup_name(&identifier.span().start);

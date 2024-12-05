@@ -563,7 +563,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                 let buffer = self.input.consume(len);
                 let end = self.input.position();
 
-                return self.token(token_kind, buffer, start, end);
+                self.token(token_kind, buffer, start, end)
             }
             LexerMode::DoubleQuoteString(interpolation) => match &interpolation {
                 Interpolation::None => {
@@ -622,10 +622,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
                         self.mode = LexerMode::Script;
                     }
 
-                    return self.token(token_kind, buffer, start, end);
+                    self.token(token_kind, buffer, start, end)
                 }
                 Interpolation::Until(offset) => {
-                    return self.interpolation(*offset, LexerMode::DoubleQuoteString(Interpolation::None));
+                    self.interpolation(*offset, LexerMode::DoubleQuoteString(Interpolation::None))
                 }
             },
             LexerMode::ShellExecuteString(interpolation) => match &interpolation {
@@ -684,10 +684,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
                         self.mode = LexerMode::Script;
                     }
 
-                    return self.token(token_kind, buffer, start, end);
+                    self.token(token_kind, buffer, start, end)
                 }
                 Interpolation::Until(offset) => {
-                    return self.interpolation(*offset, LexerMode::ShellExecuteString(Interpolation::None));
+                    self.interpolation(*offset, LexerMode::ShellExecuteString(Interpolation::None))
                 }
             },
             LexerMode::DocumentString(kind, label, interpolation) => match &kind {
@@ -870,7 +870,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
                             self.token(TokenKind::Semicolon, buffer, start, end)
                         } else if self.input.is_at(b"?>", false) {
-                            let buffer = self.input.consume(1);
+                            let buffer = self.input.consume(2);
                             let end = self.input.position();
 
                             self.mode = LexerMode::Halt(HaltStage::End);

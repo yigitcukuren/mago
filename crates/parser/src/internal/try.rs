@@ -9,7 +9,7 @@ use crate::internal::type_hint::parse_type_hint;
 use crate::internal::utils;
 use crate::internal::variable::parse_direct_variable;
 
-pub fn parse_try<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Try, ParseError> {
+pub fn parse_try(stream: &mut TokenStream<'_, '_>) -> Result<Try, ParseError> {
     Ok(Try {
         r#try: utils::expect_keyword(stream, T!["try"])?,
         block: parse_block(stream)?,
@@ -25,9 +25,7 @@ pub fn parse_try<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Try, ParseE
     })
 }
 
-pub fn parse_optional_try_catch_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
-) -> Result<Option<TryCatchClause>, ParseError> {
+pub fn parse_optional_try_catch_clause(stream: &mut TokenStream<'_, '_>) -> Result<Option<TryCatchClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["catch"]) => {
             let catch = utils::expect_any_keyword(stream)?;
@@ -46,8 +44,8 @@ pub fn parse_optional_try_catch_clause<'a, 'i>(
     })
 }
 
-pub fn parse_optional_try_finally_clause<'a, 'i>(
-    stream: &mut TokenStream<'a, 'i>,
+pub fn parse_optional_try_finally_clause(
+    stream: &mut TokenStream<'_, '_>,
 ) -> Result<Option<TryFinallyClause>, ParseError> {
     Ok(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["finally"]) => {

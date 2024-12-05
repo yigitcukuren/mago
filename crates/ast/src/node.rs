@@ -480,57 +480,52 @@ impl<'a> Node<'a> {
 
     #[inline]
     pub const fn is_declaration(&self) -> bool {
-        match self {
-            Self::Class(_)
-            | Self::Interface(_)
-            | Self::Trait(_)
-            | Self::Enum(_)
-            | Self::Function(_)
-            | Self::Method(_) => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::Class(_) | Self::Interface(_) | Self::Trait(_) | Self::Enum(_) | Self::Function(_) | Self::Method(_)
+        )
     }
 
     #[inline]
     pub const fn is_statement(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::Statement(_)
-            | Self::OpeningTag(_)
-            | Self::EchoOpeningTag(_)
-            | Self::FullOpeningTag(_)
-            | Self::ShortOpeningTag(_)
-            | Self::ClosingTag(_)
-            | Self::Inline(_)
-            | Self::Namespace(_)
-            | Self::Use(_)
-            | Self::Class(_)
-            | Self::Interface(_)
-            | Self::Trait(_)
-            | Self::Enum(_)
-            | Self::Block(_)
-            | Self::Constant(_)
-            | Self::Function(_)
-            | Self::Declare(_)
-            | Self::Goto(_)
-            | Self::Label(_)
-            | Self::Try(_)
-            | Self::Foreach(_)
-            | Self::For(_)
-            | Self::While(_)
-            | Self::DoWhile(_)
-            | Self::Continue(_)
-            | Self::Break(_)
-            | Self::Switch(_)
-            | Self::If(_)
-            | Self::Return(_)
-            | Self::ExpressionStatement(_)
-            | Self::Echo(_)
-            | Self::Global(_)
-            | Self::Static(_)
-            | Self::HaltCompiler(_)
-            | Self::Unset(_) => true,
-            _ => false,
-        }
+                | Self::OpeningTag(_)
+                | Self::EchoOpeningTag(_)
+                | Self::FullOpeningTag(_)
+                | Self::ShortOpeningTag(_)
+                | Self::ClosingTag(_)
+                | Self::Inline(_)
+                | Self::Namespace(_)
+                | Self::Use(_)
+                | Self::Class(_)
+                | Self::Interface(_)
+                | Self::Trait(_)
+                | Self::Enum(_)
+                | Self::Block(_)
+                | Self::Constant(_)
+                | Self::Function(_)
+                | Self::Declare(_)
+                | Self::Goto(_)
+                | Self::Label(_)
+                | Self::Try(_)
+                | Self::Foreach(_)
+                | Self::For(_)
+                | Self::While(_)
+                | Self::DoWhile(_)
+                | Self::Continue(_)
+                | Self::Break(_)
+                | Self::Switch(_)
+                | Self::If(_)
+                | Self::Return(_)
+                | Self::ExpressionStatement(_)
+                | Self::Echo(_)
+                | Self::Global(_)
+                | Self::Static(_)
+                | Self::HaltCompiler(_)
+                | Self::Unset(_)
+        )
     }
 
     #[inline]
@@ -781,7 +776,7 @@ impl<'a> Node<'a> {
                 Argument::Named(node) => vec![Node::NamedArgument(node)],
                 Argument::Positional(node) => vec![Node::PositionalArgument(node)],
             },
-            Node::ArgumentList(node) => node.arguments.iter().map(|arg| Node::Argument(arg)).collect(),
+            Node::ArgumentList(node) => node.arguments.iter().map(Node::Argument).collect(),
             Node::NamedArgument(node) => {
                 vec![Node::LocalIdentifier(&node.name), Node::Expression(&node.value)]
             }
@@ -850,7 +845,7 @@ impl<'a> Node<'a> {
             Node::ClassLikeConstant(node) => {
                 let mut children: Vec<_> = node.attributes.iter().map(Node::AttributeList).collect();
 
-                children.extend(node.modifiers.iter().map(|modifier| Node::Modifier(modifier)));
+                children.extend(node.modifiers.iter().map(Node::Modifier));
                 children.push(Node::Keyword(&node.r#const));
                 if let Some(hint) = &node.hint {
                     children.push(Node::Hint(hint));
@@ -1164,12 +1159,7 @@ impl<'a> Node<'a> {
                 children
             }
             Node::ConstantItem(node) => {
-                let mut children = vec![];
-
-                children.push(Node::LocalIdentifier(&node.name));
-                children.push(Node::Expression(&node.value));
-
-                children
+                vec![Node::LocalIdentifier(&node.name), Node::Expression(&node.value)]
             }
             Node::Construct(node) => vec![match node {
                 Construct::Isset(node) => Node::IssetConstruct(node),
@@ -1238,21 +1228,14 @@ impl<'a> Node<'a> {
                 children
             }
             Node::IfStatementBodyElseIfClause(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.elseif));
-                children.push(Node::Expression(&node.condition));
-                children.push(Node::Statement(&node.statement));
-
-                children
+                vec![Node::Keyword(&node.elseif), Node::Expression(&node.condition), Node::Statement(&node.statement)]
             }
             Node::IfStatementBodyElseClause(node) => {
                 vec![Node::Keyword(&node.r#else), Node::Statement(&node.statement)]
             }
             Node::IfColonDelimitedBody(node) => {
-                let mut children = vec![];
+                let mut children = node.statements.iter().map(Node::Statement).collect::<Vec<_>>();
 
-                children.extend(node.statements.iter().map(Node::Statement));
                 children.extend(node.else_if_clauses.iter().map(Node::IfColonDelimitedBodyElseIfClause));
 
                 if let Some(else_clause) = &node.else_clause {
@@ -1265,27 +1248,20 @@ impl<'a> Node<'a> {
                 children
             }
             Node::IfColonDelimitedBodyElseIfClause(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.elseif));
-                children.push(Node::Expression(&node.condition));
+                let mut children = vec![Node::Keyword(&node.elseif), Node::Expression(&node.condition)];
                 children.extend(node.statements.iter().map(Node::Statement));
 
                 children
             }
             Node::IfColonDelimitedBodyElseClause(node) => {
-                let mut children = vec![];
+                let mut children = vec![Node::Keyword(&node.r#else)];
 
-                children.push(Node::Keyword(&node.r#else));
                 children.extend(node.statements.iter().map(Node::Statement));
 
                 children
             }
             Node::Match(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.r#match));
-                children.push(Node::Expression(&node.expression));
+                let mut children = vec![Node::Keyword(&node.r#match), Node::Expression(&node.expression)];
                 children.extend(node.arms.iter().map(Node::MatchArm));
 
                 children
@@ -1306,13 +1282,7 @@ impl<'a> Node<'a> {
                 vec![Node::Keyword(&node.default), Node::Expression(&node.expression)]
             }
             Node::Switch(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.switch));
-                children.push(Node::Expression(&node.expression));
-                children.push(Node::SwitchBody(&node.body));
-
-                children
+                vec![Node::Keyword(&node.switch), Node::Expression(&node.expression), Node::SwitchBody(&node.body)]
             }
             Node::SwitchBody(node) => match node {
                 SwitchBody::BraceDelimited(body) => vec![Node::SwitchBraceDelimitedBody(body)],
@@ -1324,6 +1294,7 @@ impl<'a> Node<'a> {
                 if let Some(terminator) = &node.optional_terminator {
                     children.push(Node::Terminator(terminator));
                 }
+
                 children.extend(node.cases.iter().map(Node::SwitchCase));
 
                 children
@@ -1334,6 +1305,7 @@ impl<'a> Node<'a> {
                 if let Some(terminator) = &node.optional_terminator {
                     children.push(Node::Terminator(terminator));
                 }
+
                 children.extend(node.cases.iter().map(Node::SwitchCase));
                 children.push(Node::Keyword(&node.end_switch));
                 children.push(Node::Terminator(&node.terminator));
@@ -1345,20 +1317,18 @@ impl<'a> Node<'a> {
                 SwitchCase::Default(default_case) => vec![Node::SwitchDefaultCase(default_case)],
             },
             Node::SwitchExpressionCase(node) => {
-                let mut children = vec![];
+                let mut children = vec![
+                    Node::Keyword(&node.case),
+                    Node::Expression(&node.expression),
+                    Node::SwitchCaseSeparator(&node.separator),
+                ];
 
-                children.push(Node::Keyword(&node.case));
-                children.push(Node::Expression(&node.expression));
-                children.push(Node::SwitchCaseSeparator(&node.separator));
                 children.extend(node.statements.iter().map(Node::Statement));
 
                 children
             }
             Node::SwitchDefaultCase(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.default));
-                children.push(Node::SwitchCaseSeparator(&node.separator));
+                let mut children = vec![Node::Keyword(&node.default), Node::SwitchCaseSeparator(&node.separator)];
                 children.extend(node.statements.iter().map(Node::Statement));
 
                 children

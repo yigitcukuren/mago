@@ -35,10 +35,10 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
             return Ok(Vec::new());
         }
 
-        return Ok(vec![Token::Line {
+        Ok(vec![Token::Line {
             content: &content[1..content_len - 1],
             span: span.subspan(content_start + 1, content_end - 1),
-        }]);
+        }])
     } else {
         let lines: Vec<&'a str> = content.lines().collect();
 

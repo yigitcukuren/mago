@@ -5,7 +5,7 @@ use crate::error::ParseError;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
 
-pub fn parse_inline<'a, 'i>(stream: &mut TokenStream<'a, 'i>) -> Result<Inline, ParseError> {
+pub fn parse_inline(stream: &mut TokenStream<'_, '_>) -> Result<Inline, ParseError> {
     let token = utils::expect_one_of(stream, T![InlineText, InlineShebang])?;
 
     Ok(Inline {

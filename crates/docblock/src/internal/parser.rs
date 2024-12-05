@@ -6,15 +6,15 @@ use crate::error::ParseError;
 
 use super::token::Token;
 
-pub fn parse_document<'a>(tokens: &[Token<'a>], interner: &ThreadedInterner) -> Result<Document, ParseError> {
+pub fn parse_document(tokens: &[Token<'_>], interner: &ThreadedInterner) -> Result<Document, ParseError> {
     let mut elements = Vec::new();
     let mut i = 0;
 
     while i < tokens.len() {
         match &tokens[i] {
             Token::Line { content, .. } => {
-                if content.starts_with('@') {
-                    if is_annotation_start(&content[1..]) {
+                if let Some(stripped) = content.strip_prefix('@') {
+                    if is_annotation_start(stripped) {
                         let (annotation, new_i) = parse_annotation(tokens, i, interner)?;
                         elements.push(Element::Annotation(annotation));
                         i = new_i;
@@ -61,8 +61,8 @@ fn is_annotation_start(s: &str) -> bool {
     }
 }
 
-fn parse_tag<'a>(
-    tokens: &[Token<'a>],
+fn parse_tag(
+    tokens: &[Token<'_>],
     start_index: usize,
     interner: &ThreadedInterner,
 ) -> Result<(Tag, usize), ParseError> {
@@ -86,9 +86,11 @@ fn parse_tag<'a>(
     while i < tokens.len() {
         match &tokens[i] {
             Token::Line { content, span } => {
-                if content.is_empty() || content.trim().is_empty() {
-                    break;
-                } else if content.starts_with('@') || content.starts_with("```") {
+                if content.is_empty()
+                    || content.trim().is_empty()
+                    || content.starts_with('@')
+                    || content.starts_with("```")
+                {
                     break;
                 } else {
                     description.push('\n');
@@ -115,8 +117,8 @@ fn parse_tag<'a>(
     Ok((tag, i))
 }
 
-fn parse_code_block<'a>(
-    tokens: &[Token<'a>],
+fn parse_code_block(
+    tokens: &[Token<'_>],
     start_index: usize,
     interner: &ThreadedInterner,
 ) -> Result<(Code, usize), ParseError> {
@@ -173,8 +175,8 @@ fn parse_code_block<'a>(
     Ok((code, i))
 }
 
-fn parse_indented_code<'a>(
-    tokens: &[Token<'a>],
+fn parse_indented_code(
+    tokens: &[Token<'_>],
     start_index: usize,
     interner: &ThreadedInterner,
 ) -> Result<(Code, usize), ParseError> {
@@ -224,8 +226,8 @@ fn parse_indented_code<'a>(
     Ok((code, i))
 }
 
-fn parse_text<'a>(
-    tokens: &[Token<'a>],
+fn parse_text(
+    tokens: &[Token<'_>],
     start_index: usize,
     interner: &ThreadedInterner,
 ) -> Result<(Text, usize), ParseError> {
@@ -238,9 +240,12 @@ fn parse_text<'a>(
     while i < tokens.len() {
         match &tokens[i] {
             Token::Line { content, span } => {
-                if content.is_empty() || content.trim().is_empty() {
-                    break;
-                } else if content.starts_with('@') || content.starts_with("```") || is_indented_line(content) {
+                if content.is_empty()
+                    || content.trim().is_empty()
+                    || content.starts_with('@')
+                    || content.starts_with("```")
+                    || is_indented_line(content)
+                {
                     break;
                 } else {
                     if !text_content.is_empty() {
@@ -266,8 +271,8 @@ fn parse_text<'a>(
     Ok((text, i))
 }
 
-fn parse_text_segments<'a>(
-    text_content: &'a str,
+fn parse_text_segments(
+    text_content: &str,
     base_span: Span,
     interner: &ThreadedInterner,
 ) -> Result<Vec<TextSegment>, ParseError> {
@@ -278,7 +283,7 @@ fn parse_text_segments<'a>(
         if ch == '`' {
             let is_start = start_pos == 0;
             let is_prev_whitespace = if start_pos > 0 {
-                text_content[..start_pos].chars().rev().next().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
+                text_content[..start_pos].chars().next_back().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
             } else {
                 false
             };
@@ -331,7 +336,7 @@ fn parse_text_segments<'a>(
         if text_content[start_pos..].starts_with("{@") {
             let is_start = start_pos == 0;
             let is_prev_whitespace = if start_pos > 0 {
-                text_content[..start_pos].chars().rev().next().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
+                text_content[..start_pos].chars().next_back().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
             } else {
                 false
             };
@@ -343,7 +348,7 @@ fn parse_text_segments<'a>(
 
                 let tag_content_start = tag_start_pos + 2;
                 let mut tag_end_pos = None;
-                while let Some((idx, ch)) = char_indices.next() {
+                for (idx, ch) in char_indices.by_ref() {
                     if ch == '}' {
                         tag_end_pos = Some(idx);
                         break;
@@ -370,7 +375,7 @@ fn parse_text_segments<'a>(
             let is_code_start = ch == '`' && {
                 let is_start = idx == 0;
                 let is_prev_whitespace = if idx > 0 {
-                    text_content[..idx].chars().rev().next().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
+                    text_content[..idx].chars().next_back().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
                 } else {
                     false
                 };
@@ -381,7 +386,7 @@ fn parse_text_segments<'a>(
             let is_tag_start = text_content[idx..].starts_with("{@") && {
                 let is_start = idx == 0;
                 let is_prev_whitespace = if idx > 0 {
-                    text_content[..idx].chars().rev().next().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
+                    text_content[..idx].chars().next_back().map(|c| c.is_ascii_whitespace()).unwrap_or(false)
                 } else {
                     false
                 };
@@ -407,7 +412,7 @@ fn parse_text_segments<'a>(
     Ok(segments)
 }
 
-fn parse_inline_tag<'a>(tag_content: &'a str, span: Span, interner: &ThreadedInterner) -> Result<Tag, ParseError> {
+fn parse_inline_tag(tag_content: &str, span: Span, interner: &ThreadedInterner) -> Result<Tag, ParseError> {
     let mut parts = tag_content.trim().splitn(2, char::is_whitespace);
     let tag_name_str = parts.next().unwrap_or("");
     let description_part = parts.next().unwrap_or("").trim_start();
@@ -419,8 +424,8 @@ fn parse_inline_tag<'a>(tag_content: &'a str, span: Span, interner: &ThreadedInt
     Ok(Tag { span, name, kind, description })
 }
 
-fn parse_annotation<'a>(
-    tokens: &[Token<'a>],
+fn parse_annotation(
+    tokens: &[Token<'_>],
     start_index: usize,
     interner: &ThreadedInterner,
 ) -> Result<(Annotation, usize), ParseError> {
@@ -485,7 +490,7 @@ fn parse_annotation<'a>(
     Ok((annotation, i))
 }
 
-fn parse_annotation_name<'a>(content: &'a str, span: Span) -> Result<(String, usize), ParseError> {
+fn parse_annotation_name(content: &str, span: Span) -> Result<(String, usize), ParseError> {
     let mut name_chars = String::new();
     let mut chars = content.char_indices();
     let mut index = 0;

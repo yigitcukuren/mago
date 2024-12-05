@@ -402,7 +402,7 @@ impl IssueCollection {
     }
 
     pub fn take_suggestions(&mut self) -> impl Iterator<Item = (SourceIdentifier, FixPlan)> + '_ {
-        self.issues.iter_mut().map(|issue| issue.take_suggestions()).flatten()
+        self.issues.iter_mut().flat_map(|issue| issue.take_suggestions())
     }
 
     pub fn only_fixable(self) -> impl Iterator<Item = Issue> {
@@ -442,20 +442,20 @@ impl IntoIterator for IssueCollection {
     }
 }
 
-impl Into<LabelStyle> for AnnotationKind {
-    fn into(self) -> LabelStyle {
-        match self {
+impl From<AnnotationKind> for LabelStyle {
+    fn from(kind: AnnotationKind) -> LabelStyle {
+        match kind {
             AnnotationKind::Primary => LabelStyle::Primary,
             AnnotationKind::Secondary => LabelStyle::Secondary,
         }
     }
 }
 
-impl Into<Label<SourceIdentifier>> for Annotation {
-    fn into(self) -> Label<SourceIdentifier> {
-        let mut label = Label::new(self.kind.into(), self.span.start.source, self.span);
+impl From<Annotation> for Label<SourceIdentifier> {
+    fn from(annotation: Annotation) -> Label<SourceIdentifier> {
+        let mut label = Label::new(annotation.kind.into(), annotation.span.start.source, annotation.span);
 
-        if let Some(message) = self.message {
+        if let Some(message) = annotation.message {
             label.message = message;
         }
 
@@ -463,9 +463,9 @@ impl Into<Label<SourceIdentifier>> for Annotation {
     }
 }
 
-impl Into<Severity> for Level {
-    fn into(self) -> Severity {
-        match self {
+impl From<Level> for Severity {
+    fn from(level: Level) -> Severity {
+        match level {
             Level::Note => Severity::Note,
             Level::Help => Severity::Help,
             Level::Warning => Severity::Warning,
@@ -474,27 +474,27 @@ impl Into<Severity> for Level {
     }
 }
 
-impl Into<Diagnostic<SourceIdentifier>> for Issue {
-    fn into(self) -> Diagnostic<SourceIdentifier> {
-        let mut diagnostic = Diagnostic::new(self.level.into()).with_message(self.message);
+impl From<Issue> for Diagnostic<SourceIdentifier> {
+    fn from(issue: Issue) -> Diagnostic<SourceIdentifier> {
+        let mut diagnostic = Diagnostic::new(issue.level.into()).with_message(issue.message);
 
-        if let Some(code) = self.code {
+        if let Some(code) = issue.code {
             diagnostic.code = Some(code);
         }
 
-        for annotation in self.annotations {
+        for annotation in issue.annotations {
             diagnostic.labels.push(annotation.into());
         }
 
-        for note in self.notes {
+        for note in issue.notes {
             diagnostic.notes.push(note);
         }
 
-        if let Some(help) = self.help {
+        if let Some(help) = issue.help {
             diagnostic.notes.push(format!("help: {}", help));
         }
 
-        if let Some(link) = self.link {
+        if let Some(link) = issue.link {
             diagnostic.notes.push(format!("see: {}", link));
         }
 

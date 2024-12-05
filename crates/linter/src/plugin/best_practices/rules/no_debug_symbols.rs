@@ -6,7 +6,7 @@ use fennec_walker::Walker;
 use crate::context::LintContext;
 use crate::rule::Rule;
 
-const DEBUG_FUNCTIONS: [&'static str; 50] = [
+const DEBUG_FUNCTIONS: [&str; 50] = [
     // PHP built-in debug functions
     "var_dump",
     "var_export",

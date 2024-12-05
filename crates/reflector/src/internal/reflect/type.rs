@@ -7,9 +7,9 @@ use fennec_span::*;
 
 use crate::internal::context::Context;
 
-pub fn maybe_reflect_hint<'i, 'ast>(
+pub fn maybe_reflect_hint<'ast>(
     hint: &'ast Option<Hint>,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> Option<TypeReflection> {
     let Some(hint) = hint else {
@@ -19,19 +19,15 @@ pub fn maybe_reflect_hint<'i, 'ast>(
     Some(TypeReflection { kind: build_kind(hint, context, scope), inferred: false, span: hint.span() })
 }
 
-pub fn reflect_hint<'i, 'ast>(
+pub fn reflect_hint<'ast>(
     hint: &'ast Hint,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> TypeReflection {
     TypeReflection { kind: build_kind(hint, context, scope), inferred: false, span: hint.span() }
 }
 
-fn build_kind<'i, 'ast>(
-    hint: &'ast Hint,
-    context: &'ast mut Context<'i>,
-    scope: Option<&ClassLikeReflection>,
-) -> TypeKind {
+fn build_kind<'ast>(hint: &'ast Hint, context: &'ast mut Context<'_>, scope: Option<&ClassLikeReflection>) -> TypeKind {
     match &hint {
         Hint::Identifier(identifier) => named_object_kind(*context.semantics.names.get(identifier), vec![]),
         Hint::Parenthesized(parenthesized_hint) => build_kind(parenthesized_hint.hint.as_ref(), context, scope),

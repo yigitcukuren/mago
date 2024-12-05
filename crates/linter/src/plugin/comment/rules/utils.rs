@@ -5,7 +5,7 @@ use crate::context::LintContext;
 /// A utility function to get the content of a comment trivia.
 ///
 /// This function will return the content of a comment trivia, without the comment markers.
-pub fn comment_content<'ast>(trivia: &'ast Trivia, context: &LintContext<'_>) -> Option<String> {
+pub fn comment_content(trivia: &Trivia, context: &LintContext<'_>) -> Option<String> {
     match trivia.kind {
         TriviaKind::MultiLineComment => {
             let content = context.lookup(&trivia.value);

@@ -103,7 +103,7 @@ impl SymbolWalker {
 }
 
 impl<'a> MutWalker<Context<'a>> for SymbolWalker {
-    fn walk_in_namespace<'ast>(&mut self, namespace: &'ast Namespace, context: &mut Context<'_>) {
+    fn walk_in_namespace(&mut self, namespace: &Namespace, context: &mut Context<'_>) {
         let name = match &namespace.name {
             Some(name) => context.interner.lookup(&name.value()).to_string(),
             None => "".to_string(),
@@ -112,11 +112,11 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         context.enter_namespace(name);
     }
 
-    fn walk_out_namespace<'ast>(&mut self, _namespace: &'ast Namespace, context: &mut Context<'_>) {
+    fn walk_out_namespace(&mut self, _namespace: &Namespace, context: &mut Context<'_>) {
         context.exit_namespace();
     }
 
-    fn walk_in_function<'ast>(&mut self, function: &'ast Function, context: &mut Context<'_>) {
+    fn walk_in_function(&mut self, function: &Function, context: &mut Context<'_>) {
         let symbol = self.construct_identified(
             context,
             SymbolKind::Function,
@@ -128,7 +128,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         context.enter_scope(symbol);
     }
 
-    fn walk_out_function<'ast>(&mut self, _function: &'ast Function, context: &mut Context<'_>) {
+    fn walk_out_function(&mut self, _function: &Function, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting function, this is a bug in fennec, please report it.");
         };
@@ -136,13 +136,13 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_anonymous_class<'ast>(&mut self, anonymous_class: &'ast AnonymousClass, context: &mut Context<'_>) {
+    fn walk_in_anonymous_class(&mut self, anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         let symbol = self.construct_unidentified(context, SymbolKind::Class, anonymous_class.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_anonymous_class<'ast>(&mut self, _anonymous_class: &'ast AnonymousClass, context: &mut Context<'_>) {
+    fn walk_out_anonymous_class(&mut self, _anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting anonymous class, this is a bug in fennec, please report it.");
         };
@@ -150,14 +150,14 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_class<'ast>(&mut self, class: &'ast Class, context: &mut Context<'_>) {
+    fn walk_in_class(&mut self, class: &Class, context: &mut Context<'_>) {
         let symbol =
             self.construct_identified(context, SymbolKind::Class, class.name.value, class.name.span, class.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_class<'ast>(&mut self, _class: &'ast Class, context: &mut Context<'_>) {
+    fn walk_out_class(&mut self, _class: &Class, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting class, this is a bug in fennec, please report it.");
         };
@@ -165,7 +165,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_trait<'ast>(&mut self, r#trait: &'ast Trait, context: &mut Context<'_>) {
+    fn walk_in_trait(&mut self, r#trait: &Trait, context: &mut Context<'_>) {
         let symbol = self.construct_identified(
             context,
             SymbolKind::Trait,
@@ -177,7 +177,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         context.enter_scope(symbol);
     }
 
-    fn walk_out_trait<'ast>(&mut self, _trait: &'ast Trait, context: &mut Context<'_>) {
+    fn walk_out_trait(&mut self, _trait: &Trait, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting trait, this is a bug in fennec, please report it.");
         };
@@ -185,14 +185,14 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_enum<'ast>(&mut self, r#enum: &'ast Enum, context: &mut Context<'_>) {
+    fn walk_in_enum(&mut self, r#enum: &Enum, context: &mut Context<'_>) {
         let symbol =
             self.construct_identified(context, SymbolKind::Enum, r#enum.name.value, r#enum.name.span, r#enum.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_enum<'ast>(&mut self, _enum: &'ast Enum, context: &mut Context<'_>) {
+    fn walk_out_enum(&mut self, _enum: &Enum, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting enum, this is a bug in fennec, please report it.");
         };
@@ -200,7 +200,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_interface<'ast>(&mut self, interface: &'ast Interface, context: &mut Context<'_>) {
+    fn walk_in_interface(&mut self, interface: &Interface, context: &mut Context<'_>) {
         let symbol = self.construct_identified(
             context,
             SymbolKind::Interface,
@@ -212,7 +212,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         context.enter_scope(symbol);
     }
 
-    fn walk_out_interface<'ast>(&mut self, _interface: &'ast Interface, context: &mut Context<'_>) {
+    fn walk_out_interface(&mut self, _interface: &Interface, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting interface, this is a bug in fennec, please report it.");
         };
@@ -220,13 +220,13 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_closure<'ast>(&mut self, closure: &'ast Closure, context: &mut Context<'_>) {
+    fn walk_in_closure(&mut self, closure: &Closure, context: &mut Context<'_>) {
         let symbol = self.construct_unidentified(context, SymbolKind::Closure, closure.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_closure<'ast>(&mut self, _closure: &'ast Closure, context: &mut Context<'_>) {
+    fn walk_out_closure(&mut self, _closure: &Closure, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting closure, this is a bug in fennec, please report it.");
         };
@@ -234,13 +234,13 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_arrow_function<'ast>(&mut self, arrow_function: &'ast ArrowFunction, context: &mut Context<'_>) {
+    fn walk_in_arrow_function(&mut self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let symbol = self.construct_unidentified(context, SymbolKind::ArrowFunction, arrow_function.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_arrow_function<'ast>(&mut self, _arrow_function: &'ast ArrowFunction, context: &mut Context<'_>) {
+    fn walk_out_arrow_function(&mut self, _arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting arrow function, this is a bug in fennec, please report it.");
         };
@@ -248,14 +248,14 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_in_method<'ast>(&mut self, method: &'ast Method, context: &mut Context<'_>) {
+    fn walk_in_method(&mut self, method: &Method, context: &mut Context<'_>) {
         let symbol =
             self.construct_identified(context, SymbolKind::Method, method.name.value, method.name.span, method.span());
 
         context.enter_scope(symbol);
     }
 
-    fn walk_out_method<'ast>(&mut self, _method: &'ast Method, context: &mut Context<'_>) {
+    fn walk_out_method(&mut self, _method: &Method, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
             panic!("scope should be present when exiting method, this is a bug in fennec, please report it.");
         };
@@ -263,7 +263,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         self.symbols.add_symbol(symbol);
     }
 
-    fn walk_constant<'ast>(&mut self, constant: &'ast Constant, context: &mut Context<'_>) {
+    fn walk_constant(&mut self, constant: &Constant, context: &mut Context<'_>) {
         for item in constant.items.iter() {
             self.symbols.add_symbol(self.construct_identified(
                 context,
@@ -275,11 +275,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         }
     }
 
-    fn walk_class_like_constant<'ast>(
-        &mut self,
-        class_like_constant: &'ast ClassLikeConstant,
-        context: &mut Context<'_>,
-    ) {
+    fn walk_class_like_constant(&mut self, class_like_constant: &ClassLikeConstant, context: &mut Context<'_>) {
         for item in class_like_constant.items.iter() {
             self.symbols.add_symbol(self.construct_identified(
                 context,
@@ -291,7 +287,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         }
     }
 
-    fn walk_enum_case<'ast>(&mut self, enum_case: &'ast EnumCase, context: &mut Context<'_>) {
+    fn walk_enum_case(&mut self, enum_case: &EnumCase, context: &mut Context<'_>) {
         let item_name = enum_case.item.name();
 
         self.symbols.add_symbol(self.construct_identified(
@@ -303,7 +299,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         ));
     }
 
-    fn walk_plain_property<'ast>(&mut self, plain_property: &'ast PlainProperty, context: &mut Context<'_>) {
+    fn walk_plain_property(&mut self, plain_property: &PlainProperty, context: &mut Context<'_>) {
         for item in plain_property.items.iter() {
             let variable = item.variable();
 
@@ -317,7 +313,7 @@ impl<'a> MutWalker<Context<'a>> for SymbolWalker {
         }
     }
 
-    fn walk_in_hooked_property<'ast>(&mut self, hooked_property: &'ast HookedProperty, context: &mut Context<'_>) {
+    fn walk_in_hooked_property(&mut self, hooked_property: &HookedProperty, context: &mut Context<'_>) {
         let variable = hooked_property.item.variable();
 
         self.symbols.add_symbol(self.construct_identified(

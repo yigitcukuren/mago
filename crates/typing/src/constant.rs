@@ -21,7 +21,7 @@ impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
         Self { interner, semantics, codebase }
     }
 
-    pub fn resolve<'ast>(&self, constant: &'ast Identifier) -> TypeKind {
+    pub fn resolve(&self, constant: &Identifier) -> TypeKind {
         let (short_name, full_name) = if self.semantics.names.is_imported(constant) {
             let name = self.interner.lookup(self.semantics.names.get(constant));
 
@@ -30,8 +30,8 @@ impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
             let short_name = self.interner.lookup(&constant.value());
             let imported_name = self.interner.lookup(self.semantics.names.get(constant));
 
-            if short_name.starts_with('\\') {
-                (&short_name[1..], imported_name)
+            if let Some(stripped) = short_name.strip_prefix('\\') {
+                (stripped, imported_name)
             } else {
                 (short_name, imported_name)
             }
@@ -197,7 +197,7 @@ impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
             "PHP_INT_SIZE" => union_kind(vec![value_integer_kind(4), value_integer_kind(8)]),
             "PHP_FLOAT_DIG" => positive_integer_kind(),
             "PHP_FLOAT_EPSILON" => union_kind(vec![
-                value_float_kind(OrderedFloat(2.2204460492503131e-16)),
+                value_float_kind(OrderedFloat(2.220_446_049_250_313e-16)),
                 value_float_kind(OrderedFloat(1.19209290e-7)),
             ]),
             "PHP_EXTENSION_DIR" => non_empty_string_kind(),

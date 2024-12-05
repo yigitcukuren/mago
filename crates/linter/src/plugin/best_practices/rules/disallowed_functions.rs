@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct DisallowedFunctionsRule;
 
 impl DisallowedFunctionsRule {
-    fn report_disallowed_function<'ast>(&self, function_call: &'ast FunctionCall, context: &mut LintContext) {
+    fn report_disallowed_function(&self, function_call: &FunctionCall, context: &mut LintContext) {
         let Expression::Identifier(identifier) = function_call.function.as_ref() else {
             return;
         };
@@ -44,7 +44,7 @@ impl DisallowedFunctionsRule {
         }
     }
 
-    fn report_disallowed_extension_function<'ast>(&self, function_call: &'ast FunctionCall, context: &mut LintContext) {
+    fn report_disallowed_extension_function(&self, function_call: &FunctionCall, context: &mut LintContext) {
         let Expression::Identifier(identifier) = function_call.function.as_ref() else {
             return;
         };

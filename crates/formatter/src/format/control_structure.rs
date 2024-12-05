@@ -1,10 +1,9 @@
 use fennec_ast::*;
 use fennec_span::HasSpan;
 
-use crate::array;
-use crate::default_line;
 use crate::document::Document;
-use crate::empty_string;
+use crate::document::Group;
+use crate::document::Line;
 use crate::format::delimited;
 use crate::format::delimited::Delimiter;
 use crate::format::misc;
@@ -13,22 +12,20 @@ use crate::format::misc::print_token_with_indented_leading_comments;
 use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::statement::print_statement_sequence;
 use crate::format::Format;
-use crate::format::Group;
 use crate::format::IfBreak;
-use crate::format::Line;
-use crate::group;
-use crate::hardline;
-use crate::indent;
 use crate::settings::*;
-use crate::space;
-use crate::token;
 use crate::wrap;
 use crate::Formatter;
 
 impl<'a> Format<'a> for If {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, If, {
-            group!(self.r#if.format(f), space!(), misc::print_condition(f, &self.condition), self.body.format(f))
+            Document::Group(Group::new(vec![
+                self.r#if.format(f),
+                Document::space(),
+                misc::print_condition(f, &self.condition),
+                self.body.format(f),
+            ]))
         })
     }
 }
@@ -57,7 +54,7 @@ impl<'a> Format<'a> for IfStatementBody {
                 parts.push(else_clause.format(f));
             }
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -65,7 +62,7 @@ impl<'a> Format<'a> for IfStatementBody {
 impl<'a> Format<'a> for IfStatementBodyElseClause {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, IfStatementBodyElseClause, {
-            group!(self.r#else.format(f), misc::print_clause(f, &self.statement, false))
+            Document::Group(Group::new(vec![self.r#else.format(f), misc::print_clause(f, &self.statement, false)]))
         })
     }
 }
@@ -73,12 +70,12 @@ impl<'a> Format<'a> for IfStatementBodyElseClause {
 impl<'a> Format<'a> for IfStatementBodyElseIfClause {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, IfStatementBodyElseIfClause, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.elseif.format(f),
-                space!(),
+                Document::space(),
                 misc::print_condition(f, &self.condition),
                 misc::print_clause(f, &self.statement, false),
-            )
+            ]))
         })
     }
 }
@@ -86,34 +83,30 @@ impl<'a> Format<'a> for IfStatementBodyElseIfClause {
 impl<'a> Format<'a> for IfColonDelimitedBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, IfColonDelimitedBody, {
-            let mut parts = vec![token!(f, self.colon, ":")];
+            let mut parts = vec![Document::String(":")];
 
-            let statements = print_statement_sequence(f, &self.statements);
-            let has_statements = !statements.is_empty();
-            if has_statements {
-                parts.push(indent!(@hardline!()));
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                statements.insert(0, Document::Line(Line::hardline()));
+
+                parts.push(Document::Indent(statements));
             }
 
-            for stmt in statements {
-                parts.push(indent!(stmt));
-            }
-
-            parts.extend(hardline!());
-
+            parts.push(Document::Line(Line::hardline()));
             for else_if_clause in self.else_if_clauses.iter() {
                 parts.push(else_if_clause.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             if let Some(else_clause) = &self.else_clause {
                 parts.push(else_clause.format(f));
-                parts.extend(hardline!());
+                parts.push(Document::Line(Line::hardline()));
             }
 
             parts.push(self.endif.format(f));
             parts.push(self.terminator.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -121,19 +114,16 @@ impl<'a> Format<'a> for IfColonDelimitedBody {
 impl<'a> Format<'a> for IfColonDelimitedBodyElseClause {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, IfColonDelimitedBodyElseClause, {
-            let mut parts = vec![self.r#else.format(f), token!(f, self.colon, ":")];
+            let mut parts = vec![self.r#else.format(f), Document::String(":")];
 
-            let statements = print_statement_sequence(f, &self.statements);
-            let has_statements = !statements.is_empty();
-            if has_statements {
-                parts.push(indent!(@hardline!()));
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                statements.insert(0, Document::Line(Line::hardline()));
+
+                parts.push(Document::Indent(statements));
             }
 
-            for stmt in statements {
-                parts.push(indent!(stmt));
-            }
-
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -143,22 +133,19 @@ impl<'a> Format<'a> for IfColonDelimitedBodyElseIfClause {
         wrap!(f, self, IfColonDelimitedBodyElseIfClause, {
             let mut parts = vec![
                 self.elseif.format(f),
-                space!(),
+                Document::space(),
                 misc::print_condition(f, &self.condition),
-                token!(f, self.colon, ":"),
+                Document::String(":"),
             ];
 
-            let statements = print_statement_sequence(f, &self.statements);
-            let has_statements = !statements.is_empty();
-            if has_statements {
-                parts.push(indent!(@hardline!()));
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                statements.insert(0, Document::Line(Line::hardline()));
+
+                parts.push(Document::Indent(statements));
             }
 
-            for stmt in statements {
-                parts.push(indent!(stmt));
-            }
-
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -166,14 +153,14 @@ impl<'a> Format<'a> for IfColonDelimitedBodyElseIfClause {
 impl<'a> Format<'a> for DoWhile {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, DoWhile, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#do.format(f),
                 misc::print_clause(f, &self.statement, false),
                 self.r#while.format(f),
-                space!(),
+                Document::space(),
                 misc::print_condition(f, &self.condition),
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -181,21 +168,21 @@ impl<'a> Format<'a> for DoWhile {
 impl<'a> Format<'a> for For {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, For, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#for.format(f),
-                space!(),
+                Document::space(),
                 {
                     let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
                     let formatter = |f: &mut Formatter<'a>| {
                         let initializations = TokenSeparatedSequenceFormatter::new(",")
                             .with_trailing_separator(false)
                             .format(f, &self.initializations);
-                        let initializations_semicolon = token!(f, self.initializations_semicolon, ";");
+                        let initializations_semicolon = Document::String(";");
 
                         let conditions = TokenSeparatedSequenceFormatter::new(",")
                             .with_trailing_separator(false)
                             .format(f, &self.conditions);
-                        let conditions_semicolon = token!(f, self.conditions_semicolon, ";");
+                        let conditions_semicolon = Document::String(";");
 
                         let increments = TokenSeparatedSequenceFormatter::new(",")
                             .with_trailing_separator(false)
@@ -219,8 +206,8 @@ impl<'a> Format<'a> for For {
 
                     delimited::format_delimited_group(f, delimiter, formatter, false)
                 },
-                self.body.format(f)
-            )
+                self.body.format(f),
+            ]))
         })
     }
 }
@@ -240,7 +227,7 @@ impl<'a> Format<'a> for ForBody {
                 ForBody::Statement(s) => {
                     let stmt = s.format(f);
 
-                    misc::adjust_clause(f, &s, stmt, false)
+                    misc::adjust_clause(f, s, stmt, false)
                 }
                 ForBody::ColonDelimited(b) => b.format(f),
             }
@@ -251,17 +238,14 @@ impl<'a> Format<'a> for ForBody {
 impl<'a> Format<'a> for Switch {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Switch, {
-            let mut parts = vec![];
-
-            parts.push(self.switch.format(f));
-            parts.push(space!());
-            parts.push(token!(f, self.left_parenthesis, "("));
-            parts.push(self.expression.format(f));
-            parts.push(token!(f, self.right_parenthesis, ")"));
-
-            parts.push(self.body.format(f));
-
-            array!(@parts)
+            Document::Array(vec![
+                self.switch.format(f),
+                Document::space(),
+                Document::String("("),
+                self.expression.format(f),
+                Document::String(")"),
+                self.body.format(f),
+            ])
         })
     }
 }
@@ -270,17 +254,13 @@ impl<'a> Format<'a> for SwitchBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchBody, {
             match self {
-                SwitchBody::BraceDelimited(b) => array!(
+                SwitchBody::BraceDelimited(b) => Document::Array(vec![
                     match f.settings.control_brace_style {
-                        BraceStyle::SameLine => {
-                            space!()
-                        }
-                        BraceStyle::NextLine => {
-                            default_line!()
-                        }
+                        BraceStyle::SameLine => Document::space(),
+                        BraceStyle::NextLine => Document::Line(Line::hardline()),
                     },
-                    b.format(f)
-                ),
+                    b.format(f),
+                ]),
                 SwitchBody::ColonDelimited(b) => b.format(f),
             }
         })
@@ -290,16 +270,16 @@ impl<'a> Format<'a> for SwitchBody {
 impl<'a> Format<'a> for SwitchColonDelimitedBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchColonDelimitedBody, {
-            let mut parts = vec![token!(f, self.colon, ":")];
+            let mut contents = vec![Document::String(":")];
             for case in self.cases.iter() {
-                parts.push(indent!(default_line!(), case.format(f)));
+                contents.push(Document::Indent(vec![Document::Line(Line::hardline()), case.format(f)]));
             }
 
-            parts.push(default_line!());
-            parts.push(self.end_switch.format(f));
-            parts.push(self.terminator.format(f));
+            contents.push(Document::Line(Line::hardline()));
+            contents.push(self.end_switch.format(f));
+            contents.push(self.terminator.format(f));
 
-            group!(@parts)
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -307,15 +287,14 @@ impl<'a> Format<'a> for SwitchColonDelimitedBody {
 impl<'a> Format<'a> for SwitchBraceDelimitedBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchBraceDelimitedBody, {
-            let mut parts = vec![token!(f, self.left_brace, "{")];
-
+            let mut contents = vec![Document::String("{")];
             for case in self.cases.iter() {
-                parts.push(indent!(default_line!(), case.format(f)));
+                contents.push(Document::Indent(vec![Document::Line(Line::hardline()), case.format(f)]));
             }
 
-            parts.push(print_token_with_indented_leading_comments(f, self.right_brace, "}", true));
+            contents.push(print_token_with_indented_leading_comments(f, self.right_brace, "}", true));
 
-            group!(@parts)
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -334,18 +313,17 @@ impl<'a> Format<'a> for SwitchCase {
 impl<'a> Format<'a> for SwitchExpressionCase {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchExpressionCase, {
-            let mut parts = vec![self.case.format(f), space!(), self.expression.format(f), self.separator.format(f)];
-            let statements = print_statement_sequence(f, &self.statements);
-            let has_statements = !statements.is_empty();
-            if has_statements {
-                parts.push(indent!(@hardline!()));
+            let mut parts =
+                vec![self.case.format(f), Document::space(), self.expression.format(f), self.separator.format(f)];
+
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                statements.insert(0, Document::Line(Line::hardline()));
+
+                parts.push(Document::Indent(statements));
             }
 
-            for stmt in statements {
-                parts.push(indent!(stmt));
-            }
-
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -354,17 +332,14 @@ impl<'a> Format<'a> for SwitchDefaultCase {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchDefaultCase, {
             let mut parts = vec![self.default.format(f), self.separator.format(f)];
-            let statements = print_statement_sequence(f, &self.statements);
-            let has_statements = !statements.is_empty();
-            if has_statements {
-                parts.push(indent!(@hardline!()));
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                statements.insert(0, Document::Line(Line::hardline()));
+
+                parts.push(Document::Indent(statements));
             }
 
-            for stmt in statements {
-                parts.push(indent!(stmt));
-            }
-
-            group!(@parts)
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -373,8 +348,8 @@ impl<'a> Format<'a> for SwitchCaseSeparator {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchCaseSeparator, {
             match self {
-                SwitchCaseSeparator::Colon(span) => token!(f, *span, ":"),
-                SwitchCaseSeparator::SemiColon(span) => token!(f, *span, ";"),
+                SwitchCaseSeparator::Colon(_) => Document::String(":"),
+                SwitchCaseSeparator::SemiColon(_) => Document::String(";"),
             }
         })
     }
@@ -383,17 +358,14 @@ impl<'a> Format<'a> for SwitchCaseSeparator {
 impl<'a> Format<'a> for While {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, While, {
-            let mut parts = vec![];
-
-            parts.push(self.r#while.format(f));
-            parts.push(space!());
-            parts.push(token!(f, self.left_parenthesis, "("));
-            parts.push(self.condition.format(f));
-            parts.push(token!(f, self.right_parenthesis, ")"));
-
-            parts.push(self.body.format(f));
-
-            array!(@parts)
+            Document::Array(vec![
+                self.r#while.format(f),
+                Document::space(),
+                Document::String("("),
+                self.condition.format(f),
+                Document::String(")"),
+                self.body.format(f),
+            ])
         })
     }
 }
@@ -402,7 +374,7 @@ impl<'a> Format<'a> for WhileBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, WhileBody, {
             match self {
-                WhileBody::Statement(s) => misc::print_clause(f, &s, false),
+                WhileBody::Statement(s) => misc::print_clause(f, s, false),
                 WhileBody::ColonDelimited(b) => b.format(f),
             }
         })
@@ -420,21 +392,18 @@ impl<'a> Format<'a> for WhileColonDelimitedBody {
 impl<'a> Format<'a> for Foreach {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Foreach, {
-            let mut parts = vec![];
-
-            parts.push(self.foreach.format(f));
-            parts.push(space!());
-            parts.push(token!(f, self.left_parenthesis, "("));
-            parts.push(self.expression.format(f));
-            parts.push(space!());
-            parts.push(self.r#as.format(f));
-            parts.push(space!());
-            parts.push(self.target.format(f));
-            parts.push(token!(f, self.right_parenthesis, ")"));
-
-            parts.push(self.body.format(f));
-
-            array!(@parts)
+            Document::Array(vec![
+                self.foreach.format(f),
+                Document::space(),
+                Document::String("("),
+                self.expression.format(f),
+                Document::space(),
+                self.r#as.format(f),
+                Document::space(),
+                self.target.format(f),
+                Document::String(")"),
+                self.body.format(f),
+            ])
         })
     }
 }
@@ -459,7 +428,13 @@ impl<'a> Format<'a> for ForeachValueTarget {
 impl<'a> Format<'a> for ForeachKeyValueTarget {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ForeachKeyValueTarget, {
-            group!(self.key.format(f), space!(), token!(f, self.double_arrow, "=>"), space!(), self.value.format(f))
+            Document::Group(Group::new(vec![
+                self.key.format(f),
+                Document::space(),
+                Document::String("=>"),
+                Document::space(),
+                self.value.format(f),
+            ]))
         })
     }
 }
@@ -468,7 +443,7 @@ impl<'a> Format<'a> for ForeachBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ForeachBody, {
             match self {
-                ForeachBody::Statement(s) => misc::print_clause(f, &s, false),
+                ForeachBody::Statement(s) => misc::print_clause(f, s, false),
                 ForeachBody::ColonDelimited(b) => b.format(f),
             }
         })
@@ -486,11 +461,15 @@ impl<'a> Format<'a> for ForeachColonDelimitedBody {
 impl<'a> Format<'a> for Continue {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Continue, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#continue.format(f),
-                if let Some(level) = &self.level { array!(space!(), level.format(f)) } else { empty_string!() },
+                if let Some(level) = &self.level {
+                    Document::Array(vec![Document::space(), level.format(f)])
+                } else {
+                    Document::empty()
+                },
                 self.terminator.format(f),
-            )
+            ]))
         })
     }
 }
@@ -498,11 +477,15 @@ impl<'a> Format<'a> for Continue {
 impl<'a> Format<'a> for Break {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Break, {
-            group!(
+            Document::Group(Group::new(vec![
                 self.r#break.format(f),
-                if let Some(level) = &self.level { array!(space!(), level.format(f)) } else { empty_string!() },
-                self.terminator.format(f)
-            )
+                if let Some(level) = &self.level {
+                    Document::Array(vec![Document::space(), level.format(f)])
+                } else {
+                    Document::empty()
+                },
+                self.terminator.format(f),
+            ]))
         })
     }
 }

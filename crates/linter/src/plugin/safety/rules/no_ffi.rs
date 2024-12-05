@@ -6,13 +6,13 @@ use fennec_walker::Walker;
 use crate::context::LintContext;
 use crate::rule::Rule;
 
-const FFI_CLASSES: [&'static str; 3] = ["FFI", "FFI\\Cdata", "FFI\\Ctype"];
+const FFI_CLASSES: [&str; 3] = ["FFI", "FFI\\Cdata", "FFI\\Ctype"];
 
 #[derive(Clone, Debug)]
 pub struct NoFFIRule;
 
 impl NoFFIRule {
-    fn report<'ast>(&self, identifier: &'ast Identifier, node: Option<&impl HasSpan>, context: &mut LintContext<'_>) {
+    fn report(&self, identifier: &Identifier, node: Option<&impl HasSpan>, context: &mut LintContext<'_>) {
         let class_name = context.lookup_name(identifier);
 
         if FFI_CLASSES.iter().any(|ffi| ffi.eq_ignore_ascii_case(class_name)) {

@@ -7,9 +7,9 @@ use fennec_span::*;
 
 use crate::internal::context::Context;
 
-pub fn reflect_attributes<'i, 'ast>(
+pub fn reflect_attributes<'ast>(
     attribute_lists: &'ast Sequence<AttributeList>,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> Vec<AttributeReflection> {
     let mut reflections = vec![];
 
@@ -28,9 +28,9 @@ pub fn reflect_attributes<'i, 'ast>(
     reflections
 }
 
-pub fn reflect_attribute_arguments<'i, 'ast>(
+pub fn reflect_attribute_arguments<'ast>(
     argument_list: &'ast Option<ArgumentList>,
-    context: &'ast mut Context<'i>,
+    context: &'ast mut Context<'_>,
 ) -> Option<AttributeArgumentListReflection> {
     let Some(argument_list) = argument_list else {
         return None;
@@ -40,7 +40,7 @@ pub fn reflect_attribute_arguments<'i, 'ast>(
     for argument in argument_list.arguments.iter() {
         arguments.push(match &argument {
             Argument::Positional(arg) => AttributeArgumentReflection::Positional {
-                value_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &arg.value),
+                value_type_reflection: fennec_typing::infere(context.interner, context.semantics, &arg.value),
                 span: arg.span(),
             },
             Argument::Named(arg) => AttributeArgumentReflection::Named {

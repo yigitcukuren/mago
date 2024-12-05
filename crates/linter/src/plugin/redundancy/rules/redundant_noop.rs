@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedundantNoopRule;
 
 impl RedundantNoopRule {
-    fn report<'ast>(&self, noop: &'ast Span, context: &mut LintContext<'_>) {
+    fn report(&self, noop: &Span, context: &mut LintContext<'_>) {
         let issue = Issue::new(context.level(), "redundant noop statement")
             .with_annotations([Annotation::primary(*noop)])
             .with_help("remove the redundant `;`");

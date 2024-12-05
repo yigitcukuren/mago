@@ -13,7 +13,7 @@ pub struct NameResolver {
     pub resolved_names: Names,
 }
 
-impl<'a> NameResolver {
+impl NameResolver {
     pub fn new() -> Self {
         NameResolver { resolved_names: Names { names: HashMap::default() } }
     }
@@ -66,7 +66,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
 
                     let mut namespaced = prefix.clone();
                     namespaced.push('\\');
-                    namespaced.extend(context.interner.lookup(&name).chars());
+                    namespaced.push_str(context.interner.lookup(&name));
 
                     let namespaced_id = context.interner.intern(&namespaced);
 
@@ -88,7 +88,7 @@ impl<'a> MutWalker<NameContext<'a>> for NameResolver {
 
                     let mut namespaced = prefix.clone();
                     namespaced.push('\\');
-                    namespaced.extend(context.interner.lookup(&name).chars());
+                    namespaced.push_str(context.interner.lookup(&name));
 
                     let namespaced_id = context.interner.intern(&namespaced);
 

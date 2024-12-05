@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedudnantClosingTagRule;
 
 impl RedudnantClosingTagRule {
-    fn report<'ast>(sequence: &'ast Sequence<Statement>, context: &mut LintContext<'_>) {
+    fn report(sequence: &Sequence<Statement>, context: &mut LintContext<'_>) {
         let Some(last_statement) = sequence.last() else {
             return;
         };

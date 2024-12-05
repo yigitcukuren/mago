@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedundantBlockRule;
 
 impl RedundantBlockRule {
-    fn report<'ast>(&self, block: &'ast Block, context: &mut LintContext<'_>) {
+    fn report(&self, block: &Block, context: &mut LintContext<'_>) {
         let issue = Issue::new(context.level(), "redundant block")
             .with_annotations([
                 Annotation::primary(block.left_brace),
