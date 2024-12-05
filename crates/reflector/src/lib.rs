@@ -23,7 +23,7 @@ mod populator;
 pub fn reflect<'i, 'ast>(interner: &'i ThreadedInterner, semantics: &'ast Semantics) -> CodebaseReflection {
     let mut walker = ReflectionWalker::new();
 
-    let mut context = Context::new(&interner, &semantics);
+    let mut context = Context::new(interner, semantics);
 
     walker.walk_program(&semantics.program, &mut context);
 

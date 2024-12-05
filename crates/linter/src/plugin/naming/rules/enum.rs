@@ -24,7 +24,7 @@ impl<'a> Walker<LintContext<'a>> for EnumRule {
         let name = context.lookup(&r#enum.name.value);
         let fqcn = context.lookup_name(&r#enum.name);
 
-        if !fennec_casing::is_class_case(&name) {
+        if !fennec_casing::is_class_case(name) {
             context.report(
                 Issue::new(context.level(), format!("enum name `{}` should be in class case", name))
                     .with_annotations([
@@ -34,7 +34,7 @@ impl<'a> Walker<LintContext<'a>> for EnumRule {
                     .with_note(format!("the enum name `{}` does not follow class naming convention.", name))
                     .with_help(format!(
                         "consider renaming it to `{}` to adhere to the naming convention.",
-                        fennec_casing::to_class_case(&name)
+                        fennec_casing::to_class_case(name)
                     )),
             );
         }

@@ -248,13 +248,7 @@ fn is_property_like_with_short_key<'a, 'b>(
                     return false;
                 }
             }
-            Expression::Literal(literal) => {
-                if let Literal::String(string_literal) = literal {
-                    f.lookup(&string_literal.value).len()
-                } else {
-                    return false;
-                }
-            }
+            Expression::Literal(Literal::String(string_literal)) => f.lookup(&string_literal.value).len(),
             _ => {
                 return false;
             }

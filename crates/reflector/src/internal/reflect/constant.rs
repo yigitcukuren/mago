@@ -12,7 +12,7 @@ pub fn reflect_constant<'i, 'ast>(constant: &'ast Constant, context: &'ast mut C
 
         reflections.push(ConstantReflection {
             name: Name::new(*name, item.name.span),
-            type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &item.value),
+            type_reflection: fennec_typing::infere(context.interner, context.semantics, &item.value),
             item_span: item.span(),
             definition_span: constant.span(),
             is_populated: false,

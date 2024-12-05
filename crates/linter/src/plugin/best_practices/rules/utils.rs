@@ -257,7 +257,7 @@ mod internal {
             self.walk_expression(&assignment.rhs, context);
 
             let mut variables = Vec::default();
-            scan_expression_for_assignment(&assignment.lhs, &context.1, &mut variables);
+            scan_expression_for_assignment(&assignment.lhs, context.1, &mut variables);
 
             match assignment.operator {
                 AssignmentOperator::Assign(_) => {

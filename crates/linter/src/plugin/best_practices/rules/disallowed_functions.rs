@@ -58,7 +58,7 @@ impl DisallowedFunctionsRule {
         let function_name = context.lookup_function_name(identifier);
 
         let Some(extension) = EXTENSION_FUNCTIONS.into_iter().find_map(|(extension, function_names)| {
-            if function_names.into_iter().any(|f| function_name.eq(*f)) {
+            if function_names.iter().any(|f| function_name.eq(*f)) {
                 Some(extension)
             } else {
                 None

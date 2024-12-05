@@ -42,7 +42,7 @@ impl<'a> Walker<LintContext<'a>> for NoUntaggedFixmeRule {
                         continue;
                     }
 
-                    if (*TAGGED_FIXME_REGEX).is_match(&trimmied) {
+                    if (*TAGGED_FIXME_REGEX).is_match(trimmied) {
                         continue;
                     }
 

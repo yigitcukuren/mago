@@ -71,7 +71,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantMethodOverrideRule {
 
 fn matches_method<'ast>(
     method_name: &StringIdentifier,
-    parameters: &Vec<(bool, StringIdentifier)>,
+    parameters: &[(bool, StringIdentifier)],
     expression: &'ast Expression,
 ) -> bool {
     let Expression::Call(Call::StaticMethod(StaticMethodCall { class, method, arguments, .. })) = expression else {
@@ -85,7 +85,7 @@ fn matches_method<'ast>(
         return false;
     }
 
-    for (argument, (is_variadic, parameter)) in arguments.arguments.iter().zip(parameters.into_iter()) {
+    for (argument, (is_variadic, parameter)) in arguments.arguments.iter().zip(parameters.iter()) {
         let (variadic, value) = match &argument {
             Argument::Positional(arg) => (arg.ellipsis.is_some(), &arg.value),
             Argument::Named(arg) => (arg.ellipsis.is_some(), &arg.value),

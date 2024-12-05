@@ -42,7 +42,7 @@ impl<'a> Walker<LintContext<'a>> for NoUntaggedTodoRule {
                         continue;
                     }
 
-                    if (*TAGGED_TODO_REGEX).is_match(&trimmied) {
+                    if (*TAGGED_TODO_REGEX).is_match(trimmied) {
                         continue;
                     }
 

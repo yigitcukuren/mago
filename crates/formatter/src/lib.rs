@@ -36,7 +36,7 @@ pub fn format<'a>(
     let mut formatter = Formatter::new(interner, source, settings);
     let document = formatter.format(program);
 
-    let printer = Printer::new(document, &formatter.source, formatter.settings);
+    let printer = Printer::new(document, formatter.source, formatter.settings);
 
     printer.build()
 }
@@ -148,7 +148,7 @@ impl<'a> Formatter<'a> {
 
     pub(crate) fn skip_trailing_comment(&self, start_index: Option<usize>) -> Option<usize> {
         let start_index = start_index?;
-        let mut chars = self.source_text[start_index as usize..].chars();
+        let mut chars = self.source_text[start_index..].chars();
         let c = chars.next()?;
         if c != '/' {
             return Some(start_index);
@@ -190,14 +190,14 @@ impl<'a> Formatter<'a> {
         let start_index = start_index?;
         let mut index = start_index;
         if backwards {
-            for c in self.source_text[..=start_index as usize].chars().rev() {
+            for c in self.source_text[..=start_index].chars().rev() {
                 if !f(c) {
                     return Some(index);
                 }
                 index -= 1;
             }
         } else {
-            for c in self.source_text[start_index as usize..].chars() {
+            for c in self.source_text[start_index..].chars() {
                 if !f(c) {
                     return Some(index);
                 }
@@ -212,9 +212,9 @@ impl<'a> Formatter<'a> {
     pub(crate) fn skip_newline(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
         let start_index = start_index?;
         let c = if backwards {
-            self.source_text[..=start_index as usize].chars().next_back()
+            self.source_text[..=start_index].chars().next_back()
         } else {
-            self.source_text[start_index as usize..].chars().next()
+            self.source_text[start_index..].chars().next()
         }?;
         if is_line_terminator(c) {
             let len = c.len_utf8();
@@ -224,7 +224,7 @@ impl<'a> Formatter<'a> {
     }
 
     pub(crate) fn has_newline(&self, start_index: usize, backwards: bool) -> bool {
-        if (backwards && start_index == 0) || (!backwards && start_index as usize == self.source_text.len()) {
+        if (backwards && start_index == 0) || (!backwards && start_index == self.source_text.len()) {
             return false;
         }
         let start_index = if backwards { start_index - 1 } else { start_index };
@@ -265,14 +265,12 @@ impl<'a> Formatter<'a> {
     }
 
     pub(crate) fn skip_leading_whitespace_up_to(s: &'a str, indent: usize) -> &'a str {
-        let mut count = 0;
         let mut position = 0;
-
-        for (i, c) in s.char_indices() {
+        for (count, (i, c)) in s.char_indices().enumerate() {
             if !c.is_whitespace() || count >= indent {
                 break;
             }
-            count += 1;
+
             position = i + c.len_utf8();
         }
 

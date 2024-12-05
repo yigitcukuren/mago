@@ -307,7 +307,7 @@ fn reflect_class_like_constant<'i, 'ast>(
     for item in constant.items.iter() {
         reflections.push(ClassLikeConstantReflection {
             attribute_reflections: attribute_reflections.clone(),
-            visibility_reflection: visibility_reflection.clone(),
+            visibility_reflection,
             type_reflection: type_reflection.clone(),
             name: ClassLikeMemberName {
                 class_like: class_like.name,
@@ -431,8 +431,7 @@ fn reflect_class_like_property<'i, 'ast>(
             };
 
             // TODO(azjezz): take `(set)` modifiers into account.
-            let write_visibility_reflection = read_visibility_reflection.clone();
-
+            let write_visibility_reflection = read_visibility_reflection;
             let type_reflection = maybe_reflect_hint(&plain_property.hint, context, Some(&class_like));
             let is_readonly = class_like.is_readonly || plain_property.modifiers.contains_readonly();
             let is_final = class_like.is_final || plain_property.modifiers.contains_final();
@@ -509,7 +508,7 @@ fn reflect_class_like_property<'i, 'ast>(
                     },
                     Some(PropertyDefaultValueReflection {
                         inferred_type_reflection: fennec_typing::infere(
-                            &context.interner,
+                            context.interner,
                             context.semantics,
                             &item.value,
                         ),
@@ -555,7 +554,7 @@ fn reflect_class_like_property<'i, 'ast>(
                                 templates: vec![],
                                 parameters: match hook.parameters.as_ref() {
                                     Some(parameters) => {
-                                        reflect_function_like_parameter_list(&parameters, context, Some(&class_like))
+                                        reflect_function_like_parameter_list(parameters, context, Some(&class_like))
                                     }
                                     None => vec![],
                                 },

@@ -126,7 +126,7 @@ pub fn reflect_function_like_parameter<'i, 'ast>(
         is_passed_by_reference: parameter.ampersand.is_some(),
         is_promoted_property: parameter.is_promoted_property(),
         default: parameter.default_value.as_ref().map(|d| FunctionLikeParameterDefaultValueReflection {
-            type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &d.value),
+            type_reflection: fennec_typing::infere(context.interner, &context.semantics, &d.value),
             span: d.span(),
         }),
     }

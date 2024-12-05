@@ -171,15 +171,13 @@ impl<'a> Printer<'a> {
     }
 
     fn handle_line(&mut self, line: Line, indent: Indent, mode: Mode, doc: Document<'a>) {
-        if mode.is_flat() {
-            if !line.hard {
-                if !line.soft {
-                    self.out.push(b' ');
-                    self.position += 1;
-                }
-
-                return;
+        if mode.is_flat() && !line.hard {
+            if !line.soft {
+                self.out.push(b' ');
+                self.position += 1;
             }
+
+            return;
         }
 
         if !self.line_suffix.is_empty() {

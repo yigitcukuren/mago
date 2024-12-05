@@ -1208,7 +1208,7 @@ impl SemanticsWalker {
                             );
                         }
                     }
-                    _ if !returns_generator(context, &body, &hint) => {
+                    _ if !returns_generator(context, body, hint) => {
                         for r#return in returns {
                             if r#return.value.is_none() {
                                 context.report(
@@ -1774,7 +1774,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match name.to_ascii_lowercase().as_str() {
                 STRICT_TYPES_DECLARE_DIRECTIVE => {
                     let value = match &item.value {
-                        Expression::Literal(Literal::Integer(LiteralInteger { value, .. })) => value.clone(),
+                        Expression::Literal(Literal::Integer(LiteralInteger { value, .. })) => *value,
                         _ => None,
                     };
 
@@ -1931,7 +1931,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
     fn walk_in_property_hook<'ast>(&self, property_hook: &'ast PropertyHook, context: &mut Context<'_>) {
         if let Some(parameter_list) = &property_hook.parameters {
-            self.process_promoted_properties_outside_constructor(&parameter_list, context);
+            self.process_promoted_properties_outside_constructor(parameter_list, context);
         }
     }
 
@@ -2089,14 +2089,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
 
         if let Some(extends) = &class.extends {
-            self.process_extends(extends, class.span(), "class", &class_name, &class_fqcn, true, context);
+            self.process_extends(extends, class.span(), "class", class_name, class_fqcn, true, context);
         }
 
         if let Some(implements) = &class.implements {
-            self.process_implements(implements, class.span(), "class", &class_name, &class_fqcn, true, context);
+            self.process_implements(implements, class.span(), "class", class_name, class_fqcn, true, context);
         }
 
-        self.process_members(&class.members, class.span(), "class", &class_name, &class_fqcn, context);
+        self.process_members(&class.members, class.span(), "class", class_name, class_fqcn, context);
 
         for memeber in class.members.iter() {
             match &memeber {
@@ -2133,25 +2133,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         method,
                         &method_name,
                         class.span(),
-                        &class_name,
-                        &class_fqcn,
+                        class_name,
+                        class_fqcn,
                         "class",
                         false,
                         context,
                     );
                 }
                 ClassLikeMember::Property(property) => {
-                    self.process_property(property, class.span(), "class", &class_name, &class_fqcn, false, context);
+                    self.process_property(property, class.span(), "class", class_name, class_fqcn, false, context);
                 }
                 ClassLikeMember::Constant(constant) => {
-                    self.process_class_like_constant(
-                        constant,
-                        class.span(),
-                        "class",
-                        &class_name,
-                        &class_fqcn,
-                        context,
-                    );
+                    self.process_class_like_constant(constant, class.span(), "class", class_name, class_fqcn, context);
                 }
                 _ => {}
             }

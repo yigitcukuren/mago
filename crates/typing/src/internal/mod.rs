@@ -19,7 +19,7 @@ pub fn resolve_name<'i>(
         // take the last part of the path
         let short_value: &'i str = unsafe { value.split('\\').last().unwrap_unchecked() };
 
-        return (value_id, interner.intern(short_value));
+        (value_id, interner.intern(short_value))
     } else {
         (value_id, value_id)
     }
@@ -311,9 +311,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind == right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()
@@ -325,9 +325,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind != right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()
@@ -339,9 +339,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind < right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()
@@ -353,9 +353,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind > right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()
@@ -367,9 +367,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind <= right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()
@@ -381,9 +381,9 @@ where
                 let right_kind = extract_literal_value(&right_kind);
 
                 if left_kind >= right_kind {
-                    return true_kind();
+                    true_kind()
                 } else {
-                    return false_kind();
+                    false_kind()
                 }
             } else {
                 bool_kind()

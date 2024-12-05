@@ -24,7 +24,7 @@ impl<'a> Walker<LintContext<'a>> for ConstantRule {
         for item in constant.items.iter() {
             let name = context.lookup(&item.name.value);
             let fqcn = context.lookup_name(&item.name);
-            if !fennec_casing::is_constant_case(&name) {
+            if !fennec_casing::is_constant_case(name) {
                 context.report(
                     Issue::new(context.level(), format!("constant name `{}` should be in constant case", name))
                         .with_annotations([
@@ -35,7 +35,7 @@ impl<'a> Walker<LintContext<'a>> for ConstantRule {
                         .with_note(format!("the constant name `{}` does not follow constant naming convention.", name))
                         .with_help(format!(
                             "consider renaming it to `{}` to adhere to the naming convention.",
-                            fennec_casing::to_constant_case(&name)
+                            fennec_casing::to_constant_case(name)
                         )),
                 );
             }
@@ -53,7 +53,7 @@ impl<'a> Walker<LintContext<'a>> for ConstantRule {
         for item in class_like_constant.items.iter() {
             let name = context.lookup(&item.name.value);
 
-            if !fennec_casing::is_constant_case(&name) {
+            if !fennec_casing::is_constant_case(name) {
                 context.report(
                     Issue::new(
                         context.level(),
@@ -77,7 +77,7 @@ impl<'a> Walker<LintContext<'a>> for ConstantRule {
                     ))
                     .with_help(format!(
                         "consider renaming it to `{}` to adhere to the naming convention.",
-                        fennec_casing::to_constant_case(&name)
+                        fennec_casing::to_constant_case(name)
                     )),
                 );
             }

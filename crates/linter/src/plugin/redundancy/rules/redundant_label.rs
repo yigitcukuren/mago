@@ -22,7 +22,7 @@ impl Rule for RedundantLabelRule {
 
 impl<'a> Walker<LintContext<'a>> for RedundantLabelRule {
     fn walk_program<'ast>(&self, program: &'ast Program, context: &mut LintContext<'a>) {
-        let node = Node::Program(&program);
+        let node = Node::Program(program);
 
         let labels =
             node.filter_map(

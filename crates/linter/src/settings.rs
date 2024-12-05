@@ -91,3 +91,9 @@ impl RuleSettings {
         self.options.get(option_name)
     }
 }
+
+impl std::default::Default for Settings {
+    fn default() -> Self {
+        Self::new()
+    }
+}

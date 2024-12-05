@@ -29,7 +29,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn for_rule<'b>(&'b mut self, rule: &'b ConfiguredRule) -> LintContext<'b> {
-        LintContext { rule: &rule, interner: &self.interner, semantics: &self.semantics, issues: &mut self.issues }
+        LintContext { rule, interner: self.interner, semantics: self.semantics, issues: &mut self.issues }
     }
 
     pub fn take_issue_collection(self) -> IssueCollection {

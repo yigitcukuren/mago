@@ -45,7 +45,7 @@ pub fn reflect_attribute_arguments<'i, 'ast>(
             },
             Argument::Named(arg) => AttributeArgumentReflection::Named {
                 name: Name { value: arg.name.value, span: arg.name.span },
-                value_type_reflection: fennec_typing::infere(&context.interner, &context.semantics, &arg.value),
+                value_type_reflection: fennec_typing::infere(context.interner, context.semantics, &arg.value),
                 span: arg.span(),
             },
         });

@@ -136,7 +136,7 @@ fn populate_interface_data_from_parent_interface(
             continue;
         }
 
-        reflection.constants.insert(constant_name.clone(), constant.clone());
+        reflection.constants.insert(*constant_name, constant.clone());
     }
 
     inherit_methods_from_parent(reflection, parent_reflection);

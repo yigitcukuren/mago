@@ -46,14 +46,14 @@ fn build_kind<'i, 'ast>(
         Hint::Union(union_hint) => {
             let mut kinds = vec![];
 
-            match build_kind(&union_hint.left.as_ref(), context, scope) {
+            match build_kind(union_hint.left.as_ref(), context, scope) {
                 TypeKind::Union { kinds: left_kinds } => kinds.extend(left_kinds),
                 kind => {
                     kinds.push(kind);
                 }
             }
 
-            match build_kind(&union_hint.right.as_ref(), context, scope) {
+            match build_kind(union_hint.right.as_ref(), context, scope) {
                 TypeKind::Union { kinds: right_kinds } => kinds.extend(right_kinds),
                 kind => {
                     kinds.push(kind);
@@ -65,14 +65,14 @@ fn build_kind<'i, 'ast>(
         Hint::Intersection(intersection_hint) => {
             let mut kinds = vec![];
 
-            match build_kind(&intersection_hint.left.as_ref(), context, scope) {
+            match build_kind(intersection_hint.left.as_ref(), context, scope) {
                 TypeKind::Intersection { kinds: left_kinds } => kinds.extend(left_kinds),
                 kind => {
                     kinds.push(kind);
                 }
             }
 
-            match build_kind(&intersection_hint.right.as_ref(), context, scope) {
+            match build_kind(intersection_hint.right.as_ref(), context, scope) {
                 TypeKind::Intersection { kinds: right_kinds } => kinds.extend(right_kinds),
                 kind => {
                     kinds.push(kind);

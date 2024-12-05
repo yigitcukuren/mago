@@ -52,8 +52,8 @@ fn remove_star_prefix(content: &str) -> String {
 fn remove_stared_line_prefix(line: &str) -> &str {
     let trimmed = line.trim_start();
 
-    if trimmed.starts_with('*') {
-        trimmed[1..].trim_start()
+    if let Some(stripped) = trimmed.strip_prefix('*') {
+        stripped.trim_start()
     } else {
         line
     }

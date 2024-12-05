@@ -110,14 +110,12 @@ pub fn print_class_like_body<'a>(
 
             parts.push(properties);
         }
-    } else {
-        if let Some(properties) = print_class_like_properties(f, properties.collect()) {
-            if !parts.is_empty() {
-                parts.push(softline!());
-            }
-
-            parts.push(properties);
+    } else if let Some(properties) = print_class_like_properties(f, properties.collect()) {
+        if !parts.is_empty() {
+            parts.push(softline!());
         }
+
+        parts.push(properties);
     }
 
     let methods = class_like_members.iter().filter_map(|m| match m {
@@ -152,14 +150,12 @@ pub fn print_class_like_body<'a>(
 
             parts.push(methods);
         }
-    } else {
-        if let Some(methods) = print_class_like_methods(f, methods.collect()) {
-            if !parts.is_empty() {
-                parts.push(softline!());
-            }
-
-            parts.push(methods);
+    } else if let Some(methods) = print_class_like_methods(f, methods.collect()) {
+        if !parts.is_empty() {
+            parts.push(softline!());
         }
+
+        parts.push(methods);
     }
 
     if parts.is_empty() {

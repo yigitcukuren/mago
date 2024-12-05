@@ -162,15 +162,11 @@ impl<'a> Formatter<'a> {
         }
 
         if parent_operator.is_bitwise() {
-            return !operator.is_same_as(&parent_operator);
+            return !operator.is_same_as(parent_operator);
         }
 
         if operator.is_comparison() {
-            if parent_operator.is_logical() {
-                return false;
-            } else {
-                return true;
-            }
+            return !parent_operator.is_logical();
         }
 
         // Add parentheses if operators have different precedence
@@ -238,22 +234,22 @@ impl<'a> Formatter<'a> {
     }
 
     const fn callee_expression_need_parenthesis(&self, expression: &'a Expression) -> bool {
-        match expression {
+        !matches!(
+            expression,
             Expression::Literal(_)
-            | Expression::Array(_)
-            | Expression::LegacyArray(_)
-            | Expression::ArrayAccess(_)
-            | Expression::Variable(_)
-            | Expression::Identifier(_)
-            | Expression::Construct(_)
-            | Expression::Call(_)
-            | Expression::Access(_)
-            | Expression::ClosureCreation(_)
-            | Expression::Static(_)
-            | Expression::Self_(_)
-            | Expression::Parent(_) => false,
-            _ => true,
-        }
+                | Expression::Array(_)
+                | Expression::LegacyArray(_)
+                | Expression::ArrayAccess(_)
+                | Expression::Variable(_)
+                | Expression::Identifier(_)
+                | Expression::Construct(_)
+                | Expression::Call(_)
+                | Expression::Access(_)
+                | Expression::ClosureCreation(_)
+                | Expression::Static(_)
+                | Expression::Self_(_)
+                | Expression::Parent(_)
+        )
     }
 
     const fn is_unary_or_binary_or_ternary(&self, node: Node<'a>) -> bool {
@@ -269,10 +265,7 @@ impl<'a> Formatter<'a> {
     }
 
     const fn is_unary(&self, node: Node<'a>) -> bool {
-        match node {
-            Node::UnaryPrefix(_) | Node::UnaryPostfix(_) => true,
-            _ => false,
-        }
+        matches!(node, Node::UnaryPrefix(_) | Node::UnaryPostfix(_))
     }
 
     const fn is_conditional(&self, node: Node<'a>) -> bool {

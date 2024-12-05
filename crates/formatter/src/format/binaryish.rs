@@ -64,26 +64,24 @@ pub(super) fn print_binaryish_expression<'a>(
                 Document::Indent(vec![Document::Line(Line::hardline()), rhs]),
             ]))
         }
+    } else if is_rhs_of_binaryish {
+        Document::Group(Group::new(vec![
+            lhs,
+            spaces.clone(),
+            operator,
+            Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), spaces)),
+            rhs,
+        ]))
     } else {
-        if is_rhs_of_binaryish {
-            Document::Group(Group::new(vec![
-                lhs,
-                spaces.clone(),
-                operator,
+        Document::Group(Group::new(vec![
+            lhs,
+            spaces.clone(),
+            operator,
+            Document::IndentIfBreak(IndentIfBreak::new(vec![
                 Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), spaces)),
                 rhs,
-            ]))
-        } else {
-            Document::Group(Group::new(vec![
-                lhs,
-                spaces.clone(),
-                operator,
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), spaces)),
-                    rhs,
-                ])),
-            ]))
-        }
+            ])),
+        ]))
     }
 }
 

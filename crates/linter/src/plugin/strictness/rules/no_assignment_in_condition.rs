@@ -40,7 +40,7 @@ impl Rule for NoAssignmentInConditionRule {
 impl<'a> Walker<LintContext<'a>> for NoAssignmentInConditionRule {
     fn walk_in_if<'ast>(&self, r#if: &'ast If, context: &mut LintContext<'a>) {
         if let Some(assignment) = get_assignment_from_expression(&r#if.condition) {
-            self.report(&r#if.condition, &assignment, context);
+            self.report(&r#if.condition, assignment, context);
         }
     }
 
@@ -50,7 +50,7 @@ impl<'a> Walker<LintContext<'a>> for NoAssignmentInConditionRule {
         context: &mut LintContext<'a>,
     ) {
         if let Some(assignment) = get_assignment_from_expression(&if_statement_body_else_if_clause.condition) {
-            self.report(&if_statement_body_else_if_clause.condition, &assignment, context);
+            self.report(&if_statement_body_else_if_clause.condition, assignment, context);
         }
     }
 
@@ -60,19 +60,19 @@ impl<'a> Walker<LintContext<'a>> for NoAssignmentInConditionRule {
         context: &mut LintContext<'a>,
     ) {
         if let Some(assignment) = get_assignment_from_expression(&if_colon_delimited_body_else_if_clause.condition) {
-            self.report(&if_colon_delimited_body_else_if_clause.condition, &assignment, context);
+            self.report(&if_colon_delimited_body_else_if_clause.condition, assignment, context);
         }
     }
 
     fn walk_in_while<'ast>(&self, r#while: &'ast While, context: &mut LintContext<'a>) {
         if let Some(assignment) = get_assignment_from_expression(&r#while.condition) {
-            self.report(&r#while.condition, &assignment, context);
+            self.report(&r#while.condition, assignment, context);
         }
     }
 
     fn walk_in_do_while<'ast>(&self, do_while: &'ast DoWhile, context: &mut LintContext<'a>) {
         if let Some(assignment) = get_assignment_from_expression(&do_while.condition) {
-            self.report(&do_while.condition, &assignment, context);
+            self.report(&do_while.condition, assignment, context);
         }
     }
 }

@@ -385,7 +385,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                 ClosureCreation::Function(function_closure_creation) => {
                     if let Some(codebase) = &self.codebase {
                         if let Expression::Identifier(name) = &function_closure_creation.function {
-                            let (full_name, short_name) = resolve_name(&self.interner, name.value());
+                            let (full_name, short_name) = resolve_name(self.interner, name.value());
 
                             if let Some(function) = codebase.get_function(&full_name) {
                                 return TypeKind::from(function);

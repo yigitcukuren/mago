@@ -11,7 +11,7 @@ use crate::rule::Rule;
 pub struct RedudnantClosingTagRule;
 
 impl RedudnantClosingTagRule {
-    fn report<'ast>(&self, sequence: &'ast Sequence<Statement>, context: &mut LintContext<'_>) {
+    fn report<'ast>(sequence: &'ast Sequence<Statement>, context: &mut LintContext<'_>) {
         let Some(last_statement) = sequence.last() else {
             return;
         };
@@ -49,7 +49,7 @@ impl RedudnantClosingTagRule {
         if let Statement::Namespace(namespace) = last_statement {
             match &namespace.body {
                 NamespaceBody::Implicit(namespace_implicit_body) => {
-                    self.report(&namespace_implicit_body.statements, context);
+                    Self::report(&namespace_implicit_body.statements, context);
                 }
                 NamespaceBody::BraceDelimited(_) => {}
             }
@@ -69,6 +69,6 @@ impl Rule for RedudnantClosingTagRule {
 
 impl<'a> Walker<LintContext<'a>> for RedudnantClosingTagRule {
     fn walk_program<'ast>(&self, program: &'ast Program, context: &mut LintContext<'a>) {
-        self.report(&program.statements, context);
+        Self::report(&program.statements, context);
     }
 }
