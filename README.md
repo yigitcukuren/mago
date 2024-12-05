@@ -29,7 +29,7 @@ It is inspired by the Rust programming language and its toolchain, and aims to p
 - [x] String Case Conversion: [`crates/casing`](crates/casing)
 - [x] Reflections: [`crates/reflection`](crates/reflection)
 - [x] Reflector: [`crates/reflector`](crates/reflector), [`crates/scanner`](crates/scanner)
-- [x] Type Inference: [`crates/inference`](crates/inference)
+- [x] Type Inference: [`crates/typing`](crates/typing)
 - [x] Formatter: [`crates/formatter`](crates/formatter)
 - [ ] Static Analyzer
 - [ ] Refactoring
@@ -39,7 +39,7 @@ It is inspired by the Rust programming language and its toolchain, and aims to p
 
 ### Tooling
 
-- [x] CLI Tool: [`crates/cli`](crates/cl)
+- [x] CLI Tool: [`crates/cli`](crates/cli)
 - [ ] Web Interface
 - [ ] Language Server Protocol
 - [ ] Editor Integration
