@@ -10,15 +10,15 @@ use crate::sequence::TokenSeparatedSequence;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ArrayAccess {
-    pub array: Expression,
+    pub array: Box<Expression>,
     pub left_bracket: Span,
-    pub index: Expression,
+    pub index: Box<Expression>,
     pub right_bracket: Span,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ArrayAppend {
-    pub array: Expression,
+    pub array: Box<Expression>,
     pub left_bracket: Span,
     pub right_bracket: Span,
 }
@@ -96,9 +96,9 @@ pub enum ArrayElement {
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct KeyValueArrayElement {
-    pub key: Expression,
+    pub key: Box<Expression>,
     pub double_arrow: Span,
-    pub value: Expression,
+    pub value: Box<Expression>,
 }
 
 /// Represents a value in an array.
@@ -114,7 +114,7 @@ pub struct KeyValueArrayElement {
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ValueArrayElement {
-    pub value: Expression,
+    pub value: Box<Expression>,
 }
 
 /// Represents a variadic array element.
@@ -131,7 +131,7 @@ pub struct ValueArrayElement {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct VariadicArrayElement {
     pub ellipsis: Span,
-    pub value: Expression,
+    pub value: Box<Expression>,
 }
 
 /// Represents a missing array element.

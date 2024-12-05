@@ -14,7 +14,7 @@ use crate::Formatter;
 #[derive(Debug, Clone, Copy)]
 pub(super) enum AssignmentLikeNode<'a> {
     /// Represents a standard assignment operation, such as `$a = $b`.
-    AssignmentOperation(&'a AssignmentOperation),
+    AssignmentOperation(&'a Assignment),
 
     /// Represents a class-like constant item.
     ///
@@ -193,7 +193,7 @@ fn is_assignment<'a>(expression: &'a Expression) -> bool {
 fn is_complex_destructuring<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode<'a>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
-            let elements = match &assignment.lhs {
+            let elements = match assignment.lhs.as_ref() {
                 Expression::Array(array) => &array.elements,
                 Expression::List(list) => &list.elements,
                 Expression::LegacyArray(array) => &array.elements,
@@ -211,7 +211,10 @@ fn is_complex_destructuring<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode
 fn is_arrow_function_variable_declarator<'a, 'b>(assignment_like_node: &'b AssignmentLikeNode<'a>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
-            matches!((&assignment.lhs, &assignment.rhs), (Expression::Variable(_), Expression::ArrowFunction(_)))
+            matches!(
+                (assignment.lhs.as_ref(), assignment.rhs.as_ref()),
+                (Expression::Variable(_), Expression::ArrowFunction(_))
+            )
         }
         _ => false,
     }
@@ -230,7 +233,7 @@ fn is_property_like_with_short_key<'a, 'b>(
             f.lookup(&enum_case_backed_item.name.value).len()
         }
         AssignmentLikeNode::PropertyConcreteItem(property_item) => f.lookup(&property_item.variable.name).len(),
-        AssignmentLikeNode::KeyValueArrayElement(element) => match &element.key {
+        AssignmentLikeNode::KeyValueArrayElement(element) => match element.key.as_ref() {
             Expression::Variable(variable) => {
                 if let Variable::Direct(variable) = variable {
                     f.lookup(&variable.name).len()
@@ -276,15 +279,16 @@ fn should_break_after_operator<'a, 'b>(f: &Formatter<'a>, rhs_expression: &'a Ex
     }
 
     match rhs_expression {
-        Expression::TernaryOperation(ternary) => {
-            let condition = match ternary.as_ref() {
-                TernaryOperation::Elvis(elvis_ternary_operation) => &elvis_ternary_operation.condition,
-                TernaryOperation::Conditional(conditional_ternary_operation) => {
-                    &conditional_ternary_operation.condition
-                }
-            };
+        Expression::Binary(operation) => {
+            if let BinaryOperator::Elvis(_) = operation.operator {
+                let condition = operation.lhs.as_ref();
 
-            return condition.is_binary() && !should_inline_logical_or_coalesce_expression(&condition);
+                return condition.is_binary() && !should_inline_logical_or_coalesce_expression(&condition);
+            }
+        }
+        Expression::Conditional(conditional) => {
+            return conditional.condition.is_binary()
+                && !should_inline_logical_or_coalesce_expression(&conditional.condition);
         }
         Expression::AnonymousClass(anonymous_class) => {
             if anonymous_class.attributes.len() > 0 {
@@ -301,29 +305,7 @@ fn should_break_after_operator<'a, 'b>(f: &Formatter<'a>, rhs_expression: &'a Ex
     let mut current_expression = rhs_expression;
     loop {
         current_expression = match current_expression {
-            Expression::Suppressed(s) => &s.expression,
-            Expression::Referenced(r) => &r.expression,
-            Expression::ArithmeticOperation(arithmetic) => {
-                if let ArithmeticOperation::Prefix(prefix_arithmetic) = arithmetic.as_ref() {
-                    &prefix_arithmetic.value
-                } else {
-                    break;
-                }
-            }
-            Expression::BitwiseOperation(bitwise) => {
-                if let BitwiseOperation::Prefix(prefix_bitwise) = bitwise.as_ref() {
-                    &prefix_bitwise.value
-                } else {
-                    break;
-                }
-            }
-            Expression::LogicalOperation(logical) => {
-                if let LogicalOperation::Prefix(prefix_logical) = logical.as_ref() {
-                    &prefix_logical.value
-                } else {
-                    break;
-                }
-            }
+            Expression::UnaryPrefix(operation) => operation.operand.as_ref(),
             _ => {
                 break;
             }
@@ -449,29 +431,7 @@ fn is_lone_short_argument<'a>(f: &Formatter<'a>, argument_value: &'a Expression)
             }
             _ => false,
         },
-        Expression::Suppressed(s) => is_lone_short_argument(f, &s.expression),
-        Expression::Referenced(r) => is_lone_short_argument(f, &r.expression),
-        Expression::ArithmeticOperation(arithmetic) => {
-            if let ArithmeticOperation::Prefix(prefix_arithmetic) = arithmetic.as_ref() {
-                is_lone_short_argument(f, &prefix_arithmetic.value)
-            } else {
-                false
-            }
-        }
-        Expression::BitwiseOperation(bitwise) => {
-            if let BitwiseOperation::Prefix(prefix_bitwise) = bitwise.as_ref() {
-                is_lone_short_argument(f, &prefix_bitwise.value)
-            } else {
-                false
-            }
-        }
-        Expression::LogicalOperation(logical) => {
-            if let LogicalOperation::Prefix(prefix_logical) = logical.as_ref() {
-                is_lone_short_argument(f, &prefix_logical.value)
-            } else {
-                false
-            }
-        }
+        Expression::UnaryPrefix(unary) if !unary.operator.is_cast() => is_lone_short_argument(f, &unary.operand),
         _ => false,
     }
 }

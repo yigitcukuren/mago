@@ -40,17 +40,13 @@ impl Rule for RedundantParenthesesRule {
 
 impl<'a> Walker<LintContext<'a>> for RedundantParenthesesRule {
     fn walk_in_parenthesized<'ast>(&self, parenthesized: &'ast Parenthesized, context: &mut LintContext<'a>) {
-        if let Expression::Parenthesized(inner) = &parenthesized.expression {
+        if let Expression::Parenthesized(inner) = parenthesized.expression.as_ref() {
             self.report(inner, context);
         }
     }
 
-    fn walk_in_assignment_operation<'ast>(
-        &self,
-        assignment_operation: &'ast AssignmentOperation,
-        context: &mut LintContext<'a>,
-    ) {
-        if let Expression::Parenthesized(rhs) = &assignment_operation.rhs {
+    fn walk_in_assignment<'ast>(&self, assignment: &'ast Assignment, context: &mut LintContext<'a>) {
+        if let Expression::Parenthesized(rhs) = assignment.rhs.as_ref() {
             self.report(rhs, context);
         }
     }

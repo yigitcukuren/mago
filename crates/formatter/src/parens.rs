@@ -2,7 +2,7 @@ use fennec_ast::*;
 use fennec_span::HasSpan;
 use fennec_token::GetPrecedence;
 
-use crate::binaryish::BinaryishOperator;
+use crate::binaryish::should_flatten;
 use crate::document::Document;
 use crate::document::Group;
 use crate::Formatter;
@@ -23,7 +23,7 @@ impl<'a> Formatter<'a> {
 
         if self.called_or_accessed_node_needs_parenthesis(node)
             || self.binarish_node_needs_parenthesis(node)
-            || self.ternary_or_assignment_needs_parenthesis(node)
+            || self.conditional_or_assignment_needs_parenthesis(node)
             || self.cast_needs_parenthesis(node)
         {
             return true;
@@ -32,8 +32,8 @@ impl<'a> Formatter<'a> {
         false
     }
 
-    fn ternary_or_assignment_needs_parenthesis(&self, node: Node<'a>) -> bool {
-        if !matches!(node, Node::AssignmentOperation(_) | Node::TernaryOperation(_)) {
+    fn conditional_or_assignment_needs_parenthesis(&self, node: Node<'a>) -> bool {
+        if !matches!(node, Node::AssignmentOperation(_) | Node::Conditional(_)) {
             return false;
         }
 
@@ -45,7 +45,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn cast_needs_parenthesis(&self, node: Node<'a>) -> bool {
-        if !matches!(node, Node::CastOperation(_)) {
+        if !matches!(node, Node::UnaryPrefix(operation) if operation.operator.is_cast()) {
             return false;
         }
 
@@ -57,39 +57,35 @@ impl<'a> Formatter<'a> {
     }
 
     fn binarish_node_needs_parenthesis(&self, node: Node<'a>) -> bool {
-        let (n, operator) = match node {
-            Node::LogicalInfixOperation(e) => (3, BinaryishOperator::from(e.operator)),
-            Node::ComparisonOperation(e) => (2, BinaryishOperator::from(e.operator)),
-            Node::BitwiseInfixOperation(e) => (3, BinaryishOperator::from(e.operator)),
-            Node::ArithmeticInfixOperation(e) => (3, BinaryishOperator::from(e.operator)),
-            Node::ConcatOperation(o) => (2, BinaryishOperator::Concat(o.dot)),
-            Node::CoalesceOperation(o) => (2, BinaryishOperator::Coalesce(o.double_question_mark)),
+        let operator = match node {
+            Node::Binary(e) => &e.operator,
             _ => return false,
         };
 
-        let parent_node = self.nth_parent_kind(n);
-        let parent_operator = match parent_node {
-            Some(Node::LogicalInfixOperation(e)) => BinaryishOperator::from(e.operator),
-            Some(Node::ComparisonOperation(e)) => BinaryishOperator::from(e.operator),
-            Some(Node::BitwiseInfixOperation(e)) => BinaryishOperator::from(e.operator),
-            Some(Node::ArithmeticInfixOperation(e)) => BinaryishOperator::from(e.operator),
-            Some(Node::ConcatOperation(o)) => BinaryishOperator::Concat(o.dot),
-            Some(Node::CoalesceOperation(_)) => {
-                // Add parentheses if parent is a coalesce operator, unless the child is a coalesce operator
-                // as well.
-                if let BinaryishOperator::Coalesce(_) = operator {
-                    return false;
-                } else {
+        let parent_operator = match self.nth_parent_kind(2) {
+            Some(Node::Binary(e)) => {
+                if let BinaryOperator::NullCoalesce(_) = e.operator {
+                    // Add parentheses if parent is a coalesce operator,
+                    //  unless the child is a coalesce operator as well.
+                    return !matches!(operator, BinaryOperator::NullCoalesce(_));
+                }
+
+                if let BinaryOperator::Instanceof(_) = e.operator {
+                    // Add parentheses if parent is an instanceof operator.
                     return true;
                 }
+
+                if let BinaryOperator::Elvis(_) = e.operator {
+                    // Add parentheses if parent is an elvis operator.
+                    return true;
+                }
+
+                &e.operator
             }
-            Some(
-                Node::CastOperation(_)
-                | Node::InstanceofOperation(_)
-                | Node::ConditionalTernaryOperation(_)
-                | Node::ElvisTernaryOperation(_)
-                | Node::ArrayAppend(_),
-            ) => {
+            Some(Node::UnaryPrefix(operation)) if operation.operator.is_cast() => {
+                return true;
+            }
+            Some(Node::Conditional(_) | Node::ArrayAppend(_)) => {
                 return true;
             }
             Some(Node::ArrayAccess(access)) => {
@@ -147,7 +143,7 @@ impl<'a> Formatter<'a> {
                 return node.span().start.offset == call.span().start.offset;
             }
             _ => {
-                let grand_parent_node = self.nth_parent_kind(n + 1);
+                let grand_parent_node = self.nth_parent_kind(3);
 
                 if let Some(Node::Access(_)) = grand_parent_node {
                     return true;
@@ -157,7 +153,7 @@ impl<'a> Formatter<'a> {
             }
         };
 
-        if operator.is_bitwise_shift() {
+        if operator.is_bit_shift() {
             return true;
         }
 
@@ -192,7 +188,7 @@ impl<'a> Formatter<'a> {
             return false;
         }
 
-        if !operator.should_flatten(parent_operator) {
+        if !should_flatten(operator, parent_operator) {
             return true;
         }
 
@@ -261,38 +257,26 @@ impl<'a> Formatter<'a> {
     }
 
     const fn is_unary_or_binary_or_ternary(&self, node: Node<'a>) -> bool {
-        self.is_unary(node) || self.is_binaryish(node) || self.is_ternary(node)
+        self.is_unary(node) || self.is_binaryish(node) || self.is_conditional(node)
     }
 
     const fn is_binaryish(&self, node: Node<'a>) -> bool {
         match node {
-            Node::ConcatOperation(_)
-            | Node::CoalesceOperation(_)
-            | Node::LogicalInfixOperation(_)
-            | Node::ComparisonOperation(_)
-            | Node::BitwiseInfixOperation(_)
-            | Node::ArithmeticInfixOperation(_)
-            | Node::CastOperation(_)
-            | Node::InstanceofOperation(_)
-            | Node::ElvisTernaryOperation(_) => true,
-            Node::ConditionalTernaryOperation(op) => op.then.is_none(),
+            Node::Binary(_) => true,
+            Node::Conditional(conditional) => conditional.then.is_none(),
             _ => false,
         }
     }
 
     const fn is_unary(&self, node: Node<'a>) -> bool {
         match node {
-            Node::ArithmeticPostfixOperation(_)
-            | Node::BitwisePrefixOperation(_)
-            | Node::LogicalPrefixOperation(_)
-            | Node::ArithmeticPrefixOperation(_) => true,
-            Node::ConditionalTernaryOperation(op) => op.then.is_none(),
+            Node::UnaryPrefix(_) | Node::UnaryPostfix(_) => true,
             _ => false,
         }
     }
 
-    const fn is_ternary(&self, node: Node<'a>) -> bool {
-        if let Node::ConditionalTernaryOperation(op) = node {
+    const fn is_conditional(&self, node: Node<'a>) -> bool {
+        if let Node::Conditional(op) = node {
             op.then.is_some()
         } else {
             false

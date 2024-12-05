@@ -55,39 +55,17 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
     pub fn resolve<'ast>(&self, expression: &'ast Expression) -> TypeKind {
         match expression {
             Expression::Parenthesized(parenthesized) => self.resolve(&parenthesized.expression),
-            Expression::Referenced(referenced) => self.resolve(&referenced.expression),
-            Expression::Suppressed(suppressed) => self.resolve(&suppressed.expression),
+            Expression::Binary(operation) => get_binary_operation_kind(&self.interner, operation, |e| self.resolve(e)),
+            Expression::UnaryPrefix(operation) => {
+                get_unary_prefix_operation_kind(&self.interner, operation, |e| self.resolve(e))
+            }
+            Expression::UnaryPostfix(operation) => get_unary_postfix_operation_kind(operation, |e| self.resolve(e)),
             Expression::Literal(literal) => get_literal_kind(self.interner, literal),
             Expression::CompositeString(composite_string) => {
                 get_composite_string_kind(composite_string, |e| self.resolve(e))
             }
-            Expression::ArithmeticOperation(arithmetic_operation) => {
-                get_arithmetic_operation_kind(&self.interner, arithmetic_operation, |e| self.resolve(e))
-            }
             Expression::AssignmentOperation(assignment_operation) => self.resolve(&assignment_operation.rhs),
-            Expression::BitwiseOperation(bitwise_operation) => {
-                get_bitwise_operation_kind(&self.interner, bitwise_operation, |e| self.resolve(e))
-            }
-            Expression::ComparisonOperation(comparison_operation) => {
-                let lhs_kind = self.resolve(&comparison_operation.lhs);
-                let rhs_kind = self.resolve(&comparison_operation.rhs);
-
-                return compute_comparison_result(&lhs_kind, &rhs_kind, &comparison_operation.operator);
-            }
-            Expression::LogicalOperation(logical_operation) => {
-                get_logical_operation_kind(logical_operation, |e| self.resolve(e))
-            }
-            Expression::CastOperation(cast_operation) => get_cast_operation_kind(cast_operation, |e| self.resolve(e)),
-            Expression::TernaryOperation(ternary_operation) => {
-                get_ternary_operation_kind(ternary_operation, |e| self.resolve(e))
-            }
-            Expression::CoalesceOperation(coalesce_operation) => {
-                get_coalesce_operation_kind(coalesce_operation, |e| self.resolve(e))
-            }
-            Expression::ConcatOperation(concat_operation) => {
-                get_concat_operation_kind(concat_operation, |e| self.resolve(e))
-            }
-            Expression::InstanceofOperation(_) => bool_kind(),
+            Expression::Conditional(conditional) => get_conditional_kind(conditional, |e| self.resolve(e)),
             Expression::Array(array) => get_array_kind(&array.elements, |e| self.resolve(e)),
             Expression::LegacyArray(legacy_array) => get_array_kind(&legacy_array.elements, |e| self.resolve(e)),
             Expression::ArrayAccess(array_access) => get_array_index_kind(self.resolve(&array_access.array)),
@@ -561,12 +539,11 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                 | MagicConstant::Namespace(_) => TypeKind::Scalar(ScalarTypeKind::LiteralString),
                 MagicConstant::Class(_) => TypeKind::Scalar(ScalarTypeKind::ClassString(None)),
             },
-            // Requires more context
-            Expression::Variable(_) => mixed_kind(false),
-            Expression::Yield(_) => mixed_kind(false),
             // Non-readable expressions
             Expression::ArrayAppend(_) => never_kind(),
             Expression::List(_) => never_kind(),
+            // Requires more context
+            _ => mixed_kind(false),
         }
     }
 }

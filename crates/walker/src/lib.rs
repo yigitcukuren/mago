@@ -1285,44 +1285,23 @@ generate_ast_walker! {
 
     Expression as expression => {
         match &expression {
-            Expression::Parenthesized(parenthesized) => walker.walk_parenthesized(parenthesized.as_ref(), context),
-            Expression::Referenced(referenced) => walker.walk_referenced(referenced.as_ref(), context),
-            Expression::Suppressed(suppressed) => walker.walk_suppressed(suppressed.as_ref(), context),
-            Expression::Literal(literal) => walker.walk_literal(literal, context),
-            Expression::CompositeString(string) => walker.walk_composite_string(string.as_ref(), context),
-            Expression::ArithmeticOperation(arithmetic_operation) => {
-                walker.walk_arithmetic_operation(arithmetic_operation.as_ref(), context)
+            Expression::Parenthesized(parenthesized) => walker.walk_parenthesized(&parenthesized, context),
+            Expression::Binary(expr) => walker.walk_binary(expr, context),
+            Expression::UnaryPrefix(operation) => walker.walk_unary_prefix(operation, context),
+            Expression::UnaryPostfix(operation) => walker.walk_unary_postfix(operation, context),
+            Expression::Literal(literal) => walker.walk_literal_expression(literal, context),
+            Expression::CompositeString(string) => walker.walk_composite_string(string, context),
+            Expression::AssignmentOperation(assignment) => {
+                walker.walk_assignment(&assignment, context)
             }
-            Expression::AssignmentOperation(assignment_operation) => {
-                walker.walk_assignment_operation(assignment_operation.as_ref(), context)
+            Expression::Conditional(conditional) => {
+                walker.walk_conditional(conditional, context)
             }
-            Expression::BitwiseOperation(bitwise_operation) => {
-                walker.walk_bitwise_operation(bitwise_operation.as_ref(), context)
-            }
-            Expression::ComparisonOperation(comparison_operation) => {
-                walker.walk_comparison_operation(comparison_operation.as_ref(), context)
-            }
-            Expression::LogicalOperation(logical_operation) => {
-                walker.walk_logical_operation(logical_operation.as_ref(), context)
-            }
-            Expression::CastOperation(cast_operation) => walker.walk_cast_operation(cast_operation.as_ref(), context),
-            Expression::TernaryOperation(ternary_operation) => {
-                walker.walk_ternary_operation(ternary_operation.as_ref(), context)
-            }
-            Expression::CoalesceOperation(coalesce_operation) => {
-                walker.walk_coalesce_operation(coalesce_operation.as_ref(), context)
-            }
-            Expression::ConcatOperation(concat_operation) => {
-                walker.walk_concat_operation(concat_operation.as_ref(), context)
-            }
-            Expression::InstanceofOperation(instanceof_operation) => {
-                walker.walk_instanceof_operation(instanceof_operation.as_ref(), context)
-            }
-            Expression::Array(array) => walker.walk_array(array.as_ref(), context),
-            Expression::LegacyArray(legacy_array) => walker.walk_legacy_array(legacy_array.as_ref(), context),
-            Expression::List(list) => walker.walk_list(list.as_ref(), context),
-            Expression::ArrayAccess(array_access) => walker.walk_array_access(array_access.as_ref(), context),
-            Expression::ArrayAppend(array_append) => walker.walk_array_append(array_append.as_ref(), context),
+            Expression::Array(array) => walker.walk_array(array, context),
+            Expression::LegacyArray(legacy_array) => walker.walk_legacy_array(legacy_array, context),
+            Expression::List(list) => walker.walk_list(list, context),
+            Expression::ArrayAccess(array_access) => walker.walk_array_access(array_access, context),
+            Expression::ArrayAppend(array_append) => walker.walk_array_append(array_append, context),
             Expression::AnonymousClass(anonymous_class) => {
                 walker.walk_anonymous_class(anonymous_class.as_ref(), context)
             }
@@ -1348,20 +1327,48 @@ generate_ast_walker! {
         }
     }
 
+    Binary as binary => {
+        walker.walk_expression(&binary.lhs, context);
+        walker.walk_binary_operator(&binary.operator, context);
+        walker.walk_expression(&binary.rhs, context);
+    }
+
+    BinaryOperator as binary_operator => {
+        match binary_operator {
+            BinaryOperator::Instanceof(keyword)
+            | BinaryOperator::LowAnd(keyword)
+            | BinaryOperator::LowOr(keyword)
+            | BinaryOperator::LowXor(keyword) => {
+                walker.walk_keyword(keyword, context);
+            }
+            _ => {}
+        }
+    }
+
+    UnaryPrefix as unary_prefix => {
+        walker.walk_unary_prefix_operator(&unary_prefix.operator, context);
+        walker.walk_expression(&unary_prefix.operand, context);
+    }
+
+    UnaryPrefixOperator as unary_prefix_operator => {
+        // Do nothing
+    }
+
+    UnaryPostfix as unary_postfix => {
+        walker.walk_expression(&unary_postfix.operand, context);
+        walker.walk_unary_postfix_operator(&unary_postfix.operator, context);
+    }
+
+    UnaryPostfixOperator as unary_postfix_operator => {
+        // Do nothing
+    }
+
     Parenthesized as parenthesized => {
         walker.walk_expression(&parenthesized.expression, context)
     }
 
-    Referenced as referenced => {
-        walker.walk_expression(&referenced.expression, context)
-    }
-
-    Suppressed as suppressed => {
-        walker.walk_expression(&suppressed.expression, context)
-    }
-
-    Literal as literal => {
-        match literal {
+    Literal as literal_expression => {
+        match literal_expression {
             Literal::String(string) => walker.walk_literal_string(string, context),
             Literal::Integer(integer) => walker.walk_literal_integer(integer, context),
             Literal::Float(float) => walker.walk_literal_float(float, context),
@@ -1439,166 +1446,23 @@ generate_ast_walker! {
         walker.walk_expression(&braced_expression_string_part.expression, context);
     }
 
-    ArithmeticOperation as arithmetic_operation => {
-        match arithmetic_operation {
-            ArithmeticOperation::Prefix(arithmetic_prefix_operation) =>
-                walker.walk_arithmetic_prefix_operation(arithmetic_prefix_operation, context),
-            ArithmeticOperation::Infix(arithmetic_infix_operation) =>
-                walker.walk_arithmetic_infix_operation(arithmetic_infix_operation, context),
-            ArithmeticOperation::Postfix(arithmetic_postfix_operation) =>
-                walker.walk_arithmetic_postfix_operation(arithmetic_postfix_operation, context),
-        };
-    }
-
-    ArithmeticPrefixOperation as arithmetic_prefix_operation => {
-        walker.walk_arithmetic_prefix_operator(&arithmetic_prefix_operation.operator, context);
-        walker.walk_expression(&arithmetic_prefix_operation.value, context);
-    }
-
-    ArithmeticPrefixOperator as arithmetic_prefix_operator => {
-        // Do nothing
-    }
-
-    ArithmeticInfixOperation as arithmetic_infix_operation => {
-        walker.walk_expression(&arithmetic_infix_operation.lhs, context);
-        walker.walk_arithmetic_infix_operator(&arithmetic_infix_operation.operator, context);
-        walker.walk_expression(&arithmetic_infix_operation.rhs, context);
-    }
-
-    ArithmeticInfixOperator as arithmetic_infix_operator => {
-        // Do nothing
-    }
-
-    ArithmeticPostfixOperation as arithmetic_postfix_operation => {
-        walker.walk_expression(&arithmetic_postfix_operation.value, context);
-        walker.walk_arithmetic_postfix_operator(&arithmetic_postfix_operation.operator, context);
-    }
-
-    ArithmeticPostfixOperator as arithmetic_postfix_operator => {
-        // Do nothing
-    }
-
-    AssignmentOperation as assignment_operation => {
-        walker.walk_expression(&assignment_operation.lhs, context);
-        walker.walk_assignment_operator(&assignment_operation.operator, context);
-        walker.walk_expression(&assignment_operation.rhs, context);
+    Assignment as assignment => {
+        walker.walk_expression(&assignment.lhs, context);
+        walker.walk_assignment_operator(&assignment.operator, context);
+        walker.walk_expression(&assignment.rhs, context);
     }
 
     AssignmentOperator as assignment_operator => {
         // Do nothing
     }
 
-    BitwiseOperation as bitwise_operation => {
-        match bitwise_operation {
-            BitwiseOperation::Prefix(bitwise_prefix_operation) =>
-                walker.walk_bitwise_prefix_operation(bitwise_prefix_operation, context),
-            BitwiseOperation::Infix(bitwise_infix_operation) =>
-                walker.walk_bitwise_infix_operation(bitwise_infix_operation, context),
-        };
-    }
-
-    BitwisePrefixOperation as bitwise_prefix_operation => {
-        walker.walk_bitwise_prefix_operator(&bitwise_prefix_operation.operator, context);
-        walker.walk_expression(&bitwise_prefix_operation.value, context);
-    }
-
-    BitwisePrefixOperator as bitwise_prefix_operator => {
-        // Do nothing
-    }
-
-    BitwiseInfixOperation as bitwise_infix_operation => {
-        walker.walk_expression(&bitwise_infix_operation.lhs, context);
-        walker.walk_bitwise_infix_operator(&bitwise_infix_operation.operator, context);
-        walker.walk_expression(&bitwise_infix_operation.rhs, context);
-    }
-
-    BitwiseInfixOperator as bitwise_infix_operator => {
-        // Do nothing
-    }
-
-    ComparisonOperation as comparison_operation => {
-        walker.walk_expression(&comparison_operation.lhs, context);
-        walker.walk_comparison_operator(&comparison_operation.operator, context);
-        walker.walk_expression(&comparison_operation.rhs, context);
-    }
-
-    ComparisonOperator as comparison_operator => {
-        // Do nothing
-    }
-
-    LogicalOperation as logical_operation => {
-        match logical_operation {
-            LogicalOperation::Prefix(logical_prefix_operation) =>
-                walker.walk_logical_prefix_operation(logical_prefix_operation, context),
-            LogicalOperation::Infix(logical_infix_operation) =>
-                walker.walk_logical_infix_operation(logical_infix_operation, context),
-        };
-    }
-
-    LogicalPrefixOperation as logical_prefix_operation => {
-        walker.walk_logical_prefix_operator(&logical_prefix_operation.operator, context);
-        walker.walk_expression(&logical_prefix_operation.value, context);
-    }
-
-    LogicalPrefixOperator as logical_prefix_operator => {
-        // Do nothing
-    }
-
-    LogicalInfixOperation as logical_infix_operation => {
-        walker.walk_expression(&logical_infix_operation.lhs, context);
-        walker.walk_logical_infix_operator(&logical_infix_operation.operator, context);
-        walker.walk_expression(&logical_infix_operation.rhs, context);
-    }
-
-    LogicalInfixOperator as logical_infix_operator => {
-        // Do nothing
-    }
-
-    CastOperation as cast_operation => {
-        walker.walk_cast_operator(&cast_operation.operator, context);
-        walker.walk_expression(&cast_operation.value, context);
-    }
-
-    CastOperator as cast_operator => {
-        // Do nothing
-    }
-
-    TernaryOperation as ternary_operation => {
-        match ternary_operation {
-            TernaryOperation::Conditional(conditional_ternary_operation) =>
-                walker.walk_conditional_ternary_operation(conditional_ternary_operation, context),
-            TernaryOperation::Elvis(elvis_ternary_operation) =>
-                walker.walk_elvis_ternary_operation(elvis_ternary_operation, context),
-        };
-    }
-
-    ConditionalTernaryOperation as conditional_ternary_operation => {
-        walker.walk_expression(&conditional_ternary_operation.condition, context);
-        if let Some(then) = &conditional_ternary_operation.then {
+    Conditional as conditional => {
+        walker.walk_expression(&conditional.condition, context);
+        if let Some(then) = &conditional.then {
             walker.walk_expression(then, context);
         }
 
-        walker.walk_expression(&conditional_ternary_operation.r#else, context);
-    }
-
-    ElvisTernaryOperation as elvis_ternary_operation => {
-        walker.walk_expression(&elvis_ternary_operation.condition, context);
-        walker.walk_expression(&elvis_ternary_operation.r#else, context);
-    }
-
-    CoalesceOperation as coalesce_operation => {
-        walker.walk_expression(&coalesce_operation.lhs, context);
-        walker.walk_expression(&coalesce_operation.rhs, context);
-    }
-
-    ConcatOperation as concat_operation => {
-        walker.walk_expression(&concat_operation.lhs, context);
-        walker.walk_expression(&concat_operation.rhs, context);
-    }
-
-    InstanceofOperation as instanceof_operation => {
-        walker.walk_expression(&instanceof_operation.lhs, context);
-        walker.walk_expression(&instanceof_operation.rhs, context);
+        walker.walk_expression(&conditional.r#else, context);
     }
 
     Array as array => {

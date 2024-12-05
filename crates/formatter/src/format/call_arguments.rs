@@ -229,7 +229,7 @@ fn should_expand_first_arg<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentLis
 
     match second_argument.value() {
         Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => false,
-        Expression::Closure(_) | Expression::ArrowFunction(_) | Expression::TernaryOperation(_) => false,
+        Expression::Closure(_) | Expression::ArrowFunction(_) | Expression::Conditional(_) => false,
         expression => is_hopefully_short_call_argument(expression) && !could_expand_argument_value(expression, false),
     }
 }
@@ -273,8 +273,7 @@ fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {
     loop {
         node = match node {
             Expression::Parenthesized(parenthesized) => &parenthesized.expression,
-            Expression::Suppressed(suppressed) => &suppressed.expression,
-            Expression::Referenced(referenced) => &referenced.expression,
+            Expression::UnaryPrefix(operation) if !operation.operator.is_cast() => operation.operand.as_ref(),
             _ => break,
         };
     }
@@ -293,34 +292,7 @@ fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {
         Expression::Instantiation(instantiation) => {
             instantiation.arguments.as_ref().map_or(true, |argument_list| argument_list.arguments.len() < 2)
         }
-        node @ Expression::ArithmeticOperation(arithmetic) => {
-            if let ArithmeticOperation::Infix(operation) = arithmetic.as_ref() {
-                is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
-            } else {
-                is_simple_call_argument(node, 2)
-            }
-        }
-        Expression::BitwiseOperation(bitwise) => {
-            if let BitwiseOperation::Infix(operation) = bitwise.as_ref() {
-                is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
-            } else {
-                is_simple_call_argument(node, 2)
-            }
-        }
-        Expression::LogicalOperation(logical) => {
-            if let LogicalOperation::Infix(operation) = logical.as_ref() {
-                is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
-            } else {
-                is_simple_call_argument(node, 2)
-            }
-        }
-        Expression::ComparisonOperation(operation) => {
-            is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
-        }
-        Expression::ConcatOperation(operation) => {
-            is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
-        }
-        Expression::CoalesceOperation(operation) => {
+        Expression::Binary(operation) => {
             is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
         }
         _ => is_simple_call_argument(node, 2),
@@ -349,8 +321,17 @@ fn is_simple_call_argument<'a>(node: &'a Expression, depth: usize) -> bool {
 
     match node {
         Expression::Parenthesized(parenthesized) => is_simple_call_argument(&parenthesized.expression, depth),
-        Expression::Suppressed(suppressed) => is_simple_call_argument(&suppressed.expression, depth),
-        Expression::Referenced(referenced) => is_simple_call_argument(&referenced.expression, depth),
+        Expression::UnaryPrefix(operation) => {
+            if let UnaryPrefixOperator::PreIncrement(_) | UnaryPrefixOperator::PreDecrement(_) = operation.operator {
+                return false;
+            }
+
+            if operation.operator.is_cast() {
+                return false;
+            }
+
+            is_simple_call_argument(&operation.operand, depth)
+        }
         Expression::Array(array) => array.elements.iter().all(is_simple_element),
         Expression::LegacyArray(array) => array.elements.iter().all(is_simple_element),
         Expression::Call(call) => {
@@ -414,31 +395,6 @@ fn is_simple_call_argument<'a>(node: &'a Expression, depth: usize) -> bool {
                 false
             }
         }
-        Expression::ArithmeticOperation(arithmetic) => {
-            if let ArithmeticOperation::Prefix(ArithmeticPrefixOperation {
-                operator: ArithmeticPrefixOperator::Minus(_) | ArithmeticPrefixOperator::Plus(_),
-                value,
-            }) = arithmetic.as_ref()
-            {
-                is_simple_call_argument(&value, depth)
-            } else {
-                false
-            }
-        }
-        Expression::BitwiseOperation(bitwise) => {
-            if let BitwiseOperation::Prefix(operation) = bitwise.as_ref() {
-                is_simple_call_argument(&operation.value, depth)
-            } else {
-                false
-            }
-        }
-        Expression::LogicalOperation(logical) => {
-            if let LogicalOperation::Prefix(operation) = logical.as_ref() {
-                is_simple_call_argument(&operation.value, depth)
-            } else {
-                false
-            }
-        }
         _ => false,
     }
 }
@@ -449,37 +405,12 @@ fn could_expand_argument_value<'a>(argument_value: &'a Expression, arrow_chain_r
         Expression::LegacyArray(expr) => expr.elements.len() > 0,
         Expression::List(expr) => expr.elements.len() > 0,
         Expression::Closure(_) => true,
-        Expression::ArithmeticOperation(arithmetic) => {
-            if let ArithmeticOperation::Infix(operation) = arithmetic.as_ref() {
-                could_expand_argument_value(&operation.lhs, arrow_chain_recursion)
-            } else {
-                false
-            }
-        }
-        Expression::BitwiseOperation(bitwise) => {
-            if let BitwiseOperation::Infix(operation) = bitwise.as_ref() {
-                could_expand_argument_value(&operation.lhs, arrow_chain_recursion)
-            } else {
-                false
-            }
-        }
-        Expression::LogicalOperation(logical) => {
-            if let LogicalOperation::Infix(operation) = logical.as_ref() {
-                could_expand_argument_value(&operation.lhs, arrow_chain_recursion)
-            } else {
-                false
-            }
-        }
-        Expression::ComparisonOperation(operation) => {
-            could_expand_argument_value(&operation.lhs, arrow_chain_recursion)
-        }
-        Expression::ConcatOperation(operation) => could_expand_argument_value(&operation.lhs, arrow_chain_recursion),
-        Expression::CoalesceOperation(operation) => could_expand_argument_value(&operation.lhs, arrow_chain_recursion),
+        Expression::Binary(operation) => could_expand_argument_value(&operation.lhs, arrow_chain_recursion),
         Expression::ArrowFunction(arrow_function) => match &arrow_function.expression {
             Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => {
                 could_expand_argument_value(&arrow_function.expression, true)
             }
-            Expression::Call(_) | Expression::TernaryOperation(_) => !arrow_chain_recursion,
+            Expression::Call(_) | Expression::Conditional(_) => !arrow_chain_recursion,
             _ => false,
         },
         _ => false,

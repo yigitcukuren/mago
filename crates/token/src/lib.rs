@@ -35,7 +35,7 @@ pub enum Precedence {
     KeyXor,
     KeyAnd,
     Assignment,
-    Ternary,
+    ElvisOrConditional,
     NullCoalesce,
     Or,
     And,
@@ -278,7 +278,7 @@ impl Precedence {
             T!["&&"] => Precedence::And,
             T!["||"] => Precedence::Or,
             T!["??"] => Precedence::NullCoalesce,
-            T!["?" | "?:"] => Precedence::Ternary,
+            T!["?" | "?:"] => Precedence::ElvisOrConditional,
             T!["="
                 | "+="
                 | "-="
@@ -305,7 +305,6 @@ impl Precedence {
     #[inline(always)]
     pub fn postfix(kind: &TokenKind) -> Self {
         match kind {
-            T!["??"] => Self::NullCoalesce,
             T!["++" | "--"] => Self::Prefix,
             T!["(" | "["] => Self::CallDim,
             T!["->" | "?->" | "::"] => Self::ObjectAccess,
@@ -330,7 +329,7 @@ impl Precedence {
             | Self::KeyOr
             | Self::KeyXor => Associativity::Left,
             Self::Pow | Self::NullCoalesce | Self::Assignment => Associativity::Right,
-            Self::Ternary | Self::Equality | Self::Comparison => Associativity::NonAssociative,
+            Self::ElvisOrConditional | Self::Equality | Self::Comparison => Associativity::NonAssociative,
             _ => return None,
         })
     }
@@ -339,93 +338,93 @@ impl Precedence {
 impl TokenKind {
     #[inline(always)]
     pub fn is_keyword(&self) -> bool {
-        match self {
+        matches!(
+            self,
             TokenKind::Eval
-            | TokenKind::Die
-            | TokenKind::Empty
-            | TokenKind::Isset
-            | TokenKind::Unset
-            | TokenKind::Exit
-            | TokenKind::EndDeclare
-            | TokenKind::EndSwitch
-            | TokenKind::EndWhile
-            | TokenKind::EndForeach
-            | TokenKind::EndFor
-            | TokenKind::EndIf
-            | TokenKind::From
-            | TokenKind::And
-            | TokenKind::Or
-            | TokenKind::Xor
-            | TokenKind::Print
-            | TokenKind::Readonly
-            | TokenKind::Global
-            | TokenKind::Match
-            | TokenKind::Abstract
-            | TokenKind::Array
-            | TokenKind::As
-            | TokenKind::Break
-            | TokenKind::Case
-            | TokenKind::Catch
-            | TokenKind::Class
-            | TokenKind::Clone
-            | TokenKind::Continue
-            | TokenKind::Const
-            | TokenKind::Declare
-            | TokenKind::Default
-            | TokenKind::Do
-            | TokenKind::Echo
-            | TokenKind::ElseIf
-            | TokenKind::Else
-            | TokenKind::Enum
-            | TokenKind::Extends
-            | TokenKind::False
-            | TokenKind::Finally
-            | TokenKind::Final
-            | TokenKind::Fn
-            | TokenKind::Foreach
-            | TokenKind::For
-            | TokenKind::Function
-            | TokenKind::Goto
-            | TokenKind::If
-            | TokenKind::IncludeOnce
-            | TokenKind::Include
-            | TokenKind::Implements
-            | TokenKind::Interface
-            | TokenKind::Instanceof
-            | TokenKind::Namespace
-            | TokenKind::New
-            | TokenKind::Null
-            | TokenKind::Private
-            | TokenKind::Protected
-            | TokenKind::Public
-            | TokenKind::RequireOnce
-            | TokenKind::Require
-            | TokenKind::Return
-            | TokenKind::Static
-            | TokenKind::Switch
-            | TokenKind::Throw
-            | TokenKind::Trait
-            | TokenKind::True
-            | TokenKind::Try
-            | TokenKind::Use
-            | TokenKind::Var
-            | TokenKind::Yield
-            | TokenKind::While
-            | TokenKind::Insteadof
-            | TokenKind::List
-            | TokenKind::Self_
-            | TokenKind::Parent
-            | TokenKind::DirConstant
-            | TokenKind::FileConstant
-            | TokenKind::LineConstant
-            | TokenKind::FunctionConstant
-            | TokenKind::ClassConstant
-            | TokenKind::MethodConstant
-            | TokenKind::TraitConstant
-            | TokenKind::NamespaceConstant
-            | TokenKind::HaltCompiler => true,
-            _ => false,
-        }
+                | TokenKind::Die
+                | TokenKind::Empty
+                | TokenKind::Isset
+                | TokenKind::Unset
+                | TokenKind::Exit
+                | TokenKind::EndDeclare
+                | TokenKind::EndSwitch
+                | TokenKind::EndWhile
+                | TokenKind::EndForeach
+                | TokenKind::EndFor
+                | TokenKind::EndIf
+                | TokenKind::From
+                | TokenKind::And
+                | TokenKind::Or
+                | TokenKind::Xor
+                | TokenKind::Print
+                | TokenKind::Readonly
+                | TokenKind::Global
+                | TokenKind::Match
+                | TokenKind::Abstract
+                | TokenKind::Array
+                | TokenKind::As
+                | TokenKind::Break
+                | TokenKind::Case
+                | TokenKind::Catch
+                | TokenKind::Class
+                | TokenKind::Clone
+                | TokenKind::Continue
+                | TokenKind::Const
+                | TokenKind::Declare
+                | TokenKind::Default
+                | TokenKind::Do
+                | TokenKind::Echo
+                | TokenKind::ElseIf
+                | TokenKind::Else
+                | TokenKind::Enum
+                | TokenKind::Extends
+                | TokenKind::False
+                | TokenKind::Finally
+                | TokenKind::Final
+                | TokenKind::Fn
+                | TokenKind::Foreach
+                | TokenKind::For
+                | TokenKind::Function
+                | TokenKind::Goto
+                | TokenKind::If
+                | TokenKind::IncludeOnce
+                | TokenKind::Include
+                | TokenKind::Implements
+                | TokenKind::Interface
+                | TokenKind::Instanceof
+                | TokenKind::Namespace
+                | TokenKind::New
+                | TokenKind::Null
+                | TokenKind::Private
+                | TokenKind::Protected
+                | TokenKind::Public
+                | TokenKind::RequireOnce
+                | TokenKind::Require
+                | TokenKind::Return
+                | TokenKind::Static
+                | TokenKind::Switch
+                | TokenKind::Throw
+                | TokenKind::Trait
+                | TokenKind::True
+                | TokenKind::Try
+                | TokenKind::Use
+                | TokenKind::Var
+                | TokenKind::Yield
+                | TokenKind::While
+                | TokenKind::Insteadof
+                | TokenKind::List
+                | TokenKind::Self_
+                | TokenKind::Parent
+                | TokenKind::DirConstant
+                | TokenKind::FileConstant
+                | TokenKind::LineConstant
+                | TokenKind::FunctionConstant
+                | TokenKind::ClassConstant
+                | TokenKind::MethodConstant
+                | TokenKind::TraitConstant
+                | TokenKind::NamespaceConstant
+                | TokenKind::HaltCompiler
+        )
     }
 
     #[inline(always)]
@@ -475,13 +474,14 @@ impl TokenKind {
                 | ".="
                 | "??="
                 | "/="
-                | "*="]
+                | "*="
+                | "??"]
         )
     }
 
     #[inline(always)]
     pub fn is_postfix(&self) -> bool {
-        matches!(self, T!["++" | "--" | "(" | "[" | "->" | "?->" | "::" | "??"])
+        matches!(self, T!["++" | "--" | "(" | "[" | "->" | "?->" | "::"])
     }
 
     #[inline(always)]
@@ -629,7 +629,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_cast(&self) -> bool {
+    pub const fn is_cast(&self) -> bool {
         matches!(
             self,
             T!["(string)"
@@ -645,6 +645,15 @@ impl TokenKind {
                 | "(object)"
                 | "(unset)"]
         )
+    }
+
+    #[inline(always)]
+    pub const fn is_unary_prefix(&self) -> bool {
+        if self.is_cast() {
+            return true;
+        }
+
+        matches!(self, T!["@" | "!" | "~" | "-" | "+" | "++" | "--" | "&"])
     }
 
     #[inline(always)]

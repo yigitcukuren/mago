@@ -127,9 +127,13 @@ pub enum NodeKind {
     DeclareItem,
     Echo,
     Expression,
+    Binary,
+    BinaryOperator,
+    UnaryPrefix,
+    UnaryPrefixOperator,
+    UnaryPostfix,
+    UnaryPostfixOperator,
     Parenthesized,
-    Referenced,
-    Suppressed,
     ArrowFunction,
     Closure,
     ClosureUseClause,
@@ -150,7 +154,7 @@ pub enum NodeKind {
     Inline,
     Instantiation,
     Keyword,
-    Literal,
+    LiteralExpression,
     LiteralFloat,
     LiteralInteger,
     LiteralString,
@@ -159,35 +163,9 @@ pub enum NodeKind {
     Namespace,
     NamespaceBody,
     NamespaceImplicitBody,
-    ArithmeticInfixOperation,
-    ArithmeticInfixOperator,
-    ArithmeticOperation,
-    ArithmeticPostfixOperation,
-    ArithmeticPostfixOperator,
-    ArithmeticPrefixOperation,
-    ArithmeticPrefixOperator,
-    AssignmentOperation,
+    Assignment,
     AssignmentOperator,
-    BitwiseInfixOperation,
-    BitwiseInfixOperator,
-    BitwiseOperation,
-    BitwisePrefixOperation,
-    BitwisePrefixOperator,
-    CastOperation,
-    CastOperator,
-    CoalesceOperation,
-    ComparisonOperation,
-    ComparisonOperator,
-    ConcatOperation,
-    InstanceofOperation,
-    LogicalInfixOperation,
-    LogicalInfixOperator,
-    LogicalOperation,
-    LogicalPrefixOperation,
-    LogicalPrefixOperator,
-    ConditionalTernaryOperation,
-    ElvisTernaryOperation,
-    TernaryOperation,
+    Conditional,
     DoWhile,
     Foreach,
     ForeachBody,
@@ -370,9 +348,13 @@ pub enum Node<'a> {
     DeclareItem(&'a DeclareItem),
     Echo(&'a Echo),
     Expression(&'a Expression),
+    Binary(&'a Binary),
+    BinaryOperator(&'a BinaryOperator),
+    UnaryPrefix(&'a UnaryPrefix),
+    UnaryPrefixOperator(&'a UnaryPrefixOperator),
+    UnaryPostfix(&'a UnaryPostfix),
+    UnaryPostfixOperator(&'a UnaryPostfixOperator),
     Parenthesized(&'a Parenthesized),
-    Referenced(&'a Referenced),
-    Suppressed(&'a Suppressed),
     ArrowFunction(&'a ArrowFunction),
     Closure(&'a Closure),
     ClosureUseClause(&'a ClosureUseClause),
@@ -393,7 +375,7 @@ pub enum Node<'a> {
     Inline(&'a Inline),
     Instantiation(&'a Instantiation),
     Keyword(&'a Keyword),
-    Literal(&'a Literal),
+    LiteralExpression(&'a Literal),
     LiteralFloat(&'a LiteralFloat),
     LiteralInteger(&'a LiteralInteger),
     LiteralString(&'a LiteralString),
@@ -402,35 +384,9 @@ pub enum Node<'a> {
     Namespace(&'a Namespace),
     NamespaceBody(&'a NamespaceBody),
     NamespaceImplicitBody(&'a NamespaceImplicitBody),
-    ArithmeticInfixOperation(&'a ArithmeticInfixOperation),
-    ArithmeticInfixOperator(&'a ArithmeticInfixOperator),
-    ArithmeticOperation(&'a ArithmeticOperation),
-    ArithmeticPostfixOperation(&'a ArithmeticPostfixOperation),
-    ArithmeticPostfixOperator(&'a ArithmeticPostfixOperator),
-    ArithmeticPrefixOperation(&'a ArithmeticPrefixOperation),
-    ArithmeticPrefixOperator(&'a ArithmeticPrefixOperator),
-    AssignmentOperation(&'a AssignmentOperation),
+    AssignmentOperation(&'a Assignment),
     AssignmentOperator(&'a AssignmentOperator),
-    BitwiseInfixOperation(&'a BitwiseInfixOperation),
-    BitwiseInfixOperator(&'a BitwiseInfixOperator),
-    BitwiseOperation(&'a BitwiseOperation),
-    BitwisePrefixOperation(&'a BitwisePrefixOperation),
-    BitwisePrefixOperator(&'a BitwisePrefixOperator),
-    CastOperation(&'a CastOperation),
-    CastOperator(&'a CastOperator),
-    CoalesceOperation(&'a CoalesceOperation),
-    ComparisonOperation(&'a ComparisonOperation),
-    ComparisonOperator(&'a ComparisonOperator),
-    ConcatOperation(&'a ConcatOperation),
-    InstanceofOperation(&'a InstanceofOperation),
-    LogicalInfixOperation(&'a LogicalInfixOperation),
-    LogicalInfixOperator(&'a LogicalInfixOperator),
-    LogicalOperation(&'a LogicalOperation),
-    LogicalPrefixOperation(&'a LogicalPrefixOperation),
-    LogicalPrefixOperator(&'a LogicalPrefixOperator),
-    ConditionalTernaryOperation(&'a ConditionalTernaryOperation),
-    ElvisTernaryOperation(&'a ElvisTernaryOperation),
-    TernaryOperation(&'a TernaryOperation),
+    Conditional(&'a Conditional),
     DoWhile(&'a DoWhile),
     Foreach(&'a Foreach),
     ForeachBody(&'a ForeachBody),
@@ -694,9 +650,13 @@ impl<'a> Node<'a> {
             Self::DeclareItem(_) => NodeKind::DeclareItem,
             Self::Echo(_) => NodeKind::Echo,
             Self::Expression(_) => NodeKind::Expression,
+            Self::Binary(_) => NodeKind::Binary,
+            Self::BinaryOperator(_) => NodeKind::BinaryOperator,
+            Self::UnaryPrefix(_) => NodeKind::UnaryPrefix,
+            Self::UnaryPrefixOperator(_) => NodeKind::UnaryPrefixOperator,
+            Self::UnaryPostfix(_) => NodeKind::UnaryPostfix,
+            Self::UnaryPostfixOperator(_) => NodeKind::UnaryPostfixOperator,
             Self::Parenthesized(_) => NodeKind::Parenthesized,
-            Self::Referenced(_) => NodeKind::Referenced,
-            Self::Suppressed(_) => NodeKind::Suppressed,
             Self::ArrowFunction(_) => NodeKind::ArrowFunction,
             Self::Closure(_) => NodeKind::Closure,
             Self::ClosureUseClause(_) => NodeKind::ClosureUseClause,
@@ -717,7 +677,7 @@ impl<'a> Node<'a> {
             Self::Inline(_) => NodeKind::Inline,
             Self::Instantiation(_) => NodeKind::Instantiation,
             Self::Keyword(_) => NodeKind::Keyword,
-            Self::Literal(_) => NodeKind::Literal,
+            Self::LiteralExpression(_) => NodeKind::LiteralExpression,
             Self::LiteralFloat(_) => NodeKind::LiteralFloat,
             Self::LiteralInteger(_) => NodeKind::LiteralInteger,
             Self::LiteralString(_) => NodeKind::LiteralString,
@@ -726,35 +686,9 @@ impl<'a> Node<'a> {
             Self::Namespace(_) => NodeKind::Namespace,
             Self::NamespaceBody(_) => NodeKind::NamespaceBody,
             Self::NamespaceImplicitBody(_) => NodeKind::NamespaceImplicitBody,
-            Self::ArithmeticInfixOperation(_) => NodeKind::ArithmeticInfixOperation,
-            Self::ArithmeticInfixOperator(_) => NodeKind::ArithmeticInfixOperator,
-            Self::ArithmeticOperation(_) => NodeKind::ArithmeticOperation,
-            Self::ArithmeticPostfixOperation(_) => NodeKind::ArithmeticPostfixOperation,
-            Self::ArithmeticPostfixOperator(_) => NodeKind::ArithmeticPostfixOperator,
-            Self::ArithmeticPrefixOperation(_) => NodeKind::ArithmeticPrefixOperation,
-            Self::ArithmeticPrefixOperator(_) => NodeKind::ArithmeticPrefixOperator,
-            Self::AssignmentOperation(_) => NodeKind::AssignmentOperation,
+            Self::AssignmentOperation(_) => NodeKind::Assignment,
             Self::AssignmentOperator(_) => NodeKind::AssignmentOperator,
-            Self::BitwiseInfixOperation(_) => NodeKind::BitwiseInfixOperation,
-            Self::BitwiseInfixOperator(_) => NodeKind::BitwiseInfixOperator,
-            Self::BitwiseOperation(_) => NodeKind::BitwiseOperation,
-            Self::BitwisePrefixOperation(_) => NodeKind::BitwisePrefixOperation,
-            Self::BitwisePrefixOperator(_) => NodeKind::BitwisePrefixOperator,
-            Self::CastOperation(_) => NodeKind::CastOperation,
-            Self::CastOperator(_) => NodeKind::CastOperator,
-            Self::CoalesceOperation(_) => NodeKind::CoalesceOperation,
-            Self::ComparisonOperation(_) => NodeKind::ComparisonOperation,
-            Self::ComparisonOperator(_) => NodeKind::ComparisonOperator,
-            Self::ConcatOperation(_) => NodeKind::ConcatOperation,
-            Self::InstanceofOperation(_) => NodeKind::InstanceofOperation,
-            Self::LogicalInfixOperation(_) => NodeKind::LogicalInfixOperation,
-            Self::LogicalInfixOperator(_) => NodeKind::LogicalInfixOperator,
-            Self::LogicalOperation(_) => NodeKind::LogicalOperation,
-            Self::LogicalPrefixOperation(_) => NodeKind::LogicalPrefixOperation,
-            Self::LogicalPrefixOperator(_) => NodeKind::LogicalPrefixOperator,
-            Self::ConditionalTernaryOperation(_) => NodeKind::ConditionalTernaryOperation,
-            Self::ElvisTernaryOperation(_) => NodeKind::ElvisTernaryOperation,
-            Self::TernaryOperation(_) => NodeKind::TernaryOperation,
+            Self::Conditional(_) => NodeKind::Conditional,
             Self::DoWhile(_) => NodeKind::DoWhile,
             Self::Foreach(_) => NodeKind::Foreach,
             Self::ForeachBody(_) => NodeKind::ForeachBody,
@@ -1147,7 +1081,6 @@ impl<'a> Node<'a> {
                     vec![Node::TraitUseConcreteSpecification(specification)]
                 }
             },
-
             Node::AnonymousClass(node) => {
                 let mut children = vec![Node::Keyword(&node.new)];
                 children.extend(node.attributes.iter().map(Node::AttributeList));
@@ -1288,13 +1221,7 @@ impl<'a> Node<'a> {
                 children
             }
             Node::If(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.r#if));
-                children.push(Node::Expression(&node.condition));
-                children.push(Node::IfBody(&node.body));
-
-                children
+                vec![Node::Keyword(&node.r#if), Node::Expression(&node.condition), Node::IfBody(&node.body)]
             }
             Node::IfBody(node) => match node {
                 IfBody::Statement(statement_body) => vec![Node::IfStatementBody(statement_body)],
@@ -1450,50 +1377,33 @@ impl<'a> Node<'a> {
                 DeclareBody::ColonDelimited(body) => vec![Node::DeclareColonDelimitedBody(body)],
             },
             Node::DeclareColonDelimitedBody(node) => {
-                let mut children = vec![];
+                let mut children = node.statements.iter().map(Node::Statement).collect::<Vec<_>>();
 
-                children.extend(node.statements.iter().map(Node::Statement));
                 children.push(Node::Keyword(&node.end_declare));
                 children.push(Node::Terminator(&node.terminator));
 
                 children
             }
             Node::DeclareItem(node) => {
-                let mut children = vec![];
-
-                children.push(Node::LocalIdentifier(&node.name));
-                children.push(Node::Expression(&node.value));
-
-                children
+                vec![Node::LocalIdentifier(&node.name), Node::Expression(&node.value)]
             }
             Node::Echo(node) => {
-                let mut children = vec![];
-
-                children.push(Node::Keyword(&node.echo));
+                let mut children = vec![Node::Keyword(&node.echo)];
                 children.extend(node.values.iter().map(Node::Expression));
                 children.push(Node::Terminator(&node.terminator));
 
                 children
             }
             Node::Parenthesized(node) => vec![Node::Expression(&node.expression)],
-            Node::Referenced(node) => vec![Node::Expression(&node.expression)],
-            Node::Suppressed(node) => vec![Node::Expression(&node.expression)],
             Node::Expression(node) => vec![match node {
+                Expression::Binary(node) => Node::Binary(node),
+                Expression::UnaryPrefix(node) => Node::UnaryPrefix(node),
+                Expression::UnaryPostfix(node) => Node::UnaryPostfix(node),
                 Expression::Parenthesized(node) => Node::Parenthesized(node),
-                Expression::Referenced(node) => Node::Referenced(node),
-                Expression::Suppressed(node) => Node::Suppressed(node),
-                Expression::Literal(node) => Node::Literal(node),
+                Expression::Literal(node) => Node::LiteralExpression(node),
                 Expression::CompositeString(node) => Node::CompositeString(node),
-                Expression::ArithmeticOperation(node) => Node::ArithmeticOperation(node),
                 Expression::AssignmentOperation(node) => Node::AssignmentOperation(node),
-                Expression::BitwiseOperation(node) => Node::BitwiseOperation(node),
-                Expression::ComparisonOperation(node) => Node::ComparisonOperation(node),
-                Expression::LogicalOperation(node) => Node::LogicalOperation(node),
-                Expression::CastOperation(node) => Node::CastOperation(node),
-                Expression::TernaryOperation(node) => Node::TernaryOperation(node),
-                Expression::CoalesceOperation(node) => Node::CoalesceOperation(node),
-                Expression::ConcatOperation(node) => Node::ConcatOperation(node),
-                Expression::InstanceofOperation(node) => Node::InstanceofOperation(node),
+                Expression::Conditional(node) => Node::Conditional(node),
                 Expression::Array(node) => Node::Array(node),
                 Expression::LegacyArray(node) => Node::LegacyArray(node),
                 Expression::List(node) => Node::List(node),
@@ -1518,6 +1428,73 @@ impl<'a> Node<'a> {
                 Expression::Instantiation(node) => Node::Instantiation(node),
                 Expression::MagicConstant(node) => Node::MagicConstant(node),
             }],
+            Node::Binary(node) => {
+                vec![Node::Expression(&node.lhs), Node::BinaryOperator(&node.operator), Node::Expression(&node.rhs)]
+            }
+            Node::BinaryOperator(operator) => match operator {
+                BinaryOperator::Addition(_) => vec![],
+                BinaryOperator::Subtraction(_) => vec![],
+                BinaryOperator::Multiplication(_) => vec![],
+                BinaryOperator::Division(_) => vec![],
+                BinaryOperator::Modulo(_) => vec![],
+                BinaryOperator::Exponentiation(_) => vec![],
+                BinaryOperator::BitwiseAnd(_) => vec![],
+                BinaryOperator::BitwiseOr(_) => vec![],
+                BinaryOperator::BitwiseXor(_) => vec![],
+                BinaryOperator::LeftShift(_) => vec![],
+                BinaryOperator::RightShift(_) => vec![],
+                BinaryOperator::NullCoalesce(_) => vec![],
+                BinaryOperator::Equal(_) => vec![],
+                BinaryOperator::NotEqual(_) => vec![],
+                BinaryOperator::Identical(_) => vec![],
+                BinaryOperator::NotIdentical(_) => vec![],
+                BinaryOperator::AngledNotEqual(_) => vec![],
+                BinaryOperator::LessThan(_) => vec![],
+                BinaryOperator::LessThanOrEqual(_) => vec![],
+                BinaryOperator::GreaterThan(_) => vec![],
+                BinaryOperator::GreaterThanOrEqual(_) => vec![],
+                BinaryOperator::Spaceship(_) => vec![],
+                BinaryOperator::StringConcat(_) => vec![],
+                BinaryOperator::And(_) => vec![],
+                BinaryOperator::Or(_) => vec![],
+                BinaryOperator::Elvis(_) => vec![],
+                BinaryOperator::Instanceof(keyword) => vec![Node::Keyword(keyword)],
+                BinaryOperator::LowAnd(keyword) => vec![Node::Keyword(keyword)],
+                BinaryOperator::LowOr(keyword) => vec![Node::Keyword(keyword)],
+                BinaryOperator::LowXor(keyword) => vec![Node::Keyword(keyword)],
+            },
+            Node::UnaryPrefix(node) => {
+                vec![Node::UnaryPrefixOperator(&node.operator), Node::Expression(&node.operand)]
+            }
+            Node::UnaryPrefixOperator(operator) => match operator {
+                UnaryPrefixOperator::ErrorControl(_) => vec![],
+                UnaryPrefixOperator::Reference(_) => vec![],
+                UnaryPrefixOperator::ArrayCast(_, _) => vec![],
+                UnaryPrefixOperator::BoolCast(_, _) => vec![],
+                UnaryPrefixOperator::BooleanCast(_, _) => vec![],
+                UnaryPrefixOperator::DoubleCast(_, _) => vec![],
+                UnaryPrefixOperator::RealCast(_, _) => vec![],
+                UnaryPrefixOperator::FloatCast(_, _) => vec![],
+                UnaryPrefixOperator::IntCast(_, _) => vec![],
+                UnaryPrefixOperator::IntegerCast(_, _) => vec![],
+                UnaryPrefixOperator::ObjectCast(_, _) => vec![],
+                UnaryPrefixOperator::UnsetCast(_, _) => vec![],
+                UnaryPrefixOperator::StringCast(_, _) => vec![],
+                UnaryPrefixOperator::BinaryCast(_, _) => vec![],
+                UnaryPrefixOperator::BitwiseNot(_) => vec![],
+                UnaryPrefixOperator::Not(_) => vec![],
+                UnaryPrefixOperator::PreIncrement(_) => vec![],
+                UnaryPrefixOperator::PreDecrement(_) => vec![],
+                UnaryPrefixOperator::Plus(_) => vec![],
+                UnaryPrefixOperator::Negation(_) => vec![],
+            },
+            Node::UnaryPostfix(node) => {
+                vec![Node::Expression(&node.operand), Node::UnaryPostfixOperator(&node.operator)]
+            }
+            Node::UnaryPostfixOperator(operator) => match operator {
+                UnaryPostfixOperator::PostIncrement(_) => vec![],
+                UnaryPostfixOperator::PostDecrement(_) => vec![],
+            },
             Node::ArrowFunction(node) => {
                 let mut children = vec![];
 
@@ -1630,7 +1607,7 @@ impl<'a> Node<'a> {
                 children
             }
             Node::Keyword(_) => vec![],
-            Node::Literal(node) => vec![match node {
+            Node::LiteralExpression(node) => vec![match node {
                 Literal::Float(node) => Node::LiteralFloat(node),
                 Literal::Integer(node) => Node::LiteralInteger(node),
                 Literal::String(node) => Node::LiteralString(node),
@@ -1685,73 +1662,11 @@ impl<'a> Node<'a> {
 
                 children
             }
-            Node::ArithmeticInfixOperation(node) => vec![
-                Node::Expression(&node.lhs),
-                Node::ArithmeticInfixOperator(&node.operator),
-                Node::Expression(&node.rhs),
-            ],
-            Node::ArithmeticInfixOperator(_) => vec![],
-            Node::ArithmeticOperation(node) => vec![match node {
-                ArithmeticOperation::Infix(node) => Node::ArithmeticInfixOperation(node),
-                ArithmeticOperation::Postfix(node) => Node::ArithmeticPostfixOperation(node),
-                ArithmeticOperation::Prefix(node) => Node::ArithmeticPrefixOperation(node),
-            }],
-            Node::ArithmeticPostfixOperation(node) => {
-                vec![Node::Expression(&node.value), Node::ArithmeticPostfixOperator(&node.operator)]
-            }
-            Node::ArithmeticPostfixOperator(_) => vec![],
-            Node::ArithmeticPrefixOperation(node) => {
-                vec![Node::ArithmeticPrefixOperator(&node.operator), Node::Expression(&node.value)]
-            }
-            Node::ArithmeticPrefixOperator(_) => vec![],
             Node::AssignmentOperation(node) => {
                 vec![Node::Expression(&node.lhs), Node::AssignmentOperator(&node.operator), Node::Expression(&node.rhs)]
             }
             Node::AssignmentOperator(_) => vec![],
-            Node::BitwiseInfixOperation(node) => vec![
-                Node::Expression(&node.lhs),
-                Node::BitwiseInfixOperator(&node.operator),
-                Node::Expression(&node.rhs),
-            ],
-            Node::BitwiseInfixOperator(_) => vec![],
-            Node::BitwiseOperation(node) => vec![match node {
-                BitwiseOperation::Infix(node) => Node::BitwiseInfixOperation(node),
-                BitwiseOperation::Prefix(node) => Node::BitwisePrefixOperation(node),
-            }],
-            Node::BitwisePrefixOperation(node) => {
-                vec![Node::BitwisePrefixOperator(&node.operator), Node::Expression(&node.value)]
-            }
-            Node::BitwisePrefixOperator(_) => vec![],
-            Node::CastOperation(node) => vec![Node::CastOperator(&node.operator), Node::Expression(&node.value)],
-            Node::CastOperator(_) => vec![],
-            Node::CoalesceOperation(node) => {
-                vec![Node::Expression(&node.lhs), Node::Expression(&node.rhs)]
-            }
-            Node::ComparisonOperation(node) => {
-                vec![Node::Expression(&node.lhs), Node::ComparisonOperator(&node.operator), Node::Expression(&node.rhs)]
-            }
-            Node::ComparisonOperator(_) => vec![],
-            Node::ConcatOperation(node) => {
-                vec![Node::Expression(&node.lhs), Node::Expression(&node.rhs)]
-            }
-            Node::InstanceofOperation(node) => {
-                vec![Node::Expression(&node.rhs), Node::Expression(&node.lhs)]
-            }
-            Node::LogicalInfixOperation(node) => vec![
-                Node::Expression(&node.lhs),
-                Node::LogicalInfixOperator(&node.operator),
-                Node::Expression(&node.rhs),
-            ],
-            Node::LogicalInfixOperator(_) => vec![],
-            Node::LogicalOperation(node) => vec![match node {
-                LogicalOperation::Infix(node) => Node::LogicalInfixOperation(node),
-                LogicalOperation::Prefix(node) => Node::LogicalPrefixOperation(node),
-            }],
-            Node::LogicalPrefixOperation(node) => {
-                vec![Node::LogicalPrefixOperator(&node.operator), Node::Expression(&node.value)]
-            }
-            Node::LogicalPrefixOperator(_) => vec![],
-            Node::ConditionalTernaryOperation(node) => {
+            Node::Conditional(node) => {
                 let mut children = vec![Node::Expression(&node.condition)];
 
                 if let Some(then) = &node.then {
@@ -1762,13 +1677,6 @@ impl<'a> Node<'a> {
 
                 children
             }
-            Node::ElvisTernaryOperation(node) => {
-                vec![Node::Expression(&node.condition), Node::Expression(&node.r#else)]
-            }
-            Node::TernaryOperation(node) => vec![match node {
-                TernaryOperation::Conditional(node) => Node::ConditionalTernaryOperation(node),
-                TernaryOperation::Elvis(node) => Node::ElvisTernaryOperation(node),
-            }],
             Node::DoWhile(node) => vec![
                 Node::Keyword(&node.r#do),
                 Node::Statement(&node.statement),
@@ -2230,9 +2138,13 @@ impl<'a> HasSpan for Node<'a> {
             Self::DeclareItem(node) => node.span(),
             Self::Echo(node) => node.span(),
             Self::Expression(node) => node.span(),
+            Self::Binary(node) => node.span(),
+            Self::BinaryOperator(node) => node.span(),
+            Self::UnaryPrefix(node) => node.span(),
+            Self::UnaryPrefixOperator(node) => node.span(),
+            Self::UnaryPostfix(node) => node.span(),
+            Self::UnaryPostfixOperator(node) => node.span(),
             Self::Parenthesized(node) => node.span(),
-            Self::Referenced(node) => node.span(),
-            Self::Suppressed(node) => node.span(),
             Self::ArrowFunction(node) => node.span(),
             Self::Closure(node) => node.span(),
             Self::ClosureUseClause(node) => node.span(),
@@ -2253,7 +2165,7 @@ impl<'a> HasSpan for Node<'a> {
             Self::Inline(node) => node.span(),
             Self::Instantiation(node) => node.span(),
             Self::Keyword(node) => node.span(),
-            Self::Literal(node) => node.span(),
+            Self::LiteralExpression(node) => node.span(),
             Self::LiteralFloat(node) => node.span(),
             Self::LiteralInteger(node) => node.span(),
             Self::LiteralString(node) => node.span(),
@@ -2262,35 +2174,9 @@ impl<'a> HasSpan for Node<'a> {
             Self::Namespace(node) => node.span(),
             Self::NamespaceBody(node) => node.span(),
             Self::NamespaceImplicitBody(node) => node.span(),
-            Self::ArithmeticInfixOperation(node) => node.span(),
-            Self::ArithmeticInfixOperator(node) => node.span(),
-            Self::ArithmeticOperation(node) => node.span(),
-            Self::ArithmeticPostfixOperation(node) => node.span(),
-            Self::ArithmeticPostfixOperator(node) => node.span(),
-            Self::ArithmeticPrefixOperation(node) => node.span(),
-            Self::ArithmeticPrefixOperator(node) => node.span(),
             Self::AssignmentOperation(node) => node.span(),
             Self::AssignmentOperator(node) => node.span(),
-            Self::BitwiseInfixOperation(node) => node.span(),
-            Self::BitwiseInfixOperator(node) => node.span(),
-            Self::BitwiseOperation(node) => node.span(),
-            Self::BitwisePrefixOperation(node) => node.span(),
-            Self::BitwisePrefixOperator(node) => node.span(),
-            Self::CastOperation(node) => node.span(),
-            Self::CastOperator(node) => node.span(),
-            Self::CoalesceOperation(node) => node.span(),
-            Self::ComparisonOperation(node) => node.span(),
-            Self::ComparisonOperator(node) => node.span(),
-            Self::ConcatOperation(node) => node.span(),
-            Self::InstanceofOperation(node) => node.span(),
-            Self::LogicalInfixOperation(node) => node.span(),
-            Self::LogicalInfixOperator(node) => node.span(),
-            Self::LogicalOperation(node) => node.span(),
-            Self::LogicalPrefixOperation(node) => node.span(),
-            Self::LogicalPrefixOperator(node) => node.span(),
-            Self::ConditionalTernaryOperation(node) => node.span(),
-            Self::ElvisTernaryOperation(node) => node.span(),
-            Self::TernaryOperation(node) => node.span(),
+            Self::Conditional(node) => node.span(),
             Self::DoWhile(node) => node.span(),
             Self::Foreach(node) => node.span(),
             Self::ForeachBody(node) => node.span(),

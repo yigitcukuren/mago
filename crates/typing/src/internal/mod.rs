@@ -102,153 +102,18 @@ where
 }
 
 #[inline]
-pub fn get_bitwise_operation_kind<F>(
+pub fn get_unary_prefix_operation_kind<F>(
     interner: &ThreadedInterner,
-    bitwise_operation: &BitwiseOperation,
+    unary_operation: &UnaryPrefix,
     get_expression_kind: F,
 ) -> TypeKind
 where
     F: Fn(&Expression) -> TypeKind,
 {
-    match bitwise_operation {
-        BitwiseOperation::Prefix(bitwise_prefix_operation) => {
-            match get_expression_kind(&bitwise_prefix_operation.value) {
-                TypeKind::Never => never_kind(),
-                TypeKind::Value(ValueTypeKind::Integer { value }) => value_integer_kind(!value),
-                TypeKind::Scalar(ScalarTypeKind::Integer { .. }) => integer_kind(),
-                kind if is_gmp_or_bcmath_number(interner, &kind) => kind,
-                kind if kind.is_object() || kind.is_resource() || kind.is_array() => never_kind(),
-                _ => integer_kind(),
-            }
-        }
-        BitwiseOperation::Infix(bitwise_infix_operation) => {
-            match (get_expression_kind(&bitwise_infix_operation.lhs), get_expression_kind(&bitwise_infix_operation.rhs))
-            {
-                (TypeKind::Never, _) | (_, TypeKind::Never) => never_kind(),
-                (lhs_value_kind, rhs_value_kind)
-                    if is_numeric_value_kind(&lhs_value_kind) && is_numeric_value_kind(&rhs_value_kind) =>
-                {
-                    if !can_extract_literal_value(&lhs_value_kind) || !can_extract_literal_value(&rhs_value_kind) {
-                        return integer_kind();
-                    }
+    let value_kind = get_expression_kind(&unary_operation.operand);
 
-                    let lhs_value = extract_literal_value(&lhs_value_kind);
-                    let rhs_value = extract_literal_value(&rhs_value_kind);
-
-                    let lhs_value = lhs_value.trunc() as i64;
-                    let rhs_value = rhs_value.trunc() as i64;
-
-                    let result = match &bitwise_infix_operation.operator {
-                        BitwiseInfixOperator::And(_) => lhs_value & rhs_value,
-                        BitwiseInfixOperator::Or(_) => lhs_value | rhs_value,
-                        BitwiseInfixOperator::Xor(_) => lhs_value ^ rhs_value,
-                        BitwiseInfixOperator::LeftShift(_) => {
-                            if rhs_value < 0 {
-                                return never_kind();
-                            }
-
-                            if rhs_value > u32::MAX as i64 {
-                                0i64
-                            } else {
-                                lhs_value.wrapping_shl(rhs_value as u32)
-                            }
-                        }
-                        BitwiseInfixOperator::RightShift(_) => {
-                            if rhs_value < 0 {
-                                return never_kind();
-                            }
-
-                            if rhs_value > u32::MAX as i64 {
-                                0i64
-                            } else {
-                                lhs_value.wrapping_shr(rhs_value as u32)
-                            }
-                        }
-                    };
-
-                    value_integer_kind(result)
-                }
-                (kind, _) if is_gmp_or_bcmath_number(interner, &kind) => kind,
-                (_, kind) if is_gmp_or_bcmath_number(interner, &kind) => kind,
-                (left, right)
-                    if left.is_object()
-                        || left.is_resource()
-                        || left.is_array()
-                        || right.is_object()
-                        || right.is_resource()
-                        || right.is_array() =>
-                {
-                    never_kind()
-                }
-                _ => integer_kind(),
-            }
-        }
-    }
-}
-
-#[inline]
-pub fn get_logical_operation_kind<F>(logical_operation: &LogicalOperation, get_expression_kind: F) -> TypeKind
-where
-    F: Fn(&Expression) -> TypeKind,
-{
-    match logical_operation {
-        LogicalOperation::Prefix(logical_prefix_operation) => {
-            let value_kind = get_expression_kind(&logical_prefix_operation.value);
-
-            if matches!(value_kind, TypeKind::Never) {
-                return never_kind();
-            }
-
-            match value_kind.is_truthy() {
-                Trinary::True => false_kind(),
-                Trinary::False => true_kind(),
-                _ => bool_kind(),
-            }
-        }
-        LogicalOperation::Infix(logical_infix_operation) => {
-            let lhs_kind = get_expression_kind(&logical_infix_operation.lhs);
-            let rhs_kind = get_expression_kind(&logical_infix_operation.rhs);
-
-            if matches!(lhs_kind, TypeKind::Never) || matches!(rhs_kind, TypeKind::Never) {
-                return never_kind();
-            }
-
-            match (lhs_kind.is_truthy(), rhs_kind.is_truthy()) {
-                (Trinary::True, Trinary::True) => match logical_infix_operation.operator {
-                    LogicalInfixOperator::And(_) | LogicalInfixOperator::LowPrecedenceAnd(_) => true_kind(),
-                    LogicalInfixOperator::Or(_) | LogicalInfixOperator::LowPrecedenceOr(_) => true_kind(),
-                    LogicalInfixOperator::LowPrecedenceXor(_) => false_kind(),
-                },
-                (Trinary::False, Trinary::False) => match logical_infix_operation.operator {
-                    LogicalInfixOperator::And(_) | LogicalInfixOperator::LowPrecedenceAnd(_) => false_kind(),
-                    LogicalInfixOperator::Or(_) | LogicalInfixOperator::LowPrecedenceOr(_) => false_kind(),
-                    LogicalInfixOperator::LowPrecedenceXor(_) => false_kind(),
-                },
-                (Trinary::True, Trinary::False) => match logical_infix_operation.operator {
-                    LogicalInfixOperator::And(_) | LogicalInfixOperator::LowPrecedenceAnd(_) => false_kind(),
-                    LogicalInfixOperator::Or(_) | LogicalInfixOperator::LowPrecedenceOr(_) => true_kind(),
-                    LogicalInfixOperator::LowPrecedenceXor(_) => true_kind(),
-                },
-                (Trinary::False, Trinary::True) => match logical_infix_operation.operator {
-                    LogicalInfixOperator::And(_) | LogicalInfixOperator::LowPrecedenceAnd(_) => false_kind(),
-                    LogicalInfixOperator::Or(_) | LogicalInfixOperator::LowPrecedenceOr(_) => true_kind(),
-                    LogicalInfixOperator::LowPrecedenceXor(_) => true_kind(),
-                },
-                (_, _) => bool_kind(),
-            }
-        }
-    }
-}
-
-#[inline]
-pub fn get_cast_operation_kind<F>(cast_operation: &CastOperation, get_expression_kind: F) -> TypeKind
-where
-    F: Fn(&Expression) -> TypeKind,
-{
-    let value_kind = get_expression_kind(&cast_operation.value);
-
-    match &cast_operation.operator {
-        CastOperator::Array(_, _) => {
+    match &unary_operation.operator {
+        UnaryPrefixOperator::ArrayCast(_, _) => {
             if value_kind.is_array() {
                 // the value is already an array, which could be more specific, so we keep it.
                 value_kind
@@ -256,7 +121,7 @@ where
                 array_kind(array_key_kind(), mixed_kind(false), None)
             }
         }
-        CastOperator::Bool(_, _) | CastOperator::Boolean(_, _) => {
+        UnaryPrefixOperator::BoolCast(_, _) | UnaryPrefixOperator::BooleanCast(_, _) => {
             if value_kind.is_bool().is_true() {
                 return value_kind;
             }
@@ -267,21 +132,23 @@ where
                 Trinary::False => false_kind(),
             }
         }
-        CastOperator::Double(_, _) | CastOperator::Real(_, _) | CastOperator::Float(_, _) => {
+        UnaryPrefixOperator::DoubleCast(_, _)
+        | UnaryPrefixOperator::RealCast(_, _)
+        | UnaryPrefixOperator::FloatCast(_, _) => {
             if value_kind.is_float().is_true() {
                 return value_kind;
             } else {
                 return float_kind();
             }
         }
-        CastOperator::Int(_, _) | CastOperator::Integer(_, _) => {
+        UnaryPrefixOperator::IntCast(_, _) | UnaryPrefixOperator::IntegerCast(_, _) => {
             if value_kind.is_integer().is_true() {
                 return value_kind;
             } else {
                 return integer_kind();
             }
         }
-        CastOperator::Object(_, _) => {
+        UnaryPrefixOperator::ObjectCast(_, _) => {
             if value_kind.is_object() {
                 // the value is already an object, which could be more specific, so we keep it.
                 value_kind
@@ -289,8 +156,8 @@ where
                 any_object_kind()
             }
         }
-        CastOperator::Unset(_, _) => void_kind(),
-        CastOperator::String(_, _) | CastOperator::Binary(_, _) => {
+        UnaryPrefixOperator::UnsetCast(_, _) => void_kind(),
+        UnaryPrefixOperator::StringCast(_, _) | UnaryPrefixOperator::BinaryCast(_, _) => {
             if value_kind.is_string().is_true() {
                 // the value is already a string, which could be more specific, so we keep it.
                 value_kind
@@ -298,43 +165,88 @@ where
                 string_kind()
             }
         }
+        UnaryPrefixOperator::ErrorControl(_) => void_kind(),
+        UnaryPrefixOperator::Reference(_) => value_kind,
+        UnaryPrefixOperator::BitwiseNot(_) => match value_kind {
+            TypeKind::Never => never_kind(),
+            TypeKind::Value(ValueTypeKind::Integer { value }) => value_integer_kind(!value),
+            TypeKind::Scalar(ScalarTypeKind::Integer { .. }) => integer_kind(),
+            kind if is_gmp_or_bcmath_number(interner, &kind) => kind,
+            kind if kind.is_object() || kind.is_resource() || kind.is_array() => never_kind(),
+            _ => integer_kind(),
+        },
+        UnaryPrefixOperator::Not(_) => match value_kind.is_truthy() {
+            Trinary::True => false_kind(),
+            Trinary::Maybe => bool_kind(),
+            Trinary::False => true_kind(),
+        },
+        operator if operator.is_arithmetic() => {
+            match value_kind {
+                TypeKind::Value(ValueTypeKind::Integer { value }) => match operator {
+                    UnaryPrefixOperator::PreIncrement(_) => value_integer_kind(value.wrapping_add(1)),
+                    UnaryPrefixOperator::PreDecrement(_) => value_integer_kind(value.wrapping_sub(1)),
+                    UnaryPrefixOperator::Plus(_) => value_integer_kind(value),
+                    UnaryPrefixOperator::Negation(_) => value_integer_kind(-value),
+                    _ => unreachable!(),
+                },
+                TypeKind::Value(ValueTypeKind::Float { value }) => match operator {
+                    UnaryPrefixOperator::PreIncrement(_) => value_float_kind(value + 1.0),
+                    UnaryPrefixOperator::PreDecrement(_) => value_float_kind(value - 1.0),
+                    UnaryPrefixOperator::Plus(_) => value_float_kind(value),
+                    UnaryPrefixOperator::Negation(_) => value_float_kind(-value),
+                    _ => unreachable!(),
+                },
+                TypeKind::Scalar(ScalarTypeKind::Integer { .. }) => match operator {
+                    UnaryPrefixOperator::PreIncrement(_) | UnaryPrefixOperator::PreDecrement(_) => integer_kind(),
+                    UnaryPrefixOperator::Plus(_) | UnaryPrefixOperator::Negation(_) => integer_kind(),
+                    _ => unreachable!(),
+                },
+                TypeKind::Scalar(ScalarTypeKind::Float) => float_kind(),
+                TypeKind::Scalar(ScalarTypeKind::NumericString) => {
+                    // If the operand is a non-empty string, the result is an integer
+                    integer_kind()
+                }
+                kind if is_gmp_or_bcmath_number(interner, &kind) => kind,
+                _ => never_kind(),
+            }
+        }
+        _ => mixed_kind(false),
     }
 }
 
 #[inline]
-pub fn get_ternary_operation_kind<F>(ternary_operation: &TernaryOperation, get_expression_kind: F) -> TypeKind
+pub fn get_unary_postfix_operation_kind<F>(unary_operation: &UnaryPostfix, get_expression_kind: F) -> TypeKind
 where
     F: Fn(&Expression) -> TypeKind,
 {
-    match ternary_operation {
-        TernaryOperation::Conditional(conditional_ternary_operation) => {
-            let condition_kind = get_expression_kind(&conditional_ternary_operation.condition);
+    let value_kind = get_expression_kind(&unary_operation.operand);
 
-            match &conditional_ternary_operation.then {
-                Some(then) => {
-                    let then_kind = get_expression_kind(then);
-                    let else_kind = get_expression_kind(&conditional_ternary_operation.r#else);
+    match &unary_operation.operator {
+        UnaryPostfixOperator::PostIncrement(_) => value_kind,
+        UnaryPostfixOperator::PostDecrement(_) => value_kind,
+    }
+}
 
-                    match condition_kind.is_truthy() {
-                        Trinary::True => then_kind,
-                        Trinary::Maybe => union_kind(vec![then_kind, else_kind]),
-                        Trinary::False => else_kind,
-                    }
-                }
-                None => {
-                    let else_kind = get_expression_kind(&conditional_ternary_operation.r#else);
+#[inline]
+pub fn get_conditional_kind<F>(conditional: &Conditional, get_expression_kind: F) -> TypeKind
+where
+    F: Fn(&Expression) -> TypeKind,
+{
+    let condition_kind = get_expression_kind(&conditional.condition);
 
-                    match condition_kind.is_truthy() {
-                        Trinary::True => condition_kind,
-                        Trinary::Maybe => union_kind(vec![condition_kind, else_kind]),
-                        Trinary::False => else_kind,
-                    }
-                }
+    match &conditional.then {
+        Some(then) => {
+            let then_kind = get_expression_kind(then.as_ref());
+            let else_kind = get_expression_kind(&conditional.r#else);
+
+            match condition_kind.is_truthy() {
+                Trinary::True => then_kind,
+                Trinary::Maybe => union_kind(vec![then_kind, else_kind]),
+                Trinary::False => else_kind,
             }
         }
-        TernaryOperation::Elvis(elvis_ternary_operation) => {
-            let condition_kind = get_expression_kind(&elvis_ternary_operation.condition);
-            let else_kind = get_expression_kind(&elvis_ternary_operation.r#else);
+        None => {
+            let else_kind = get_expression_kind(&conditional.r#else);
 
             match condition_kind.is_truthy() {
                 Trinary::True => condition_kind,
@@ -346,49 +258,461 @@ where
 }
 
 #[inline]
-pub fn get_coalesce_operation_kind<F>(coalesce_operation: &CoalesceOperation, get_expression_kind: F) -> TypeKind
+pub fn get_binary_operation_kind<F>(
+    interner: &ThreadedInterner,
+    binary_operation: &Binary,
+    get_expression_kind: F,
+) -> TypeKind
 where
     F: Fn(&Expression) -> TypeKind,
 {
-    let left_kind = get_expression_kind(&coalesce_operation.lhs);
-    let right_kind = get_expression_kind(&coalesce_operation.rhs);
+    let left_kind = get_expression_kind(&binary_operation.lhs);
+    let right_kind = get_expression_kind(&binary_operation.rhs);
 
     if matches!(left_kind, TypeKind::Never) || matches!(right_kind, TypeKind::Never) {
         return never_kind();
     }
 
-    if left_kind == right_kind {
-        return left_kind;
+    match &binary_operation.operator {
+        BinaryOperator::And(_) | BinaryOperator::LowAnd(_) => match (left_kind.is_truthy(), right_kind.is_truthy()) {
+            (Trinary::True, Trinary::True) => true_kind(),
+            (_, Trinary::False) | (Trinary::False, _) => false_kind(),
+            (_, _) => bool_kind(),
+        },
+        BinaryOperator::Or(_) | BinaryOperator::LowOr(_) => match (left_kind.is_truthy(), right_kind.is_truthy()) {
+            (Trinary::True, _) | (_, Trinary::True) => true_kind(),
+            (Trinary::False, Trinary::False) => false_kind(),
+            (_, _) => bool_kind(),
+        },
+        BinaryOperator::LowXor(_) => match (left_kind.is_truthy(), right_kind.is_truthy()) {
+            (Trinary::True, Trinary::False) | (Trinary::False, Trinary::True) => true_kind(),
+            (Trinary::True, Trinary::True) | (Trinary::False, Trinary::False) => false_kind(),
+            (_, _) => bool_kind(),
+        },
+        BinaryOperator::StringConcat(_) => {
+            if left_kind.is_non_empty_string().or(right_kind.is_non_empty_string()).is_true() {
+                return non_empty_string_kind();
+            }
+
+            if left_kind
+                .is_integer()
+                .or(left_kind.is_float())
+                .and(right_kind.is_integer().or(right_kind.is_float()))
+                .is_true()
+            {
+                return TypeKind::Scalar(ScalarTypeKind::NumericString);
+            }
+
+            string_kind()
+        }
+        BinaryOperator::Equal(_) | BinaryOperator::Identical(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind == right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::NotEqual(_) | BinaryOperator::AngledNotEqual(_) | BinaryOperator::NotIdentical(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind != right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::LessThan(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind < right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::GreaterThan(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind > right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::LessThanOrEqual(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind <= right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::GreaterThanOrEqual(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                if left_kind >= right_kind {
+                    return true_kind();
+                } else {
+                    return false_kind();
+                }
+            } else {
+                bool_kind()
+            }
+        }
+        BinaryOperator::Spaceship(_) => {
+            if can_extract_literal_value(&left_kind) && can_extract_literal_value(&right_kind) {
+                let left_kind = extract_literal_value(&left_kind);
+                let right_kind = extract_literal_value(&right_kind);
+
+                let cmp_result = left_kind.partial_cmp(&right_kind).unwrap_or(std::cmp::Ordering::Equal);
+
+                return value_integer_kind(match cmp_result {
+                    std::cmp::Ordering::Less => -1,
+                    std::cmp::Ordering::Equal => 0,
+                    std::cmp::Ordering::Greater => 1,
+                });
+            } else {
+                integer_range_kind(-1, 1)
+            }
+        }
+        BinaryOperator::NullCoalesce(_) => {
+            if left_kind == right_kind {
+                return left_kind;
+            }
+
+            match left_kind.is_nullable() {
+                Trinary::False => left_kind,
+                Trinary::True => right_kind,
+                Trinary::Maybe => union_kind(vec![left_kind, right_kind]),
+            }
+        }
+        BinaryOperator::Elvis(_) => match left_kind.is_truthy() {
+            Trinary::True => left_kind,
+            Trinary::Maybe => union_kind(vec![left_kind, right_kind]),
+            Trinary::False => right_kind,
+        },
+        BinaryOperator::BitwiseOr(_) => {
+            if !is_numeric_value_kind(&left_kind)
+                || !can_extract_literal_value(&left_kind)
+                || !is_numeric_value_kind(&right_kind)
+                || !can_extract_literal_value(&right_kind)
+            {
+                if is_gmp_or_bcmath_number(interner, &left_kind) {
+                    return left_kind;
+                }
+
+                if is_gmp_or_bcmath_number(interner, &right_kind) {
+                    return right_kind;
+                }
+
+                return if left_kind.is_object()
+                    || left_kind.is_resource()
+                    || left_kind.is_array()
+                    || right_kind.is_object()
+                    || right_kind.is_resource()
+                    || right_kind.is_array()
+                {
+                    never_kind()
+                } else {
+                    integer_kind()
+                };
+            }
+
+            let lhs_value = extract_literal_value(&left_kind);
+            let rhs_value = extract_literal_value(&right_kind);
+
+            let lhs_value = lhs_value.trunc() as i64;
+            let rhs_value = rhs_value.trunc() as i64;
+
+            value_integer_kind(lhs_value | rhs_value)
+        }
+        BinaryOperator::BitwiseAnd(_) => {
+            if !is_numeric_value_kind(&left_kind)
+                || !can_extract_literal_value(&left_kind)
+                || !is_numeric_value_kind(&right_kind)
+                || !can_extract_literal_value(&right_kind)
+            {
+                if is_gmp_or_bcmath_number(interner, &left_kind) {
+                    return left_kind;
+                }
+
+                if is_gmp_or_bcmath_number(interner, &right_kind) {
+                    return right_kind;
+                }
+
+                return if left_kind.is_object()
+                    || left_kind.is_resource()
+                    || left_kind.is_array()
+                    || right_kind.is_object()
+                    || right_kind.is_resource()
+                    || right_kind.is_array()
+                {
+                    never_kind()
+                } else {
+                    integer_kind()
+                };
+            }
+
+            let lhs_value = extract_literal_value(&left_kind);
+            let rhs_value = extract_literal_value(&right_kind);
+
+            let lhs_value = lhs_value.trunc() as i64;
+            let rhs_value = rhs_value.trunc() as i64;
+
+            value_integer_kind(lhs_value & rhs_value)
+        }
+        BinaryOperator::BitwiseXor(_) => {
+            if !is_numeric_value_kind(&left_kind)
+                || !can_extract_literal_value(&left_kind)
+                || !is_numeric_value_kind(&right_kind)
+                || !can_extract_literal_value(&right_kind)
+            {
+                if is_gmp_or_bcmath_number(interner, &left_kind) {
+                    return left_kind;
+                }
+
+                if is_gmp_or_bcmath_number(interner, &right_kind) {
+                    return right_kind;
+                }
+
+                return if left_kind.is_object()
+                    || left_kind.is_resource()
+                    || left_kind.is_array()
+                    || right_kind.is_object()
+                    || right_kind.is_resource()
+                    || right_kind.is_array()
+                {
+                    never_kind()
+                } else {
+                    integer_kind()
+                };
+            }
+
+            let lhs_value = extract_literal_value(&left_kind);
+            let rhs_value = extract_literal_value(&right_kind);
+
+            let lhs_value = lhs_value.trunc() as i64;
+            let rhs_value = rhs_value.trunc() as i64;
+
+            value_integer_kind(lhs_value ^ rhs_value)
+        }
+        BinaryOperator::LeftShift(_) => {
+            if !is_numeric_value_kind(&left_kind)
+                || !can_extract_literal_value(&left_kind)
+                || !is_numeric_value_kind(&right_kind)
+                || !can_extract_literal_value(&right_kind)
+            {
+                if is_gmp_or_bcmath_number(interner, &left_kind) {
+                    return left_kind;
+                }
+
+                if is_gmp_or_bcmath_number(interner, &right_kind) {
+                    return right_kind;
+                }
+
+                return if left_kind.is_object()
+                    || left_kind.is_resource()
+                    || left_kind.is_array()
+                    || right_kind.is_object()
+                    || right_kind.is_resource()
+                    || right_kind.is_array()
+                {
+                    never_kind()
+                } else {
+                    integer_kind()
+                };
+            }
+
+            let lhs_value = extract_literal_value(&left_kind);
+            let rhs_value = extract_literal_value(&right_kind);
+
+            let lhs_value = lhs_value.trunc() as i64;
+            let rhs_value = rhs_value.trunc() as i64;
+
+            if rhs_value < 0 {
+                return never_kind();
+            }
+
+            value_integer_kind(if rhs_value > u32::MAX as i64 {
+                0i64
+            } else {
+                lhs_value.wrapping_shl(rhs_value as u32)
+            })
+        }
+        BinaryOperator::RightShift(_) => {
+            if !is_numeric_value_kind(&left_kind)
+                || !can_extract_literal_value(&left_kind)
+                || !is_numeric_value_kind(&right_kind)
+                || !can_extract_literal_value(&right_kind)
+            {
+                if is_gmp_or_bcmath_number(interner, &left_kind) {
+                    return left_kind;
+                }
+
+                if is_gmp_or_bcmath_number(interner, &right_kind) {
+                    return right_kind;
+                }
+
+                return if left_kind.is_object()
+                    || left_kind.is_resource()
+                    || left_kind.is_array()
+                    || right_kind.is_object()
+                    || right_kind.is_resource()
+                    || right_kind.is_array()
+                {
+                    never_kind()
+                } else {
+                    integer_kind()
+                };
+            }
+
+            let lhs_value = extract_literal_value(&left_kind);
+            let rhs_value = extract_literal_value(&right_kind);
+
+            let lhs_value = lhs_value.trunc() as i64;
+            let rhs_value = rhs_value.trunc() as i64;
+
+            if rhs_value < 0 {
+                return never_kind();
+            }
+
+            value_integer_kind(if rhs_value > u32::MAX as i64 {
+                0i64
+            } else {
+                lhs_value.wrapping_shr(rhs_value as u32)
+            })
+        }
+        operator if operator.is_arithmetic() => {
+            match (&left_kind, &right_kind) {
+                (
+                    TypeKind::Value(ValueTypeKind::Integer { value: lhs }),
+                    TypeKind::Value(ValueTypeKind::Integer { value: rhs_value }),
+                ) => {
+                    match operator {
+                        BinaryOperator::Addition(_) => value_integer_kind(lhs.wrapping_add(*rhs_value)),
+                        BinaryOperator::Subtraction(_) => value_integer_kind(lhs.wrapping_sub(*rhs_value)),
+                        BinaryOperator::Multiplication(_) => value_integer_kind(lhs.wrapping_mul(*rhs_value)),
+                        BinaryOperator::Division(_) => {
+                            if *rhs_value != 0 {
+                                if lhs % rhs_value == 0 {
+                                    // Division is exact, result is integer
+                                    value_integer_kind(lhs / rhs_value)
+                                } else {
+                                    // Division results in float
+                                    value_float_kind(OrderedFloat((*lhs as f64) / (*rhs_value as f64)))
+                                }
+                            } else {
+                                // Division by zero; in PHP, this throws, resulting in `never`
+                                never_kind()
+                            }
+                        }
+                        BinaryOperator::Modulo(_) => {
+                            if *rhs_value != 0 {
+                                value_integer_kind(lhs % rhs_value)
+                            } else {
+                                // Modulo by zero; in PHP, this throws, resulting in `never`
+                                never_kind()
+                            }
+                        }
+                        BinaryOperator::Exponentiation(_) => {
+                            // Exponentiation of integers
+                            let base = *lhs as f64;
+                            let exponent = *rhs_value as f64;
+                            let result = base.powf(exponent);
+
+                            if result.fract() == 0.0 && result >= i64::MIN as f64 && result <= i64::MAX as f64 {
+                                // Result is an integer
+                                value_integer_kind(result as i64)
+                            } else {
+                                // Result is a float
+                                value_float_kind(OrderedFloat(result))
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                // Both operands are numeric literals (integer or float)
+                (lhs_value_kind, rhs_value_kind)
+                    if is_numeric_value_kind(lhs_value_kind) && is_numeric_value_kind(rhs_value_kind) =>
+                {
+                    let lhs_value = extract_numeric_value(lhs_value_kind);
+                    let rhs_value = extract_numeric_value(rhs_value_kind);
+
+                    match (lhs_value, rhs_value) {
+                        (Some(lhs_num), Some(rhs_num)) => {
+                            let result = match &operator {
+                                BinaryOperator::Addition(_) => lhs_num + rhs_num,
+                                BinaryOperator::Subtraction(_) => lhs_num - rhs_num,
+                                BinaryOperator::Multiplication(_) => lhs_num * rhs_num,
+                                BinaryOperator::Division(_) => {
+                                    if rhs_num != 0.0 {
+                                        lhs_num / rhs_num
+                                    } else {
+                                        return never_kind(); // Division by zero
+                                    }
+                                }
+                                BinaryOperator::Modulo(_) => {
+                                    if rhs_num != 0.0 {
+                                        // Convert operands to integers by truncating the decimal part
+                                        let lhs_int = lhs_num.0.trunc() as i64;
+                                        let rhs_int = rhs_num.0.trunc() as i64;
+
+                                        if rhs_int != 0 {
+                                            let result = lhs_int % rhs_int;
+                                            return value_integer_kind(result);
+                                        } else {
+                                            return never_kind(); // Modulo by zero
+                                        }
+                                    } else {
+                                        return never_kind(); // Modulo by zero
+                                    }
+                                }
+                                BinaryOperator::Exponentiation(_) => OrderedFloat(lhs_num.powf(*rhs_num)),
+                                _ => unreachable!(),
+                            };
+
+                            value_float_kind(result)
+                        }
+                        _ => float_kind(),
+                    }
+                }
+                // One or both operands are not literals
+                _ => resolve_numeric_operation_kind(interner, left_kind, right_kind, &operator),
+            }
+        }
+        BinaryOperator::Instanceof(_) => bool_kind(),
+        _ => mixed_kind(false),
     }
-
-    match left_kind.is_nullable() {
-        Trinary::False => left_kind,
-        Trinary::True => right_kind,
-        Trinary::Maybe => union_kind(vec![left_kind, right_kind]),
-    }
-}
-
-#[inline]
-pub fn get_concat_operation_kind<F>(concat_operation: &ConcatOperation, get_expression_kind: F) -> TypeKind
-where
-    F: Fn(&Expression) -> TypeKind,
-{
-    let lhs = get_expression_kind(&concat_operation.lhs);
-    let rhs = get_expression_kind(&concat_operation.rhs);
-
-    if matches!(lhs, TypeKind::Never) || matches!(rhs, TypeKind::Never) {
-        return never_kind();
-    }
-
-    if lhs.is_non_empty_string().or(rhs.is_non_empty_string()).is_true() {
-        return non_empty_string_kind();
-    }
-
-    if lhs.is_integer().or(lhs.is_float()).and(rhs.is_integer().or(rhs.is_float())).is_true() {
-        return TypeKind::Scalar(ScalarTypeKind::NumericString);
-    }
-
-    string_kind()
 }
 
 #[inline]
@@ -488,157 +812,6 @@ where
 }
 
 #[inline]
-pub fn get_arithmetic_operation_kind<F>(
-    interner: &ThreadedInterner,
-    arithmetic_operation: &ArithmeticOperation,
-    get_expression_kind: F,
-) -> TypeKind
-where
-    F: Fn(&Expression) -> TypeKind,
-{
-    match arithmetic_operation {
-        ArithmeticOperation::Prefix(arithmetic_prefix_operation) => {
-            match get_expression_kind(&arithmetic_prefix_operation.value) {
-                TypeKind::Value(ValueTypeKind::Integer { value }) => match &arithmetic_prefix_operation.operator {
-                    ArithmeticPrefixOperator::Increment(_) => value_integer_kind(value.wrapping_add(1)),
-                    ArithmeticPrefixOperator::Decrement(_) => value_integer_kind(value.wrapping_sub(1)),
-                    ArithmeticPrefixOperator::Plus(_) => value_integer_kind(value),
-                    ArithmeticPrefixOperator::Minus(_) => value_integer_kind(-value),
-                },
-                TypeKind::Value(ValueTypeKind::Float { value }) => match &arithmetic_prefix_operation.operator {
-                    ArithmeticPrefixOperator::Increment(_) => value_float_kind(value + 1.0),
-                    ArithmeticPrefixOperator::Decrement(_) => value_float_kind(value - 1.0),
-                    ArithmeticPrefixOperator::Plus(_) => value_float_kind(value),
-                    ArithmeticPrefixOperator::Minus(_) => value_float_kind(-value),
-                },
-                TypeKind::Scalar(ScalarTypeKind::Integer { .. }) => match &arithmetic_prefix_operation.operator {
-                    ArithmeticPrefixOperator::Increment(_) | ArithmeticPrefixOperator::Decrement(_) => integer_kind(),
-                    ArithmeticPrefixOperator::Plus(_) | ArithmeticPrefixOperator::Minus(_) => integer_kind(),
-                },
-                TypeKind::Scalar(ScalarTypeKind::Float) => float_kind(),
-                TypeKind::Scalar(ScalarTypeKind::NumericString) => {
-                    // If the operand is a non-empty string, the result is an integer
-                    integer_kind()
-                }
-                kind if is_gmp_or_bcmath_number(interner, &kind) => kind,
-                _ => never_kind(),
-            }
-        }
-        ArithmeticOperation::Infix(arithmetic_infix_operation) => {
-            let lhs_kind = get_expression_kind(&arithmetic_infix_operation.lhs);
-            let rhs_kind = get_expression_kind(&arithmetic_infix_operation.rhs);
-
-            match (&lhs_kind, &rhs_kind) {
-                (TypeKind::Never, _) | (_, TypeKind::Never) => {
-                    // If either operand is Never, the result is Never
-                    never_kind()
-                }
-                (
-                    TypeKind::Value(ValueTypeKind::Integer { value: lhs }),
-                    TypeKind::Value(ValueTypeKind::Integer { value: rhs_value }),
-                ) => {
-                    match &arithmetic_infix_operation.operator {
-                        ArithmeticInfixOperator::Addition(_) => value_integer_kind(lhs.wrapping_add(*rhs_value)),
-                        ArithmeticInfixOperator::Subtraction(_) => value_integer_kind(lhs.wrapping_sub(*rhs_value)),
-                        ArithmeticInfixOperator::Multiplication(_) => value_integer_kind(lhs.wrapping_mul(*rhs_value)),
-                        ArithmeticInfixOperator::Division(_) => {
-                            if *rhs_value != 0 {
-                                if lhs % rhs_value == 0 {
-                                    // Division is exact, result is integer
-                                    value_integer_kind(lhs / rhs_value)
-                                } else {
-                                    // Division results in float
-                                    value_float_kind(OrderedFloat((*lhs as f64) / (*rhs_value as f64)))
-                                }
-                            } else {
-                                // Division by zero; in PHP, this throws, resulting in `never`
-                                never_kind()
-                            }
-                        }
-                        ArithmeticInfixOperator::Modulo(_) => {
-                            if *rhs_value != 0 {
-                                value_integer_kind(lhs % rhs_value)
-                            } else {
-                                // Modulo by zero; in PHP, this throws, resulting in `never`
-                                never_kind()
-                            }
-                        }
-                        ArithmeticInfixOperator::Exponentiation(_) => {
-                            // Exponentiation of integers
-                            let base = *lhs as f64;
-                            let exponent = *rhs_value as f64;
-                            let result = base.powf(exponent);
-
-                            if result.fract() == 0.0 && result >= i64::MIN as f64 && result <= i64::MAX as f64 {
-                                // Result is an integer
-                                value_integer_kind(result as i64)
-                            } else {
-                                // Result is a float
-                                value_float_kind(OrderedFloat(result))
-                            }
-                        }
-                    }
-                }
-                // Both operands are numeric literals (integer or float)
-                (lhs_value_kind, rhs_value_kind)
-                    if is_numeric_value_kind(lhs_value_kind) && is_numeric_value_kind(rhs_value_kind) =>
-                {
-                    let lhs_value = extract_numeric_value(lhs_value_kind);
-                    let rhs_value = extract_numeric_value(rhs_value_kind);
-
-                    match (lhs_value, rhs_value) {
-                        (Some(lhs_num), Some(rhs_num)) => {
-                            let result = match &arithmetic_infix_operation.operator {
-                                ArithmeticInfixOperator::Addition(_) => lhs_num + rhs_num,
-                                ArithmeticInfixOperator::Subtraction(_) => lhs_num - rhs_num,
-                                ArithmeticInfixOperator::Multiplication(_) => lhs_num * rhs_num,
-                                ArithmeticInfixOperator::Division(_) => {
-                                    if rhs_num != 0.0 {
-                                        lhs_num / rhs_num
-                                    } else {
-                                        return never_kind(); // Division by zero
-                                    }
-                                }
-                                ArithmeticInfixOperator::Modulo(_) => {
-                                    if rhs_num != 0.0 {
-                                        // Convert operands to integers by truncating the decimal part
-                                        let lhs_int = lhs_num.0.trunc() as i64;
-                                        let rhs_int = rhs_num.0.trunc() as i64;
-
-                                        if rhs_int != 0 {
-                                            let result = lhs_int % rhs_int;
-                                            return value_integer_kind(result);
-                                        } else {
-                                            return never_kind(); // Modulo by zero
-                                        }
-                                    } else {
-                                        return never_kind(); // Modulo by zero
-                                    }
-                                }
-                                ArithmeticInfixOperator::Exponentiation(_) => OrderedFloat(lhs_num.powf(*rhs_num)),
-                            };
-
-                            value_float_kind(result)
-                        }
-                        _ => float_kind(),
-                    }
-                }
-                // One or both operands are not literals
-                _ => resolve_numeric_operation_kind(
-                    interner,
-                    lhs_kind.clone(),
-                    rhs_kind.clone(),
-                    &arithmetic_infix_operation.operator,
-                ),
-            }
-        }
-        ArithmeticOperation::Postfix(arithmetic_postfix_operation) => {
-            get_expression_kind(&arithmetic_postfix_operation.value)
-        }
-    }
-}
-
-#[inline]
 pub fn get_literal_kind(interner: &ThreadedInterner, literal: &Literal) -> TypeKind {
     match &literal {
         Literal::String(string) => get_literal_string_value_kind(interner, string.value, true),
@@ -733,16 +906,16 @@ pub fn resolve_numeric_operation_kind(
     interner: &ThreadedInterner,
     lhs_kind: TypeKind,
     rhs_kind: TypeKind,
-    operator: &ArithmeticInfixOperator,
+    operator: &BinaryOperator,
 ) -> TypeKind {
     match (lhs_kind, rhs_kind) {
         // If either operand is Never, the result is Never
         (TypeKind::Never, _) | (_, TypeKind::Never) => never_kind(),
         (TypeKind::Scalar(ScalarTypeKind::Integer { .. }), TypeKind::Scalar(ScalarTypeKind::Integer { .. })) => {
             match operator {
-                ArithmeticInfixOperator::Modulo(_) => integer_kind(),
-                ArithmeticInfixOperator::Division(_) => union_kind(vec![integer_kind(), float_kind()]),
-                ArithmeticInfixOperator::Exponentiation(_) => union_kind(vec![integer_kind(), float_kind()]),
+                BinaryOperator::Modulo(_) => integer_kind(),
+                BinaryOperator::Division(_) => union_kind(vec![integer_kind(), float_kind()]),
+                BinaryOperator::Exponentiation(_) => union_kind(vec![integer_kind(), float_kind()]),
                 _ => integer_kind(),
             }
         }
@@ -762,48 +935,6 @@ pub fn resolve_numeric_operation_kind(
             never_kind()
         }
         _ => union_kind(vec![integer_kind(), float_kind()]),
-    }
-}
-
-// Compute the result of a logical operation when both operands are known
-#[inline]
-pub fn compute_comparison_result(lhs_kind: &TypeKind, rhs_kind: &TypeKind, operator: &ComparisonOperator) -> TypeKind {
-    use ComparisonOperator::*;
-
-    if matches!(lhs_kind, TypeKind::Never) || matches!(rhs_kind, TypeKind::Never) {
-        return never_kind();
-    }
-
-    if can_extract_literal_value(lhs_kind) && can_extract_literal_value(rhs_kind) {
-        let lhs_value = extract_literal_value(lhs_kind);
-        let rhs_value = extract_literal_value(rhs_kind);
-
-        let result = match operator {
-            Equal(_) => lhs_value == rhs_value,
-            NotEqual(_) | AngledNotEqual(_) => lhs_value != rhs_value,
-            Identical(_) => lhs_value == rhs_value,
-            NotIdentical(_) => lhs_value != rhs_value,
-            LessThan(_) => lhs_value < rhs_value,
-            GreaterThan(_) => lhs_value > rhs_value,
-            LessThanOrEqual(_) => lhs_value <= rhs_value,
-            GreaterThanOrEqual(_) => lhs_value >= rhs_value,
-            Spaceship(_) => {
-                let cmp_result = lhs_value.partial_cmp(&rhs_value).unwrap_or(std::cmp::Ordering::Equal);
-
-                return value_integer_kind(match cmp_result {
-                    std::cmp::Ordering::Less => -1,
-                    std::cmp::Ordering::Equal => 0,
-                    std::cmp::Ordering::Greater => 1,
-                });
-            }
-        };
-
-        return if result { true_kind() } else { false_kind() };
-    }
-
-    match operator {
-        Spaceship(_) => integer_range_kind(-1, 1),
-        _ => bool_kind(),
     }
 }
 

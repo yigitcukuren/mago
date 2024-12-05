@@ -266,60 +266,18 @@ pub fn statement_has_yield<'ast>(statement: &'ast Statement) -> bool {
 pub fn expression_has_yield<'ast>(expression: &'ast Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => expression_has_yield(&parenthesized.expression),
-        Expression::Referenced(referenced) => expression_has_yield(&referenced.expression),
-        Expression::Suppressed(suppressed) => expression_has_yield(&suppressed.expression),
         Expression::Literal(_) => false,
         Expression::CompositeString(_) => false,
-        Expression::ArithmeticOperation(arithmetic_operation) => match arithmetic_operation.as_ref() {
-            ArithmeticOperation::Prefix(arithmetic_prefix_operation) => {
-                expression_has_yield(&arithmetic_prefix_operation.value)
-            }
-            ArithmeticOperation::Infix(arithmetic_infix_operation) => {
-                expression_has_yield(&arithmetic_infix_operation.lhs)
-                    || expression_has_yield(&arithmetic_infix_operation.rhs)
-            }
-            ArithmeticOperation::Postfix(arithmetic_postfix_operation) => {
-                expression_has_yield(&arithmetic_postfix_operation.value)
-            }
-        },
+        Expression::Binary(operation) => expression_has_yield(&operation.lhs) || expression_has_yield(&operation.rhs),
+        Expression::UnaryPrefix(operation) => expression_has_yield(&operation.operand),
+        Expression::UnaryPostfix(operation) => expression_has_yield(&operation.operand),
         Expression::AssignmentOperation(assignment_operation) => {
             expression_has_yield(&assignment_operation.lhs) || expression_has_yield(&assignment_operation.rhs)
         }
-        Expression::BitwiseOperation(bitwise_operation) => match bitwise_operation.as_ref() {
-            BitwiseOperation::Prefix(bitwise_prefix_operation) => expression_has_yield(&bitwise_prefix_operation.value),
-            BitwiseOperation::Infix(bitwise_infix_operation) => {
-                expression_has_yield(&bitwise_infix_operation.lhs) || expression_has_yield(&bitwise_infix_operation.rhs)
-            }
-        },
-        Expression::ComparisonOperation(comparison_operation) => {
-            expression_has_yield(&comparison_operation.lhs) || expression_has_yield(&comparison_operation.rhs)
-        }
-        Expression::LogicalOperation(logical_operation) => match logical_operation.as_ref() {
-            LogicalOperation::Prefix(logical_prefix_operation) => expression_has_yield(&logical_prefix_operation.value),
-            LogicalOperation::Infix(logical_infix_operation) => {
-                expression_has_yield(&logical_infix_operation.lhs) || expression_has_yield(&logical_infix_operation.rhs)
-            }
-        },
-        Expression::CastOperation(cast_operation) => expression_has_yield(&cast_operation.value),
-        Expression::TernaryOperation(ternary_operation) => match ternary_operation.as_ref() {
-            TernaryOperation::Conditional(conditional_ternary_operation) => {
-                expression_has_yield(&conditional_ternary_operation.condition)
-                    || conditional_ternary_operation.then.as_ref().map(expression_has_yield).unwrap_or(false)
-                    || expression_has_yield(&conditional_ternary_operation.r#else)
-            }
-            TernaryOperation::Elvis(elvis_ternary_operation) => {
-                expression_has_yield(&elvis_ternary_operation.condition)
-                    || expression_has_yield(&elvis_ternary_operation.r#else)
-            }
-        },
-        Expression::CoalesceOperation(coalesce_operation) => {
-            expression_has_yield(&coalesce_operation.lhs) || expression_has_yield(&coalesce_operation.rhs)
-        }
-        Expression::ConcatOperation(concat_operation) => {
-            expression_has_yield(&concat_operation.lhs) || expression_has_yield(&concat_operation.rhs)
-        }
-        Expression::InstanceofOperation(instanceof_operation) => {
-            expression_has_yield(&instanceof_operation.lhs) || expression_has_yield(&instanceof_operation.rhs)
+        Expression::Conditional(conditional) => {
+            expression_has_yield(&conditional.condition)
+                || conditional.then.as_ref().map(|e| expression_has_yield(e.as_ref())).unwrap_or(false)
+                || expression_has_yield(&conditional.r#else)
         }
         Expression::Array(array) => array.elements.iter().any(|element| match element {
             ArrayElement::KeyValue(key_value_array_element) => {
@@ -613,66 +571,18 @@ pub fn statement_has_throws<'ast>(statement: &'ast Statement) -> bool {
 pub fn expression_has_throws<'ast>(expression: &'ast Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => expression_has_throws(&parenthesized.expression),
-        Expression::Referenced(referenced) => expression_has_throws(&referenced.expression),
-        Expression::Suppressed(suppressed) => expression_has_throws(&suppressed.expression),
         Expression::Literal(_) => false,
         Expression::CompositeString(_) => false,
-        Expression::ArithmeticOperation(arithmetic_operation) => match arithmetic_operation.as_ref() {
-            ArithmeticOperation::Prefix(arithmetic_prefix_operation) => {
-                expression_has_throws(&arithmetic_prefix_operation.value)
-            }
-            ArithmeticOperation::Infix(arithmetic_infix_operation) => {
-                expression_has_throws(&arithmetic_infix_operation.lhs)
-                    || expression_has_throws(&arithmetic_infix_operation.rhs)
-            }
-            ArithmeticOperation::Postfix(arithmetic_postfix_operation) => {
-                expression_has_throws(&arithmetic_postfix_operation.value)
-            }
-        },
+        Expression::Binary(operation) => expression_has_throws(&operation.lhs) || expression_has_throws(&operation.rhs),
+        Expression::UnaryPrefix(operation) => expression_has_throws(&operation.operand),
+        Expression::UnaryPostfix(operation) => expression_has_throws(&operation.operand),
         Expression::AssignmentOperation(assignment_operation) => {
             expression_has_throws(&assignment_operation.lhs) || expression_has_throws(&assignment_operation.rhs)
         }
-        Expression::BitwiseOperation(bitwise_operation) => match bitwise_operation.as_ref() {
-            BitwiseOperation::Prefix(bitwise_prefix_operation) => {
-                expression_has_throws(&bitwise_prefix_operation.value)
-            }
-            BitwiseOperation::Infix(bitwise_infix_operation) => {
-                expression_has_throws(&bitwise_infix_operation.lhs)
-                    || expression_has_throws(&bitwise_infix_operation.rhs)
-            }
-        },
-        Expression::ComparisonOperation(comparison_operation) => {
-            expression_has_throws(&comparison_operation.lhs) || expression_has_throws(&comparison_operation.rhs)
-        }
-        Expression::LogicalOperation(logical_operation) => match logical_operation.as_ref() {
-            LogicalOperation::Prefix(logical_prefix_operation) => {
-                expression_has_throws(&logical_prefix_operation.value)
-            }
-            LogicalOperation::Infix(logical_infix_operation) => {
-                expression_has_throws(&logical_infix_operation.lhs)
-                    || expression_has_throws(&logical_infix_operation.rhs)
-            }
-        },
-        Expression::CastOperation(cast_operation) => expression_has_throws(&cast_operation.value),
-        Expression::TernaryOperation(ternary_operation) => match ternary_operation.as_ref() {
-            TernaryOperation::Conditional(conditional_ternary_operation) => {
-                expression_has_throws(&conditional_ternary_operation.condition)
-                    || conditional_ternary_operation.then.as_ref().map(expression_has_throws).unwrap_or(false)
-                    || expression_has_throws(&conditional_ternary_operation.r#else)
-            }
-            TernaryOperation::Elvis(elvis_ternary_operation) => {
-                expression_has_throws(&elvis_ternary_operation.condition)
-                    || expression_has_throws(&elvis_ternary_operation.r#else)
-            }
-        },
-        Expression::CoalesceOperation(coalesce_operation) => {
-            expression_has_throws(&coalesce_operation.lhs) || expression_has_throws(&coalesce_operation.rhs)
-        }
-        Expression::ConcatOperation(concat_operation) => {
-            expression_has_throws(&concat_operation.lhs) || expression_has_throws(&concat_operation.rhs)
-        }
-        Expression::InstanceofOperation(instanceof_operation) => {
-            expression_has_throws(&instanceof_operation.lhs) || expression_has_throws(&instanceof_operation.rhs)
+        Expression::Conditional(conditional) => {
+            expression_has_throws(&conditional.condition)
+                || conditional.then.as_ref().map(|e| expression_has_throws(e.as_ref())).unwrap_or(false)
+                || expression_has_throws(&conditional.r#else)
         }
         Expression::Array(array) => array.elements.iter().any(|element| match element {
             ArrayElement::KeyValue(key_value_array_element) => {
@@ -847,71 +757,18 @@ pub fn expression_has_throws<'ast>(expression: &'ast Expression) -> bool {
 ///
 /// If no assignment operation is found, it will return `None`.
 #[inline]
-pub fn get_assignment_from_expression<'ast>(expression: &'ast Expression) -> Option<&'ast AssignmentOperation> {
+pub fn get_assignment_from_expression<'ast>(expression: &'ast Expression) -> Option<&'ast Assignment> {
     match &expression {
         Expression::AssignmentOperation(assignment_operation) => Some(assignment_operation),
         Expression::Parenthesized(parenthesized) => get_assignment_from_expression(&parenthesized.expression),
-        Expression::Referenced(referenced) => get_assignment_from_expression(&referenced.expression),
-        Expression::Suppressed(suppressed) => get_assignment_from_expression(&suppressed.expression),
-        Expression::ArithmeticOperation(arithmetic_operation) => match arithmetic_operation.as_ref() {
-            ArithmeticOperation::Prefix(arithmetic_prefix_operation) => {
-                get_assignment_from_expression(&arithmetic_prefix_operation.value)
-            }
-            ArithmeticOperation::Infix(arithmetic_infix_operation) => {
-                get_assignment_from_expression(&arithmetic_infix_operation.lhs)
-                    .or_else(|| get_assignment_from_expression(&arithmetic_infix_operation.rhs))
-            }
-            ArithmeticOperation::Postfix(arithmetic_postfix_operation) => {
-                get_assignment_from_expression(&arithmetic_postfix_operation.value)
-            }
-        },
-        Expression::BitwiseOperation(bitwise_operation) => match bitwise_operation.as_ref() {
-            BitwiseOperation::Prefix(bitwise_prefix_operation) => {
-                get_assignment_from_expression(&bitwise_prefix_operation.value)
-            }
-            BitwiseOperation::Infix(bitwise_infix_operation) => {
-                get_assignment_from_expression(&bitwise_infix_operation.lhs)
-                    .or_else(|| get_assignment_from_expression(&bitwise_infix_operation.rhs))
-            }
-        },
-        Expression::ComparisonOperation(comparison_operation) => {
-            get_assignment_from_expression(&comparison_operation.lhs)
-                .or_else(|| get_assignment_from_expression(&comparison_operation.rhs))
+        Expression::Binary(operation) => {
+            get_assignment_from_expression(&operation.lhs).or_else(|| get_assignment_from_expression(&operation.rhs))
         }
-        Expression::LogicalOperation(logical_operation) => match logical_operation.as_ref() {
-            LogicalOperation::Prefix(logical_prefix_operation) => {
-                get_assignment_from_expression(&logical_prefix_operation.value)
-            }
-            LogicalOperation::Infix(logical_infix_operation) => {
-                get_assignment_from_expression(&logical_infix_operation.lhs)
-                    .or_else(|| get_assignment_from_expression(&logical_infix_operation.rhs))
-            }
-        },
-        Expression::CastOperation(cast_operation) => get_assignment_from_expression(&cast_operation.value),
-        Expression::TernaryOperation(ternary_operation) => match ternary_operation.as_ref() {
-            TernaryOperation::Conditional(conditional_ternary_operation) => {
-                get_assignment_from_expression(&conditional_ternary_operation.condition)
-                    .or_else(|| {
-                        conditional_ternary_operation
-                            .then
-                            .as_ref()
-                            .and_then(|then| get_assignment_from_expression(then))
-                    })
-                    .or_else(|| get_assignment_from_expression(&conditional_ternary_operation.r#else))
-            }
-            TernaryOperation::Elvis(elvis_ternary_operation) => {
-                get_assignment_from_expression(&elvis_ternary_operation.condition)
-                    .or_else(|| get_assignment_from_expression(&elvis_ternary_operation.r#else))
-            }
-        },
-        Expression::CoalesceOperation(coalesce_operation) => get_assignment_from_expression(&coalesce_operation.lhs)
-            .or_else(|| get_assignment_from_expression(&coalesce_operation.rhs)),
-        Expression::ConcatOperation(concat_operation) => get_assignment_from_expression(&concat_operation.lhs)
-            .or_else(|| get_assignment_from_expression(&concat_operation.rhs)),
-        Expression::InstanceofOperation(instanceof_operation) => {
-            get_assignment_from_expression(&instanceof_operation.lhs)
-                .or_else(|| get_assignment_from_expression(&instanceof_operation.rhs))
-        }
+        Expression::UnaryPrefix(operation) => get_assignment_from_expression(&operation.operand),
+        Expression::UnaryPostfix(operation) => get_assignment_from_expression(&operation.operand),
+        Expression::Conditional(conditional) => get_assignment_from_expression(&conditional.condition)
+            .or_else(|| conditional.then.as_ref().and_then(|then| get_assignment_from_expression(then)))
+            .or_else(|| get_assignment_from_expression(&conditional.r#else)),
         Expression::Array(array) => array.elements.iter().find_map(|element| match &element {
             ArrayElement::KeyValue(key_value_array_element) => {
                 get_assignment_from_expression(&key_value_array_element.key)
@@ -1141,30 +998,30 @@ pub fn get_assignment_from_expression<'ast>(expression: &'ast Expression) -> Opt
 pub fn is_truthy(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => is_truthy(&parenthesized.expression),
-        Expression::Referenced(referenced) => is_truthy(&referenced.expression),
-        Expression::Suppressed(suppressed) => is_truthy(&suppressed.expression),
         Expression::Literal(literal) => match &literal {
             Literal::True(_) => true,
             _ => false,
         },
-        Expression::CoalesceOperation(coalesce_operation) => is_truthy(&coalesce_operation.lhs),
         Expression::AnonymousClass(_) => true,
         Expression::Closure(_) => true,
         Expression::ArrowFunction(_) => true,
         Expression::Array(array) => !array.elements.is_empty(),
         Expression::LegacyArray(array) => !array.elements.is_empty(),
         Expression::ClosureCreation(_) => true,
-        Expression::LogicalOperation(operation) => match operation.as_ref() {
-            LogicalOperation::Prefix(logical_prefix_operation) => return is_falsy(&logical_prefix_operation.value),
-            LogicalOperation::Infix(logical_infix_operation) => match &logical_infix_operation.operator {
-                LogicalInfixOperator::LowPrecedenceAnd(_) | LogicalInfixOperator::And(_) => {
-                    is_truthy(&logical_infix_operation.lhs) && is_truthy(&logical_infix_operation.rhs)
-                }
-                LogicalInfixOperator::LowPrecedenceOr(_) | LogicalInfixOperator::Or(_) => {
-                    is_truthy(&logical_infix_operation.lhs) || is_truthy(&logical_infix_operation.rhs)
-                }
-                _ => false,
-            },
+        Expression::Binary(operation) => match operation.operator {
+            BinaryOperator::Or(_) | BinaryOperator::LowOr(_) => is_truthy(&operation.lhs) || is_truthy(&operation.rhs),
+            BinaryOperator::And(_) | BinaryOperator::LowAnd(_) => {
+                is_truthy(&operation.lhs) && is_truthy(&operation.rhs)
+            }
+            BinaryOperator::NullCoalesce(_) => is_truthy(&operation.lhs),
+            BinaryOperator::LowXor(_) => is_truthy(&operation.lhs) ^ is_truthy(&operation.rhs),
+            _ => false,
+        },
+        Expression::UnaryPrefix(operation) => match operation.operator {
+            UnaryPrefixOperator::ErrorControl(_) => is_truthy(&operation.operand),
+            UnaryPrefixOperator::Reference(_) => is_truthy(&operation.operand),
+            UnaryPrefixOperator::Not(_) => is_falsy(&operation.operand),
+            _ => false,
         },
         Expression::AssignmentOperation(assignment) => is_truthy(&assignment.rhs),
         _ => false,
@@ -1181,30 +1038,26 @@ pub fn is_truthy(expression: &Expression) -> bool {
 pub fn is_falsy(expression: &Expression) -> bool {
     match &expression {
         Expression::Parenthesized(parenthesized) => is_falsy(&parenthesized.expression),
-        Expression::Referenced(referenced) => is_falsy(&referenced.expression),
-        Expression::Suppressed(suppressed) => is_falsy(&suppressed.expression),
         Expression::Literal(literal) => match &literal {
             Literal::False(_) | Literal::Null(_) => true,
             _ => false,
         },
         Expression::Array(array) => array.elements.is_empty(),
         Expression::LegacyArray(array) => array.elements.is_empty(),
-        Expression::CoalesceOperation(coalesce_operation) => {
-            is_falsy(&coalesce_operation.lhs) && is_falsy(&coalesce_operation.rhs)
-        }
-        Expression::LogicalOperation(operation) => match operation.as_ref() {
-            LogicalOperation::Prefix(logical_prefix_operation) => return is_truthy(&logical_prefix_operation.value),
-            LogicalOperation::Infix(logical_infix_operation) => match &logical_infix_operation.operator {
-                LogicalInfixOperator::LowPrecedenceAnd(_) | LogicalInfixOperator::And(_) => {
-                    is_falsy(&logical_infix_operation.lhs) || is_falsy(&logical_infix_operation.rhs)
-                }
-                LogicalInfixOperator::LowPrecedenceOr(_) | LogicalInfixOperator::Or(_) => {
-                    is_falsy(&logical_infix_operation.lhs) && is_falsy(&logical_infix_operation.rhs)
-                }
-                _ => false,
-            },
-        },
         Expression::AssignmentOperation(assignment) => is_falsy(&assignment.rhs),
+        Expression::Binary(operation) => match operation.operator {
+            BinaryOperator::Or(_) | BinaryOperator::LowOr(_) => is_falsy(&operation.lhs) && is_falsy(&operation.rhs),
+            BinaryOperator::And(_) | BinaryOperator::LowAnd(_) => is_falsy(&operation.lhs) || is_falsy(&operation.rhs),
+            BinaryOperator::NullCoalesce(_) => is_falsy(&operation.lhs) && is_falsy(&operation.rhs),
+            BinaryOperator::LowXor(_) => is_falsy(&operation.lhs) ^ is_falsy(&operation.rhs),
+            _ => false,
+        },
+        Expression::UnaryPrefix(operation) => match operation.operator {
+            UnaryPrefixOperator::ErrorControl(_) => is_falsy(&operation.operand),
+            UnaryPrefixOperator::Reference(_) => is_falsy(&operation.operand),
+            UnaryPrefixOperator::Not(_) => is_truthy(&operation.operand),
+            _ => false,
+        },
         _ => false,
     }
 }
