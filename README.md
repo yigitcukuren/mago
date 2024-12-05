@@ -30,13 +30,12 @@ It is inspired by the Rust programming language and its toolchain, and aims to p
 - [x] Reflections: [`crates/reflection`](crates/reflection)
 - [x] Reflector: [`crates/reflector`](crates/reflector), [`crates/scanner`](crates/scanner)
 - [x] Type Inference: [`crates/inference`](crates/inference)
-- [ ] Formatter
+- [x] Formatter: [`crates/formatter`](crates/formatter)
 - [ ] Static Analyzer
 - [ ] Refactoring
 - [ ] Code Generation
 - [ ] Documentation Generation
 - [x] Docblock Parser [`crates/docblock`](crates/docblock)
-- [ ] Test Runner
 
 ### Tooling
 
