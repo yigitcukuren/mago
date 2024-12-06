@@ -1,5 +1,37 @@
 <?php
 
+$a = isset($a);
+$b = isset($a, $b);
+$c = isset(
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+    $b,
+    $c,
+);
+
+unset($a);
+unset($a, $b);
+unset(
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+    $b,
+    $c,
+);
+
+global $a;
+global $a, $b;
+global
+    $aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+    $b,
+    $c
+;
+
+static $a = 1;
+static $a = 1, $b = 1;
+static
+    $aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1,
+    $b = 1,
+    $c = 1
+;
+
 for (;;) {
     print 1;
     // for loop without initialisation, condition and increment

@@ -10,7 +10,6 @@ use crate::format::block::print_block_of_nodes;
 use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
-use crate::format::delimited::Delimiter;
 use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_colon_delimited_body;
 use crate::format::misc::print_modifiers;
@@ -30,7 +29,6 @@ pub mod call_arguments;
 pub mod call_node;
 pub mod class_like;
 pub mod control_structure;
-pub mod delimited;
 pub mod expression;
 pub mod misc;
 pub mod parameters;
@@ -1612,12 +1610,21 @@ impl<'a> Format<'a> for TryFinallyClause {
 impl<'a> Format<'a> for Global {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Global, {
-            Document::Group(Group::new(vec![
-                self.global.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.variables),
-                self.terminator.format(f),
-            ]))
+            let mut contents = vec![self.global.format(f), Document::String(" ")];
+
+            if !self.variables.is_empty() {
+                let mut values =
+                    Document::join(self.variables.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+
+                values.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(values));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -1656,12 +1663,20 @@ impl<'a> Format<'a> for StaticItem {
 impl<'a> Format<'a> for Static {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Static, {
-            Document::Group(Group::new(vec![
-                self.r#static.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-                self.terminator.format(f),
-            ]))
+            let mut contents = vec![self.r#static.format(f), Document::String(" ")];
+
+            if !self.items.is_empty() {
+                let mut values = Document::join(self.items.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+
+                values.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(values));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -1669,14 +1684,26 @@ impl<'a> Format<'a> for Static {
 impl<'a> Format<'a> for Unset {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Unset, {
-            let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-            let formatter = TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false);
+            let mut contents = vec![self.unset.format(f), Document::String("(")];
 
-            Document::Group(Group::new(vec![
-                self.unset.format(f),
-                formatter.format_with_delimiter(f, &self.values, delimiter, false),
-                self.terminator.format(f),
-            ]))
+            if !self.values.is_empty() {
+                let mut values =
+                    Document::join(self.values.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+
+                if f.settings.trailing_comma {
+                    values.push(Document::IfBreak(IfBreak::then(Document::String(","))));
+                }
+
+                values.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(values));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(Document::String(")"));
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }

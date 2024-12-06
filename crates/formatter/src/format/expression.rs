@@ -14,10 +14,8 @@ use crate::format::call_arguments::print_argument_list;
 use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
-use crate::format::delimited::Delimiter;
 use crate::format::misc::print_condition;
 use crate::format::misc::print_modifiers;
-use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::Group;
 use crate::format::IfBreak;
 use crate::format::IndentIfBreak;
@@ -365,14 +363,25 @@ impl<'a> Format<'a> for Construct {
 impl<'a> Format<'a> for IssetConstruct {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, IssetConstruct, {
-            let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-            let formatter = TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false);
+            let mut contents = vec![self.isset.format(f), Document::String("(")];
 
-            // todo: add an setting to control preserve_broken_constructs
-            Document::Group(Group::new(vec![
-                self.isset.format(f),
-                formatter.format_with_delimiter(f, &self.values, delimiter, false),
-            ]))
+            if !self.values.is_empty() {
+                let mut values =
+                    Document::join(self.values.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+
+                if f.settings.trailing_comma {
+                    values.push(Document::IfBreak(IfBreak::then(Document::String(","))));
+                }
+
+                values.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(values));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(Document::String(")"));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
