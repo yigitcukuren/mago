@@ -1,4 +1,3 @@
-use fennec_ast::sequence::Sequence;
 use fennec_ast::sequence::TokenSeparatedSequence;
 use fennec_span::HasSpan;
 
@@ -18,11 +17,6 @@ pub(super) struct TokenSeparatedSequenceFormatter<'a> {
     pub force_break: bool,
     pub force_inline: bool,
     pub break_parent: bool,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(super) struct SequenceFormatter {
-    pub force_break: bool,
 }
 
 impl<'a> TokenSeparatedSequenceFormatter<'a> {
@@ -170,38 +164,5 @@ impl<'a> TokenSeparatedSequenceFormatter<'a> {
         } else {
             Document::Array(documents)
         }
-    }
-}
-
-impl SequenceFormatter {
-    pub fn new() -> Self {
-        Self { force_break: false }
-    }
-
-    pub fn with_force_break(mut self, force_break: bool) -> Self {
-        self.force_break = force_break;
-        self
-    }
-
-    pub fn format<'a, T: Format<'a> + HasSpan>(self, f: &mut Formatter<'a>, nodes: &'a Sequence<T>) -> Document<'a> {
-        let mut contents = Vec::new();
-
-        let length = nodes.len();
-        for (i, item) in nodes.iter().enumerate() {
-            contents.push(item.format(f));
-
-            if i < (length - 1) {
-                if self.force_break {
-                    contents.push(Document::Line(Line::hardline()));
-                    if f.is_next_line_empty(item.span()) {
-                        contents.push(Document::Line(Line::hardline()));
-                    }
-                } else {
-                    contents.push(Document::Line(Line::default()));
-                }
-            }
-        }
-
-        Document::Group(Group::new(contents))
     }
 }

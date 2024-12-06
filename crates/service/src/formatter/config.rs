@@ -123,42 +123,6 @@ pub struct FormatterConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_instantiation_parens: Option<bool>,
 
-    /// Sort methods alphabetically.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort_methods: Option<bool>,
-
-    /// Sort properties alphabetically.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort_properties: Option<bool>,
-
-    /// Sort enum cases alphabetically.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort_enum_cases: Option<bool>,
-
-    /// Sort class-like constants alphabetically.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort_classlike_constants: Option<bool>,
-
-    /// Ensure constructor is the first method.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub constructor_first: Option<bool>,
-
-    /// Ensure destructor is the last method.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub destructor_last: Option<bool>,
-
-    /// Static methods come before non-static methods.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub static_methods_first: Option<bool>,
-
-    /// Static properties come before non-static properties.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub static_properties_first: Option<bool>,
-
-    /// Split grouped `use` statements.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub split_use_statements: Option<bool>,
-
     /// List style (`[a, b]` or `list(a, b)`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub list_style: Option<ListStyle>,
@@ -178,10 +142,6 @@ pub struct FormatterConfiguration {
     /// Spacing in union/intersection types (`A | B` or `A|B`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_spacing: Option<usize>,
-
-    /// Split constants and properties into separate statements.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub split_multi_declare: Option<bool>,
 
     /// The minimum length of a method call chain that triggers line-breaking formatting.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -258,21 +218,11 @@ impl FormatterConfiguration {
                 .unwrap_or(d.space_before_arrow_function_params),
             static_visibility_order: self.static_visibility_order.unwrap_or(d.static_visibility_order),
             require_instantiation_parens: self.require_instantiation_parens.unwrap_or(d.require_instantiation_parens),
-            sort_methods: self.sort_methods.unwrap_or(d.sort_methods),
-            sort_properties: self.sort_properties.unwrap_or(d.sort_properties),
-            sort_enum_cases: self.sort_enum_cases.unwrap_or(d.sort_enum_cases),
-            sort_classlike_constants: self.sort_classlike_constants.unwrap_or(d.sort_classlike_constants),
-            constructor_first: self.constructor_first.unwrap_or(d.constructor_first),
-            destructor_last: self.destructor_last.unwrap_or(d.destructor_last),
-            static_methods_first: self.static_methods_first.unwrap_or(d.static_methods_first),
-            static_properties_first: self.static_properties_first.unwrap_or(d.static_properties_first),
-            split_use_statements: self.split_use_statements.unwrap_or(d.split_use_statements),
             list_style: self.list_style.unwrap_or(d.list_style),
             null_type_hint: self.null_type_hint.unwrap_or(d.null_type_hint),
             binary_op_spacing: self.binary_op_spacing.unwrap_or(d.binary_op_spacing),
             replace_angle_not_equals: self.replace_angle_not_equals.unwrap_or(d.replace_angle_not_equals),
             type_spacing: self.type_spacing.unwrap_or(d.type_spacing),
-            split_multi_declare: self.split_multi_declare.unwrap_or(d.split_multi_declare),
             method_chain_break_threshold: self.method_chain_break_threshold.unwrap_or(d.method_chain_break_threshold),
             break_promoted_properties_list: self
                 .break_promoted_properties_list

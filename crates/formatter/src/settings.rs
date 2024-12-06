@@ -148,51 +148,6 @@ pub struct FormatSettings {
     #[serde(default = "default_true")]
     pub require_instantiation_parens: bool,
 
-    /// Sort methods alphabetically.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub sort_methods: bool,
-
-    /// Sort properties alphabetically.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub sort_properties: bool,
-
-    /// Sort enum cases alphabetically.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub sort_enum_cases: bool,
-
-    /// Sort class-like constants alphabetically.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub sort_classlike_constants: bool,
-
-    /// Ensure constructor is the first method.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub constructor_first: bool,
-
-    /// Ensure destructor is the last method.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub destructor_last: bool,
-
-    /// Static methods come before non-static methods.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub static_methods_first: bool,
-
-    /// Static properties come before non-static properties.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub static_properties_first: bool,
-
-    /// Split grouped `use` statements.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub split_use_statements: bool,
-
     /// List style (`[a, b]` or `list(a, b)`).
     /// Default: Short
     #[serde(default)]
@@ -217,11 +172,6 @@ pub struct FormatSettings {
     /// Default: 0
     #[serde(default = "default_type_spacing")]
     pub type_spacing: usize,
-
-    /// Split constants and properties into separate statements.
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub split_multi_declare: bool,
 
     /// The minimum length of a method call chain that triggers line-breaking formatting.
     ///
@@ -333,21 +283,11 @@ impl Default for FormatSettings {
             space_before_arrow_function_params: false,
             static_visibility_order: StaticVisibilityOrder::default(),
             require_instantiation_parens: true,
-            sort_enum_cases: false,
-            sort_classlike_constants: false,
-            sort_methods: false,
-            sort_properties: false,
-            constructor_first: false,
-            destructor_last: false,
-            static_methods_first: false,
-            static_properties_first: false,
-            split_use_statements: false,
             list_style: ListStyle::default(),
             null_type_hint: NullTypeHint::default(),
             binary_op_spacing: default_binary_op_spacing(),
             replace_angle_not_equals: true,
             type_spacing: default_type_spacing(),
-            split_multi_declare: true,
             method_chain_break_threshold: default_method_chain_break_threshold(),
             break_promoted_properties_list: true,
             space_concatenation: true,

@@ -54,9 +54,11 @@ pub struct Configuration {
     pub source: SourceConfiguration,
 
     /// Configuration options for the linter.
+    #[serde(default)]
     pub linter: LinterConfiguration,
 
     /// Configuration options for the formatter.
+    #[serde(default)]
     pub format: FormatterConfiguration,
 }
 

@@ -453,12 +453,18 @@ impl<'a> Format<'a> for UseType {
 impl<'a> Format<'a> for TraitUse {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUse, {
-            Document::Group(Group::new(vec![
-                self.r#use.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.trait_names),
-                self.specification.format(f),
-            ]))
+            let mut contents = vec![self.r#use.format(f), Document::space()];
+            for (i, trait_name) in self.trait_names.iter().enumerate() {
+                if i != 0 {
+                    contents.push(Document::String(", "));
+                }
+
+                contents.push(trait_name.format(f));
+            }
+
+            contents.push(self.specification.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -483,7 +489,7 @@ impl<'a> Format<'a> for TraitUseAbstractSpecification {
 impl<'a> Format<'a> for TraitUseConcreteSpecification {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUseConcreteSpecification, {
-            print_block_of_nodes(f, self.left_brace, &self.adaptations, self.right_brace)
+            print_block_of_nodes(f, &self.left_brace, &self.adaptations, &self.right_brace, false)
         })
     }
 }
@@ -525,14 +531,20 @@ impl<'a> Format<'a> for TraitUseAbsoluteMethodReference {
 impl<'a> Format<'a> for TraitUsePrecedenceAdaptation {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TraitUsePrecedenceAdaptation, {
-            Document::Group(Group::new(vec![
-                self.method_reference.format(f),
-                Document::space(),
-                self.insteadof.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.trait_names),
-                self.terminator.format(f),
-            ]))
+            let mut contents =
+                vec![self.method_reference.format(f), Document::space(), self.insteadof.format(f), Document::space()];
+
+            for (i, trait_name) in self.trait_names.iter().enumerate() {
+                if i != 0 {
+                    contents.push(Document::String(", "));
+                }
+
+                contents.push(trait_name.format(f));
+            }
+
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -576,29 +588,10 @@ impl<'a> Format<'a> for ClassLikeConstant {
                 parts.push(Document::space());
             }
 
-            let prefix = Document::Array(parts);
+            parts.push(TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items));
+            parts.push(self.terminator.format(f));
 
-            if f.settings.split_multi_declare {
-                let items = self.items.iter().map(|i| i.format(f)).collect::<Vec<_>>();
-                let terminator = self.terminator.format(f);
-
-                let mut constants = vec![];
-                let last = items.len() - 1;
-                for (i, item) in items.into_iter().enumerate() {
-                    constants.push(Document::Group(Group::new(vec![prefix.clone(), item, terminator.clone()])));
-                    if i != last {
-                        constants.push(Document::Line(Line::hardline()));
-                    }
-                }
-
-                Document::Array(constants)
-            } else {
-                Document::Group(Group::new(vec![
-                    prefix,
-                    TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-                    self.terminator.format(f),
-                ]))
-            }
+            Document::Group(Group::new(parts))
         })
     }
 }
@@ -693,27 +686,10 @@ impl<'a> Format<'a> for PlainProperty {
                 parts.push(Document::space());
             }
 
-            let prefix = Document::Array(parts);
-            if f.settings.split_multi_declare {
-                let items = self.items.iter().map(|i| i.format(f)).collect::<Vec<_>>();
-                let terminator = self.terminator.format(f);
-                let mut properties = vec![];
-                let last = items.len() - 1;
-                for (i, item) in items.into_iter().enumerate() {
-                    properties.push(Document::Group(Group::new(vec![prefix.clone(), item, terminator.clone()])));
-                    if i != last {
-                        properties.push(Document::Line(Line::hardline()));
-                    }
-                }
+            parts.push(TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items));
+            parts.push(self.terminator.format(f));
 
-                Document::Array(properties)
-            } else {
-                Document::Group(Group::new(vec![
-                    prefix,
-                    TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-                    self.terminator.format(f),
-                ]))
-            }
+            Document::Group(Group::new(parts))
         })
     }
 }
