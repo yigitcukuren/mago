@@ -1,5 +1,129 @@
 <?php
 
+#[Attribute]
+class A
+{
+}
+
+#[
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+    Attribute,
+]
+class B
+{
+}
+
+#[Attribute, Attribute([
+    'foo',
+    'bar',
+    'baz',
+])]
+class C
+{
+}
+
+#[Attribute, Attribute([
+    'foo',
+    'bar',
+    'baz',
+])]
+class C
+{
+}
+
+class Author
+{
+    #[Assert\IsTrue(message: 'The password cannot match your first name')]
+    public function isPasswordSafe(): bool
+    {
+        // ... return true or false
+    }
+}
+
+class User
+{
+    #[Assert\All([
+        new Assert\NotBlank,
+        new Assert\Length(min: 5),
+    ])]
+    protected array $favoriteColors = [];
+}
+
+class Place
+{
+    #[Assert\Sequentially([
+        new Assert\NotNull,
+        new Assert\Type('string'),
+        new Assert\Length(min: 10),
+        new Assert\Regex(Place::ADDRESS_REGEX),
+        new AcmeAssert\Geolocalizable,
+    ])]
+    public string $address;
+}
+
+class Discount
+{
+    #[Assert\GreaterThan(0)]
+    #[Assert\When(expression: 'this.getType() == "percent"', constraints: [
+        new Assert\LessThanOrEqual(100, message: 'The value should be between 1 and 100!'),
+    ])]
+    private null|int $value;
+
+    // ...
+}
+
+class Author
+{
+    #[Assert\Collection(
+        fields: [
+            'personal_email' => new Assert\Email,
+            'short_bio' => [
+                new Assert\NotBlank,
+                new Assert\Length(max: 100, maxMessage: 'Your short bio is too long!'),
+            ],
+        ],
+        allowMissingFields: true,
+    )]
+    protected array $profileData = [
+        'personal_email' => '...',
+        'short_bio' => '...',
+    ];
+}
+
+#[Assert\GroupSequence(['User', 'Strict'])]
+class User implements UserInterface
+{
+    #[Assert\NotBlank]
+    private string $username;
+
+    #[Assert\NotBlank]
+    private string $password;
+
+    #[Assert\IsTrue(message: 'The password cannot match your username', groups: ['Strict'])]
+    public function isPasswordSafe(): bool
+    {
+        return $this->username !== $this->password;
+    }
+}
+
 $a = function () use (
     $aaaaaaaaaaaaaaaaaaaaaaaa,
     $aaaaaaaaaaaaaaaaaa,

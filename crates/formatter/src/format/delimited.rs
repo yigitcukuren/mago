@@ -12,7 +12,6 @@ use crate::Formatter;
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(super) enum Delimiter {
     Parentheses(Span, Span),
-    Attributes(Span, Span),
 }
 
 impl Delimiter {
@@ -20,7 +19,6 @@ impl Delimiter {
     pub fn left_as_str(&self) -> &'static str {
         match self {
             Self::Parentheses(_, _) => "(",
-            Self::Attributes(_, _) => "#[",
         }
     }
 
@@ -28,7 +26,6 @@ impl Delimiter {
     pub fn right_as_str(&self) -> &'static str {
         match self {
             Self::Parentheses(_, _) => ")",
-            Self::Attributes(_, _) => "]",
         }
     }
 
@@ -38,7 +35,6 @@ impl Delimiter {
     pub fn needs_space(&self) -> bool {
         match self {
             Self::Parentheses(_, _) => false,
-            Self::Attributes(_, _) => false,
         }
     }
 
@@ -47,7 +43,6 @@ impl Delimiter {
     pub fn spans(&self) -> (&Span, &Span) {
         match self {
             Self::Parentheses(left, right) => (left, right),
-            Self::Attributes(left, right) => (left, right),
         }
     }
 

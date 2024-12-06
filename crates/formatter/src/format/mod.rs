@@ -1,8 +1,8 @@
 use fennec_ast::*;
 use fennec_span::HasSpan;
-use misc::print_colon_delimited_body;
-use parameters::print_function_like_parameters;
+use fennec_span::Span;
 
+use crate::comment::CommentFlags;
 use crate::document::*;
 use crate::format::assignment::print_assignment;
 use crate::format::assignment::AssignmentLikeNode;
@@ -12,7 +12,9 @@ use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
 use crate::format::delimited::Delimiter;
 use crate::format::misc::print_attribute_list_sequence;
+use crate::format::misc::print_colon_delimited_body;
 use crate::format::misc::print_modifiers;
+use crate::format::parameters::print_function_like_parameters;
 use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::statement::print_statement_sequence;
 use crate::settings::*;
@@ -1291,12 +1293,76 @@ impl<'a> Format<'a> for Modifier {
 impl<'a> Format<'a> for AttributeList {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, AttributeList, {
-            let delimiter = Delimiter::Attributes(self.hash_left_bracket, self.right_bracket);
-            let document = TokenSeparatedSequenceFormatter::new(",")
-                .with_trailing_separator(true)
-                .format_with_delimiter(f, &self.attributes, delimiter, false);
+            // Determine if there are comments between the `#[` and the first attribute (if any).
+            let has_comments_before_first = || {
+                if let Some(first_attr) = self.attributes.first() {
+                    f.has_comment(
+                        Span { start: self.hash_left_bracket.span().end, end: first_attr.span().start },
+                        CommentFlags::all(),
+                    )
+                } else {
+                    // If there are no attributes, then no comments "before the first attribute" can apply.
+                    false
+                }
+            };
 
-            Document::Group(Group::new(vec![document]))
+            // Determine if there are comments between the last attribute and the `]` (if any).
+            let has_comments_after_last = || {
+                if let Some(last_attr) = self.attributes.last() {
+                    f.has_comment(
+                        Span { start: last_attr.span().end, end: self.right_bracket.span().start },
+                        CommentFlags::all(),
+                    )
+                } else {
+                    // If there are no attributes, then no comments "after the last attribute" can apply.
+                    false
+                }
+            };
+
+            // Determine if the attribute list is empty and has comments inside the brackets.
+            let is_empty_with_comments = || {
+                self.attributes.is_empty()
+                    && f.has_comment(self.hash_left_bracket.join(self.right_bracket), CommentFlags::all())
+            };
+
+            let should_break = self.attributes.len() > 3
+                || has_comments_before_first()
+                || has_comments_after_last()
+                || is_empty_with_comments();
+
+            let mut contents = vec![Document::String("#[")];
+            let mut attributes = vec![];
+            for attribute in self.attributes.iter() {
+                attributes.push(Document::Group(Group::new(vec![attribute.format(f)])));
+            }
+
+            if should_break {
+                let mut inner_conent = Document::join(attributes, Separator::CommaLine);
+                inner_conent.insert(0, Document::Line(Line::softline()));
+                if f.settings.trailing_comma {
+                    inner_conent.push(Document::IfBreak(IfBreak::then(Document::String(","))));
+                }
+
+                contents.push(Document::Indent(inner_conent));
+                if let Some(comments) = f.print_dangling_comments(self.hash_left_bracket.join(self.right_bracket), true)
+                {
+                    contents.push(comments);
+                } else {
+                    contents.push(Document::Line(Line::softline()));
+                }
+            } else {
+                for (i, attribute) in attributes.into_iter().enumerate() {
+                    if i != 0 {
+                        contents.push(Document::String(", "));
+                    }
+
+                    contents.push(attribute);
+                }
+            }
+
+            contents.push(Document::String("]"));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
