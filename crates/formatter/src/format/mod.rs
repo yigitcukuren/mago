@@ -14,7 +14,6 @@ use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_colon_delimited_body;
 use crate::format::misc::print_modifiers;
 use crate::format::parameters::print_function_like_parameters;
-use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::statement::print_statement_sequence;
 use crate::settings::*;
 use crate::wrap;
@@ -32,7 +31,6 @@ pub mod control_structure;
 pub mod expression;
 pub mod misc;
 pub mod parameters;
-pub mod sequence;
 pub mod statement;
 
 pub trait Format<'a> {
@@ -70,6 +68,18 @@ impl<'a> Format<'a> for Program {
 
         if f.scripting_mode {
             parts.push(Document::Line(Line::hardline()));
+
+            if let Some(last_span) = self.trivia.last_span().or_else(|| self.statements.last_span()) {
+                let first_span = self.trivia.first_span().or_else(|| self.statements.first_span()).unwrap_or(last_span);
+
+                if let Some(comments) = f.print_dangling_comments(first_span.join(last_span), false) {
+                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(comments);
+                }
+            } else {
+                unreachable!();
+            }
+
             if f.settings.include_closing_tag {
                 parts.push(Document::Line(Line::hardline()));
                 parts.push(Document::String("?>"));
@@ -314,26 +324,17 @@ impl<'a> Format<'a> for FullyQualifiedIdentifier {
 impl<'a> Format<'a> for Use {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Use, {
-            let mut parts = vec![self.r#use.format(f), Document::space()];
-
-            match &self.items {
-                UseItems::Sequence(s) => {
-                    parts.push(s.format(f));
-                }
-                UseItems::TypedSequence(s) => {
-                    parts.push(s.format(f));
-                }
-                UseItems::TypedList(t) => {
-                    parts.push(t.format(f));
-                }
-                UseItems::MixedList(m) => {
-                    parts.push(m.format(f));
-                }
-            }
-
-            parts.push(self.terminator.format(f));
-
-            Document::Array(parts)
+            Document::Group(Group::new(vec![
+                self.r#use.format(f),
+                Document::space(),
+                match &self.items {
+                    UseItems::Sequence(s) => s.format(f),
+                    UseItems::TypedSequence(s) => s.format(f),
+                    UseItems::TypedList(t) => t.format(f),
+                    UseItems::MixedList(m) => m.format(f),
+                },
+                self.terminator.format(f),
+            ]))
         })
     }
 }
@@ -356,7 +357,13 @@ impl<'a> Format<'a> for UseItem {
 impl<'a> Format<'a> for UseItemSequence {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, UseItemSequence, {
-            TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items)
+            Document::Group(Group::new(vec![
+                Document::Indent(Document::join(
+                    self.items.iter().map(|i| i.format(f)).collect(),
+                    Separator::CommaLine,
+                )),
+                Document::Line(Line::softline()),
+            ]))
         })
     }
 }
@@ -364,25 +371,30 @@ impl<'a> Format<'a> for UseItemSequence {
 impl<'a> Format<'a> for TypedUseItemList {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TypedUseItemList, {
-            let mut parts = vec![
+            let mut contents = vec![
                 self.r#type.format(f),
                 Document::space(),
                 self.namespace.format(f),
                 Document::String("\\"),
                 Document::String("{"),
             ];
-            for item in self.items.iter() {
-                parts.push(Document::Indent(vec![
-                    Document::Line(Line::default()),
-                    item.format(f),
-                    Document::String(","),
-                ]));
+
+            if !self.items.is_empty() {
+                let mut items = Document::join(self.items.iter().map(|i| i.format(f)).collect(), Separator::CommaLine);
+                items.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(items));
             }
 
-            parts.push(Document::Line(Line::default()));
-            parts.push(Document::String("}"));
+            if let Some(comments) = f.print_dangling_comments(self.left_brace.join(self.right_brace), true) {
+                contents.push(comments);
+            } else {
+                contents.push(Document::Line(Line::softline()));
+            }
 
-            Document::Group(Group::new(parts))
+            contents.push(Document::String("}"));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -390,20 +402,24 @@ impl<'a> Format<'a> for TypedUseItemList {
 impl<'a> Format<'a> for MixedUseItemList {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, MixedUseItemList, {
-            let mut parts = vec![self.namespace.format(f), Document::String("\\"), Document::String("{")];
+            let mut contents = vec![self.namespace.format(f), Document::String("\\"), Document::String("{")];
 
-            for item in self.items.iter() {
-                parts.push(Document::Indent(vec![
-                    Document::Line(Line::default()),
-                    item.format(f),
-                    Document::String(","),
-                ]));
+            if !self.items.is_empty() {
+                let mut items = Document::join(self.items.iter().map(|i| i.format(f)).collect(), Separator::CommaLine);
+                items.insert(0, Document::Line(Line::softline()));
+
+                contents.push(Document::Indent(items));
             }
 
-            parts.push(Document::Line(Line::default()));
-            parts.push(Document::String("}"));
+            if let Some(comments) = f.print_dangling_comments(self.left_brace.join(self.right_brace), true) {
+                contents.push(comments);
+            } else {
+                contents.push(Document::Line(Line::softline()));
+            }
 
-            Document::Group(Group::new(parts))
+            contents.push(Document::String("}"));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -422,11 +438,15 @@ impl<'a> Format<'a> for MaybeTypedUseItem {
 impl<'a> Format<'a> for TypedUseItemSequence {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, TypedUseItemSequence, {
-            Document::Array(vec![
+            Document::Group(Group::new(vec![
                 self.r#type.format(f),
                 Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-            ])
+                Document::Indent(Document::join(
+                    self.items.iter().map(|i| i.format(f)).collect(),
+                    Separator::CommaLine,
+                )),
+                Document::Line(Line::softline()),
+            ]))
         })
     }
 }
@@ -574,24 +594,41 @@ impl<'a> Format<'a> for TraitUseAliasAdaptation {
 impl<'a> Format<'a> for ClassLikeConstant {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ClassLikeConstant, {
-            let mut parts = vec![];
-            for attribute_list in self.attributes.iter() {
-                parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
-            }
+            let attributes = if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attributes, false) {
+                attributes
+            } else {
+                Document::empty()
+            };
 
-            parts.extend(print_modifiers(f, &self.modifiers));
-            parts.push(self.r#const.format(f));
-            parts.push(Document::space());
-            if let Some(h) = &self.hint {
-                parts.push(h.format(f));
-                parts.push(Document::space());
-            }
+            let constant = {
+                let mut contents = vec![];
+                contents.extend(print_modifiers(f, &self.modifiers));
+                contents.push(self.r#const.format(f));
 
-            parts.push(TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items));
-            parts.push(self.terminator.format(f));
+                if let Some(h) = &self.hint {
+                    contents.push(Document::space());
+                    contents.push(h.format(f));
+                }
 
-            Document::Group(Group::new(parts))
+                if self.items.len() == 1 {
+                    contents.push(Document::space());
+                    contents.push(self.items.as_slice()[0].format(f));
+                } else if !self.items.is_empty() {
+                    contents.push(Document::Indent(vec![Document::Line(Line::default())]));
+
+                    contents.push(Document::Indent(Document::join(
+                        self.items.iter().map(|v| v.format(f)).collect(),
+                        Separator::CommaLine,
+                    )));
+                    contents.push(Document::Line(Line::softline()));
+                }
+
+                contents.push(self.terminator.format(f));
+
+                Document::Group(Group::new(contents))
+            };
+
+            Document::Group(Group::new(vec![attributes, constant]))
         })
     }
 }
@@ -600,9 +637,14 @@ impl<'a> Format<'a> for ClassLikeConstantItem {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ClassLikeConstantItem, {
             let lhs = self.name.format(f);
-            let operator = Document::String("=");
 
-            print_assignment(f, AssignmentLikeNode::ClassLikeConstantItem(self), lhs, operator, &self.value)
+            print_assignment(
+                f,
+                AssignmentLikeNode::ClassLikeConstantItem(self),
+                lhs,
+                Document::String("="),
+                &self.value,
+            )
         })
     }
 }
@@ -668,28 +710,42 @@ impl<'a> Format<'a> for Property {
 impl<'a> Format<'a> for PlainProperty {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PlainProperty, {
-            let mut parts = vec![];
-            for attribute_list in self.attributes.iter() {
-                parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
-            }
+            let attributes = if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attributes, false) {
+                attributes
+            } else {
+                Document::empty()
+            };
 
-            if let Some(var) = &self.var {
-                parts.push(var.format(f));
-                parts.push(Document::space());
-            }
+            let property = {
+                let mut contents = print_modifiers(f, &self.modifiers);
+                if let Some(var) = &self.var {
+                    contents.push(var.format(f));
+                    contents.push(Document::space());
+                }
 
-            parts.extend(print_modifiers(f, &self.modifiers));
+                if let Some(h) = &self.hint {
+                    contents.push(h.format(f));
+                }
 
-            if let Some(h) = &self.hint {
-                parts.push(h.format(f));
-                parts.push(Document::space());
-            }
+                if self.items.len() == 1 {
+                    contents.push(Document::space());
+                    contents.push(self.items.as_slice()[0].format(f));
+                } else if !self.items.is_empty() {
+                    contents.push(Document::Indent(vec![Document::Line(Line::default())]));
 
-            parts.push(TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items));
-            parts.push(self.terminator.format(f));
+                    contents.push(Document::Indent(Document::join(
+                        self.items.iter().map(|v| v.format(f)).collect(),
+                        Separator::CommaLine,
+                    )));
+                    contents.push(Document::Line(Line::softline()));
+                }
 
-            Document::Group(Group::new(parts))
+                contents.push(self.terminator.format(f));
+
+                Document::Group(Group::new(contents))
+            };
+
+            Document::Group(Group::new(vec![attributes, property]))
         })
     }
 }
@@ -709,7 +765,6 @@ impl<'a> Format<'a> for HookedProperty {
             }
 
             parts.extend(print_modifiers(f, &self.modifiers));
-
             if let Some(h) = &self.hint {
                 parts.push(h.format(f));
                 parts.push(Document::space());
@@ -855,10 +910,11 @@ impl<'a> Format<'a> for Extends {
         wrap!(f, self, Extends, {
             Document::Group(Group::new(vec![
                 self.extends.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), Document::space())),
-                    TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.types),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default())]),
+                Document::Indent(Document::join(
+                    self.types.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )),
             ]))
         })
     }
@@ -869,10 +925,11 @@ impl<'a> Format<'a> for Implements {
         wrap!(f, self, Implements, {
             Document::Group(Group::new(vec![
                 self.implements.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), Document::space())),
-                    TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.types),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default())]),
+                Document::Indent(Document::join(
+                    self.types.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )),
             ]))
         })
     }
@@ -1083,12 +1140,19 @@ impl<'a> Format<'a> for Block {
 impl<'a> Format<'a> for Echo {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Echo, {
-            Document::Group(Group::new(vec![
-                self.echo.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.values),
-                self.terminator.format(f),
-            ]))
+            let mut contents = vec![self.echo.format(f), Document::Indent(vec![Document::Line(Line::default())])];
+
+            if !self.values.is_empty() {
+                contents.push(Document::Indent(Document::join(
+                    self.values.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -1107,12 +1171,24 @@ impl<'a> Format<'a> for ConstantItem {
 impl<'a> Format<'a> for Constant {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Constant, {
-            Document::Group(Group::new(vec![
-                self.r#const.format(f),
-                Document::space(),
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(false).format(f, &self.items),
-                self.terminator.format(f),
-            ]))
+            let mut contents = vec![self.r#const.format(f)];
+
+            if self.items.len() == 1 {
+                contents.push(Document::space());
+                contents.push(self.items.as_slice()[0].format(f));
+            } else if !self.items.is_empty() {
+                contents.push(Document::Indent(vec![Document::Line(Line::default())]));
+
+                contents.push(Document::Indent(Document::join(
+                    self.items.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )));
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(self.terminator.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -1463,7 +1539,7 @@ impl<'a> Format<'a> for FunctionLikeParameter {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, FunctionLikeParameter, {
             let mut parts = vec![];
-            if let Some(attributes) = print_attribute_list_sequence(f, &self.attributes) {
+            if let Some(attributes) = print_attribute_list_sequence(f, &self.attributes, true) {
                 parts.push(attributes);
             }
 
@@ -1610,15 +1686,18 @@ impl<'a> Format<'a> for TryFinallyClause {
 impl<'a> Format<'a> for Global {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Global, {
-            let mut contents = vec![self.global.format(f), Document::String(" ")];
+            let mut contents = vec![self.global.format(f)];
 
-            if !self.variables.is_empty() {
-                let mut values =
-                    Document::join(self.variables.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+            if self.variables.len() == 1 {
+                contents.push(Document::space());
+                contents.push(self.variables.as_slice()[0].format(f));
+            } else if !self.variables.is_empty() {
+                contents.push(Document::Indent(vec![Document::Line(Line::default())]));
 
-                values.insert(0, Document::Line(Line::softline()));
-
-                contents.push(Document::Indent(values));
+                contents.push(Document::Indent(Document::join(
+                    self.variables.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )));
                 contents.push(Document::Line(Line::softline()));
             }
 
@@ -1663,14 +1742,18 @@ impl<'a> Format<'a> for StaticItem {
 impl<'a> Format<'a> for Static {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Static, {
-            let mut contents = vec![self.r#static.format(f), Document::String(" ")];
+            let mut contents = vec![self.r#static.format(f)];
 
-            if !self.items.is_empty() {
-                let mut values = Document::join(self.items.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
+            if self.items.len() == 1 {
+                contents.push(Document::space());
+                contents.push(self.items.as_slice()[0].format(f));
+            } else if !self.items.is_empty() {
+                contents.push(Document::Indent(vec![Document::Line(Line::default())]));
 
-                values.insert(0, Document::Line(Line::softline()));
-
-                contents.push(Document::Indent(values));
+                contents.push(Document::Indent(Document::join(
+                    self.items.iter().map(|v| v.format(f)).collect(),
+                    Separator::CommaLine,
+                )));
                 contents.push(Document::Line(Line::softline()));
             }
 

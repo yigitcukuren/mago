@@ -93,32 +93,6 @@ pub(super) fn is_string_word_type(node: &Expression) -> bool {
     }
 }
 
-pub(super) fn print_token_with_indented_leading_comments<'a>(
-    f: &mut Formatter<'a>,
-    span: Span,
-    value: &'a str,
-    mut should_break: bool,
-) -> Document<'a> {
-    let mut parts = vec![];
-    if let Some(leading_comments) = f.print_leading_comments(span) {
-        parts.push(Document::Indent(vec![Document::Line(Line::hardline()), leading_comments]));
-
-        should_break = true;
-    }
-
-    if should_break {
-        parts.push(Document::Line(Line::hardline()));
-        parts.push(Document::BreakParent);
-    }
-
-    parts.push(Document::String(value));
-    if let Some(trailing_comments) = f.print_trailing_comments(span) {
-        parts.push(trailing_comments);
-    }
-
-    Document::Group(Group::new(parts))
-}
-
 pub(super) fn print_colon_delimited_body<'a>(
     f: &mut Formatter<'a>,
     colon: &'a Span,
@@ -197,6 +171,7 @@ pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence
 pub(super) fn print_attribute_list_sequence<'a>(
     f: &mut Formatter<'a>,
     attribute_lists: &'a Sequence<AttributeList>,
+    can_inline: bool,
 ) -> Option<Document<'a>> {
     if attribute_lists.is_empty() {
         return None;
@@ -211,17 +186,17 @@ pub(super) fn print_attribute_list_sequence<'a>(
     }
 
     // if there is a single attribute list, we can inline it
-    if !has_new_line && f.settings.inline_single_attribute_group && lists.len() == 1 {
+    if can_inline && !has_new_line && f.settings.inline_single_attribute_group && lists.len() == 1 {
         return Some(Document::Group(Group::new(vec![lists.remove(0), Document::Line(Line::default())])));
     }
 
-    let mut parts = vec![];
+    let mut contents = vec![];
     for attribute_list in lists {
-        parts.push(attribute_list);
-        parts.push(Document::Line(Line::default()));
+        contents.push(attribute_list);
+        contents.push(Document::Line(Line::hardline()));
     }
 
-    Some(Document::Group(Group::new(parts).with_break(true)))
+    Some(Document::Group(Group::new(contents).with_break(true)))
 }
 
 pub(super) fn print_clause<'a>(f: &mut Formatter<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {

@@ -4,9 +4,9 @@ use fennec_span::HasSpan;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
+use crate::format::block::print_block_of_nodes;
 use crate::format::misc;
 use crate::format::misc::print_colon_delimited_body;
-use crate::format::misc::print_token_with_indented_leading_comments;
 use crate::format::statement::print_statement_sequence;
 use crate::format::Format;
 use crate::settings::*;
@@ -275,7 +275,12 @@ impl<'a> Format<'a> for SwitchColonDelimitedBody {
                 contents.push(Document::Indent(vec![Document::Line(Line::hardline()), case.format(f)]));
             }
 
-            contents.push(Document::Line(Line::hardline()));
+            if let Some(comment) = f.print_dangling_comments(self.colon.join(self.end_switch.span), true) {
+                contents.push(comment);
+            } else {
+                contents.push(Document::Line(Line::hardline()));
+            }
+
             contents.push(self.end_switch.format(f));
             contents.push(self.terminator.format(f));
 
@@ -287,14 +292,7 @@ impl<'a> Format<'a> for SwitchColonDelimitedBody {
 impl<'a> Format<'a> for SwitchBraceDelimitedBody {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, SwitchBraceDelimitedBody, {
-            let mut contents = vec![Document::String("{")];
-            for case in self.cases.iter() {
-                contents.push(Document::Indent(vec![Document::Line(Line::hardline()), case.format(f)]));
-            }
-
-            contents.push(print_token_with_indented_leading_comments(f, self.right_brace, "}", true));
-
-            Document::Group(Group::new(contents))
+            print_block_of_nodes(f, &self.left_brace, &self.cases, &self.right_brace, false)
         })
     }
 }

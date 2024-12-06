@@ -221,10 +221,15 @@ impl<'a> Formatter<'a> {
     pub(crate) fn print_dangling_comments(&mut self, range: Span, indented: bool) -> Option<Document<'a>> {
         let mut parts = vec![];
         while let Some(comment) = self.comments.peek() {
+            let span = comment.span;
             let comment = Comment::from_trivia(comment);
             // Comment within the span
             if comment.end <= range.end.offset {
-                parts.push(self.print_comment(comment));
+                if !indented && self.is_next_line_empty(span) {
+                    parts.push(Document::Array(vec![self.print_comment(comment), Document::Line(Line::hardline())]));
+                } else {
+                    parts.push(self.print_comment(comment));
+                }
 
                 self.comments.next();
             } else {

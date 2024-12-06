@@ -1,5 +1,153 @@
 <?php
 
+use Foo, Bar, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe;
+use Foo,
+    Bar,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe,
+    Baz,
+    qwe
+;
+use const Foo\Bar\{
+    Foo,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Bar
+    // This is a comment
+};
+use const Foo\Bar\{
+    Foo,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Baz,
+    Bar,
+    Baz,
+    Bar,
+    Baz,
+    Bar
+};
+use const Foo\Bar\{Foo, Bar, Baz};
+use const Foo\Bar\{a};
+use Foo\Bar\{Foo, Bar, Baz};
+use Foo\Bar\{Foo, Bar, Baz};
+use Q\{A, B, C};
+use function Foo\Bar\{foo, bar, baz};
+use const Foo\Bar\{FOO, BAR, BAZ};
+use Foo\Bar\{function foo, function bar, function baz};
+use Foo\Bar\{const FOO, const BAR, const BAZ};
+
+class ClassName extends ParentClass implements
+    ArrayAccess,
+    Countable,
+    Serializable,
+    IteratorAggregate,
+    JsonSerializable,
+    Traversable,
+    SeekableIterator
+{
+    #[Attribute]
+    public const A = 1;
+
+    public const A = 1, B = 1;
+
+    #[Attribute]
+    public const
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        B = 1,
+        C = 1
+    ;
+
+    #[Attribute]
+    public const int A = 1, AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1;
+
+    public const int A = 1, B = 1;
+
+    #[Attribute(1, 2)]
+    public var int $A = 1;
+
+    public mixed
+        $C = 12,
+        $W = function (): void {
+            echo 'Hello, world!';
+        }
+    ;
+
+    public mixed $W = function (): void {
+        echo 'Hello, world!';
+    };
+
+    #[Attribute(1, 2)]
+    public int
+        $AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        $AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        $AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        $AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+        $B = 1,
+        $C = 1
+    ;
+
+    #[Attribute]
+    public int $A = 1, $AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1;
+
+    public int $A = 1, $B = 1;
+}
+
+interface Collection extends
+    ArrayAccess,
+    Countable,
+    Serializable,
+    IteratorAggregate,
+    JsonSerializable,
+    Traversable,
+    SeekableIterator
+{
+    // constants, properties, methods
+}
+
 $a = isset($a);
 $b = isset($a, $b);
 $c = isset(
@@ -30,6 +178,22 @@ static
     $aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1,
     $b = 1,
     $c = 1
+;
+
+const A = 1;
+const A = 1, B = 1;
+const
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+    B = 1,
+    C = 1
+;
+const
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = 1,
+    B = 1,
+    C = 1,
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA =
+        "hello, world",
+    D = 1
 ;
 
 for (;;) {
@@ -162,7 +326,6 @@ class Discount
         new Assert\LessThanOrEqual(100, message: 'The value should be between 1 and 100!'),
     ])]
     private null|int $value;
-
     // ...
 }
 
@@ -263,7 +426,6 @@ class Talker
     use A, B {
         B::smallTalk insteadof A; // space
         A::bigTalk insteadof B, C, D, E;
-
         // This is a comment
     }
 }
@@ -277,9 +439,9 @@ class Talker
         // This is a comment
     }
 
-    private static $instance;
-    private $name;
-    private $age;
+    private static  $instance;
+    private  $name;
+    private  $age;
 
     public static function getInstance(): self
     {
@@ -299,6 +461,77 @@ class Talker
     {
         $this->name = $name;
     }
-
     // This is a comment
 }
+
+switch ($i) {
+    case 0:
+        echo 'i equals 0';
+        break;
+    case 1:
+        echo 'i equals 1';
+        break;
+    case 2:
+        echo 'i equals 2';
+        break;
+    default:
+        echo 'i is not equal to 0, 1 or 2';
+}
+
+switch ($i):
+    case 0:
+        echo 'i equals 0';
+        break;
+    case 1:
+        echo 'i equals 1';
+        break;
+    case 2:
+        echo 'i equals 2';
+        break;
+    default:
+        echo 'i is not equal to 0, 1 or 2';
+endswitch;
+
+switch ($i) {
+    case 0:
+        echo 'i equals 0';
+        break;
+    case 1:
+        echo 'i equals 1';
+        break;
+    case 2:
+        echo 'i equals 2';
+        break;
+    default:
+        echo 'i is not equal to 0, 1 or 2';
+    // Heeeheee
+}
+
+match ($i) {
+    0 => 'i equals 0',
+    1 => 'i equals 1',
+    2 => 'i equals 2',
+    default => 'i is not equal to 0, 1 or 2',
+    // Haaahaaaa
+};
+
+switch ($i):
+    case 0:
+        echo 'i equals 0';
+        break;
+    case 1:
+        echo 'i equals 1';
+        break;
+    case 2:
+        echo 'i equals 2';
+        break;
+    default:
+        echo 'i is not equal to 0, 1 or 2';
+    // Haaahaaaa
+endswitch;
+
+// This is a comment
+
+/**
+ * Dangling ..
+ */
