@@ -4,15 +4,11 @@ use fennec_span::HasSpan;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
-use crate::format::delimited;
-use crate::format::delimited::Delimiter;
 use crate::format::misc;
 use crate::format::misc::print_colon_delimited_body;
 use crate::format::misc::print_token_with_indented_leading_comments;
-use crate::format::sequence::TokenSeparatedSequenceFormatter;
 use crate::format::statement::print_statement_sequence;
 use crate::format::Format;
-use crate::format::IfBreak;
 use crate::settings::*;
 use crate::wrap;
 use crate::Formatter;
@@ -168,46 +164,50 @@ impl<'a> Format<'a> for DoWhile {
 impl<'a> Format<'a> for For {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, For, {
-            Document::Group(Group::new(vec![
-                self.r#for.format(f),
-                Document::space(),
-                {
-                    let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-                    let formatter = |f: &mut Formatter<'a>| {
-                        let initializations = TokenSeparatedSequenceFormatter::new(",")
-                            .with_trailing_separator(false)
-                            .format(f, &self.initializations);
-                        let initializations_semicolon = Document::String(";");
+            let mut contents = vec![self.r#for.format(f), Document::String(" (")];
 
-                        let conditions = TokenSeparatedSequenceFormatter::new(",")
-                            .with_trailing_separator(false)
-                            .format(f, &self.conditions);
-                        let conditions_semicolon = Document::String(";");
+            let format_expressions = |f: &mut Formatter<'a>, expressions: &'a [Expression]| {
+                let Some(first) = expressions.first() else {
+                    return Document::empty();
+                };
 
-                        let increments = TokenSeparatedSequenceFormatter::new(",")
-                            .with_trailing_separator(false)
-                            .format(f, &self.increments);
+                let first = first.format(f);
+                let rest = expressions[1..].iter().map(|expression| expression.format(f)).collect::<Vec<_>>();
 
-                        let is_empty =
-                            self.initializations.is_empty() && self.conditions.is_empty() && self.increments.is_empty();
+                if rest.is_empty() {
+                    first
+                } else {
+                    let mut contents = vec![first, Document::String(",")];
+                    for (i, expression) in rest.into_iter().enumerate() {
+                        if i != 0 {
+                            contents.push(Document::String(","));
+                        }
 
-                        let document = Document::Group(Group::new(vec![
-                            initializations,
-                            initializations_semicolon,
-                            Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), Document::space())),
-                            conditions,
-                            conditions_semicolon,
-                            Document::IfBreak(IfBreak::new(Document::Line(Line::hardline()), Document::space())),
-                            increments,
-                        ]));
+                        contents.push(Document::Indent(vec![Document::Line(Line::default()), expression]));
+                    }
 
-                        (document, is_empty)
-                    };
+                    Document::Group(Group::new(contents))
+                }
+            };
 
-                    delimited::format_delimited_group(f, delimiter, formatter, false)
-                },
-                self.body.format(f),
-            ]))
+            contents.push(Document::Group(Group::new(vec![
+                Document::Indent(vec![
+                    Document::Line(Line::softline()),
+                    format_expressions(f, self.initializations.as_slice()),
+                    Document::String(";"),
+                    if self.conditions.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
+                    format_expressions(f, self.conditions.as_slice()),
+                    Document::String(";"),
+                    if self.increments.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
+                    format_expressions(f, self.increments.as_slice()),
+                ]),
+                Document::Line(Line::softline()),
+            ])));
+
+            contents.push(Document::String(")"));
+            contents.push(self.body.format(f));
+
+            Document::Group(Group::new(contents))
         })
     }
 }

@@ -1,9 +1,7 @@
 use fennec_span::Span;
 
 use crate::document::Document;
-use crate::document::Group;
 use crate::document::IfBreak;
-use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::Formatter;
 
@@ -114,74 +112,5 @@ impl Delimiter {
         }
 
         (Document::Array(contents), has_leading_comments)
-    }
-}
-
-/// Formats a group of content wrapped by delimiters, taking into account comments,
-/// line breaks, and whether to preserve existing line breaks.
-///
-/// # Arguments
-///
-/// - `f`: A mutable reference to the `Formatter`.
-/// - `delimiter`: The `Delimiter` to use for wrapping the content.
-/// - `formatter`: A function that formats the inner content.
-/// - `preserve_breaks`: Whether to preserve existing line breaks.
-///
-/// # Returns
-///
-/// A `Document` representing the formatted delimited group.
-pub(super) fn format_delimited_group<'a, F: FnOnce(&mut Formatter<'a>) -> (Document<'a>, bool)>(
-    f: &mut Formatter<'a>,
-    delimiter: Delimiter,
-    formatter: F,
-    preserve_breaks: bool,
-) -> Document<'a> {
-    // Check if the group is already broken across multiple lines
-    let is_already_broken = if preserve_breaks { delimiter.is_already_broken(f) } else { false };
-
-    // Format the left delimiter with any leading or trailing comments
-    let (left_delimiter, has_left_trailing_comments) = delimiter.format_left(f);
-
-    // Format the inner content using the provided formatter function
-    let (inner_content, inner_content_is_empty) = formatter(f);
-
-    // Format the right delimiter with any leading or trailing comments
-    let (right_delimiter, has_right_leading_comments) = delimiter.format_right(f);
-
-    let delimiter_needs_space = delimiter.needs_space();
-
-    if has_left_trailing_comments || has_right_leading_comments || is_already_broken {
-        Document::Group(Group::new(vec![
-            left_delimiter,
-            Document::Indent(vec![Document::Line(Line::hardline()), inner_content]),
-            Document::Line(Line::hardline()),
-            right_delimiter,
-            Document::BreakParent,
-        ]))
-    } else {
-        // Construct the final document with proper grouping and indentation
-        Document::Group(Group::new(vec![
-            left_delimiter,
-            if inner_content_is_empty {
-                Document::empty()
-            } else {
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(
-                        Document::Line(Line::hardline()),
-                        if delimiter_needs_space { Document::space() } else { Document::empty() },
-                    )),
-                    inner_content,
-                ]))
-            },
-            if !inner_content_is_empty {
-                Document::IfBreak(IfBreak::new(
-                    Document::Line(Line::hardline()),
-                    if delimiter_needs_space { Document::space() } else { Document::empty() },
-                ))
-            } else {
-                Document::empty()
-            },
-            right_delimiter,
-        ]))
     }
 }
