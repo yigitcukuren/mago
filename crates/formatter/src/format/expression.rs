@@ -14,7 +14,6 @@ use crate::format::call_arguments::print_argument_list;
 use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
-use crate::format::delimited;
 use crate::format::delimited::Delimiter;
 use crate::format::misc::print_condition;
 use crate::format::misc::print_modifiers;
@@ -381,12 +380,11 @@ impl<'a> Format<'a> for IssetConstruct {
 impl<'a> Format<'a> for EmptyConstruct {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, EmptyConstruct, {
-            let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-            let formatter = |f: &mut Formatter<'a>| (Document::Group(Group::new(vec![self.value.format(f)])), false);
-
             Document::Group(Group::new(vec![
                 self.empty.format(f),
-                delimited::format_delimited_group(f, delimiter, formatter, false),
+                Document::String("("),
+                self.value.format(f),
+                Document::String(")"),
             ]))
         })
     }
@@ -395,12 +393,11 @@ impl<'a> Format<'a> for EmptyConstruct {
 impl<'a> Format<'a> for EvalConstruct {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, EvalConstruct, {
-            let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-            let formatter = |f: &mut Formatter<'a>| (Document::Group(Group::new(vec![self.value.format(f)])), false);
-
             Document::Group(Group::new(vec![
                 self.eval.format(f),
-                delimited::format_delimited_group(f, delimiter, formatter, false),
+                Document::String("("),
+                self.value.format(f),
+                Document::String(")"),
             ]))
         })
     }
@@ -411,10 +408,7 @@ impl<'a> Format<'a> for IncludeConstruct {
         wrap!(f, self, IncludeConstruct, {
             Document::Group(Group::new(vec![
                 self.include.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::default()), Document::space())),
-                    self.value.format(f),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default()), self.value.format(f)]),
             ]))
         })
     }
@@ -425,10 +419,7 @@ impl<'a> Format<'a> for IncludeOnceConstruct {
         wrap!(f, self, IncludeOnceConstruct, {
             Document::Group(Group::new(vec![
                 self.include_once.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::default()), Document::space())),
-                    self.value.format(f),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default()), self.value.format(f)]),
             ]))
         })
     }
@@ -439,10 +430,7 @@ impl<'a> Format<'a> for RequireConstruct {
         wrap!(f, self, RequireConstruct, {
             Document::Group(Group::new(vec![
                 self.require.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::default()), Document::space())),
-                    self.value.format(f),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default()), self.value.format(f)]),
             ]))
         })
     }
@@ -453,10 +441,7 @@ impl<'a> Format<'a> for RequireOnceConstruct {
         wrap!(f, self, RequireOnceConstruct, {
             Document::Group(Group::new(vec![
                 self.require_once.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::default()), Document::space())),
-                    self.value.format(f),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default()), self.value.format(f)]),
             ]))
         })
     }
@@ -467,10 +452,7 @@ impl<'a> Format<'a> for PrintConstruct {
         wrap!(f, self, PrintConstruct, {
             Document::Group(Group::new(vec![
                 self.print.format(f),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
-                    Document::IfBreak(IfBreak::new(Document::Line(Line::default()), Document::space())),
-                    self.value.format(f),
-                ])),
+                Document::Indent(vec![Document::Line(Line::default()), self.value.format(f)]),
             ]))
         })
     }
@@ -579,21 +561,35 @@ impl<'a> Format<'a> for ClosureUseClauseVariable {
 impl<'a> Format<'a> for ClosureUseClause {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ClosureUseClause, {
-            let delimiter = Delimiter::Parentheses(self.left_parenthesis, self.right_parenthesis);
-            let formatter =
-                TokenSeparatedSequenceFormatter::new(",").with_trailing_separator(f.settings.trailing_comma);
+            let mut contents = vec![self.r#use.format(f)];
+            if f.settings.space_after_closure_use {
+                contents.push(Document::space());
+            }
 
-            Document::Group(Group::new(vec![
-                self.r#use.format(f),
-                {
-                    if f.settings.space_after_closure_use {
-                        Document::space()
-                    } else {
-                        Document::empty()
-                    }
-                },
-                formatter.format_with_delimiter(f, &self.variables, delimiter, true),
-            ]))
+            contents.push(Document::String("("));
+
+            let mut variables = vec![];
+            for variable in self.variables.iter() {
+                variables.push(variable.format(f));
+            }
+
+            let mut inner_conent = Document::join(variables, Separator::CommaLine);
+            inner_conent.insert(0, Document::Line(Line::softline()));
+            if f.settings.trailing_comma {
+                inner_conent.push(Document::IfBreak(IfBreak::then(Document::String(","))));
+            }
+
+            contents.push(Document::Indent(inner_conent));
+            if let Some(comments) = f.print_dangling_comments(self.left_parenthesis.join(self.right_parenthesis), true)
+            {
+                contents.push(comments);
+            } else {
+                contents.push(Document::Line(Line::softline()));
+            }
+
+            contents.push(Document::String(")"));
+
+            Document::Group(Group::new(contents))
         })
     }
 }

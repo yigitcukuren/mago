@@ -107,7 +107,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
 
             return Document::Array(vec![
                 Document::BreakParent,
-                Document::Group(Group::new_conditional_group(
+                Document::Group(Group::conditional(
                     vec![
                         Document::String("("),
                         Document::Group(Group::new(vec![first_doc]).with_break(true)),
@@ -145,7 +145,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
         if will_break(&mut last_doc) {
             return Document::Array(vec![
                 Document::BreakParent,
-                Document::Group(Group::new_conditional_group(
+                Document::Group(Group::conditional(
                     vec![
                         Document::String("("),
                         Document::Array(printed_arguments),
@@ -157,7 +157,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
             ]);
         }
 
-        return Document::Group(Group::new_conditional_group(
+        return Document::Group(Group::conditional(
             vec![Document::String("("), Document::Array(printed_arguments), last_doc, Document::String(")")],
             vec![
                 Document::Array(vec![

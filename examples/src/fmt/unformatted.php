@@ -1,5 +1,55 @@
 <?php
 
+$a = function () use (
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    // This is a comment
+) {
+    return $aaaaaaaaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaaaaaaaa;
+};
+
+$a = function () use (
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+) {
+    return $aaaaaaaaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaaaaaaaa;
+};
+
+$a = function () use (
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+    $aaaaaaaaaaaaaaaaaaaaaaaa,
+) {
+    return $aaaaaaaaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaaaaaaaa;
+};
+
+$a = function () use ($aaaaaaaaaaaaaaaaaaaaaaaa, $aaaaaaaaaaaaaaaaaaaaaaaa, $aaaaaaaaaaaaaaaaaaaaaaaa) {
+    return $aaaaaaaaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaa + $aaaaaaaaaaaaaaaaaaaaaaaa;
+};
+
+require
+    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+require_once
+    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+include
+    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+include_once
+    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+require
+    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+require_once
+    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+include
+    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+include_once
+    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
 class Talker
 {
     use A, B {

@@ -83,7 +83,7 @@ impl<'a> Group<'a> {
         Self { contents, should_break: false, id: None, expanded_states: None }
     }
 
-    pub fn new_conditional_group(contents: Vec<Document<'a>>, expanded_states: Vec<Document<'a>>) -> Self {
+    pub fn conditional(contents: Vec<Document<'a>>, expanded_states: Vec<Document<'a>>) -> Self {
         Self { contents, should_break: false, id: None, expanded_states: Some(expanded_states) }
     }
 
