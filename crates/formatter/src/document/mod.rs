@@ -191,6 +191,7 @@ pub enum Separator {
     Softline,
     Hardline,
     CommaLine, // [",", line]
+    Space,
 }
 
 impl<'a> Document<'a> {
@@ -244,6 +245,7 @@ impl<'a> Document<'a> {
         for (i, document) in documents.into_iter().enumerate() {
             if i != 0 {
                 parts.push(match separator {
+                    Separator::Space => Document::String(" "),
                     Separator::Softline => Document::Line(Line::softline()),
                     Separator::Hardline => Document::Line(Line::hardline()),
                     Separator::CommaLine => {

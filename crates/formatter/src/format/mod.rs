@@ -591,8 +591,11 @@ impl<'a> Format<'a> for ClassLikeConstant {
             };
 
             let constant = {
-                let mut contents = vec![];
-                contents.extend(print_modifiers(f, &self.modifiers));
+                let mut contents = print_modifiers(f, &self.modifiers);
+                if !contents.is_empty() {
+                    contents.push(Document::space());
+                }
+
                 contents.push(self.r#const.format(f));
 
                 if let Some(h) = &self.hint {
@@ -700,34 +703,43 @@ impl<'a> Format<'a> for Property {
 impl<'a> Format<'a> for PlainProperty {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PlainProperty, {
-            let attributes = if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attributes, false) {
-                attributes
-            } else {
-                Document::empty()
-            };
-
+            let attributes = misc::print_attribute_list_sequence(f, &self.attributes, false);
             let property = {
                 let mut contents = print_modifiers(f, &self.modifiers);
                 if let Some(var) = &self.var {
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
+
                     contents.push(var.format(f));
-                    contents.push(Document::space());
                 }
 
                 if let Some(h) = &self.hint {
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
+
                     contents.push(h.format(f));
                 }
 
                 if self.items.len() == 1 {
-                    contents.push(Document::space());
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
+
                     contents.push(self.items.as_slice()[0].format(f));
                 } else if !self.items.is_empty() {
-                    contents.push(Document::Indent(vec![Document::Line(Line::default())]));
+                    let mut items =
+                        Document::join(self.items.iter().map(|v| v.format(f)).collect(), Separator::CommaLine);
 
-                    contents.push(Document::Indent(Document::join(
-                        self.items.iter().map(|v| v.format(f)).collect(),
-                        Separator::CommaLine,
-                    )));
-                    contents.push(Document::Line(Line::softline()));
+                    if !contents.is_empty() {
+                        items.insert(0, Document::Line(Line::default()));
+                        contents.push(Document::Indent(items));
+                        contents.push(Document::Line(Line::softline()));
+                    } else {
+                        // we don't have any modifiers, so we don't need to indent, or add a line
+                        contents.extend(items);
+                    }
                 }
 
                 contents.push(self.terminator.format(f));
@@ -735,7 +747,11 @@ impl<'a> Format<'a> for PlainProperty {
                 Document::Group(Group::new(contents))
             };
 
-            Document::Group(Group::new(vec![attributes, property]))
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, property]))
+            } else {
+                property
+            }
         })
     }
 }
@@ -743,28 +759,41 @@ impl<'a> Format<'a> for PlainProperty {
 impl<'a> Format<'a> for HookedProperty {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, HookedProperty, {
-            let mut parts = vec![];
-            for attribute_list in self.attributes.iter() {
-                parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
+            let attributes = misc::print_attribute_list_sequence(f, &self.attributes, false);
+
+            let property = {
+                let mut contents = print_modifiers(f, &self.modifiers);
+                if let Some(var) = &self.var {
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
+
+                    contents.push(var.format(f));
+                }
+
+                if let Some(h) = &self.hint {
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
+
+                    contents.push(h.format(f));
+                }
+
+                if !contents.is_empty() {
+                    contents.push(Document::space());
+                }
+                contents.push(self.item.format(f));
+                contents.push(Document::space());
+                contents.push(self.hooks.format(f));
+
+                Document::Group(Group::new(contents))
+            };
+
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, property]))
+            } else {
+                property
             }
-
-            if let Some(var) = &self.var {
-                parts.push(var.format(f));
-                parts.push(Document::space());
-            }
-
-            parts.extend(print_modifiers(f, &self.modifiers));
-            if let Some(h) = &self.hint {
-                parts.push(h.format(f));
-                parts.push(Document::space());
-            }
-
-            parts.push(self.item.format(f));
-            parts.push(Document::space());
-            parts.push(self.hooks.format(f));
-
-            Document::Group(Group::new(parts))
         })
     }
 }
@@ -806,8 +835,11 @@ impl<'a> Format<'a> for Method {
                 attributes.push(Document::Line(Line::hardline()));
             }
 
-            let mut signature = vec![];
-            signature.extend(print_modifiers(f, &self.modifiers));
+            let mut signature = print_modifiers(f, &self.modifiers);
+            if !signature.is_empty() {
+                signature.push(Document::space());
+            }
+
             signature.push(self.function.format(f));
             signature.push(Document::space());
             if self.ampersand.is_some() {
@@ -996,6 +1028,10 @@ impl<'a> Format<'a> for Class {
             }
 
             let mut signature = print_modifiers(f, &self.modifiers);
+            if !signature.is_empty() {
+                signature.push(Document::space());
+            }
+
             signature.push(self.class.format(f));
             signature.push(Document::space());
             signature.push(self.name.format(f));
@@ -1478,25 +1514,32 @@ impl<'a> Format<'a> for PropertyHookBody {
 impl<'a> Format<'a> for PropertyHook {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, PropertyHook, {
-            let mut parts = vec![];
-            for attribute_list in self.attributes.iter() {
-                parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
+            let attributes = misc::print_attribute_list_sequence(f, &self.attributes, false);
+            let hook = {
+                let mut contents = print_modifiers(f, &self.modifiers);
+                if !contents.is_empty() {
+                    contents.push(Document::space());
+                }
+
+                if self.ampersand.is_some() {
+                    contents.push(Document::String("&"));
+                }
+
+                contents.push(self.name.format(f));
+                if let Some(parameters) = &self.parameters {
+                    contents.push(parameters.format(f));
+                }
+
+                contents.push(self.body.format(f));
+
+                Document::Group(Group::new(contents))
+            };
+
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, hook]))
+            } else {
+                hook
             }
-
-            parts.extend(print_modifiers(f, &self.modifiers));
-            if self.ampersand.is_some() {
-                parts.push(Document::String("&"));
-            }
-
-            parts.push(self.name.format(f));
-            if let Some(parameters) = &self.parameters {
-                parts.push(parameters.format(f));
-            }
-
-            parts.push(self.body.format(f));
-
-            Document::Group(Group::new(parts))
         })
     }
 }
@@ -1528,37 +1571,48 @@ impl<'a> Format<'a> for FunctionLikeParameterDefaultValue {
 impl<'a> Format<'a> for FunctionLikeParameter {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, FunctionLikeParameter, {
-            let mut parts = vec![];
-            if let Some(attributes) = print_attribute_list_sequence(f, &self.attributes, true) {
-                parts.push(attributes);
-            }
+            let attributes = print_attribute_list_sequence(f, &self.attributes, true);
+            let parameter = {
+                let mut contents = print_modifiers(f, &self.modifiers);
+                if let Some(hint) = &self.hint {
+                    if !contents.is_empty() {
+                        contents.push(Document::space());
+                    }
 
-            parts.extend(print_modifiers(f, &self.modifiers));
-            if let Some(hint) = &self.hint {
-                parts.push(hint.format(f));
-                parts.push(Document::space());
-            }
+                    contents.push(hint.format(f));
+                }
 
-            if self.ampersand.is_some() {
-                parts.push(Document::String("&"));
-            }
+                if !contents.is_empty() {
+                    contents.push(Document::space());
+                }
 
-            if self.ellipsis.is_some() {
-                parts.push(Document::String("..."));
-            }
+                if self.ampersand.is_some() {
+                    contents.push(Document::String("&"));
+                }
 
-            parts.push(self.variable.format(f));
-            if let Some(default_value) = &self.default_value {
-                parts.push(Document::space());
-                parts.push(default_value.format(f));
-            }
+                if self.ellipsis.is_some() {
+                    contents.push(Document::String("..."));
+                }
 
-            if let Some(hooks) = &self.hooks {
-                parts.push(Document::space());
-                parts.push(hooks.format(f));
-            }
+                contents.push(self.variable.format(f));
+                if let Some(default_value) = &self.default_value {
+                    contents.push(Document::space());
+                    contents.push(default_value.format(f));
+                }
 
-            Document::Group(Group::new(parts))
+                if let Some(hooks) = &self.hooks {
+                    contents.push(Document::space());
+                    contents.push(hooks.format(f));
+                }
+
+                Document::Group(Group::new(contents))
+            };
+
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, parameter]))
+            } else {
+                parameter
+            }
         })
     }
 }

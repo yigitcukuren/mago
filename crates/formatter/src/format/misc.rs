@@ -4,13 +4,13 @@ use fennec_span::Span;
 
 use crate::comment::CommentFlags;
 use crate::document::Document;
+use crate::document::Group;
 use crate::document::Line;
+use crate::document::Separator;
 use crate::format::statement::print_statement_sequence;
 use crate::format::Format;
 use crate::settings::BraceStyle;
 use crate::Formatter;
-
-use super::Group;
 
 pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> bool {
     text[start..end].contains('\n')
@@ -125,47 +125,39 @@ pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence
 
     if let Some(modifier) = modifiers.get_final() {
         printed_modifiers.push(modifier.format(f));
-        printed_modifiers.push(Document::space());
     }
 
     if let Some(modifier) = modifiers.get_abstract() {
         printed_modifiers.push(modifier.format(f));
-        printed_modifiers.push(Document::space());
     }
 
     if f.settings.static_before_visibility {
         if let Some(modifier) = modifiers.get_static() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
 
         if let Some(modifier) = modifiers.get_readonly() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
 
         if let Some(modifier) = modifiers.get_first_visibility() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
     } else {
         if let Some(modifier) = modifiers.get_first_visibility() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
 
         if let Some(modifier) = modifiers.get_static() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
 
         if let Some(modifier) = modifiers.get_readonly() {
             printed_modifiers.push(modifier.format(f));
-            printed_modifiers.push(Document::space());
         }
     }
 
-    printed_modifiers
+    Document::join(printed_modifiers, Separator::Space)
 }
 
 pub(super) fn print_attribute_list_sequence<'a>(

@@ -1140,12 +1140,12 @@ impl<'a> Format<'a> for AnonymousClass {
                 attributes.push(Document::Line(Line::hardline()));
             }
 
-            let mut signature = vec![];
-            signature.push(self.new.format(f));
-            signature.push(Document::space());
-            signature.extend(print_modifiers(f, &self.modifiers));
-            signature.push(self.class.format(f));
+            let mut signature = print_modifiers(f, &self.modifiers);
+            if !signature.is_empty() {
+                signature.push(Document::space());
+            }
 
+            signature.push(self.class.format(f));
             if let Some(arguments) = &self.arguments {
                 signature.push(arguments.format(f));
             }
