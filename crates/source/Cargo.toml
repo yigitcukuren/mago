@@ -9,7 +9,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-interner = { path = "../interner" }
+mago-interner = { workspace = true }
 codespan-reporting = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

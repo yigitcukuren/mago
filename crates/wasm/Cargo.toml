@@ -12,17 +12,17 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+mago-ast = { workspace = true }
+mago-names = { workspace = true }
+mago-interner = { workspace = true }
+mago-reporting = { workspace = true }
+mago-semantics = { workspace = true }
+mago-symbol-table = { workspace = true }
+mago-source = { workspace = true }
+mago-parser = { workspace = true }
+mago-formatter = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
 getrandom = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
-mago-ast = { path = "../ast" }
-mago-names = { path = "../names" }
-mago-interner = { path = "../interner" }
-mago-reporting = { path = "../reporting" }
-mago-semantics = { path = "../semantics" }
-mago-symbol-table = { path = "../symbol-table" }
-mago-source = { path = "../source" }
-mago-parser = { path = "../parser" }
-mago-formatter = { path = "../formatter" }

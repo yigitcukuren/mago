@@ -9,10 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-interner = { path = "../interner" }
-mago-span = { path = "../span" }
-mago-source = { path = "../source" }
-mago-trinary = { path = "../trinary" }
+mago-interner = { workspace = true }
+mago-span = { workspace = true }
+mago-source = { workspace = true }
+mago-trinary = { workspace = true }
 ahash = { workspace = true }
 serde = { workspace = true }
 ordered-float = { workspace = true }

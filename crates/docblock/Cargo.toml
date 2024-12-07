@@ -9,8 +9,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-ast = { path = "../ast" }
-mago-span = { path = "../span" }
-mago-interner = { path = "../interner" }
+mago-ast = { workspace = true }
+mago-span = { workspace = true }
+mago-interner = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }

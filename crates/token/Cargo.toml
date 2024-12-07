@@ -9,7 +9,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-span = { path = "../span" }
-mago-interner = { path = "../interner" }
+mago-span = { workspace = true }
+mago-interner = { workspace = true }
 serde = { workspace = true }
 strum = { workspace = true }

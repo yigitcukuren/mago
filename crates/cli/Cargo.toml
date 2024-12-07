@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-ast = { path = "../ast" }
-mago-reporting = { path = "../reporting" }
-mago-interner = { path = "../interner" }
-mago-source = { path = "../source" }
-mago-fixer = { path = "../fixer" }
-mago-service = { path = "../service" }
-mago-feedback = { path = "../feedback" }
+mago-ast = { workspace = true }
+mago-reporting = { workspace = true }
+mago-interner = { workspace = true }
+mago-source = { workspace = true }
+mago-fixer = { workspace = true }
+mago-service = { workspace = true }
+mago-feedback = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true , features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }

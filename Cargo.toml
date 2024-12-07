@@ -20,6 +20,34 @@ declare_interior_mutable_const = { level = "allow" }
 large_enum_variant = { level = "allow" }
 
 [workspace.dependencies]
+mago-ast = { path = "crates/ast", version = "0.0.0" }
+mago-ast-utils = { path = "crates/ast-utils", version = "0.0.0" }
+mago-casing = { path = "crates/casing", version = "0.0.0" }
+mago-cli = { path = "crates/cli", version = "0.0.0" }
+mago-composer = { path = "crates/composer", version = "0.0.0" }
+mago-docblock = { path = "crates/docblock", version = "0.0.0" }
+mago-feedback = { path = "crates/feedback", version = "0.0.0" }
+mago-fixer = { path = "crates/fixer", version = "0.0.0" }
+mago-formatter = { path = "crates/formatter", version = "0.0.0" }
+mago-interner = { path = "crates/interner", version = "0.0.0" }
+mago-lexer = { path = "crates/lexer", version = "0.0.0" }
+mago-linter = { path = "crates/linter", version = "0.0.0" }
+mago-names = { path = "crates/names", version = "0.0.0" }
+mago-parser = { path = "crates/parser", version = "0.0.0" }
+mago-reflection = { path = "crates/reflection", version = "0.0.0" }
+mago-reflector = { path = "crates/reflector", version = "0.0.0" }
+mago-reporting = { path = "crates/reporting", version = "0.0.0" }
+mago-semantics = { path = "crates/semantics", version = "0.0.0" }
+mago-service = { path = "crates/service", version = "0.0.0" }
+mago-source = { path = "crates/source", version = "0.0.0" }
+mago-span = { path = "crates/span", version = "0.0.0" }
+mago-symbol-table = { path = "crates/symbol-table", version = "0.0.0" }
+mago-token = { path = "crates/token", version = "0.0.0" }
+mago-traverser = { path = "crates/traverser", version = "0.0.0" }
+mago-trinary = { path = "crates/trinary", version = "0.0.0" }
+mago-typing = { path = "crates/typing", version = "0.0.0" }
+mago-walker = { path = "crates/walker", version = "0.0.0" }
+mago-wasm = { path = "crates/wasm", version = "0.0.0" }
 dashmap = { version = "6.1.0" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8.11" }
@@ -50,7 +78,6 @@ termtree = "0.5.1"
 bitflags = "2.6.0"
 wasm-bindgen = "0.2.97"
 serde-wasm-bindgen = "0.4"
-
 [dependencies]
 mago-cli = { path = "crates/cli" }
 

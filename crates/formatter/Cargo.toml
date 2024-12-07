@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+mago-ast = { workspace = true }
+mago-source = { workspace = true }
+mago-span = { workspace = true }
+mago-token = { workspace = true }
+mago-interner = { workspace = true }
 ahash = { workspace = true }
 strum = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 bitflags = { workspace = true }
-mago-ast = { path = "../ast" }
-mago-source = { path = "../source" }
-mago-span = { path = "../span" }
-mago-token = { path = "../token" }
-mago-interner = { path = "../interner" }

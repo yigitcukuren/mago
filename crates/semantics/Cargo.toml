@@ -9,15 +9,15 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-fixer = { path = "../fixer" }
-mago-reporting = { path = "../reporting" }
-mago-interner = { path = "../interner" }
-mago-parser = { path = "../parser" }
-mago-walker = { path = "../walker" }
-mago-span = { path = "../span" }
-mago-ast = { path = "../ast" }
-mago-ast-utils = { path = "../ast-utils" }
-mago-names = { path = "../names" }
-mago-source = { path = "../source" }
-mago-symbol-table = { path = "../symbol-table" }
+mago-fixer = { workspace = true }
+mago-reporting = { workspace = true }
+mago-interner = { workspace = true }
+mago-parser = { workspace = true }
+mago-walker = { workspace = true }
+mago-span = { workspace = true }
+mago-ast = { workspace = true }
+mago-ast-utils = { workspace = true }
+mago-names = { workspace = true }
+mago-source = { workspace = true }
+mago-symbol-table = { workspace = true }
 serde = { workspace = true }

@@ -9,14 +9,14 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-source = { path = "../source" }
-mago-span = { path = "../span" }
-mago-feedback = { path = "../feedback" }
-mago-reporting = { path = "../reporting" }
-mago-ast = { path = "../ast" }
-mago-token = { path = "../token" }
-mago-interner = { path = "../interner" }
-mago-lexer = { path = "../lexer" }
+mago-source = { workspace = true }
+mago-span = { workspace = true }
+mago-feedback = { workspace = true }
+mago-reporting = { workspace = true }
+mago-ast = { workspace = true }
+mago-token = { workspace = true }
+mago-interner = { workspace = true }
+mago-lexer = { workspace = true }
 ordered-float = { workspace = true, features = ["serde", "rand"] }
 either = { workspace = true }
 serde = { workspace = true }

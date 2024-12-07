@@ -9,4 +9,4 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-ast = { path = "../ast" }
+mago-ast = { workspace = true }

@@ -9,10 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-mago-source = { path = "../source" }
-mago-span = { path = "../span" }
-mago-token = { path = "../token" }
-mago-interner = { path = "../interner" }
+mago-source = { workspace = true }
+mago-span = { workspace = true }
+mago-token = { workspace = true }
+mago-interner = { workspace = true }
 serde = { workspace = true }
 strum = { workspace = true }
 ordered-float = { workspace = true, features = ["serde", "rand"] }

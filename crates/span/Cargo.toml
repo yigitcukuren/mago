@@ -9,5 +9,5 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-mago-source = { path = "../source" }
+mago-source = { workspace = true }
 serde = { workspace = true }
