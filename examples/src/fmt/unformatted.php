@@ -2,7 +2,7 @@
 
 class Foo
 {
-    public static  $bar = 1;
+    public static $bar = 1;
 }
 
 use Foo, Bar, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe, Baz, qwe;
@@ -444,9 +444,9 @@ class Talker
         // This is a comment
     }
 
-    private static  $instance;
-    private  $name;
-    private  $age;
+    private static $instance;
+    private $name;
+    private $age;
 
     public static function getInstance(): self
     {

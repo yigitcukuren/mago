@@ -140,11 +140,19 @@ pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence
             printed_modifiers.push(modifier.format(f));
         }
 
-        if let Some(modifier) = modifiers.get_first_visibility() {
+        if let Some(modifier) = modifiers.get_first_read_visibility() {
+            printed_modifiers.push(modifier.format(f));
+        }
+
+        if let Some(modifier) = modifiers.get_first_write_visibility() {
             printed_modifiers.push(modifier.format(f));
         }
     } else {
-        if let Some(modifier) = modifiers.get_first_visibility() {
+        if let Some(modifier) = modifiers.get_first_read_visibility() {
+            printed_modifiers.push(modifier.format(f));
+        }
+
+        if let Some(modifier) = modifiers.get_first_write_visibility() {
             printed_modifiers.push(modifier.format(f));
         }
 

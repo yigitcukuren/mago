@@ -1385,6 +1385,7 @@ impl<'a> Format<'a> for Modifier {
                 Modifier::Public(keyword) => keyword.format(f),
                 Modifier::Protected(keyword) => keyword.format(f),
                 Modifier::Private(keyword) => keyword.format(f),
+                Modifier::PrivateSet(keyword) => keyword.format(f),
             }
         })
     }

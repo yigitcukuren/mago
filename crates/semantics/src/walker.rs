@@ -171,7 +171,8 @@ impl SemanticsWalker {
         let mut last_final: Option<Span> = None;
         let mut last_static: Option<Span> = None;
         let mut last_readonly: Option<Span> = None;
-        let mut last_visibility: Option<Span> = None;
+        let mut last_read_visibility: Option<Span> = None;
+        let mut last_write_visibility: Option<Span> = None;
 
         for modifier in modifiers.iter() {
             match modifier {
@@ -221,6 +222,25 @@ impl SemanticsWalker {
                             .with_annotation(
                                 Annotation::secondary(last_static).with_message("previous `static` modifier"),
                             )
+                            .with_annotation(
+                                Annotation::secondary(first_variable.span())
+                                    .with_message(format!("property `{}`", first_variable_name)),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                            ),
+                        );
+                    }
+
+                    if let Some(last_visibility) = last_write_visibility {
+                        context.report(
+                            Issue::error(format!(
+                                "static property `{}::{}` cannot have a write visibility modifier",
+                                class_like_name, first_variable_name
+                            ))
+                            .with_annotation(Annotation::primary(last_visibility))
+                            .with_annotation(Annotation::primary(modifier.span()).with_message("`static` modifier"))
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
                                     .with_message(format!("property `{}`", first_variable_name)),
@@ -301,7 +321,7 @@ impl SemanticsWalker {
                     last_final = Some(modifier.span());
                 }
                 Modifier::Private(_) | Modifier::Protected(_) | Modifier::Public(_) => {
-                    if let Some(last_visibility) = last_visibility {
+                    if let Some(last_visibility) = last_read_visibility {
                         context.report(
                             Issue::error(format!(
                                 "property `{}::{}` has multiple visibility modifiers",
@@ -322,7 +342,50 @@ impl SemanticsWalker {
                         );
                     }
 
-                    last_visibility = Some(modifier.span());
+                    last_read_visibility = Some(modifier.span());
+                }
+                Modifier::PrivateSet(_) => {
+                    if let Some(last_visibility) = last_write_visibility {
+                        context.report(
+                            Issue::error(format!(
+                                "property `{}::{}` has multiple write visibility modifiers",
+                                class_like_name, first_variable_name
+                            ))
+                            .with_annotation(Annotation::primary(modifier.span()))
+                            .with_annotation(
+                                Annotation::primary(last_visibility).with_message("previous write visibility modifier"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(first_variable.span())
+                                    .with_message(format!("property `{}`", first_variable_name)),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                            ),
+                        );
+                    }
+
+                    if let Some(last_static) = last_static {
+                        context.report(
+                            Issue::error(format!(
+                                "static property `{}::{}` cannot have a write visibility modifier",
+                                class_like_name, first_variable_name
+                            ))
+                            .with_annotation(Annotation::primary(modifier.span()))
+                            .with_annotation(Annotation::primary(last_static).with_message("`static` modifier"))
+                            .with_annotation(
+                                Annotation::secondary(first_variable.span())
+                                    .with_message(format!("property `{}`", first_variable_name)),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                            ),
+                        );
+                    }
+
+                    last_write_visibility = Some(modifier.span());
                 }
             }
         }
@@ -975,6 +1038,24 @@ impl SemanticsWalker {
                         last_visibility = Some(modifier.span());
                     }
                 }
+                Modifier::PrivateSet(_) => {
+                    context.report(
+                        Issue::error("`private(set)` modifier is not allowed on methods".to_string())
+                            .with_annotation(
+                                Annotation::primary(modifier.span()).with_message("`private(set)` modifier"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(method.span()).with_message(format!(
+                                    "method `{}::{}` defined here",
+                                    class_like_name, method_name,
+                                )),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                            ),
+                    );
+                }
             }
         }
 
@@ -1510,7 +1591,7 @@ impl SemanticsWalker {
         let mut last_visibility: Option<Span> = None;
         for modifier in class_like_constant.modifiers.iter() {
             match modifier {
-                Modifier::Readonly(k) | Modifier::Static(k) | Modifier::Abstract(k) => {
+                Modifier::Readonly(k) | Modifier::Static(k) | Modifier::Abstract(k) | Modifier::PrivateSet(k) => {
                     context.report(
                         Issue::error(format!(
                             "`{}` modifier is not allowed on constants",
@@ -1986,15 +2067,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         for modifier in class.modifiers.iter() {
             match &modifier {
-                Modifier::Static(keyword) => {
+                Modifier::Static(_) | Modifier::PrivateSet(_) => {
                     context.report(
-                        Issue::error(format!("class `{}` cannot have `static` modifier", class_name))
-                            .with_annotation(Annotation::primary(keyword.span()))
-                            .with_annotation(
-                                Annotation::secondary(class.span())
-                                    .with_message(format!("class `{}` defined here", class_fqcn)),
-                            )
-                            .with_help("remove the `static` modifier"),
+                        Issue::error(format!(
+                            "class `{}` cannot have `{}` modifier",
+                            class_name,
+                            modifier.as_str(context.interner)
+                        ))
+                        .with_annotation(Annotation::primary(modifier.span()))
+                        .with_annotation(
+                            Annotation::secondary(class.span())
+                                .with_message(format!("class `{}` defined here", class_fqcn)),
+                        )
+                        .with_help("remove the `static` modifier"),
                     );
                 }
                 Modifier::Public(keyword) | Modifier::Protected(keyword) | Modifier::Private(keyword) => {
@@ -2226,12 +2311,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         }
                     }
 
-                    for visibility in visibilities.iter() {
-                        let visibility_name = context.interner.lookup(&visibility.keyword().value);
+                    for visibility in visibilities {
+                        let visibility_name = visibility.as_str(context.interner);
 
                         context.report(
                             Issue::error(format!(
-                                "interface method `{}::{}` cannot have `{}` visibility modifier",
+                                "interface method `{}::{}` cannot have `{}` modifier",
                                 interface_name, method_name, visibility_name
                             ))
                             .with_annotation(Annotation::primary(visibility.span()))
@@ -2306,22 +2391,44 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             let property_name = context.interner.lookup(&property_name_id);
 
                             let mut found_public = false;
-                            let mut visibilities = vec![];
+                            let mut non_public_read_visibilities = vec![];
+                            let mut write_visibilities = vec![];
                             for modifier in hooked_property.modifiers.iter() {
                                 if matches!(modifier, Modifier::Public(_)) {
                                     found_public = true;
                                 }
 
                                 if matches!(modifier, Modifier::Private(_) | Modifier::Protected(_)) {
-                                    visibilities.push(modifier);
+                                    non_public_read_visibilities.push(modifier);
+                                }
+
+                                if matches!(modifier, Modifier::PrivateSet(_)) {
+                                    write_visibilities.push(modifier);
                                 }
                             }
 
-                            for visibility in visibilities.iter() {
-                                let visibility_name = context.interner.lookup(&visibility.keyword().value);
+                            for visibility in write_visibilities {
+                                let visibility_name = visibility.as_str(context.interner);
+
                                 context.report(
                                     Issue::error(format!(
-                                        "interface property `{}::{}` cannot have `{}` visibility modifier",
+                                        "interface virtual property `{}::{}` must not specify asymmetric visibility",
+                                        interface_name, property_name,
+                                    ))
+                                    .with_annotation(Annotation::primary(visibility.span()))
+                                    .with_annotation(
+                                        Annotation::secondary(interface.span())
+                                            .with_message(format!("`{}` defined here", interface_fqcn)),
+                                    )
+                                    .with_help(format!("remove the `{}` modifier", visibility_name)),
+                                );
+                            }
+
+                            for visibility in non_public_read_visibilities {
+                                let visibility_name = visibility.as_str(context.interner);
+                                context.report(
+                                    Issue::error(format!(
+                                        "interface virtual property `{}::{}` cannot have `{}` modifier",
                                         interface_name, property_name, visibility_name,
                                     ))
                                     .with_annotation(Annotation::primary(visibility.span()))
@@ -2413,15 +2520,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Constant(class_like_constant) => {
-                    let mut visibilities = vec![];
+                    let mut non_public_read_visibility = vec![];
                     for modifier in class_like_constant.modifiers.iter() {
                         if matches!(modifier, Modifier::Private(_) | Modifier::Protected(_)) {
-                            visibilities.push(modifier);
+                            non_public_read_visibility.push(modifier);
                         }
                     }
 
-                    for visibility in visibilities.iter() {
-                        let visibility_name = context.interner.lookup(&visibility.keyword().value);
+                    for visibility in non_public_read_visibility.iter() {
+                        let visibility_name = visibility.as_str(context.interner);
 
                         context.report(
                             Issue::error(format!(
@@ -2676,42 +2783,25 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         for modifier in anonymous_class.modifiers.iter() {
             match &modifier {
-                Modifier::Static(keyword) => {
-                    context.report(
-                        Issue::error(format!("class `{}` cannot have `static` modifier", ANONYMOUS_CLASS_NAME))
-                            .with_annotation(Annotation::primary(keyword.span()))
-                            .with_annotation(
-                                Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
-                            )
-                            .with_help("help: remove the `static` modifier"),
-                    );
-                }
-                Modifier::Abstract(keyword) => {
-                    context.report(
-                        Issue::error(format!("class `{}` cannot have `abstract` modifier", ANONYMOUS_CLASS_NAME))
-                            .with_annotation(Annotation::primary(keyword.span()))
-                            .with_annotation(
-                                Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
-                            )
-                            .with_help("help: remove the `abstract` modifier"),
-                    );
-                }
-                Modifier::Public(keyword) | Modifier::Protected(keyword) | Modifier::Private(keyword) => {
-                    let visibility_name = context.interner.lookup(&keyword.value);
+                Modifier::Static(_)
+                | Modifier::Abstract(_)
+                | Modifier::PrivateSet(_)
+                | Modifier::Public(_)
+                | Modifier::Protected(_)
+                | Modifier::Private(_) => {
+                    let modifier_name = modifier.as_str(context.interner);
 
                     context.report(
                         Issue::error(format!(
-                            "class `{}` cannot have `{}` visibility modifier",
-                            ANONYMOUS_CLASS_NAME, visibility_name
+                            "class `{}` cannot have `{}` modifier",
+                            ANONYMOUS_CLASS_NAME, modifier_name
                         ))
-                        .with_annotation(Annotation::primary(keyword.span()))
+                        .with_annotation(Annotation::primary(modifier.span()))
                         .with_annotation(
                             Annotation::secondary(anonymous_class.span())
                                 .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
                         )
-                        .with_help(format!("help: remove the `{}` modifier", visibility_name)),
+                        .with_help(format!("help: remove the `{}` modifier", modifier_name)),
                     );
                 }
                 Modifier::Final(keyword) => {
@@ -3160,7 +3250,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
 
             let mut last_readonly = None;
-            let mut last_visibility = None;
+            let mut last_read_visibility = None;
+            let mut last_write_visibility = None;
             for modifier in parameter.modifiers.iter() {
                 match &modifier {
                     Modifier::Static(keyword) | Modifier::Final(keyword) | Modifier::Abstract(keyword) => {
@@ -3193,7 +3284,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         }
                     }
                     Modifier::Public(_) | Modifier::Protected(_) | Modifier::Private(_) => {
-                        if let Some(s) = last_visibility {
+                        if let Some(s) = last_read_visibility {
                             context.report(
                                 Issue::error(format!("parameter `{}` cannot have multiple visibility modifiers", name))
                                     .with_annotation(Annotation::primary(modifier.span()))
@@ -3203,7 +3294,22 @@ impl Walker<Context<'_>> for SemanticsWalker {
                                     .with_help("remove the duplicate visibility modifier"),
                             );
                         } else {
-                            last_visibility = Some(modifier.span());
+                            last_read_visibility = Some(modifier.span());
+                        }
+                    }
+                    Modifier::PrivateSet(_) => {
+                        if let Some(s) = last_write_visibility {
+                            context.report(
+                                Issue::error(format!(
+                                    "parameter `{}` cannot have multiple write visibility modifiers",
+                                    name
+                                ))
+                                .with_annotation(Annotation::primary(modifier.span()))
+                                .with_annotation(Annotation::secondary(s).with_message("previous visibility modifier"))
+                                .with_help("remove the duplicate visibility modifier"),
+                            );
+                        } else {
+                            last_write_visibility = Some(modifier.span());
                         }
                     }
                 }

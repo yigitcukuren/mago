@@ -349,7 +349,7 @@ generate_ast_walker! {
     }
 
     Modifier as modifier => {
-        walker.walk_keyword(modifier.keyword(), context);
+        walker.walk_keyword(modifier.get_keyword(), context);
     }
 
     Extends as extends => {

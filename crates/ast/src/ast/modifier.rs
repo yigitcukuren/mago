@@ -1,3 +1,4 @@
+use fennec_interner::ThreadedInterner;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
@@ -25,24 +26,52 @@ pub enum Modifier {
     Public(Keyword),
     Protected(Keyword),
     Private(Keyword),
+    PrivateSet(Keyword),
 }
 
 impl Modifier {
-    pub fn keyword(&self) -> &Keyword {
-        match &self {
-            Modifier::Static(keyword) => keyword,
-            Modifier::Final(keyword) => keyword,
-            Modifier::Abstract(keyword) => keyword,
-            Modifier::Readonly(keyword) => keyword,
-            Modifier::Public(keyword) => keyword,
-            Modifier::Protected(keyword) => keyword,
-            Modifier::Private(keyword) => keyword,
+    pub fn get_keyword(&self) -> &Keyword {
+        match self {
+            Modifier::Static(k) => k,
+            Modifier::Final(k) => k,
+            Modifier::Abstract(k) => k,
+            Modifier::Readonly(k) => k,
+            Modifier::Public(k) => k,
+            Modifier::Protected(k) => k,
+            Modifier::Private(k) => k,
+            Modifier::PrivateSet(k) => k,
         }
     }
 
     /// Returns `true` if the modifier is a visibility modifier.
     pub fn is_visibility(&self) -> bool {
-        matches!(self, Modifier::Public { .. } | Modifier::Protected { .. } | Modifier::Private { .. })
+        matches!(
+            self,
+            Modifier::Public(..) | Modifier::Protected(..) | Modifier::Private(..) | Modifier::PrivateSet(..)
+        )
+    }
+
+    /// Returns `true` if the modifier is a read visibility modifier.
+    pub fn is_read_visibility(&self) -> bool {
+        matches!(self, Modifier::Public(..) | Modifier::Protected(..) | Modifier::Private(..))
+    }
+
+    /// Returns `true` if the modifier is a write visibility modifier.
+    pub fn is_write_visibility(&self) -> bool {
+        matches!(self, Modifier::PrivateSet(..))
+    }
+
+    pub fn as_str<'a>(&self, interner: &'a ThreadedInterner) -> &'a str {
+        match self {
+            Modifier::Static(k) => interner.lookup(&k.value),
+            Modifier::Final(k) => interner.lookup(&k.value),
+            Modifier::Abstract(k) => interner.lookup(&k.value),
+            Modifier::Readonly(k) => interner.lookup(&k.value),
+            Modifier::Public(k) => interner.lookup(&k.value),
+            Modifier::Protected(k) => interner.lookup(&k.value),
+            Modifier::Private(k) => interner.lookup(&k.value),
+            Modifier::PrivateSet(k) => interner.lookup(&k.value),
+        }
     }
 }
 
@@ -55,7 +84,8 @@ impl HasSpan for Modifier {
             | Modifier::Readonly(value)
             | Modifier::Public(value)
             | Modifier::Protected(value)
-            | Modifier::Private(value) => value.span(),
+            | Modifier::Private(value)
+            | Modifier::PrivateSet(value) => value.span(),
         }
     }
 }
@@ -102,11 +132,24 @@ impl Sequence<Modifier> {
     }
 
     pub fn get_first_visibility(&self) -> Option<&Modifier> {
+        self.iter().find(|modifier| {
+            matches!(
+                modifier,
+                Modifier::Public(..) | Modifier::Protected(..) | Modifier::Private(..) | Modifier::PrivateSet(..)
+            )
+        })
+    }
+
+    pub fn get_first_read_visibility(&self) -> Option<&Modifier> {
         self.iter()
             .find(|modifier| matches!(modifier, Modifier::Public(..) | Modifier::Protected(..) | Modifier::Private(..)))
     }
 
-    /// Returns `true` if the sequence contains a visibility modifier.
+    pub fn get_first_write_visibility(&self) -> Option<&Modifier> {
+        self.iter().find(|modifier| matches!(modifier, Modifier::PrivateSet(..)))
+    }
+
+    /// Returns `true` if the sequence contains a visibility modifier for reading or writing.
     pub fn contains_visibility(&self) -> bool {
         self.iter().any(Modifier::is_visibility)
     }
@@ -136,5 +179,13 @@ impl Sequence<Modifier> {
     /// Returns `true` if the sequence contains a private visibility modifier.
     pub fn contains_private(&self) -> bool {
         self.iter().any(|modifier| matches!(modifier, Modifier::Private(..)))
+    }
+
+    pub fn get_private_set(&self) -> Option<&Modifier> {
+        self.iter().find(|modifier| matches!(modifier, Modifier::PrivateSet(..)))
+    }
+
+    pub fn contains_private_set(&self) -> bool {
+        self.iter().any(|modifier| matches!(modifier, Modifier::PrivateSet(..)))
     }
 }

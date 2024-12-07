@@ -2,10 +2,12 @@
 
 declare(strict_types=10);
 
-const Example = ((((((((((2 + 3) * 4) - 5) / 6) ** 2) % 7) + 8) - 9) * 10) / 11);
+const Example = (((((((((2 + 3) * 4) - 5) / 6) ** 2) % 7) + 8) - 9) * 10) / 11;
 
-class Example {
-    public static function getInstance(): self {
+class Example
+{
+    public static function getInstance(): self
+    {
         return new self();
     }
 }
@@ -13,7 +15,8 @@ class Example {
 /**
  * This function has an unclosed inline tag {@see Class
  */
-Function Main(): Never {
+function Main(): never
+{
     global $var;
 
     $files = `ls -la`;
@@ -24,17 +27,25 @@ Function Main(): Never {
 
     biz:
 
-    If (((false))) {
-        eval('echo ' . '"Hello";') ?><?php
+    if (false) {
+        eval('echo ' . '"Hello";');
     }
 
     {
         xdebug_var_dump(Example());
 
         goto biz;
-    };;;;
+    }
 
-    for (;true;) {
+    ;
+
+    ;
+
+    ;
+
+    ;
+
+    for (; true;) {
         break;
     }
 

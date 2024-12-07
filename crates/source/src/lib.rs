@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use codespan_reporting::files::line_starts;
 use codespan_reporting::files::Error;
@@ -40,14 +41,14 @@ pub trait HasSource {
 }
 
 /// Internal structure to store source information before full loading.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct SourceEntry {
     /// The name of the source.
     name: String,
     /// The path to the source.
     path: Option<PathBuf>,
     /// The content of the source.
-    content: OnceCell<(StringIdentifier, usize, Vec<usize>)>,
+    content: Mutex<OnceCell<(StringIdentifier, usize, Vec<usize>)>>,
 }
 
 /// A manager for sources, which stores sources and provides methods to insert and retrieve them.
@@ -131,7 +132,7 @@ impl SourceManager {
             return source_id;
         }
 
-        self.sources.insert(source_id, SourceEntry { name, path: Some(path), content: OnceCell::new() });
+        self.sources.insert(source_id, SourceEntry { name, path: Some(path), content: Mutex::new(OnceCell::new()) });
 
         source_id
     }
@@ -157,8 +158,10 @@ impl SourceManager {
         let size = content.len();
         let content = self.interner.intern(content);
 
-        self.sources
-            .insert(source_id, SourceEntry { name, path: None, content: OnceCell::from((content, size, lines)) });
+        self.sources.insert(
+            source_id,
+            SourceEntry { name, path: None, content: Mutex::new(OnceCell::from((content, size, lines))) },
+        );
 
         source_id
     }
@@ -205,8 +208,9 @@ impl SourceManager {
             return Err(SourceError::UnavailableSource(source_id));
         };
 
-        let content = entry.value()
-            .content
+        let content_cell = entry.value().content.lock().expect("failed to aquire lock on entry content");
+
+        let content = content_cell
             .get_or_try_init(||  {
                 let path = entry
                     .path
@@ -255,13 +259,13 @@ impl SourceManager {
         let content = self.interner.intern(content);
 
         let (_, v) = entry.pair_mut();
-        if let Some((old_content, _, _)) = v.content.get() {
+        if let Some((old_content, _, _)) = v.content.lock().expect("failed to aquire lock on entry content").get() {
             if *old_content == content {
                 return Ok(());
             }
         }
 
-        v.content = OnceCell::from((content, size, lines));
+        v.content = Mutex::new(OnceCell::from((content, size, lines)));
 
         if let Some(path) = entry.value().path.as_ref() {
             std::fs::write(path, self.interner.lookup(&content)).map_err(SourceError::IOError)?;
@@ -286,8 +290,10 @@ impl SourceManager {
             .map(|entry| {
                 let entry = entry.value();
 
+                let content_cell = entry.content.lock().expect("failed to aquire lock on entry content");
+
                 let (content, size, lines) =
-                    entry.content.get().expect("content must be initialized when source entry is present in the map");
+                    content_cell.get().expect("content must be initialized when source entry is present in the map");
 
                 Source {
                     identifier: source_id,

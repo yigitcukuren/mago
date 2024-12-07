@@ -1607,6 +1607,7 @@ impl<'a> Node<'a> {
                 Modifier::Public(node) => Node::Keyword(node),
                 Modifier::Static(node) => Node::Keyword(node),
                 Modifier::Readonly(node) => Node::Keyword(node),
+                Modifier::PrivateSet(node) => Node::Keyword(node),
             }],
             Node::Namespace(node) => {
                 let mut children = vec![Node::Keyword(&node.r#namespace)];

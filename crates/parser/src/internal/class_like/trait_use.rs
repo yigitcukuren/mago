@@ -6,7 +6,7 @@ use fennec_token::T;
 use crate::error::ParseError;
 use crate::internal::identifier::parse_identifier;
 use crate::internal::identifier::parse_local_identifier;
-use crate::internal::modifier::parse_optional_visibility_modifier;
+use crate::internal::modifier::parse_optional_read_visibility_modifier;
 use crate::internal::terminator::parse_terminator;
 use crate::internal::token_stream::TokenStream;
 use crate::internal::utils;
@@ -72,7 +72,7 @@ pub fn parse_trait_use_adaptation(stream: &mut TokenStream<'_, '_>) -> Result<Tr
                 T!["as"] => TraitUseAdaptation::Alias(TraitUseAliasAdaptation {
                     method_reference: TraitUseMethodReference::Absolute(reference),
                     r#as: utils::expect_keyword(stream, T!["as"])?,
-                    visibility: parse_optional_visibility_modifier(stream)?,
+                    visibility: parse_optional_read_visibility_modifier(stream)?,
                     alias: match utils::maybe_peek(stream)?.map(|t| t.kind) {
                         Some(T![";" | "?>"]) => None,
                         _ => Some(parse_local_identifier(stream)?),
@@ -113,7 +113,7 @@ pub fn parse_trait_use_adaptation(stream: &mut TokenStream<'_, '_>) -> Result<Tr
             TraitUseAdaptation::Alias(TraitUseAliasAdaptation {
                 method_reference,
                 r#as: utils::expect_keyword(stream, T!["as"])?,
-                visibility: parse_optional_visibility_modifier(stream)?,
+                visibility: parse_optional_read_visibility_modifier(stream)?,
                 alias: match utils::maybe_peek(stream)?.map(|t| t.kind) {
                     Some(T![";" | "?>"]) => None,
                     _ => Some(parse_local_identifier(stream)?),

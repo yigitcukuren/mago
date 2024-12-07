@@ -220,6 +220,7 @@ pub enum TokenKind {
     AsteriskAsterisk,            // `**`
     AsteriskAsteriskEqual,       // `**=`
     Private,                     // `private`
+    PrivateSet,                  // `private(set)`
     Protected,                   // `protected`
     Public,                      // `public`
     QualifiedIdentifier,         // `Namespace\Class`
@@ -396,6 +397,7 @@ impl TokenKind {
                 | TokenKind::New
                 | TokenKind::Null
                 | TokenKind::Private
+                | TokenKind::PrivateSet
                 | TokenKind::Protected
                 | TokenKind::Public
                 | TokenKind::RequireOnce
@@ -486,12 +488,15 @@ impl TokenKind {
 
     #[inline(always)]
     pub fn is_visibility_modifier(&self) -> bool {
-        matches!(self, T!["public" | "protected" | "private"])
+        matches!(self, T!["public" | "protected" | "private" | "private(set)"])
     }
 
     #[inline(always)]
     pub fn is_modifier(&self) -> bool {
-        matches!(self, T!["public" | "protected" | "private" | "static" | "final" | "abstract" | "readonly"])
+        matches!(
+            self,
+            T!["public" | "protected" | "private" | "private(set)" | "static" | "final" | "abstract" | "readonly"]
+        )
     }
 
     #[inline(always)]
@@ -530,6 +535,7 @@ impl TokenKind {
                 | "final"
                 | "for"
                 | "private"
+                | "private(set)"
                 | "protected"
                 | "public"
                 | "include"
@@ -1142,6 +1148,9 @@ macro_rules! T {
     };
     ("**=") => {
         $crate::TokenKind::AsteriskAsteriskEqual
+    };
+    ("private(set)") => {
+        $crate::TokenKind::PrivateSet
     };
     ("private") => {
         $crate::TokenKind::Private

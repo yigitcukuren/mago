@@ -411,6 +411,14 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                     ended_with_slash = true;
                                     break;
                                 }
+                                // special case for `private(set)`
+                                [b'(', ..] if length == 7 => {
+                                    if self.input.is_at(b"private(set)", true) {
+                                        break 'identifier (TokenKind::PrivateSet, 7 + 5);
+                                    }
+
+                                    break;
+                                }
                                 _ => {
                                     break;
                                 }

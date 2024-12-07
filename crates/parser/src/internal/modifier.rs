@@ -15,7 +15,9 @@ pub fn parse_modifier_sequence(stream: &mut TokenStream<'_, '_>) -> Result<Seque
     Ok(Sequence::new(modifiers))
 }
 
-pub fn parse_optional_visibility_modifier(stream: &mut TokenStream<'_, '_>) -> Result<Option<Modifier>, ParseError> {
+pub fn parse_optional_read_visibility_modifier(
+    stream: &mut TokenStream<'_, '_>,
+) -> Result<Option<Modifier>, ParseError> {
     Ok(Some(match utils::maybe_peek(stream)?.map(|t| t.kind) {
         Some(T!["public"]) => Modifier::Public(utils::expect_any_keyword(stream)?),
         Some(T!["protected"]) => Modifier::Protected(utils::expect_any_keyword(stream)?),
@@ -33,6 +35,7 @@ pub fn parse_optional_modifier(stream: &mut TokenStream<'_, '_>) -> Result<Optio
         Some(T!["final"]) => Modifier::Final(utils::expect_any_keyword(stream)?),
         Some(T!["abstract"]) => Modifier::Abstract(utils::expect_any_keyword(stream)?),
         Some(T!["readonly"]) => Modifier::Readonly(utils::expect_any_keyword(stream)?),
+        Some(T!["private(set)"]) => Modifier::PrivateSet(utils::expect_any_keyword(stream)?),
         _ => return Ok(None),
     }))
 }
