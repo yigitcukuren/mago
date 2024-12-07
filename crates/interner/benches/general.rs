@@ -51,7 +51,7 @@ fn bench_current_thread_get(c: &mut Criterion) {
             // Existing string
             black_box(interner.get(&strings[i % size]));
             // Non-existing string
-            black_box(interner.get(&format!("nonexistent-{}", i)));
+            black_box(interner.get(format!("nonexistent-{}", i)));
             i += 1;
         });
     });
@@ -174,7 +174,7 @@ fn bench_threaded_interner_multi_thread_lookup(c: &mut Criterion) {
     let identifiers: Vec<_> = strings.iter().map(|s| interner.intern(s)).collect();
 
     group.throughput(Throughput::Elements((size * thread_count) as u64));
-    group.bench_function(&format!("Threads: {}", thread_count), |b| {
+    group.bench_function(format!("Threads: {}", thread_count), |b| {
         b.iter(|| {
             let mut handles = Vec::with_capacity(thread_count);
             for thread_id in 0..thread_count {

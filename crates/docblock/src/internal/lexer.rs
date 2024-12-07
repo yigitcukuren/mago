@@ -235,11 +235,8 @@ mod tests {
             Ok(tokens) => {
                 assert_eq!(tokens.len(), 3);
 
-                let expected_contents = vec![
-                    "This is a multi-line comment.",
-                    "It has multiple lines.",
-                    "Each line starts with an asterisk.",
-                ];
+                let expected_contents =
+                    ["This is a multi-line comment.", "It has multiple lines.", "Each line starts with an asterisk."];
 
                 for (i, line) in tokens.iter().enumerate() {
                     let Token::Line { content, span } = line else {
@@ -273,7 +270,7 @@ mod tests {
             Ok(tokens) => {
                 assert_eq!(tokens.len(), 6);
 
-                let expected_contents = vec![
+                let expected_contents = [
                     "This is a multi-line comment.",
                     "It has multiple lines.",
                     "Each line starts with an asterisk.",

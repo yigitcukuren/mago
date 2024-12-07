@@ -854,6 +854,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::reversed_empty_ranges)]
     fn test_operations_with_invalid_ranges() {
         // Operations with invalid ranges (start >= end)
         let content = "Hello World";

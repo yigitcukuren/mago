@@ -13,7 +13,7 @@ use fennec_ast::Node;
 /// # Lifetimes
 ///
 /// - `'ast`: The lifetime of the AST nodes that are visited.
-pub fn traverse<'ast, TContext>(node: Node<'ast>, visitor: &dyn NodeVisitor<TContext>, context: &mut TContext) {
+pub fn traverse<TContext>(node: Node<'_>, visitor: &dyn NodeVisitor<TContext>, context: &mut TContext) {
     visitor.enter(&node, context);
 
     for child in node.children() {
@@ -34,11 +34,7 @@ pub fn traverse<'ast, TContext>(node: Node<'ast>, visitor: &dyn NodeVisitor<TCon
 /// # Lifetimes
 ///
 /// - `'ast`: The lifetime of the AST nodes that are visited.
-pub fn traverse_mut<'ast, TContext>(
-    node: Node<'ast>,
-    visitor: &mut dyn MutNodeVisitor<TContext>,
-    context: &mut TContext,
-) {
+pub fn traverse_mut<TContext>(node: Node<'_>, visitor: &mut dyn MutNodeVisitor<TContext>, context: &mut TContext) {
     visitor.enter_mut(&node, context);
 
     for child in node.children() {
@@ -63,7 +59,7 @@ pub trait NodeVisitor<TContext>: Sync + Send {
     /// # Lifetimes
     ///
     /// - `'ast`: The lifetime of the AST nodes that are visited.
-    fn enter<'ast>(&self, node: &Node<'ast>, context: &mut TContext);
+    fn enter(&self, node: &Node<'_>, context: &mut TContext);
 
     /// Called when the visitor exits a node.
     ///
@@ -74,7 +70,7 @@ pub trait NodeVisitor<TContext>: Sync + Send {
     /// # Lifetimes
     ///
     /// - `'ast`: The lifetime of the AST nodes that are visited.
-    fn exit<'ast>(&self, node: &Node<'ast>, context: &mut TContext) {
+    fn exit(&self, node: &Node<'_>, context: &mut TContext) {
         // Do nothing by default.
     }
 }
@@ -94,7 +90,7 @@ pub trait MutNodeVisitor<TContext>: Sync + Send {
     /// # Lifetimes
     ///
     /// - `'ast`: The lifetime of the AST nodes that are visited.
-    fn enter_mut<'ast>(&mut self, node: &Node<'ast>, context: &mut TContext);
+    fn enter_mut(&mut self, node: &Node<'_>, context: &mut TContext);
 
     /// Called when the visitor exits a node.
     ///
@@ -105,18 +101,18 @@ pub trait MutNodeVisitor<TContext>: Sync + Send {
     /// # Lifetimes
     ///
     /// - `'ast`: The lifetime of the AST nodes that are visited.
-    fn exit_mut<'ast>(&mut self, node: &Node<'ast>, context: &mut TContext) {
+    fn exit_mut(&mut self, node: &Node<'_>, context: &mut TContext) {
         // Do nothing by default.
     }
 }
 
 /// Implement the `MutNodeVisitor` trait for any type that implements the `NodeVisitor` trait.
 impl<T> MutNodeVisitor<T> for dyn NodeVisitor<T> {
-    fn enter_mut<'ast>(&mut self, node: &Node<'ast>, context: &mut T) {
+    fn enter_mut(&mut self, node: &Node<'_>, context: &mut T) {
         self.enter(node, context);
     }
 
-    fn exit_mut<'ast>(&mut self, node: &Node<'ast>, context: &mut T) {
+    fn exit_mut(&mut self, node: &Node<'_>, context: &mut T) {
         self.exit(node, context);
     }
 }

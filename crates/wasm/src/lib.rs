@@ -227,10 +227,7 @@ pub fn fennec_get_insight(code: String, format_settings: Option<String>) -> Resu
 
 fn get_format_settings(settings: Option<String>) -> FormatSettings {
     if let Some(settings_json) = settings {
-        match serde_json::from_str::<FormatSettings>(&settings_json) {
-            Ok(parsed_settings) => parsed_settings,
-            Err(_) => FormatSettings::default(), // default settings if parsing fails
-        }
+        serde_json::from_str::<FormatSettings>(&settings_json).unwrap_or_default()
     } else {
         FormatSettings::default()
     }
