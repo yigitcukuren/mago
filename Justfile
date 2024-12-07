@@ -22,8 +22,8 @@ publish:
     cd crates/trinary && cargo publish
     cd crates/interner && cargo publish
     cd crates/source && cargo publish
-    cd crates/reflection && cargo publish
     cd crates/span && cargo publish
+    cd crates/reflection && cargo publish
     cd crates/token && cargo publish
     cd crates/ast && cargo publish
     cd crates/walker && cargo publish
