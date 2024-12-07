@@ -151,7 +151,7 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
     }
 
     pub fn has_trailing_token(&self) -> bool {
-        self.tokens.last().map_or(false, |token| token.span.start >= self.last_span().unwrap().end)
+        self.tokens.last().is_some_and(|token| token.span.start >= self.last_span().unwrap().end)
     }
 
     pub fn iter(&self) -> Iter<'_, T> {
