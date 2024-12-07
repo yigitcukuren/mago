@@ -73,7 +73,6 @@ criterion = "0.5.1"
 lasso = { version = "0.7.3", features = [
     "multi-threaded",
     "ahasher",
-    "serialize",
     "inline-more",
 ]}
 clap = { version = "4.5.20", features = ["cargo", "derive", "unicode", "wrap_help"] }
