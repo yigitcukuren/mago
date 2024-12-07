@@ -1,12 +1,8 @@
-#![feature(once_cell_try)]
-
 use std::borrow::Cow;
-use std::cell::OnceCell;
 use std::cmp::Ordering;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 use codespan_reporting::files::line_starts;
 use codespan_reporting::files::Error;
@@ -48,7 +44,7 @@ struct SourceEntry {
     /// The path to the source.
     path: Option<PathBuf>,
     /// The content of the source.
-    content: Mutex<OnceCell<(StringIdentifier, usize, Vec<usize>)>>,
+    content: Option<(StringIdentifier, usize, Vec<usize>)>,
 }
 
 /// A manager for sources, which stores sources and provides methods to insert and retrieve them.
@@ -132,7 +128,7 @@ impl SourceManager {
             return source_id;
         }
 
-        self.sources.insert(source_id, SourceEntry { name, path: Some(path), content: Mutex::new(OnceCell::new()) });
+        self.sources.insert(source_id, SourceEntry { name, path: Some(path), content: None });
 
         source_id
     }
@@ -158,10 +154,7 @@ impl SourceManager {
         let size = content.len();
         let content = self.interner.intern(content);
 
-        self.sources.insert(
-            source_id,
-            SourceEntry { name, path: None, content: Mutex::new(OnceCell::from((content, size, lines))) },
-        );
+        self.sources.insert(source_id, SourceEntry { name, path: None, content: Some((content, size, lines)) });
 
         source_id
     }
@@ -204,20 +197,21 @@ impl SourceManager {
     ///
     /// The source with the given identifier, or an error if the source does not exist, or could not be loaded.
     pub fn load(&self, source_id: SourceIdentifier) -> Result<Source, SourceError> {
-        let Some(entry) = self.sources.get(&source_id) else {
+        let Some(mut entry) = self.sources.get_mut(&source_id) else {
             return Err(SourceError::UnavailableSource(source_id));
         };
 
-        let content_cell = entry.value().content.lock().expect("failed to aquire lock on entry content");
-
-        let content = content_cell
-            .get_or_try_init(||  {
-                let path = entry
-                    .path
-                    .as_ref()
-                    .expect("source entry must contain either content or path");
-
-                std::fs::read(path)
+        match &entry.content {
+            Some((content, size, lines)) => Ok(Source {
+                identifier: source_id,
+                path: entry.path.clone(),
+                content: *content,
+                size: *size,
+                lines: lines.clone(),
+            }),
+            None => {
+                let path = entry.path.clone().expect("source entry must contain either content or path");
+                let content = std::fs::read(&path)
                     .map(|bytes| match String::from_utf8_lossy(&bytes) {
                         Cow::Borrowed(str) => str.to_string(),
                         Cow::Owned(string) => {
@@ -228,25 +222,20 @@ impl SourceManager {
 
                             string
                         }
-                    })
-                    .map(|content| {
-                        let lines = line_starts(&content).collect();
-                        let size = content.len();
-                        let content = self.interner.intern(content);
+                    })?;
 
-                        (content, size, lines)
-                    })
-            });
+                let (_, v) = entry.pair_mut();
 
-        match content {
-            Ok((content, size, lines)) => Ok(Source {
-                identifier: source_id,
-                path: entry.path.clone(),
-                content: *content,
-                size: *size,
-                lines: lines.clone(),
-            }),
-            Err(err) => Err(SourceError::IOError(err)),
+                let lines: Vec<_> = line_starts(&content).collect();
+                let size = content.len();
+                let content = self.interner.intern(content);
+
+                let source = Source { identifier: source_id, path: Some(path), content, size, lines: lines.clone() };
+
+                v.content = Some((content, size, lines));
+
+                Ok(source)
+            }
         }
     }
 
@@ -259,14 +248,13 @@ impl SourceManager {
         let content = self.interner.intern(content);
 
         let (_, v) = entry.pair_mut();
-        if let Some((old_content, _, _)) = v.content.lock().expect("failed to aquire lock on entry content").get() {
+        if let Some((old_content, _, _)) = v.content.as_mut() {
             if *old_content == content {
                 return Ok(());
             }
         }
 
-        v.content = Mutex::new(OnceCell::from((content, size, lines)));
-
+        v.content = Some((content, size, lines));
         if let Some(path) = entry.value().path.as_ref() {
             std::fs::write(path, self.interner.lookup(&content)).map_err(SourceError::IOError)?;
         }
@@ -289,11 +277,10 @@ impl SourceManager {
             .get(&source_id)
             .map(|entry| {
                 let entry = entry.value();
-
-                let content_cell = entry.content.lock().expect("failed to aquire lock on entry content");
-
-                let (content, size, lines) =
-                    content_cell.get().expect("content must be initialized when source entry is present in the map");
+                let (content, size, lines) = entry
+                    .content
+                    .as_ref()
+                    .expect("content must be initialized when source entry is present in the map");
 
                 Source {
                     identifier: source_id,
