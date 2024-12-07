@@ -45,7 +45,7 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
 
     contents.push(Document::String("}"));
 
-    return Document::Group(Group::new(contents));
+    Document::Group(Group::new(contents))
 }
 
 pub(super) fn print_block<'a>(

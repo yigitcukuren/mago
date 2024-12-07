@@ -102,7 +102,7 @@ impl SymbolWalker {
     }
 }
 
-impl<'a> MutWalker<Context<'a>> for SymbolWalker {
+impl MutWalker<Context<'_>> for SymbolWalker {
     fn walk_in_namespace(&mut self, namespace: &Namespace, context: &mut Context<'_>) {
         let name = match &namespace.name {
             Some(name) => context.interner.lookup(&name.value()).to_string(),

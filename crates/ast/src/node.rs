@@ -1992,7 +1992,7 @@ impl<'a> Node<'a> {
     }
 }
 
-impl<'a> HasSpan for Node<'a> {
+impl HasSpan for Node<'_> {
     fn span(&self) -> Span {
         match self {
             Self::Program(node) => node.span(),

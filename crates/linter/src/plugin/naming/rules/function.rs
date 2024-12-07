@@ -19,7 +19,7 @@ impl Rule for FunctionRule {
     }
 }
 
-impl<'a> Walker<LintContext<'a>> for FunctionRule {
+impl Walker<LintContext<'_>> for FunctionRule {
     fn walk_in_function(&self, function: &Function, context: &mut LintContext) {
         let name = context.lookup(&function.name.value);
         let fqfn = context.lookup_name(&function.name);

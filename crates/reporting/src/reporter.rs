@@ -120,7 +120,7 @@ impl std::fmt::Debug for Reporter {
 
 struct Gaurd<'a>(MutexGuard<'a, StandardStream>);
 
-impl<'a> WriteColor for Gaurd<'a> {
+impl WriteColor for Gaurd<'_> {
     fn set_color(&mut self, spec: &term::termcolor::ColorSpec) -> std::io::Result<()> {
         self.0.set_color(spec)
     }
@@ -134,7 +134,7 @@ impl<'a> WriteColor for Gaurd<'a> {
     }
 }
 
-impl<'a> std::io::Write for Gaurd<'a> {
+impl std::io::Write for Gaurd<'_> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.0.write(buf)
     }

@@ -45,7 +45,7 @@ pub struct LintContext<'a> {
     pub issues: &'a mut IssueCollection,
 }
 
-impl<'a> LintContext<'a> {
+impl LintContext<'_> {
     /// Determines the effective reporting level for a linter rule.
     pub fn level(&self) -> Level {
         self.rule.level

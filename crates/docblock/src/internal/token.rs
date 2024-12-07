@@ -6,7 +6,7 @@ pub enum Token<'a> {
     EmptyLine { span: Span },
 }
 
-impl<'a> Token<'a> {
+impl Token<'_> {
     pub fn span(&self) -> Span {
         match self {
             Token::Line { span, .. } => *span,

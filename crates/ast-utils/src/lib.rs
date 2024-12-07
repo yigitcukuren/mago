@@ -141,7 +141,7 @@ pub fn block_has_yield(block: &Block) -> bool {
 
 #[inline]
 pub fn statement_has_yield(statement: &Statement) -> bool {
-    return match statement {
+    match statement {
         Statement::Namespace(namespace) => {
             for statement in namespace.statements().iter() {
                 if statement_has_yield(statement) {
@@ -259,7 +259,7 @@ pub fn statement_has_yield(statement: &Statement) -> bool {
         },
         Statement::Expression(expression) => expression_has_yield(&expression.expression),
         _ => false,
-    };
+    }
 }
 
 #[inline]
@@ -446,7 +446,7 @@ pub fn block_has_throws(block: &Block) -> bool {
 
 #[inline]
 pub fn statement_has_throws(statement: &Statement) -> bool {
-    return match statement {
+    match statement {
         Statement::Namespace(namespace) => {
             for statement in namespace.statements().iter() {
                 if statement_has_throws(statement) {
@@ -564,7 +564,7 @@ pub fn statement_has_throws(statement: &Statement) -> bool {
         },
         Statement::Expression(expression) => expression_has_throws(&expression.expression),
         _ => false,
-    };
+    }
 }
 
 #[inline]

@@ -85,7 +85,7 @@ impl Names {
     ///
     /// Panics if the name is not found at the given position.
     pub fn get(&self, position: &impl HasPosition) -> &StringIdentifier {
-        return self.names.get(&position.position().offset).map(|(name, _)| name).expect("name not found at position");
+        self.names.get(&position.position().offset).map(|(name, _)| name).expect("name not found at position")
     }
 
     /// Returns whether the name at the given position was explicitly imported.
@@ -98,7 +98,7 @@ impl Names {
     ///
     /// `true` if the name was imported, `false` otherwise.
     pub fn is_imported(&self, position: &impl HasPosition) -> bool {
-        return self.names.get(&position.position().offset).map(|(_, imported)| *imported).unwrap_or(false);
+        self.names.get(&position.position().offset).map(|(_, imported)| *imported).unwrap_or(false)
     }
 
     /// Inserts a resolved name at the given position.
