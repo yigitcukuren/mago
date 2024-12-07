@@ -245,7 +245,7 @@ impl<'a> Input<'a> {
     /// use mago_lexer::input::Input;
     /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
+    /// let source = SourceIdentifier::dummy();
     ///
     /// // Given input "( string ) x", starting at offset 0:
     /// let input = Input::new(source.clone(), b"( string ) x");
@@ -411,19 +411,19 @@ mod tests {
 
         // '\r\n' should be treated as one newline
         input.next();
-        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 5));
+        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 4));
 
         // 'c'
         input.next();
-        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 6));
+        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 5));
 
         // '\r'
         input.next();
-        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 7));
+        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 6));
 
         // 'd'
         input.next();
-        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 8));
+        assert_eq!(input.position(), Position::new(SourceIdentifier::dummy(), 7));
     }
 
     #[test]

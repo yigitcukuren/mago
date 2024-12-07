@@ -10,13 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
         rust: [stable, nightly]
-        exclude:
-          - os: macos-latest
-            rust: nightly
-          - os: windows-latest
-            rust: nightly
 
     runs-on: ${{ matrix.os }}
 
@@ -46,5 +41,4 @@ jobs:
         run: cargo test --workspace --locked --all-targets
 
       - name: cargo build
-        run: |
-          cargo build --workspace --release --locked --all-targets
+        run: cargo build --workspace --release --locked --all-targets

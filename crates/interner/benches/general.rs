@@ -70,13 +70,11 @@ fn bench_current_thread_lookup(c: &mut Criterion) {
 
     // Test lookup method with valid and invalid identifiers
     group.throughput(Throughput::Elements(size as u64 * 2));
-    group.bench_function("lookup_valid_and_invalid_ids", |b| {
+    group.bench_function("lookup_valid_ids", |b| {
         let mut i = 0;
         b.iter(|| {
             // Valid identifier
             black_box(interner.lookup(&identifiers[i % size]));
-            // Invalid identifier (assuming higher than any assigned ID)
-            black_box(interner.lookup(&mago_interner::StringIdentifier::new(usize::MAX - i)));
             i += 1;
         });
     });

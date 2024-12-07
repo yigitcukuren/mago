@@ -114,7 +114,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
     ///
     /// let interner = ThreadedInterner::new();
     ///
-    /// let source = SourceIdentifier::empty();
+    /// let source = SourceIdentifier::dummy();
     /// let input = Input::new(source, b"<?php echo 'Hello, World!'; ?>");
     ///
     /// let mut lexer = Lexer::new(&interner, input);

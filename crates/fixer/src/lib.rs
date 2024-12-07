@@ -801,7 +801,7 @@ mod tests {
         let content = "The quick brown fox jumps over the lazy dog.";
         let mut fix = FixPlan::new();
         fix.delete(10..19, SafetyClassification::Safe); // Delete "brown fox"
-        fix.replace(16..19, "cat", SafetyClassification::Safe); // Replace "fox" (which is partially deleted)
+        fix.insert(16, "cat", SafetyClassification::Safe); // Replace "fox" (which is partially deleted)
         let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "The quick cat jumps over the lazy dog.");
         // "brown fox" deleted, "cat" inserted

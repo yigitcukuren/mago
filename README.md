@@ -51,7 +51,7 @@ _Note: This project was previously named “Fennec” before being rebranded due
 ## Installation
 
 ```bash
-cargo install --git https://github.com/carthage-software/mago
+cargo install mago
 ```
 
 ## Installation from source

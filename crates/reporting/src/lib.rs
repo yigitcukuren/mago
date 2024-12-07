@@ -84,14 +84,12 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_reporting::{Annotation, AnnotationKind};
     /// use mago_span::Span;
     /// use mago_span::Position;
-    /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
-    /// let start = Position::new(source, 0, 0, 0);
-    /// let end = Position::new(source, 0, 0, 5);
+    /// let start = Position::dummy(0);
+    /// let end = Position::dummy(5);
     /// let span = Span::new(start, end);
     /// let annotation = Annotation::new(AnnotationKind::Primary, span);
     /// ```
@@ -104,14 +102,12 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_reporting::{Annotation, AnnotationKind};
     /// use mago_span::Span;
     /// use mago_span::Position;
-    /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
-    /// let start = Position::new(source, 0, 0, 0);
-    /// let end = Position::new(source, 0, 0, 5);
+    /// let start = Position::dummy(0);
+    /// let end = Position::dummy(5);
     /// let span = Span::new(start, end);
     /// let annotation = Annotation::primary(span);
     /// ```
@@ -124,14 +120,12 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_reporting::{Annotation, AnnotationKind};
     /// use mago_span::Span;
     /// use mago_span::Position;
-    /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
-    /// let start = Position::new(source, 0, 0, 0);
-    /// let end = Position::new(source, 0, 0, 5);
+    /// let start = Position::dummy(0);
+    /// let end = Position::dummy(5);
     /// let span = Span::new(start, end);
     /// let annotation = Annotation::secondary(span);
     /// ```
@@ -144,14 +138,12 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_reporting::{Annotation, AnnotationKind};
     /// use mago_span::Span;
     /// use mago_span::Position;
-    /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
-    /// let start = Position::new(source, 0, 0, 0);
-    /// let end = Position::new(source, 0, 0, 5);
+    /// let start = Position::dummy(0);
+    /// let end = Position::dummy(5);
     /// let span = Span::new(start, end);
     /// let annotation = Annotation::primary(span).with_message("This is a primary annotation");
     /// ```
@@ -169,7 +161,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Issue, Level};
+    /// use mago_reporting::{Issue, Level};
     ///
     /// let issue = Issue::new(Level::Error, "This is an error");
     /// ```
@@ -191,7 +183,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::error("This is an error");
     /// ```
@@ -204,7 +196,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::warning("This is a warning");
     /// ```
@@ -217,7 +209,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::help("This is a help message");
     /// ```
@@ -230,7 +222,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::note("This is a note");
     /// ```
@@ -243,7 +235,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Issue, Level};
+    /// use mago_reporting::{Issue, Level};
     ///
     /// let issue = Issue::error("This is an error").with_code("E0001");
     /// ```
@@ -259,14 +251,12 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::{Issue, Annotation, AnnotationKind};
+    /// use mago_reporting::{Issue, Annotation, AnnotationKind};
     /// use mago_span::Span;
     /// use mago_span::Position;
-    /// use mago_source::SourceIdentifier;
     ///
-    /// let source = SourceIdentifier::empty();
-    /// let start = Position::new(source, 0, 0, 0);
-    /// let end = Position::new(source, 0, 0, 5);
+    /// let start = Position::dummy(0);
+    /// let end = Position::dummy(5);
     /// let span = Span::new(start, end);
     ///
     /// let issue = Issue::error("This is an error").with_annotation(Annotation::primary(span));
@@ -290,7 +280,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_note("This is a note");
     /// ```
@@ -308,7 +298,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_help("This is a help message");
     /// ```
@@ -324,7 +314,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use mago_reporting::issue::Issue;
+    /// use mago_reporting::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_link("https://example.com");
     /// ```

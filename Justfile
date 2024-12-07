@@ -18,32 +18,35 @@ fix:
     cargo fix --allow-dirty --allow-staged
 
 publish:
-    cd crates/casing && cargo publish
-    cd crates/trinary && cargo publish
-    cd crates/interner && cargo publish
-    cd crates/source && cargo publish
-    cd crates/span && cargo publish
-    cd crates/reflection && cargo publish
-    cd crates/token && cargo publish
-    cd crates/ast && cargo publish
-    cd crates/walker && cargo publish
-    cd crates/traverser && cargo publish
-    cd crates/ast-utils && cargo publish
-    cd crates/composer && cargo publish
-    cd crates/docblock && cargo publish
-    cd crates/feedback && cargo publish
-    cd crates/fixer && cargo publish
-    cd crates/reporting && cargo publish
-    cd crates/formatter && cargo publish
-    cd crates/lexer && cargo publish
-    cd crates/parser && cargo publish
-    cd crates/names && cargo publish
-    cd crates/symbol-table && cargo publish
-    cd crates/semantics && cargo publish
-    cd crates/reflector && cargo publish
-    cd crates/linter && cargo publish
-    cd crates/typing && cargo publish
-    cd crates/service && cargo publish
-    cd crates/wasm && cargo publish
-    cd crates/cli && cargo publish
-    cargo publish
+    # Sadly, we get rate-limited by crates.io, so we have to sleep between each publish.
+    # This is a workaround until we hopefully get a limit increase from crates.io.
+    # Note: the order of publishing is important, as some crates depend on others.
+    sleep 120 && cargo publish -p mago-casing --allow-dirty
+    sleep 120 && cargo publish -p mago-trinary --allow-dirty
+    sleep 120 && cargo publish -p mago-interner --allow-dirty
+    sleep 120 && cargo publish -p mago-source --allow-dirty
+    sleep 120 && cargo publish -p mago-span --allow-dirty
+    sleep 120 && cargo publish -p mago-reflection --allow-dirty
+    sleep 120 && cargo publish -p mago-token --allow-dirty
+    sleep 120 && cargo publish -p mago-ast --allow-dirty
+    sleep 120 && cargo publish -p mago-walker --allow-dirty
+    sleep 120 && cargo publish -p mago-traverser --allow-dirty
+    sleep 120 && cargo publish -p mago-ast-utils --allow-dirty
+    sleep 120 && cargo publish -p mago-composer --allow-dirty
+    sleep 120 && cargo publish -p mago-docblock --allow-dirty
+    sleep 120 && cargo publish -p mago-feedback --allow-dirty
+    sleep 120 && cargo publish -p mago-fixer --allow-dirty
+    sleep 120 && cargo publish -p mago-reporting --allow-dirty
+    sleep 120 && cargo publish -p mago-formatter --allow-dirty
+    sleep 120 && cargo publish -p mago-lexer --allow-dirty
+    sleep 120 && cargo publish -p mago-parser --allow-dirty
+    sleep 120 && cargo publish -p mago-names --allow-dirty
+    sleep 120 && cargo publish -p mago-symbol-table --allow-dirty
+    sleep 120 && cargo publish -p mago-semantics --allow-dirty
+    sleep 120 && cargo publish -p mago-typing --allow-dirty
+    sleep 120 && cargo publish -p mago-reflector --allow-dirty
+    sleep 120 && cargo publish -p mago-linter --allow-dirty
+    sleep 120 && cargo publish -p mago-service --allow-dirty
+    sleep 120 && cargo publish -p mago-wasm --allow-dirty
+    sleep 120 && cargo publish -p mago-cli --allow-dirty
+    sleep 120 && cargo publish

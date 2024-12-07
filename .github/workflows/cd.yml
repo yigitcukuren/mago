@@ -1,0 +1,351 @@
+name: Continuous Deployment
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+
+env:
+  CICD_INTERMEDIATES_DIR: "_cd-intermediates"
+
+jobs:
+  crate_metadata:
+    name: extract crate metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: extract crate information
+        id: crate_metadata
+        run: |
+          cargo metadata --no-deps --format-version 1 | jq -r '
+            .packages[0] |
+            [
+              "version=" + .version,
+              "maintainer=" + (.authors[0] // ""),
+              "homepage=" + (.homepage // ""),
+              "msrv=" + (.rust_version // "")
+            ] |
+            join("\n")
+          ' | tee -a $GITHUB_OUTPUT
+    outputs:
+      name: "mago"
+      bin-name: "mago"
+      version: ${{ steps.crate_metadata.outputs.version }}
+      maintainer: ${{ steps.crate_metadata.outputs.maintainer }}
+      homepage: ${{ steps.crate_metadata.outputs.homepage }}
+      msrv: ${{ steps.crate_metadata.outputs.msrv }}
+
+  ensure_cargo_fmt:
+    name: Ensure 'cargo fmt' has been run
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: actions/checkout@v4
+      - run: cargo fmt -- --check
+
+  min_version:
+    name: Minimum supported rust version
+    runs-on: ubuntu-20.04
+    needs: crate_metadata
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ needs.crate_metadata.outputs.msrv }}
+      - name: Run tests
+        run: cargo test --workspace --locked --all-targets
+
+  build:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    needs: crate_metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          # Windows
+          - { target: x86_64-pc-windows-msvc, os: windows-2019 }
+          # macOS
+          - { target: aarch64-apple-darwin, os: macos-15 }
+          - { target: x86_64-apple-darwin, os: macos-13 }
+          # Linux with cross
+          - {
+              target: aarch64-unknown-linux-gnu,
+              os: ubuntu-20.04,
+              use-cross: true,
+            }
+          - {
+              target: arm-unknown-linux-gnueabihf,
+              os: ubuntu-20.04,
+              use-cross: true,
+            }
+          - {
+              target: arm-unknown-linux-musleabihf,
+              os: ubuntu-20.04,
+              use-cross: true,
+            }
+          - {
+              target: x86_64-unknown-linux-gnu,
+              os: ubuntu-20.04,
+              use-cross: true,
+            }
+          - {
+              target: x86_64-unknown-linux-musl,
+              os: ubuntu-20.04,
+              use-cross: true,
+            }
+
+    env:
+      BUILD_CMD: cargo
+
+    steps:
+      - name: checkout source code
+        uses: actions/checkout@v4
+
+      - name: Determine tag version
+        id: version
+        shell: bash
+        run: |
+          CLEAN_TAG=${GITHUB_REF_NAME#v}
+          echo "CLEAN_TAG=$CLEAN_TAG" >> $GITHUB_OUTPUT
+
+      - name: install prerequisites
+        shell: bash
+        run: |
+          case ${{ matrix.job.target }} in
+            arm-unknown-linux-*) sudo apt-get -y update && sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
+            aarch64-unknown-linux-gnu) sudo apt-get -y update && sudo apt-get -y install gcc-aarch64-linux-gnu ;;
+          esac
+
+      - name: install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.job.target }}
+
+      - name: install cross
+        if: matrix.job.use-cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: overwrite build command env variable (for cross)
+        if: matrix.job.use-cross
+        shell: bash
+        run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
+
+      - name: show version information (Rust, cargo, GCC)
+        shell: bash
+        run: |
+          set -x
+          gcc --version || true
+          rustup -V
+          rustup toolchain list
+          rustup default
+          cargo -V
+          rustc -V
+
+      - name: build
+        shell: bash
+        run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+
+      - name: set binary name
+        id: bin
+        shell: bash
+        run: |
+          EXE_suffix=""
+          case ${{ matrix.job.target }} in
+            *-pc-windows-*) EXE_suffix=".exe" ;;
+          esac;
+
+          BIN_NAME="${{ needs.crate_metadata.outputs.bin-name }}${EXE_suffix}"
+          BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
+
+          echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
+          echo "BIN_NAME=${BIN_NAME}" >> $GITHUB_OUTPUT
+
+      - name: set testing options
+        id: test-options
+        shell: bash
+        run: |
+          unset CARGO_TEST_OPTIONS
+          case ${{ matrix.job.target }} in
+            arm-* | aarch64-*)
+              CARGO_TEST_OPTIONS="--bin ${{ steps.bin.outputs.BIN_NAME }}"
+              ;;
+          esac;
+          echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
+
+      - name: run tests
+        shell: bash
+        run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+
+      # Build the WASM artifacts only for x86_64-unknown-linux-gnu
+      - name: Install wasm-pack and build WASM
+        if: matrix.job.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          cargo install wasm-pack --version 0.13.1 --locked
+          cd crates/wasm
+          wasm-pack build --target web --no-typescript -d pkg --no-pack --release
+          cd ../..
+          WASM_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/wasm"
+          mkdir -p "${WASM_STAGING}"
+          cp crates/wasm/pkg/mago_wasm_bg.wasm crates/wasm/pkg/mago_wasm.js "${WASM_STAGING}/"
+
+      - name: create tarball (main binary)
+        id: package
+        shell: bash
+        run: |
+          CLEAN_TAG="${{ steps.version.outputs.CLEAN_TAG }}"
+          TARGET="${{ matrix.job.target }}"
+          PKG_SUFFIX=".tar.gz"
+          case "$TARGET" in
+            *-pc-windows-msvc) PKG_SUFFIX=".zip" ;;
+          esac
+
+          # Transform target naming:
+          # 1) remove "unknown-" substrings
+          # 2) replace "pc-windows-msvc" with "windows"
+          # 3) replace "x86_64" with "x86-64"
+          SHORT_TARGET=$(echo "$TARGET" | sed 's/unknown-//g; s/pc-windows-msvc/windows/; s/x86_64/x86-64/')
+
+          PKG_NAME="mago-${CLEAN_TAG}-${SHORT_TARGET}${PKG_SUFFIX}"
+          echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+
+          PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
+          ARCHIVE_DIR="${PKG_STAGING}/mago-${CLEAN_TAG}-${SHORT_TARGET}/"
+          mkdir -p "${ARCHIVE_DIR}"
+
+          # Binary
+          cp "${{ steps.bin.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
+
+          # Docs and licenses
+          cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "$ARCHIVE_DIR" || true
+
+          pushd "${PKG_STAGING}/" >/dev/null
+          case "$PKG_SUFFIX" in
+            .zip)
+              7z -y a "${PKG_NAME}" "mago-${CLEAN_TAG}-${SHORT_TARGET}/*"
+              ;;
+            .tar.gz)
+              tar czf "${PKG_NAME}" "mago-${CLEAN_TAG}-${SHORT_TARGET}"/*
+              ;;
+          esac
+          popd >/dev/null
+
+          echo "PKG_PATH=${PKG_STAGING}/${PKG_NAME}" >> $GITHUB_OUTPUT
+
+      - name: create WASM tarball
+        id: wasm_package
+        if: matrix.job.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          CLEAN_TAG="${{ steps.version.outputs.CLEAN_TAG }}"
+          # Since WASM is universal, just name it 'mago-{CLEAN_TAG}-wasm.tar.gz'
+          WASM_PKG_NAME="mago-${CLEAN_TAG}-wasm.tar.gz"
+          echo "WASM_PKG_NAME=${WASM_PKG_NAME}" >> $GITHUB_OUTPUT
+
+          WASM_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/wasm"
+          pushd "${WASM_STAGING}" >/dev/null
+          tar czf "${WASM_PKG_NAME}" mago_wasm_bg.wasm mago_wasm.js
+          popd >/dev/null
+
+          echo "WASM_PKG_PATH=${WASM_STAGING}/${WASM_PKG_NAME}" >> $GITHUB_OUTPUT
+
+      - name: create Debian package
+        id: debian-package
+        shell: bash
+        if: startsWith(matrix.job.os, 'ubuntu')
+        run: |
+          CLEAN_TAG="${{ steps.version.outputs.CLEAN_TAG }}"
+          TARGET="${{ matrix.job.target }}"
+
+          # Derive arch from target:
+          case "$TARGET" in
+            *x86_64*) DPKG_ARCH="amd64" ;;
+            *i686*) DPKG_ARCH="i686" ;;
+            *aarch64*|*arm64*) DPKG_ARCH="arm64" ;;
+            *arm*hf*) DPKG_ARCH="armhf" ;;
+          esac
+
+          # Check if musl in target
+          if [[ "$TARGET" == *"musl"* ]]; then
+            DPKG_NAME="mago-${CLEAN_TAG}-musl-${DPKG_ARCH}.deb"
+          else
+            DPKG_NAME="mago-${CLEAN_TAG}-${DPKG_ARCH}.deb"
+          fi
+
+          echo "DPKG_NAME=${DPKG_NAME}" >> $GITHUB_OUTPUT
+
+          DPKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/debian-package"
+          DPKG_DIR="${DPKG_STAGING}/dpkg"
+          mkdir -p "${DPKG_DIR}"
+
+          install -Dm755 "${{ steps.bin.outputs.BIN_PATH }}" "${DPKG_DIR}/usr/bin/${{ steps.bin.outputs.BIN_NAME }}"
+
+          install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/mago/README.md" || true
+          install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/mago/LICENSE-MIT" || true
+          install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/mago/LICENSE-APACHE" || true
+
+          mkdir -p "${DPKG_DIR}/DEBIAN"
+          cat > "${DPKG_DIR}/DEBIAN/control" <<EOF
+          Package: mago
+          Version: ${CLEAN_TAG}
+          Section: utils
+          Priority: optional
+          Maintainer: ${{ needs.crate_metadata.outputs.maintainer }}
+          Homepage: ${{ needs.crate_metadata.outputs.homepage }}
+          Architecture: ${DPKG_ARCH}
+          Description: A command-line benchmarking tool
+          EOF
+
+          DPKG_PATH="${DPKG_STAGING}/${DPKG_NAME}"
+          echo "DPKG_PATH=${DPKG_PATH}" >> $GITHUB_OUTPUT
+
+          fakeroot dpkg-deb --build "${DPKG_DIR}" "${DPKG_PATH}"
+
+      - name: "Artifact upload: tarball"
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.package.outputs.PKG_NAME }}
+          path: ${{ steps.package.outputs.PKG_PATH }}
+
+      - name: "Artifact upload: WASM"
+        if: matrix.job.target == 'x86_64-unknown-linux-gnu' && steps.wasm_package.outputs.WASM_PKG_NAME
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.wasm_package.outputs.WASM_PKG_NAME }}
+          path: ${{ steps.wasm_package.outputs.WASM_PKG_PATH }}
+
+      - name: "Artifact upload: Debian package"
+        uses: actions/upload-artifact@v3
+        if: steps.debian-package.outputs.DPKG_NAME
+        with:
+          name: ${{ steps.debian-package.outputs.DPKG_NAME }}
+          path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+
+      - name: check for release
+        id: is-release
+        shell: bash
+        run: |
+          unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/[0-9].* ]]; then IS_RELEASE='true' ; fi
+          echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
+
+      - name: publish archives and packages
+        uses: softprops/action-gh-release@v2
+        if: steps.is-release.outputs.IS_RELEASE
+        with:
+          files: |
+            ${{ steps.package.outputs.PKG_PATH }}
+            ${{ steps.debian-package.outputs.DPKG_PATH }}
+            ${{ steps.wasm_package.outputs.WASM_PKG_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
