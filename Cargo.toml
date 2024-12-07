@@ -78,8 +78,9 @@ termtree = "0.5.1"
 bitflags = "2.6.0"
 wasm-bindgen = "0.2.97"
 serde-wasm-bindgen = "0.4"
+
 [dependencies]
-mago-cli = { path = "crates/cli" }
+mago-cli = { workspace = true }
 
 [profile.release]
 opt-level = 3
