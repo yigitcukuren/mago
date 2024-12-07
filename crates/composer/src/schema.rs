@@ -645,7 +645,7 @@ pub enum ComposerPackageMinimumStability {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ComposerPackageName(String);
+pub struct ComposerPackageName(pub String);
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ComposerPackagePhpExt {
@@ -685,7 +685,7 @@ pub struct ComposerPackagePhpExtConfigureOptionsItem {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ComposerPackagePhpExtConfigureOptionsItemName(String);
+pub struct ComposerPackagePhpExtConfigureOptionsItemName(pub String);
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(untagged)]
@@ -826,10 +826,10 @@ pub struct ComposerPackageSupport {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ComposerPackageType(String);
+pub struct ComposerPackageType(pub String);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ComposerPackageVersion(String);
+pub struct ComposerPackageVersion(pub String);
 
 #[derive(Deserialize, Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ArtifactRepositoryType {
