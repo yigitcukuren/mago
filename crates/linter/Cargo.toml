@@ -1,5 +1,6 @@
 [package]
 name = "mago-linter"
+description = "A PHP linter that identifies common coding errors, style issues, and potential bugs, helping maintain high code quality."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

@@ -1,5 +1,6 @@
 [package]
 name = "mago-interner"
+description = "A string interning library that stores and reuses identical strings efficiently, improving memory use in large codebases or tools."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

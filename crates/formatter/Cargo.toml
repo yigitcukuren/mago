@@ -1,5 +1,6 @@
 [package]
 name = "mago-formatter"
+description = "Reformats PHP source code according to configurable style rules, ensuring consistent code style across a project or organization."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

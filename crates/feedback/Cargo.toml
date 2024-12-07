@@ -1,5 +1,6 @@
 [package]
 name = "mago-feedback"
+description = "Logging, progress bars, and other feedback utilities."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

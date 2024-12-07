@@ -1,5 +1,6 @@
 [package]
 name = "mago-reflection"
+description = "Offers data structures and APIs to represent and inspect PHP code elements—like classes, functions, and interfaces—enabling introspection and analysis."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

@@ -1,5 +1,6 @@
 [package]
 name = "mago-walker"
+description = "Provides traits to systematically walk through AST nodes."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

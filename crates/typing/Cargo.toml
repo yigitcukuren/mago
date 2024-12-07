@@ -1,5 +1,6 @@
 [package]
 name = "mago-typing"
+description = "Provides basic type inference for PHP code, deducing variable and return types to assist in static analysis and automated tooling."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

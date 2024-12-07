@@ -1,5 +1,6 @@
 [package]
 name = "mago-service"
+description = "Integrates multiple PHP tooling capabilities—such as parsing, linting, and formatting—into a unified interface for easier tool orchestration."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

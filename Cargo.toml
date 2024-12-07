@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2021"
 authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "The Oxidized PHP Toolchain"
+description = "A comprehensive suite of PHP tooling inspired by Rust’s approach, providing parsing, linting, formatting, and more through a unified CLI and library interface."
 
 [workspace]
 package.edition = "2021"

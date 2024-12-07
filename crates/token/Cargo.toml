@@ -1,5 +1,6 @@
 [package]
 name = "mago-token"
+description = "Defines the data structures and enumerations representing PHP tokens."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

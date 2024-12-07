@@ -1,5 +1,6 @@
 [package]
 name = "mago-lexer"
+description = "A fast and efficient lexer for PHP code."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

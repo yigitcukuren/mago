@@ -1,5 +1,6 @@
 [package]
 name = "mago-docblock"
+description = "Analyzes PHP docblocks to extract annotations, tags, and documentation comments, aiding tools that rely on inline documentation."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

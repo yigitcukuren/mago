@@ -1,5 +1,6 @@
 [package]
 name = "mago-span"
+description = "Tracks exact character positions in source code, making it easier to report precise errors, warnings, and other diagnostics."
 edition.workspace = true
 authors.workspace = true
 license.workspace = true

@@ -1,5 +1,6 @@
 [package]
 name = "mago-casing"
+description = "A Rust utility for converting strings between various common casing styles."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

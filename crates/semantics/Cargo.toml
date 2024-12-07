@@ -1,5 +1,6 @@
 [package]
 name = "mago-semantics"
+description = "Performs semantic analysis on PHP code, interpreting the AST to check correctness, resolve references, and enforce language rules."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

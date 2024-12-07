@@ -1,5 +1,6 @@
 [package]
 name = "mago-composer"
+description = "Parses and models composer.json files"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true

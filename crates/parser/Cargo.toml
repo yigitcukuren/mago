@@ -1,5 +1,6 @@
 [package]
 name = "mago-parser"
+description = "A fast, recursive descent parser for PHP."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

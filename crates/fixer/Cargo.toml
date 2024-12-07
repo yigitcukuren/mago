@@ -1,5 +1,6 @@
 [package]
 name = "mago-fixer"
+description = "Applies automated fixes and transformations to text."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

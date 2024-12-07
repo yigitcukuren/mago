@@ -1,5 +1,6 @@
 [package]
 name = "mago-reporting"
+description = "Structured error and diagnostic reporting utilities."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

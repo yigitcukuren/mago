@@ -1,5 +1,6 @@
 [package]
 name = "mago-ast"
+description = "Supplies the data structures and types for representing PHP code as an Abstract Syntax Tree (AST)"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

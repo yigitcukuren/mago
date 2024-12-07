@@ -1,5 +1,6 @@
 [package]
 name = "mago-symbol-table"
+description = "A library for discovering and working with symbols in PHP code."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

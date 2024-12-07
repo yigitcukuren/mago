@@ -1,5 +1,6 @@
 [package]
 name = "mago-trinary"
+description = "A library implementing three-valued logical operations (true, false, maybe) to handle complex logical reasoning scenarios."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

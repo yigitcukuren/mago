@@ -1,5 +1,6 @@
 [package]
 name = "mago-cli"
+description = "Offers a command-line interface to parsing, linting, formatting, and other analysis tasks, giving direct, easy-to-use terminal commands."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

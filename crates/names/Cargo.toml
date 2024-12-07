@@ -1,5 +1,6 @@
 [package]
 name = "mago-names"
+description = "Resolves and normalizes identifiers (classes, functions, constants) within PHP code."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

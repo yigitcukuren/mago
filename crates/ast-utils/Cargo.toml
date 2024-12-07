@@ -1,5 +1,6 @@
 [package]
 name = "mago-ast-utils"
+description = "Helper functions and utilities for working with PHP AST nodes."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

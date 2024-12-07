@@ -1,5 +1,6 @@
 [package]
 name = "mago-source"
+description = "Manages PHP source files by providing functions for loading, reading, and referencing PHP code, making it easier to work with file-based inputs."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
