@@ -10,12 +10,7 @@ workspace = true
 
 [dependencies]
 serde = { workspace = true }
-lasso = { workspace = true, features = [
-    "multi-threaded",
-    "ahasher",
-    "serialize",
-    "inline-more",
-] }
+lasso = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
