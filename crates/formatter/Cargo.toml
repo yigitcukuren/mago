@@ -1,5 +1,5 @@
 [package]
-name = "fennec-formatter"
+name = "mago-formatter"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -14,8 +14,8 @@ strum = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 bitflags = { workspace = true }
-fennec-ast = { path = "../ast" }
-fennec-source = { path = "../source" }
-fennec-span = { path = "../span" }
-fennec-token = { path = "../token" }
-fennec-interner = { path = "../interner" }
+mago-ast = { path = "../ast" }
+mago-source = { path = "../source" }
+mago-span = { path = "../span" }
+mago-token = { path = "../token" }
+mago-interner = { path = "../interner" }

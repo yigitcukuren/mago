@@ -1,4 +1,4 @@
-# Fennec PHPDoc Parser
+# Mago PHPDoc Parser
 
 This crate provides a parser for PHPDoc comments, offering a standardized approach to interpreting PHPDoc blocks.
 Given the lack of a strict standard for PHPDoc formatting, we've established our own conventions to ensure consistent parsing and to facilitate tooling such as linters or documentation generators.
@@ -230,9 +230,9 @@ Each error includes:
 To use the parser, include the crate in your project and utilize the public API provided.
 
 ```rust
-use fennec_interner::ThreadedInterner;
-use fennec_span::Span;
-use fennec_docblock::parse_phpdoc_with_span;
+use mago_interner::ThreadedInterner;
+use mago_span::Span;
+use mago_docblock::parse_phpdoc_with_span;
 
 const PHPDOC: &str = r#"/**
  * This is a simple description.

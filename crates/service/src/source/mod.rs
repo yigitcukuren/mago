@@ -6,8 +6,8 @@ use async_walkdir::Filtering;
 use async_walkdir::WalkDir;
 use futures::StreamExt;
 
-use fennec_interner::ThreadedInterner;
-use fennec_source::SourceManager;
+use mago_interner::ThreadedInterner;
+use mago_source::SourceManager;
 
 use crate::source::config::SourceConfiguration;
 
@@ -31,7 +31,7 @@ impl SourceService {
     ///
     /// A `Result` containing the new source manager or a `SourceError` if
     /// an error occurred during the build process.
-    pub async fn load<'i>(&self) -> Result<SourceManager, Error> {
+    pub async fn load(&self) -> Result<SourceManager, Error> {
         let SourceConfiguration { root, paths, includes, excludes, extensions } = &self.configuration;
 
         let mut starting_paths = Vec::new();

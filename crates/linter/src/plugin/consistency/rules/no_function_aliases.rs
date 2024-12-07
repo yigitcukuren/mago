@@ -1,11 +1,11 @@
 use ahash::HashMap;
 use std::sync::LazyLock;
 
-use fennec_ast::ast::*;
-use fennec_fixer::SafetyClassification;
-use fennec_reporting::*;
-use fennec_span::*;
-use fennec_walker::Walker;
+use mago_ast::ast::*;
+use mago_fixer::SafetyClassification;
+use mago_reporting::*;
+use mago_span::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;

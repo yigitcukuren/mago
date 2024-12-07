@@ -1,7 +1,7 @@
-use fennec_ast::Trivia;
-use fennec_ast::TriviaKind;
-use fennec_interner::ThreadedInterner;
-use fennec_span::Span;
+use mago_ast::Trivia;
+use mago_ast::TriviaKind;
+use mago_interner::ThreadedInterner;
+use mago_span::Span;
 
 use crate::document::Document;
 use crate::error::ParseError;
@@ -31,9 +31,9 @@ pub fn parse_phpdoc_with_span(interner: &ThreadedInterner, content: &str, span: 
 mod tests {
     use super::*;
 
-    use fennec_interner::ThreadedInterner;
-    use fennec_span::Position;
-    use fennec_span::Span;
+    use mago_interner::ThreadedInterner;
+    use mago_span::Position;
+    use mago_span::Span;
 
     use crate::document::*;
 

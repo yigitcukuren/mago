@@ -1,5 +1,63 @@
 <?php
 
+$a = new class {
+};
+
+$a = new class {
+    public function foo(): void
+    {
+        echo 'Hello, world!';
+    }
+};
+
+$a = new class {
+    public function foo(): void
+    {
+        echo 'Hello, world!';
+    }
+};
+
+$a = new class implements
+    Foo,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar,
+    Bar {
+    public function foo(): void
+    {
+        echo 'Hello, world!';
+    }
+};
+
+$util->setLogger(new
+#[Foo]
+#[baz]
+readonly class('[DEBUG]') {
+    public function __construct(
+        private string $prefix,
+    ) {
+    }
+
+    public function log($msg): void
+    {
+        echo $this->prefix . ' ' . $msg;
+    }
+});
+
 class Foo
 {
     public static $bar = 1;

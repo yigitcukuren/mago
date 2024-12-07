@@ -1,10 +1,10 @@
-use fennec_ast::Program;
-use fennec_fixer::FixPlan;
-use fennec_fixer::SafetyClassification;
-use fennec_reporting::*;
-use fennec_source::*;
-use fennec_span::*;
-use fennec_walker::Walker;
+use mago_ast::Program;
+use mago_fixer::FixPlan;
+use mago_fixer::SafetyClassification;
+use mago_reporting::*;
+use mago_source::*;
+use mago_span::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;

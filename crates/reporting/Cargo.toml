@@ -1,5 +1,5 @@
 [package]
-name = "fennec-reporting"
+name = "mago-reporting"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -12,6 +12,6 @@ workspace = true
 ahash = { workspace = true }
 serde = { workspace = true }
 codespan-reporting = { workspace = true }
-fennec-span = { path = "../span" }
-fennec-source = { path = "../source" }
-fennec-fixer = { path = "../fixer" }
+mago-span = { path = "../span" }
+mago-source = { path = "../source" }
+mago-fixer = { path = "../fixer" }

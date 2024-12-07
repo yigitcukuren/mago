@@ -9,9 +9,9 @@ use codespan_reporting::diagnostic::Severity;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_fixer::FixPlan;
-use fennec_source::SourceIdentifier;
-use fennec_span::Span;
+use mago_fixer::FixPlan;
+use mago_source::SourceIdentifier;
+use mago_span::Span;
 
 pub mod reporter;
 
@@ -84,10 +84,10 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Annotation, AnnotationKind};
-    /// use fennec_span::Span;
-    /// use fennec_span::Position;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_span::Span;
+    /// use mago_span::Position;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     /// let start = Position::new(source, 0, 0, 0);
@@ -104,10 +104,10 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Annotation, AnnotationKind};
-    /// use fennec_span::Span;
-    /// use fennec_span::Position;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_span::Span;
+    /// use mago_span::Position;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     /// let start = Position::new(source, 0, 0, 0);
@@ -124,10 +124,10 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Annotation, AnnotationKind};
-    /// use fennec_span::Span;
-    /// use fennec_span::Position;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_span::Span;
+    /// use mago_span::Position;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     /// let start = Position::new(source, 0, 0, 0);
@@ -144,10 +144,10 @@ impl Annotation {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Annotation, AnnotationKind};
-    /// use fennec_span::Span;
-    /// use fennec_span::Position;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_reporting::issue::{Annotation, AnnotationKind};
+    /// use mago_span::Span;
+    /// use mago_span::Position;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     /// let start = Position::new(source, 0, 0, 0);
@@ -169,7 +169,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Issue, Level};
+    /// use mago_reporting::issue::{Issue, Level};
     ///
     /// let issue = Issue::new(Level::Error, "This is an error");
     /// ```
@@ -191,7 +191,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::error("This is an error");
     /// ```
@@ -204,7 +204,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::warning("This is a warning");
     /// ```
@@ -217,7 +217,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::help("This is a help message");
     /// ```
@@ -230,7 +230,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::note("This is a note");
     /// ```
@@ -243,7 +243,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Issue, Level};
+    /// use mago_reporting::issue::{Issue, Level};
     ///
     /// let issue = Issue::error("This is an error").with_code("E0001");
     /// ```
@@ -259,10 +259,10 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::{Issue, Annotation, AnnotationKind};
-    /// use fennec_span::Span;
-    /// use fennec_span::Position;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_reporting::issue::{Issue, Annotation, AnnotationKind};
+    /// use mago_span::Span;
+    /// use mago_span::Position;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     /// let start = Position::new(source, 0, 0, 0);
@@ -290,7 +290,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_note("This is a note");
     /// ```
@@ -308,7 +308,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_help("This is a help message");
     /// ```
@@ -324,7 +324,7 @@ impl Issue {
     /// # Examples
     ///
     /// ```
-    /// use fennec_reporting::issue::Issue;
+    /// use mago_reporting::issue::Issue;
     ///
     /// let issue = Issue::error("This is an error").with_link("https://example.com");
     /// ```

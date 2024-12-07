@@ -2,13 +2,13 @@ use clap::Parser;
 use serde_json::json;
 use termtree::Tree;
 
-use fennec_ast::node::NodeKind;
-use fennec_ast::Node;
-use fennec_interner::ThreadedInterner;
-use fennec_reporting::reporter::Reporter;
-use fennec_reporting::Issue;
-use fennec_service::ast::AstService;
-use fennec_source::SourceManager;
+use mago_ast::node::NodeKind;
+use mago_ast::Node;
+use mago_interner::ThreadedInterner;
+use mago_reporting::reporter::Reporter;
+use mago_reporting::Issue;
+use mago_service::ast::AstService;
+use mago_source::SourceManager;
 
 use crate::utils::bail;
 
@@ -31,12 +31,12 @@ pub async fn execute(command: AstCommand) -> i32 {
 
     // Check if the file exists and is readable
     if !file_path.exists() {
-        fennec_feedback::error!("file '{}' does not exist.", command.file);
+        mago_feedback::error!("file '{}' does not exist.", command.file);
         return 1;
     }
 
     if !file_path.is_file() {
-        fennec_feedback::error!("'{}' is not a valid file.", command.file);
+        mago_feedback::error!("'{}' is not a valid file.", command.file);
         return 1;
     }
 

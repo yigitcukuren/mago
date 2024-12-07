@@ -8,8 +8,8 @@ use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::term;
 use codespan_reporting::term::Config;
 
-use fennec_source::SourceIdentifier;
-use fennec_source::SourceManager;
+use mago_source::SourceIdentifier;
+use mago_source::SourceManager;
 
 use crate::Issue;
 use crate::IssueCollection;

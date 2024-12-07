@@ -7,9 +7,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_ast::ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
+use mago_ast::ast::*;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]

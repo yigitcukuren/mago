@@ -1,8 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::ast::keyword::Keyword;
 use crate::ast::terminator::Terminator;

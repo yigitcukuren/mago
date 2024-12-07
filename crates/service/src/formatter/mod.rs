@@ -1,12 +1,12 @@
-use fennec_feedback::create_progress_bar;
-use fennec_feedback::remove_progress_bar;
-use fennec_feedback::ProgressBarTheme;
-use fennec_formatter::format;
-use fennec_interner::ThreadedInterner;
-use fennec_parser::parse_source;
-use fennec_source::error::SourceError;
-use fennec_source::SourceIdentifier;
-use fennec_source::SourceManager;
+use mago_feedback::create_progress_bar;
+use mago_feedback::remove_progress_bar;
+use mago_feedback::ProgressBarTheme;
+use mago_formatter::format;
+use mago_interner::ThreadedInterner;
+use mago_parser::parse_source;
+use mago_source::error::SourceError;
+use mago_source::SourceIdentifier;
+use mago_source::SourceManager;
 
 use crate::formatter::config::FormatterConfiguration;
 
@@ -35,7 +35,7 @@ impl FormatterService {
     }
 
     #[inline]
-    async fn process_sources<'a>(&self, source_ids: Vec<SourceIdentifier>) -> Result<usize, SourceError> {
+    async fn process_sources(&self, source_ids: Vec<SourceIdentifier>) -> Result<usize, SourceError> {
         let settings = self.configuration.get_settings();
         let mut handles = Vec::with_capacity(source_ids.len());
 
@@ -58,7 +58,7 @@ impl FormatterService {
                     let source = manager.load(source_id)?;
                     source_pb.inc(1);
 
-                    fennec_feedback::debug!("> parsing program: {}", interner.lookup(&source.identifier.0));
+                    mago_feedback::debug!("> parsing program: {}", interner.lookup(&source.identifier.0));
 
                     // Step 2: parse the source
                     let (program, error) = parse_source(&interner, &source);
@@ -66,7 +66,7 @@ impl FormatterService {
 
                     if let Some(error) = error {
                         let source_name = interner.lookup(&source.identifier.0);
-                        fennec_feedback::error!("skipping formatting for source '{}', {} ", source_name, error);
+                        mago_feedback::error!("skipping formatting for source '{}', {} ", source_name, error);
 
                         format_pb.inc(1);
                         write_pb.inc(1);
@@ -74,19 +74,19 @@ impl FormatterService {
                         return Result::<_, SourceError>::Ok(());
                     }
 
-                    fennec_feedback::debug!("> formatting program: {}", interner.lookup(&program.source.0));
+                    mago_feedback::debug!("> formatting program: {}", interner.lookup(&program.source.0));
 
                     // Step 3: format the source
                     let formatted = format(settings, &interner, &source, &program);
                     format_pb.inc(1);
 
-                    fennec_feedback::debug!("> writing program: {}", interner.lookup(&program.source.0));
+                    mago_feedback::debug!("> writing program: {}", interner.lookup(&program.source.0));
 
                     // Step 4: write the formatted source
                     manager.write(source.identifier, formatted)?;
                     write_pb.inc(1);
 
-                    fennec_feedback::debug!("< formatted program: {}", interner.lookup(&program.source.0));
+                    mago_feedback::debug!("< formatted program: {}", interner.lookup(&program.source.0));
 
                     Result::<_, SourceError>::Ok(())
                 }

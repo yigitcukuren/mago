@@ -1,10 +1,10 @@
 use ahash::HashMap;
 
-use fennec_interner::StringIdentifier;
+use mago_interner::StringIdentifier;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::Span;
+use mago_span::Span;
 
 use crate::attribute::AttributeReflection;
 use crate::class_like::member::ClassLikeMemberVisibilityReflection;

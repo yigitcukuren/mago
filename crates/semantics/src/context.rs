@@ -1,13 +1,13 @@
-use fennec_ast::ast::*;
-use fennec_ast::Node;
-use fennec_ast::Program;
-use fennec_interner::ThreadedInterner;
-use fennec_names::Names;
-use fennec_reporting::Issue;
-use fennec_reporting::IssueCollection;
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
+use mago_ast::ast::*;
+use mago_ast::Node;
+use mago_ast::Program;
+use mago_interner::ThreadedInterner;
+use mago_names::Names;
+use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
 
 #[derive(Debug)]
 pub struct Context<'a> {

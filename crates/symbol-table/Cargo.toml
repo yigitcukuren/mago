@@ -1,5 +1,5 @@
 [package]
-name = "fennec-symbol-table"
+name = "mago-symbol-table"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,10 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-interner = { path = "../interner" }
-fennec-span = { path = "../span" }
-fennec-ast = { path = "../ast" }
-fennec-walker = { path = "../walker" }
-fennec-source = { path = "../source" }
+mago-interner = { path = "../interner" }
+mago-span = { path = "../span" }
+mago-ast = { path = "../ast" }
+mago-walker = { path = "../walker" }
+mago-source = { path = "../source" }
 serde = { workspace = true }
 strum = { workspace = true }

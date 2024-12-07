@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use ahash::HashMap;
 
-use fennec_source::Source;
+use mago_source::Source;
 
 use crate::document::group::GroupIdentifier;
 use crate::document::Document;

@@ -1,8 +1,8 @@
-use fennec_ast::*;
-use fennec_fixer::SafetyClassification;
-use fennec_reporting::*;
-use fennec_span::HasSpan;
-use fennec_walker::Walker;
+use mago_ast::*;
+use mago_fixer::SafetyClassification;
+use mago_reporting::*;
+use mago_span::HasSpan;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;
@@ -22,7 +22,7 @@ impl Rule for RedundantIfStatementRule {
 
 impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
     fn walk_in_if<'ast>(&self, r#if: &'ast If, context: &mut LintContext<'a>) {
-        if fennec_ast_utils::is_truthy(&r#if.condition) {
+        if mago_ast_utils::is_truthy(&r#if.condition) {
             // this condition always evaluates, given:
             //
             // if ($expr) { block } elseif ($expr2) { block2 } else { block3 }
@@ -76,7 +76,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
             return;
         }
 
-        if fennec_ast_utils::is_falsy(&r#if.condition) {
+        if mago_ast_utils::is_falsy(&r#if.condition) {
             // if the `if` statement has no else if/else clauses, and the body contains only
             // definitions, then we should not report it as redundant.
             //
@@ -90,7 +90,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
                 IfBody::Statement(if_statement_body) => {
                     if if_statement_body.else_if_clauses.is_empty()
                         && if_statement_body.else_clause.is_none()
-                        && fennec_ast_utils::statement_contains_only_definitions(&if_statement_body.statement)
+                        && mago_ast_utils::statement_contains_only_definitions(&if_statement_body.statement)
                     {
                         return;
                     }
@@ -98,7 +98,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
                 IfBody::ColonDelimited(if_colon_delimited_body) => {
                     if if_colon_delimited_body.else_if_clauses.is_empty()
                         && if_colon_delimited_body.else_clause.is_none()
-                        && fennec_ast_utils::statement_sequence_contains_only_definitions(
+                        && mago_ast_utils::statement_sequence_contains_only_definitions(
                             &if_colon_delimited_body.statements,
                         )
                     {

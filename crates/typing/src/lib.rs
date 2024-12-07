@@ -1,10 +1,10 @@
-use fennec_ast::Expression;
-use fennec_interner::ThreadedInterner;
-use fennec_reflection::r#type::kind::TypeKind;
-use fennec_reflection::r#type::TypeReflection;
-use fennec_reflection::CodebaseReflection;
-use fennec_semantics::Semantics;
-use fennec_span::HasSpan;
+use mago_ast::Expression;
+use mago_interner::ThreadedInterner;
+use mago_reflection::r#type::kind::TypeKind;
+use mago_reflection::r#type::TypeReflection;
+use mago_reflection::CodebaseReflection;
+use mago_semantics::Semantics;
+use mago_span::HasSpan;
 
 use crate::resolver::TypeResolver;
 

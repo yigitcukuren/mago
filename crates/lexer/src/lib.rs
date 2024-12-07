@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::mem;
 
-use fennec_interner::ThreadedInterner;
-use fennec_span::Position;
-use fennec_span::Span;
-use fennec_token::DocumentKind;
-use fennec_token::Token;
-use fennec_token::TokenKind;
+use mago_interner::ThreadedInterner;
+use mago_span::Position;
+use mago_span::Span;
+use mago_token::DocumentKind;
+use mago_token::Token;
+use mago_token::TokenKind;
 
 use crate::error::SyntaxError;
 use crate::input::Input;
@@ -107,10 +107,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
     /// # Examples
     ///
     /// ```
-    /// use fennec_interner::ThreadedInterner;
-    /// use fennec_lexer::Lexer;
-    /// use fennec_source::SourceIdentifier;
-    /// use fennec_lexer::input::Input;
+    /// use mago_interner::ThreadedInterner;
+    /// use mago_lexer::Lexer;
+    /// use mago_source::SourceIdentifier;
+    /// use mago_lexer::input::Input;
     ///
     /// let interner = ThreadedInterner::new();
     ///

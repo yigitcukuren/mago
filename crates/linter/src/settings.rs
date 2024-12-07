@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use toml::value::Value;
 
-use fennec_reporting::Level;
+use mago_reporting::Level;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Settings {

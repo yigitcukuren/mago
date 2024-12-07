@@ -1,5 +1,5 @@
 [package]
-name = "fennec-semantics"
+name = "mago-semantics"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,15 +9,15 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-fixer = { path = "../fixer" }
-fennec-reporting = { path = "../reporting" }
-fennec-interner = { path = "../interner" }
-fennec-parser = { path = "../parser" }
-fennec-walker = { path = "../walker" }
-fennec-span = { path = "../span" }
-fennec-ast = { path = "../ast" }
-fennec-ast-utils = { path = "../ast-utils" }
-fennec-names = { path = "../names" }
-fennec-source = { path = "../source" }
-fennec-symbol-table = { path = "../symbol-table" }
+mago-fixer = { path = "../fixer" }
+mago-reporting = { path = "../reporting" }
+mago-interner = { path = "../interner" }
+mago-parser = { path = "../parser" }
+mago-walker = { path = "../walker" }
+mago-span = { path = "../span" }
+mago-ast = { path = "../ast" }
+mago-ast-utils = { path = "../ast-utils" }
+mago-names = { path = "../names" }
+mago-source = { path = "../source" }
+mago-symbol-table = { path = "../symbol-table" }
 serde = { workspace = true }

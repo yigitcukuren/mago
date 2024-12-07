@@ -1,6 +1,6 @@
-use fennec_ast::*;
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_ast::*;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::comment::CommentFlags;
 use crate::document::*;
@@ -1021,12 +1021,7 @@ impl<'a> Format<'a> for EnumBackingTypeHint {
 impl<'a> Format<'a> for Class {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, Class, {
-            let mut attributes = vec![];
-            for attribute_list in self.attributes.iter() {
-                attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
-            }
-
+            let attributes = misc::print_attribute_list_sequence(f, &self.attributes, false);
             let mut signature = print_modifiers(f, &self.modifiers);
             if !signature.is_empty() {
                 signature.push(Document::space());
@@ -1046,21 +1041,24 @@ impl<'a> Format<'a> for Class {
                 signature.push(i.format(f));
             }
 
-            let body = vec![
-                match f.settings.classlike_brace_style {
-                    BraceStyle::SameLine => Document::space(),
-                    BraceStyle::NextLine => {
-                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
-                    }
-                },
-                print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
-            ];
-
-            Document::Group(Group::new(vec![
-                Document::Group(Group::new(attributes)),
+            let class = Document::Group(Group::new(vec![
                 Document::Group(Group::new(signature)),
-                Document::Group(Group::new(body)),
-            ]))
+                Document::Group(Group::new(vec![
+                    match f.settings.classlike_brace_style {
+                        BraceStyle::SameLine => Document::space(),
+                        BraceStyle::NextLine => {
+                            Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
+                        }
+                    },
+                    print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
+                ])),
+            ]));
+
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, class]))
+            } else {
+                class
+            }
         })
     }
 }

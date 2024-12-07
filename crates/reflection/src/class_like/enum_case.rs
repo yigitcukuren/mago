@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::Span;
+use mago_span::Span;
 
 use crate::attribute::AttributeReflection;
 use crate::identifier::ClassLikeMemberName;

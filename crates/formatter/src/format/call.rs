@@ -1,4 +1,4 @@
-use fennec_ast::*;
+use mago_ast::*;
 
 use crate::document::Document;
 use crate::document::Group;
@@ -19,12 +19,22 @@ pub(super) fn collect_method_call_chain(expr: &Expression) -> Option<MethodChain
     let mut current_expr = expr;
 
     while let Expression::Call(call) = current_expr {
-        calls.push(CallLikeNode::Call(call));
-
         current_expr = match call {
-            Call::Method(method_call) => method_call.object.as_ref(),
-            Call::NullSafeMethod(null_safe_method_call) => null_safe_method_call.object.as_ref(),
-            Call::StaticMethod(static_method_call) => static_method_call.class.as_ref(),
+            Call::Method(method_call) => {
+                calls.push(CallLikeNode::Call(call));
+
+                method_call.object.as_ref()
+            }
+            Call::NullSafeMethod(null_safe_method_call) => {
+                calls.push(CallLikeNode::Call(call));
+
+                null_safe_method_call.object.as_ref()
+            }
+            Call::StaticMethod(static_method_call) => {
+                calls.push(CallLikeNode::Call(call));
+
+                static_method_call.class.as_ref()
+            }
             _ => {
                 break;
             }

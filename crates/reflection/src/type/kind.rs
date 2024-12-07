@@ -2,10 +2,10 @@ use ordered_float::OrderedFloat;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_span::Span;
-use fennec_trinary::Trinary;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_span::Span;
+use mago_trinary::Trinary;
 
 use crate::function_like::FunctionLikeReflection;
 use crate::identifier::ClassLikeName;

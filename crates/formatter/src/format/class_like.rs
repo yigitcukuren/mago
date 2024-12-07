@@ -1,5 +1,5 @@
-use fennec_ast::*;
-use fennec_span::Span;
+use mago_ast::*;
+use mago_span::Span;
 
 use crate::document::Document;
 use crate::settings::BraceStyle;

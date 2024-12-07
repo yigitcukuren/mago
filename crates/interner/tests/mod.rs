@@ -1,6 +1,6 @@
-use fennec_interner::Interner;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
+use mago_interner::Interner;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
 
 #[test]
 fn test_empty_is_always_zero() {

@@ -1,4 +1,4 @@
-use fennec_interner::ThreadedInterner;
+use mago_interner::ThreadedInterner;
 
 use crate::symbol::Symbol;
 

@@ -2,9 +2,9 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-use fennec_ast::Program;
-use fennec_reporting::*;
-use fennec_walker::Walker;
+use mago_ast::Program;
+use mago_reporting::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::plugin::comment::rules::utils::comment_content;

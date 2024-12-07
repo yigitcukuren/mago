@@ -1,4 +1,4 @@
-use fennec_token::TokenKind;
+use mago_token::TokenKind;
 
 pub const CAST_TYPES: [(&[u8], TokenKind); 12] = [
     (b"(int)", TokenKind::IntCast),

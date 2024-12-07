@@ -1,7 +1,7 @@
-use fennec_ast::ast::*;
-use fennec_reporting::*;
-use fennec_span::*;
-use fennec_walker::Walker;
+use mago_ast::ast::*;
+use mago_reporting::*;
+use mago_span::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;
@@ -26,7 +26,7 @@ impl<'a> Walker<LintContext<'a>> for ClassRule {
         let name = context.lookup(&class.name.value);
         let fqcn = context.lookup_name(&class.name);
 
-        if !fennec_casing::is_class_case(name) {
+        if !mago_casing::is_class_case(name) {
             let issue = Issue::new(context.level(), format!("class name `{}` should be in class case", name))
                 .with_annotations([
                     Annotation::primary(class.name.span()),
@@ -35,7 +35,7 @@ impl<'a> Walker<LintContext<'a>> for ClassRule {
                 .with_note(format!("the class name `{}` does not follow class naming convention.", name))
                 .with_help(format!(
                     "consider renaming it to `{}` to adhere to the naming convention.",
-                    fennec_casing::to_class_case(name)
+                    mago_casing::to_class_case(name)
                 ));
 
             issues.push(issue);

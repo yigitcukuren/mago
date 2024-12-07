@@ -1,8 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::ast::attribute::AttributeList;
 use crate::ast::expression::Expression;
@@ -37,7 +37,7 @@ impl ClassLikeConstant {
     pub fn first_item(&self) -> &ClassLikeConstantItem {
         self.items
             .first()
-            .expect("expected class-like constant to have at least 1 item. this is a bug in fennec. please report it.")
+            .expect("expected class-like constant to have at least 1 item. this is a bug in mago. please report it.")
     }
 }
 

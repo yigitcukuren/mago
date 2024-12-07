@@ -1,5 +1,5 @@
 [package]
-name = "fennec-source"
+name = "mago-source"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,7 +9,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-interner = { path = "../interner" }
+mago-interner = { path = "../interner" }
 codespan-reporting = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

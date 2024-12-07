@@ -3,16 +3,16 @@ use std::collections::HashSet;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-use fennec_ast::Program;
-use fennec_formatter::settings::FormatSettings;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_parser::parse_source;
-use fennec_reporting::Issue;
-use fennec_reporting::IssueCollection;
-use fennec_semantics::Semantics;
-use fennec_source::SourceManager;
-use fennec_symbol_table::table::SymbolTable;
+use mago_ast::Program;
+use mago_formatter::settings::FormatSettings;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_parser::parse_source;
+use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
+use mago_semantics::Semantics;
+use mago_source::SourceManager;
+use mago_symbol_table::table::SymbolTable;
 
 /// Represents the result of analyzing and optionally formatting PHP code.
 ///
@@ -56,7 +56,7 @@ struct CodeInsight<'a> {
     pub formatted: Option<String>,
 }
 
-/// Formats PHP code using the Fennec formatter.
+/// Formats PHP code using the Mago formatter.
 ///
 /// This function takes a string of PHP code and optionally a JSON string representing formatting settings.
 /// It returns the formatted version of the code. If there are any parser errors, it returns the error message instead of the formatted code.
@@ -81,12 +81,12 @@ struct CodeInsight<'a> {
 /// # Example
 ///
 /// ```javascript
-/// import init, { fennec_format } from "./pkg/fennec_wasm.js";
+/// import init, { mago_format } from "./pkg/mago_wasm.js";
 ///
 /// async function formatCode(phpCode, formatterSettings) {
 ///     await init(); // Initialize the WASM module
 ///     try {
-///         const formattedCode = fennec_format(phpCode, formatterSettings);
+///         const formattedCode = mago_format(phpCode, formatterSettings);
 ///         console.log("Formatted code:", formattedCode);
 ///     } catch (err) {
 ///         console.error("Error formatting code:", err);
@@ -118,7 +118,7 @@ struct CodeInsight<'a> {
 ///
 /// This function is intended for use in a browser environment through WebAssembly.
 #[wasm_bindgen]
-pub fn fennec_format(code: String, settings: Option<String>) -> Result<JsValue, JsValue> {
+pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, JsValue> {
     let settings = get_format_settings(settings);
 
     let interner = ThreadedInterner::new();
@@ -132,7 +132,7 @@ pub fn fennec_format(code: String, settings: Option<String>) -> Result<JsValue, 
         return Err(JsValue::from_str(&err.to_string()));
     }
 
-    let formatted = fennec_formatter::format(settings, &interner, &source, &program);
+    let formatted = mago_formatter::format(settings, &interner, &source, &program);
 
     Ok(JsValue::from_str(&formatted))
 }
@@ -164,12 +164,12 @@ pub fn fennec_format(code: String, settings: Option<String>) -> Result<JsValue, 
 /// # Example
 ///
 /// ```javascript
-/// import init, { fennec_get_insight } from "./pkg/fennec_wasm.js";
+/// import init, { mago_get_insight } from "./pkg/mago_wasm.js";
 ///
 /// async function getCodeInsight(phpCode, formatterSettings) {
 ///     await init(); // Initialize the WASM module
 ///     try {
-///         const insights = fennec_get_insight(phpCode, formatterSettings);
+///         const insights = mago_get_insight(phpCode, formatterSettings);
 ///         console.log("Code insights:", JSON.parse(insights));
 ///     } catch (err) {
 ///         console.error("Error analyzing code:", err);
@@ -202,7 +202,7 @@ pub fn fennec_format(code: String, settings: Option<String>) -> Result<JsValue, 
 /// - This function is designed for browser environments through WebAssembly.
 /// - It is suitable for interactive playgrounds or tools requiring in-depth PHP code analysis.
 #[wasm_bindgen]
-pub fn fennec_get_insight(code: String, format_settings: Option<String>) -> Result<JsValue, JsValue> {
+pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result<JsValue, JsValue> {
     let settings = get_format_settings(format_settings);
     let interner = ThreadedInterner::new();
     let mut manager = SourceManager::new(interner.clone());
@@ -211,7 +211,7 @@ pub fn fennec_get_insight(code: String, format_settings: Option<String>) -> Resu
     let semantics = Semantics::build(&interner, source);
     let mut formatted = None;
     if semantics.parse_error.is_none() {
-        formatted = Some(fennec_formatter::format(settings, &interner, &semantics.source, &semantics.program));
+        formatted = Some(mago_formatter::format(settings, &interner, &semantics.source, &semantics.program));
     }
 
     Ok(serde_wasm_bindgen::to_value(&CodeInsight {

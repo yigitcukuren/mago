@@ -14,10 +14,10 @@ pub mod error;
 
 use crate::config::error::ConfigurationError;
 
-/// The name of the environment variable prefix for fennec.
-pub const ENVIRONMENT_PREFIX: &str = "FENNEC";
-/// The name of the configuration file for fennec.
-pub const CONFIGURATION_FILE: &str = "fennec";
+/// The name of the environment variable prefix for mago.
+pub const ENVIRONMENT_PREFIX: &str = "MAGO";
+/// The name of the configuration file for mago.
+pub const CONFIGURATION_FILE: &str = "mago";
 /// The minimum stack size for each thread.
 pub const MINIMUM_STACK_SIZE: usize = 8 * 1024 * 1024;
 /// The default stack size for each thread.
@@ -41,7 +41,7 @@ pub const CURRENT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     })
 });
 
-/// Configuration options for fennec.
+/// Configuration options for mago.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Configuration {
     /// The number of threads to use.

@@ -1,12 +1,12 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_reporting::Annotation;
-use fennec_reporting::Issue;
-use fennec_span::HasPosition;
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
+use mago_reporting::Annotation;
+use mago_reporting::Issue;
+use mago_span::HasPosition;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SyntaxError {

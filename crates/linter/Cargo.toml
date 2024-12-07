@@ -1,5 +1,5 @@
 [package]
-name = "fennec-linter"
+name = "mago-linter"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,19 +9,19 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-fixer = { path = "../fixer" }
-fennec-semantics = { path = "../semantics" }
-fennec-reporting = { path = "../reporting" }
-fennec-docblock = { path = "../docblock" }
-fennec-interner = { path = "../interner" }
-fennec-span = { path = "../span" }
-fennec-ast = { path = "../ast" }
-fennec-ast-utils = { path = "../ast-utils" }
-fennec-names = { path = "../names" }
-fennec-source = { path = "../source" }
-fennec-symbol-table = { path = "../symbol-table" }
-fennec-walker = { path = "../walker" }
-fennec-casing = { path = "../casing" }
+mago-fixer = { path = "../fixer" }
+mago-semantics = { path = "../semantics" }
+mago-reporting = { path = "../reporting" }
+mago-docblock = { path = "../docblock" }
+mago-interner = { path = "../interner" }
+mago-span = { path = "../span" }
+mago-ast = { path = "../ast" }
+mago-ast-utils = { path = "../ast-utils" }
+mago-names = { path = "../names" }
+mago-source = { path = "../source" }
+mago-symbol-table = { path = "../symbol-table" }
+mago-walker = { path = "../walker" }
+mago-casing = { path = "../casing" }
 ahash = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

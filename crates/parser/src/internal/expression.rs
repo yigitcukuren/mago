@@ -1,9 +1,9 @@
 use either::Either;
 
-use fennec_ast::ast::*;
-use fennec_token::Associativity;
-use fennec_token::Precedence;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_token::Associativity;
+use mago_token::Precedence;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::argument;

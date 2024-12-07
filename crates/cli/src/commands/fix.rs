@@ -1,11 +1,11 @@
 use clap::Parser;
 
-use fennec_fixer::SafetyClassification;
-use fennec_interner::ThreadedInterner;
-use fennec_service::config::Configuration;
-use fennec_service::linter::LintService;
-use fennec_service::source::SourceService;
-use fennec_source::error::SourceError;
+use mago_fixer::SafetyClassification;
+use mago_interner::ThreadedInterner;
+use mago_service::config::Configuration;
+use mago_service::linter::LintService;
+use mago_service::source::SourceService;
+use mago_source::error::SourceError;
 
 use crate::utils::bail;
 
@@ -16,7 +16,7 @@ use crate::utils::bail;
     long_about = r#"
 Fix lint issues identified during the linting process.
 
-Automatically applies fixes where possible, based on the rules in the `fennec.toml` or the default settings.
+Automatically applies fixes where possible, based on the rules in the `mago.toml` or the default settings.
     "#
 )]
 pub struct FixCommand {
@@ -71,7 +71,7 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
                 let source_name = interner.lookup(&source.identifier.value());
                 let source_content = interner.lookup(&source.content);
 
-                fennec_feedback::info!("fixing issues in `{}` ( {} fix operations )", source_name, plan.len());
+                mago_feedback::info!("fixing issues in `{}` ( {} fix operations )", source_name, plan.len());
 
                 let code = plan.execute(source_content);
 

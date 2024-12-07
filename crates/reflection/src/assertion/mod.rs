@@ -9,7 +9,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_interner::ThreadedInterner;
+use mago_interner::ThreadedInterner;
 
 use crate::r#type::kind::*;
 

@@ -1,6 +1,6 @@
-use fennec_ast::*;
-use fennec_span::HasSpan;
-use fennec_token::GetPrecedence;
+use mago_ast::*;
+use mago_span::HasSpan;
+use mago_token::GetPrecedence;
 
 use crate::binaryish::should_flatten;
 use crate::document::Document;
@@ -82,7 +82,8 @@ impl<'a> Formatter<'a> {
 
                 &e.operator
             }
-            Some(Node::UnaryPrefix(operation)) if operation.operator.is_cast() => {
+            Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_)) => {
+                // Add parentheses if parent is an unary operator.
                 return true;
             }
             Some(Node::Conditional(_) | Node::ArrayAppend(_)) => {

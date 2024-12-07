@@ -1,9 +1,9 @@
-use fennec_ast::*;
-use fennec_reflection::attribute::AttributeArgumentListReflection;
-use fennec_reflection::attribute::AttributeArgumentReflection;
-use fennec_reflection::attribute::AttributeReflection;
-use fennec_reflection::identifier::Name;
-use fennec_span::*;
+use mago_ast::*;
+use mago_reflection::attribute::AttributeArgumentListReflection;
+use mago_reflection::attribute::AttributeArgumentReflection;
+use mago_reflection::attribute::AttributeReflection;
+use mago_reflection::identifier::Name;
+use mago_span::*;
 
 use crate::internal::context::Context;
 
@@ -40,12 +40,12 @@ pub fn reflect_attribute_arguments<'ast>(
     for argument in argument_list.arguments.iter() {
         arguments.push(match &argument {
             Argument::Positional(arg) => AttributeArgumentReflection::Positional {
-                value_type_reflection: fennec_typing::infere(context.interner, context.semantics, &arg.value),
+                value_type_reflection: mago_typing::infere(context.interner, context.semantics, &arg.value),
                 span: arg.span(),
             },
             Argument::Named(arg) => AttributeArgumentReflection::Named {
                 name: Name { value: arg.name.value, span: arg.name.span },
-                value_type_reflection: fennec_typing::infere(context.interner, context.semantics, &arg.value),
+                value_type_reflection: mago_typing::infere(context.interner, context.semantics, &arg.value),
                 span: arg.span(),
             },
         });

@@ -1,16 +1,16 @@
 use ahash::HashSet;
 
-use fennec_ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_reflection::identifier::ClassLikeName;
-use fennec_reflection::identifier::FunctionLikeName;
-use fennec_reflection::r#type::kind::*;
-use fennec_reflection::CodebaseReflection;
-use fennec_semantics::Semantics;
-use fennec_span::HasPosition;
-use fennec_span::HasSpan;
-use fennec_trinary::Trinary;
+use mago_ast::*;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_reflection::identifier::ClassLikeName;
+use mago_reflection::identifier::FunctionLikeName;
+use mago_reflection::r#type::kind::*;
+use mago_reflection::CodebaseReflection;
+use mago_semantics::Semantics;
+use mago_span::HasPosition;
+use mago_span::HasSpan;
+use mago_trinary::Trinary;
 
 use crate::constant::ConstantTypeResolver;
 use crate::internal::*;

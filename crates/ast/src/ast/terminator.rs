@@ -2,8 +2,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::ast::tag::ClosingTag;
 use crate::ast::tag::OpeningTag;

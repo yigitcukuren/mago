@@ -1,5 +1,5 @@
-use fennec_ast::*;
-use fennec_span::HasSpan;
+use mago_ast::*;
+use mago_span::HasSpan;
 
 use crate::document::Document;
 use crate::document::Line;
@@ -14,6 +14,7 @@ use crate::format::call_arguments::print_argument_list;
 use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
+use crate::format::misc;
 use crate::format::misc::print_condition;
 use crate::format::misc::print_modifiers;
 use crate::format::string::print_string;
@@ -1126,19 +1127,17 @@ impl<'a> Format<'a> for StaticMethodClosureCreation {
 impl<'a> Format<'a> for AnonymousClass {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, AnonymousClass, {
-            let mut initialization = vec![];
-            initialization.push(self.new.format(f));
-            initialization.push(if self.attributes.is_empty() {
-                Document::space()
-            } else {
-                Document::Indent(vec![Document::Line(Line::default())])
-            });
+            let initialization = {
+                let mut contents = vec![self.new.format(f)];
+                if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attributes, true) {
+                    contents.push(Document::Line(Line::default()));
+                    contents.push(attributes);
+                } else {
+                    contents.push(Document::space());
+                }
 
-            let mut attributes = vec![];
-            for attribute_list in self.attributes.iter() {
-                attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
-            }
+                Document::Group(Group::new(contents))
+            };
 
             let mut signature = print_modifiers(f, &self.modifiers);
             if !signature.is_empty() {
@@ -1161,26 +1160,24 @@ impl<'a> Format<'a> for AnonymousClass {
             }
 
             let signature_id = f.next_id();
-            let signature_document = Document::Group(Group::new(signature).with_id(signature_id));
+            let signature = Document::Group(Group::new(signature).with_id(signature_id));
 
-            Document::Group(Group::new(vec![
-                Document::Group(Group::new(attributes)),
-                signature_document,
-                Document::Group(Group::new(vec![
-                    match f.settings.classlike_brace_style {
-                        BraceStyle::SameLine => Document::space(),
-                        BraceStyle::NextLine => Document::IfBreak(
-                            IfBreak::new(
-                                Document::space(),
-                                Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent]),
-                            )
-                            .with_id(signature_id),
-                        ),
-                    },
-                    print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
-                ])),
-                Document::BreakParent,
-            ]))
+            let body = Document::Group(Group::new(vec![
+                // we follow the same brace style as closures, not classes
+                match f.settings.closure_brace_style {
+                    BraceStyle::SameLine => Document::space(),
+                    BraceStyle::NextLine => Document::IfBreak(
+                        IfBreak::new(
+                            Document::space(),
+                            Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent]),
+                        )
+                        .with_id(signature_id),
+                    ),
+                },
+                print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
+            ]));
+
+            Document::Group(Group::new(vec![initialization, signature, body]))
         })
     }
 }

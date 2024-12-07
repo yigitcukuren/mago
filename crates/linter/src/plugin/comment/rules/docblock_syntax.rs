@@ -1,7 +1,7 @@
-use fennec_ast::*;
-use fennec_reporting::*;
-use fennec_span::*;
-use fennec_walker::Walker;
+use mago_ast::*;
+use mago_reporting::*;
+use mago_span::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;
@@ -26,7 +26,7 @@ impl<'a> Walker<LintContext<'a>> for DocblockSyntaxRule {
     fn walk_program<'ast>(&self, program: &'ast Program, context: &mut LintContext<'a>) {
         for trivia in program.trivia.iter() {
             if let TriviaKind::DocBlockComment = trivia.kind {
-                let Err(parse_error) = fennec_docblock::parse_trivia(context.interner, trivia) else {
+                let Err(parse_error) = mago_docblock::parse_trivia(context.interner, trivia) else {
                     continue;
                 };
 

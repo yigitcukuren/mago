@@ -1,7 +1,7 @@
 use ahash::HashMap;
 use ahash::HashSet;
 
-use fennec_interner::StringIdentifier;
+use mago_interner::StringIdentifier;
 use serde::Deserialize;
 use serde::Serialize;
 

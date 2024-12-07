@@ -8,8 +8,8 @@ use criterion::BenchmarkId;
 use criterion::Criterion;
 use criterion::Throughput;
 
-use fennec_interner::Interner;
-use fennec_interner::ThreadedInterner;
+use mago_interner::Interner;
+use mago_interner::ThreadedInterner;
 
 fn bench_current_thread_intern(c: &mut Criterion) {
     let mut group = c.benchmark_group("Interner::intern");
@@ -76,7 +76,7 @@ fn bench_current_thread_lookup(c: &mut Criterion) {
             // Valid identifier
             black_box(interner.lookup(&identifiers[i % size]));
             // Invalid identifier (assuming higher than any assigned ID)
-            black_box(interner.lookup(&fennec_interner::StringIdentifier::new(usize::MAX - i)));
+            black_box(interner.lookup(&mago_interner::StringIdentifier::new(usize::MAX - i)));
             i += 1;
         });
     });

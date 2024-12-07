@@ -1,6 +1,6 @@
-use fennec_ast::*;
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_ast::*;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::comment::CommentFlags;
 use crate::document::Document;

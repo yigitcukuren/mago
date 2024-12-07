@@ -1,8 +1,8 @@
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_reflection::class_like::ClassLikeReflection;
-use fennec_reflection::identifier::ClassLikeName;
-use fennec_reflection::CodebaseReflection;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_reflection::class_like::ClassLikeReflection;
+use mago_reflection::identifier::ClassLikeName;
+use mago_reflection::CodebaseReflection;
 
 #[inline(always)]
 pub fn populate(interner: &ThreadedInterner, codebase: &mut CodebaseReflection) {

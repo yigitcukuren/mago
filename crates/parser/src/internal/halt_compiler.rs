@@ -1,5 +1,5 @@
-use fennec_ast::ast::*;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::terminator::parse_terminator;

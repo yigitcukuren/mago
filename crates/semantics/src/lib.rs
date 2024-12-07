@@ -1,11 +1,11 @@
-//! # Fennec Semantics Crate
+//! # Mago Semantics Crate
 //!
-//! The `fennec_semantics` crate provides semantic analysis capabilities for PHP code.
-//! **Fennec** is the name of the toolchain, and this crate processes PHP source code to generate
+//! The `mago_semantics` crate provides semantic analysis capabilities for PHP code.
+//! **Mago** is the name of the toolchain, and this crate processes PHP source code to generate
 //! an abstract syntax tree (AST), performs name resolution, builds a symbol table, and detects
 //! semantic issues.
 //!
-//! This crate is essential for the compilation pipeline of PHP within the Fennec toolchain,
+//! This crate is essential for the compilation pipeline of PHP within the Mago toolchain,
 //! ensuring that source code adheres to the language's semantic rules before code generation
 //! or interpretation.
 //!
@@ -19,15 +19,15 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_ast::Program;
-use fennec_interner::ThreadedInterner;
-use fennec_names::Names;
-use fennec_parser::error::ParseError;
-use fennec_reporting::IssueCollection;
-use fennec_source::Source;
-use fennec_symbol_table::get_symbols;
-use fennec_symbol_table::table::SymbolTable;
-use fennec_walker::Walker;
+use mago_ast::Program;
+use mago_interner::ThreadedInterner;
+use mago_names::Names;
+use mago_parser::error::ParseError;
+use mago_reporting::IssueCollection;
+use mago_source::Source;
+use mago_symbol_table::get_symbols;
+use mago_symbol_table::table::SymbolTable;
+use mago_walker::Walker;
 
 use crate::context::Context;
 use crate::walker::SemanticsWalker;
@@ -86,7 +86,7 @@ impl Semantics {
     pub fn build(interner: &ThreadedInterner, source: Source) -> Self {
         // Parse the source code into an AST.
         // The parser returns a tuple containing the AST and an optional parse error.
-        let (program, parse_error) = fennec_parser::parse_source(interner, &source);
+        let (program, parse_error) = mago_parser::parse_source(interner, &source);
 
         // Resolve names in the AST.
         // This step links identifiers to their declarations, handling scopes and imports.

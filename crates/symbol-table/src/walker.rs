@@ -1,8 +1,8 @@
-use fennec_ast::ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_span::HasSpan;
-use fennec_span::Span;
-use fennec_walker::MutWalker;
+use mago_ast::ast::*;
+use mago_interner::StringIdentifier;
+use mago_span::HasSpan;
+use mago_span::Span;
+use mago_walker::MutWalker;
 
 use crate::context::Context;
 use crate::symbol::Symbol;
@@ -130,7 +130,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_function(&mut self, _function: &Function, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting function, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting function, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -144,7 +144,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_anonymous_class(&mut self, _anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting anonymous class, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting anonymous class, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -159,7 +159,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_class(&mut self, _class: &Class, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting class, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting class, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -179,7 +179,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_trait(&mut self, _trait: &Trait, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting trait, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting trait, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -194,7 +194,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_enum(&mut self, _enum: &Enum, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting enum, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting enum, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -214,7 +214,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_interface(&mut self, _interface: &Interface, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting interface, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting interface, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -228,7 +228,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_closure(&mut self, _closure: &Closure, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting closure, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting closure, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -242,7 +242,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_arrow_function(&mut self, _arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting arrow function, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting arrow function, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);
@@ -257,7 +257,7 @@ impl MutWalker<Context<'_>> for SymbolWalker {
 
     fn walk_out_method(&mut self, _method: &Method, context: &mut Context<'_>) {
         let Some(symbol) = context.exit_scope() else {
-            panic!("scope should be present when exiting method, this is a bug in fennec, please report it.");
+            panic!("scope should be present when exiting method, this is a bug in mago, please report it.");
         };
 
         self.symbols.add_symbol(symbol);

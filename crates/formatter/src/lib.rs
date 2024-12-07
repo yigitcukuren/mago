@@ -1,13 +1,13 @@
 use std::iter::Peekable;
 use std::vec::IntoIter;
 
-use fennec_ast::Node;
-use fennec_ast::Program;
-use fennec_ast::Trivia;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_source::Source;
-use fennec_span::Span;
+use mago_ast::Node;
+use mago_ast::Program;
+use mago_ast::Trivia;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_source::Source;
+use mago_span::Span;
 
 use crate::document::group::GroupIdentifier;
 use crate::document::group::GroupIdentifierBuilder;

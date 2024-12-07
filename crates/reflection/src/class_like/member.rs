@@ -5,8 +5,8 @@ use ahash::HashSet;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_interner::StringIdentifier;
-use fennec_span::Span;
+use mago_interner::StringIdentifier;
+use mago_span::Span;
 
 use crate::identifier::ClassLikeName;
 

@@ -1,7 +1,7 @@
-use fennec_ast::*;
-use fennec_reflection::constant::ConstantReflection;
-use fennec_reflection::identifier::Name;
-use fennec_span::*;
+use mago_ast::*;
+use mago_reflection::constant::ConstantReflection;
+use mago_reflection::identifier::Name;
+use mago_span::*;
 
 use crate::internal::context::Context;
 
@@ -12,7 +12,7 @@ pub fn reflect_constant<'ast>(constant: &'ast Constant, context: &'ast mut Conte
 
         reflections.push(ConstantReflection {
             name: Name::new(*name, item.name.span),
-            type_reflection: fennec_typing::infere(context.interner, context.semantics, &item.value),
+            type_reflection: mago_typing::infere(context.interner, context.semantics, &item.value),
             item_span: item.span(),
             definition_span: constant.span(),
             is_populated: false,

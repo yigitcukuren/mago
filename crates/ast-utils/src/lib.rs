@@ -1,4 +1,4 @@
-use fennec_ast::*;
+use mago_ast::*;
 
 #[inline]
 pub fn find_returns_in_block(block: &Block) -> Vec<&Return> {

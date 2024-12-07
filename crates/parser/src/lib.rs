@@ -1,9 +1,9 @@
-use fennec_ast::sequence::Sequence;
-use fennec_ast::Program;
-use fennec_interner::ThreadedInterner;
-use fennec_lexer::input::Input;
-use fennec_lexer::Lexer;
-use fennec_source::Source;
+use mago_ast::sequence::Sequence;
+use mago_ast::Program;
+use mago_interner::ThreadedInterner;
+use mago_lexer::input::Input;
+use mago_lexer::Lexer;
+use mago_source::Source;
 
 use crate::error::ParseError;
 use crate::internal::statement::parse_statement;

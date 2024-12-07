@@ -1,15 +1,15 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
-use fennec_ast::sequence::Sequence;
-use fennec_ast::trivia::Trivia;
-use fennec_ast::trivia::TriviaKind;
-use fennec_interner::ThreadedInterner;
-use fennec_lexer::error::SyntaxError;
-use fennec_lexer::Lexer;
-use fennec_span::Position;
-use fennec_token::Token;
-use fennec_token::TokenKind;
+use mago_ast::sequence::Sequence;
+use mago_ast::trivia::Trivia;
+use mago_ast::trivia::TriviaKind;
+use mago_interner::ThreadedInterner;
+use mago_lexer::error::SyntaxError;
+use mago_lexer::Lexer;
+use mago_span::Position;
+use mago_token::Token;
+use mago_token::TokenKind;
 
 #[derive(Debug)]
 pub struct TokenStream<'a, 'i> {

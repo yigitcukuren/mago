@@ -1,5 +1,5 @@
 [package]
-name = "fennec-fixer"
+name = "mago-fixer"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

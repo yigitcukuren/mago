@@ -1,3 +1,3 @@
 pub fn main() -> ! {
-    fennec_cli::run()
+    mago_cli::run()
 }

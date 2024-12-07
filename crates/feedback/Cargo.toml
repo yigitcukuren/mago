@@ -1,5 +1,5 @@
 [package]
-name = "fennec-feedback"
+name = "mago-feedback"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

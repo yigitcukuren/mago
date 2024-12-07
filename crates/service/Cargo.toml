@@ -1,5 +1,5 @@
 [package]
-name = "fennec-service"
+name = "mago-service"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,18 +9,18 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-interner = { path = "../interner" }
-fennec-source = { path = "../source" }
-fennec-reporting = { path = "../reporting" }
-fennec-semantics = { path = "../semantics" }
-fennec-linter = { path = "../linter" }
-fennec-reflection = { path = "../reflection" }
-fennec-reflector = { path = "../reflector" }
-fennec-span = { path = "../span" }
-fennec-feedback = { path = "../feedback" }
-fennec-formatter = { path = "../formatter" }
-fennec-ast = { path = "../ast" }
-fennec-parser = { path = "../parser" }
+mago-interner = { path = "../interner" }
+mago-source = { path = "../source" }
+mago-reporting = { path = "../reporting" }
+mago-semantics = { path = "../semantics" }
+mago-linter = { path = "../linter" }
+mago-reflection = { path = "../reflection" }
+mago-reflector = { path = "../reflector" }
+mago-span = { path = "../span" }
+mago-feedback = { path = "../feedback" }
+mago-formatter = { path = "../formatter" }
+mago-ast = { path = "../ast" }
+mago-parser = { path = "../parser" }
 tokio = { workspace = true }
 serde = { workspace = true }
 ahash = { workspace = true }

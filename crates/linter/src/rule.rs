@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use fennec_ast::Program;
-use fennec_reporting::Level;
-use fennec_walker::Walker;
+use mago_ast::Program;
+use mago_reporting::Level;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::settings::RuleSettings;

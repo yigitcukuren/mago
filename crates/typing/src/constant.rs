@@ -1,9 +1,9 @@
-use fennec_ast::Identifier;
-use fennec_interner::ThreadedInterner;
-use fennec_reflection::r#type::kind::*;
-use fennec_reflection::CodebaseReflection;
-use fennec_semantics::Semantics;
-use fennec_trinary::Trinary;
+use mago_ast::Identifier;
+use mago_interner::ThreadedInterner;
+use mago_reflection::r#type::kind::*;
+use mago_reflection::CodebaseReflection;
+use mago_semantics::Semantics;
+use mago_trinary::Trinary;
 use ordered_float::OrderedFloat;
 
 pub struct ConstantTypeResolver<'i, 'c> {

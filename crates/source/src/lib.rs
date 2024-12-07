@@ -11,8 +11,8 @@ use dashmap::DashMap;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
 
 use crate::error::SourceError;
 

@@ -1,7 +1,7 @@
-use fennec_ast::ast::*;
-use fennec_ast::sequence::TokenSeparatedSequence;
-use fennec_token::Token;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_ast::sequence::TokenSeparatedSequence;
+use mago_token::Token;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::attribute;

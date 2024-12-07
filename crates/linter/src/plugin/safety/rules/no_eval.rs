@@ -1,7 +1,7 @@
-use fennec_ast::*;
-use fennec_reporting::*;
-use fennec_span::HasSpan;
-use fennec_walker::Walker;
+use mago_ast::*;
+use mago_reporting::*;
+use mago_span::HasSpan;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;

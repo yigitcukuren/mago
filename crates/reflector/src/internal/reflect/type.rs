@@ -1,9 +1,9 @@
-use fennec_ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_reflection::class_like::ClassLikeReflection;
-use fennec_reflection::r#type::kind::*;
-use fennec_reflection::r#type::*;
-use fennec_span::*;
+use mago_ast::*;
+use mago_interner::StringIdentifier;
+use mago_reflection::class_like::ClassLikeReflection;
+use mago_reflection::r#type::kind::*;
+use mago_reflection::r#type::*;
+use mago_span::*;
 
 use crate::internal::context::Context;
 

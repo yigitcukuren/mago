@@ -1,20 +1,20 @@
 use ahash::HashMap;
 
-use fennec_ast::*;
-use fennec_reflection::class_like::constant::ClassLikeConstantReflection;
-use fennec_reflection::class_like::enum_case::EnumCaseReflection;
-use fennec_reflection::class_like::inheritance::InheritanceReflection;
-use fennec_reflection::class_like::member::ClassLikeMemberVisibilityReflection;
-use fennec_reflection::class_like::member::MemeberCollection;
-use fennec_reflection::class_like::property::PropertyDefaultValueReflection;
-use fennec_reflection::class_like::property::PropertyReflection;
-use fennec_reflection::class_like::ClassLikeReflection;
-use fennec_reflection::function_like::FunctionLikeReflection;
-use fennec_reflection::identifier::ClassLikeMemberName;
-use fennec_reflection::identifier::ClassLikeName;
-use fennec_reflection::identifier::FunctionLikeName;
-use fennec_reflection::identifier::Name;
-use fennec_span::*;
+use mago_ast::*;
+use mago_reflection::class_like::constant::ClassLikeConstantReflection;
+use mago_reflection::class_like::enum_case::EnumCaseReflection;
+use mago_reflection::class_like::inheritance::InheritanceReflection;
+use mago_reflection::class_like::member::ClassLikeMemberVisibilityReflection;
+use mago_reflection::class_like::member::MemeberCollection;
+use mago_reflection::class_like::property::PropertyDefaultValueReflection;
+use mago_reflection::class_like::property::PropertyReflection;
+use mago_reflection::class_like::ClassLikeReflection;
+use mago_reflection::function_like::FunctionLikeReflection;
+use mago_reflection::identifier::ClassLikeMemberName;
+use mago_reflection::identifier::ClassLikeName;
+use mago_reflection::identifier::FunctionLikeName;
+use mago_reflection::identifier::Name;
+use mago_span::*;
 
 use crate::internal::context::Context;
 use crate::internal::reflect::attribute::reflect_attributes;
@@ -312,7 +312,7 @@ fn reflect_class_like_constant<'ast>(
                 member: Name::new(item.name.value, item.name.span),
             },
             is_final,
-            inferred_type_reflection: fennec_typing::infere(context.interner, context.semantics, &item.value),
+            inferred_type_reflection: mago_typing::infere(context.interner, context.semantics, &item.value),
             item_span: item.span(),
             definition_span: constant.span(),
         });
@@ -340,7 +340,7 @@ fn reflect_class_like_enum_case<'ast>(
                 class_like: class_like.name,
                 member: Name::new(enum_case_backed_item.name.value, enum_case_backed_item.name.span),
             },
-            Some(fennec_typing::infere(context.interner, context.semantics, &enum_case_backed_item.value)),
+            Some(mago_typing::infere(context.interner, context.semantics, &enum_case_backed_item.value)),
             true,
         ),
     };
@@ -364,7 +364,7 @@ fn reflect_class_like_method<'ast>(
     let (has_yield, has_throws, is_abstract) = match &method.body {
         MethodBody::Abstract(_) => (false, false, true),
         MethodBody::Concrete(block) => {
-            (fennec_ast_utils::block_has_yield(block), fennec_ast_utils::block_has_throws(block), false)
+            (mago_ast_utils::block_has_yield(block), mago_ast_utils::block_has_throws(block), false)
         }
     };
 
@@ -449,7 +449,7 @@ fn reflect_class_like_property<'ast>(
                             member: Name::new(item.variable.name, item.variable.span),
                         },
                         Some(PropertyDefaultValueReflection {
-                            inferred_type_reflection: fennec_typing::infere(
+                            inferred_type_reflection: mago_typing::infere(
                                 context.interner,
                                 context.semantics,
                                 &item.value,
@@ -505,11 +505,7 @@ fn reflect_class_like_property<'ast>(
                         member: Name::new(item.variable.name, item.variable.span),
                     },
                     Some(PropertyDefaultValueReflection {
-                        inferred_type_reflection: fennec_typing::infere(
-                            context.interner,
-                            context.semantics,
-                            &item.value,
-                        ),
+                        inferred_type_reflection: mago_typing::infere(context.interner, context.semantics, &item.value),
                         span: item.value.span(),
                     }),
                 ),
@@ -532,13 +528,12 @@ fn reflect_class_like_property<'ast>(
                         let (has_yield, has_throws) = match &hook.body {
                             PropertyHookBody::Abstract(_) => (false, false),
                             PropertyHookBody::Concrete(body) => match &body {
-                                PropertyHookConcreteBody::Block(block) => (
-                                    fennec_ast_utils::block_has_yield(block),
-                                    fennec_ast_utils::block_has_throws(block),
-                                ),
+                                PropertyHookConcreteBody::Block(block) => {
+                                    (mago_ast_utils::block_has_yield(block), mago_ast_utils::block_has_throws(block))
+                                }
                                 PropertyHookConcreteBody::Expression(body) => (
-                                    fennec_ast_utils::expression_has_yield(&body.expression),
-                                    fennec_ast_utils::expression_has_throws(&body.expression),
+                                    mago_ast_utils::expression_has_yield(&body.expression),
+                                    mago_ast_utils::expression_has_throws(&body.expression),
                                 ),
                             },
                         };

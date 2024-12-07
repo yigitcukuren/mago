@@ -1,7 +1,7 @@
-use fennec_ast::ast::*;
-use fennec_span::Span;
-use fennec_token::Token;
-use fennec_token::TokenKind;
+use mago_ast::ast::*;
+use mago_span::Span;
+use mago_token::Token;
+use mago_token::TokenKind;
 
 use crate::error::ParseError;
 use crate::internal::token_stream::TokenStream;

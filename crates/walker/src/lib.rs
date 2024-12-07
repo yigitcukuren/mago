@@ -1,5 +1,5 @@
-use fennec_ast::ast::*;
-use fennec_ast::Program;
+use mago_ast::ast::*;
+use mago_ast::Program;
 
 /// Macro for generating a walker trait and associated functions for traversing an AST.
 ///

@@ -1,5 +1,5 @@
 [package]
-name = "fennec-walker"
+name = "mago-walker"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,5 +9,5 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-ast = { path = "../ast" }
+mago-ast = { path = "../ast" }
 paste = { workspace = true }

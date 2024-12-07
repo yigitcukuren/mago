@@ -4,10 +4,10 @@ use std::vec::IntoIter;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
-use fennec_token::Token;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
+use mago_token::Token;
 
 /// Represents a sequence of nodes.
 ///

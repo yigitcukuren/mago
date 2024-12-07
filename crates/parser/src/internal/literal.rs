@@ -1,8 +1,8 @@
 use ordered_float::OrderedFloat;
 
-use fennec_ast::ast::*;
-use fennec_span::Position;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_span::Position;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::token_stream::TokenStream;

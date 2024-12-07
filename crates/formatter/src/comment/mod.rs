@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use fennec_ast::Trivia;
+use mago_ast::Trivia;
 
 pub mod format;
 

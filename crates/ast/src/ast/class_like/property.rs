@@ -2,8 +2,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::ast::attribute::AttributeList;
 use crate::ast::block::Block;
@@ -216,7 +216,7 @@ impl Property {
     pub fn first_variable(&self) -> &DirectVariable {
         self.variables()
             .first()
-            .expect("expected property to have at least 1 item. this is a bug in fennec. please report it.")
+            .expect("expected property to have at least 1 item. this is a bug in mago. please report it.")
     }
 
     pub fn variables(&self) -> Vec<&DirectVariable> {

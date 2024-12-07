@@ -1,5 +1,5 @@
-use fennec_interner::ThreadedInterner;
-use fennec_semantics::Semantics;
+use mago_interner::ThreadedInterner;
+use mago_semantics::Semantics;
 
 #[derive(Debug)]
 pub struct Context<'a> {

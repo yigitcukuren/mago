@@ -1,6 +1,6 @@
 use std::vec::IntoIter;
 
-use fennec_source::HasSource;
+use mago_source::HasSource;
 use serde::Deserialize;
 use serde::Serialize;
 

@@ -1,13 +1,13 @@
 use pretty_assertions::assert_eq;
 
-use fennec_interner::ThreadedInterner;
-use fennec_lexer::input::Input;
-use fennec_source::SourceIdentifier;
-use fennec_token::DocumentKind;
-use fennec_token::TokenKind;
+use mago_interner::ThreadedInterner;
+use mago_lexer::input::Input;
+use mago_source::SourceIdentifier;
+use mago_token::DocumentKind;
+use mago_token::TokenKind;
 
-use fennec_lexer::error::SyntaxError;
-use fennec_lexer::Lexer;
+use mago_lexer::error::SyntaxError;
+use mago_lexer::Lexer;
 
 #[tokio::test]
 async fn test_casts() -> Result<(), SyntaxError> {

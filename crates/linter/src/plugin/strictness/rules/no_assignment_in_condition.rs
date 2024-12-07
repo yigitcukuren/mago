@@ -1,8 +1,8 @@
-use fennec_ast::ast::*;
-use fennec_ast_utils::get_assignment_from_expression;
-use fennec_reporting::*;
-use fennec_span::*;
-use fennec_walker::Walker;
+use mago_ast::ast::*;
+use mago_ast_utils::get_assignment_from_expression;
+use mago_reporting::*;
+use mago_span::*;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::rule::Rule;

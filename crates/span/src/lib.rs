@@ -1,10 +1,10 @@
 use std::ops::Range;
 
-use fennec_source::HasSource;
+use mago_source::HasSource;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_source::SourceIdentifier;
+use mago_source::SourceIdentifier;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct Position {

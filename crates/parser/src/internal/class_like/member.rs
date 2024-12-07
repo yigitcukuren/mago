@@ -1,8 +1,8 @@
 use either::Either;
 
-use fennec_ast::ast::*;
-use fennec_ast::sequence::Sequence;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_ast::sequence::Sequence;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::attribute::parse_attribute_list_sequence;

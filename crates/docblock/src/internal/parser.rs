@@ -1,5 +1,5 @@
-use fennec_interner::ThreadedInterner;
-use fennec_span::Span;
+use mago_interner::ThreadedInterner;
+use mago_span::Span;
 
 use crate::document::*;
 use crate::error::ParseError;

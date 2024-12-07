@@ -1,5 +1,5 @@
 [package]
-name = "fennec-wasm"
+name = "mago-wasm"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -17,12 +17,12 @@ serde-wasm-bindgen = { workspace = true }
 getrandom = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
-fennec-ast = { path = "../ast" }
-fennec-names = { path = "../names" }
-fennec-interner = { path = "../interner" }
-fennec-reporting = { path = "../reporting" }
-fennec-semantics = { path = "../semantics" }
-fennec-symbol-table = { path = "../symbol-table" }
-fennec-source = { path = "../source" }
-fennec-parser = { path = "../parser" }
-fennec-formatter = { path = "../formatter" }
+mago-ast = { path = "../ast" }
+mago-names = { path = "../names" }
+mago-interner = { path = "../interner" }
+mago-reporting = { path = "../reporting" }
+mago-semantics = { path = "../semantics" }
+mago-symbol-table = { path = "../symbol-table" }
+mago-source = { path = "../source" }
+mago-parser = { path = "../parser" }
+mago-formatter = { path = "../formatter" }

@@ -21,7 +21,7 @@ pub use cruet::case::train::to_train_case;
 /// require the string to be in singular form.
 ///
 /// ```
-/// use fennec_casing::is_class_case;
+/// use mago_casing::is_class_case;
 ///
 /// assert!(is_class_case("Foo"));
 /// assert!(is_class_case("FooBarIsAReallyReallyLongString"));
@@ -46,7 +46,7 @@ pub fn is_class_case(test_string: &str) -> bool {
 /// convert the string to singular form.
 ///
 /// ```
-/// use fennec_casing::to_class_case;
+/// use mago_casing::to_class_case;
 ///
 /// assert_eq!(to_class_case("UInt"), "UInt");
 /// assert_eq!(to_class_case("Uint"), "Uint");
@@ -103,7 +103,7 @@ pub fn to_class_case(non_class_case_string: &str) -> String {
 /// numbers to be included in the string without separating them.
 ///
 /// ```
-/// use fennec_casing::is_snake_case;
+/// use mago_casing::is_snake_case;
 ///
 /// assert!(is_snake_case("foo_2_bar"));
 /// assert!(is_snake_case("foo2bar"));
@@ -127,7 +127,7 @@ pub fn is_snake_case(test_string: &str) -> bool {
 /// numbers to be included in the string without separating them.
 ///
 /// ```
-/// use fennec_casing::to_snake_case;
+/// use mago_casing::to_snake_case;
 ///
 /// assert_eq!(to_snake_case("foo_2_bar"),  "foo_2_bar");
 /// assert_eq!(to_snake_case("foo_bar"),  "foo_bar");

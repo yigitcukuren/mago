@@ -1,12 +1,12 @@
-use fennec_interner::ThreadedInterner;
+use mago_interner::ThreadedInterner;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_span::HasSpan;
-use fennec_span::Span;
-use fennec_token::GetPrecedence;
-use fennec_token::Precedence;
+use mago_span::HasSpan;
+use mago_span::Span;
+use mago_token::GetPrecedence;
+use mago_token::Precedence;
 
 use crate::ast::expression::Expression;
 use crate::Keyword;

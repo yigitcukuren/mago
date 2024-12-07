@@ -1,9 +1,9 @@
-use fennec_ast::ast::DocumentKind as AstDocumentKind;
-use fennec_ast::ast::*;
-use fennec_ast::sequence::Sequence;
-use fennec_token::DocumentKind;
-use fennec_token::TokenKind;
-use fennec_token::T;
+use mago_ast::ast::DocumentKind as AstDocumentKind;
+use mago_ast::ast::*;
+use mago_ast::sequence::Sequence;
+use mago_token::DocumentKind;
+use mago_token::TokenKind;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::expression::parse_expression;

@@ -1,11 +1,11 @@
 use ahash::HashSet;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_trinary::Trinary;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_trinary::Trinary;
 use ordered_float::OrderedFloat;
 
-use fennec_ast::*;
-use fennec_reflection::r#type::kind::*;
+use mago_ast::*;
+use mago_reflection::r#type::kind::*;
 use sequence::TokenSeparatedSequence;
 
 #[inline]

@@ -1,5 +1,5 @@
 [package]
-name = "fennec-reflection"
+name = "mago-reflection"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,10 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-interner = { path = "../interner" }
-fennec-span = { path = "../span" }
-fennec-source = { path = "../source" }
-fennec-trinary = { path = "../trinary" }
+mago-interner = { path = "../interner" }
+mago-span = { path = "../span" }
+mago-source = { path = "../source" }
+mago-trinary = { path = "../trinary" }
 ahash = { workspace = true }
 serde = { workspace = true }
 ordered-float = { workspace = true }

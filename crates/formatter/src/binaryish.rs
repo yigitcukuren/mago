@@ -1,5 +1,5 @@
-use fennec_ast::BinaryOperator;
-use fennec_token::GetPrecedence;
+use mago_ast::BinaryOperator;
+use mago_token::GetPrecedence;
 
 pub fn should_flatten<'a>(operator: &'a BinaryOperator, parent_op: &'a BinaryOperator) -> bool {
     let self_precedence = operator.precedence();

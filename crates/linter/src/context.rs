@@ -1,17 +1,17 @@
-use fennec_ast::Identifier;
-use fennec_semantics::Semantics;
+use mago_ast::Identifier;
+use mago_semantics::Semantics;
 use toml::value::Value;
 
-use fennec_ast::Hint;
-use fennec_fixer::FixPlan;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_reporting::Issue;
-use fennec_reporting::IssueCollection;
-use fennec_reporting::Level;
-use fennec_span::HasPosition;
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_ast::Hint;
+use mago_fixer::FixPlan;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
+use mago_reporting::Level;
+use mago_span::HasPosition;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 use crate::consts::ANONYMOUS_CLASS_NAME;
 use crate::rule::ConfiguredRule;

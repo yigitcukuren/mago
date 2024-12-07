@@ -4,12 +4,12 @@ use ahash::HashMap;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_ast::Program;
-use fennec_interner::StringIdentifier;
-use fennec_interner::ThreadedInterner;
-use fennec_span::HasPosition;
-use fennec_span::Position;
-use fennec_walker::MutWalker;
+use mago_ast::Program;
+use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
+use mago_span::HasPosition;
+use mago_span::Position;
+use mago_walker::MutWalker;
 
 use crate::internal::context::NameContext;
 use crate::internal::resolver::NameResolver;

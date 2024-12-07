@@ -1,5 +1,5 @@
-use fennec_source::SourceIdentifier;
-use fennec_span::Position;
+use mago_source::SourceIdentifier;
+use mago_span::Position;
 
 /// A struct representing the input code being lexed.
 ///
@@ -242,8 +242,8 @@ impl<'a> Input<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use fennec_lexer::input::Input;
-    /// use fennec_source::SourceIdentifier;
+    /// use mago_lexer::input::Input;
+    /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::empty();
     ///
@@ -361,7 +361,7 @@ impl<'a> Input<'a> {
 
 #[cfg(test)]
 mod tests {
-    use fennec_span::Position;
+    use mago_span::Position;
 
     use super::*;
 

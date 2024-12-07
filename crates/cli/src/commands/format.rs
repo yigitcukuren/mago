@@ -1,9 +1,9 @@
 use clap::Parser;
 
-use fennec_interner::ThreadedInterner;
-use fennec_service::config::Configuration;
-use fennec_service::formatter::FormatterService;
-use fennec_service::source::SourceService;
+use mago_interner::ThreadedInterner;
+use mago_service::config::Configuration;
+use mago_service::formatter::FormatterService;
+use mago_service::source::SourceService;
 
 use crate::utils::bail;
 
@@ -37,7 +37,7 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
 
     let count = service.run().await.unwrap_or_else(bail);
 
-    fennec_feedback::info!("formatted {} source files successfully", count);
+    mago_feedback::info!("formatted {} source files successfully", count);
 
     0
 }

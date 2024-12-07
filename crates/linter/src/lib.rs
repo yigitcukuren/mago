@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use fennec_interner::ThreadedInterner;
-use fennec_reporting::IssueCollection;
-use fennec_semantics::Semantics;
+use mago_interner::ThreadedInterner;
+use mago_reporting::IssueCollection;
+use mago_semantics::Semantics;
 
 use crate::context::Context;
 use crate::plugin::Plugin;

@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_token::DocumentKind;
+use mago_token::DocumentKind;
 
 /// Represents the different stages of the `halt_compiler` keyword.
 ///

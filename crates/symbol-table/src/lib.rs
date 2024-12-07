@@ -1,6 +1,6 @@
-use fennec_ast::Program;
-use fennec_interner::ThreadedInterner;
-use fennec_walker::MutWalker;
+use mago_ast::Program;
+use mago_interner::ThreadedInterner;
+use mago_walker::MutWalker;
 
 use crate::context::Context;
 use crate::table::SymbolTable;

@@ -2,11 +2,11 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_interner::StringIdentifier;
-use fennec_source::HasSource;
-use fennec_source::SourceIdentifier;
-use fennec_span::HasSpan;
-use fennec_span::Span;
+use mago_interner::StringIdentifier;
+use mago_source::HasSource;
+use mago_source::SourceIdentifier;
+use mago_span::HasSpan;
+use mago_span::Span;
 
 /// Represents the different kinds of symbols that can be encountered in the code.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]

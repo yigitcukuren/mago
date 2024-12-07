@@ -3,10 +3,10 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_source::SourceIdentifier;
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
+use mago_source::SourceIdentifier;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
 
 pub use crate::ast::*;
 pub use crate::node::Node;

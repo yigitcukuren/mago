@@ -30,18 +30,18 @@ pub const CLAP_STYLING: Styles = Styles::styled()
     long_about = r#"
 --------------------------------------------------------------------------
   /\   /\            |
- //\\_//\\     ____  | Fennec 🦊 is an all-in-one, oxidized PHP toolchain,
+ //\\_//\\     ____  | Mago 🦊 is an all-in-one, oxidized PHP toolchain,
  \_     _/    /   /  | built to handle everything from static analysis and
   / * * \    /^^^]   | refactoring to full project management.
   \_\O/_/    [   ]   |
    /   \_    [   /   |
    \     \_  /  /    |
-    [ [ /  \/ _/     | https://carthage.software/fennec
+    [ [ /  \/ _/     | https://carthage.software/mago
    _[ [ \  /_/       |
 --------------------------------------------------------------------------
 "#,
 )]
-pub enum FennecCommand {
+pub enum MagoCommand {
     #[command(name = "lint")]
     Lint(LintCommand),
     #[command(name = "fix")]

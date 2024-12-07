@@ -1,4 +1,4 @@
-use fennec_span::Span;
+use mago_span::Span;
 
 use crate::error::ParseError;
 use crate::internal::token::Token;
@@ -131,7 +131,7 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
 mod tests {
     use super::*;
 
-    use fennec_span::Position;
+    use mago_span::Position;
 
     #[test]
     fn test_lex_empty_single_line_comment() {

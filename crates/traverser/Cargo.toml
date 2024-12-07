@@ -1,5 +1,5 @@
 [package]
-name = "fennec-traverser"
+name = "mago-traverser"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,4 +9,4 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-ast = { path = "../ast" }
+mago-ast = { path = "../ast" }

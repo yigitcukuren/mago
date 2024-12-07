@@ -1,5 +1,5 @@
 [package]
-name = "fennec-cli"
+name = "mago-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-ast = { path = "../ast" }
-fennec-reporting = { path = "../reporting" }
-fennec-interner = { path = "../interner" }
-fennec-source = { path = "../source" }
-fennec-fixer = { path = "../fixer" }
-fennec-service = { path = "../service" }
-fennec-feedback = { path = "../feedback" }
+mago-ast = { path = "../ast" }
+mago-reporting = { path = "../reporting" }
+mago-interner = { path = "../interner" }
+mago-source = { path = "../source" }
+mago-fixer = { path = "../fixer" }
+mago-service = { path = "../service" }
+mago-feedback = { path = "../feedback" }
 serde = { workspace = true }
 tokio = { workspace = true , features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }

@@ -1,8 +1,8 @@
 use ahash::HashMap;
-use fennec_ast::ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_span::HasSpan;
-use fennec_walker::MutWalker;
+use mago_ast::ast::*;
+use mago_interner::StringIdentifier;
+use mago_span::HasSpan;
+use mago_walker::MutWalker;
 
 use crate::internal::context::NameContext;
 use crate::internal::context::NameKind;

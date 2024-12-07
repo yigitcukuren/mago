@@ -1,5 +1,5 @@
 [package]
-name = "fennec-ast"
+name = "mago-ast"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,10 +9,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-source = { path = "../source" }
-fennec-span = { path = "../span" }
-fennec-token = { path = "../token" }
-fennec-interner = { path = "../interner" }
+mago-source = { path = "../source" }
+mago-span = { path = "../span" }
+mago-token = { path = "../token" }
+mago-interner = { path = "../interner" }
 serde = { workspace = true }
 strum = { workspace = true }
 ordered-float = { workspace = true, features = ["serde", "rand"] }

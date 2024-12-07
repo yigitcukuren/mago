@@ -1,4 +1,4 @@
-use fennec_ast::*;
+use mago_ast::*;
 
 use crate::context::LintContext;
 

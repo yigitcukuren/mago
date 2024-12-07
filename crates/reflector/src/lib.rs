@@ -1,7 +1,7 @@
-use fennec_interner::ThreadedInterner;
-use fennec_reflection::CodebaseReflection;
-use fennec_semantics::Semantics;
-use fennec_walker::*;
+use mago_interner::ThreadedInterner;
+use mago_reflection::CodebaseReflection;
+use mago_semantics::Semantics;
+use mago_walker::*;
 
 use crate::internal::context::Context;
 use crate::internal::walker::ReflectionWalker;

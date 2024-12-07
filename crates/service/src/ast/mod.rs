@@ -1,9 +1,9 @@
-use fennec_ast::Program;
-use fennec_interner::ThreadedInterner;
-use fennec_parser::error::ParseError;
-use fennec_source::error::SourceError;
-use fennec_source::SourceIdentifier;
-use fennec_source::SourceManager;
+use mago_ast::Program;
+use mago_interner::ThreadedInterner;
+use mago_parser::error::ParseError;
+use mago_source::error::SourceError;
+use mago_source::SourceIdentifier;
+use mago_source::SourceManager;
 
 #[derive(Debug)]
 pub struct AstService {
@@ -20,6 +20,6 @@ impl AstService {
     pub async fn parse(&self, source: SourceIdentifier) -> Result<(Program, Option<ParseError>), SourceError> {
         let source = self.source_manager.load(source)?;
 
-        Ok(fennec_parser::parse_source(&self.interner, &source))
+        Ok(mago_parser::parse_source(&self.interner, &source))
     }
 }

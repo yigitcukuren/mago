@@ -1,14 +1,14 @@
-use fennec_reporting::Annotation;
-use fennec_reporting::Issue;
+use mago_reporting::Annotation;
+use mago_reporting::Issue;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_ast::ast::*;
-use fennec_lexer::error::SyntaxError;
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
-use fennec_token::TokenKind;
+use mago_ast::ast::*;
+use mago_lexer::error::SyntaxError;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
+use mago_token::TokenKind;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ParseError {

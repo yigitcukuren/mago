@@ -1,11 +1,11 @@
-use fennec_ast::*;
-use fennec_reflection::class_like::ClassLikeReflection;
-use fennec_reflection::function_like::parameter::*;
-use fennec_reflection::function_like::r#return::*;
-use fennec_reflection::function_like::*;
-use fennec_reflection::identifier::FunctionLikeName;
-use fennec_reflection::identifier::Name;
-use fennec_span::*;
+use mago_ast::*;
+use mago_reflection::class_like::ClassLikeReflection;
+use mago_reflection::function_like::parameter::*;
+use mago_reflection::function_like::r#return::*;
+use mago_reflection::function_like::*;
+use mago_reflection::identifier::FunctionLikeName;
+use mago_reflection::identifier::Name;
+use mago_span::*;
 
 use crate::internal::context::Context;
 use crate::internal::reflect::attribute::reflect_attributes;
@@ -26,8 +26,8 @@ pub fn reflect_function<'ast>(
         parameters: reflect_function_like_parameter_list(&function.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(&function.return_type_hint, context, scope),
         returns_by_reference: function.ampersand.is_some(),
-        has_yield: fennec_ast_utils::block_has_yield(&function.body),
-        has_throws: fennec_ast_utils::block_has_throws(&function.body),
+        has_yield: mago_ast_utils::block_has_yield(&function.body),
+        has_throws: mago_ast_utils::block_has_throws(&function.body),
         is_anonymous: false,
         is_static: true,
         is_final: true,
@@ -54,8 +54,8 @@ pub fn reflect_closure<'ast>(
         parameters: reflect_function_like_parameter_list(&closure.parameters, context, scope),
         return_type_reflection: reflect_function_like_return_type_hint(&closure.return_type_hint, context, scope),
         returns_by_reference: closure.ampersand.is_some(),
-        has_yield: fennec_ast_utils::block_has_yield(&closure.body),
-        has_throws: fennec_ast_utils::block_has_throws(&closure.body),
+        has_yield: mago_ast_utils::block_has_yield(&closure.body),
+        has_throws: mago_ast_utils::block_has_throws(&closure.body),
         is_anonymous: true,
         is_static: closure.r#static.is_some(),
         is_final: true,
@@ -86,8 +86,8 @@ pub fn reflect_arrow_function<'ast>(
             scope,
         ),
         returns_by_reference: arrow_function.ampersand.is_some(),
-        has_yield: fennec_ast_utils::expression_has_yield(&arrow_function.expression),
-        has_throws: fennec_ast_utils::expression_has_throws(&arrow_function.expression),
+        has_yield: mago_ast_utils::expression_has_yield(&arrow_function.expression),
+        has_throws: mago_ast_utils::expression_has_throws(&arrow_function.expression),
         is_anonymous: true,
         is_static: arrow_function.r#static.is_some(),
         is_final: true,
@@ -126,7 +126,7 @@ pub fn reflect_function_like_parameter<'ast>(
         is_passed_by_reference: parameter.ampersand.is_some(),
         is_promoted_property: parameter.is_promoted_property(),
         default: parameter.default_value.as_ref().map(|d| FunctionLikeParameterDefaultValueReflection {
-            type_reflection: fennec_typing::infere(context.interner, context.semantics, &d.value),
+            type_reflection: mago_typing::infere(context.interner, context.semantics, &d.value),
             span: d.span(),
         }),
     }

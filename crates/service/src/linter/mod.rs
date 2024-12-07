@@ -1,25 +1,25 @@
-use fennec_feedback::create_progress_bar;
-use fennec_feedback::remove_progress_bar;
-use fennec_feedback::ProgressBarTheme;
-use fennec_interner::ThreadedInterner;
-use fennec_linter::plugin::best_practices::BestPracticesPlugin;
-use fennec_linter::plugin::comment::CommentPlugin;
-use fennec_linter::plugin::consistency::ConsistencyPlugin;
-use fennec_linter::plugin::naming::NamingPlugin;
-use fennec_linter::plugin::redundancy::RedundancyPlugin;
-use fennec_linter::plugin::safety::SafetyPlugin;
-use fennec_linter::plugin::strictness::StrictnessPlugin;
-use fennec_linter::plugin::symfony::SymfonyPlugin;
-use fennec_linter::settings::RuleSettings;
-use fennec_linter::settings::Settings;
-use fennec_linter::Linter;
-use fennec_reporting::Issue;
-use fennec_reporting::IssueCollection;
-use fennec_reporting::Level;
-use fennec_semantics::Semantics;
-use fennec_source::error::SourceError;
-use fennec_source::SourceIdentifier;
-use fennec_source::SourceManager;
+use mago_feedback::create_progress_bar;
+use mago_feedback::remove_progress_bar;
+use mago_feedback::ProgressBarTheme;
+use mago_interner::ThreadedInterner;
+use mago_linter::plugin::best_practices::BestPracticesPlugin;
+use mago_linter::plugin::comment::CommentPlugin;
+use mago_linter::plugin::consistency::ConsistencyPlugin;
+use mago_linter::plugin::naming::NamingPlugin;
+use mago_linter::plugin::redundancy::RedundancyPlugin;
+use mago_linter::plugin::safety::SafetyPlugin;
+use mago_linter::plugin::strictness::StrictnessPlugin;
+use mago_linter::plugin::symfony::SymfonyPlugin;
+use mago_linter::settings::RuleSettings;
+use mago_linter::settings::Settings;
+use mago_linter::Linter;
+use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
+use mago_reporting::Level;
+use mago_semantics::Semantics;
+use mago_source::error::SourceError;
+use mago_source::SourceIdentifier;
+use mago_source::SourceManager;
 
 use crate::linter::config::LinterConfiguration;
 use crate::linter::config::LinterLevel;
@@ -48,7 +48,7 @@ impl LintService {
     }
 
     #[inline]
-    async fn process_sources<'a>(
+    async fn process_sources(
         &self,
         linter: Linter,
         source_ids: Vec<SourceIdentifier>,

@@ -1,5 +1,5 @@
 [package]
-name = "fennec-composer"
+name = "mago-composer"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true

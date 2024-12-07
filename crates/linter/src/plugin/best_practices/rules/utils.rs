@@ -1,6 +1,6 @@
-use fennec_ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_walker::Walker;
+use mago_ast::*;
+use mago_interner::StringIdentifier;
+use mago_walker::Walker;
 
 use crate::context::LintContext;
 
@@ -165,9 +165,9 @@ pub fn get_foreign_variable_names(block: &Block, context: &LintContext<'_>) -> V
 mod internal {
     use super::is_predefined_variable;
 
-    use fennec_ast::*;
-    use fennec_interner::StringIdentifier;
-    use fennec_walker::Walker;
+    use mago_ast::*;
+    use mago_interner::StringIdentifier;
+    use mago_walker::Walker;
 
     use crate::context::LintContext;
 

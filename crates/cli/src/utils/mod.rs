@@ -1,11 +1,11 @@
 use std::error::Error;
 
 pub fn print(error: impl Error) {
-    fennec_feedback::error!(target = "fennec", "{}", error);
-    fennec_feedback::debug!(target = "fennec", "{:#?}", error);
+    mago_feedback::error!(target = "mago", "{}", error);
+    mago_feedback::debug!(target = "mago", "{:#?}", error);
 
     if let Some(source) = error.source() {
-        fennec_feedback::debug!(target = "fennec", "{:#?}", source);
+        mago_feedback::debug!(target = "mago", "{:#?}", source);
     }
 }
 

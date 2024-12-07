@@ -2,8 +2,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_interner::StringIdentifier;
-use fennec_span::Span;
+use mago_interner::StringIdentifier;
+use mago_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]

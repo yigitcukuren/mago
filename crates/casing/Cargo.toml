@@ -1,5 +1,5 @@
 [package]
-name = "fennec-casing"
+name = "mago-casing"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

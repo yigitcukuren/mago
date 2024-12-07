@@ -2,9 +2,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 
-use fennec_span::HasSpan;
-use fennec_span::Position;
-use fennec_span::Span;
+use mago_span::HasSpan;
+use mago_span::Position;
+use mago_span::Span;
 
 use crate::ast::identifier::Identifier;
 use crate::ast::identifier::LocalIdentifier;

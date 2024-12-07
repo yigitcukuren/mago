@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use fennec_span::Span;
+use mago_span::Span;
 
 use crate::document::Document;
 use crate::document::Group;

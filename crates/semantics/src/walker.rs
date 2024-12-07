@@ -1,12 +1,12 @@
 #![allow(clippy::too_many_arguments)]
 
-use fennec_ast::ast::*;
-use fennec_ast::*;
-use fennec_interner::StringIdentifier;
-use fennec_reporting::*;
-use fennec_span::HasSpan;
-use fennec_span::Span;
-use fennec_walker::Walker;
+use mago_ast::ast::*;
+use mago_ast::*;
+use mago_interner::StringIdentifier;
+use mago_reporting::*;
+use mago_span::HasSpan;
+use mago_span::Span;
+use mago_walker::Walker;
 
 use crate::consts::ANONYMOUS_CLASS_NAME;
 use crate::consts::CALL_MAGIC_METHOD;
@@ -1242,7 +1242,7 @@ impl SemanticsWalker {
                     return;
                 };
 
-                let returns = fennec_ast_utils::find_returns_in_block(body);
+                let returns = mago_ast_utils::find_returns_in_block(body);
 
                 match &hint {
                     Hint::Void(_) => {
@@ -2955,7 +2955,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         };
 
-        let returns = fennec_ast_utils::find_returns_in_block(&function.body);
+        let returns = mago_ast_utils::find_returns_in_block(&function.body);
 
         match &hint {
             Hint::Void(_) => {
@@ -3158,7 +3158,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         };
 
-        let returns = fennec_ast_utils::find_returns_in_block(&closure.body);
+        let returns = mago_ast_utils::find_returns_in_block(&closure.body);
 
         match &hint {
             Hint::Void(_) => {
@@ -3473,7 +3473,7 @@ fn returns_generator<'ast>(context: &mut Context<'_>, block: &'ast Block, hint: 
         return true;
     }
 
-    fennec_ast_utils::block_has_yield(block)
+    mago_ast_utils::block_has_yield(block)
 }
 
 fn hint_contains_generator(context: &mut Context<'_>, hint: &Hint) -> bool {

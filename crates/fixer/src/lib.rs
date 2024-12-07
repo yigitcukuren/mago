@@ -103,7 +103,7 @@ impl ChangeSet {
     /// # Example
     ///
     /// ```rust
-    /// use fennec_fixer::{Change, ChangeSet};
+    /// use mago_fixer::{Change, ChangeSet};
     ///
     /// let changes = vec![
     ///     Change::Unchanged("Hello".to_string()),
@@ -124,7 +124,7 @@ impl ChangeSet {
     /// # Example
     ///
     /// ```rust
-    /// use fennec_fixer::{Change, ChangeSet};
+    /// use mago_fixer::{Change, ChangeSet};
     ///
     /// let changes = vec![
     ///     Change::Unchanged("Hello".to_string()),
@@ -159,7 +159,7 @@ impl ChangeSet {
     /// # Example
     ///
     /// ```rust
-    /// use fennec_fixer::{Change, ChangeSet};
+    /// use mago_fixer::{Change, ChangeSet};
     ///
     /// let changes = vec![
     ///     Change::Unchanged("Hello".to_string()),
@@ -198,7 +198,7 @@ impl ChangeSet {
     /// # Example
     ///
     /// ```rust
-    /// use fennec_fixer::{Change, ChangeSet};
+    /// use mago_fixer::{Change, ChangeSet};
     ///
     /// let changes = vec![
     ///     Change::Unchanged("Hello".to_string()),

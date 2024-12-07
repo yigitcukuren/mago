@@ -1,6 +1,6 @@
-use fennec_ast::ast::*;
-use fennec_ast::sequence::Sequence;
-use fennec_token::T;
+use mago_ast::ast::*;
+use mago_ast::sequence::Sequence;
+use mago_token::T;
 
 use crate::error::ParseError;
 use crate::internal::statement::parse_statement;

@@ -1,5 +1,5 @@
 [package]
-name = "fennec-interner"
+name = "mago-interner"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

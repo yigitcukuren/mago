@@ -1,7 +1,7 @@
-use fennec_ast::ast::*;
-use fennec_reflection::class_like::ClassLikeReflection;
-use fennec_reflection::CodebaseReflection;
-use fennec_walker::MutWalker;
+use mago_ast::ast::*;
+use mago_reflection::class_like::ClassLikeReflection;
+use mago_reflection::CodebaseReflection;
+use mago_walker::MutWalker;
 
 use crate::internal::context::Context;
 use crate::internal::reflect::class_like::*;

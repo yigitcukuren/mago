@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_span::Span;
+use mago_span::Span;
 
 use crate::identifier::Name;
 use crate::r#type::TypeReflection;

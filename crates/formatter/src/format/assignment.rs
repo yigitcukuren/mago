@@ -1,5 +1,5 @@
-use fennec_ast::*;
-use fennec_span::*;
+use mago_ast::*;
+use mago_span::*;
 
 use crate::comment::CommentFlags;
 use crate::document::Document;

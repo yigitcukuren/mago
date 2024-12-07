@@ -1,5 +1,5 @@
 [package]
-name = "fennec-parser"
+name = "mago-parser"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,14 +9,14 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-source = { path = "../source" }
-fennec-span = { path = "../span" }
-fennec-feedback = { path = "../feedback" }
-fennec-reporting = { path = "../reporting" }
-fennec-ast = { path = "../ast" }
-fennec-token = { path = "../token" }
-fennec-interner = { path = "../interner" }
-fennec-lexer = { path = "../lexer" }
+mago-source = { path = "../source" }
+mago-span = { path = "../span" }
+mago-feedback = { path = "../feedback" }
+mago-reporting = { path = "../reporting" }
+mago-ast = { path = "../ast" }
+mago-token = { path = "../token" }
+mago-interner = { path = "../interner" }
+mago-lexer = { path = "../lexer" }
 ordered-float = { workspace = true, features = ["serde", "rand"] }
 either = { workspace = true }
 serde = { workspace = true }

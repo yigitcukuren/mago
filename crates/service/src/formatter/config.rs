@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fennec_formatter::settings::*;
+use mago_formatter::settings::*;
 
 /// Configuration options for formatting source code.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

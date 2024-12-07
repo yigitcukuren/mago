@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use fennec_ast::Node;
+use mago_ast::Node;
 
 /// Traverse a given node using the given visitor.
 ///

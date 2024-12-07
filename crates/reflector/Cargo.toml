@@ -1,5 +1,5 @@
 [package]
-name = "fennec-reflector"
+name = "mago-reflector"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-interner = { path = "../interner" }
-fennec-span = { path = "../span" }
-fennec-ast = { path = "../ast" }
-fennec-ast-utils = { path = "../ast-utils" }
-fennec-walker = { path = "../walker" }
-fennec-source = { path = "../source" }
-fennec-semantics = { path = "../semantics" }
-fennec-typing = { path = "../typing" }
-fennec-reflection = { path = "../reflection" }
+mago-interner = { path = "../interner" }
+mago-span = { path = "../span" }
+mago-ast = { path = "../ast" }
+mago-ast-utils = { path = "../ast-utils" }
+mago-walker = { path = "../walker" }
+mago-source = { path = "../source" }
+mago-semantics = { path = "../semantics" }
+mago-typing = { path = "../typing" }
+mago-reflection = { path = "../reflection" }
 ahash = { workspace = true }

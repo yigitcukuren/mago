@@ -1,4 +1,4 @@
-use fennec_span::Span;
+use mago_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum Token<'a> {

@@ -1,5 +1,5 @@
 [package]
-name = "fennec-lexer"
+name = "mago-lexer"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -9,11 +9,11 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-fennec-source = { path = "../source" }
-fennec-span = { path = "../span" }
-fennec-token = { path = "../token" }
-fennec-reporting = { path = "../reporting" }
-fennec-interner = { path = "../interner" }
+mago-source = { path = "../source" }
+mago-span = { path = "../span" }
+mago-token = { path = "../token" }
+mago-reporting = { path = "../reporting" }
+mago-interner = { path = "../interner" }
 serde = { workspace = true }
 strum = { workspace = true }
 

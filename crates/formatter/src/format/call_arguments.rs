@@ -1,5 +1,5 @@
-use fennec_ast::*;
-use fennec_span::*;
+use mago_ast::*;
+use mago_span::*;
 
 use crate::comment::CommentFlags;
 use crate::document::*;
@@ -286,7 +286,7 @@ fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {
             argument_list.arguments.len() < 2
         }
         Expression::Instantiation(instantiation) => {
-            instantiation.arguments.as_ref().map_or(true, |argument_list| argument_list.arguments.len() < 2)
+            instantiation.arguments.as_ref().is_none_or(|argument_list| argument_list.arguments.len() < 2)
         }
         Expression::Binary(operation) => {
             is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)

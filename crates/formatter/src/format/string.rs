@@ -1,4 +1,4 @@
-use fennec_interner::StringIdentifier;
+use mago_interner::StringIdentifier;
 
 use crate::Formatter;
 
