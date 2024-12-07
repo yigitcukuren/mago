@@ -848,10 +848,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
                             self.token(TokenKind::LeftParenthesis, buffer, start, end)
                         } else {
-                            Some(Err(SyntaxError::UnexpectedToken(
-                                self.input.read(1)[0],
-                                self.input.position(),
-                            )))
+                            Some(Err(SyntaxError::UnexpectedToken(self.input.read(1)[0], self.input.position())))
                         }
                     }
                     HaltStage::LookingForRightParenthesis => {
@@ -863,10 +860,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
                             self.token(TokenKind::RightParenthesis, buffer, start, end)
                         } else {
-                            Some(Err(SyntaxError::UnexpectedToken(
-                                self.input.read(1)[0],
-                                self.input.position(),
-                            )))
+                            Some(Err(SyntaxError::UnexpectedToken(self.input.read(1)[0], self.input.position())))
                         }
                     }
                     HaltStage::LookingForTerminator => {
