@@ -187,10 +187,6 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
 }
 
 fn should_inline_single_breaking_argument<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentList) -> bool {
-    if !f.settings.inline_single_breaking_argument {
-        return false;
-    }
-
     if argument_list.arguments.len() != 1 {
         return false;
     }

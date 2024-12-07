@@ -112,12 +112,12 @@ class ClassName extends ParentClass implements
     public mixed
         $C = 12,
         $W = function (): void {
-            echo 'Hello, world!';
+            echo "Hello, world!";
         }
     ;
 
     public mixed $W = function (): void {
-        echo 'Hello, world!';
+        echo "Hello, world!";
     };
 
     #[Attribute(1, 2)]
@@ -272,18 +272,18 @@ class B
 }
 
 #[Attribute, Attribute([
-    'foo',
-    'bar',
-    'baz',
+    "foo",
+    "bar",
+    "baz",
 ])]
 class C
 {
 }
 
 #[Attribute, Attribute([
-    'foo',
-    'bar',
-    'baz',
+    "foo",
+    "bar",
+    "baz",
 ])]
 class C
 {
@@ -291,7 +291,7 @@ class C
 
 class Author
 {
-    #[Assert\IsTrue(message: 'The password cannot match your first name')]
+    #[Assert\IsTrue(message: "The password cannot match your first name")]
     public function isPasswordSafe(): bool
     {
         // ... return true or false
@@ -311,7 +311,7 @@ class Place
 {
     #[Assert\Sequentially([
         new Assert\NotNull,
-        new Assert\Type('string'),
+        new Assert\Type("string"),
         new Assert\Length(min: 10),
         new Assert\Regex(Place::ADDRESS_REGEX),
         new AcmeAssert\Geolocalizable,
@@ -323,7 +323,7 @@ class Discount
 {
     #[Assert\GreaterThan(0)]
     #[Assert\When(expression: 'this.getType() == "percent"', constraints: [
-        new Assert\LessThanOrEqual(100, message: 'The value should be between 1 and 100!'),
+        new Assert\LessThanOrEqual(100, message: "The value should be between 1 and 100!"),
     ])]
     private null|int $value;
     // ...
@@ -333,21 +333,21 @@ class Author
 {
     #[Assert\Collection(
         fields: [
-            'personal_email' => new Assert\Email,
-            'short_bio' => [
+            "personal_email" => new Assert\Email,
+            "short_bio" => [
                 new Assert\NotBlank,
-                new Assert\Length(max: 100, maxMessage: 'Your short bio is too long!'),
+                new Assert\Length(max: 100, maxMessage: "Your short bio is too long!"),
             ],
         ],
         allowMissingFields: true,
     )]
     protected array $profileData = [
-        'personal_email' => '...',
-        'short_bio' => '...',
+        "personal_email" => "...",
+        "short_bio" => "...",
     ];
 }
 
-#[Assert\GroupSequence(['User', 'Strict'])]
+#[Assert\GroupSequence(["User", "Strict"])]
 class User implements UserInterface
 {
     #[Assert\NotBlank]
@@ -356,7 +356,7 @@ class User implements UserInterface
     #[Assert\NotBlank]
     private string $password;
 
-    #[Assert\IsTrue(message: 'The password cannot match your username', groups: ['Strict'])]
+    #[Assert\IsTrue(message: "The password cannot match your username", groups: ["Strict"])]
     public function isPasswordSafe(): bool
     {
         return $this->username !== $this->password;
@@ -396,22 +396,22 @@ $a = function () use ($aaaaaaaaaaaaaaaaaaaaaaaa, $aaaaaaaaaaaaaaaaaaaaaaaa, $aaa
 };
 
 require
-    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 require_once
-    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 include
-    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 include_once
-    'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
 require
-    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "ffffffffffffffffffffffffffffffffffffffffffffffff" . "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 require_once
-    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "ffffffffffffffffffffffffffffffffffffffffffffffff" . "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 include
-    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "ffffffffffffffffffffffffffffffffffffffffffffffff" . "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 include_once
-    'ffffffffffffffffffffffffffffffffffffffffffffffff' . 'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    "ffffffffffffffffffffffffffffffffffffffffffffffff" . "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
 class Talker
 {
@@ -466,69 +466,74 @@ class Talker
 
 switch ($i) {
     case 0:
-        echo 'i equals 0';
+        echo "i equals 0";
         break;
     case 1:
-        echo 'i equals 1';
+        echo "i equals 1";
         break;
     case 2:
-        echo 'i equals 2';
+        echo "i equals 2";
         break;
     default:
-        echo 'i is not equal to 0, 1 or 2';
+        echo "i is not equal to 0, 1 or 2";
 }
 
 switch ($i):
     case 0:
-        echo 'i equals 0';
+        echo "i equals 0";
         break;
     case 1:
-        echo 'i equals 1';
+        echo "i equals 1";
         break;
     case 2:
-        echo 'i equals 2';
+        echo "i equals 2";
         break;
     default:
-        echo 'i is not equal to 0, 1 or 2';
+        echo "i is not equal to 0, 1 or 2";
 endswitch;
 
 switch ($i) {
     case 0:
-        echo 'i equals 0';
+        echo "i equals 0";
         break;
     case 1:
-        echo 'i equals 1';
+        echo "i equals 1";
         break;
     case 2:
-        echo 'i equals 2';
+        echo "i equals 2";
         break;
     default:
-        echo 'i is not equal to 0, 1 or 2';
+        echo "i is not equal to 0, 1 or 2";
     // Heeeheee
 }
 
 match ($i) {
-    0 => 'i equals 0',
-    1 => 'i equals 1',
-    2 => 'i equals 2',
-    default => 'i is not equal to 0, 1 or 2',
+    0 => "i equals 0",
+    1 => "i equals 1",
+    2 => "i equals 2",
+    default => "i is not equal to 0, 1 or 2",
     // Haaahaaaa
 };
 
 switch ($i):
     case 0:
-        echo 'i equals 0';
+        echo "i equals 0";
         break;
     case 1:
-        echo 'i equals 1';
+        echo "i equals 1";
         break;
     case 2:
-        echo 'i equals 2';
+        echo "i equals 2";
         break;
     default:
-        echo 'i is not equal to 0, 1 or 2';
+        echo "i is not equal to 0, 1 or 2";
     // Haaahaaaa
 endswitch;
+
+$a = "hello, world";
+$b = "hello, world";
+$c = "hello, 'world'";
+$d = 'hello, \'\' "world"';
 
 // This is a comment
 

@@ -1,3 +1,5 @@
+use fennec_interner::StringIdentifier;
+
 use crate::Formatter;
 
 fn get_preferred_quote(raw: &str, prefer_single_quote: bool) -> char {
@@ -21,7 +23,7 @@ fn get_preferred_quote(raw: &str, prefer_single_quote: bool) -> char {
     }
 }
 
-fn make_string<'a>(raw_text: &str, enclosing_quote: char) -> String {
+fn make_string(raw_text: &str, enclosing_quote: char) -> String {
     let other_quote = if enclosing_quote == '"' { '\'' } else { '"' };
     let mut result = String::new();
     result.push(enclosing_quote);
@@ -52,8 +54,11 @@ fn make_string<'a>(raw_text: &str, enclosing_quote: char) -> String {
     result
 }
 
-fn print_string<'a>(f: &'a Formatter, raw_text: &str, prefer_single_quote: bool) -> &'a str {
-    let enclosing_quote = get_preferred_quote(raw_text, prefer_single_quote);
+pub(super) fn print_string<'a>(f: &Formatter<'a>, value: &StringIdentifier) -> &'a str {
+    let text = f.lookup(value);
+
+    let raw_text = &text[1..text.len() - 1];
+    let enclosing_quote = get_preferred_quote(raw_text, f.settings.single_quote);
 
     f.as_str(make_string(raw_text, enclosing_quote))
 }

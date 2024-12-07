@@ -38,41 +38,9 @@ pub struct FormatterConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub keyword_case: Option<CasingStyle>,
 
-    /// Casting operator for strings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub string_cast: Option<StringCastOperator>,
-
-    /// Casting operator for floats.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub float_cast: Option<FloatCastOperator>,
-
-    /// Casting operator for booleans.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub bool_cast: Option<BoolCastOperator>,
-
-    /// Casting operator for integers.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub int_cast: Option<IntCastOperator>,
-
-    /// Leave casting operators as is.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub leave_casts_as_is: Option<bool>,
-
-    /// Include `?>` in files containing only PHP code.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub include_closing_tag: Option<bool>,
-
     /// Blank line after the opening PHP tag.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blank_line_after_open_tag: Option<bool>,
-
-    /// Controls whether a single breaking argument (e.g., an array or closure) is inlined within the enclosing parentheses.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub inline_single_breaking_argument: Option<bool>,
-
-    /// Controls whether a single breaking attribute is inlined within the `#[` and `]`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub inline_single_attribute: Option<bool>,
 
     /// In a control structure expression, is there a space after the opening parenthesis
     ///  and a space before the closing parenthesis?
@@ -111,21 +79,9 @@ pub struct FormatterConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub space_before_arrow_function_params: Option<bool>,
 
-    /// Space between function name and opening parenthesis in calls.
+    /// Whether to put the `static` keyword before the visibility keyword.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub space_after_function_name: Option<bool>,
-
-    /// Order of `static` and visibility in method declarations.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub static_visibility_order: Option<StaticVisibilityOrder>,
-
-    /// Require parentheses around class instantiations.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub require_instantiation_parens: Option<bool>,
-
-    /// List style (`[a, b]` or `list(a, b)`).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub list_style: Option<ListStyle>,
+    pub static_before_visibility: Option<bool>,
 
     /// Null type hint style (`null|foo` or `?foo`).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -134,10 +90,6 @@ pub struct FormatterConfiguration {
     /// Spacing around binary operators.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binary_op_spacing: Option<usize>,
-
-    /// Replace `<>` with `!=`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub replace_angle_not_equals: Option<bool>,
 
     /// Spacing in union/intersection types (`A | B` or `A|B`).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -154,22 +106,6 @@ pub struct FormatterConfiguration {
     /// Whether to add a space before and after the concatenation operator.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub space_concatenation: Option<bool>,
-
-    /// Whether to preserve argument lists that are already broken into multiple lines.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub preserve_broken_argument_lists: Option<bool>,
-
-    /// Whether to inline a single attribute group in a parameter.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub inline_single_attribute_group: Option<bool>,
-
-    /// Whether to preserve newlines between attribute groups.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub preserve_attribute_group_newlines: Option<bool>,
-
-    /// Preserve existing newlines in parameter lists.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub preserve_multiline_parameters: Option<bool>,
 
     /// Whether to preserve binary operations that are already broken into multiple lines.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -193,53 +129,28 @@ impl FormatterConfiguration {
             trailing_comma: self.trailing_comma.unwrap_or(d.trailing_comma),
             space_around_declare_equals: self.space_around_declare_equals.unwrap_or(d.space_around_declare_equals),
             keyword_case: self.keyword_case.unwrap_or(d.keyword_case),
-            string_cast: self.string_cast.unwrap_or(d.string_cast),
-            float_cast: self.float_cast.unwrap_or(d.float_cast),
-            bool_cast: self.bool_cast.unwrap_or(d.bool_cast),
-            int_cast: self.int_cast.unwrap_or(d.int_cast),
-            leave_casts_as_is: self.leave_casts_as_is.unwrap_or(d.leave_casts_as_is),
-            include_closing_tag: self.include_closing_tag.unwrap_or(d.include_closing_tag),
             blank_line_after_open_tag: self.blank_line_after_open_tag.unwrap_or(d.blank_line_after_open_tag),
-            inline_single_breaking_argument: self
-                .inline_single_breaking_argument
-                .unwrap_or(d.inline_single_breaking_argument),
-            inline_single_attribute: self.inline_single_attribute.unwrap_or(d.inline_single_attribute),
             control_space_parens: self.control_space_parens.unwrap_or(d.control_space_parens),
             closure_brace_style: self.closure_brace_style.unwrap_or(d.closure_brace_style),
             function_brace_style: self.function_brace_style.unwrap_or(d.function_brace_style),
             method_brace_style: self.method_brace_style.unwrap_or(d.method_brace_style),
             classlike_brace_style: self.classlike_brace_style.unwrap_or(d.classlike_brace_style),
             control_brace_style: self.control_brace_style.unwrap_or(d.control_brace_style),
-            space_after_function_name: self.space_after_function_name.unwrap_or(d.space_after_function_name),
             space_before_closure_params: self.space_before_closure_params.unwrap_or(d.space_before_closure_params),
             space_after_closure_use: self.space_after_closure_use.unwrap_or(d.space_after_closure_use),
             space_before_arrow_function_params: self
                 .space_before_arrow_function_params
                 .unwrap_or(d.space_before_arrow_function_params),
-            static_visibility_order: self.static_visibility_order.unwrap_or(d.static_visibility_order),
-            require_instantiation_parens: self.require_instantiation_parens.unwrap_or(d.require_instantiation_parens),
-            list_style: self.list_style.unwrap_or(d.list_style),
+            static_before_visibility: self.static_before_visibility.unwrap_or(d.static_before_visibility),
             null_type_hint: self.null_type_hint.unwrap_or(d.null_type_hint),
             binary_op_spacing: self.binary_op_spacing.unwrap_or(d.binary_op_spacing),
-            replace_angle_not_equals: self.replace_angle_not_equals.unwrap_or(d.replace_angle_not_equals),
             type_spacing: self.type_spacing.unwrap_or(d.type_spacing),
             method_chain_break_threshold: self.method_chain_break_threshold.unwrap_or(d.method_chain_break_threshold),
             break_promoted_properties_list: self
                 .break_promoted_properties_list
                 .unwrap_or(d.break_promoted_properties_list),
             space_concatenation: self.space_concatenation.unwrap_or(d.space_concatenation),
-            preserve_broken_argument_lists: self
-                .preserve_broken_argument_lists
-                .unwrap_or(d.preserve_broken_argument_lists),
-            inline_single_attribute_group: self
-                .inline_single_attribute_group
-                .unwrap_or(d.inline_single_attribute_group),
-            preserve_attribute_group_newlines: self
-                .preserve_attribute_group_newlines
-                .unwrap_or(d.preserve_attribute_group_newlines),
-            preserve_multiline_parameters: self
-                .preserve_multiline_parameters
-                .unwrap_or(d.preserve_multiline_parameters),
+
             preserve_multiline_binary_operations: self
                 .preserve_multiline_binary_operations
                 .unwrap_or(d.preserve_multiline_binary_operations),

@@ -7,181 +7,427 @@ use serde::Serialize;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct FormatSettings {
     /// Specify the maximum line length that the printer will wrap on.
+    ///
     /// Default: 120
     #[serde(default = "default_print_width")]
     pub print_width: usize,
 
     /// Specify the number of spaces per indentation-level.
+    ///
     /// Default: 4
     #[serde(default = "default_tab_width")]
     pub tab_width: usize,
 
     /// Indent lines with tabs instead of spaces.
+    ///
     /// Default: false
     #[serde(default = "default_false")]
     pub use_tabs: bool,
 
     /// Specify which end-of-line characters to use.
+    ///
     /// Default: "lf"
     #[serde(default)]
     pub end_of_line: EndOfLine,
 
     /// Use single quotes instead of double quotes for strings.
-    /// Default: false
-    #[serde(default = "default_false")]
+    ///
+    /// The formatter will automatically determine whether to use single or double quotes based on the content of the string,
+    /// with a preference for single quotes if this option is enabled.
+    ///
+    /// If the string contains more single quotes than double quotes, the formatter will use double quotes.
+    /// If the string contains more double quotes than single quotes, the formatter will use single quotes.
+    ///
+    /// If the string contains an equal number of single and double quotes, the formatter will use single quotes
+    /// if this option is enabled, and double quotes otherwise.
+    ///
+    /// Default: true
+    #[serde(default = "default_true")]
     pub single_quote: bool,
 
     /// Enable or disable trailing commas in multi-line syntactic structures.
+    ///
+    /// When enabled, the formatter will add a trailing comma to the last element in a multi-line list, array,
+    /// parameter list, argument list, and other syntactic structures.
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub trailing_comma: bool,
 
     /// Add spaces around the `=` in declare statements.
+    ///
+    /// When enabled, the formatter will add a space before and after the `=` in declare statements.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// declare(strict_types = 1);
+    /// ```
+    ///
     /// Default: false
     #[serde(default = "default_false")]
     pub space_around_declare_equals: bool,
 
     /// Keyword casing (e.g., lowercase, uppercase).
+    ///
+    /// The formatter will convert keywords to the specified case.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// // lowercase
+    /// if (true) {
+    ///    $foo = (string) $bar;
+    ///
+    ///    echo $foo;
+    ///
+    ///    return;
+    /// }
+    ///
+    /// // uppercase
+    /// IF (TRUE) {
+    ///   $foo = (STRING) $bar;
+    ///
+    ///   ECHO $foo;
+    ///
+    ///   RETURN;
+    /// }
+    /// ```
+    ///
     /// Default: lowercase
     #[serde(default)]
     pub keyword_case: CasingStyle,
 
-    /// Casting operator for strings.
-    /// Default: `(string)`
-    #[serde(default)]
-    pub string_cast: StringCastOperator,
-
-    /// Casting operator for floats.
-    /// Default: `(float)`
-    #[serde(default)]
-    pub float_cast: FloatCastOperator,
-
-    /// Casting operator for booleans.
-    /// Default: `(bool)`
-    #[serde(default)]
-    pub bool_cast: BoolCastOperator,
-
-    /// Casting operator for integers.
-    /// Default: `(int)`
-    #[serde(default)]
-    pub int_cast: IntCastOperator,
-
-    /// Leave casting operators as is.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub leave_casts_as_is: bool,
-
-    /// Include `?>` in files containing only PHP code.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub include_closing_tag: bool,
-
     /// Blank line after the opening PHP tag.
+    ///
+    /// When enabled, the formatter will add a blank line after the opening PHP tag.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// <?php
+    ///
+    /// echo 'Hello, world!';
+    /// ```
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub blank_line_after_open_tag: bool,
 
-    /// Controls whether a single breaking argument (e.g., an array or closure) is inlined within the enclosing parentheses.
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub inline_single_breaking_argument: bool,
-
-    /// Controls whether a single breaking attribute is inlined within the enclosing `#[` and `]`
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub inline_single_attribute: bool,
-
     /// In a control structure expression, is there a space after the opening parenthesis
     ///  and a space before the closing parenthesis?
+    ///
+    /// When enabled, the formatter will add a space after the opening parenthesis and a space before the closing parenthesis
+    /// in control structure expressions.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// if ( $expr ) {
+    /// }
+    ///
+    /// // or
+    ///
+    /// if ($expr) {
+    /// }
+    /// ```
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub control_space_parens: bool,
 
-    /// Brace style for closures.
+    /// Whether the formatter should keep the opening brace on the same line for closures, or move it to the next line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// $closure = function() {
+    ///    return 'Hello, world!';
+    /// };
+    ///
+    /// // or
+    ///
+    /// $closure = function()
+    /// {
+    ///   return 'Hello, world!';
+    /// };
+    /// ```
+    ///
+    ///
+    /// Default: same_line
     #[serde(default = "BraceStyle::same_line")]
     pub closure_brace_style: BraceStyle,
 
-    /// Brace style for function.
+    /// Whether the formatter should keep the opening brace on the same line for functions, or move it to the next line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// function foo() {
+    ///   return 'Hello, world!';
+    /// }
+    ///
+    /// // or
+    ///
+    /// function foo()
+    /// {
+    ///   return 'Hello, world!';
+    /// }
+    /// ```
+    ///
+    /// Default: next_line
     #[serde(default = "BraceStyle::next_line")]
     pub function_brace_style: BraceStyle,
 
-    /// Brace style for methods.
+    /// Whether the formatter should keep the opening brace on the same line for methods, or move it to the next line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// class Foo
+    /// {
+    ///   public function bar() {
+    ///     return 'Hello, world!';
+    ///   }
+    ///
+    ///   // or
+    ///
+    ///   public function bar()
+    ///   {
+    ///     return 'Hello, world!';
+    ///   }
+    /// }
+    /// ```
+    ///
+    /// Default: next_line
     #[serde(default = "BraceStyle::next_line")]
     pub method_brace_style: BraceStyle,
 
-    /// Brace style for class-like structures.
+    /// Whether the formatter should keep the opening brace on the same line for class-like structures, or move it to the next line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// class Foo {
+    /// }
+    ///
+    /// interface Bar {
+    /// }
+    ///
+    /// trait Baz {
+    /// }
+    ///
+    /// enum Qux {
+    /// }
+    ///
+    /// // or
+    ///
+    /// class Foo
+    /// {
+    /// }
+    ///
+    /// interface Bar
+    /// {
+    /// }
+    ///
+    /// trait Baz
+    /// {
+    /// }
+    ///
+    /// enum Qux
+    /// {
+    /// }
+    /// ```
+    ///
+    /// Default: next_line
     #[serde(default = "BraceStyle::next_line")]
     pub classlike_brace_style: BraceStyle,
 
-    /// Brace style for control structures.
+    /// Whether the formatter should keep the opening brace of a block statement on the same line for control structures,
+    /// or move it to the next line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// if ($expr) {
+    ///   return 'Hello, world!';
+    /// }
+    ///
+    /// // or
+    ///
+    /// if ($expr)
+    /// {
+    ///   return 'Hello, world!';
+    /// }
+    /// ```
+    ///
+    /// Default: same_line
     #[serde(default = "BraceStyle::same_line")]
     pub control_brace_style: BraceStyle,
 
-    /// Space between function name and opening parenthesis in calls.
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_after_function_name: bool,
-
-    /// Space between the `function` keyword and the opening parenthesis in closure declarations.
+    /// Whether to add a space between the `function` keyword and the opening parenthesis in closure declarations,
+    /// or keep them together.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// $closure = function () {
+    ///   return 'Hello, world!';
+    /// };
+    ///
+    /// // or
+    ///
+    /// $closure = function() {
+    ///   return 'Hello, world!';
+    /// };
+    /// ```
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub space_before_closure_params: bool,
 
-    /// Space between the `use` keyword and the opening parenthesis in closure use declarations.
+    /// Whether to add a space between the `use` keyword and the opening parenthesis in closure use declarations.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// $closure = function() use ($foo, $bar) {
+    ///   return 'Hello, world!';
+    /// };
+    ///
+    /// // or
+    ///
+    /// $closure = function() use($foo, $bar) {
+    ///   return 'Hello, world!';
+    /// };
+    /// ```
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub space_after_closure_use: bool,
 
-    /// Space between the `fn` keyword and the opening parenthesis in arrow function declarations.
+    /// Whether to add a space between the `fn` keyword and the opening parenthesis in arrow function declarations.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// $closure = fn () => 'Hello, world!';
+    ///
+    /// // or
+    ///
+    /// $closure = fn() => 'Hello, world!';
+    /// ```
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub space_before_arrow_function_params: bool,
 
-    /// Order of `static` and visibility in method declarations.
-    /// Default: Visibility first
-    #[serde(default)]
-    pub static_visibility_order: StaticVisibilityOrder,
+    /// Whether to put the `static` keyword before the visibility keyword.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// class Foo {
+    ///   public static $bar;
+    ///
+    ///   // or
+    ///
+    ///   static public $bar;
+    /// }
+    /// ```
+    ///
+    /// This setting also affects the order of the `readonly` keyword, if present.
+    ///
+    /// Default: false
+    #[serde(default = "default_false")]
+    pub static_before_visibility: bool,
 
-    /// Require parentheses around class instantiations.
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub require_instantiation_parens: bool,
-
-    /// List style (`[a, b]` or `list(a, b)`).
-    /// Default: Short
-    #[serde(default)]
-    pub list_style: ListStyle,
-
-    /// Null type hint style (`null|foo` or `?foo`).
+    /// Which style to use for null type hints.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// function foo(?string $bar) {
+    ///   return $bar;
+    /// }
+    ///
+    /// // or
+    ///
+    /// function foo(null|string $bar) {
+    ///   return $bar;
+    /// }
+    /// ```
+    ///
     /// Default: NullPipe
     #[serde(default)]
     pub null_type_hint: NullTypeHint,
 
-    /// Spacing around binary operators.
+    /// How many spaces to add around binary operators.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// $foo = $bar + $baz;
+    ///
+    /// // or
+    ///
+    /// $foo = $bar+$baz;
+    ///
+    /// // or
+    ///
+    /// $foo = $bar  +  $baz;
+    /// ```
+    ///
     /// Default: 1
     #[serde(default = "default_binary_op_spacing")]
     pub binary_op_spacing: usize,
 
-    /// Replace `<>` with `!=`.
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub replace_angle_not_equals: bool,
-
-    /// Spacing in union/intersection types (`A | B` or `A|B`).
+    /// How many spaces to add around type operators.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// function foo(): A|B {}
+    /// function bar(): A&(B|C) {}
+    /// function baz(): ?B {}
+    ///
+    /// // or
+    ///
+    /// function foo(): A | B {}
+    /// function bar(): A & ( B | C) {}
+    /// function baz(): ? B {}
+    /// ```
+    ///
     /// Default: 0
     #[serde(default = "default_type_spacing")]
     pub type_spacing: usize,
 
     /// The minimum length of a method call chain that triggers line-breaking formatting.
     ///
-    /// When the number of chained method calls exceeds this threshold, the formatter will break the chain into multiple lines:
+    /// When the number of chained method calls exceeds this threshold, the formatter will break the chain into multiple lines.
     ///
     /// Default: 4
     #[serde(default = "default_method_chain_break_threshold")]
     pub method_chain_break_threshold: usize,
 
-    /// Whether to break a parameter list into multiple lines if it contains one or more promoted property.
+    /// Whether to break a parameter list into multiple lines if it contains one or more promoted property even if it fits into a single line.
+    ///
+    /// Example:
+    ///
+    /// ```php
+    /// class User {
+    ///   public function __construct(
+    ///     public string $name,
+    ///     public string $email,
+    ///   ) {}
+    /// }
+    ///
+    /// // or
+    ///
+    /// class User {
+    ///   public function __construct(public string $name, public string $email) {}
+    /// }
+    /// ```
     ///
     /// Default: true
     #[serde(default = "default_true")]
@@ -189,46 +435,21 @@ pub struct FormatSettings {
 
     /// Whether to add a space before and after the concatenation operator.
     ///
+    /// Example:
+    ///
+    /// ```php
+    /// $foo = 'Hello, ' . 'world!';
+    ///
+    /// // or
+    ///
+    /// $foo = 'Hello, '.'world!';
+    /// ```
+    ///
+    /// Note: The number of spaces added around the concatenation operator is controlled by the `binary_op_spacing` setting.
+    ///
     /// Default: true
     #[serde(default = "default_true")]
     pub space_concatenation: bool,
-
-    /// Whether to preserve argument list that are already broken into multiple lines.
-    ///
-    /// If enabled, argum ent lists that span multiple lines will remain in multiple lines,
-    /// even if they can fit into a single line. This gives users the option to
-    /// manually decide when an argument list should use a multi-line format for readability.
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub preserve_broken_argument_lists: bool,
-
-    /// Whether to inline a single attribute group in a parameter.
-    ///
-    /// When enabled, a single attribute group applied to a parameter can be formatted
-    /// inline with the parameter, instead of appearing on a separate line.
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub inline_single_attribute_group: bool,
-
-    /// Whether to preserve newlines between attribute groups.
-    ///
-    /// If an attribute group is already followed by a newline, this option can
-    /// be used to preserve that newline.
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub preserve_attribute_group_newlines: bool,
-
-    /// Preserve existing newlines in parameter lists.
-    ///
-    /// If a parameter list is already broken into multiple lines, this option can
-    /// be used to preserve the existing newlines.
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub preserve_multiline_parameters: bool,
 
     /// Whether to preserve binary operations that are already broken into multiple lines.
     ///
@@ -245,6 +466,19 @@ pub struct FormatSettings {
     /// When breaking a method or property chain, this option determines whether the
     /// first method/property remains on the same line as the object/class, or if it starts on a new line.
     ///
+    /// Example:
+    ///
+    /// ```php
+    /// $foo->bar()
+    ///   ->baz();
+    ///
+    /// // or
+    ///
+    /// $foo
+    ///   ->bar()
+    ///   ->baz();
+    /// ```
+    ///
     /// Default: SameLine
     #[serde(default)]
     pub method_chain_breaking_style: MethodChainBreakingStyle,
@@ -258,43 +492,27 @@ impl Default for FormatSettings {
             tab_width: default_tab_width(),
             use_tabs: false,
             end_of_line: EndOfLine::default(),
-            single_quote: false,
+            single_quote: true,
             trailing_comma: true,
             space_around_declare_equals: false,
             keyword_case: CasingStyle::default(),
-            string_cast: StringCastOperator::default(),
-            float_cast: FloatCastOperator::default(),
-            bool_cast: BoolCastOperator::default(),
-            int_cast: IntCastOperator::default(),
-            leave_casts_as_is: false,
-            include_closing_tag: false,
             blank_line_after_open_tag: true,
-            inline_single_breaking_argument: true,
-            inline_single_attribute: true,
             control_space_parens: false,
             closure_brace_style: BraceStyle::SameLine,
             function_brace_style: BraceStyle::NextLine,
             method_brace_style: BraceStyle::NextLine,
             classlike_brace_style: BraceStyle::NextLine,
             control_brace_style: BraceStyle::SameLine,
-            space_after_function_name: false,
             space_before_closure_params: true,
             space_after_closure_use: true,
             space_before_arrow_function_params: false,
-            static_visibility_order: StaticVisibilityOrder::default(),
-            require_instantiation_parens: true,
-            list_style: ListStyle::default(),
+            static_before_visibility: false,
             null_type_hint: NullTypeHint::default(),
             binary_op_spacing: default_binary_op_spacing(),
-            replace_angle_not_equals: true,
             type_spacing: default_type_spacing(),
             method_chain_break_threshold: default_method_chain_break_threshold(),
             break_promoted_properties_list: true,
             space_concatenation: true,
-            preserve_broken_argument_lists: true,
-            inline_single_attribute_group: true,
-            preserve_attribute_group_newlines: true,
-            preserve_multiline_parameters: true,
             preserve_multiline_binary_operations: true,
             method_chain_breaking_style: MethodChainBreakingStyle::SameLine,
         }
@@ -387,68 +605,6 @@ impl FromStr for EndOfLine {
             _ => Self::default(),
         })
     }
-}
-
-/// Specifies the order of `static` and visibility in method declarations.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum StaticVisibilityOrder {
-    #[default]
-    #[serde(alias = "visibility")]
-    VisibilityFirst,
-    #[serde(alias = "static")]
-    StaticFirst,
-}
-
-/// Casting operator for strings.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum StringCastOperator {
-    #[default]
-    #[serde(alias = "(string)", alias = "string")]
-    String,
-    #[serde(alias = "(bianry)", alias = "binary")]
-    Binary,
-}
-
-/// Casting operator for floats.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum FloatCastOperator {
-    #[default]
-    #[serde(alias = "(float)", alias = "float")]
-    Float,
-    #[serde(alias = "(double)", alias = "double")]
-    Double,
-    #[serde(alias = "(real)", alias = "real")]
-    Real,
-}
-
-/// Casting operator for booleans.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum BoolCastOperator {
-    #[default]
-    #[serde(alias = "(bool)", alias = "bool")]
-    Bool,
-    #[serde(alias = "(boolean)", alias = "boolean")]
-    Boolean,
-}
-
-/// Casting operator for integers.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum IntCastOperator {
-    #[default]
-    #[serde(alias = "(int)", alias = "int")]
-    Int,
-    #[serde(alias = "(integer)", alias = "integer")]
-    Integer,
-}
-
-/// Specifies list style.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub enum ListStyle {
-    #[default]
-    #[serde(alias = "short", alias = "[]")]
-    Short,
-    #[serde(alias = "long", alias = "legacy", alias = "list()")]
-    Long,
 }
 
 /// Specifies null type hint style.

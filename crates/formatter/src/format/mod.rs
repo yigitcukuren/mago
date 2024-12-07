@@ -32,6 +32,7 @@ pub mod expression;
 pub mod misc;
 pub mod parameters;
 pub mod statement;
+pub mod string;
 
 pub trait Format<'a> {
     #[must_use]
@@ -76,14 +77,6 @@ impl<'a> Format<'a> for Program {
                     parts.push(Document::Line(Line::hardline()));
                     parts.push(comments);
                 }
-            } else {
-                unreachable!();
-            }
-
-            if f.settings.include_closing_tag {
-                parts.push(Document::Line(Line::hardline()));
-                parts.push(Document::String("?>"));
-                parts.push(Document::Line(Line::hardline()));
             }
         }
 
@@ -179,14 +172,11 @@ impl<'a> Format<'a> for ClosingTag {
 
         wrap!(f, self, ClosingTag, {
             let last_index = self.span.end.offset;
+            // todo: put this behind a setting
             if f.skip_spaces_and_new_lines(Some(last_index), false).is_none() {
-                if !f.settings.include_closing_tag {
-                    f.scripting_mode = true;
+                f.scripting_mode = true;
 
-                    Document::empty()
-                } else {
-                    Document::String("?>")
-                }
+                Document::empty()
             } else {
                 Document::String("?>")
             }

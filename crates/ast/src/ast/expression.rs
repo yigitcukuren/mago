@@ -212,7 +212,7 @@ impl Expression {
             Expression::UnaryPrefix(_) => NodeKind::UnaryPrefix,
             Expression::UnaryPostfix(_) => NodeKind::UnaryPostfix,
             Expression::Parenthesized(_) => NodeKind::Parenthesized,
-            Expression::Literal(_) => NodeKind::LiteralExpression,
+            Expression::Literal(_) => NodeKind::Literal,
             Expression::CompositeString(_) => NodeKind::CompositeString,
             Expression::AssignmentOperation(_) => NodeKind::Assignment,
             Expression::Conditional(_) => NodeKind::Conditional,

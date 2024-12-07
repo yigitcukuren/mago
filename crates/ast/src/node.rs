@@ -154,7 +154,7 @@ pub enum NodeKind {
     Inline,
     Instantiation,
     Keyword,
-    LiteralExpression,
+    Literal,
     LiteralFloat,
     LiteralInteger,
     LiteralString,
@@ -375,7 +375,7 @@ pub enum Node<'a> {
     Inline(&'a Inline),
     Instantiation(&'a Instantiation),
     Keyword(&'a Keyword),
-    LiteralExpression(&'a Literal),
+    Literal(&'a Literal),
     LiteralFloat(&'a LiteralFloat),
     LiteralInteger(&'a LiteralInteger),
     LiteralString(&'a LiteralString),
@@ -672,7 +672,7 @@ impl<'a> Node<'a> {
             Self::Inline(_) => NodeKind::Inline,
             Self::Instantiation(_) => NodeKind::Instantiation,
             Self::Keyword(_) => NodeKind::Keyword,
-            Self::LiteralExpression(_) => NodeKind::LiteralExpression,
+            Self::Literal(_) => NodeKind::Literal,
             Self::LiteralFloat(_) => NodeKind::LiteralFloat,
             Self::LiteralInteger(_) => NodeKind::LiteralInteger,
             Self::LiteralString(_) => NodeKind::LiteralString,
@@ -1370,7 +1370,7 @@ impl<'a> Node<'a> {
                 Expression::UnaryPrefix(node) => Node::UnaryPrefix(node),
                 Expression::UnaryPostfix(node) => Node::UnaryPostfix(node),
                 Expression::Parenthesized(node) => Node::Parenthesized(node),
-                Expression::Literal(node) => Node::LiteralExpression(node),
+                Expression::Literal(node) => Node::Literal(node),
                 Expression::CompositeString(node) => Node::CompositeString(node),
                 Expression::AssignmentOperation(node) => Node::AssignmentOperation(node),
                 Expression::Conditional(node) => Node::Conditional(node),
@@ -1577,7 +1577,7 @@ impl<'a> Node<'a> {
                 children
             }
             Node::Keyword(_) => vec![],
-            Node::LiteralExpression(node) => vec![match node {
+            Node::Literal(node) => vec![match node {
                 Literal::Float(node) => Node::LiteralFloat(node),
                 Literal::Integer(node) => Node::LiteralInteger(node),
                 Literal::String(node) => Node::LiteralString(node),
@@ -2135,7 +2135,7 @@ impl<'a> HasSpan for Node<'a> {
             Self::Inline(node) => node.span(),
             Self::Instantiation(node) => node.span(),
             Self::Keyword(node) => node.span(),
-            Self::LiteralExpression(node) => node.span(),
+            Self::Literal(node) => node.span(),
             Self::LiteralFloat(node) => node.span(),
             Self::LiteralInteger(node) => node.span(),
             Self::LiteralString(node) => node.span(),

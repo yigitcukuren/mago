@@ -8,7 +8,6 @@ use crate::document::Line;
 use crate::format::statement::print_statement_sequence;
 use crate::format::Format;
 use crate::settings::BraceStyle;
-use crate::settings::StaticVisibilityOrder;
 use crate::Formatter;
 
 use super::Group;
@@ -134,34 +133,35 @@ pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence
         printed_modifiers.push(Document::space());
     }
 
-    match f.settings.static_visibility_order {
-        StaticVisibilityOrder::VisibilityFirst => {
-            if let Some(modifier) = modifiers.get_first_visibility() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            }
-
-            if let Some(modifier) = modifiers.get_static() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            } else if let Some(modifier) = modifiers.get_readonly() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            }
+    if f.settings.static_before_visibility {
+        if let Some(modifier) = modifiers.get_static() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
         }
-        StaticVisibilityOrder::StaticFirst => {
-            if let Some(modifier) = modifiers.get_static() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            } else if let Some(modifier) = modifiers.get_readonly() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            }
 
-            if let Some(modifier) = modifiers.get_first_visibility() {
-                printed_modifiers.push(modifier.format(f));
-                printed_modifiers.push(Document::space());
-            }
+        if let Some(modifier) = modifiers.get_readonly() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
+        }
+
+        if let Some(modifier) = modifiers.get_first_visibility() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
+        }
+    } else {
+        if let Some(modifier) = modifiers.get_first_visibility() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
+        }
+
+        if let Some(modifier) = modifiers.get_static() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
+        }
+
+        if let Some(modifier) = modifiers.get_readonly() {
+            printed_modifiers.push(modifier.format(f));
+            printed_modifiers.push(Document::space());
         }
     }
 
@@ -186,7 +186,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
     }
 
     // if there is a single attribute list, we can inline it
-    if can_inline && !has_new_line && f.settings.inline_single_attribute_group && lists.len() == 1 {
+    if can_inline && !has_new_line && lists.len() == 1 {
         return Some(Document::Group(Group::new(vec![lists.remove(0), Document::Line(Line::default())])));
     }
 
