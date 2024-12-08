@@ -1,5 +1,88 @@
 <?php
 
+(function () {
+    echo 'Hello, world!';
+})();
+
+$foo->bar()
+    ->baz()
+    ->qux()
+    ->quux(static fn() => [
+        'foo',
+        'bar',
+        'baz',
+        'qux',
+        'quux',
+        'corge',
+        'grault',
+        'garply',
+        'waldo',
+    ])
+    ->corge(
+        static fn() => [
+            'foo',
+            'bar',
+            'baz',
+            'qux',
+            'quux',
+            'corge',
+            'grault',
+            'garply',
+            'waldo',
+        ],
+        [],
+    )
+    ->grault(
+        #[bar] static fn() => [
+            'foo',
+            'bar',
+            'baz',
+            'qux',
+            'quux',
+            'corge',
+            'grault',
+            'garply',
+            'waldo',
+        ],
+        [],
+    )
+    ->garply(
+        #[bar] static fn() => [
+            'foo',
+            'bar',
+            'baz',
+            'qux',
+            'quux',
+            'corge',
+            'grault',
+            'garply',
+            'waldo',
+        ],
+        [],
+        [],
+    )
+    ->waldo(
+        #[foo]
+        #[bar]
+        static fn() => [
+            'foo',
+            'bar',
+            'baz',
+            'qux',
+            'quux',
+            'corge',
+            'grault',
+            'garply',
+            'waldo',
+        ],
+        [],
+        [],
+    )
+    ->fred()
+    ->plugh()
+    ->xyzzy()
+    ->thud();
+
 $a = new class {
 };
 

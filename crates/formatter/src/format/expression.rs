@@ -15,6 +15,7 @@ use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
 use crate::format::misc;
+use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_condition;
 use crate::format::misc::print_modifiers;
 use crate::format::string::print_string;
@@ -591,43 +592,36 @@ impl<'a> Format<'a> for Closure {
 impl<'a> Format<'a> for ArrowFunction {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, ArrowFunction, {
-            let mut parts = vec![];
-            for attribute_list in self.attributes.iter() {
-                parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
-                parts.push(Document::BreakParent);
-            }
+            let attributes = print_attribute_list_sequence(f, &self.attributes, true);
 
+            let mut contents = vec![];
             if let Some(s) = &self.r#static {
-                parts.push(s.format(f));
-                parts.push(Document::space());
+                contents.push(s.format(f));
+                contents.push(Document::space());
             }
 
-            parts.push(self.r#fn.format(f));
+            contents.push(self.r#fn.format(f));
             if f.settings.space_before_arrow_function_params {
-                parts.push(Document::space());
+                contents.push(Document::space());
             }
 
             if self.ampersand.is_some() {
-                parts.push(Document::String("&"));
+                contents.push(Document::String("&"));
             }
 
-            parts.push(self.parameters.format(f));
+            contents.push(self.parameters.format(f));
             if let Some(h) = &self.return_type_hint {
-                parts.push(h.format(f));
+                contents.push(h.format(f));
             }
 
-            parts.push(Document::IfBreak(IfBreak::new(
-                Document::Indent(vec![Document::Line(Line::default())]),
-                Document::space(),
-            )));
+            contents.push(Document::String(" => "));
+            contents.push(self.expression.format(f));
 
-            parts.push(Document::String("=>"));
-            parts.push(Document::space());
-
-            parts.push(self.expression.format(f));
-
-            Document::Group(Group::new(parts))
+            if let Some(attributes) = attributes {
+                Document::Group(Group::new(vec![attributes, Document::Group(Group::new(contents))]))
+            } else {
+                Document::Group(Group::new(contents))
+            }
         })
     }
 }

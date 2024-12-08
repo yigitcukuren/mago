@@ -199,7 +199,7 @@ impl<'a> Formatter<'a> {
 
         if let Node::Call(call) = self.parent_node() {
             if let Call::Function(_) = call {
-                return matches!(expression, Expression::Access(_) | Expression::Instantiation(_));
+                return self.function_callee_expression_need_parenthesis(expression);
             }
 
             if let Expression::Instantiation(new) = expression {
@@ -246,6 +246,24 @@ impl<'a> Formatter<'a> {
                 | Expression::Construct(_)
                 | Expression::Call(_)
                 | Expression::Access(_)
+                | Expression::ClosureCreation(_)
+                | Expression::Static(_)
+                | Expression::Self_(_)
+                | Expression::Parent(_)
+        )
+    }
+
+    const fn function_callee_expression_need_parenthesis(&self, expression: &'a Expression) -> bool {
+        !matches!(
+            expression,
+            Expression::Literal(_)
+                | Expression::Array(_)
+                | Expression::LegacyArray(_)
+                | Expression::ArrayAccess(_)
+                | Expression::Variable(_)
+                | Expression::Identifier(_)
+                | Expression::Construct(_)
+                | Expression::Call(_)
                 | Expression::ClosureCreation(_)
                 | Expression::Static(_)
                 | Expression::Self_(_)
