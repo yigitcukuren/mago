@@ -2,7 +2,7 @@ use mago_interner::StringIdentifier;
 
 use crate::Formatter;
 
-fn get_preferred_quote(raw: &str, prefer_single_quote: bool) -> char {
+fn get_preferred_quote(raw: &str, enclosing_quote: char, prefer_single_quote: bool) -> char {
     let (preferred_quote_char, alternate_quote_char) = if prefer_single_quote { ('\'', '"') } else { ('"', '\'') };
 
     let mut preferred_quote_count = 0;
@@ -13,6 +13,10 @@ fn get_preferred_quote(raw: &str, prefer_single_quote: bool) -> char {
             preferred_quote_count += 1;
         } else if character == alternate_quote_char {
             alternate_quote_count += 1;
+        } else if character == '\\' && !matches!(raw.chars().next(), Some(c) if c == enclosing_quote) {
+            // If the string contains a backslash followed by the other quote character, we should
+            // prefer the existing quote character.
+            return enclosing_quote;
         }
     }
 
@@ -57,8 +61,9 @@ fn make_string(raw_text: &str, enclosing_quote: char) -> String {
 pub(super) fn print_string<'a>(f: &Formatter<'a>, value: &StringIdentifier) -> &'a str {
     let text = f.lookup(value);
 
+    let quote = unsafe { text.chars().nth(0).unwrap_unchecked() };
     let raw_text = &text[1..text.len() - 1];
-    let enclosing_quote = get_preferred_quote(raw_text, f.settings.single_quote);
+    let enclosing_quote = get_preferred_quote(raw_text, quote, f.settings.single_quote);
 
     f.as_str(make_string(raw_text, enclosing_quote))
 }
