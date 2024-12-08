@@ -61,7 +61,7 @@ fn make_string(raw_text: &str, enclosing_quote: char) -> String {
 pub(super) fn print_string<'a>(f: &Formatter<'a>, value: &StringIdentifier) -> &'a str {
     let text = f.lookup(value);
 
-    let quote = unsafe { text.chars().nth(0).unwrap_unchecked() };
+    let quote = unsafe { text.chars().next().unwrap_unchecked() };
     let raw_text = &text[1..text.len() - 1];
     let enclosing_quote = get_preferred_quote(raw_text, quote, f.settings.single_quote);
 
