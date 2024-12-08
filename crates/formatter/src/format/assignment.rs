@@ -355,7 +355,7 @@ fn is_poorly_breakable_member_or_call_chain<'a>(f: &Formatter<'a>, rhs_expressio
         }
     }
 
-    if !is_chain_expression || !is_identifier_or_variable {
+    if !is_chain_expression || !is_identifier_or_variable || call_argument_lists.is_empty() {
         return false;
     }
 
