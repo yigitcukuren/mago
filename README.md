@@ -50,11 +50,22 @@ _Note: This project was previously named “Fennec” before being rebranded due
 
 ## Installation
 
+### Pre-compiled Binaries
+
+You can find precompiled binaries for various platforms on our [Releases page](https://github.com/carthage-software/mago/releases).
+Simply download the archive for your platform, extract it, and place the mago binary somewhere in your `PATH`.
+
+### Installation via Cargo
+
+If you have Rust installed, you can install Mago using Cargo:
+
 ```bash
 cargo install mago
 ```
 
-## Installation from source
+### Installation from source
+
+To install Mago from source, you can clone the repository and build the project using Cargo:
 
 ```bash
 git clone https://github.com/carthage-software/mago
@@ -74,6 +85,7 @@ You can try Mago by navigating to the [`examples`](examples) directory and runni
 ```bash
 cd examples
 mago lint
+mago fmt
 ```
 
 This will analyze the PHP files located in the [`examples/src/`](examples/src) directory and display any linting errors.
