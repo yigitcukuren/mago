@@ -1,5 +1,14 @@
 <?php
 
+$queue = $this->queue; // Using separate object to avoid a circular reference.
+
+$foo = foo(
+    (static fn(): float => 1.0)(...),
+    (static function (): float {
+        return 1.0;
+    })(...),
+);
+
 (function () {
     echo 'Hello, world!';
 })();

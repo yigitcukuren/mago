@@ -197,6 +197,14 @@ impl<'a> Formatter<'a> {
             return false;
         };
 
+        if let Some(Node::ClosureCreation(closure)) = self.grandparent_node() {
+            if let ClosureCreation::Function(_) = closure {
+                return self.function_callee_expression_need_parenthesis(expression);
+            }
+
+            return self.callee_expression_need_parenthesis(expression);
+        }
+
         if let Node::Call(call) = self.parent_node() {
             if let Call::Function(_) = call {
                 return self.function_callee_expression_need_parenthesis(expression);
