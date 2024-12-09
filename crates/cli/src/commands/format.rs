@@ -21,6 +21,8 @@ This command will format source files according to the rules defined in the conf
 pub struct FormatCommand {
     #[arg(long, short = 'w', help = "The width of the printed source code", value_name = "WIDTH")]
     pub print_width: Option<usize>,
+    #[arg(long, short = 'd', help = "Run the command without writing any changes to disk")]
+    pub dry_run: bool,
 }
 
 pub async fn execute(command: FormatCommand, mut configuration: Configuration) -> i32 {
@@ -35,9 +37,21 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
 
     let service = FormatterService::new(configuration.format, interner.clone(), source_manager.clone());
 
-    let count = service.run().await.unwrap_or_else(bail);
+    let changed = service.run(command.dry_run).await.unwrap_or_else(bail);
 
-    mago_feedback::info!("formatted {} source files successfully", count);
+    if changed == 0 {
+        mago_feedback::info!("All source files are already formatted");
 
-    0
+        return 0;
+    }
+
+    if command.dry_run {
+        mago_feedback::info!("Found {} source files that need formatting", changed);
+
+        1
+    } else {
+        mago_feedback::info!("Formatted {} source files successfully", changed);
+
+        0
+    }
 }

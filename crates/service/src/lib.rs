@@ -1,3 +1,5 @@
+mod utils;
+
 pub mod ast;
 pub mod config;
 pub mod formatter;

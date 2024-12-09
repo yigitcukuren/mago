@@ -9,6 +9,7 @@ use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 
 use crate::formatter::config::FormatterConfiguration;
+use crate::utils;
 
 pub mod config;
 
@@ -29,13 +30,13 @@ impl FormatterService {
     }
 
     /// Runs the formatting process.
-    pub async fn run(&self) -> Result<usize, SourceError> {
+    pub async fn run(&self, dry_run: bool) -> Result<usize, SourceError> {
         // Process sources concurrently
-        self.process_sources(self.source_manager.user_defined_source_ids().collect()).await
+        self.process_sources(self.source_manager.user_defined_source_ids().collect(), dry_run).await
     }
 
     #[inline]
-    async fn process_sources(&self, source_ids: Vec<SourceIdentifier>) -> Result<usize, SourceError> {
+    async fn process_sources(&self, source_ids: Vec<SourceIdentifier>, dry_run: bool) -> Result<usize, SourceError> {
         let settings = self.configuration.get_settings();
         let mut handles = Vec::with_capacity(source_ids.len());
 
@@ -71,7 +72,7 @@ impl FormatterService {
                         format_pb.inc(1);
                         write_pb.inc(1);
 
-                        return Result::<_, SourceError>::Ok(());
+                        return Result::<bool, SourceError>::Ok(false);
                     }
 
                     mago_feedback::debug!("> formatting program: {}", interner.lookup(&program.source.0));
@@ -83,21 +84,21 @@ impl FormatterService {
                     mago_feedback::debug!("> writing program: {}", interner.lookup(&program.source.0));
 
                     // Step 4: write the formatted source
-                    manager.write(source.identifier, formatted)?;
+                    let changed = utils::apply_changes(&interner, &manager, &source, formatted, dry_run)?;
                     write_pb.inc(1);
 
                     mago_feedback::debug!("< formatted program: {}", interner.lookup(&program.source.0));
 
-                    Result::<_, SourceError>::Ok(())
+                    Result::<bool, SourceError>::Ok(changed)
                 }
             }));
         }
 
-        let mut count = 0;
+        let mut changed = 0;
         for handle in handles {
-            handle.await.expect("failed to format files, this should never happen.")?;
-
-            count += 1;
+            if handle.await.expect("failed to format files, this should never happen.")? {
+                changed += 1;
+            }
         }
 
         remove_progress_bar(source_pb);
@@ -105,6 +106,6 @@ impl FormatterService {
         remove_progress_bar(format_pb);
         remove_progress_bar(write_pb);
 
-        Ok(count)
+        Ok(changed)
     }
 }

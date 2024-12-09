@@ -88,6 +88,7 @@ termtree = "0.5.1"
 bitflags = "2.6.0"
 wasm-bindgen = "0.2.97"
 serde-wasm-bindgen = "0.4"
+diffy = "0.4.0"
 
 [dependencies]
 mago-cli = { workspace = true }
