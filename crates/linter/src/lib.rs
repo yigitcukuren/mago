@@ -33,12 +33,12 @@ impl Linter {
     pub fn add_plugin(&mut self, plugin: impl Plugin) {
         let name = plugin.get_name();
 
-        tracing::info!("Adding plugin `{name}`...");
+        tracing::debug!("Adding plugin `{name}`...");
 
         let enabled = self.settings.plugins.iter().any(|p| p.eq(name));
         if !enabled {
             if self.settings.default_plugins && plugin.is_enabled_by_default() {
-                tracing::info!("Enabling default plugin `{name}`.");
+                tracing::debug!("Enabling default plugin `{name}`.");
             } else {
                 tracing::debug!(
                     "Plugin `{name}` is not enabled in the configuration and is not a default plugin. Skipping."
@@ -47,7 +47,7 @@ impl Linter {
                 return;
             }
         } else {
-            tracing::info!("Enabling plugin `{name}`.");
+            tracing::debug!("Enabling plugin `{name}`.");
         }
 
         for rule in plugin.get_rules() {
@@ -60,7 +60,7 @@ impl Linter {
         let rule_name = rule.get_name();
         let full_name = format!("{}/{}", plugin, rule_name);
 
-        tracing::info!("Adding rule `{full_name}`...");
+        tracing::debug!("Adding rule `{full_name}`...");
 
         let settings = self.settings.get_rule_settings(full_name.as_str()).cloned().unwrap_or_else(|| {
             tracing::debug!("No configuration found for rule `{full_name}`, using default.");
@@ -79,14 +79,14 @@ impl Linter {
             None => match rule.get_default_level() {
                 Some(level) => level,
                 None => {
-                    tracing::warn!("Rule `{full_name}` does not have a default level. Skipping.");
+                    tracing::debug!("Rule `{full_name}` does not have a default level. Skipping.");
 
                     return;
                 }
             },
         };
 
-        tracing::info!("Enabling rule `{full_name}` with level `{level:?}`.");
+        tracing::debug!("Enabling rule `{full_name}` with level `{level:?}`.");
 
         self.rules.write().expect("Unable to add rule: poisoned lock").push(ConfiguredRule {
             level,

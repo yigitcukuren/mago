@@ -17,7 +17,6 @@ mago-ast = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-source = { workspace = true }
-mago-fixer = { workspace = true }
 mago-service = { workspace = true }
 mago-feedback = { workspace = true }
 serde = { workspace = true }

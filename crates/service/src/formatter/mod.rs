@@ -59,8 +59,6 @@ impl FormatterService {
                     let source = manager.load(source_id)?;
                     source_pb.inc(1);
 
-                    mago_feedback::debug!("> parsing program: {}", interner.lookup(&source.identifier.0));
-
                     // Step 2: parse the source
                     let (program, error) = parse_source(&interner, &source);
                     parse_pb.inc(1);
@@ -75,19 +73,13 @@ impl FormatterService {
                         return Result::<bool, SourceError>::Ok(false);
                     }
 
-                    mago_feedback::debug!("> formatting program: {}", interner.lookup(&program.source.0));
-
                     // Step 3: format the source
                     let formatted = format(settings, &interner, &source, &program);
                     format_pb.inc(1);
 
-                    mago_feedback::debug!("> writing program: {}", interner.lookup(&program.source.0));
-
                     // Step 4: write the formatted source
                     let changed = utils::apply_changes(&interner, &manager, &source, formatted, dry_run)?;
                     write_pb.inc(1);
-
-                    mago_feedback::debug!("< formatted program: {}", interner.lookup(&program.source.0));
 
                     Result::<bool, SourceError>::Ok(changed)
                 }

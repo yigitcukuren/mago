@@ -266,6 +266,11 @@ impl FixPlan {
         Self { operations: Vec::default() }
     }
 
+    /// Creates a new `FixPlan` instance from a vector of `FixOperation` instances.
+    pub fn from_operations(operations: Vec<FixOperation>) -> Self {
+        Self { operations }
+    }
+
     /// Adds a custom `FixOperation` to the plan.
     ///
     /// This method allows you to manually add a fix operation to the plan.
@@ -346,6 +351,18 @@ impl FixPlan {
         for op in other.operations {
             self.operation(op);
         }
+    }
+
+    /// Returns a reference to the operations in the plan.
+    pub fn get_operations(&self) -> &Vec<FixOperation> {
+        &self.operations
+    }
+
+    /// Takes ownership of the operations in the plan.
+    ///
+    /// This method consumes the `FixPlan` and returns the list of operations it contains.
+    pub fn take_operations(self) -> Vec<FixOperation> {
+        self.operations
     }
 
     /// Determines the minimum safety classification across all operations in the plan.

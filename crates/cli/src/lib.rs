@@ -15,7 +15,7 @@ pub mod utils;
 
 pub fn run() -> ! {
     // Set up the logger.
-    initialize_logger(LevelFilter::WARN, "MAGO_LOG");
+    initialize_logger(if cfg!(debug_assertions) { LevelFilter::DEBUG } else { LevelFilter::INFO }, "MAGO_LOG");
 
     // Load the configuration.
     let configuration = Configuration::load().unwrap_or_else(bail);

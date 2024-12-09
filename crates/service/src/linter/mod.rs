@@ -1,6 +1,8 @@
 use mago_feedback::create_progress_bar;
 use mago_feedback::remove_progress_bar;
 use mago_feedback::ProgressBarTheme;
+use mago_fixer::FixPlan;
+use mago_fixer::SafetyClassification;
 use mago_interner::ThreadedInterner;
 use mago_linter::plugin::best_practices::BestPracticesPlugin;
 use mago_linter::plugin::comment::CommentPlugin;
@@ -23,6 +25,7 @@ use mago_source::SourceManager;
 
 use crate::linter::config::LinterConfiguration;
 use crate::linter::config::LinterLevel;
+use crate::utils;
 
 pub mod config;
 
@@ -33,18 +36,131 @@ pub struct LintService {
     source_manager: SourceManager,
 }
 
+#[derive(Debug)]
+pub struct LinterFixResult {
+    pub skipped_unsafe: usize,
+    pub skipped_potentially_unsafe: usize,
+    pub changed: usize,
+}
+
 impl LintService {
     pub fn new(configuration: LinterConfiguration, interner: ThreadedInterner, source_manager: SourceManager) -> Self {
         Self { configuration, interner, source_manager }
     }
 
-    /// Runs the linting process and returns a stream of issues.
+    /// Runs the linting process and returns a collection of issues.
     pub async fn run(&self) -> Result<IssueCollection, SourceError> {
         // Initialize the linter
         let linter = self.initialize_linter();
 
         // Process sources concurrently
         self.process_sources(linter, self.source_manager.user_defined_source_ids().collect()).await
+    }
+
+    /// Runs the linting process and returns a collection of issues.
+    pub async fn fix(
+        &self,
+        r#unsafe: bool,
+        potentially_unsafe: bool,
+        dry_run: bool,
+    ) -> Result<LinterFixResult, SourceError> {
+        let classification = if r#unsafe {
+            SafetyClassification::Unsafe
+        } else if potentially_unsafe {
+            SafetyClassification::PotentiallyUnsafe
+        } else {
+            SafetyClassification::Safe
+        };
+
+        let mut skipped_unsafe = 0;
+        let mut skipped_potentially_unsafe = 0;
+        let fix_plans = self
+            .run()
+            .await?
+            .to_fix_plans()
+            .into_iter()
+            .filter_map(|(source, plan)| {
+                if plan.is_empty() {
+                    return None;
+                }
+
+                let mut operations = vec![];
+                for operation in plan.take_operations() {
+                    match operation.get_safety_classification() {
+                        SafetyClassification::Unsafe => {
+                            if classification == SafetyClassification::Unsafe {
+                                operations.push(operation);
+                            } else {
+                                skipped_unsafe += 1;
+
+                                mago_feedback::warn!(
+                                    "Skipping a fix for `{}` because it contains unsafe changes.",
+                                    self.interner.lookup(&source.0)
+                                );
+                            }
+                        }
+                        SafetyClassification::PotentiallyUnsafe => {
+                            if classification == SafetyClassification::Unsafe
+                                || classification == SafetyClassification::PotentiallyUnsafe
+                            {
+                                operations.push(operation);
+                            } else {
+                                skipped_potentially_unsafe += 1;
+
+                                mago_feedback::warn!(
+                                    "Skipping a fix for `{}` because it contains potentially unsafe changes.",
+                                    self.interner.lookup(&source.0)
+                                );
+                            }
+                        }
+                        SafetyClassification::Safe => {
+                            operations.push(operation);
+                        }
+                    }
+                }
+
+                if operations.is_empty() {
+                    None
+                } else {
+                    Some((source, FixPlan::from_operations(operations)))
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let fix_pb = create_progress_bar(fix_plans.len(), "✨  Fixing", ProgressBarTheme::Magenta);
+        let mut handles = vec![];
+        for (source, plan) in fix_plans.into_iter() {
+            handles.push(tokio::spawn({
+                let source_manager = self.source_manager.clone();
+                let interner = self.interner.clone();
+                let fix_pb = fix_pb.clone();
+
+                async move {
+                    let source = source_manager.load(source)?;
+                    let source_content = interner.lookup(&source.content);
+                    let result = utils::apply_changes(
+                        &interner,
+                        &source_manager,
+                        &source,
+                        plan.execute(source_content).get_fixed(),
+                        dry_run,
+                    );
+
+                    fix_pb.inc(1);
+
+                    result
+                }
+            }));
+        }
+
+        let mut changed = 0;
+        for handle in handles {
+            if handle.await.expect("failed to fix sources, this should never happen.")? {
+                changed += 1;
+            }
+        }
+
+        Ok(LinterFixResult { skipped_unsafe, skipped_potentially_unsafe, changed })
     }
 
     #[inline]

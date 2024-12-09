@@ -25,6 +25,7 @@ mago-feedback = { workspace = true }
 mago-formatter = { workspace = true }
 mago-ast = { workspace = true }
 mago-parser = { workspace = true }
+mago-fixer = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 ahash = { workspace = true }
