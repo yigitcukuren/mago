@@ -20,6 +20,9 @@ pub fn initialize_logger(directive: impl Into<Directive>, env_var: impl Into<Str
             EnvFilter::builder().with_default_directive(directive.into()).with_env_var(env_var.into()).from_env_lossy(),
         )
         .with_writer(LoggerWriter::stderr)
+        .with_target(if cfg!(debug_assertions) { true } else { false })
+        .without_time()
+        .compact()
         .init();
 }
 
