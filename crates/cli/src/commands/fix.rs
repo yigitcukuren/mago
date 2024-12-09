@@ -49,14 +49,35 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
     let service = LintService::new(configuration.linter, interner.clone(), source_manager.clone());
 
     let classification = command.get_safety_classification();
-
+    let mut unsafe_fixes = 0;
+    let mut potentially_unsafe_fixes = 0;
     let fix_plans = service.run().await.unwrap_or_else(bail).to_fix_plans().into_iter().filter_map(|(source, plan)| {
-        let plan = plan.to_minimum_safety_classification(classification);
-
         if plan.is_empty() {
+            return None;
+        }
+
+        let safe_plan = plan.to_minimum_safety_classification(classification);
+        if safe_plan.is_empty() {
+            match plan.get_minimum_safety_classification() {
+                SafetyClassification::Unsafe => {
+                    unsafe_fixes += 1;
+
+                    mago_feedback::warn!("Skipping `{}` because it contains unsafe fixes.", interner.lookup(&source.0));
+                }
+                SafetyClassification::PotentiallyUnsafe => {
+                    potentially_unsafe_fixes += 1;
+
+                    mago_feedback::warn!(
+                        "Skipping `{}` because it contains potentially unsafe fixes.",
+                        interner.lookup(&source.0)
+                    );
+                }
+                _ => {}
+            }
+
             None
         } else {
-            Some((source, plan))
+            Some((source, safe_plan))
         }
     });
 
@@ -71,7 +92,7 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
                 let source_name = interner.lookup(&source.identifier.value());
                 let source_content = interner.lookup(&source.content);
 
-                mago_feedback::info!("fixing issues in `{}` ( {} fix operations )", source_name, plan.len());
+                mago_feedback::info!("Fixing {} issues in `{}`", plan.len(), source_name);
 
                 let code = plan.execute(source_content);
 
@@ -85,6 +106,20 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> i32 {
                 Ok::<(), SourceError>(())
             }
         }));
+    }
+
+    if unsafe_fixes > 0 {
+        mago_feedback::warn!(
+            "Skipped {} fixes because they were marked as unsafe. To apply these fixes, use the `--unsafe` flag.",
+            unsafe_fixes
+        );
+    }
+
+    if potentially_unsafe_fixes > 0 {
+        mago_feedback::warn!(
+            "Skipped {} fixes because they were marked as potentially unsafe. To apply these fixes, use the `--potentially-unsafe` flag.",
+            potentially_unsafe_fixes
+        );
     }
 
     for handle in handles {
