@@ -935,14 +935,14 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "mago"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-cli",
 ]
 
 [[package]]
 name = "mago-ast"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-interner",
  "mago-source",
@@ -955,21 +955,21 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-casing"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-cli"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "clap",
@@ -987,7 +987,7 @@ dependencies = [
 
 [[package]]
 name = "mago-composer"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "serde",
@@ -996,7 +996,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1007,7 +1007,7 @@ dependencies = [
 
 [[package]]
 name = "mago-feedback"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "indicatif",
  "tracing",
@@ -1016,7 +1016,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1026,7 +1026,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1042,7 +1042,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "criterion",
  "lasso",
@@ -1051,7 +1051,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1067,7 +1067,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1091,7 +1091,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1104,7 +1104,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "either",
  "mago-ast",
@@ -1125,7 +1125,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1138,7 +1138,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1154,7 +1154,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "codespan-reporting",
@@ -1166,7 +1166,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1184,7 +1184,7 @@ dependencies = [
 
 [[package]]
 name = "mago-service"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1214,7 +1214,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "codespan-reporting",
  "dashmap",
@@ -1225,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-source",
  "serde",
@@ -1233,7 +1233,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1256,14 +1256,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "serde",
  "strum",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1286,7 +1286,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1294,7 +1294,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "getrandom",
  "mago-ast",
