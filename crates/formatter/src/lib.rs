@@ -148,15 +148,21 @@ impl<'a> Formatter<'a> {
 
     pub(crate) fn skip_trailing_comment(&self, start_index: Option<usize>) -> Option<usize> {
         let start_index = start_index?;
-        let mut chars = self.source_text[start_index..].chars();
-        let c = chars.next()?;
-        if c != '/' {
-            return Some(start_index);
-        }
+        let mut bytes = self.source_text[start_index..].bytes();
 
-        let c = chars.next()?;
-        if c != '/' {
-            return Some(start_index);
+        match bytes.next()? {
+            b'/' => {
+                let c = bytes.next()?;
+                if c != b'/' {
+                    return Some(start_index);
+                }
+            }
+            b'#' => {
+                if let Some(b'#') = bytes.next() {
+                    return Some(start_index);
+                }
+            }
+            _ => return Some(start_index),
         }
 
         self.skip_everything_but_new_line(Some(start_index), /* backwards */ false)
@@ -168,36 +174,36 @@ impl<'a> Formatter<'a> {
     }
 
     pub(crate) fn skip_to_line_end(&self, start_index: Option<usize>) -> Option<usize> {
-        self.skip(start_index, false, |c| matches!(c, ' ' | '\t' | ',' | ';'))
+        self.skip(start_index, false, |c| matches!(c, b' ' | b'\t' | b',' | b';'))
     }
 
     pub(crate) fn skip_spaces(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
-        self.skip(start_index, backwards, |c| matches!(c, ' ' | '\t'))
+        self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t'))
     }
 
     pub(crate) fn skip_spaces_and_new_lines(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
-        self.skip(start_index, backwards, |c| matches!(c, ' ' | '\t' | '\r' | '\n') || is_line_terminator(c))
+        self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t' | b'\r' | b'\n'))
     }
 
     pub(crate) fn skip_everything_but_new_line(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
-        self.skip(start_index, backwards, |c| !is_line_terminator(c))
+        self.skip(start_index, backwards, |c| !matches!(c, b'\r' | b'\n'))
     }
 
     pub(crate) fn skip<F>(&self, start_index: Option<usize>, backwards: bool, f: F) -> Option<usize>
     where
-        F: Fn(char) -> bool,
+        F: Fn(u8) -> bool,
     {
         let start_index = start_index?;
         let mut index = start_index;
         if backwards {
-            for c in self.source_text[..=start_index].chars().rev() {
+            for c in self.source_text[..=start_index].bytes().rev() {
                 if !f(c) {
                     return Some(index);
                 }
                 index -= 1;
             }
         } else {
-            for c in self.source_text[start_index..].chars() {
+            for c in self.source_text[start_index..].bytes() {
                 if !f(c) {
                     return Some(index);
                 }
@@ -212,14 +218,15 @@ impl<'a> Formatter<'a> {
     pub(crate) fn skip_newline(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
         let start_index = start_index?;
         let c = if backwards {
-            self.source_text[..=start_index].chars().next_back()
+            self.source_text[..=start_index].bytes().next_back()
         } else {
-            self.source_text[start_index..].chars().next()
+            self.source_text[start_index..].bytes().next()
         }?;
-        if is_line_terminator(c) {
-            let len = c.len_utf8();
-            return Some(if backwards { start_index - len } else { start_index + len });
+
+        if matches!(c, b'\n') {
+            return Some(if backwards { start_index - 1 } else { start_index + 1 });
         }
+
         Some(start_index)
     }
 
@@ -265,19 +272,18 @@ impl<'a> Formatter<'a> {
     }
 
     pub(crate) fn skip_leading_whitespace_up_to(s: &'a str, indent: usize) -> &'a str {
+        let mut count = 0;
         let mut position = 0;
-        for (count, (i, c)) in s.char_indices().enumerate() {
-            if !c.is_whitespace() || count >= indent {
+        for (i, b) in s.bytes().enumerate() {
+            // Check if the current byte represents whitespace
+            if !b.is_ascii_whitespace() || count >= indent {
                 break;
             }
 
-            position = i + c.len_utf8();
+            count += 1;
+            position = i + 1;
         }
 
         &s[position..]
     }
-}
-
-pub(crate) const fn is_line_terminator(c: char) -> bool {
-    matches!(c, '\u{a}' | '\u{d}' | '\u{2028}' | '\u{2029}')
 }
