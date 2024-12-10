@@ -272,15 +272,13 @@ impl<'a> Formatter<'a> {
     }
 
     pub(crate) fn skip_leading_whitespace_up_to(s: &'a str, indent: usize) -> &'a str {
-        let mut count = 0;
         let mut position = 0;
-        for (i, b) in s.bytes().enumerate() {
+        for (count, (i, b)) in s.bytes().enumerate().enumerate() {
             // Check if the current byte represents whitespace
             if !b.is_ascii_whitespace() || count >= indent {
                 break;
             }
 
-            count += 1;
             position = i + 1;
         }
 
