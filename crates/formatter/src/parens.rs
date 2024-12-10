@@ -105,44 +105,6 @@ impl<'a> Formatter<'a> {
                 // ```
                 return access.left_bracket.start.offset > node.span().start.offset;
             }
-            Some(Node::Access(access)) => {
-                // we add parentheses if the parent is an access and the child is a binaryish node
-                //
-                // Example:
-                //
-                // ```php
-                // ($foo ?? $bar)->baz;
-                // ($foo ?? $bar)?->baz;
-                // ($foo ?? $bar)::$baz;
-                // ($foo ?? $bar)::baz;
-                // ```
-                //
-                // requires parentheses, if we remove them, the code will be interpreted as:
-                //
-                // ```php
-                // $foo ?? $bar->baz;
-                // $foo ?? $bar->baz;
-                // $foo ?? $bar::$baz;
-                // $foo ?? $bar)::baz;
-                // ```
-                return node.span().start.offset == access.span().start.offset;
-            }
-            Some(Node::Call(call)) => {
-                // we add parentheses if the parent is a call and the child is a binaryish node
-                //
-                // Example:
-                //
-                // ```php
-                // ($foo ?? $bar)();
-                // ```
-                //
-                // requires parentheses, if we remove them, the code will be interpreted as:
-                //
-                // ```php
-                // $foo ?? $bar();
-                // ```
-                return node.span().start.offset == call.span().start.offset;
-            }
             _ => {
                 let grand_parent_node = self.nth_parent_kind(3);
 
@@ -235,8 +197,29 @@ impl<'a> Formatter<'a> {
             return self.callee_expression_need_parenthesis(expression);
         }
 
-        if let Some(Node::Access(_)) = self.grandparent_node() {
-            return self.callee_expression_need_parenthesis(expression);
+        if let Node::ArrayAccess(access) = self.parent_node() {
+            return if expression.span().end.offset < access.left_bracket.start.offset {
+                self.callee_expression_need_parenthesis(expression)
+            } else {
+                false
+            };
+        }
+
+        if let Some(Node::Access(access)) = self.grandparent_node() {
+            let offset = match access {
+                Access::Property(property_access) => property_access.arrow.start.offset,
+                Access::NullSafeProperty(null_safe_property_access) => {
+                    null_safe_property_access.question_mark_arrow.start.offset
+                }
+                Access::StaticProperty(static_property_access) => static_property_access.double_colon.start.offset,
+                Access::ClassConstant(class_constant_access) => class_constant_access.double_colon.start.offset,
+            };
+
+            return if expression.span().end.offset < offset {
+                self.callee_expression_need_parenthesis(expression)
+            } else {
+                false
+            };
         }
 
         false
