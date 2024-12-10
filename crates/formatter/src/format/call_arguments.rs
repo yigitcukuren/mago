@@ -51,7 +51,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
 
         for (i, element) in arguments {
             let mut argument = vec![element.format(p)];
-            if i < length - 1 {
+            if i < (length - 1) {
                 argument.push(Document::String(","));
 
                 if p.is_next_line_empty(element.span()) {
@@ -162,9 +162,15 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
             vec![
                 Document::Array(vec![
                     Document::String("("),
-                    Document::Array(get_printed_arguments(f, -1)),
-                    Document::String(","),
-                    Document::Line(Line::default()),
+                    if argument_list.arguments.len() > 1 {
+                        Document::Array(vec![
+                            Document::Array(get_printed_arguments(f, -1)),
+                            Document::String(","),
+                            Document::Line(Line::default()),
+                        ])
+                    } else {
+                        Document::empty()
+                    },
                     Document::Group(Group::new(vec![get_last_doc(f)]).with_break(true)),
                     Document::String(")"),
                 ]),
