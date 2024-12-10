@@ -479,7 +479,7 @@ pub struct FormatSettings {
     ///   ->baz();
     /// ```
     ///
-    /// Default: SameLine
+    /// Default: NextLine
     #[serde(default)]
     pub method_chain_breaking_style: MethodChainBreakingStyle,
 }
@@ -514,7 +514,7 @@ impl Default for FormatSettings {
             break_promoted_properties_list: true,
             space_concatenation: true,
             preserve_multiline_binary_operations: true,
-            method_chain_breaking_style: MethodChainBreakingStyle::SameLine,
+            method_chain_breaking_style: MethodChainBreakingStyle::NextLine,
         }
     }
 }
@@ -555,8 +555,8 @@ pub enum BraceStyle {
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum MethodChainBreakingStyle {
     #[serde(alias = "same")]
-    #[default]
     SameLine,
+    #[default]
     #[serde(alias = "next")]
     NextLine,
 }
