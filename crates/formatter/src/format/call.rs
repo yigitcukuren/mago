@@ -51,11 +51,14 @@ pub(super) fn collect_method_call_chain(expr: &Expression) -> Option<MethodChain
 }
 
 pub(super) fn print_method_call_chain<'a>(method_chain: &MethodChain<'a>, f: &mut Formatter<'a>) -> Document<'a> {
-    let mut parts = Vec::new();
+    let base_document = method_chain.base.format(f);
+    let mut parts = if base_needs_parerns(method_chain.base) {
+        vec![Document::String("("), base_document, Document::String(")")]
+    } else {
+        vec![base_document]
+    };
 
     let mut calls_iter = method_chain.calls.iter();
-
-    parts.push(method_chain.base.format(f));
 
     // Handle the first method call
     if !f.settings.method_chain_breaking_style.is_next_line() {
@@ -91,4 +94,42 @@ pub(super) fn print_method_call_chain<'a>(method_chain: &MethodChain<'a>, f: &mu
 
     // Wrap everything in a group to manage line breaking
     Document::Group(Group::new(parts))
+}
+
+fn base_needs_parerns(base: &Expression) -> bool {
+    if let Expression::Parenthesized(parenthesized) = base {
+        return base_needs_parerns(&parenthesized.expression);
+    }
+
+    match base {
+        Expression::Instantiation(instantiation) => {
+            if instantiation.arguments.is_none() {
+                // parentheses are required if the instantiation has no arguments
+                // e.g. `new Foo->baz()` should be `(new Foo)->baz()`
+                true
+            } else {
+                // parentheses are not required if the instantiation has arguments
+                // e.g. `new Foo()->baz()`.
+                //
+                // but this is only allowed in PHP 8.4, so for now, we add
+                // parentheses to be safe, in the future, we can add an option
+                // to remove them.
+                //
+                // TODO(azjezz): we should add an option to remove parentheses.
+                true
+            }
+        }
+        Expression::Binary(_)
+        | Expression::UnaryPrefix(_)
+        | Expression::UnaryPostfix(_)
+        | Expression::AssignmentOperation(_)
+        | Expression::Conditional(_)
+        | Expression::AnonymousClass(_)
+        | Expression::Closure(_)
+        | Expression::ArrowFunction(_)
+        | Expression::Match(_)
+        | Expression::Yield(_)
+        | Expression::Clone(_) => true,
+        _ => false,
+    }
 }
