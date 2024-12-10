@@ -36,7 +36,7 @@ impl<'a> Walker<LintContext<'a>> for MissingAssertDescriptionRule {
             return;
         }
 
-        if let None = function_call.arguments.arguments.get(1) {
+        if function_call.arguments.arguments.get(1).is_none() {
             let issue = Issue::new(context.level(), "missing description in assert")
                 .with_annotation(Annotation::primary(function_call.span()))
                 .with_help("add a description to the assert function to make it easier to understand the purpose of the assertion.");
