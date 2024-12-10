@@ -1,3 +1,4 @@
+pub mod missing_assert_description;
 pub mod no_assignment_in_condition;
 pub mod require_constant_type;
 pub mod require_identity_comparison;

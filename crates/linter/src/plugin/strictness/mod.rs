@@ -1,3 +1,4 @@
+use crate::plugin::strictness::rules::missing_assert_description::MissingAssertDescriptionRule;
 use crate::plugin::strictness::rules::no_assignment_in_condition::NoAssignmentInConditionRule;
 use crate::plugin::strictness::rules::require_constant_type::RequireConstantTypeRule;
 use crate::plugin::strictness::rules::require_identity_comparison::RequireIdentityComparisonRule;
@@ -25,6 +26,7 @@ impl Plugin for StrictnessPlugin {
 
     fn get_rules(&self) -> Vec<Box<dyn Rule>> {
         vec![
+            Box::new(MissingAssertDescriptionRule),
             Box::new(NoAssignmentInConditionRule),
             Box::new(RequireConstantTypeRule),
             Box::new(RequireParameterTypeRule),
