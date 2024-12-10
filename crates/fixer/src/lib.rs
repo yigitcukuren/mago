@@ -884,4 +884,48 @@ mod tests {
         let result = fix.execute(content);
         assert_eq!(result.get_fixed(), "Hello Beautiful WoTestrld"); // Only the insert is applied
     }
+
+    #[test]
+    fn test_happy_path() {
+        let content = "<?php for (;true;): endfor;";
+        let mut fix = FixPlan::new();
+
+        fix.replace(6..12, "while(", SafetyClassification::Safe);
+        fix.delete(16..17, SafetyClassification::Safe);
+        fix.replace(20..26, "endwhile", SafetyClassification::Safe);
+
+        let result = fix.execute(content);
+        assert_eq!(result.get_fixed(), "<?php while(true): endwhile;");
+    }
+
+    #[test]
+    fn test_happy_path_2() {
+        let content = "<?php for (;;): endfor;";
+        let mut fix = FixPlan::new();
+
+        fix.replace(6..10, "while", SafetyClassification::Safe);
+        fix.delete(11..12, SafetyClassification::Safe);
+        fix.insert(12, "true", SafetyClassification::Safe);
+        fix.delete(12..13, SafetyClassification::Safe);
+        fix.replace(16..22, "endwhile", SafetyClassification::Safe);
+
+        let result = fix.execute(content);
+        assert_eq!(result.get_fixed(), "<?php while(true): endwhile;");
+    }
+
+    #[test]
+    fn test_happy_path_3() {
+        let content = "<?php for(;;): endfor;";
+        let mut fix = FixPlan::new();
+
+        fix.delete(6..9, SafetyClassification::Safe);
+        fix.insert(6, "while", SafetyClassification::Safe);
+        fix.delete(10..11, SafetyClassification::Safe);
+        fix.insert(11, "true", SafetyClassification::Safe);
+        fix.delete(11..12, SafetyClassification::Safe);
+        fix.replace(15..21, "endwhile", SafetyClassification::Safe);
+
+        let result = fix.execute(content);
+        assert_eq!(result.get_fixed(), "<?php while(true): endwhile;");
+    }
 }

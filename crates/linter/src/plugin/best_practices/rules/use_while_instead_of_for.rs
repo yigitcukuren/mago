@@ -35,18 +35,19 @@ impl<'a> Walker<LintContext<'a>> for UseWhileInsteadOfForRule {
         .with_help("use a `while` loop instead of a `for` loop.");
 
         context.report_with_fix(issue, |plan| {
-            plan.replace(
-                r#for.r#for.span.join(r#for.initializations_semicolon).to_range(),
-                "while (",
-                SafetyClassification::Safe,
-            );
+            plan.delete(r#for.r#for.span.to_range(), SafetyClassification::Safe);
+            plan.insert(r#for.r#for.span.start.offset, "while", SafetyClassification::Safe);
 
-            plan.delete(r#for.conditions_semicolon.to_range(), SafetyClassification::Safe);
-
-            for semicolon in r#for.conditions.tokens.iter() {
-                plan.replace(semicolon.span.to_range(), " && ", SafetyClassification::Safe);
+            plan.delete(r#for.initializations_semicolon.to_range(), SafetyClassification::Safe);
+            if r#for.conditions.is_empty() {
+                plan.insert(r#for.initializations_semicolon.end.offset, "true", SafetyClassification::Safe);
+            } else {
+                for semicolon in r#for.conditions.tokens.iter() {
+                    plan.replace(semicolon.span.to_range(), " && ", SafetyClassification::Safe);
+                }
             }
 
+            plan.delete(r#for.conditions_semicolon.to_range(), SafetyClassification::Safe);
             if let ForBody::ColonDelimited(for_colon_delimited_body) = &r#for.body {
                 plan.replace(for_colon_delimited_body.end_for.span.to_range(), "endwhile", SafetyClassification::Safe);
             }
