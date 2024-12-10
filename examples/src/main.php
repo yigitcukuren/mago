@@ -25,6 +25,19 @@ function Main(): never
         return 12;
     }
 
+    foreach ($files as $file) {
+        echo $file;
+
+        continue;
+    }
+
+    while (true) {
+    }
+
+    do {
+        ;   ;
+    } while (false);
+
     biz:
 
     if (false) {
@@ -48,6 +61,8 @@ function Main(): never
     for (; true;) {
         break;
     }
+
+    assert($var === 1);
 
     return;
 }
