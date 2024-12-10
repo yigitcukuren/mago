@@ -1,5 +1,6 @@
 pub mod disallowed_functions;
 pub mod excessive_nesting;
+pub mod loop_does_not_iterate;
 pub mod no_debug_symbols;
 pub mod no_empty_loop;
 pub mod no_goto;

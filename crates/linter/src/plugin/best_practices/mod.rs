@@ -1,5 +1,6 @@
 use crate::plugin::best_practices::rules::disallowed_functions::DisallowedFunctionsRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
+use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
 use crate::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
 use crate::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
 use crate::plugin::best_practices::rules::no_goto::NoGotoRule;
@@ -28,6 +29,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(DisallowedFunctionsRule),
             Box::new(NoUnusedParameterRule),
             Box::new(ExcessiveNesting),
+            Box::new(LoopDoesNotIterateRule),
             Box::new(NoGotoRule),
             Box::new(NoDebugSymbolsRule),
             Box::new(NoEmptyLoopRule),

@@ -62,6 +62,10 @@ function Main(): never
         break;
     }
 
+    foreach ($files as $file) {
+        return;
+    }
+
     assert($var === 1);
 
     return;
