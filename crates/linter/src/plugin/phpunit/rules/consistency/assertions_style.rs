@@ -1,12 +1,12 @@
 use mago_ast::*;
+use mago_ast_utils::reference::MethodReference;
 use mago_fixer::SafetyClassification;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_walker::Walker;
 
 use crate::context::LintContext;
-use crate::plugin::phpunit::rules::utils::find_testing_and_assertions_methods;
-use crate::plugin::phpunit::rules::utils::MethodReference;
+use crate::plugin::phpunit::rules::utils::find_testing_or_assertion_references_in_method;
 use crate::rule::Rule;
 
 const STATIC_STYLES: &str = "static";
@@ -49,7 +49,7 @@ impl<'a> Walker<LintContext<'a>> for AssertionsStyleRule {
             _ => unreachable!(),
         };
 
-        for reference in find_testing_and_assertions_methods(method, context) {
+        for reference in find_testing_or_assertion_references_in_method(method, context) {
             let (to_replace, current_style) = match reference {
                 MethodReference::MethodCall(c) => (c.object.span().join(c.arrow), THIS_STYLES),
                 MethodReference::MethodClosureCreation(c) => (c.object.span().join(c.arrow), THIS_STYLES),

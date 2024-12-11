@@ -1,5 +1,7 @@
 use mago_ast::*;
 
+pub mod reference;
+
 #[inline]
 pub fn find_returns_in_block(block: &Block) -> Vec<&Return> {
     let mut returns = vec![];

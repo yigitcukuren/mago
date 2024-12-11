@@ -14,3 +14,4 @@ workspace = true
 
 [dependencies]
 mago-ast = { workspace = true }
+mago-span = { workspace = true }

@@ -958,6 +958,7 @@ name = "mago-ast-utils"
 version = "0.0.7"
 dependencies = [
  "mago-ast",
+ "mago-span",
 ]
 
 [[package]]

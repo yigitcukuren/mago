@@ -5,7 +5,7 @@ use mago_span::HasSpan;
 use mago_walker::Walker;
 
 use crate::context::LintContext;
-use crate::plugin::phpunit::rules::utils::find_assertions_methods;
+use crate::plugin::phpunit::rules::utils::find_assertion_references_in_method;
 use crate::rule::Rule;
 
 const NON_STRICT_ASSERTIONS: [&str; 4] =
@@ -32,7 +32,7 @@ impl<'a> Walker<LintContext<'a>> for StrictAssertionsRule {
             return;
         }
 
-        for reference in find_assertions_methods(method, context) {
+        for reference in find_assertion_references_in_method(method, context) {
             let ClassLikeMemberSelector::Identifier(identifier) = reference.get_selector() else {
                 continue;
             };
