@@ -1,3 +1,4 @@
+pub mod combine_consecutive_issets;
 pub mod disallowed_functions;
 pub mod excessive_nesting;
 pub mod loop_does_not_iterate;

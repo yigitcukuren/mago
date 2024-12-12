@@ -1,3 +1,4 @@
+use crate::plugin::best_practices::rules::combine_consecutive_issets::CombineConsecutiveIssetsRule;
 use crate::plugin::best_practices::rules::disallowed_functions::DisallowedFunctionsRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
 use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
@@ -26,6 +27,7 @@ impl Plugin for BestPracticesPlugin {
 
     fn get_rules(&self) -> Vec<Box<dyn Rule>> {
         vec![
+            Box::new(CombineConsecutiveIssetsRule),
             Box::new(DisallowedFunctionsRule),
             Box::new(NoUnusedParameterRule),
             Box::new(ExcessiveNesting),
