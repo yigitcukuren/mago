@@ -56,10 +56,7 @@ impl<'a> Walker<LintContext<'a>> for CombineConsecutiveIssetsRule {
     }
 }
 
-fn get_isset_construct(
-    mut expression: &Expression,
-    select_binary_rhs: bool,
-) -> Option<(bool, &IssetConstruct)> {
+fn get_isset_construct(mut expression: &Expression, select_binary_rhs: bool) -> Option<(bool, &IssetConstruct)> {
     let mut between_parentheses = false;
 
     while let Expression::Parenthesized(parenthesized) = expression {

@@ -8,6 +8,7 @@ use mago_linter::plugin::best_practices::BestPracticesPlugin;
 use mago_linter::plugin::comment::CommentPlugin;
 use mago_linter::plugin::consistency::ConsistencyPlugin;
 use mago_linter::plugin::laravel::LaravelPlugin;
+use mago_linter::plugin::migration::MigrationPlugin;
 use mago_linter::plugin::naming::NamingPlugin;
 use mago_linter::plugin::phpunit::PHPUnitPlugin;
 use mago_linter::plugin::redundancy::RedundancyPlugin;
@@ -267,6 +268,7 @@ impl LintService {
         linter.add_plugin(SymfonyPlugin);
         linter.add_plugin(LaravelPlugin);
         linter.add_plugin(PHPUnitPlugin);
+        linter.add_plugin(MigrationPlugin);
 
         linter
     }
