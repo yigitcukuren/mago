@@ -30,11 +30,6 @@ pub(super) fn collect_method_call_chain(expr: &Expression) -> Option<MethodChain
 
                 null_safe_method_call.object.as_ref()
             }
-            Call::StaticMethod(static_method_call) => {
-                calls.push(CallLikeNode::Call(call));
-
-                static_method_call.class.as_ref()
-            }
             _ => {
                 break;
             }
@@ -67,30 +62,31 @@ pub(super) fn print_method_call_chain<'a>(method_chain: &MethodChain<'a>, f: &mu
             let (operator, method) = match first_chain_link {
                 CallLikeNode::Call(Call::Method(c)) => (Document::String("->"), c.method.format(f)),
                 CallLikeNode::Call(Call::NullSafeMethod(c)) => (Document::String("?->"), c.method.format(f)),
-                CallLikeNode::Call(Call::StaticMethod(c)) => (Document::String("::"), c.method.format(f)),
                 _ => unreachable!(),
             };
 
             parts.push(operator);
             parts.push(method);
-            parts.push(print_call_arguments(f, first_chain_link));
+
+            parts.push(Document::Group(Group::new(vec![print_call_arguments(f, first_chain_link)])));
         }
     }
 
     // Now handle the remaining method calls
     for chain_link in calls_iter {
-        let mut contents = vec![Document::Line(Line::softline())];
+        let mut contents = vec![Document::Line(Line::hardline())];
         contents.extend(match chain_link {
             CallLikeNode::Call(Call::Method(c)) => vec![Document::String("->"), c.method.format(f)],
             CallLikeNode::Call(Call::NullSafeMethod(c)) => vec![Document::String("?->"), c.method.format(f)],
-            CallLikeNode::Call(Call::StaticMethod(c)) => vec![Document::String("::"), c.method.format(f)],
             _ => unreachable!(),
         });
 
-        contents.push(print_call_arguments(f, chain_link));
+        contents.push(Document::Group(Group::new(vec![print_call_arguments(f, chain_link)])));
 
         parts.push(Document::Indent(contents));
     }
+
+    parts.push(Document::BreakParent);
 
     // Wrap everything in a group to manage line breaking
     Document::Group(Group::new(parts))

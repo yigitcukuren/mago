@@ -92,7 +92,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
 
         return Document::Group(Group::new(vec![
             Document::String("("),
-            Document::Group(Group::new(vec![single_argument]).with_break(true)),
+            Document::Group(Group::new(vec![single_argument])),
             Document::String(")"),
         ]));
     }
