@@ -26,10 +26,51 @@ pub struct Linter {
 }
 
 impl Linter {
+    /// Creates a new linter.
+    ///
+    /// This method will create a new linter with the given settings and interner.
+    ///
+    /// # Parameters
+    ///
+    /// - `settings`: The settings to use for the linter.
+    /// - `interner`: The interner to use for the linter, usually the same one used by the parser, and the semantics.
+    ///
+    /// # Returns
+    ///
+    /// A new linter.
     pub fn new(settings: Settings, interner: ThreadedInterner) -> Self {
         Self { settings, interner, rules: Arc::new(RwLock::new(Vec::new())) }
     }
 
+    /// Creates a new linter with all plugins enabled.
+    ///
+    /// This method will create a new linter with all plugins enabled. This is useful for
+    /// when you want to lint a source with all available rules.
+    ///
+    /// # Parameters
+    ///
+    /// - `settings`: The settings to use for the linter.
+    /// - `interner`: The interner to use for the linter, usually the same one used by the parser, and the semantics.
+    ///
+    /// # Returns
+    ///
+    /// A new linter with all plugins enabled.
+    pub fn with_all_plugins(settings: Settings, interner: ThreadedInterner) -> Self {
+        let mut linter = Self::new(settings, interner);
+
+        crate::foreach_plugin!(|plugin| linter.add_plugin(plugin));
+
+        linter
+    }
+
+    /// Adds a plugin to the linter.
+    ///
+    /// This method will add a plugin to the linter. The plugin will be enabled if it is enabled in the settings.
+    /// If the plugin is not enabled in the settings, it will only be enabled if it is a default plugin.
+    ///
+    /// # Parameters
+    ///
+    /// - `plugin`: The plugin to add to the linter.
     pub fn add_plugin(&mut self, plugin: impl Plugin) {
         let name = plugin.get_name();
 
@@ -55,6 +96,14 @@ impl Linter {
         }
     }
 
+    /// Adds a rule to the linter.
+    ///
+    /// This method will add a rule to the linter. The rule will be enabled if it is enabled in the settings.
+    ///
+    /// # Parameters
+    ///
+    /// - `plugin`: The name of the plugin that the rule belongs to.
+    /// - `rule`: The rule to add to the linter.
     pub fn add_rule(&mut self, plugin: impl Into<String>, rule: Box<dyn Rule>) {
         let plugin = plugin.into();
         let rule_name = rule.get_name();
@@ -96,6 +145,17 @@ impl Linter {
         });
     }
 
+    /// Lints the given semantics.
+    ///
+    /// This method will lint the given semantics and return a collection of issues.
+    ///
+    /// # Parameters
+    ///
+    /// - `semantics`: The semantics to lint.
+    ///
+    /// # Returns
+    ///
+    /// A collection of issues.
     pub fn lint(&self, semantics: &Semantics) -> IssueCollection {
         let source_name = self.interner.lookup(&semantics.source.identifier.value());
 

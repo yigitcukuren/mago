@@ -4,17 +4,6 @@ use mago_feedback::ProgressBarTheme;
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_interner::ThreadedInterner;
-use mago_linter::plugin::best_practices::BestPracticesPlugin;
-use mago_linter::plugin::comment::CommentPlugin;
-use mago_linter::plugin::consistency::ConsistencyPlugin;
-use mago_linter::plugin::laravel::LaravelPlugin;
-use mago_linter::plugin::migration::MigrationPlugin;
-use mago_linter::plugin::naming::NamingPlugin;
-use mago_linter::plugin::phpunit::PHPUnitPlugin;
-use mago_linter::plugin::redundancy::RedundancyPlugin;
-use mago_linter::plugin::safety::SafetyPlugin;
-use mago_linter::plugin::strictness::StrictnessPlugin;
-use mago_linter::plugin::symfony::SymfonyPlugin;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
 use mago_linter::Linter;
@@ -258,17 +247,9 @@ impl LintService {
 
         let mut linter = Linter::new(settings, self.interner.clone());
 
-        linter.add_plugin(BestPracticesPlugin);
-        linter.add_plugin(CommentPlugin);
-        linter.add_plugin(ConsistencyPlugin);
-        linter.add_plugin(NamingPlugin);
-        linter.add_plugin(RedundancyPlugin);
-        linter.add_plugin(SafetyPlugin);
-        linter.add_plugin(StrictnessPlugin);
-        linter.add_plugin(SymfonyPlugin);
-        linter.add_plugin(LaravelPlugin);
-        linter.add_plugin(PHPUnitPlugin);
-        linter.add_plugin(MigrationPlugin);
+        mago_linter::foreach_plugin!(|plugin| {
+            linter.add_plugin(plugin);
+        });
 
         linter
     }

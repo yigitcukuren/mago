@@ -129,6 +129,16 @@ impl Hint {
         matches!(self, Self::Nullable(_))
     }
 
+    pub fn contains_null(&self) -> bool {
+        match self {
+            Hint::Mixed(_) => true,
+            Hint::Nullable(_) => true,
+            Hint::Null(_) => true,
+            Hint::Union(union) => union.left.contains_null() || union.right.contains_null(),
+            _ => false,
+        }
+    }
+
     /// Returns `true` if the type is a bottom type.
     ///
     /// A bottom type is a type that has no instances.
