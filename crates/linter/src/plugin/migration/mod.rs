@@ -1,6 +1,7 @@
 use crate::plugin::migration::rules::php80::str_contains::StrContainsRule;
 use crate::plugin::migration::rules::php80::str_starts_with::StrStartsWithRule;
 use crate::plugin::migration::rules::php81::explicit_octal_notation::ExplicitOctalNotationRule;
+use crate::plugin::migration::rules::php82::readonly_class_promotion::ReadonlyClassPromotionRule;
 
 use crate::plugin::Plugin;
 use crate::rule::Rule;
@@ -26,6 +27,8 @@ impl Plugin for MigrationPlugin {
             Box::new(StrContainsRule),
             // PHP 8.1
             Box::new(ExplicitOctalNotationRule),
+            // PHP 8.2
+            Box::new(ReadonlyClassPromotionRule),
         ]
     }
 }
