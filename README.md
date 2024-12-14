@@ -108,6 +108,12 @@ Mago is a community-driven project, and we’d love for you to join us! Here are
 - _Sponsor the Project_: If you’d like to support Mago financially, consider sponsoring [@azjezz](https://github.com/azjezz). Every contribution helps!
 - _Help with Art_: Mago could use a logo! We’d appreciate the help of a skilled artist to create an original logo for Mago. (Please note that AI-generated art will not be accepted.)
 
+## Join the Mago Community
+
+Got questions, feedback, or ideas? Join the Mago community on Discord to connect with other developers and stay up-to-date.
+
+[Join Here](https://discord.gg/mwyyjr27eu)
+
 ## Inspiration
 
 Mago is inspired by several tools and projects that have significantly contributed to the development community:
