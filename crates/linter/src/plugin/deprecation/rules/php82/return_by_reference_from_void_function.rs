@@ -99,13 +99,7 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     }
 }
 
-fn report(
-    context: &mut LintContext<'_>,
-    kind: &'static str,
-    span: Span,
-    ampersand: &Span,
-    is_set_hook: bool,
-) {
+fn report(context: &mut LintContext<'_>, kind: &'static str, span: Span, ampersand: &Span, is_set_hook: bool) {
     let message = if !is_set_hook {
         format!("returning by reference from a void {} is deprecated since PHP 8.0", kind)
     } else {

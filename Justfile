@@ -13,9 +13,9 @@ lint:
 
 # fix linting problems.
 fix:
-    cargo fmt --all -- --unstable-features
     cargo clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged
     cargo fix --allow-dirty --allow-staged
+    cargo fmt --all -- --unstable-features
 
 publish:
     # Note: the order of publishing is important, as some crates depend on others.
