@@ -48,6 +48,14 @@ _Note: This project was previously named “Fennec” before being rebranded due
 - [ ] Language Server Protocol
 - [ ] Editor Integration
 
+## PHP Version Compatibility
+
+Currently, **Mago** is built around PHP 8.3 and also supports PHP 8.4. While the linter and formatter may work with earlier versions of PHP, **we cannot guarantee compatibility**. They might suggest fixes or write code that is only compatible with PHP 8.3 and later.
+
+At this stage, there is no option to select a PHP version target, which means Mago operates under the assumption of modern PHP versions. In the future, we plan to introduce support for selecting a PHP version target. Once implemented, this feature should enable better compatibility with earlier PHP versions, potentially down to PHP 8.0 or even earlier.
+
+If you're working with PHP versions prior to 8.3, please proceed with caution and review suggested fixes or formatted code to ensure compatibility with your version.
+
 ## Installation
 
 ### Pre-compiled Binaries
