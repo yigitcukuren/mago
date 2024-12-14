@@ -750,25 +750,6 @@ impl SemanticsWalker {
                                     }
                                 }
                             }
-
-                            if let Some(ampersand) = hook.ampersand {
-                                context.report(
-                                    Issue::warning("returning by reference from a void function is deprecated")
-                                        .with_annotation(Annotation::primary(ampersand.span()))
-                                        .with_annotation(
-                                            Annotation::secondary(hook.name.span())
-                                                .with_message(format!("hook `{}` defined here", name)),
-                                        )
-                                        .with_annotation(
-                                            Annotation::secondary(hooked_property.item.variable().span())
-                                                .with_message(format!("property `{}` defined here", item_name)),
-                                        )
-                                        .with_annotation(Annotation::secondary(class_like_span).with_message(format!(
-                                            "{} `{}` defined here",
-                                            class_like_kind, class_like_fqcn
-                                        ))),
-                                );
-                            }
                         }
                         "get" => {
                             if let Some(parameters) = &hook.parameters {
@@ -3233,7 +3214,6 @@ impl Walker<Context<'_>> for SemanticsWalker {
         context: &mut Context<'_>,
     ) {
         let mut last_variadic = None;
-        let mut last_optional = None;
         let mut parameters_seen = vec![];
         for parameter in function_like_parameter_list.parameters.iter() {
             let name = context.interner.lookup(&parameter.variable.name);
@@ -3343,33 +3323,6 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                 last_variadic = Some((parameter.variable.name, parameter.span()));
                 continue;
-            } else if parameter.default_value.is_some() {
-                last_optional = Some((parameter.variable.name, parameter.span()));
-                continue;
-            }
-
-            if let Some((name, span)) = last_optional {
-                let current = context.interner.lookup(&parameter.variable.name);
-
-                context.report(
-                    Issue::warning(format!(
-                        "deprecated: required parameter `{}` after optional parameter `{}`",
-                        current,
-                        context.interner.lookup(&name)
-                    ))
-                    .with_annotation(
-                        Annotation::primary(parameter.variable.span())
-                            .with_message(format!("required parameter `{}` defined here", current)),
-                    )
-                    .with_annotation(
-                        Annotation::primary(span).with_message(format!(
-                            "optional parameter `{}` defined here",
-                            context.interner.lookup(&name)
-                        )),
-                    )
-                    .with_note("the optional parameter will be implicitly treated as required")
-                    .with_help("move all optional parameters to the end of the parameter list"),
-                );
             }
 
             if let Some(hint) = &parameter.hint {
