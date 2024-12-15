@@ -46,7 +46,31 @@ pub fn github_format(
             }
         };
 
-        writeln!(writer, "::{} {}::{}", level, properties, issue.message.as_str())?;
+        let mut message = issue.message.clone();
+
+        // we must use `%0A` instead of `\n`.
+        //
+        // see: https://github.com/actions/toolkit/issues/193
+        if !issue.notes.is_empty() {
+            message.push_str("%0A");
+
+            for note in issue.notes.iter() {
+                message.push_str("%0A");
+                message.push_str(note.as_str());
+            }
+        }
+
+        if let Some(help) = issue.help.as_ref() {
+            message.push_str("%0A%0AHelp: ");
+            message.push_str(help.as_str());
+        }
+
+        if let Some(link) = issue.link.as_ref() {
+            message.push_str("%0A%0AMore information: ");
+            message.push_str(link.as_str());
+        }
+
+        writeln!(writer, "::{} {}::{}", level, properties, message)?;
     }
 
     Ok(highest_level)
