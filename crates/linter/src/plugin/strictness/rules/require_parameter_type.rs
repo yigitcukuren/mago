@@ -34,10 +34,13 @@ impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
         let parameter_name = context.lookup(&function_like_parameter.variable.name);
 
         context.report(
-            Issue::new(context.level(), format!("parameter `{}` is missing a type hint", parameter_name))
-                .with_annotation(Annotation::primary(function_like_parameter.span()))
-                .with_note("type hints improve code readability and help prevent type-related errors.")
-                .with_help(format!("consider adding a type hint to parameter `{}`.", parameter_name)),
+            Issue::new(context.level(), format!("Parameter `{}` is missing a type hint.", parameter_name))
+                .with_annotation(
+                    Annotation::primary(function_like_parameter.span())
+                        .with_message(format!("Parameter `{}` is declared here", parameter_name)),
+                )
+                .with_note("Type hints improve code readability and help prevent type-related errors.")
+                .with_help(format!("Consider adding a type hint to parameter `{}`.", parameter_name)),
         );
     }
 }

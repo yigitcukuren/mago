@@ -41,14 +41,14 @@ struct NestingWalker {
 impl NestingWalker {
     fn check_indent(&self, block: &Block, context: &mut LintContext) -> bool {
         if self.level > self.threshold {
-            let issue = Issue::new(context.level(), "excessive block nesting")
+            let issue = Issue::new(context.level(), "Excessive block nesting.")
                 .with_annotation(Annotation::primary(block.span()))
                 .with_note(format!(
-                    "this block has a nesting level of {} which exceeds the threshold of {}",
+                    "This block has a nesting level of {} which exceeds the threshold of {}.",
                     self.level, self.threshold
                 ))
-                .with_note("excessive nesting can make code harder to read, understand, and maintain.")
-                .with_help("refactor your code to reduce the level of nesting.");
+                .with_note("Excessive nesting can make code harder to read, understand, and maintain.")
+                .with_help("Refactor your code to reduce the level of nesting.");
 
             context.report(issue);
 

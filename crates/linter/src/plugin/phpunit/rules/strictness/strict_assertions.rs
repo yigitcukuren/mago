@@ -41,11 +41,13 @@ impl<'a> Walker<LintContext<'a>> for StrictAssertionsRule {
             if NON_STRICT_ASSERTIONS.contains(&name) {
                 let strict_name = name.replacen("Equals", "Same", 1);
 
-                let issue = Issue::new(context.level(), "use strict assertions in PHPUnit tests")
-                    .with_annotations([Annotation::primary(reference.span())
-                        .with_message(format!("replace `{}` with `{}`", name, strict_name))])
+                let issue = Issue::new(context.level(), "Use strict assertions in PHPUnit tests.")
+                    .with_annotation(
+                        Annotation::primary(reference.span())
+                            .with_message(format!("Non-strict assertion `{}` is used here.", name)),
+                    )
                     .with_help(format!(
-                        "replace `{}` with `{}` to enforce strict comparisons in your tests.",
+                        "Replace `{}` with `{}` to enforce strict comparisons in your tests.",
                         name, strict_name
                     ));
 

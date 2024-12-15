@@ -10,7 +10,6 @@ use mago_span::Span;
 
 /// Represents the different kinds of symbols that can be encountered in the code.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
-#[strum(serialize_all = "kebab-case")]
 pub enum SymbolKind {
     /// A class definition.
     Class,

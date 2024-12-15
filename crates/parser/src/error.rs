@@ -39,11 +39,11 @@ impl std::fmt::Display for ParseError {
                 let expected = expected.iter().map(|kind| kind.to_string()).collect::<Vec<_>>().join("`, `");
 
                 if expected.is_empty() {
-                    "unexpected end of file".to_string()
+                    "Unexpected end of file".to_string()
                 } else if expected.len() == 1 {
-                    format!("expected `{}` before end of file", expected)
+                    format!("Expected `{}` before end of file", expected)
                 } else {
-                    format!("expected one of `{}` before end of file", expected)
+                    format!("Expected one of `{}` before end of file", expected)
                 }
             }
             ParseError::UnexpectedToken(expected, found, _) => {
@@ -52,20 +52,20 @@ impl std::fmt::Display for ParseError {
                 let found = found.to_string();
 
                 if expected.is_empty() {
-                    format!("unexpected token `{}`", found)
+                    format!("Unexpected token `{}`", found)
                 } else if expected.len() == 1 {
-                    format!("expected `{}`, found `{}`", expected, found)
+                    format!("Expected `{}`, found `{}`", expected, found)
                 } else {
-                    format!("expected one of `{}`, found `{}`", expected, found)
+                    format!("Expected one of `{}`, found `{}`", expected, found)
                 }
             }
             ParseError::UnclosedLiteralString(kind, _) => match kind {
-                LiteralStringKind::SingleQuoted => "unclosed single-quoted string".to_string(),
-                LiteralStringKind::DoubleQuoted => "unclosed double-quoted string".to_string(),
+                LiteralStringKind::SingleQuoted => "Unclosed single-quoted string".to_string(),
+                LiteralStringKind::DoubleQuoted => "Unclosed double-quoted string".to_string(),
             },
         };
 
-        write!(f, "parse error: {}", message)
+        write!(f, "{}", message)
     }
 }
 
@@ -88,6 +88,6 @@ impl From<&ParseError> for Issue {
     fn from(error: &ParseError) -> Self {
         let span = error.span();
 
-        Issue::error(error.to_string()).with_annotation(Annotation::primary(span))
+        Issue::error(error.to_string()).with_annotation(Annotation::primary(span).with_message("Invalid syntax."))
     }
 }

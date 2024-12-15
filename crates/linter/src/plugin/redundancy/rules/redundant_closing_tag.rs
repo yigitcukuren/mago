@@ -17,9 +17,9 @@ impl RedudnantClosingTagRule {
         };
 
         if let Statement::ClosingTag(closing_tag) = last_statement {
-            let issue = Issue::new(context.level(), "redundant closing tag")
-                .with_annotation(Annotation::primary(closing_tag.span()))
-                .with_help("remove the redundant closing tag.");
+            let issue = Issue::new(context.level(), "Redundant closing tag ( `?>` ).")
+                .with_annotation(Annotation::primary(closing_tag.span()).with_message("This closing tag is redundant."))
+                .with_help("Remove the redundant closing tag ( `?>` ).");
 
             context
                 .report_with_fix(issue, |plan| plan.delete(closing_tag.span().to_range(), SafetyClassification::Safe));
@@ -39,10 +39,14 @@ impl RedudnantClosingTagRule {
                     return;
                 };
 
-                let issue = Issue::new(context.level(), "redundant closing tag")
-                    .with_annotation(Annotation::primary(tag.span()))
-                    .with_annotation(Annotation::secondary(inline.span()).with_message("trailing whitespaces"))
-                    .with_help("remove the redundant closing tag.");
+                let issue =
+                    Issue::new(context.level(), "Redundant closing tag ( `?>` ) followed by trailing whitespace.")
+                        .with_annotation(Annotation::primary(tag.span()).with_message("This closing tag is redundant."))
+                        .with_annotation(
+                            Annotation::secondary(inline.span())
+                                .with_message("This inline statement is contains only whitespace."),
+                        )
+                        .with_help("Remove the redundant closing tag ( `?>` ) and trailing whitespace.");
 
                 context.report_with_fix(issue, |plan| {
                     plan.delete(inline.span().to_range(), SafetyClassification::Safe);

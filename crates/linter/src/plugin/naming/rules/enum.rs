@@ -26,14 +26,17 @@ impl<'a> Walker<LintContext<'a>> for EnumRule {
 
         if !mago_casing::is_class_case(name) {
             context.report(
-                Issue::new(context.level(), format!("enum name `{}` should be in class case", name))
-                    .with_annotations([
-                        Annotation::primary(r#enum.name.span()),
-                        Annotation::secondary(r#enum.span()).with_message(format!("enum `{}` is declared here", fqcn)),
-                    ])
-                    .with_note(format!("the enum name `{}` does not follow class naming convention.", name))
+                Issue::new(context.level(), format!("Enum name `{}` should be in class case.", name))
+                    .with_annotation(
+                        Annotation::primary(r#enum.name.span())
+                            .with_message(format!("Enum `{}` is declared here.", name)),
+                    )
+                    .with_annotation(
+                        Annotation::secondary(r#enum.span()).with_message(format!("Enum `{}` is defined here.", fqcn)),
+                    )
+                    .with_note(format!("The enum name `{}` does not follow class naming convention.", name))
                     .with_help(format!(
-                        "consider renaming it to `{}` to adhere to the naming convention.",
+                        "Consider renaming it to `{}` to adhere to the naming convention.",
                         mago_casing::to_class_case(name)
                     )),
             );

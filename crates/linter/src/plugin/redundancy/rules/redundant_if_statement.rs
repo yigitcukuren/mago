@@ -34,14 +34,14 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
             // block
             // block
             // block
-            let issue = Issue::new(context.level(), "unnecessary `if` statement")
+            let issue = Issue::new(context.level(), "Unnecessary `if` statement.")
                 .with_annotations([
-                    Annotation::primary(r#if.condition.span()).with_message("this condition always evaluates to true"),
+                    Annotation::primary(r#if.condition.span()).with_message("This condition always evaluates to true"),
                     Annotation::secondary(r#if.span()),
                 ])
-                .with_note("this `if` statement's condition always evaluates to true.")
-                .with_note("the `if` statement can be removed, and its body can be executed unconditionally.")
-                .with_help("remove the unnecessary `if` statement and execute its body directly.");
+                .with_note("This `if` statement's condition always evaluates to true.")
+                .with_note("The `if` statement can be removed, and its body can be executed unconditionally.")
+                .with_help("Remove the unnecessary `if` statement and execute its body directly.");
 
             context.report_with_fix(issue, |plan| {
                 plan.delete(r#if.r#if.span.join(r#if.right_parenthesis).to_range(), SafetyClassification::Safe);
@@ -119,15 +119,15 @@ impl<'a> Walker<LintContext<'a>> for RedundantIfStatementRule {
             // if ($expr2) { block2 } else { block3 }
             // block2
             // block2
-            let issue = Issue::new(context.level(), "unnecessary `if` statement")
+            let issue = Issue::new(context.level(), "Unnecessary `if` statement.")
                 .with_annotations([
                     Annotation::primary(r#if.condition.span())
-                        .with_message("this condition always evaluates to false."),
+                        .with_message("This condition always evaluates to false."),
                     Annotation::secondary(r#if.span()),
                 ])
-                .with_note("this `if` statement's condition always evaluates to false.")
-                .with_note("the `if` statement can be removed, and its body can be skipped.")
-                .with_help("remove the unnecessary `if` statement and skip its body.");
+                .with_note("This `if` statement's condition always evaluates to false.")
+                .with_note("The `if` statement can be removed, and its body can be skipped.")
+                .with_help("Remove the unnecessary `if` statement and skip its body.");
 
             context.report_with_fix(issue, |plan| match &r#if.body {
                 IfBody::Statement(if_statement_body) => {

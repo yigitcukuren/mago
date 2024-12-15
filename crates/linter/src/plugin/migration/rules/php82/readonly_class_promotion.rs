@@ -58,11 +58,13 @@ impl<'a> Walker<LintContext<'a>> for ReadonlyClassPromotionRule {
             .collect::<Vec<_>>();
 
         // Prepare fix plan
-        let issue = Issue::new(context.level(), "promote class to readonly")
+        let issue = Issue::new(context.level(), "Promote class to readonly")
             .with_annotations(annotations)
-            .with_annotation(Annotation::primary(class.span()).with_message("class has all readonly properties"))
-            .with_note("classes with all readonly properties can be marked readonly themselves.")
-            .with_help("add the `readonly` modifier to the class and remove `readonly` from all properties");
+            .with_annotation(
+                Annotation::primary(class.span()).with_message("This class contains only readonly properties."),
+            )
+            .with_note("Classes that contains only readonly properties can be marked readonly themselves.")
+            .with_help("Add the `readonly` modifier to the class and remove `readonly` from all properties");
 
         // Determine safety classification
         let safety = if class.extends.is_some() {

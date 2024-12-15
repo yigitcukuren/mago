@@ -53,16 +53,17 @@ impl<'a> Walker<LintContext<'a>> for ImplicitlyNullableParameterRule {
 
         let issue = Issue::new(
             context.level(),
-            format!("parameter `{}` is implicitly nullable and relies on a deprecated feature", parameter_name),
+            format!("Parameter `{}` is implicitly nullable and relies on a deprecated feature.", parameter_name),
         )
         .with_annotation(
-            Annotation::primary(function_like_parameter.span()).with_message("implicitly nullable parameter"),
+            Annotation::primary(function_like_parameter.span())
+                .with_message(format!("Parameter `{}` is declared here.", parameter_name)),
         )
         .with_help(format!(
-            "consider using an explicit nullable type hint ( `{}` ) or replacing the default value.",
+            "Consider using an explicit nullable type hint ( `{}` ) or replacing the default value.",
             replacement_hint
         ))
-        .with_note("updating this will future-proof your code and align it with PHP 8.4 standards.");
+        .with_note("Updating this will future-proof your code and align it with PHP 8.4 standards.");
 
         context.report_with_fix(issue, |plan| {
             plan.replace(hint.span().to_range(), replacement_hint, SafetyClassification::Safe);

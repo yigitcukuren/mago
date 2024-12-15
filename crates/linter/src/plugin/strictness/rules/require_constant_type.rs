@@ -31,28 +31,18 @@ impl<'a> Walker<LintContext<'a>> for RequireConstantTypeRule {
             return;
         }
 
-        let (class_like_kind, class_like_name, class_like_fqcn, class_like_span) =
-            context.get_class_like_details(class_like_constant);
+        let item = class_like_constant.first_item();
 
-        for item in class_like_constant.items.iter() {
-            let constant_name = context.lookup(&item.name.value);
+        let constant_name = context.lookup(&item.name.value);
 
-            context.report(
-                Issue::new(
-                    context.level(),
-                    format!(
-                        "{} constant `{}::{}` is missing a type hint",
-                        class_like_kind, class_like_name, constant_name
-                    ),
+        context.report(
+            Issue::new(context.level(), format!("Class constant `{}` is missing a type hint.", constant_name))
+                .with_annotation(
+                    Annotation::primary(class_like_constant.span())
+                        .with_message(format!("Class constant `{}` is defined here.", constant_name)),
                 )
-                .with_annotations([
-                    Annotation::primary(class_like_constant.span()),
-                    Annotation::secondary(class_like_span)
-                        .with_message(format!("{} `{}` declared here", class_like_kind, class_like_fqcn)),
-                ])
-                .with_note("adding a type hint to constants improves code readability and helps prevent type errors.")
-                .with_help(format!("consider specifying a type hint for `{}::{}`.", class_like_name, constant_name)),
-            );
-        }
+                .with_note("Adding a type hint to constants improves code readability and helps prevent type errors.")
+                .with_help(format!("Consider specifying a type hint for `{}`.", constant_name)),
+        );
     }
 }

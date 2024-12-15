@@ -31,14 +31,13 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
         let function_fqn = context.lookup_name(&function.name);
 
         context.report(
-            Issue::new(context.level(), format!("function `{}` is missing a return type hint", function_name))
-                .with_annotation(Annotation::primary(function.name.span()))
+            Issue::new(context.level(), format!("Function `{}` is missing a return type hint.", function_name))
                 .with_annotation(
-                    Annotation::secondary(function.span())
-                        .with_message(format!("function `{}` defined here", function_fqn)),
+                    Annotation::primary(function.span())
+                        .with_message(format!("Function `{}` defined here.", function_fqn)),
                 )
-                .with_note("type hints improve code readability and help prevent type-related errors.")
-                .with_help(format!("consider adding a return type hint to function `{}`.", function_name)),
+                .with_note("Type hints improve code readability and help prevent type-related errors.")
+                .with_help(format!("Consider adding a return type hint to function `{}`.", function_name)),
         );
     }
 
@@ -48,11 +47,10 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
         }
 
         context.report(
-            Issue::new(context.level(), "closure is missing a return type hint")
-                .with_annotation(Annotation::primary(closure.function.span()))
-                .with_annotation(Annotation::secondary(closure.span()).with_message("closure defined here"))
-                .with_note("type hints improve code readability and help prevent type-related errors.")
-                .with_help("consider adding a return type hint to the closure."),
+            Issue::new(context.level(), "Closure is missing a return type hint")
+                .with_annotation(Annotation::primary(closure.span()).with_message("Closure defined here."))
+                .with_note("Type hints improve code readability and help prevent type-related errors.")
+                .with_help("Consider adding a return type hint to the closure."),
         );
     }
 
@@ -62,13 +60,12 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
         }
 
         context.report(
-            Issue::new(context.level(), "arrow function is missing a return type hint")
-                .with_annotation(Annotation::primary(arrow_function.r#fn.span()))
+            Issue::new(context.level(), "Arrow function is missing a return type hint.")
                 .with_annotation(
-                    Annotation::secondary(arrow_function.span()).with_message("arrow function defined here"),
+                    Annotation::secondary(arrow_function.span()).with_message("Arrow function defined here."),
                 )
-                .with_note("type hints improve code readability and help prevent type-related errors.")
-                .with_help("consider adding a return type hint to the arrow function."),
+                .with_note("Type hints improve code readability and help prevent type-related errors.")
+                .with_help("Consider adding a return type hint to the arrow function."),
         );
     }
 
@@ -83,26 +80,13 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
             return;
         }
 
-        let (class_like_kind, class_like_name, class_like_fqcn, class_like_span) =
-            context.get_class_like_details(method);
-
         context.report(
-            Issue::new(
-                context.level(),
-                format!(
-                    "{} method `{}::{}` is missing a return type hint",
-                    class_like_kind, class_like_name, method_name
-                ),
-            )
-            .with_annotation(Annotation::primary(method.name.span()))
-            .with_annotations([
-                Annotation::secondary(method.span())
-                    .with_message(format!("{} method `{}` defined here", class_like_kind, method_name)),
-                Annotation::secondary(class_like_span)
-                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
-            ])
-            .with_note("type hints improve code readability and help prevent type-related errors.")
-            .with_help(format!("consider adding a return type hint to {} method `{}`.", class_like_kind, method_name)),
+            Issue::new(context.level(), format!("Method `{}` is missing a return type hint.", method_name))
+                .with_annotation(
+                    Annotation::secondary(method.span()).with_message(format!("Method `{}` defined here", method_name)),
+                )
+                .with_note("Type hints improve code readability and help prevent type-related errors.")
+                .with_help(format!("Consider adding a return type hint to method `{}`.", method_name)),
         );
     }
 }

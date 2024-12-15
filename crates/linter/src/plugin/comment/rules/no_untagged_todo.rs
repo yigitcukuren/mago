@@ -47,10 +47,10 @@ impl<'a> Walker<LintContext<'a>> for NoUntaggedTodoRule {
                     }
 
                     context.report(
-                        Issue::new(context.level(), "TODO should be tagged with (@username) or (#issue)")
+                        Issue::new(context.level(), "TODO should be tagged with (@username) or (#issue).")
                             .with_annotation(Annotation::primary(trivia.span))
                             .with_help(
-                                "add a user tag or issue reference to the TODO comment, e.g. TODO(@azjezz), TODO(azjezz), TODO(#123)",
+                                "Add a user tag or issue reference to the TODO comment, e.g. TODO(@azjezz), TODO(azjezz), TODO(#123).",
                             )
                     );
 

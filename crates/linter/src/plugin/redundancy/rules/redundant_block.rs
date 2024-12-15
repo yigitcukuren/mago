@@ -12,13 +12,11 @@ pub struct RedundantBlockRule;
 
 impl RedundantBlockRule {
     fn report(&self, block: &Block, context: &mut LintContext<'_>) {
-        let issue = Issue::new(context.level(), "redundant block")
+        let issue = Issue::new(context.level(), "Redundant block around statements")
             .with_annotations([
-                Annotation::primary(block.left_brace),
-                Annotation::primary(block.right_brace),
-                Annotation::secondary(block.span()).with_message("statements do not need to be wrapped within a block"),
+                Annotation::primary(block.span()).with_message("Statements do not need to be wrapped within a block.")
             ])
-            .with_help("remove the redundant outer braces");
+            .with_help("Remove the block to simplify the code.");
 
         context.report_with_fix(issue, |plan| {
             plan.delete(block.left_brace.to_range(), SafetyClassification::Safe);

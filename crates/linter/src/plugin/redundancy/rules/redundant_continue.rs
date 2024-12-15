@@ -22,7 +22,7 @@ impl Rule for RedundantContinueRule {
 
 impl RedundantContinueRule {
     fn report(&self, r#continue: &Continue, r#loop: impl HasSpan, context: &mut LintContext<'_>) {
-        let issue = Issue::new(context.level(), "Redundant continue statement in loop body")
+        let issue = Issue::new(context.level(), "Redundant continue statement in loop body.")
             .with_annotations([
                 Annotation::primary(r#continue.span()).with_message(
                     "This `continue` statement is redundant because it is the last statement in the loop body.",

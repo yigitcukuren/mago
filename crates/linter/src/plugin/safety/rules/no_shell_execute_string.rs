@@ -35,17 +35,19 @@ impl<'a> Walker<LintContext<'a>> for NoShellExecuteStringRule {
         }
 
         let issue = if is_interpolated {
-            Issue::new(context.level(), "unsafe use of interpolated shell execute string")
-                    .with_annotation(Annotation::primary(shell_execute_string.span()))
-                    .with_note("interpolating shell execute strings (`...`) is a potential security vulnerability, as it allows executing arbitrary shell commands.")
+            Issue::new(context.level(), "Unsafe use of interpolated shell execute string.")
+                    .with_annotation(Annotation::primary(shell_execute_string.span()).with_message("This shell execute string is interpolated."))
+                    .with_note("Interpolating shell execute strings (`...`) is a potential security vulnerability, as it allows executing arbitrary shell commands.")
                     .with_help(
-                        "consider using `shell_exec()` along with `escapeshellarg()` or `escapeshellcmd()` to escape arguments instead."
+                        "Consider using `shell_exec()` along with `escapeshellarg()` or `escapeshellcmd()` to escape arguments instead."
                     )
         } else {
-            Issue::new(context.level(), "potentilly unsafe use of shell execute string")
-                .with_annotation(Annotation::primary(shell_execute_string.span()))
-                .with_note("shell execute strings (`...`) can often be replaced with safer alternatives.")
-                .with_help("consider using `shell_exec()` instead.")
+            Issue::new(context.level(), "Potentilly unsafe use of shell execute string.")
+                .with_annotation(
+                    Annotation::primary(shell_execute_string.span()).with_message("Shell execute string used here."),
+                )
+                .with_note("Shell execute strings (`...`) can often be replaced with safer alternatives.")
+                .with_help("Consider using `shell_exec()` instead.")
         };
 
         context.report(issue);

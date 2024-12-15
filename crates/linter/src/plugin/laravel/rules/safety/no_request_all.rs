@@ -68,18 +68,19 @@ impl<'a> Walker<LintContext<'a>> for NoRequestAllRule {
                         || context.lookup(&identifier.value()).eq_ignore_ascii_case(REQUEST_CLASS)
                 }
                 _ => {
-                    // we do not care abotu closure creation..
+                    // we do not care about closure creation..
                     false
                 }
             }
         });
 
         for reference in request_all_references {
-            let issue = Issue::new(context.level(), "avoid using `$request->all()` or `Request::all()`.")
-                .with_annotations([
-                    Annotation::primary(reference.span()).with_message("using `$request->all()` retrieves all input values, including ones you might not expect or intend to handle.")
-                ])
-                .with_help("use `$request->only([...])` to specify the inputs you need explicitly, ensuring better security and validation.");
+            let issue = Issue::new(context.level(), "Avoid using `$request->all()` or `Request::all()`.")
+                .with_annotation(
+                    Annotation::primary(reference.span()).with_message("`Request::all()` is called here")
+                )
+                .with_note("Using `$request->all()` retrieves all input values, including ones you might not expect or intend to handle.")
+                .with_help("Use `$request->only([...])` to specify the inputs you need explicitly, ensuring better security and validation.");
 
             context.report(issue);
         }

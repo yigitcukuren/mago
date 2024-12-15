@@ -44,7 +44,6 @@ impl<'a> Walker<LintContext<'a>> for RedundantStringConcatRule {
             }
 
             let dangerous = matches!(context.interner.lookup(&right.value)[1..].as_bytes(), [b'{', ..]);
-
             if dangerous {
                 // $a = "\u" . "{1F418}";
                 // $b = "\u{1F418}";
@@ -52,12 +51,12 @@ impl<'a> Walker<LintContext<'a>> for RedundantStringConcatRule {
                 return;
             }
 
-            let issue = Issue::new(context.level(), "string concatenation can be simplified")
-                .with_help("consider combining these strings into a single string")
+            let issue = Issue::new(context.level(), "String concatenation can be simplified.")
+                .with_help("Consider combining these strings into a single string.")
                 .with_annotations(vec![
-                    Annotation::primary(operator.span()),
-                    Annotation::secondary(left.span()),
-                    Annotation::secondary(right.span()),
+                    Annotation::primary(operator.span()).with_message("Redundant string concatenation."),
+                    Annotation::secondary(left.span()).with_message("Left string"),
+                    Annotation::secondary(right.span()).with_message("Right string"),
                 ]);
 
             context.report_with_fix(issue, |plan| {

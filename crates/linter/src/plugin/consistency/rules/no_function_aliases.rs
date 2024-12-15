@@ -135,37 +135,37 @@ impl<'a> Walker<LintContext<'a>> for NoFunctionAliasesRule {
                     if alias_used_in_code == original_name {
                         // Special case: imported alias as the original function
                         format!(
-                            "function `{}` refers to alias function `{}`, which should not be used",
+                            "Function `{}` refers to alias function `{}`, which should not be used.",
                             alias_used_in_code, resolved_name
                         )
                     } else {
                         format!(
-                            "function alias `{}` (imported as `{}`) should not be used",
+                            "Function alias `{}` (imported as `{}`) should not be used.",
                             resolved_name, alias_used_in_code
                         )
                     }
                 } else {
-                    format!("function alias `{}` should not be used", resolved_name)
+                    format!("Function alias `{}` should not be used.", resolved_name)
                 },
             )
             .with_annotation(Annotation::primary(identifier.span()).with_message(if is_name_imported {
                 if alias_used_in_code == original_name {
                     // Special case: imported alias as the original function
                     format!(
-                        "function `{}` refers to alias function `{}`, which should not be used",
+                        "Function `{}` refers to alias function `{}`, which should not be used.",
                         alias_used_in_code, resolved_name
                     )
                 } else {
                     format!(
-                        "function alias `{}` (imported as `{}`) should not be used",
+                        "Function alias `{}` (imported as `{}`) should not be used.",
                         resolved_name, alias_used_in_code
                     )
                 }
             } else {
-                format!("function alias `{}` should not be used", resolved_name)
+                format!("Function alias `{}` should not be used.", resolved_name)
             }))
-            .with_note(format!("the function `{}` is an alias of `{}`.", resolved_name, original_name))
-            .with_help(format!("consider using the function `{}` instead.", original_name));
+            .with_note(format!("The function `{}` is an alias of `{}`.", resolved_name, original_name))
+            .with_help(format!("Consider using the function `{}` instead.", original_name));
 
             if is_name_imported {
                 if alias_used_in_code != resolved_name {
@@ -173,10 +173,10 @@ impl<'a> Walker<LintContext<'a>> for NoFunctionAliasesRule {
                 } else {
                     // Special case: imported alias as the original function, e.g `use function i_am_the_alias as original_func;`
                     issue = issue.with_note(format!(
-                        "you are importing the alias function `{}` as `{}`.",
+                        "You are importing the alias function `{}` as `{}`.",
                         resolved_name, alias_used_in_code
                     ));
-                    issue = issue.with_note(format!("consider importing `{}` instead.", original_name));
+                    issue = issue.with_note(format!("Consider importing `{}` instead.", original_name));
                 }
             }
 
@@ -193,7 +193,7 @@ impl<'a> Walker<LintContext<'a>> for NoFunctionAliasesRule {
                         // current namespace, so we mark it as unsafe.
                         //
                         // TODO(azjezz): this case can be considered safe is we are in the global namespace.
-                        SafetyClassification::Unsafe
+                        SafetyClassification::PotentiallyUnsafe
                     },
                 )
             });

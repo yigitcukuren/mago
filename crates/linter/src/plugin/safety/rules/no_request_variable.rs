@@ -27,8 +27,10 @@ impl<'a> Walker<LintContext<'a>> for NoRequestVariableRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "unsafe use of `$_REQUEST` variable")
-            .with_annotation(Annotation::primary(direct_variable.span))
+        let issue = Issue::new(context.level(), "Unsafe use of `$_REQUEST` variable.")
+            .with_annotation(
+                Annotation::primary(direct_variable.span).with_message("The `$_REQUEST` variable is used here."),
+            )
             .with_help("use `$_GET`, `$_POST`, or `$_COOKIE` instead for better clarity.");
 
         context.report(issue);

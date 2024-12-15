@@ -55,14 +55,13 @@ impl<'a> Walker<LintContext<'a>> for RequireStrictTypesRule {
                             if disabled && !context.option("allow-disabling").and_then(|o| o.as_bool()).unwrap_or(false)
                             {
                                 context.report(
-                                    Issue::new(context.level(), "`strict_types` is disabled")
-                                        .with_annotation(Annotation::primary(item.value.span()))
+                                    Issue::new(context.level(), "The `strict_types` directive is disabled.")
                                         .with_annotation(
-                                            Annotation::secondary(item.name.span())
-                                                .with_message("`strict_types` directive here"),
+                                            Annotation::primary(item.span())
+                                                .with_message("The `strict_types` is disabled here."),
                                         )
-                                        .with_note("disabling `strict_types` can lead to type safety issues.")
-                                        .with_help("consider setting `strict_types` to `1` to enforce strict typing."),
+                                        .with_note("Disabling `strict_types` can lead to type safety issues.")
+                                        .with_help("Consider setting `strict_types` to `1` to enforce strict typing."),
                                 );
                             }
                         }
@@ -80,11 +79,11 @@ impl<'a> Walker<LintContext<'a>> for RequireStrictTypesRule {
             context.report(
                 Issue::new(
                     context.level(),
-                    "missing `declare(strict_types=1);` statement at the beginning of the file",
+                    "Missing `declare(strict_types=1);` statement at the beginning of the file",
                 )
                 .with_annotation(Annotation::primary(program.span()))
-                .with_note("`strict_types` enforces strict type checking, which can prevent subtle bugs.")
-                .with_help("add `declare(strict_types=1);` at the top of your file."),
+                .with_note("The `strict_types` directive enforces strict type checking, which can prevent subtle bugs.")
+                .with_help("Add `declare(strict_types=1);` at the top of your file."),
             );
         }
     }

@@ -85,10 +85,13 @@ impl<'a> Walker<LintContext<'a>> for NoDebugSymbolsRule {
         let function_name = context.lookup_function_name(function_identifier);
 
         if DEBUG_FUNCTIONS.contains(&function_name) {
-            let issue = Issue::new(context.level(), format!("usage of debug function: `{}`", function_name))
-                .with_annotation(Annotation::primary(function_call.span()))
-                .with_note("avoid using debug functions like `var_dump`, `print_r`, etc. in production code.")
-                .with_help("remove the debug function call.");
+            let issue = Issue::new(context.level(), format!("Usage of debug function `{}` detected.", function_name))
+                .with_annotation(
+                    Annotation::primary(function_call.span())
+                        .with_message(format!("Function `{}` is called here.", function_name)),
+                )
+                .with_note("Avoid using debug functions like `var_dump`, `print_r`, etc. in production code.")
+                .with_help("Remove the debug function call.");
 
             context.report(issue);
         }

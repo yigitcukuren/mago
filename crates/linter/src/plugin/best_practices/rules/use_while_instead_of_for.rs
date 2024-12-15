@@ -28,11 +28,11 @@ impl<'a> Walker<LintContext<'a>> for UseWhileInsteadOfForRule {
 
         let issue = Issue::new(
             context.level(),
-            "use `while` instead of `for`",
+            "Use `while` loop instead of `for` loop.",
         )
-        .with_annotation(Annotation::primary(r#for.span()))
-        .with_note("this `for` loop can be simplified to a `while` loop since it doesn't have initializations or increments.")
-        .with_help("use a `while` loop instead of a `for` loop.");
+        .with_annotation(Annotation::primary(r#for.span()).with_message("This `for` loop can be simplified to a `while` loop."))
+        .with_note("This `for` loop can be simplified to a `while` loop since it doesn't have initializations or increments.")
+        .with_help("Use a `while` loop instead of a `for` loop.");
 
         context.report_with_fix(issue, |plan| {
             plan.delete(r#for.r#for.span.to_range(), SafetyClassification::Safe);

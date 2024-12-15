@@ -51,16 +51,16 @@ impl<'a> Walker<LintContext<'a>> for RedundantMethodOverrideRule {
         };
 
         if matches_method(&name, &parameters, expression) {
-            let issue = Issue::new(context.level(), "redundant method override")
+            let issue = Issue::new(context.level(), "Redundant method override.")
                 .with_annotation(Annotation::primary(method.span()))
                 .with_annotation(
                     Annotation::secondary(expression.span())
-                        .with_message("parent method is called with the same arguments"),
+                        .with_message("Parent method is called with the same arguments."),
                 )
                 .with_note(
-                    "this method overrides a parent method but only calls the parent method with the same arguments.",
+                    "This method overrides a parent method but only calls the parent method with the same arguments.",
                 )
-                .with_help("remove this redundant method override.");
+                .with_help("Remove this redundant method override.");
 
             context.report_with_fix(issue, |plan| {
                 plan.delete(method.span().to_range(), SafetyClassification::PotentiallyUnsafe)

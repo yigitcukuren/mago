@@ -59,12 +59,11 @@ impl<'a> Walker<LintContext<'a>> for StrStartsWithRule {
 
         let issue = Issue::new(
             context.level(),
-            "consider replacing `strpos` with `str_starts_with` for improved readability and intent clarity",
+            "Consider replacing `strpos` with `str_starts_with` for improved readability and intent clarity.",
         )
-        .with_annotation(Annotation::primary(call.span()))
-        .with_annotation(Annotation::secondary(binary.span()))
+        .with_annotation(Annotation::secondary(binary.span()).with_message("This expression can be simplified."))
         .with_help("`strpos($a, $b) === 0` can be simplified to `str_starts_with($a, $b)`.")
-        .with_note("using `str_starts_with` makes the code easier to understand and more expressive.");
+        .with_note("Using `str_starts_with` makes the code easier to understand and more expressive.");
 
         context.report_with_fix(issue, |plan| {
             // we can't guarantee that the replacement is safe, since `strpos` can be re-defined in

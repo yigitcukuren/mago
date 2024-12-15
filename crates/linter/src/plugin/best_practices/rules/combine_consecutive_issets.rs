@@ -34,11 +34,11 @@ impl<'a> Walker<LintContext<'a>> for CombineConsecutiveIssetsRule {
             return;
         };
 
-        let issue = Issue::new(context.level(), "consecutive isset calls can be combined")
+        let issue = Issue::new(context.level(), "Consecutive isset calls can be combined.")
             .with_annotation(Annotation::primary(left_isset.span()))
             .with_annotation(Annotation::primary(right_isset.span()))
             .with_annotation(Annotation::secondary(binary.span()))
-            .with_help("combine the isset calls into a single call, e.g. `isset($a, $b)`");
+            .with_help("Combine the isset calls into a single call, e.g. `isset($a, $b)`.");
 
         // don't bother fixing if either of the isset calls is already parenthesized
         // this can be messy to fix and is not worth the effort.

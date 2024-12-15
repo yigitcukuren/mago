@@ -44,10 +44,10 @@ impl<'a> Walker<LintContext<'a>> for RedundantLabelRule {
 
             let label_name = context.interner.lookup(&label_id);
 
-            let issue = Issue::new(context.level(), format!("redundant label: `{}`", label_name))
-                .with_annotation(Annotation::primary(label_span))
-                .with_note("this label is declared but not used by any `goto` statement.")
-                .with_help("remove the redundant label.");
+            let issue = Issue::new(context.level(), format!("Redundant goto label `{}`.", label_name))
+                .with_annotation(Annotation::primary(label_span).with_message("This label is declared but not used."))
+                .with_note(format!("Label `{}` is declared but not used by any `goto` statement.", label_name))
+                .with_help("Remove the redundant label.");
 
             context.report_with_fix(issue, |plan| plan.delete(label_span.to_range(), SafetyClassification::Safe));
         }

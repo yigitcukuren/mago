@@ -18,13 +18,13 @@ impl NoFFIRule {
         if FFI_CLASSES.iter().any(|ffi| ffi.eq_ignore_ascii_case(class_name)) {
             let mut issue = Issue::new(
                context.level(),
-               format!("potentionally unsafe use of FFI class `{}`", class_name),
+               format!("Potentionally unsafe use of FFI class `{}`.", class_name),
             )
             .with_annotation(Annotation::primary(identifier.span()))
             .with_note("FFI (Foreign Function Interface) allows interaction with code written in other languages.")
-            .with_note("this can introduce potential security risks and stability issues if not handled carefully.")
-            .with_note("make sure you understand the implications and potential vulnerabilities before using FFI in production.")
-            .with_help("if possible, consider using alternative solutions within PHP to avoid relying on FFI.");
+            .with_note("This can introduce potential security risks and stability issues if not handled carefully.")
+            .with_note("Make sure you understand the implications and potential vulnerabilities before using FFI in production.")
+            .with_help("If possible, consider using alternative solutions within PHP to avoid relying on FFI.");
 
             if let Some(node) = node {
                 issue = issue.with_annotation(Annotation::secondary(node.span()));

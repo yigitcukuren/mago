@@ -24,10 +24,12 @@ impl NoEmptyLoopRule {
     fn report(&self, r#loop: impl HasSpan, context: &mut LintContext<'_>) {
         let loop_span = r#loop.span();
 
-        let issue = Issue::new(context.level(), "loop body is empty")
-            .with_annotations([Annotation::primary(loop_span)
-                .with_message("this loop body is empty and does not perform any actions.")])
-            .with_help("consider removing this loop or adding meaningful logic to its body.");
+        let issue = Issue::new(context.level(), "Loop body is empty")
+            .with_annotation(
+                Annotation::primary(loop_span)
+                    .with_message("This loop body is empty and does not perform any actions."),
+            )
+            .with_help("Consider removing this loop or adding meaningful logic to its body.");
 
         context.report_with_fix(issue, |plan| {
             plan.delete(loop_span.to_range(), SafetyClassification::PotentiallyUnsafe);

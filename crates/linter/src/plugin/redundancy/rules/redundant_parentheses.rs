@@ -12,14 +12,12 @@ pub struct RedundantParenthesesRule;
 
 impl RedundantParenthesesRule {
     fn report(&self, parenthesized: &Parenthesized, context: &mut LintContext<'_>) {
-        let issue = Issue::new(context.level(), "redundant parentheses")
-            .with_annotations([
-                Annotation::primary(parenthesized.left_parenthesis),
-                Annotation::primary(parenthesized.right_parenthesis),
-                Annotation::secondary(parenthesized.expression.span())
-                    .with_message("expression does not need to be parenthesized"),
-            ])
-            .with_help("remove the redundant inner parentheses");
+        let issue = Issue::new(context.level(), "Redundant parentheses around expression.")
+            .with_annotation(
+                Annotation::primary(parenthesized.expression.span())
+                    .with_message("expression does not need to be parenthesized."),
+            )
+            .with_help("Remove the redundant inner parentheses.");
 
         context.report_with_fix(issue, |plan| {
             plan.delete(parenthesized.left_parenthesis.to_range(), SafetyClassification::Safe);

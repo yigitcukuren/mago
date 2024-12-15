@@ -28,15 +28,16 @@ impl<'a> Walker<LintContext<'a>> for TraitRule {
 
         if !mago_casing::is_class_case(name) {
             issues.push(
-                Issue::new(context.level(), format!("trait name `{}` should be in class case", name))
+                Issue::new(context.level(), format!("Trait name `{}` should be in class case.", name))
                     .with_annotations([
-                        Annotation::primary(r#trait.name.span()),
+                        Annotation::primary(r#trait.name.span())
+                            .with_message(format!("Trait `{}` is declared here.", name)),
                         Annotation::secondary(r#trait.span())
-                            .with_message(format!("trait `{}` is declared here", fqcn)),
+                            .with_message(format!("Trait `{}` is defined here.", fqcn)),
                     ])
-                    .with_note(format!("the trait name `{}` does not follow class naming convention.", name))
+                    .with_note(format!("The trait name `{}` does not follow class naming convention.", name))
                     .with_help(format!(
-                        "consider renaming it to `{}` to adhere to the naming convention.",
+                        "Consider renaming it to `{}` to adhere to the naming convention.",
                         mago_casing::to_class_case(name)
                     )),
             );
@@ -44,14 +45,15 @@ impl<'a> Walker<LintContext<'a>> for TraitRule {
 
         if context.option("psr").and_then(|o| o.as_bool()).unwrap_or(true) && !name.ends_with("Trait") {
             issues.push(
-                Issue::new(context.level(), format!("trait name `{}` should be suffixed with `Trait`", name))
+                Issue::new(context.level(), format!("Trait name `{}` should be suffixed with `Trait`.", name))
                     .with_annotations([
-                        Annotation::primary(r#trait.name.span()),
+                        Annotation::primary(r#trait.name.span())
+                            .with_message(format!("Trait `{}` is declared here.", name)),
                         Annotation::secondary(r#trait.span())
-                            .with_message(format!("trait `{}` is declared here", fqcn)),
+                            .with_message(format!("Trait `{}` is defined here.", fqcn)),
                     ])
-                    .with_note(format!("the trait name `{}` does not follow PSR naming convention.", name))
-                    .with_help(format!("consider renaming it to `{}Trait` to adhere to the naming convention.", name)),
+                    .with_note(format!("The trait name `{}` does not follow PSR naming convention.", name))
+                    .with_help(format!("Consider renaming it to `{}Trait` to adhere to the naming convention.", name)),
             );
         }
 

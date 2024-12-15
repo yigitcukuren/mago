@@ -23,21 +23,21 @@ impl RedundantFinalMethodModifierRule {
 
         let message = if in_enum {
             format!(
-                "the `final` modifier on method `{}` is redundant in enum `{}` as enums cannot be extended.",
+                "The `final` modifier on method `{}` is redundant in enum `{}` as enums cannot be extended.",
                 method_name, class_like_name
             )
         } else {
             format!(
-                "the `final` modifier on method `{}` is redundant as the class `{}` is already final.",
+                "The `final` modifier on method `{}` is redundant as the class `{}` is already final.",
                 method_name, class_like_name
             )
         };
 
         let issue = Issue::new(context.level(), message)
             .with_annotations([
-                Annotation::primary(final_modifier.span()),
+                Annotation::primary(final_modifier.span()).with_message("This `final` modifier is redundant."),
                 Annotation::secondary(class_like_span)
-                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
             ])
             .with_help("Remove the redundant `final` modifier.");
 

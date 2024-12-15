@@ -47,10 +47,10 @@ impl<'a> Walker<LintContext<'a>> for NoUntaggedFixmeRule {
                     }
 
                     context.report(
-                        Issue::new(context.level(), "FIXME should be tagged with (@username) or (#issue)")
+                        Issue::new(context.level(), "FIXME comment should be tagged with (@username) or (#issue).")
                             .with_annotation(Annotation::primary(trivia.span))
                             .with_help(
-                                "add a user tag or issue reference to the FIXME comment, e.g. FIXME(@azjezz), FIXME(azjezz), FIXME(#123)",
+                                "Add a user tag or issue reference to the FIXME comment, e.g. FIXME(@azjezz), FIXME(azjezz), FIXME(#123).",
                             )
                     );
 

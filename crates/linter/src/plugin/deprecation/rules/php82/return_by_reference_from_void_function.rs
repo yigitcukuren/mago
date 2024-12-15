@@ -101,15 +101,18 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
 
 fn report(context: &mut LintContext<'_>, kind: &'static str, span: Span, ampersand: &Span, is_set_hook: bool) {
     let message = if !is_set_hook {
-        format!("returning by reference from a void {} is deprecated since PHP 8.0", kind)
+        format!("Returning by reference from a void {} is deprecated since PHP 8.0.", kind)
     } else {
-        "returning by reference from a set property hook is deprecated since PHP 8.0".to_string()
+        "Returning by reference from a set property hook is deprecated since PHP 8.0".to_string()
     };
 
     let issue = Issue::new(context.level(), message)
-        .with_annotation(Annotation::primary(*ampersand).with_message("`&` indicating a return by reference"))
+        .with_annotation(
+            Annotation::primary(*ampersand)
+                .with_message(format!("The `&` indicates that the {} returns by reference.", kind)),
+        )
         .with_annotation(Annotation::secondary(span))
-        .with_help("consider removing the `&` to comply with PHP 8.0 standards and avoid future issues.".to_string());
+        .with_help("Consider removing the `&` to comply with PHP 8.0 standards and avoid future issues.".to_string());
 
     context.report_with_fix(issue, |plan| {
         plan.delete(ampersand.to_range(), SafetyClassification::Safe);

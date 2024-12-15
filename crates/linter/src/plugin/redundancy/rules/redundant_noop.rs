@@ -12,9 +12,9 @@ pub struct RedundantNoopRule;
 
 impl RedundantNoopRule {
     fn report(&self, noop: &Span, context: &mut LintContext<'_>) {
-        let issue = Issue::new(context.level(), "redundant noop statement")
-            .with_annotations([Annotation::primary(*noop)])
-            .with_help("remove the redundant `;`");
+        let issue = Issue::new(context.level(), "Redundant noop statement.")
+            .with_annotation(Annotation::primary(*noop).with_message("This is a redundant `noop` statement."))
+            .with_help("Remove the redundant `;`");
 
         context.report_with_fix(issue, |plan| plan.delete(noop.to_range(), SafetyClassification::Safe));
     }

@@ -12,13 +12,13 @@ pub struct NoAssignmentInConditionRule;
 
 impl NoAssignmentInConditionRule {
     fn report<'ast>(&self, condition: &'ast Expression, assignment: &'ast Assignment, context: &mut LintContext) {
-        let mut issue = Issue::new(context.level(), "avoid assignments in conditions")
-            .with_annotation(Annotation::primary(assignment.span()))
-            .with_annotation(Annotation::secondary(condition.span()))
-            .with_note("assigning a value within a condition can lead to unexpected behavior and make the code harder to read and understand.");
+        let mut issue = Issue::new(context.level(), "Avoid assignments in conditions.")
+            .with_annotation(Annotation::primary(assignment.span()).with_message("This is an assignment."))
+            .with_annotation(Annotation::secondary(condition.span()).with_message("This is the condition."))
+            .with_note("Assigning a value within a condition can lead to unexpected behavior and make the code harder to read and understand.");
 
         if matches!(&assignment.operator, AssignmentOperator::Assign(_)) {
-            issue = issue.with_note("it's easy to confuse assignment (`=`) with comparison (`==`) in this context. ensure you're using the correct operator.");
+            issue = issue.with_note("It's easy to confuse assignment (`=`) with comparison (`==`) in this context. ensure you're using the correct operator.");
         }
 
         context.report(issue);

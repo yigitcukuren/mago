@@ -31,9 +31,12 @@ impl<'a> Walker<LintContext<'a>> for InterfaceShouldBeUsed {
             if fqcn == *implementation {
                 let issue = Issue::new(
                     context.level(),
-                    format!("use the interface `{}` instead of the implementation `{}`", interface, implementation,),
+                    format!("Use the interface `{}` instead of the implementation `{}`", interface, implementation,),
                 )
-                .with_annotation(Annotation::primary(identifier.span()).with_message("interface should be used"));
+                .with_annotation(
+                    Annotation::primary(identifier.span())
+                        .with_message("This uses the implementation instead of the interface."),
+                );
 
                 context.report_with_fix(issue, |plan| {
                     // the change is potentially unsafe because we don't

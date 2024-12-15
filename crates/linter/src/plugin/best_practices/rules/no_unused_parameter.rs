@@ -33,13 +33,13 @@ impl NoUnusedParameterRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), format!("unused parameter: `{}`", parameter_name))
+        let issue = Issue::new(context.level(), format!("Parameter `{}` is never used.", parameter_name))
             .with_annotations([
-                Annotation::primary(parameter.span()),
+                Annotation::primary(parameter.span()).with_message(format!("Parameter `{}` is declared here.", parameter_name)),
                 Annotation::secondary(function_like.span()),
             ])
-            .with_note(format!("this parameter is declared but not used within the {}", kind))
-            .with_help("consider prefixing the parameter with an underscore (`_`) to indicate that it is intentionally unused, or remove it if it is not needed");
+            .with_note(format!("This parameter is declared but not used within the {}.", kind))
+            .with_help("Consider prefixing the parameter with an underscore (`_`) to indicate that it is intentionally unused, or remove it if it is not needed.");
 
         context.report_with_fix(issue, |plan| {
             plan.insert(
@@ -106,7 +106,7 @@ impl<'a> Walker<LintContext<'a>> for NoUnusedParameterRule {
         };
 
         if !context.option("methods").and_then(|o| o.as_bool()).unwrap_or(false) {
-            tracing::trace!("skipping checking parameters, methods are disabled");
+            tracing::trace!("Skipping method parameters check because the rule is disabled for methods.");
 
             return;
         }

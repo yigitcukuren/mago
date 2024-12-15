@@ -35,9 +35,9 @@ impl<'a> Walker<LintContext<'a>> for LowercaseHintRule {
             let name = context.interner.lookup(&identifier.value);
             let lowered = name.to_ascii_lowercase();
             if !lowered.eq(&name) {
-                let issue = Issue::new(context.level(), format!("type hint `{}` should be in lowercase", name))
+                let issue = Issue::new(context.level(), format!("Type hint `{}` should be in lowercase.", name))
                     .with_annotation(Annotation::primary(identifier.span()))
-                    .with_help(format!("consider using `{}` instead of `{}`.", lowered, name));
+                    .with_help(format!("Consider using `{}` instead of `{}`.", lowered, name));
 
                 context.report_with_fix(issue, |p| {
                     p.replace(identifier.span.to_range(), lowered, SafetyClassification::Safe)

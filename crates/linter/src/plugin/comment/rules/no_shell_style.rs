@@ -29,9 +29,9 @@ impl<'a> Walker<LintContext<'a>> for NoShellStyleRule {
                 let comment_span = trivia.span();
                 let comment_pos = comment_span.start;
 
-                let issue = Issue::new(context.level(), "shell-style comments ('#') are not allowed.")
-                    .with_annotation(Annotation::primary(comment_span).with_message("shell-style comment here"))
-                    .with_help("consider using double slash comments ('//') instead.");
+                let issue = Issue::new(context.level(), "Shell-style comments ('#') are not allowed.")
+                    .with_annotation(Annotation::primary(comment_span).with_message("This is a shell-style comment."))
+                    .with_help("Consider using double slash comments ('//') instead.");
 
                 context.report_with_fix(issue, |plan| {
                     plan.replace(comment_pos.range_for(1), "//", SafetyClassification::Safe);

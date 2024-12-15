@@ -27,13 +27,13 @@ impl LoopDoesNotIterateRule {
             LoopTerminator::Return(return_stmt) => return_stmt.span(),
         };
 
-        let issue = Issue::new(context.level(), "loop does not iterate")
+        let issue = Issue::new(context.level(), "Loop does not iterate.")
             .with_annotations([
-                Annotation::primary(terminator_span)
-                    .with_message("this statement unconditionally terminates the loop."),
-                Annotation::secondary(loop_span).with_message("this loop does not iterate."),
+                Annotation::primary(loop_span).with_message("This loop does not iterate."),
+                Annotation::secondary(terminator_span)
+                    .with_message("This statement unconditionally terminates the loop."),
             ])
-            .with_help("remove or refactor the loop to avoid redundant or misleading code.");
+            .with_help("Remove or refactor the loop to avoid redundant or misleading code.");
 
         context.report(issue);
     }

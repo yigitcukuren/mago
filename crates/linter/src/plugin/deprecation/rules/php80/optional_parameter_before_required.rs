@@ -39,7 +39,7 @@ impl<'a> Walker<LintContext<'a>> for OptionalParameterBeforeRequiredRule {
                 let issue = Issue::new(
                     context.level(),
                     format!(
-                        "optional parameter(s) `{}` defined before required parameter `{}`",
+                        "Optional parameter(s) `{}` defined before required parameter `{}`.",
                         optional_parameters
                             .iter()
                             .map(|(opt_name, _, _)| context.lookup(opt_name).to_string())
@@ -50,15 +50,15 @@ impl<'a> Walker<LintContext<'a>> for OptionalParameterBeforeRequiredRule {
                 )
                 .with_annotation(
                     Annotation::primary(parameter.variable.span())
-                        .with_message(format!("required parameter `{}` defined here", name)),
+                        .with_message(format!("Required parameter `{}` defined here", name)),
                 )
                 .with_annotations(optional_parameters.iter().map(|(opt_name, opt_span, _)| {
                     Annotation::secondary(*opt_span)
-                        .with_message(format!("optional parameter `{}` defined here", context.lookup(opt_name)))
+                        .with_message(format!("Optional parameter `{}` defined here.", context.lookup(opt_name)))
                 }))
-                .with_note("parameters after an optional one are implicitly required")
-                .with_note("defining optional parameters before required ones has been deprecated since PHP 8.0.")
-                .with_help("move all optional parameters to the end of the parameter list to resolve this issue.");
+                .with_note("Parameters after an optional one are implicitly required.")
+                .with_note("Defining optional parameters before required ones has been deprecated since PHP 8.0.")
+                .with_help("Move all optional parameters to the end of the parameter list to resolve this issue.");
 
                 context.report_with_fix(issue, |plan| {
                     for (_, _, default_span) in &optional_parameters {

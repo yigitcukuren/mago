@@ -26,9 +26,11 @@ impl<'a> Walker<LintContext<'a>> for ArraySyntaxRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "short array syntax `[..]` is preferred over `array(..)`")
-            .with_annotation(Annotation::primary(arr.span()))
-            .with_help("use the short array syntax `[..]` instead");
+        let issue = Issue::new(context.level(), "Short array syntax `[..]` is preferred over `array(..)`.")
+            .with_annotation(
+                Annotation::primary(arr.span()).with_message("This array uses the long array syntax `array(..)`."),
+            )
+            .with_help("Use the short array syntax `[..]` instead");
 
         context.report_with_fix(issue, |plan| {
             plan.replace(arr.array.span.join(arr.left_parenthesis).to_range(), "[", SafetyClassification::Safe);
@@ -41,9 +43,11 @@ impl<'a> Walker<LintContext<'a>> for ArraySyntaxRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "long array syntax `array(..)` is preferred over `[..]`")
-            .with_annotation(Annotation::primary(arr.span()))
-            .with_help("use the long array syntax `array(..)` instead");
+        let issue = Issue::new(context.level(), "Long array syntax `array(..)` is preferred over `[..]`.")
+            .with_annotation(
+                Annotation::primary(arr.span()).with_message("This array uses the short array syntax `[..]`."),
+            )
+            .with_help("Use the long array syntax `array(..)` instead");
 
         context.report_with_fix(issue, |plan| {
             plan.replace(arr.left_bracket.to_range(), "array(", SafetyClassification::Safe);

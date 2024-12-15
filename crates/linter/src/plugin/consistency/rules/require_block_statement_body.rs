@@ -16,13 +16,13 @@ impl RequireBlockStatementBodyRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "loop body should be enclosed in a block")
+        let issue = Issue::new(context.level(), "Loop body should be enclosed in a block.")
             .with_annotations([Annotation::primary(statement.span()), Annotation::secondary(r#loop.span())])
             .with_note(
-                "enclosing the loop body in a block improves readability and prevents potential errors \
+                "Enclosing the loop body in a block improves readability and prevents potential errors \
                 when adding or modifying statements within the loop.",
             )
-            .with_help("enclose the loop body in a block for clarity and error prevention.");
+            .with_help("Enclose the loop body in a block for clarity and error prevention.");
 
         context.report_with_fix(issue, |plan| {
             if matches!(statement, Statement::Noop(_)) {

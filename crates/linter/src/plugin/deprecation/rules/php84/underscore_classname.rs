@@ -26,11 +26,11 @@ impl<'a> Walker<LintContext<'a>> for UnderscoreClassNameRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "using `_` as a class name is deprecated")
+        let issue = Issue::new(context.level(), "Using `_` as a class name is deprecated.")
             .with_annotation(
-                Annotation::primary(class.name.span()).with_message("rename the class to something more descriptive"),
+                Annotation::primary(class.name.span()).with_message("Rename the class to something more descriptive."),
             )
-            .with_note("class names consisting only of `_` are deprecated. consider using a meaningful name.");
+            .with_note("Class names consisting only of `_` are deprecated. consider using a meaningful name.");
 
         context.report(issue);
     }
@@ -41,12 +41,12 @@ impl<'a> Walker<LintContext<'a>> for UnderscoreClassNameRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "using `_` as an interface name is deprecated")
+        let issue = Issue::new(context.level(), "Using `_` as an interface name is deprecated.")
             .with_annotation(
                 Annotation::primary(interface.name.span())
-                    .with_message("rename the interface to something more descriptive"),
+                    .with_message("Rename the interface to something more descriptive."),
             )
-            .with_note("interface names consisting only of `_` are deprecated. consider using a meaningful name.");
+            .with_note("Interface names consisting only of `_` are deprecated. consider using a meaningful name.");
 
         context.report(issue);
     }
@@ -57,11 +57,12 @@ impl<'a> Walker<LintContext<'a>> for UnderscoreClassNameRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "using `_` as a trait name is deprecated")
+        let issue = Issue::new(context.level(), "Using `_` as a trait name is deprecated.")
             .with_annotation(
-                Annotation::primary(r#trait.name.span()).with_message("rename the trait to something more descriptive"),
+                Annotation::primary(r#trait.name.span())
+                    .with_message("Rename the trait to something more descriptive."),
             )
-            .with_note("trait names consisting only of `_` are deprecated. consider using a meaningful name.");
+            .with_note("Trait names consisting only of `_` are deprecated. consider using a meaningful name.");
 
         context.report(issue);
     }
@@ -72,11 +73,11 @@ impl<'a> Walker<LintContext<'a>> for UnderscoreClassNameRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "using `_` as an enum name is deprecated")
+        let issue = Issue::new(context.level(), "Using `_` as an enum name is deprecated.")
             .with_annotation(
-                Annotation::primary(r#enum.name.span()).with_message("rename the enum to something more descriptive"),
+                Annotation::primary(r#enum.name.span()).with_message("Rename the enum to something more descriptive."),
             )
-            .with_note("enum names consisting only of `_` are deprecated. consider using a meaningful name.");
+            .with_note("Enum names consisting only of `_` are deprecated. consider using a meaningful name.");
 
         context.report(issue);
     }

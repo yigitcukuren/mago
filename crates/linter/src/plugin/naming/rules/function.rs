@@ -31,19 +31,22 @@ impl Walker<LintContext<'_>> for FunctionRule {
                 context.report(
                     Issue::new(
                         context.level(),
-                        format!("function name `{}` should be in either camel case or snake case", name),
+                        format!("Function name `{}` should be in either camel case or snake case.", name),
                     )
-                    .with_annotations([
-                        Annotation::primary(function.name.span()),
+                    .with_annotation(
+                        Annotation::primary(function.name.span())
+                            .with_message(format!("Function `{}` is declared here.`", name)),
+                    )
+                    .with_annotation(
                         Annotation::secondary(function.span())
-                            .with_message(format!("function `{}` is declared here", fqfn)),
-                    ])
+                            .with_message(format!("Function `{}` is defined here.", fqfn)),
+                    )
                     .with_note(format!(
-                        "the function name `{}` does not follow either camel case or snake naming convention.",
+                        "The function name `{}` does not follow either camel case or snake naming convention.",
                         name
                     ))
                     .with_help(format!(
-                        "consider renaming it to `{}` or `{}` to adhere to the naming convention.",
+                        "Consider renaming it to `{}` or `{}` to adhere to the naming convention.",
                         mago_casing::to_camel_case(name),
                         mago_casing::to_snake_case(name)
                     )),
@@ -56,15 +59,18 @@ impl Walker<LintContext<'_>> for FunctionRule {
         if camel_case {
             if !mago_casing::is_camel_case(name) {
                 context.report(
-                    Issue::new(context.level(), format!("function name `{}` should be in camel case", name))
-                        .with_annotations([
-                            Annotation::primary(function.name.span()),
+                    Issue::new(context.level(), format!("Function name `{}` should be in camel case.", name))
+                        .with_annotation(
+                            Annotation::primary(function.name.span())
+                                .with_message(format!("Function `{}` is declared here.`", name)),
+                        )
+                        .with_annotation(
                             Annotation::secondary(function.span())
-                                .with_message(format!("function `{}` is declared here", fqfn)),
-                        ])
-                        .with_note(format!("the function name `{}` does not follow camel naming convention.", name))
+                                .with_message(format!("Function `{}` is defined here.", fqfn)),
+                        )
+                        .with_note(format!("The function name `{}` does not follow camel naming convention.", name))
                         .with_help(format!(
-                            "consider renaming it to `{}` to adhere to the naming convention.",
+                            "Consider renaming it to `{}` to adhere to the naming convention.",
                             mago_casing::to_camel_case(name)
                         )),
                 );
@@ -75,15 +81,18 @@ impl Walker<LintContext<'_>> for FunctionRule {
 
         if !mago_casing::is_snake_case(name) {
             context.report(
-                Issue::new(context.level(), format!("function name `{}` should be in snake case", name))
-                    .with_annotations([
-                        Annotation::primary(function.name.span()),
+                Issue::new(context.level(), format!("Function name `{}` should be in snake case.", name))
+                    .with_annotation(
+                        Annotation::primary(function.name.span())
+                            .with_message(format!("Function `{}` is declared here.`", name)),
+                    )
+                    .with_annotation(
                         Annotation::secondary(function.span())
-                            .with_message(format!("function `{}` is declared here", fqfn)),
-                    ])
-                    .with_note(format!("the function name `{}` does not follow snake naming convention.", name))
+                            .with_message(format!("Function `{}` is defined here.", fqfn)),
+                    )
+                    .with_note(format!("The function name `{}` does not follow snake naming convention.", name))
                     .with_help(format!(
-                        "consider renaming it to `{}` to adhere to the naming convention.",
+                        "Consider renaming it to `{}` to adhere to the naming convention.",
                         mago_casing::to_snake_case(name)
                     )),
             );

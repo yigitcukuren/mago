@@ -58,12 +58,11 @@ impl<'a> Walker<LintContext<'a>> for StrContainsRule {
 
         let issue = Issue::new(
             context.level(),
-            "consider replacing `strpos` with `str_contains` for improved readability and intent clarity",
+            "Consider replacing `strpos` with `str_contains` for improved readability and intent clarity.",
         )
-        .with_annotation(Annotation::primary(call.span()))
-        .with_annotation(Annotation::secondary(binary.span()))
+        .with_annotation(Annotation::primary(binary.span()).with_message("This comparison can be simplified."))
         .with_help("`strpos($a, $b) !== false` can be simplified to `str_contains($a, $b)`.")
-        .with_note("using `str_contains` makes the code easier to understand and more expressive.");
+        .with_note("Using `str_contains` makes the code easier to understand and more expressive.");
 
         context.report_with_fix(issue, |plan| {
             // Mark the fix as potentially unsafe due to possible redefinition of `strpos` in the namespace.

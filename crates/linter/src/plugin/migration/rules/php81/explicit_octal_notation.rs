@@ -34,13 +34,13 @@ impl<'a> Walker<LintContext<'a>> for ExplicitOctalNotationRule {
             return;
         }
 
-        let issue = Issue::new(context.level(), "use explicit octal numeral notation")
+        let issue = Issue::new(context.level(), "Use explicit octal numeral notation.")
             .with_annotation(
                 Annotation::primary(literal_integer.span())
-                    .with_message("implicit octal numeral notation")
+                    .with_message("Implicit octal numeral notation used here."),
             )
-            .with_note("using `0o` makes the octal intent explicit and avoids confusion with other formats.")
-            .with_help("replace the leading `0` with `0o` to make the octal intent explicit")
+            .with_note("Using `0o` makes the octal intent explicit and avoids confusion with other formats.")
+            .with_help("Replace the leading `0` with `0o` to make the octal intent explicit")
             .with_link("https://www.php.net/manual/en/migration81.new-features.php#migration81.new-features.core.octal-literal-prefix")
         ;
 

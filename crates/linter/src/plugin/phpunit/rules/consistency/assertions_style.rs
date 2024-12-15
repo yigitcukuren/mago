@@ -81,13 +81,13 @@ impl<'a> Walker<LintContext<'a>> for AssertionsStyleRule {
                 _ => unreachable!(),
             };
 
-            let issue = Issue::new(context.level(), "inconsistent assertions style")
-                .with_annotations([Annotation::primary(reference.span()).with_message(format!(
-                    "assertion style mismatch: expected `{}` style but found `{}` style.",
-                    desired_style, current_style
-                ))])
+            let issue = Issue::new(context.level(), "Inconsistent assertions style.")
+                .with_annotation(
+                    Annotation::primary(reference.span())
+                        .with_message(format!("This assertion uses the `{}` style.", current_syntax)),
+                )
                 .with_help(format!(
-                    "use `{}` instead of `{}` to conform to the `{}` style.",
+                    "Use `{}` instead of `{}` to conform to the `{}` style.",
                     desired_syntax, current_syntax, desired_style,
                 ));
 

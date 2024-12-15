@@ -49,14 +49,14 @@ impl<'a> Walker<LintContext<'a>> for NoTrailingWhitespaceRule {
                         );
 
                         issues.push(
-                            Issue::new(context.level(), "trailing whitespace detected in comment.")
+                            Issue::new(context.level(), "Trailing whitespace detected in comment.")
                                 .with_annotations([
-                                    Annotation::primary(whitespace_span).with_message("trailing whitespace"),
+                                    Annotation::primary(whitespace_span).with_message("Trailing whitespace detected."),
                                     Annotation::secondary(comment_span)
-                                        .with_message("comment containing trailing whitespace"),
+                                        .with_message("Comment with trailing whitespace."),
                                 ])
-                                .with_note("trailing whitespaces can cause unnecessary diffs and formatting issues.")
-                                .with_help("remove the extra whitespace.")
+                                .with_note("Trailing whitespaces can cause unnecessary diffs and formatting issues.")
+                                .with_help("Remove the extra whitespace.")
                                 .with_suggestion(whitespace_span.source(), {
                                     let mut plan = FixPlan::new();
 

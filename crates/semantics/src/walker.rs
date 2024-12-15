@@ -39,6 +39,7 @@ use crate::context::Context;
 pub struct SemanticsWalker;
 
 impl SemanticsWalker {
+    #[inline]
     fn process_extends(
         &self,
         extends: &Extends,
@@ -52,16 +53,17 @@ impl SemanticsWalker {
         if extension_limit && extends.types.len() > 1 {
             context.report(
                 Issue::error(format!(
-                    "{} `{}` can only extend one other tyoe, found {}",
+                    "{} `{}` can only extend one other type, found {}.",
                     class_like_kind,
                     class_like_name,
                     extends.types.len()
                 ))
-                .with_annotation(Annotation::primary(extends.span()))
+                .with_annotation(Annotation::primary(extends.span()).with_message("Multiple extensions found here."))
                 .with_annotation(
                     Annotation::secondary(class_like_span)
-                        .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
-                ),
+                        .with_message(format!("{} `{}` declared here.", class_like_kind, class_like_fqcn)),
+                )
+                .with_help("Remove the extra extensions to ensure only one type is extended."),
             );
         }
 
@@ -70,12 +72,18 @@ impl SemanticsWalker {
 
             if extended_fqcn.eq_ignore_ascii_case(class_like_fqcn) {
                 context.report(
-                    Issue::error(format!("{} `{}` cannot extend itself", class_like_kind, class_like_name))
-                        .with_annotation(Annotation::primary(extended_type.span()))
+                    Issue::error(format!("{} `{}` cannot extend itself.", class_like_kind, class_like_name))
+                        .with_annotation(
+                            Annotation::primary(extended_type.span()).with_message(format!(
+                                "{} `{}` extends itself here.",
+                                class_like_kind, class_like_name
+                            )),
+                        )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
-                        ),
+                                .with_message(format!("{} `{}` declared here.", class_like_kind, class_like_fqcn)),
+                        )
+                        .with_help("Remove the self-referencing extension."),
                 );
             }
         }
@@ -90,19 +98,26 @@ impl SemanticsWalker {
             {
                 context.report(
                     Issue::error(format!(
-                        "{} `{}` cannot extend reserved keyword `{}`",
+                        "{} `{}` cannot extend reserved keyword `{}`.",
                         class_like_kind, class_like_name, extended_name
                     ))
-                    .with_annotation(Annotation::primary(extended_type.span()))
+                    .with_annotation(
+                        Annotation::primary(extended_type.span()).with_message("Extension uses a reserved keyword."),
+                    )
                     .with_annotation(
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` defined here", class_like_kind, class_like_name)),
-                    ),
+                            .with_message(format!("{} `{}` declared here.", class_like_kind, class_like_name)),
+                    )
+                    .with_help(format!(
+                        "Change the extended type to a valid identifier. `{}` is a reserved keyword.",
+                        extended_name
+                    )),
                 );
             }
         }
     }
 
+    #[inline]
     fn process_implements(
         &self,
         implements: &Implements,
@@ -119,12 +134,16 @@ impl SemanticsWalker {
 
                 if implemented_fqcn.eq_ignore_ascii_case(class_like_fqcn) {
                     context.report(
-                        Issue::error(format!("{} `{}` cannot implement itself", class_like_kind, class_like_name))
-                            .with_annotation(Annotation::primary(implemented_type.span()))
+                        Issue::error(format!("{} `{}` cannot implement itself.", class_like_kind, class_like_name))
+                            .with_annotation(Annotation::primary(implemented_type.span()).with_message(format!(
+                                "{} `{}` implements itself here.",
+                                class_like_kind, class_like_name
+                            )))
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
-                            ),
+                                    .with_message(format!("{} `{}` declared here.", class_like_kind, class_like_fqcn)),
+                            )
+                            .with_help("Remove the self-referencing implementation."),
                     );
                 }
             }
@@ -140,19 +159,26 @@ impl SemanticsWalker {
             {
                 context.report(
                     Issue::error(format!(
-                        "{} `{}` cannot implement reserved keyword `{}`",
+                        "{} `{}` cannot implement reserved keyword `{}`.",
                         class_like_kind, class_like_name, implemented_name
                     ))
-                    .with_annotation(Annotation::primary(implemented_type.span()))
+                    .with_annotation(
+                        Annotation::primary(implemented_type.span()).with_message("This is a reserved keyword."),
+                    )
                     .with_annotation(
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` defined here", class_like_kind, class_like_name)),
-                    ),
+                            .with_message(format!("{} `{}` declared here.", class_like_kind, class_like_name)),
+                    )
+                    .with_help(format!(
+                        "Replace `{}` with a valid identifier. Reserved keywords cannot be used as implemented types.",
+                        implemented_name
+                    )),
                 );
             }
         }
     }
 
+    #[inline]
     fn process_property(
         &self,
         property: &Property,
@@ -179,17 +205,20 @@ impl SemanticsWalker {
                 Modifier::Abstract(_) => {
                     context.report(
                         Issue::error(format!(
-                            "property `{}:{}` cannot be declared abstract",
+                            "Property `{}::{}` cannot be declared abstract",
                             class_like_name, first_variable_name
                         ))
-                        .with_annotation(Annotation::primary(modifier.span()))
+                        .with_annotation(
+                            Annotation::primary(modifier.span())
+                                .with_message("`abstract` modifier cannot be used on properties"),
+                        )
                         .with_annotation(
                             Annotation::secondary(first_variable.span())
-                                .with_message(format!("property `{}`", first_variable_name)),
+                                .with_message(format!("Property `{}` declared here.", first_variable_name)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                         ),
                     );
                 }
@@ -197,17 +226,23 @@ impl SemanticsWalker {
                     if let Some(last_readonly) = last_readonly {
                         context.report(
                             Issue::error(format!(
-                                "readonly property `{}::{}` cannot be static",
+                                "Readonly property `{}::{}` cannot be static.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(last_readonly))
+                            .with_annotation(
+                                Annotation::primary(modifier.span())
+                                    .with_message("`static` modifier cannot be used on readonly properties."),
+                            )
+                            .with_annotation(
+                                Annotation::primary(last_readonly).with_message("Property is marked as readonly here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -215,20 +250,22 @@ impl SemanticsWalker {
                     if let Some(last_static) = last_static {
                         context.report(
                             Issue::error(format!(
-                                "property `{}::{}` has multiple `static` modifiers",
+                                "Property `{}::{}` has multiple `static` modifiers.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
                             .with_annotation(
-                                Annotation::secondary(last_static).with_message("previous `static` modifier"),
+                                Annotation::primary(modifier.span()).with_message("Duplicate `static` modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(last_static).with_message("Previous `static` modifier."),
                             )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -236,18 +273,22 @@ impl SemanticsWalker {
                     if let Some(last_visibility) = last_write_visibility {
                         context.report(
                             Issue::error(format!(
-                                "static property `{}::{}` cannot have a write visibility modifier",
+                                "static property `{}::{}` cannot have a write visibility modifier.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(last_visibility))
-                            .with_annotation(Annotation::primary(modifier.span()).with_message("`static` modifier"))
+                            .with_annotation(
+                                Annotation::primary(modifier.span()).with_message("Duplicate visibility modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(last_visibility).with_message("Previous visibility modifier."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -258,18 +299,23 @@ impl SemanticsWalker {
                     if let Some(last_static) = last_static {
                         context.report(
                             Issue::error(format!(
-                                "static property `{}::{}` cannot be readonly",
+                                "Static property `{}::{}` cannot be readonly.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
-                            .with_annotation(Annotation::primary(last_static).with_message("`static` modifier"))
+                            .with_annotation(
+                                Annotation::primary(modifier.span())
+                                    .with_message("`readonly` modifier cannot be used on static properties."),
+                            )
+                            .with_annotation(
+                                Annotation::primary(last_static).with_message("Property is marked as static here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -277,20 +323,22 @@ impl SemanticsWalker {
                     if let Some(last_readonly) = last_readonly {
                         context.report(
                             Issue::error(format!(
-                                "property `{}::{}` has multiple `readonly` modifiers",
+                                "Property `{}::{}` has multiple `readonly` modifiers.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
                             .with_annotation(
-                                Annotation::secondary(last_readonly).with_message("previous `readonly` modifier"),
+                                Annotation::primary(modifier.span()).with_message("Duplicate `readonly` modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(last_readonly).with_message("Previous `readonly` modifier."),
                             )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -300,18 +348,20 @@ impl SemanticsWalker {
                 Modifier::Final(_) => {
                     if let Some(last_final) = last_final {
                         context.report(
-                            Issue::error("property has multiple `final` modifiers")
-                                .with_annotation(Annotation::primary(modifier.span()))
+                            Issue::error("Property has multiple `final` modifiers.")
                                 .with_annotation(
-                                    Annotation::primary(last_final).with_message("previous `final` modifier"),
+                                    Annotation::primary(modifier.span()).with_message("Duplicate `final` modifier."),
+                                )
+                                .with_annotation(
+                                    Annotation::primary(last_final).with_message("Previous `final` modifier."),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(first_variable.span())
-                                        .with_message(format!("property `{}`", first_variable_name)),
+                                        .with_message(format!("Property `{}` declared here.", first_variable_name)),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ),
@@ -324,20 +374,22 @@ impl SemanticsWalker {
                     if let Some(last_visibility) = last_read_visibility {
                         context.report(
                             Issue::error(format!(
-                                "property `{}::{}` has multiple visibility modifiers",
+                                "Property `{}::{}` has multiple visibility modifiers.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
                             .with_annotation(
-                                Annotation::primary(last_visibility).with_message("previous visibility modifier"),
+                                Annotation::primary(modifier.span()).with_message("Duplicate visibility modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::primary(last_visibility).with_message("Previous visibility modifier."),
                             )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -348,20 +400,24 @@ impl SemanticsWalker {
                     if let Some(last_visibility) = last_write_visibility {
                         context.report(
                             Issue::error(format!(
-                                "property `{}::{}` has multiple write visibility modifiers",
+                                "Property `{}::{}` has multiple write visibility modifiers.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
                             .with_annotation(
-                                Annotation::primary(last_visibility).with_message("previous write visibility modifier"),
+                                Annotation::primary(modifier.span())
+                                    .with_message("Duplicate write visibility modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::primary(last_visibility)
+                                    .with_message("Previous write visibility modifier."),
                             )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -369,18 +425,22 @@ impl SemanticsWalker {
                     if let Some(last_static) = last_static {
                         context.report(
                             Issue::error(format!(
-                                "static property `{}::{}` cannot have a write visibility modifier",
+                                "Static property `{}::{}` cannot have a write visibility modifier.",
                                 class_like_name, first_variable_name
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
-                            .with_annotation(Annotation::primary(last_static).with_message("`static` modifier"))
+                            .with_annotation(
+                                Annotation::primary(modifier.span()).with_message("Write visibility modifier."),
+                            )
+                            .with_annotation(
+                                Annotation::primary(last_static).with_message("Property is marked as static here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(first_variable.span())
-                                    .with_message(format!("property `{}`", first_variable_name)),
+                                    .with_message(format!("Property `{}` declared here.", first_variable_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -397,20 +457,22 @@ impl SemanticsWalker {
 
                 context.report(
                     Issue::error(format!(
-                        "var property `{}::{}` cannot have modifiers",
+                        "Var property `{}::{}` cannot have modifiers.",
                         class_like_name, first_variable_name
                     ))
-                    .with_annotation(Annotation::primary(first.span().join(last.span())))
-                    .with_annotation(Annotation::primary(var.span()).with_message("`var` is here"))
+                    .with_annotation(
+                        Annotation::primary(first.span().join(last.span())).with_message("Modifiers used here."),
+                    )
+                    .with_annotation(Annotation::primary(var.span()).with_message("Property is marked as `var` here."))
                     .with_annotation(
                         Annotation::secondary(first_variable.span())
-                            .with_message(format!("property `{}`", first_variable_name)),
+                            .with_message(format!("Property `{}` declared here.", first_variable_name)),
                     )
                     .with_annotation(
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                     )
-                    .with_help("remove either the `var` keyword, or the modifiers".to_string()),
+                    .with_help("Remove either the `var` keyword, or the modifiers.".to_string()),
                 );
             }
         }
@@ -421,20 +483,20 @@ impl SemanticsWalker {
                 // cant be used on properties
                 context.report(
                     Issue::error(format!(
-                        "property `{}::{}` cannot have type `{}`",
+                        "Property `{}::{}` cannot have type `{}`.",
                         class_like_name, first_variable_name, hint_name
                     ))
                     .with_annotation(
                         Annotation::primary(hint.span())
-                            .with_message(format!("type `{}` is not allowed on properties", hint_name)),
+                            .with_message(format!("Type `{}` is not allowed on properties.", hint_name)),
                     )
                     .with_annotation(
                         Annotation::secondary(first_variable.span())
-                            .with_message(format!("property `{}`", first_variable_name)),
+                            .with_message(format!("Property `{}` declared here.", first_variable_name)),
                     )
                     .with_annotation(
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                     ),
                 );
             }
@@ -442,17 +504,17 @@ impl SemanticsWalker {
             // readonly properties must have a type hint
             context.report(
                 Issue::error(format!(
-                    "readonly property `{}::{}` must have a type hint",
+                    "Readonly property `{}::{}` must have a type hint.",
                     class_like_name, first_variable_name
                 ))
-                .with_annotation(Annotation::primary(readonly))
+                .with_annotation(Annotation::primary(readonly).with_message("Property is marked as readonly here."))
                 .with_annotation(
                     Annotation::secondary(first_variable.span())
-                        .with_message(format!("property `{}`", first_variable_name)),
+                        .with_message(format!("Property `{}` declared here.", first_variable_name)),
                 )
                 .with_annotation(
                     Annotation::secondary(class_like_span)
-                        .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                        .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                 ),
             );
         }
@@ -467,20 +529,20 @@ impl SemanticsWalker {
                         if !property_concrete_item.value.is_constant(false) {
                             context.report(
                                 Issue::error(format!(
-                                    "property `{}::{}` value contains a non-constant expression",
+                                    "Property `{}::{}` value contains a non-constant expression.",
                                     class_like_name, item_name
                                 ))
                                 .with_annotation(
                                     Annotation::primary(property_concrete_item.value.span())
-                                        .with_message("non-constant expression"),
+                                        .with_message("This is a non-constant expression."),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(property_concrete_item.variable.span())
-                                        .with_message(format!("property `{}` defined here", item_name)),
+                                        .with_message(format!("Property `{}` declared here.", item_name)),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ),
@@ -490,24 +552,24 @@ impl SemanticsWalker {
                         if let Some(readonly) = last_readonly {
                             context.report(
                                 Issue::error(format!(
-                                    "readonly property `{}::{}` cannot have a default value",
+                                    "Readonly property `{}::{}` cannot have a default value.",
                                     class_like_name, item_name
                                 ))
                                 .with_annotation(
                                     Annotation::primary(property_concrete_item.value.span())
-                                        .with_message("default value here"),
+                                        .with_message("This is a default value."),
                                 )
                                 .with_annotation(Annotation::primary(readonly).with_message(format!(
-                                    "property `{}::{}` is marked as readonly",
+                                    "Property `{}::{}` is marked as readonly here.",
                                     class_like_name, item_name
                                 )))
                                 .with_annotation(
                                     Annotation::secondary(property_concrete_item.variable.span())
-                                        .with_message(format!("property `{}` defined here", item_name)),
+                                        .with_message(format!("Property `{}` is declared here.", item_name)),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ),
@@ -523,40 +585,46 @@ impl SemanticsWalker {
                 if let Some(readonly) = last_readonly {
                     context.report(
                         Issue::error(format!(
-                            "hooked property `{}::{}` cannot be readonly",
+                            "Hooked property `{}::{}` cannot be readonly.",
                             class_like_name, item_name
                         ))
-                        .with_annotation(Annotation::primary(hooked_property.hooks.span()))
                         .with_annotation(Annotation::primary(readonly).with_message(format!(
-                            "property `{}::{}` is marked as readonly",
+                            "Property `{}::{}` is marked as readonly here.",
                             class_like_name, item_name
                         )))
                         .with_annotation(
+                            Annotation::secondary(hooked_property.hooks.span())
+                                .with_message("Property hooks are defined here."),
+                        )
+                        .with_annotation(
                             Annotation::secondary(hooked_property.item.variable().span())
-                                .with_message(format!("property `{}` defined here", item_name)),
+                                .with_message(format!("Property `{}` is declared here.", item_name)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                         ),
                     );
                 }
 
                 if let Some(r#static) = last_static {
                     context.report(
-                        Issue::error(format!("hooked property `{}::{}` cannot be static", class_like_name, item_name))
-                            .with_annotation(Annotation::primary(hooked_property.hooks.span()))
+                        Issue::error(format!("Hooked property `{}::{}` cannot be static.", class_like_name, item_name))
                             .with_annotation(Annotation::primary(r#static).with_message(format!(
-                                "property `{}::{}` is marked as static",
+                                "Property `{}::{}` is marked as static here.",
                                 class_like_name, item_name
                             )))
                             .with_annotation(
+                                Annotation::secondary(hooked_property.hooks.span())
+                                    .with_message("Property hooks are defined here."),
+                            )
+                            .with_annotation(
                                 Annotation::secondary(hooked_property.item.variable().span())
-                                    .with_message(format!("property `{}` defined here", item_name)),
+                                    .with_message(format!("Property `{}` is declared here.", item_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                     );
                 }
@@ -572,19 +640,20 @@ impl SemanticsWalker {
 
                         context.report(
                             Issue::error(format!(
-                                "hook `{}` for property `{}::{}` cannot have modifiers",
+                                "Hook `{}` for property `{}::{}` cannot have modifiers.",
                                 name, class_like_name, item_name
                             ))
                             .with_annotation(
-                                Annotation::primary(first.span().join(last.span())).with_message("hook modifiers here"),
+                                Annotation::primary(first.span().join(last.span()))
+                                    .with_message("Hook modifiers here."),
                             )
                             .with_annotation(
                                 Annotation::secondary(hooked_property.item.variable().span())
-                                    .with_message(format!("property `{}` defined here", item_name)),
+                                    .with_message(format!("Property `{}` is declared here.", item_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     }
@@ -592,18 +661,21 @@ impl SemanticsWalker {
                     if !class_like_is_interface {
                         if let PropertyHookBody::Abstract(property_hook_abstract_body) = &hook.body {
                             context.report(
-                                Issue::error(format!("non-abstract property hook `{}` must have a body", name))
-                                    .with_annotation(Annotation::primary(property_hook_abstract_body.span()))
+                                Issue::error(format!("Non-abstract property hook `{}` must have a body.", name))
+                                    .with_annotation(
+                                        Annotation::primary(property_hook_abstract_body.span())
+                                            .with_message("Abstract hook body here."),
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(hook.name.span())
-                                            .with_message(format!("hook `{}` defined here", name)),
+                                            .with_message(format!("Hook `{}` is declared here.", name)),
                                     )
                                     .with_annotation(
                                         Annotation::secondary(hooked_property.item.variable().span())
-                                            .with_message(format!("property `{}` defined here", item_name)),
+                                            .with_message(format!("Property `{}` is declared here.", item_name)),
                                     )
                                     .with_annotation(Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     ))),
                             );
@@ -616,22 +688,22 @@ impl SemanticsWalker {
                                 if parameters.parameters.len() != 1 {
                                     context.report(
                                         Issue::error(format!(
-                                            "hook `{}` of property `{}::{}` must accept exactly one parameter, found {}",
+                                            "Hook `{}` of property `{}::{}` must accept exactly one parameter, found {}.",
                                             name, class_like_name, item_name, parameters.parameters.len()
                                         ))
-                                        .with_annotation(Annotation::primary(parameters.span()))
+                                        .with_annotation(Annotation::primary(parameters.span()).with_message("Parameters are defined here."))
                                         .with_annotation(
                                             Annotation::secondary(hook.name.span()).with_message(
-                                                format!("hook `{}` defined here", name),
+                                                format!("Hook `{}` is declared here.", name),
                                             ),
                                         )
                                         .with_annotation(
                                             Annotation::secondary(hooked_property.item.variable().span())
-                                                .with_message(format!("property `{}` defined here", item_name)),
+                                                .with_message(format!("Property `{}` is declared here.", item_name)),
                                         )
                                         .with_annotation(
                                             Annotation::secondary(class_like_span)
-                                                .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                                         ),
                                     );
                                 } else {
@@ -641,21 +713,28 @@ impl SemanticsWalker {
                                     if first_parameter.hint.is_none() {
                                         context.report(
                                             Issue::error(format!(
-                                                "parameter `{}` of hook `{}::{}::{}` must contain a type hint",
+                                                "Parameter `{}` of hook `{}::{}::{}` must contain a type hint.",
                                                 first_parameter_name, class_like_name, item_name, name
                                             ))
-                                            .with_annotation(Annotation::primary(first_parameter.variable.span()))
+                                            .with_annotation(
+                                                Annotation::primary(first_parameter.variable.span()).with_message(
+                                                    format!("Parameter `{}` declared here.", first_parameter_name),
+                                                ),
+                                            )
                                             .with_annotation(
                                                 Annotation::secondary(hook.name.span())
-                                                    .with_message(format!("hook `{}` defined here", name)),
+                                                    .with_message(format!("Hook `{}` is declared here.", name)),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hooked_property.item.variable().span())
-                                                    .with_message(format!("property `{}` defined here", item_name)),
+                                                    .with_message(format!(
+                                                        "Property `{}` is declared here.",
+                                                        item_name
+                                                    )),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(class_like_span).with_message(format!(
-                                                    "{} `{}` defined here",
+                                                    "{} `{}` defined here.",
                                                     class_like_kind, class_like_fqcn
                                                 )),
                                             ),
@@ -665,26 +744,34 @@ impl SemanticsWalker {
                                     if let Some(ellipsis) = first_parameter.ellipsis {
                                         context.report(
                                             Issue::error(format!(
-                                                "parameter `{}` of hook `{}::{}::{}` must not be variadic",
+                                                "Parameter `{}` of hook `{}::{}::{}` must not be variadic.",
                                                 first_parameter_name, class_like_name, item_name, name
                                             ))
-                                            .with_annotation(Annotation::primary(ellipsis.span()))
+                                            .with_annotation(Annotation::primary(ellipsis.span()).with_message(
+                                                format!(
+                                                    "Parameter `{}` is marked as variadic here.",
+                                                    first_parameter_name
+                                                ),
+                                            ))
                                             .with_annotation(
                                                 Annotation::secondary(first_parameter.variable.span()).with_message(
-                                                    format!("parameter `{}` defined here", first_parameter_name),
+                                                    format!("Parameter `{}` declared here.", first_parameter_name),
                                                 ),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hook.name.span())
-                                                    .with_message(format!("hook `{}` defined here", name)),
+                                                    .with_message(format!("Hook `{}` is declared here.", name)),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hooked_property.item.variable().span())
-                                                    .with_message(format!("property `{}` defined here", item_name)),
+                                                    .with_message(format!(
+                                                        "Property `{}` is declared here.",
+                                                        item_name
+                                                    )),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(class_like_span).with_message(format!(
-                                                    "{} `{}` defined here",
+                                                    "{} `{}` defined here.",
                                                     class_like_kind, class_like_fqcn
                                                 )),
                                             ),
@@ -694,26 +781,34 @@ impl SemanticsWalker {
                                     if let Some(ampersand) = first_parameter.ampersand {
                                         context.report(
                                             Issue::error(format!(
-                                                "parameter `{}` of hook `{}::{}::{}` must not be pass-by-reference",
+                                                "Parameter `{}` of hook `{}::{}::{}` must not be pass-by-reference.",
                                                 first_parameter_name, class_like_name, item_name, name
                                             ))
-                                            .with_annotation(Annotation::primary(ampersand.span()))
+                                            .with_annotation(Annotation::primary(ampersand.span()).with_message(
+                                                format!(
+                                                    "Parameter `{}` is marked as pass-by-reference here.",
+                                                    first_parameter_name
+                                                ),
+                                            ))
                                             .with_annotation(
                                                 Annotation::secondary(first_parameter.variable.span()).with_message(
-                                                    format!("parameter `{}` defined here", first_parameter_name),
+                                                    format!("Parameter `{}` declared here.", first_parameter_name),
                                                 ),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hook.name.span())
-                                                    .with_message(format!("hook `{}` defined here", name)),
+                                                    .with_message(format!("Hook `{}` is declared here.", name)),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hooked_property.item.variable().span())
-                                                    .with_message(format!("property `{}` defined here", item_name)),
+                                                    .with_message(format!(
+                                                        "Property `{}` is declared here.",
+                                                        item_name
+                                                    )),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(class_like_span).with_message(format!(
-                                                    "{} `{}` defined here",
+                                                    "{} `{}` defined here.",
                                                     class_like_kind, class_like_fqcn
                                                 )),
                                             ),
@@ -723,26 +818,29 @@ impl SemanticsWalker {
                                     if let Some(default_value) = &first_parameter.default_value {
                                         context.report(
                                             Issue::error(format!(
-                                                "parameter `{}` of hook `{}::{}::{}` must not have a default value",
+                                                "Parameter `{}` of hook `{}::{}::{}` must not have a default value.",
                                                 first_parameter_name, class_like_name, item_name, name
                                             ))
                                             .with_annotation(Annotation::primary(default_value.span()))
                                             .with_annotation(
                                                 Annotation::secondary(first_parameter.variable.span()).with_message(
-                                                    format!("parameter `{}` defined here", first_parameter_name),
+                                                    format!("Parameter `{}` declared here.", first_parameter_name),
                                                 ),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hook.name.span())
-                                                    .with_message(format!("hook `{}` defined here", name)),
+                                                    .with_message(format!("Hook `{}` is declared here.", name)),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(hooked_property.item.variable().span())
-                                                    .with_message(format!("property `{}` defined here", item_name)),
+                                                    .with_message(format!(
+                                                        "Property `{}` is declared here.",
+                                                        item_name
+                                                    )),
                                             )
                                             .with_annotation(
                                                 Annotation::secondary(class_like_span).with_message(format!(
-                                                    "{} `{}` defined here",
+                                                    "{} `{}` defined here.",
                                                     class_like_kind, class_like_fqcn
                                                 )),
                                             ),
@@ -755,21 +853,24 @@ impl SemanticsWalker {
                             if let Some(parameters) = &hook.parameters {
                                 context.report(
                                     Issue::error(format!(
-                                        "hook `{}` of property `{}::{}` must not have a parameters list",
+                                        "Hook `{}` of property `{}::{}` must not have a parameters list.",
                                         name, class_like_name, item_name
                                     ))
-                                    .with_annotation(Annotation::primary(parameters.span()))
+                                    .with_annotation(
+                                        Annotation::primary(parameters.span())
+                                            .with_message("Parameters are defined here."),
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(hook.name.span())
-                                            .with_message(format!("hook `{}` defined here", name)),
+                                            .with_message(format!("Hook `{}` is declared here.", name)),
                                     )
                                     .with_annotation(
                                         Annotation::secondary(hooked_property.item.variable().span())
-                                            .with_message(format!("property `{}` defined here", item_name)),
+                                            .with_message(format!("Property `{}` is declared here.", item_name)),
                                     )
                                     .with_annotation(
                                         Annotation::secondary(class_like_span).with_message(format!(
-                                            "{} `{}` defined here",
+                                            "{} `{}` defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                     ),
@@ -779,20 +880,20 @@ impl SemanticsWalker {
                         _ => {
                             context.report(
                                 Issue::error(format!(
-                                    "hooked property `{}::{}` contains an unknwon hook `{}`, expected `set` or `get`",
+                                    "Hooked property `{}::{}` contains an unknwon hook `{}`, expected `set` or `get`.",
                                     class_like_name, item_name, name
                                 ))
                                 .with_annotation(
                                     Annotation::primary(hook.name.span())
-                                        .with_message(format!("hook `{}` defined here", name)),
+                                        .with_message(format!("Hook `{}` declared here.", name)),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(hooked_property.item.variable().span())
-                                        .with_message(format!("property `{}` defined here", item_name)),
+                                        .with_message(format!("Property `{}` is declared here.", item_name)),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ),
@@ -804,21 +905,24 @@ impl SemanticsWalker {
                     {
                         context.report(
                             Issue::error(format!(
-                                "hook `{}` has already been defined for property `{}::{}`",
+                                "Hook `{}` has already been defined for property `{}::{}`.",
                                 name, class_like_name, item_name
                             ))
-                            .with_annotation(Annotation::primary(hook.name.span()))
+                            .with_annotation(
+                                Annotation::primary(hook.name.span())
+                                    .with_message(format!("Duplicate hook `{}`.", name)),
+                            )
                             .with_annotation(
                                 Annotation::secondary(*previous_span)
-                                    .with_message(format!("previous definition of hook `{}`", previous_span)),
+                                    .with_message(format!("Previous declaration of hook `{}`", previous_span)),
                             )
                             .with_annotation(
                                 Annotation::secondary(hooked_property.item.variable().span())
-                                    .with_message(format!("property `{}` defined here", item_name)),
+                                    .with_message(format!("Property `{}` is declared here.", item_name)),
                             )
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ),
                         );
                     } else {
@@ -829,6 +933,7 @@ impl SemanticsWalker {
         };
     }
 
+    #[inline]
     fn process_method(
         &self,
         method: &Method,
@@ -862,13 +967,15 @@ impl SemanticsWalker {
                             )
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -886,13 +993,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(abstract_modifier).with_message("`abstract` modifier"))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -909,13 +1018,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(last_final).with_message("previous `final` modifier"))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -933,13 +1044,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(final_modifier).with_message("`final` modifier"))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -958,13 +1071,15 @@ impl SemanticsWalker {
                             )
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -977,13 +1092,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(modifier.span()).with_message("`readonly` modifier"))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                     );
                 }
@@ -1002,13 +1119,15 @@ impl SemanticsWalker {
                             )
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     } else {
@@ -1027,13 +1146,15 @@ impl SemanticsWalker {
                             )
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                     );
                 }
@@ -1075,11 +1196,11 @@ impl SemanticsWalker {
                             Issue::error(message)
                                 .with_annotation(Annotation::primary(method.parameters.span()))
                                 .with_annotation(Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )))
                                 .with_annotation(Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is defined here",
+                                    "{} `{}` is defined here.",
                                     class_like_kind, class_like_fqcn
                                 ))),
                         );
@@ -1095,13 +1216,15 @@ impl SemanticsWalker {
                             )
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                     );
                 }
@@ -1116,13 +1239,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(*span).with_message("`static` modifier"))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -1135,7 +1260,7 @@ impl SemanticsWalker {
                                         .with_message(format!("{} `{}`", class_like_kind, class_like_fqcn)),
                                 )
                                 .with_annotation(Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 ))),
                         );
@@ -1153,13 +1278,15 @@ impl SemanticsWalker {
                             .with_annotation(Annotation::primary(hint.span()))
                             .with_annotation(
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "method `{}::{}` defined here",
+                                    "method `{}::{}` defined here.",
                                     class_like_name, method_name,
                                 )),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                Annotation::secondary(class_like_span).with_message(format!(
+                                    "{} `{}` is defined here.",
+                                    class_like_kind, class_like_fqcn
+                                )),
                             ),
                         );
                     }
@@ -1178,9 +1305,9 @@ impl SemanticsWalker {
                         .with_annotation(Annotation::primary(method_abstract_body.span()))
                         .with_annotations([
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here", class_like_name, method_name)),
+                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name)),
                         ]),
                     );
                 }
@@ -1196,9 +1323,9 @@ impl SemanticsWalker {
                         .with_annotations([
                             Annotation::primary(abstract_modifier.span()),
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here", class_like_name, method_name)),
+                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name)),
                         ]),
                     );
                 } else if class_like_is_interface {
@@ -1210,9 +1337,9 @@ impl SemanticsWalker {
                         .with_annotation(Annotation::primary(body.span()))
                         .with_annotations([
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here", class_like_name, method_name)),
+                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name)),
                         ]),
                     );
                 }
@@ -1237,11 +1364,11 @@ impl SemanticsWalker {
                                     .with_annotation(Annotation::primary(val.span()))
                                     .with_annotations([
                                         Annotation::secondary(class_like_span).with_message(format!(
-                                            "{} `{}` is defined here",
+                                            "{} `{}` is defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                         Annotation::secondary(method.span()).with_message(format!(
-                                            "method `{}::{}` defined here",
+                                            "method `{}::{}` defined here.",
                                             class_like_name, method_name,
                                         )),
                                     ])
@@ -1260,11 +1387,11 @@ impl SemanticsWalker {
                                 .with_annotation(Annotation::primary(r#return.span()))
                                 .with_annotations([
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` is defined here",
+                                        "{} `{}` is defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                     Annotation::secondary(method.span()).with_message(format!(
-                                        "method `{}::{}` defined here",
+                                        "method `{}::{}` defined here.",
                                         class_like_name, method_name,
                                     )),
                                 ])
@@ -1283,11 +1410,11 @@ impl SemanticsWalker {
                                     .with_annotation(Annotation::primary(r#return.span()))
                                     .with_annotations([
                                         Annotation::secondary(class_like_span).with_message(format!(
-                                            "{} `{}` is defined here",
+                                            "{} `{}` is defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                         Annotation::secondary(method.span()).with_message(format!(
-                                            "method `{}::{}` defined here",
+                                            "method `{}::{}` defined here.",
                                             class_like_name, method_name,
                                         )),
                                     ])
@@ -1303,7 +1430,7 @@ impl SemanticsWalker {
         };
     }
 
-    #[inline(always)]
+    #[inline]
     fn process_members(
         &self,
         members: &Sequence<ClassLikeMember>,
@@ -1342,11 +1469,11 @@ impl SemanticsWalker {
                                         .with_annotation(Annotation::primary(item.variable().span()))
                                         .with_annotations([
                                             Annotation::secondary(*span).with_message(format!(
-                                                "property `{}::{}` previously defined here",
+                                                "property `{}::{}` previously defined here.",
                                                 class_like_name, item_name
                                             )),
                                             Annotation::secondary(class_like_span.span()).with_message(format!(
-                                                "{} `{}` defined here",
+                                                "{} `{}` defined here.",
                                                 class_like_kind, class_like_fqcn
                                             )),
                                         ])
@@ -1379,11 +1506,11 @@ impl SemanticsWalker {
                                     .with_annotation(Annotation::primary(item_variable.span()))
                                     .with_annotations([
                                         Annotation::secondary(*span).with_message(format!(
-                                            "property `{}::{}` previously defined here",
+                                            "property `{}::{}` previously defined here.",
                                             class_like_name, item_name
                                         )),
                                         Annotation::secondary(class_like_span.span()).with_message(format!(
-                                            "{} `{}` defined here",
+                                            "{} `{}` defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                     ])
@@ -1411,7 +1538,7 @@ impl SemanticsWalker {
                             .with_annotations([
                                 Annotation::secondary(*previous).with_message("previous definition"),
                                 Annotation::secondary(class_like_span.span())
-                                    .with_message(format!("{} `{}` defined here", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
                             ]),
                         );
                     } else {
@@ -1444,11 +1571,11 @@ impl SemanticsWalker {
                                             .with_annotation(Annotation::primary(parameter.variable.span()))
                                             .with_annotations([
                                                 Annotation::secondary(*span).with_message(format!(
-                                                    "property `{}::{}` previously defined here",
+                                                    "property `{}::{}` previously defined here.",
                                                     class_like_name, item_name
                                                 )),
                                                 Annotation::secondary(class_like_span.span()).with_message(format!(
-                                                    "{} `{}` defined here",
+                                                    "{} `{}` defined here.",
                                                     class_like_kind, class_like_fqcn
                                                 )),
                                             ])
@@ -1475,11 +1602,11 @@ impl SemanticsWalker {
                                     .with_annotation(Annotation::primary(item.name.span()))
                                     .with_annotations([
                                         Annotation::secondary(*span).with_message(format!(
-                                            "constant `{}::{}` previously defined here",
+                                            "Constant `{}::{}` previously defined here.",
                                             class_like_name, name
                                         )),
                                         Annotation::secondary(class_like_span.span()).with_message(format!(
-                                            "{} `{}` defined here",
+                                            "{} `{}` defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                     ]),
@@ -1492,10 +1619,12 @@ impl SemanticsWalker {
                                     ))
                                     .with_annotation(Annotation::primary(item.name.span()))
                                     .with_annotations([
-                                        Annotation::secondary(*span)
-                                            .with_message(format!("case `{}::{}` defined here", class_like_name, name)),
+                                        Annotation::secondary(*span).with_message(format!(
+                                            "case `{}::{}` defined here.",
+                                            class_like_name, name
+                                        )),
                                         Annotation::secondary(class_like_span.span()).with_message(format!(
-                                            "{} `{}` defined here",
+                                            "{} `{}` defined here.",
                                             class_like_kind, class_like_fqcn
                                         )),
                                     ]),
@@ -1518,10 +1647,12 @@ impl SemanticsWalker {
                                 ))
                                 .with_annotation(Annotation::primary(enum_case.item.name().span()))
                                 .with_annotations([
-                                    Annotation::secondary(*span)
-                                        .with_message(format!("constant `{}::{}` defined here", class_like_name, name)),
+                                    Annotation::secondary(*span).with_message(format!(
+                                        "Constant `{}::{}` defined here.",
+                                        class_like_name, name
+                                    )),
                                     Annotation::secondary(class_like_span.span()).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ]),
@@ -1535,11 +1666,11 @@ impl SemanticsWalker {
                                 .with_annotation(Annotation::primary(enum_case.item.name().span()))
                                 .with_annotations([
                                     Annotation::secondary(*span).with_message(format!(
-                                        "case `{}::{}` previously defined here",
+                                        "case `{}::{}` previously defined here.",
                                         class_like_name, name
                                     )),
                                     Annotation::secondary(class_like_span.span()).with_message(format!(
-                                        "{} `{}` defined here",
+                                        "{} `{}` defined here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ]),
@@ -1556,6 +1687,7 @@ impl SemanticsWalker {
         }
     }
 
+    #[inline]
     fn process_class_like_constant(
         &self,
         class_like_constant: &ClassLikeConstant,
@@ -1581,11 +1713,11 @@ impl SemanticsWalker {
                         .with_annotation(Annotation::primary(modifier.span()))
                         .with_annotations([
                             Annotation::secondary(first_item.span()).with_message(format!(
-                                "{} constant `{}::{}` is declared here",
+                                "{} constant `{}::{}` is declared here.",
                                 class_like_kind, class_like_name, first_item_name
                             )),
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is declared here", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{} `{}` is declared here.", class_like_kind, class_like_fqcn)),
                         ]),
                     );
                 }
@@ -1597,11 +1729,11 @@ impl SemanticsWalker {
                                 .with_annotations([
                                     Annotation::secondary(last_final).with_message("previous `final` modifier"),
                                     Annotation::secondary(first_item.span()).with_message(format!(
-                                        "{} constant `{}::{}` is declared here",
+                                        "{} constant `{}::{}` is declared here.",
                                         class_like_kind, class_like_name, first_item_name
                                     )),
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` is declared here",
+                                        "{} `{}` is declared here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ]),
@@ -1618,11 +1750,11 @@ impl SemanticsWalker {
                                 .with_annotations([
                                     Annotation::secondary(last_visibility).with_message("previous visibility modifier"),
                                     Annotation::secondary(first_item.span()).with_message(format!(
-                                        "{} constant `{}::{}` is declared here",
+                                        "{} constant `{}::{}` is declared here.",
                                         class_like_kind, class_like_name, first_item_name
                                     )),
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` is declared here",
+                                        "{} `{}` is declared here.",
                                         class_like_kind, class_like_fqcn
                                     )),
                                 ]),
@@ -1640,23 +1772,24 @@ impl SemanticsWalker {
             if !item.value.is_constant(false) {
                 context.report(
                     Issue::error(format!(
-                        "constant `{}::{}` value contains a non-constant expression",
+                        "Constant `{}::{}` value contains a non-constant expression.",
                         class_like_name, item_name
                     ))
                     .with_annotation(Annotation::primary(item.value.span()))
                     .with_annotations([
                         Annotation::secondary(item.name.span()).with_message(format!(
-                            "{} constant `{}::{}` is declared here",
+                            "{} constant `{}::{}` is declared here.",
                             class_like_kind, class_like_name, item_name
                         )),
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` is declared here", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{} `{}` is declared here.", class_like_kind, class_like_fqcn)),
                     ]),
                 );
             }
         }
     }
 
+    #[inline]
     fn process_promoted_properties_outside_constructor(
         &self,
         parameter_list: &FunctionLikeParameterList,
@@ -1665,8 +1798,11 @@ impl SemanticsWalker {
         for parameter in parameter_list.parameters.iter() {
             if parameter.is_promoted_property() {
                 context.report(
-                    Issue::error("promoted properties are not allowed outside of constructors")
-                        .with_annotation(Annotation::primary(parameter.span())),
+                    Issue::error("Promoted properties are not allowed outside of constructors.")
+                        .with_annotation(
+                            Annotation::primary(parameter.span()).with_message("Promoted property found here."),
+                        )
+                        .with_help("Move this promoted property to the constructor, or remove the promotion."),
                 );
             }
         }
@@ -1718,12 +1854,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     if name.eq_ignore_ascii_case(STRICT_TYPES_DECLARE_DIRECTIVE) {
                         context.report(
-                            Issue::error("strict type declaration must be the first statement in the file")
-                                .with_annotation(Annotation::primary(declare.span()))
+                            Issue::error("Strict type declaration must be the first statement in the file.")
+                                .with_annotation(
+                                    Annotation::primary(declare.span())
+                                        .with_message("Strict type declaration found here."),
+                                )
                                 .with_annotations(before.iter().map(|span| {
                                     Annotation::secondary(*span)
-                                        .with_message("this statement should come after the strict type declaration")
-                                })),
+                                        .with_message("This statement appears before the strict type declaration.")
+                                }))
+                                .with_help("Move all statements before the strict type declaration to after it."),
                         );
                     }
                 }
@@ -1754,12 +1894,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
             if let Statement::Namespace(namespace) = statement {
                 context.report(
-                    Issue::error("namespace must be the first statement in the file")
-                        .with_annotation(Annotation::primary(namespace.span()))
+                    Issue::error("Namespace must be the first statement in the file.")
+                        .with_annotation(
+                            Annotation::primary(namespace.span()).with_message("Namespace statement found here."),
+                        )
                         .with_annotations(before.iter().map(|span| {
                             Annotation::secondary(*span)
-                                .with_message("this statement should come after the namespace statement")
-                        })),
+                                .with_message("This statement appears before the namespace declaration.")
+                        }))
+                        .with_help("Move all statements before the namespace declaration to after it."),
                 );
             }
         }
@@ -1780,25 +1923,37 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 NamespaceBody::Implicit(body) => {
                     if namespace.name.is_none() {
                         context.report(
-                            Issue::error("unbraced namespace must be named")
-                                .with_annotation(Annotation::primary(namespace.span().join(body.terminator.span())))
-                                .with_annotation(Annotation::secondary(body.span())),
+                            Issue::error("Unbraced namespace must be named.")
+                                .with_annotation(
+                                    Annotation::primary(namespace.span().join(body.terminator.span()))
+                                        .with_message("Unnamed unbraced namespace."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(body.span()).with_message("Namespace body without a name."),
+                                )
+                                .with_help("Add a name to the unbraced namespace."),
                         );
                     }
 
                     last_unbraced = Some((namespace_span, body.span()));
-
                     if let Some((last_namespace_span, last_body_span)) = last_braced {
                         context.report(
                             Issue::error(
-                                "cannot mix unbraced namespace declarations with braced namespace declarations",
+                                "Cannot mix unbraced namespace declarations with braced namespace declarations.",
                             )
-                            .with_annotation(Annotation::primary(namespace_span))
+                            .with_annotation(
+                                Annotation::primary(namespace_span)
+                                    .with_message("This is an unbraced namespace declaration."),
+                            )
                             .with_annotations([
-                                Annotation::primary(last_namespace_span),
-                                Annotation::secondary(last_body_span).with_message("braced namespace declaration"),
-                                Annotation::secondary(body.span()).with_message("unbraced namespace declaration"),
-                            ]),
+                                Annotation::primary(last_namespace_span)
+                                    .with_message("Previous braced namespace declaration."),
+                                Annotation::secondary(last_body_span).with_message("Braced namespace body."),
+                                Annotation::secondary(body.span()).with_message("Unbraced namespace body."),
+                            ])
+                            .with_help(
+                                "Use consistent namespace declaration styles: either all braced or all unbraced.",
+                            ),
                         );
                     }
                 }
@@ -1808,14 +1963,21 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if let Some((last_namespace_span, last_body_span)) = last_unbraced {
                         context.report(
                             Issue::error(
-                                "cannot mix braced namespace declarations with unbraced namespace declarations",
+                                "Cannot mix braced namespace declarations with unbraced namespace declarations.",
                             )
-                            .with_annotation(Annotation::primary(namespace_span))
+                            .with_annotation(
+                                Annotation::primary(namespace_span)
+                                    .with_message("This is a braced namespace declaration."),
+                            )
                             .with_annotations([
-                                Annotation::primary(last_namespace_span),
-                                Annotation::secondary(last_body_span).with_message("unbraced namespace declaration"),
-                                Annotation::secondary(body.span()).with_message("braced namespace declaration"),
-                            ]),
+                                Annotation::primary(last_namespace_span)
+                                    .with_message("Previous unbraced namespace declaration."),
+                                Annotation::secondary(last_body_span).with_message("Unbraced namespace body."),
+                                Annotation::secondary(body.span()).with_message("Braced namespace body."),
+                            ])
+                            .with_help(
+                                "Use consistent namespace declaration styles: either all braced or all unbraced.",
+                            ),
                         );
                     }
                 }
@@ -1825,9 +1987,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
     fn walk_in_short_opening_tag(&self, short_opening_tag: &ShortOpeningTag, context: &mut Context<'_>) {
         context.report(
-            Issue::error("short opening tag `<?` is no longer supported")
-                .with_annotation(Annotation::primary(short_opening_tag.span()))
-                .with_help("use the full opening tag `<?php` instead."),
+            Issue::error("Short opening tag `<?` is no longer supported.")
+                .with_annotation(
+                    Annotation::primary(short_opening_tag.span()).with_message("Short opening tag used here."),
+                )
+                .with_note("Short opening tags have been removed in modern PHP versions.")
+                .with_help("Replace the short opening tag with the full opening tag `<?php`."),
         );
     }
 
@@ -1844,8 +2009,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     if !matches!(value, Some(0) | Some(1)) {
                         context.report(
-                            Issue::error(format!("`{}` declare directive must be set to either `0` or `1`", name))
-                                .with_annotation(Annotation::primary(item.value.span())),
+                            Issue::error("The `strict_types` directive must be set to either `0` or `1`.")
+                                .with_annotation(
+                                    Annotation::primary(item.value.span())
+                                        .with_message("Invalid value assigned to the directive."),
+                                )
+                                .with_note("The `strict_types` directive controls strict type enforcement and only accepts `0` (disabled) or `1` (enabled).")
+                                .with_help("Set the directive value to either `0` or `1`."),
                         );
                     }
 
@@ -1854,39 +2024,59 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         let parent = context.get_ancestor(context.get_ancestors_len() - 2);
 
                         context.report(
-                            Issue::error("strict types declaration must be at the top level")
-                                .with_annotation(Annotation::primary(declare.span()))
+                            Issue::error("The `strict_types` directive must be declared at the top level.")
+                                .with_annotation(
+                                    Annotation::primary(declare.span()).with_message("Directive declared here."),
+                                )
                                 .with_annotation(
                                     Annotation::secondary(parent)
-                                        .with_message("this statement should come after the strict type declaration"),
-                                ),
+                                        .with_message("This statement should follow the `strict_types` directive."),
+                                )
+                                .with_help("Move the `strict_types` declaration to the top level of the file."),
                         );
                     }
                 }
                 TICKS_DECLARE_DIRECTIVE => {
                     if !matches!(item.value, Expression::Literal(Literal::Integer(_))) {
                         context.report(
-                            Issue::error(format!("`{}` declare directive must be set to a literal integer", name))
-                                .with_annotation(Annotation::primary(item.value.span())),
+                            Issue::error("The `ticks` directive must be set to a literal integer.")
+                                .with_annotation(
+                                    Annotation::primary(item.value.span())
+                                        .with_message("Invalid value assigned to the directive."),
+                                )
+                                .with_note("The `ticks` directive requires a literal integer value to specify the tick interval.")
+                                .with_help("Provide a literal integer value for the `ticks` directive."),
                         );
                     }
                 }
                 ENCODING_DECLARE_DIRECTIVE => {
                     if !matches!(item.value, Expression::Literal(Literal::String(_))) {
                         context.report(
-                            Issue::error(format!("`{}` declare directive must be set to a literal integer", name))
-                                .with_annotation(Annotation::primary(item.value.span())),
+                            Issue::error("The `encoding` declare directive must be set to a literal integer")
+                                .with_annotation(
+                                    Annotation::primary(item.value.span())
+                                        .with_message("Invalid value assigned to the directive."),
+                                )
+                                .with_note("The `encoding` directive requires a literal string value to specify the character encoding.")
+                                .with_help("Provide a literal string value for the `encoding` directive."),
                         );
                     }
                 }
                 _ => {
                     context.report(
                         Issue::error(format!(
-                            "`{}` is not a supported declare directive, supported directives are: `{}`",
+                            "`{}` is not a supported `declare` directive. Supported directives are: `{}`.",
                             name,
                             DECLARE_DIRECTIVES.join("`, `")
                         ))
-                        .with_annotation(Annotation::primary(item.name.span())),
+                        .with_annotation(
+                            Annotation::primary(item.name.span()).with_message("Unsupported directive used here."),
+                        )
+                        .with_note("Only specific directives are allowed in `declare` statements.")
+                        .with_help(format!(
+                            "Use one of the supported directives: `{}`.",
+                            DECLARE_DIRECTIVES.join("`, `")
+                        )),
                     );
                 }
             }
@@ -1899,12 +2089,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
             let parent = context.get_ancestor(context.get_ancestors_len() - 2);
 
             context.report(
-                Issue::error("namespace declaration must be at the top level")
-                    .with_annotation(Annotation::primary(namespace.span()))
+                Issue::error("Namespace declaration must be at the top level.")
+                    .with_annotation(
+                        Annotation::primary(namespace.span())
+                            .with_message("Namespace declared here."),
+                    )
                     .with_annotation(
                         Annotation::secondary(parent)
-                            .with_message("this statement should come after the namespace declaration"),
-                    ),
+                            .with_message("This statement should come after the namespace declaration."),
+                    )
+                    .with_note("Namespace declarations define the scope of the code and should always appear at the top level.")
+                    .with_help("Move the namespace declaration to the top level of the file."),
             );
         }
     }
@@ -1916,9 +2111,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let val = context.lookup_hint(&parenthesized_hint.hint);
 
                     context.report(
-                        Issue::error(format!("type `{}` cannot be parenthesized", val))
-                            .with_annotation(Annotation::primary(parenthesized_hint.hint.span()))
-                            .with_annotation(Annotation::secondary(parenthesized_hint.span())),
+                        Issue::error(format!("Type `{}` cannot be parenthesized.", val))
+                            .with_annotation(
+                                Annotation::primary(parenthesized_hint.hint.span())
+                                    .with_message("Invalid parenthesized type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(parenthesized_hint.span())
+                                    .with_message("Parenthesized type defined here."),
+                            )
+                            .with_note("Only union or intersection types can be enclosed in parentheses.")
+                            .with_help("Remove the parentheses around the type."),
                     );
                 }
             }
@@ -1927,9 +2130,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let val = context.lookup_hint(&nullable_hint.hint);
 
                     context.report(
-                        Issue::error(format!("type `{}` cannot be nullable", val))
-                            .with_annotation(Annotation::primary(nullable_hint.hint.span()))
-                            .with_annotation(Annotation::secondary(nullable_hint.span())),
+                        Issue::error(format!("Type `{}` cannot be nullable.", val))
+                            .with_annotation(
+                                Annotation::primary(nullable_hint.hint.span()).with_message("Invalid nullable type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(nullable_hint.span()).with_message("Nullable type defined here."),
+                            )
+                            .with_help("Replace the type or remove the nullable modifier."),
                     );
                 }
             }
@@ -1938,9 +2146,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let val = context.lookup_hint(&union_hint.left);
 
                     context.report(
-                        Issue::error(format!("type `{}` cannot be part of a union", val))
-                            .with_annotation(Annotation::primary(union_hint.left.span()))
-                            .with_annotation(Annotation::secondary(union_hint.pipe)),
+                        Issue::error(format!("Type `{}` cannot be part of a union.", val))
+                            .with_annotation(
+                                Annotation::primary(union_hint.left.span()).with_message("Invalid union type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(union_hint.pipe).with_message("Union operator `|` used here."),
+                            )
+                            .with_note("Intersection and standalone types cannot be part of a union.")
+                            .with_help("Replace the type or remove it from the union."),
                     );
                 }
 
@@ -1948,19 +2162,34 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let val = context.lookup_hint(&union_hint.right);
 
                     context.report(
-                        Issue::error(format!("type `{}` cannot be part of a union", val))
-                            .with_annotation(Annotation::primary(union_hint.right.span()))
-                            .with_annotation(Annotation::secondary(union_hint.pipe)),
+                        Issue::error(format!("Type `{}` cannot be part of a union.", val))
+                            .with_annotation(
+                                Annotation::primary(union_hint.right.span()).with_message("Invalid union type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(union_hint.pipe).with_message("Union operator `|` used here."),
+                            )
+                            .with_note("Intersection and standalone types cannot be part of a union.")
+                            .with_help("Replace the type or remove it from the union."),
                     );
                 }
             }
             Hint::Intersection(intersection_hint) => {
                 if !intersection_hint.left.is_intersectable() {
                     let val = context.lookup_hint(&intersection_hint.left);
+
                     context.report(
-                        Issue::error(format!("type `{}` cannot be part of an intersection", val))
-                            .with_annotation(Annotation::primary(intersection_hint.left.span()))
-                            .with_annotation(Annotation::secondary(intersection_hint.ampersand)),
+                        Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
+                            .with_annotation(
+                                Annotation::primary(intersection_hint.left.span())
+                                    .with_message("Invalid intersection type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(intersection_hint.ampersand)
+                                    .with_message("Intersection operator `&` used here."),
+                            )
+                            .with_note("Union and standalone types cannot be part of an intersection.")
+                            .with_help("Replace the type or remove it from the intersection."),
                     );
                 }
 
@@ -1968,9 +2197,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let val = context.lookup_hint(&intersection_hint.right);
 
                     context.report(
-                        Issue::error(format!("type `{}` cannot be part of an intersection", val))
-                            .with_annotation(Annotation::primary(intersection_hint.right.span()))
-                            .with_annotation(Annotation::secondary(intersection_hint.ampersand)),
+                        Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
+                            .with_annotation(
+                                Annotation::primary(intersection_hint.right.span())
+                                    .with_message("Invalid intersection type."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(intersection_hint.ampersand)
+                                    .with_message("Intersection operator `&` used here."),
+                            )
+                            .with_note("Union and standalone types cannot be part of an intersection.")
+                            .with_help("Replace the type or remove it from the intersection."),
                     );
                 }
             }
@@ -1981,13 +2218,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
     fn walk_in_try(&self, r#try: &Try, context: &mut Context<'_>) {
         if r#try.catch_clauses.is_empty() && r#try.finally_clause.is_none() {
             context.report(
-                Issue::error("cannot use `try` without a `catch` or `finally`")
-                    .with_annotations([
-                        Annotation::primary(r#try.r#try.span()),
-                        Annotation::secondary(r#try.block.span()),
-                    ])
-                    .with_note("each `try` must have at least one corresponding `catch` or `finally` clause.")
-                    .with_help("add either a `catch` or `finally` clause")
+                Issue::error("Cannot use `try` without a `catch` or `finally` clause.")
+                    .with_annotation(
+                        Annotation::primary(r#try.span()).with_message("`try` statement without `catch` or `finally`."),
+                    )
+                    .with_note("Each `try` block must have at least one corresponding `catch` or `finally` clause.")
+                    .with_help("Add either a `catch` or `finally` clause to the `try` block.")
                     .with_link("https://www.php.net/manual/en/language.exceptions.php"),
             );
         }
@@ -2011,11 +2247,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
             for parameter in method.parameters.parameters.iter() {
                 if parameter.is_promoted_property() {
                     context.report(
-                        Issue::error("promoted properties are not allowed in abstract constructors")
-                            .with_annotation(Annotation::primary(parameter.span()))
+                        Issue::error("Promoted properties are not allowed in abstract constructors.")
+                            .with_annotation(
+                                Annotation::primary(parameter.span()).with_message("Promoted property used here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(abstract_modifier.span())
-                                    .with_message("this constructor is abstract"),
+                                    .with_message("This constructor is abstract."),
+                            )
+                            .with_help(
+                                "Remove the promoted property from the constructor or make the constructor concrete.",
                             ),
                     );
                 }
@@ -2033,12 +2274,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 .any(|keyword| keyword.eq_ignore_ascii_case(class_name))
         {
             context.report(
-                Issue::error(format!("class `{}` name cannot be a reserved keyword", class_name))
-                    .with_annotation(Annotation::primary(class.name.span()))
+                Issue::error(format!("Class `{}` name cannot be a reserved keyword.", class_name))
+                    .with_annotation(
+                        Annotation::primary(class.name.span())
+                            .with_message(format!("Class name `{}` conflicts with a reserved keyword.", class_name)),
+                    )
                     .with_annotation(
                         Annotation::secondary(class.span())
-                            .with_message(format!("class `{}` defined here", class_fqcn)),
-                    ),
+                            .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                    )
+                    .with_help("Rename the class to avoid using reserved keywords."),
             );
         }
 
@@ -2048,61 +2293,71 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         for modifier in class.modifiers.iter() {
             match &modifier {
-                Modifier::Static(_) | Modifier::PrivateSet(_) => {
+                Modifier::Static(_) => {
                     context.report(
-                        Issue::error(format!(
-                            "class `{}` cannot have `{}` modifier",
-                            class_name,
-                            modifier.as_str(context.interner)
-                        ))
-                        .with_annotation(Annotation::primary(modifier.span()))
-                        .with_annotation(
-                            Annotation::secondary(class.span())
-                                .with_message(format!("class `{}` defined here", class_fqcn)),
-                        )
-                        .with_help("remove the `static` modifier"),
+                        Issue::error(format!("Class `{}` cannot have the `static` modifier.", class_name))
+                            .with_annotation(
+                                Annotation::primary(modifier.span()).with_message("`static` modifier applied here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class.span())
+                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                            )
+                            .with_help("Remove the `static` modifier."),
                     );
                 }
-                Modifier::Public(keyword) | Modifier::Protected(keyword) | Modifier::Private(keyword) => {
+                Modifier::Public(keyword)
+                | Modifier::Protected(keyword)
+                | Modifier::Private(keyword)
+                | Modifier::PrivateSet(keyword) => {
                     let visibility_name = context.interner.lookup(&keyword.value);
 
                     context.report(
                         Issue::error(format!(
-                            "class `{}` cannot have `{}` visibility modifier",
+                            "Class `{}` cannot have the `{}` visibility modifier.",
                             class_name, visibility_name
                         ))
-                        .with_annotation(Annotation::primary(keyword.span()))
+                        .with_annotation(
+                            Annotation::primary(keyword.span())
+                                .with_message(format!("`{}` modifier applied here.", visibility_name)),
+                        )
                         .with_annotation(
                             Annotation::secondary(class.span())
-                                .with_message(format!("class `{}` defined here", class_fqcn)),
+                                .with_message(format!("Class `{}` declared here.", class_fqcn)),
                         )
-                        .with_help(format!("remove the `{}` modifier", visibility_name)),
+                        .with_help(format!("Remove the `{}` modifier.", visibility_name)),
                     );
                 }
                 Modifier::Final(keyword) => {
                     if let Some(span) = last_abstract {
                         context.report(
-                            Issue::error(format!("abstract class `{}` cannot have `final` modifier", class_name))
-                                .with_annotation(Annotation::primary(keyword.span()))
+                            Issue::error(format!("Abstract class `{}` cannot have the `final` modifier.", class_name))
+                                .with_annotation(
+                                    Annotation::primary(keyword.span()).with_message("`final` modifier applied here."),
+                                )
                                 .with_annotations([
-                                    Annotation::secondary(span).with_message("previous `abstract` modifier"),
+                                    Annotation::secondary(span)
+                                        .with_message("Previous `abstract` modifier applied here."),
                                     Annotation::secondary(class.span())
-                                        .with_message(format!("class `{}` defined here", class_fqcn)),
+                                        .with_message(format!("Class `{}` declared here.", class_fqcn)),
                                 ])
-                                .with_help("remove the `final` modifier"),
+                                .with_help("Remove the `final` modifier from the abstract class."),
                         );
                     }
 
                     if let Some(span) = last_final {
                         context.report(
-                            Issue::error(format!("class `{}` cannot have multiple `final` modifiers", class_name))
-                                .with_annotation(Annotation::primary(keyword.span()))
+                            Issue::error(format!("Class `{}` cannot have multiple `final` modifiers.", class_name))
+                                .with_annotation(
+                                    Annotation::primary(keyword.span())
+                                        .with_message("Duplicate `final` modifier applied here."),
+                                )
                                 .with_annotations([
-                                    Annotation::secondary(span).with_message("previous `final` modifier"),
+                                    Annotation::secondary(span).with_message("Previous `final` modifier applied here."),
                                     Annotation::secondary(class.span())
-                                        .with_message(format!("class `{}` defined here", class_fqcn)),
+                                        .with_message(format!("Class `{}` declared here.", class_fqcn)),
                                 ])
-                                .with_help("remove the duplicate `final` modifier"),
+                                .with_help("Remove the duplicate `final` modifier."),
                         );
                     }
 
@@ -2111,27 +2366,34 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 Modifier::Abstract(keyword) => {
                     if let Some(span) = last_final {
                         context.report(
-                            Issue::error(format!("final class `{}` cannot have `abstract` modifier", class_name))
-                                .with_annotation(Annotation::primary(keyword.span()))
+                            Issue::error(format!("Final class `{}` cannot have the `abstract` modifier.", class_name))
+                                .with_annotation(
+                                    Annotation::primary(keyword.span())
+                                        .with_message("`abstract` modifier applied here."),
+                                )
                                 .with_annotations([
-                                    Annotation::secondary(span).with_message("previous `final` modifier"),
+                                    Annotation::secondary(span).with_message("Previous `final` modifier applied here."),
                                     Annotation::secondary(class.span())
-                                        .with_message(format!("class `{}` defined here", class_fqcn)),
+                                        .with_message(format!("Class `{}` declared here.", class_fqcn)),
                                 ])
-                                .with_help("remove the `abstract` modifier"),
+                                .with_help("Remove the `abstract` modifier from the final class."),
                         );
                     }
 
                     if let Some(span) = last_abstract {
                         context.report(
-                            Issue::error(format!("class `{}` cannot have multiple `abstract` modifiers", class_name))
-                                .with_annotation(Annotation::primary(keyword.span()))
+                            Issue::error(format!("Class `{}` cannot have multiple `abstract` modifiers.", class_name))
+                                .with_annotation(
+                                    Annotation::primary(keyword.span())
+                                        .with_message("Duplicate `abstract` modifier applied here."),
+                                )
                                 .with_annotations([
-                                    Annotation::secondary(span).with_message("previous `abstract` modifier"),
+                                    Annotation::secondary(span)
+                                        .with_message("Previous `abstract` modifier applied here."),
                                     Annotation::secondary(class.span())
-                                        .with_message(format!("class `{}` defined here", class_fqcn)),
+                                        .with_message(format!("Class `{}` declared here.", class_fqcn)),
                                 ])
-                                .with_help("remove the duplicate `abstract` modifier"),
+                                .with_help("Remove the duplicate `abstract` modifier."),
                         );
                     }
 
@@ -2140,14 +2402,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 Modifier::Readonly(keyword) => {
                     if let Some(span) = last_readonly {
                         context.report(
-                            Issue::error(format!("class `{}` cannot have multiple `readonly` modifiers", class_name))
-                                .with_annotation(Annotation::primary(keyword.span()))
+                            Issue::error(format!("Class `{}` cannot have multiple `readonly` modifiers.", class_name))
+                                .with_annotation(
+                                    Annotation::primary(keyword.span())
+                                        .with_message("Duplicate `readonly` modifier applied here."),
+                                )
                                 .with_annotations([
-                                    Annotation::secondary(span).with_message("previous `readonly` modifier"),
+                                    Annotation::secondary(span)
+                                        .with_message("Previous `readonly` modifier applied here."),
                                     Annotation::secondary(class.span())
-                                        .with_message(format!("class `{}` defined here", class_fqcn)),
+                                        .with_message(format!("Class `{}` declared here.", class_fqcn)),
                                 ])
-                                .with_help("remove the duplicate `readonly` modifier"),
+                                .with_help("Remove the duplicate `readonly` modifier."),
                         );
                     }
 
@@ -2170,12 +2436,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &memeber {
                 ClassLikeMember::EnumCase(case) => {
                     context.report(
-                        Issue::error(format!("class `{}` cannot contain enum cases", class_name))
-                            .with_annotation(Annotation::primary(case.span()))
+                        Issue::error(format!("Class `{}` cannot contain enum cases.", class_name))
+                            .with_annotation(Annotation::primary(case.span()).with_message("Enum case found in class."))
                             .with_annotation(
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("class `{}` defined here", class_fqcn)),
-                            ),
+                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                            )
+                            .with_help("Remove the enum cases from the class definition."),
                     );
                 }
                 ClassLikeMember::Method(method) => {
@@ -2184,16 +2451,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if !class.modifiers.contains_abstract() && method.modifiers.contains_abstract() {
                         context.report(
                             Issue::error(format!(
-                                "class `{}` has an abstract method `{}`, and therefore must be declared abstract",
+                                "Class `{}` contains an abstract method `{}`, so the class must be declared abstract.",
                                 class_name, method_name
                             ))
-                            .with_annotation(Annotation::primary(class.name.span()))
                             .with_annotation(
-                                Annotation::secondary(method.span()).with_message(format!(
-                                    "abstract method `{}::{}` is defined here",
-                                    class_name, method_name
-                                )),
-                            ),
+                                Annotation::primary(class.name.span())
+                                    .with_message("Class is missing the `abstract` modifier."),
+                            )
+                            .with_annotation(Annotation::secondary(method.span()).with_message(format!(
+                                "Abstract method `{}::{}` declared here.",
+                                class_name, method_name
+                            )))
+                            .with_help("Add the `abstract` modifier to the class."),
                         );
                     }
 
@@ -2229,12 +2498,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 .any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
         {
             context.report(
-                Issue::error(format!("interface `{}` name cannot be a reserved keyword", interface_name))
-                    .with_annotation(Annotation::primary(interface.name.span()))
+                Issue::error(format!("Interface `{}` name cannot be a reserved keyword.", interface_name))
+                    .with_annotation(
+                        Annotation::primary(interface.name.span())
+                            .with_message(format!("Interface `{}` declared here.", interface_name)),
+                    )
                     .with_annotation(
                         Annotation::secondary(interface.span())
-                            .with_message(format!("interface `{}` defined here", interface_fqcn)),
-                    ),
+                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                    )
+                    .with_help("Rename the interface to avoid using a reserved keyword."),
             );
         }
 
@@ -2263,22 +2536,27 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &memeber {
                 ClassLikeMember::TraitUse(trait_use) => {
                     context.report(
-                        Issue::error(format!("interface `{}` cannot use traits", interface_name))
-                            .with_annotation(Annotation::primary(trait_use.span()))
+                        Issue::error(format!("Interface `{}` cannot use traits.", interface_name))
+                            .with_annotation(Annotation::primary(trait_use.span()).with_message("Trait use statement."))
                             .with_annotation(
                                 Annotation::secondary(interface.span())
-                                    .with_message(format!("interface `{}` defined here", interface_fqcn)),
-                            ),
+                                    .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                            )
+                            .with_help("Remove the trait use statement."),
                     );
                 }
                 ClassLikeMember::EnumCase(case) => {
                     context.report(
-                        Issue::error(format!("interface `{}` cannot contain enum cases", interface_name))
-                            .with_annotation(Annotation::primary(case.span()))
+                        Issue::error(format!("Interface `{}` cannot contain enum cases.", interface_name))
+                            .with_annotation(
+                                Annotation::primary(case.span())
+                                    .with_message("Enum case declared here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(interface.span())
-                                    .with_message(format!("interface `{}` defined here", interface_fqcn)),
-                            ),
+                                    .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                            )
+                            .with_note("Consider moving the enum case to an enum or class if it represents state or constants."),
                     );
                 }
                 ClassLikeMember::Method(method) => {
@@ -2297,47 +2575,62 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                         context.report(
                             Issue::error(format!(
-                                "interface method `{}::{}` cannot have `{}` modifier",
+                                "Interface method `{}::{}` cannot have `{}` modifier.",
                                 interface_name, method_name, visibility_name
                             ))
-                            .with_annotation(Annotation::primary(visibility.span()))
+                            .with_annotation(
+                                Annotation::primary(visibility.span())
+                                    .with_message(format!("`{}` modifier applied here.", visibility_name)),
+                            )
                             .with_annotation(
                                 Annotation::secondary(interface.span())
-                                    .with_message(format!("`{}` defined here", interface_fqcn)),
+                                    .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
                             )
-                            .with_help(format!("remove the `{}` modifier", visibility_name)),
+                            .with_help(format!(
+                                "Remove the `{}` modifier from the method definition as methods in interfaces must always be public.",
+                                visibility_name
+                            ))
+                            .with_note("Interface methods are always public and cannot have non-public visibility modifiers."),
                         );
                     }
 
                     if let MethodBody::Concrete(body) = &method.body {
                         context.report(
                             Issue::error(format!(
-                                "interface method `{}::{}` cannot have a body",
+                                "Interface method `{}::{}` cannot have a body.",
                                 interface_name, method_name
                             ))
                             .with_annotations([
-                                Annotation::primary(body.span()),
-                                Annotation::primary(method.name.span()),
+                                Annotation::primary(body.span()).with_message("Method body declared here."),
+                                Annotation::primary(method.name.span()).with_message("Method name defined here."),
                                 Annotation::secondary(interface.span())
-                                    .with_message(format!("`interface {}` defined here", interface_fqcn)),
+                                    .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
                             ])
-                            .with_help("replace the method body with a `;`"),
+                            .with_help("Replace the method body with a `;` to indicate it is abstract.")
+                            .with_note("Methods in interfaces cannot have implementations and must be abstract."),
                         );
                     }
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                         context.report(
                             Issue::error(format!(
-                                "interface method `{}::{}` must not be abstract",
+                                "Interface method `{}::{}` must not be abstract.",
                                 interface_name, method_name
                             ))
-                            .with_annotation(Annotation::primary(abstract_modifier.span()))
+                            .with_annotation(
+                                Annotation::primary(abstract_modifier.span())
+                                    .with_message("Abstract modifier applied here."),
+                            )
                             .with_annotations([
                                 Annotation::secondary(interface.span())
-                                    .with_message(format!("interface `{}` is defined here", interface_fqcn)),
+                                    .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
                                 Annotation::secondary(method.span())
-                                    .with_message(format!("method `{}::{}` defined here", interface_name, method_name)),
-                            ]),
+                                    .with_message(format!("Method `{}::{}` declared here.", interface_name, method_name)),
+                            ])
+                            .with_help("Remove the `abstract` modifier as all interface methods are implicitly abstract.")
+                            .with_note(
+                                "Adding the `abstract` modifier to an interface method is redundant because all interface methods are implicitly abstract.",
+                            ),
                         );
                     }
 
@@ -2357,14 +2650,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         Property::Plain(plain_property) => {
                             context.report(
                                 Issue::error(format!(
-                                    "interface `{}` cannot have non-hooked properties",
+                                    "Interface `{}` cannot have non-hooked properties.",
                                     interface_name
                                 ))
-                                .with_annotation(Annotation::primary(plain_property.span()))
+                                .with_annotation(
+                                    Annotation::primary(plain_property.span())
+                                        .with_message("Non-hooked property declared here."),
+                                )
                                 .with_annotation(
                                     Annotation::secondary(interface.span())
-                                        .with_message(format!("`{}` defined here", interface_fqcn)),
-                                ),
+                                        .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                )
+                                .with_note("Interfaces are intended to define behavior and cannot include concrete property declarations.")
+                                .with_help("Remove the non-hooked property from the interface or convert it into a hooked property.")
                             );
                         }
                         Property::Hooked(hooked_property) => {
@@ -2393,79 +2691,107 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                                 context.report(
                                     Issue::error(format!(
-                                        "interface virtual property `{}::{}` must not specify asymmetric visibility",
+                                        "Interface virtual property `{}::{}` must not specify asymmetric visibility.",
                                         interface_name, property_name,
                                     ))
-                                    .with_annotation(Annotation::primary(visibility.span()))
+                                    .with_annotation(
+                                        Annotation::primary(visibility.span())
+                                            .with_message(format!("Asymmetric visibility modifier `{}` applied here.", visibility_name)),
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("`{}` defined here", interface_fqcn)),
+                                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
                                     )
-                                    .with_help(format!("remove the `{}` modifier", visibility_name)),
+                                    .with_help(format!(
+                                        "Remove the `{}` modifier from the property to make it compatible with interface constraints.",
+                                        visibility_name
+                                    )),
                                 );
                             }
 
                             for visibility in non_public_read_visibilities {
                                 let visibility_name = visibility.as_str(context.interner);
+
                                 context.report(
                                     Issue::error(format!(
-                                        "interface virtual property `{}::{}` cannot have `{}` modifier",
+                                        "Interface virtual property `{}::{}` cannot have `{}` modifier.",
                                         interface_name, property_name, visibility_name,
                                     ))
-                                    .with_annotation(Annotation::primary(visibility.span()))
+                                    .with_annotation(Annotation::primary(visibility.span()).with_message(format!(
+                                        "Visibility modifier `{}` applied here.",
+                                        visibility_name
+                                    )))
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("`{}` defined here", interface_fqcn)),
+                                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
                                     )
-                                    .with_help(format!("remove the `{}` modifier", visibility_name)),
+                                    .with_help(format!(
+                                        "Remove the `{}` modifier from the property to meet interface requirements.",
+                                        visibility_name
+                                    )),
                                 );
                             }
 
                             if !found_public {
                                 context.report(
                                     Issue::error(format!(
-                                        "interface property `{}::{}` must be declared public",
+                                        "Interface virtual property `{}::{}` must be declared public.",
                                         interface_name, property_name
                                     ))
-                                    .with_annotation(Annotation::primary(hooked_property.item.variable().span()))
+                                    .with_annotation(
+                                        Annotation::primary(hooked_property.span())
+                                            .with_message("Property defined here."),
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("`{}` defined here", interface_fqcn)),
+                                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
                                     )
-                                    .with_help("add the `public` visibility modifier to the property"),
+                                    .with_help("Add the `public` visibility modifier to the property."),
                                 );
                             }
 
                             if let Some(abstract_modifier) = hooked_property.modifiers.get_abstract() {
                                 context.report(
-                                    Issue::error(format!(
-                                        "interface property `{}::{}` cannot be abstract",
-                                        interface_name, property_name
-                                    ))
-                                    .with_annotation(Annotation::primary(abstract_modifier.span()))
-                                    .with_annotations([
-                                        Annotation::secondary(hooked_property.item.variable().span()),
-                                        Annotation::secondary(interface.span()).with_message(format!("`{}` defined here", interface_fqcn)),
-                                    ])
-                                    .with_note(
-                                        "all interface properties are implicitly abstract, and cannot be explicitly abstract.",
-                                    ),
-                                );
+                                        Issue::error(format!(
+                                            "Interface virtual property `{}::{}` cannot be abstract.",
+                                            interface_name, property_name
+                                        ))
+                                        .with_annotation(
+                                            Annotation::primary(abstract_modifier.span())
+                                                .with_message("Abstract modifier applied here."),
+                                        )
+                                        .with_annotations([
+                                            Annotation::secondary(hooked_property.span())
+                                                .with_message("Property defined here."),
+                                            Annotation::secondary(interface.span())
+                                                .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                        ])
+                                        .with_note(
+                                            "All interface virtual properties are implicitly abstract and cannot be explicitly declared as abstract.",
+                                        ),
+                                    );
                             }
 
                             if let PropertyItem::Concrete(item) = &hooked_property.item {
                                 context.report(
                                     Issue::error(format!(
-                                        "interface hooked property `{}::{}` cannot have a default value",
+                                        "Interface virtual property `{}::{}` cannot have a default value.",
                                         interface_name, property_name
                                     ))
-                                    .with_annotation(Annotation::primary(item.span()))
+                                    .with_annotation(
+                                        Annotation::primary(item.equals.join(item.value.span()))
+                                            .with_message("Default value assigned here."),
+                                    )
+                                    .with_annotation(
+                                        Annotation::secondary(hooked_property.span())
+                                                .with_message("Property defined here.")
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("`{}` defined here", interface_fqcn)),
+                                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
                                     )
                                     .with_note(
-                                        "interface properties are virtual properties which cannot contain a default value",
+                                        "Interface properties are virtual properties and cannot contain a default value.",
                                     ),
                                 );
                             }
@@ -2474,16 +2800,22 @@ impl Walker<Context<'_>> for SemanticsWalker {
                                 if let PropertyHookBody::Concrete(property_hook_concrete_body) = &hook.body {
                                     context.report(
                                         Issue::error(format!(
-                                            "interface hooked property `{}::{}` must be abstract",
+                                            "Interface virtual property `{}::{}` must be abstract.",
                                             interface_name, property_name
                                         ))
-                                        .with_annotation(Annotation::primary(property_hook_concrete_body.span()))
-                                        .with_annotations([
-                                            Annotation::primary(hooked_property.item.variable().span()),
+                                        .with_annotation(
+                                            Annotation::primary(property_hook_concrete_body.span())
+                                                .with_message("Body defined here."),
+                                        )
+                                        .with_annotation(
+                                            Annotation::secondary(hooked_property.item.variable().span())
+                                                .with_message("Property declared here."),
+                                        )
+                                        .with_annotation(
                                             Annotation::secondary(interface.span())
-                                                .with_message(format!("`{}` defined here", interface_fqcn)),
-                                        ])
-                                        .with_note("abstract hooked properties do not contain a body"),
+                                                .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                        )
+                                        .with_note("Abstract hooked properties must not contain a body."),
                                     );
                                 }
                             }
@@ -2513,15 +2845,20 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                         context.report(
                             Issue::error(format!(
-                                "interface constant cannot have `{}` visibility modifier",
+                                "Interface constant cannot have `{}` visibility modifier.",
                                 visibility_name,
                             ))
-                            .with_annotation(Annotation::primary(visibility.span()))
                             .with_annotation(
-                                Annotation::secondary(interface.span())
-                                    .with_message(format!("`{}` defined here", interface_fqcn)),
+                                Annotation::primary(visibility.span())
+                                    .with_message(format!("Visibility modifier `{}` applied here.", visibility_name)),
                             )
-                            .with_help(format!("remove the `{}` modifier", visibility_name)),
+                            .with_help(format!(
+                                "Remove the `{}` modifier from the constant to comply with interface requirements.",
+                                visibility_name
+                            ))
+                            .with_note(
+                                "Interface constants are implicitly public and cannot have a non-public visibility modifier.",
+                            ),
                         );
                     }
 
@@ -2548,12 +2885,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 .any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
         {
             context.report(
-                Issue::error(format!("trait `{}` name cannot be a reserved keyword", class_like_name))
-                    .with_annotation(Annotation::primary(r#trait.name.span()))
+                Issue::error(format!("Trait `{}` name cannot be a reserved keyword.", class_like_name))
+                    .with_annotation(
+                        Annotation::primary(r#trait.name.span())
+                            .with_message(format!("Trait `{}` declared here.", class_like_name)),
+                    )
                     .with_annotation(
                         Annotation::secondary(r#trait.span())
-                            .with_message(format!("trait `{}` defined here", class_like_fqcn)),
-                    ),
+                            .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                    )
+                    .with_help("Rename the trait to a non-reserved keyword."),
             );
         }
 
@@ -2563,12 +2904,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &member {
                 ClassLikeMember::EnumCase(case) => {
                     context.report(
-                        Issue::error(format!("trait `{}` cannot contain enum cases", class_like_name))
-                            .with_annotation(Annotation::primary(case.span()))
+                        Issue::error(format!("Trait `{}` cannot contain enum cases.", class_like_name))
+                            .with_annotation(Annotation::primary(case.span()).with_message("Enum case defined here."))
                             .with_annotation(
                                 Annotation::secondary(r#trait.span())
-                                    .with_message(format!("trait `{}` defined here", class_like_fqcn)),
-                            ),
+                                    .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                            )
+                            .with_help("Remove the enum case from the trait."),
                     );
                 }
                 ClassLikeMember::Method(method) => {
@@ -2620,11 +2962,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
         {
             context.report(
-                Issue::error(format!("enum `{}` name cannot be a reserved keyword", enum_name))
-                    .with_annotation(Annotation::primary(r#enum.name.span()))
+                Issue::error(format!("Enum `{}` name cannot be a reserved keyword.", enum_name))
                     .with_annotation(
-                        Annotation::secondary(r#enum.span()).with_message(format!("enum `{}` defined here", enum_fqcn)),
-                    ),
+                        Annotation::primary(r#enum.name.span())
+                            .with_message(format!("Reserved keyword used as the enum name `{}`.", enum_name)),
+                    )
+                    .with_annotation(
+                        Annotation::secondary(r#enum.span())
+                            .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                    )
+                    .with_help(format!("Rename the enum `{}` to a non-reserved keyword.", enum_name)),
             );
         }
 
@@ -2634,14 +2981,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                 context.report(
                     Issue::error(format!(
-                        "enum `{}` backing type must be either `string` or `int`, found `{}`.",
+                        "Enum `{}` backing type must be either `string` or `int`, but found `{}`.",
                         enum_name, key
                     ))
-                    .with_annotation(Annotation::primary(hint.span()))
+                    .with_annotation(
+                        Annotation::primary(hint.span())
+                            .with_message(format!("Invalid backing type `{}` specified here.", key)),
+                    )
                     .with_annotation(
                         Annotation::secondary(r#enum.name.span())
-                            .with_message(format!("enum `{}` defined here", enum_fqcn)),
-                    ),
+                            .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                    )
+                    .with_help("Change the backing type to either `string` or `int`."),
                 );
             }
         }
@@ -2652,8 +3003,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         self.process_members(&r#enum.members, r#enum.span(), enum_name, enum_fqcn, "enum", context);
 
-        for memeber in r#enum.members.iter() {
-            match &memeber {
+        for member in r#enum.members.iter() {
+            match &member {
                 ClassLikeMember::EnumCase(case) => {
                     let item_name_id = case.item.name().value;
                     let item_name = context.interner.lookup(&item_name_id);
@@ -2663,14 +3014,21 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             if enum_is_backed {
                                 context.report(
                                     Issue::error(format!(
-                                        "case `{}` of backed enum `{}` must have a value",
+                                        "Case `{}` of backed enum `{}` must have a value.",
                                         item_name, enum_name
                                     ))
-                                    .with_annotation(Annotation::primary(case.span()))
+                                    .with_annotation(
+                                        Annotation::primary(case.span())
+                                            .with_message(format!("Case `{}` defined here.", item_name)),
+                                    )
                                     .with_annotation(
                                         Annotation::secondary(r#enum.span())
-                                            .with_message(format!("enum `{}` defined here", enum_fqcn)),
-                                    ),
+                                            .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                    )
+                                    .with_help(format!(
+                                        "Add a value to case `{}` or remove the backing from the enum `{}`.",
+                                        item_name, enum_name
+                                    )),
                                 );
                             }
                         }
@@ -2678,16 +3036,25 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             if !enum_is_backed {
                                 context.report(
                                     Issue::error(format!(
-                                        "case `{}` of unbacked enum `{}` must not have a value",
+                                        "Case `{}` of unbacked enum `{}` must not have a value.",
                                         item_name, enum_name
                                     ))
-                                    .with_annotation(Annotation::primary(item.equals.span().join(item.value.span())))
+                                    .with_annotation(
+                                        Annotation::primary(item.equals.span().join(item.value.span()))
+                                            .with_message("Value assigned to the enum case."),
+                                    )
                                     .with_annotations([
-                                        Annotation::secondary(item.name.span())
-                                            .with_message(format!("case `{}::{}` defined here", enum_name, item_name)),
+                                        Annotation::secondary(item.name.span()).with_message(format!(
+                                            "Case `{}::{}` declared here.",
+                                            enum_name, item_name
+                                        )),
                                         Annotation::secondary(r#enum.span())
-                                            .with_message(format!("enum `{}` defined here", enum_fqcn)),
-                                    ]),
+                                            .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                    ])
+                                    .with_help(format!(
+                                        "Remove the value from case `{}` or make the enum `{}` backed.",
+                                        item_name, enum_name
+                                    )),
                                 );
                             }
                         }
@@ -2702,24 +3069,41 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     {
                         context.report(
                             Issue::error(format!(
-                                "enum `{}` cannot contain magic method `{}`",
+                                "Enum `{}` cannot contain magic method `{}`.",
                                 enum_name, magic_method
                             ))
-                            .with_annotation(Annotation::primary(method.name.span))
-                            .with_annotation(Annotation::secondary(r#enum.name.span())),
+                            .with_annotation(
+                                Annotation::primary(method.name.span)
+                                    .with_message(format!("Magic method `{}` declared here.", method_name)),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(r#enum.name.span())
+                                    .with_message(format!("Enum `{}` declared here.", enum_fqcn)),
+                            )
+                            .with_help(format!(
+                                "Remove the magic method `{}` from the enum `{}`.",
+                                method_name, enum_name
+                            )),
                         );
                     }
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                         context.report(
-                            Issue::error(format!("enum method `{}::{}` must not be abstract", enum_name, method_name))
-                                .with_annotation(Annotation::primary(abstract_modifier.span()))
+                            Issue::error(format!("Enum method `{}::{}` must not be abstract.", enum_name, method_name))
+                                .with_annotation(
+                                    Annotation::primary(abstract_modifier.span())
+                                        .with_message("Abstract modifier found here."),
+                                )
                                 .with_annotations([
                                     Annotation::secondary(r#enum.span())
-                                        .with_message(format!("enum `{}` is defined here", enum_fqcn)),
+                                        .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
                                     Annotation::secondary(method.span())
-                                        .with_message(format!("method `{}::{}` defined here", enum_name, method_name)),
-                                ]),
+                                        .with_message(format!("Method `{}::{}` defined here.", enum_name, method_name)),
+                                ])
+                                .with_help(format!(
+                                    "Remove the abstract modifier from the method `{}` in enum `{}`.",
+                                    method_name, enum_name
+                                )),
                         );
                     }
 
@@ -2736,9 +3120,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 ClassLikeMember::Property(property) => {
                     context.report(
-                        Issue::error(format!("enum `{}` cannot have properties", enum_name))
-                            .with_annotation(Annotation::primary(property.span()))
-                            .with_annotation(Annotation::secondary(r#enum.span())),
+                        Issue::error(format!("Enum `{}` cannot have properties.", enum_name))
+                            .with_annotation(
+                                Annotation::primary(property.span()).with_message("Property defined here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(r#enum.span())
+                                    .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                            )
+                            .with_help(format!("Remove the property from the enum `{}`.", enum_name)),
                     );
 
                     self.process_property(property, r#enum.span(), "enum", enum_name, enum_fqcn, false, context);
@@ -2774,31 +3164,39 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     context.report(
                         Issue::error(format!(
-                            "class `{}` cannot have `{}` modifier",
+                            "Anonymous class `{}` cannot have the `{}` modifier.",
                             ANONYMOUS_CLASS_NAME, modifier_name
                         ))
-                        .with_annotation(Annotation::primary(modifier.span()))
+                        .with_annotation(
+                            Annotation::primary(modifier.span())
+                                .with_message(format!("`{}` modifier applied here.", modifier_name)),
+                        )
                         .with_annotation(
                             Annotation::secondary(anonymous_class.span())
-                                .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
+                                .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
                         )
-                        .with_help(format!("help: remove the `{}` modifier", modifier_name)),
+                        .with_help(format!("Remove the `{}` modifier from the class definition.", modifier_name)),
                     );
                 }
                 Modifier::Final(keyword) => {
                     if let Some(span) = last_final {
                         context.report(
                             Issue::error(format!(
-                                "class `{}` cannot have multiple `final` modifiers",
+                                "Anonymous class `{}` cannot have multiple `final` modifiers.",
                                 ANONYMOUS_CLASS_NAME
                             ))
-                            .with_annotation(Annotation::primary(keyword.span()))
-                            .with_annotation(Annotation::secondary(span).with_message("previous `final` modifier"))
+                            .with_annotation(
+                                Annotation::primary(keyword.span())
+                                    .with_message("Duplicate `final` modifier applied here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(span).with_message("Previous `final` modifier applied here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
+                                    .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
                             )
-                            .with_help("help: remove the duplicate `final` modifier"),
+                            .with_help("Remove the duplicate `final` modifier."),
                         );
                     }
 
@@ -2808,16 +3206,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if let Some(span) = last_readonly {
                         context.report(
                             Issue::error(format!(
-                                "class `{}` cannot have multiple `readonly` modifiers",
+                                "Anonymous class `{}` cannot have multiple `readonly` modifiers.",
                                 ANONYMOUS_CLASS_NAME
                             ))
                             .with_annotations([
-                                Annotation::primary(keyword.span),
-                                Annotation::secondary(span).with_message("previous `readonly` modifier"),
+                                Annotation::primary(keyword.span)
+                                    .with_message("Duplicate `readonly` modifier applied here."),
+                                Annotation::secondary(span).with_message("Previous `readonly` modifier applied here."),
                                 Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
+                                    .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
                             ])
-                            .with_help("help: remove the duplicate `readonly` modifier"),
+                            .with_help("Remove the duplicate `readonly` modifier."),
                         );
                     }
 
@@ -2863,12 +3262,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &member {
                 ClassLikeMember::EnumCase(case) => {
                     context.report(
-                        Issue::error(format!("class `{}` cannot contain enum cases", ANONYMOUS_CLASS_NAME))
+                        Issue::error(format!("Anonymous class `{}` cannot contain enum cases.", ANONYMOUS_CLASS_NAME))
                             .with_annotations([
-                                Annotation::primary(case.span()),
+                                Annotation::primary(case.span()).with_message("Enum case defined here."),
                                 Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
-                            ]),
+                                    .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                            ])
+                            .with_help("Remove the enum case from the anonymous class definition."),
                     );
                 }
                 ClassLikeMember::Method(method) => {
@@ -2876,14 +3276,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                         context.report(
-                            Issue::error(format!("anonymous class method `{}` must not be abstract", method_name))
-                                .with_annotations([
-                                    Annotation::primary(abstract_modifier.span()),
-                                    Annotation::secondary(anonymous_class.span())
-                                        .with_message(format!("class `{}` defined here", ANONYMOUS_CLASS_NAME)),
-                                    Annotation::secondary(method.span())
-                                        .with_message(format!("method `{}` defined here", method_name)),
-                                ]),
+                            Issue::error(format!(
+                                "Method `{}` in anonymous class `{}` must not be abstract.",
+                                method_name, ANONYMOUS_CLASS_NAME
+                            ))
+                            .with_annotations([
+                                Annotation::primary(abstract_modifier.span())
+                                    .with_message("Abstract modifier applied here."),
+                                Annotation::secondary(anonymous_class.span())
+                                    .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                Annotation::secondary(method.span())
+                                    .with_message(format!("Method `{}` defined here.", method_name)),
+                            ])
+                            .with_help("Remove the `abstract` modifier from the method."),
                         );
                     }
 
@@ -2944,15 +3349,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if let Some(val) = &r#return.value {
                         context.report(
                             Issue::error(format!(
-                                "function `{}` with return type of `void` must not return a value",
+                                "Function `{}` with return type `void` must not return a value.",
                                 name
                             ))
-                            .with_annotation(Annotation::primary(val.span()))
+                            .with_annotation(Annotation::primary(val.span()).with_message("Return value found here."))
                             .with_annotation(
                                 Annotation::secondary(function.span())
-                                    .with_message(format!("function `{}` defined here", fqfn)),
+                                    .with_message(format!("Function `{}` defined here.", fqfn)),
                             )
-                            .with_help("help: remove the return type hint, or remove the return value"),
+                            .with_help("Remove the return type hint or the return value."),
                         );
                     }
                 }
@@ -2960,13 +3365,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
             Hint::Never(_) => {
                 for r#return in returns {
                     context.report(
-                        Issue::error(format!("function `{}` with return type of `never` must not return", name))
-                            .with_annotation(Annotation::primary(r#return.span()))
+                        Issue::error(format!("Function `{}` with return type `never` must not return.", name))
+                            .with_annotation(
+                                Annotation::primary(r#return.span()).with_message("Return statement found here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(function.span())
-                                    .with_message(format!("function `{}` defined here", fqfn)),
+                                    .with_message(format!("Function `{}` defined here.", fqfn)),
                             )
-                            .with_help("remove the return type hint, or remove the return statement"),
+                            .with_help("Remove the return type hint or the return statement."),
                     );
                 }
             }
@@ -2974,14 +3381,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 for r#return in returns {
                     if r#return.value.is_none() {
                         context.report(
-                            Issue::error(format!("function `{}` with return type must return a value", name))
-                                .with_annotation(Annotation::primary(r#return.span()))
+                            Issue::error(format!("Function `{}` with a return type must return a value.", name))
+                                .with_annotation(
+                                    Annotation::primary(r#return.span())
+                                        .with_message("Empty return statement found here."),
+                                )
                                 .with_annotation(
                                     Annotation::secondary(function.span())
-                                        .with_message(format!("function `{}` defined here", fqfn)),
+                                        .with_message(format!("Function `{}` defined here.", fqfn)),
                                 )
-                                .with_note("did you mean `return null;` instead of `return;`?")
-                                .with_help("add a return value to the statement"),
+                                .with_note("Did you mean `return null;` instead of `return;`?")
+                                .with_help("Add a return value to the statement."),
                         );
                     }
                 }
@@ -2992,7 +3402,6 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
     fn walk_in_attribute(&self, attribute: &Attribute, context: &mut Context<'_>) {
         let name = context.interner.lookup(&attribute.name.value());
-
         if let Some(list) = &attribute.arguments {
             for argument in list.arguments.iter() {
                 let (ellipsis, value) = match &argument {
@@ -3004,25 +3413,27 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                 if let Some(ellipsis) = ellipsis {
                     context.report(
-                        Issue::error("cannot use argument unpacking in attribute arguments")
-                            .with_annotation(Annotation::primary(ellipsis.span()))
+                        Issue::error("Cannot use argument unpacking in attribute arguments.")
+                            .with_annotation(
+                                Annotation::primary(ellipsis.span()).with_message("Argument unpacking used here."),
+                            )
                             .with_annotation(
                                 Annotation::secondary(attribute.name.span())
-                                    .with_message(format!("attribute `{}` defined here", name)),
+                                    .with_message(format!("Attribute `{}` defined here.", name)),
                             )
-                            .with_note("unpacking arguments is not allowed in attribute arguments"),
+                            .with_note("Unpacking arguments is not allowed in attribute arguments."),
                     );
                 }
 
                 if !value.is_constant(true) {
                     context.report(
-                        Issue::error(format!("attribute `{}` argument contains a non-constant expression", name))
+                        Issue::error(format!("Attribute `{}` argument contains a non-constant expression.", name))
                             .with_annotations([
-                                Annotation::primary(value.span()),
+                                Annotation::primary(value.span()).with_message("Non-constant expression used here."),
                                 Annotation::secondary(attribute.name.span())
-                                    .with_message(format!("attribute `{}` defined here", name)),
+                                    .with_message(format!("Attribute `{}` defined here.", name)),
                             ])
-                            .with_note("attribute arguments must be constant expressions"),
+                            .with_note("Attribute arguments must be constant expressions."),
                     );
                 }
             }
@@ -3037,11 +3448,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         }
 
-        // If we reach this point, the label was not found
-        // try to see if there is a label with the same name but different case
-        // if so, suggest the correct label
+        // If we reach this point, the label was not found.
+        // Attempt to find a label with the same name but different case.
+        // If found, suggest the correct label.
         let going_to = context.interner.lookup(&goto.label.value);
         let mut suggestions = vec![];
+
         for label in all_labels {
             let label_name = context.interner.lookup(&label.name.value);
             if label_name.eq_ignore_ascii_case(going_to) {
@@ -3050,19 +3462,23 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
 
         let mut issue =
-            Issue::error(format!("undefined goto label `{}`", going_to))
-                .with_annotation(Annotation::primary(goto.label.span))
+            Issue::error(format!("Undefined `goto` label `{}`.", going_to))
+                .with_annotation(Annotation::primary(goto.label.span).with_message("This `goto` label is not defined."))
                 .with_annotations(suggestions.iter().map(|(name, span)| {
-                    Annotation::secondary(*span).with_message(format!("did you mean `{}`?", name))
+                    Annotation::secondary(*span).with_message(format!("Did you mean `{}`?", name))
                 }));
 
-        if 1 == suggestions.len() {
-            issue =
-                issue.with_note(format!("goto label `{}` not found, did you mean `{}`?", going_to, suggestions[0].0));
+        if suggestions.len() == 1 {
+            issue = issue.with_note(format!(
+                "The `goto` label `{}` was not found. Did you mean `{}`?",
+                going_to, suggestions[0].0
+            ));
         } else if !suggestions.is_empty() {
             let names = suggestions.iter().map(|(name, _)| format!("`{}`", name)).collect::<Vec<_>>().join(", ");
-
-            issue = issue.with_note(format!("goto label `{}` not found, did you mean one of: {}?", going_to, names));
+            issue = issue.with_note(format!(
+                "The `goto` label `{}` was not found. Did you mean one of the following: {}?",
+                going_to, names
+            ));
         }
 
         context.report(issue);
@@ -3078,12 +3494,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if let Some(ellipsis) = positional_argument.ellipsis {
                         if let Some(last_named_argument) = last_named_argument {
                             context.report(
-                                Issue::error("cannot use argument unpacking after a named argument")
-                                    .with_annotation(Annotation::primary(ellipsis.span()))
+                                Issue::error("Cannot use argument unpacking after a named argument.")
                                     .with_annotation(
-                                        Annotation::secondary(last_named_argument).with_message("named argument here"),
+                                        Annotation::primary(ellipsis.span()).with_message("Unpacking argument here."),
                                     )
-                                    .with_note("unpacking arguments must come before named arguments"),
+                                    .with_annotation(
+                                        Annotation::secondary(last_named_argument).with_message("Named argument here."),
+                                    )
+                                    .with_note("Unpacking arguments must come before named arguments."),
                             );
                         }
 
@@ -3091,23 +3509,29 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     } else {
                         if let Some(named_argument) = last_named_argument {
                             context.report(
-                                Issue::error("cannot use positional argument after a named argument")
-                                    .with_annotation(Annotation::primary(positional_argument.span()))
+                                Issue::error("Cannot use positional argument after a named argument.")
                                     .with_annotation(
-                                        Annotation::secondary(named_argument).with_message("named argument here"),
+                                        Annotation::primary(positional_argument.span())
+                                            .with_message("Positional argument defined here."),
                                     )
-                                    .with_note("positional arguments must come before named arguments"),
+                                    .with_annotation(
+                                        Annotation::secondary(named_argument).with_message("Named argument here."),
+                                    )
+                                    .with_note("Positional arguments must come before named arguments."),
                             );
                         }
 
                         if let Some(unpacking) = last_unpacking {
                             context.report(
-                                Issue::error("cannot use positional argument after argument unpacking")
-                                    .with_annotation(Annotation::primary(positional_argument.span()))
+                                Issue::error("Cannot use positional argument after argument unpacking.")
                                     .with_annotation(
-                                        Annotation::secondary(unpacking).with_message("argument unpacking here"),
+                                        Annotation::primary(positional_argument.span())
+                                            .with_message("Positional argument defined here."),
                                     )
-                                    .with_note("positional arguments must come before unpacking arguments"),
+                                    .with_annotation(
+                                        Annotation::secondary(unpacking).with_message("Argument unpacking here."),
+                                    )
+                                    .with_note("Positional arguments must come before unpacking arguments."),
                             );
                         }
                     }
@@ -3115,12 +3539,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 Argument::Named(named_argument) => {
                     if let Some(ellipsis) = named_argument.ellipsis {
                         context.report(
-                            Issue::error("cannot use argument unpacking in named arguments")
-                                .with_annotation(Annotation::primary(ellipsis.span()))
+                            Issue::error("Cannot use argument unpacking in named arguments.")
                                 .with_annotation(
-                                    Annotation::secondary(named_argument.span()).with_message("named argument here"),
+                                    Annotation::primary(ellipsis.span())
+                                        .with_message("Unpacking argument defined here."),
                                 )
-                                .with_note("unpacking arguments is not allowed in named arguments"),
+                                .with_annotation(
+                                    Annotation::secondary(named_argument.span())
+                                        .with_message("Named argument defined here."),
+                                )
+                                .with_note("Unpacking arguments is not allowed in named arguments."),
                         );
                     }
 
@@ -3146,12 +3574,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 for r#return in returns {
                     if let Some(val) = &r#return.value {
                         context.report(
-                            Issue::error("closure with return type of `void` must not return a value")
-                                .with_annotation(Annotation::primary(val.span()))
+                            Issue::error("Closure with a return type of `void` must not return a value.")
                                 .with_annotation(
-                                    Annotation::secondary(closure.function.span).with_message("closure defined here"),
+                                    Annotation::primary(val.span())
+                                        .with_message("This value is not allowed with a `void` return type."),
                                 )
-                                .with_help("remove the return type hint, or remove the return value"),
+                                .with_annotation(
+                                    Annotation::secondary(closure.span()).with_message("Closure defined here."),
+                                )
+                                .with_help(
+                                    "Remove the return value, or change the return type hint to an appropriate type.",
+                                ),
                         );
                     }
                 }
@@ -3159,12 +3592,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
             Hint::Never(_) => {
                 for r#return in returns {
                     context.report(
-                        Issue::error("closure with return type of `never` must not return")
-                            .with_annotation(Annotation::primary(r#return.span()))
+                        Issue::error("Closure with a return type of `never` must not include a return statement.")
                             .with_annotation(
-                                Annotation::secondary(closure.function.span).with_message("closure defined here"),
+                                Annotation::primary(r#return.span())
+                                    .with_message("Return statement is not allowed with a `never` return type."),
                             )
-                            .with_help("remove the return type hint, or remove the return statement"),
+                            .with_annotation(
+                                Annotation::secondary(closure.span()).with_message("Closure defined here."),
+                            )
+                            .with_help(
+                                "Remove the return statement, or change the return type hint to a compatible type.",
+                            ),
                     );
                 }
             }
@@ -3172,13 +3610,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 for r#return in returns {
                     if r#return.value.is_none() {
                         context.report(
-                            Issue::error("closure with return type must return a value")
-                                .with_annotation(Annotation::primary(r#return.span()))
+                            Issue::error("Closure with a return type must return a value.")
                                 .with_annotation(
-                                    Annotation::secondary(closure.function.span).with_message("closure defined here"),
+                                    Annotation::primary(r#return.span()).with_message("Missing return value."),
                                 )
-                                .with_note("did you mean `return null;` instead of `return;`?")
-                                .with_help("add a return value to the statement"),
+                                .with_annotation(
+                                    Annotation::secondary(closure.span()).with_message("Closure defined here."),
+                                )
+                                .with_note("Did you mean `return null;` instead of `return;`?")
+                                .with_help("Add a return value that matches the expected return type."),
                         );
                     }
                 }
@@ -3198,10 +3638,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
             // see: https://3v4l.org/VgoiO
             if let Hint::Void(_) = &return_hint.hint {
                 context.report(
-                    Issue::error("arrow function cannot have a return type of `void`")
-                        .with_annotation(Annotation::primary(return_hint.hint.span()))
-                        .with_annotation(Annotation::secondary(arrow_function.r#fn.span))
-                        .with_help("remove the return type hint, or use a different type"),
+                    Issue::error("Arrow function cannot have a return type of `void`.")
+                        .with_annotation(
+                            Annotation::primary(return_hint.hint.span())
+                                .with_message("Return type `void` is not valid for an arrow function."),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(arrow_function.r#fn.span)
+                                .with_message("Arrow function defined here."),
+                        )
+                        .with_help("Remove the `void` return type hint, or replace it with a valid type."),
                 );
             }
         }
@@ -3221,9 +3667,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 parameters_seen.iter().find_map(|(n, s)| if parameter.variable.name.eq(n) { Some(s) } else { None })
             {
                 context.report(
-                    Issue::error(format!("parameter `{}` is already defined", name))
-                        .with_annotation(Annotation::primary(parameter.variable.span()))
-                        .with_annotation(Annotation::secondary(*prev_span).with_message("previously defined here")),
+                    Issue::error(format!("Parameter `{}` is already defined.", name))
+                        .with_annotation(
+                            Annotation::primary(parameter.variable.span())
+                                .with_message("This parameter is redefined here."),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(*prev_span).with_message("The original parameter was defined here."),
+                        )
+                        .with_help("Ensure all parameter names are unique within the parameter list."),
                 );
             } else if !parameter.is_promoted_property() {
                 parameters_seen.push((parameter.variable.name, parameter.variable.span()));
@@ -3237,27 +3689,36 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     Modifier::Static(keyword) | Modifier::Final(keyword) | Modifier::Abstract(keyword) => {
                         context.report(
                             Issue::error(format!(
-                                "parameter `{}` cannot have modifier `{}`",
+                                "Parameter `{}` cannot have the `{}` modifier.",
                                 name,
                                 context.interner.lookup(&keyword.value)
                             ))
-                            .with_annotation(Annotation::primary(modifier.span()))
+                            .with_annotation(Annotation::primary(modifier.span()).with_message(format!(
+                                "Invalid `{}` modifier used here.",
+                                context.interner.lookup(&keyword.value)
+                            )))
                             .with_annotation(
                                 Annotation::secondary(parameter.variable.span)
-                                    .with_message(format!("parameter `{}` defined here", name)),
+                                    .with_message(format!("Parameter `{}` defined here.", name)),
                             )
-                            .with_help("remove the modifier from the parameter"),
+                            .with_help("Remove the invalid modifier from the parameter."),
                         );
                     }
                     Modifier::Readonly(_) => {
                         if let Some(s) = last_readonly {
                             context.report(
-                                Issue::error(format!("parameter `{}` cannot have multiple `readonly` modifiers", name))
-                                    .with_annotation(Annotation::primary(modifier.span()))
-                                    .with_annotation(
-                                        Annotation::secondary(s).with_message("previous `readonly` modifier"),
-                                    )
-                                    .with_help("remove the duplicate `readonly` modifier"),
+                                Issue::error(format!(
+                                    "Parameter `{}` cannot have multiple `readonly` modifiers.",
+                                    name
+                                ))
+                                .with_annotation(
+                                    Annotation::primary(modifier.span())
+                                        .with_message("Duplicate `readonly` modifier used here."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(s).with_message("Previous `readonly` modifier used here."),
+                                )
+                                .with_help("Remove the duplicate `readonly` modifier."),
                             );
                         } else {
                             last_readonly = Some(modifier.span());
@@ -3266,12 +3727,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     Modifier::Public(_) | Modifier::Protected(_) | Modifier::Private(_) => {
                         if let Some(s) = last_read_visibility {
                             context.report(
-                                Issue::error(format!("parameter `{}` cannot have multiple visibility modifiers", name))
-                                    .with_annotation(Annotation::primary(modifier.span()))
-                                    .with_annotation(
-                                        Annotation::secondary(s).with_message("previous visibility modifier"),
-                                    )
-                                    .with_help("remove the duplicate visibility modifier"),
+                                Issue::error(format!(
+                                    "Parameter `{}` cannot have multiple visibility modifiers.",
+                                    name
+                                ))
+                                .with_annotation(
+                                    Annotation::primary(modifier.span())
+                                        .with_message("Duplicate visibility modifier used here."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(s).with_message("Previous visibility modifier used here."),
+                                )
+                                .with_help("Remove the duplicate visibility modifier."),
                             );
                         } else {
                             last_read_visibility = Some(modifier.span());
@@ -3281,12 +3748,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         if let Some(s) = last_write_visibility {
                             context.report(
                                 Issue::error(format!(
-                                    "parameter `{}` cannot have multiple write visibility modifiers",
+                                    "Parameter `{}` cannot have multiple write visibility modifiers.",
                                     name
                                 ))
-                                .with_annotation(Annotation::primary(modifier.span()))
-                                .with_annotation(Annotation::secondary(s).with_message("previous visibility modifier"))
-                                .with_help("remove the duplicate visibility modifier"),
+                                .with_annotation(
+                                    Annotation::primary(modifier.span())
+                                        .with_message("Duplicate write visibility modifier used here."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(s)
+                                        .with_message("Previous write visibility modifier used here."),
+                                )
+                                .with_help("Remove the duplicate write visibility modifier."),
                             );
                         } else {
                             last_write_visibility = Some(modifier.span());
@@ -3298,26 +3771,44 @@ impl Walker<Context<'_>> for SemanticsWalker {
             if let Some((n, s)) = last_variadic {
                 context.report(
                     Issue::error(format!(
-                        "parameter `{}` is defined after variadic parameter `{}`",
+                        "Invalid parameter order: parameter `{}` is defined after variadic parameter `{}`.",
                         name,
                         context.interner.lookup(&n)
                     ))
-                    .with_annotation(Annotation::primary(parameter.variable.span()))
-                    .with_annotation(Annotation::secondary(s).with_message("variadic parameter defined here"))
-                    .with_help("move all parameters after the variadic parameter to the end of the parameter list"),
+                    .with_annotation(
+                        Annotation::primary(parameter.variable.span())
+                            .with_message(format!("Parameter `{}` is defined here.", name)),
+                    )
+                    .with_annotation(
+                        Annotation::secondary(s).with_message(format!(
+                            "Variadic parameter `{}` is defined here.",
+                            context.interner.lookup(&n)
+                        )),
+                    )
+                    .with_help(
+                        "Move all parameters following the variadic parameter to the end of the parameter list.",
+                    ),
                 );
             }
 
             if let Some(ellipsis) = parameter.ellipsis {
                 if let Some(default) = &parameter.default_value {
                     context.report(
-                        Issue::error(format!("variadic parameter `{}` cannot have a default value", name))
-                            .with_annotation(Annotation::primary(default.span()))
-                            .with_annotation(
-                                Annotation::secondary(ellipsis.join(parameter.variable.span))
-                                    .with_message(format!("parameter `{}` is variadic", name)),
-                            )
-                            .with_help("remove the default value from the variadic parameter"),
+                        Issue::error(format!(
+                            "Invalid parameter definition: variadic parameter `{}` cannot have a default value.",
+                            name
+                        ))
+                        .with_annotation(
+                            Annotation::primary(default.span()).with_message(format!(
+                                "Default value is defined for variadic parameter `{}` here.",
+                                name
+                            )),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(ellipsis.join(parameter.variable.span))
+                                .with_message(format!("Parameter `{}` is variadic and marked with `...` here.", name)),
+                        )
+                        .with_help("Remove the default value from the variadic parameter."),
                     );
                 }
 
@@ -3330,12 +3821,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let hint_name = context.lookup_hint(hint);
 
                     context.report(
-                        Issue::error(format!("bottom type `{}` cannot be used as a parameter type", hint_name))
-                            .with_annotation(Annotation::primary(hint.span()))
-                            .with_annotation(
-                                Annotation::secondary(parameter.variable.span())
-                                    .with_message(format!("parameter `{}` defined here", name)),
-                            ),
+                        Issue::error(format!(
+                            "Invalid parameter type: bottom type `{}` cannot be used as a parameter type.",
+                            hint_name
+                        ))
+                        .with_annotation(
+                            Annotation::primary(hint.span())
+                                .with_message(format!("Bottom type `{}` is not allowed here.", hint_name)),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(parameter.variable.span())
+                                .with_message(format!("This parameter `{}` is defined here.", name)),
+                        )
+                        .with_help("Use a valid parameter type to ensure compatibility with PHP's type system."),
                     );
                 }
             }
@@ -3349,13 +3847,18 @@ impl Walker<Context<'_>> for SemanticsWalker {
             if let MatchArm::Default(default_arm) = &arm {
                 if let Some(previous) = last_default {
                     context.report(
-                        Issue::error("match expression may only contain one default arm")
-                            .with_annotation(Annotation::primary(default_arm.span()))
+                        Issue::error("A match expression can only have one default arm.")
                             .with_annotation(
-                                Annotation::secondary(previous).with_message("previous default arm defined here"),
+                                Annotation::primary(default_arm.span())
+                                    .with_message("This is a duplicate default arm."),
                             )
-                            .with_annotation(Annotation::secondary(r#match.span()))
-                            .with_help("remove this default case"),
+                            .with_annotation(
+                                Annotation::secondary(previous).with_message("The first default arm is defined here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(r#match.span()).with_message("Match expression defined here."),
+                            )
+                            .with_help("Remove this duplicate default arm to ensure the match expression is valid."),
                     );
                 } else {
                     last_default = Some(default_arm.default.span);
@@ -3367,22 +3870,21 @@ impl Walker<Context<'_>> for SemanticsWalker {
     fn walk_in_switch(&self, switch: &Switch, context: &mut Context<'_>) {
         let mut last_default: Option<Span> = None;
 
-        let cases = match &switch.body {
-            SwitchBody::BraceDelimited(switch_brace_delimited_body) => &switch_brace_delimited_body.cases,
-            SwitchBody::ColonDelimited(switch_colon_delimited_body) => &switch_colon_delimited_body.cases,
-        };
-
-        for case in cases.iter() {
+        for case in switch.body.cases() {
             if let SwitchCase::Default(default_case) = &case {
                 if let Some(previous) = last_default {
                     context.report(
-                        Issue::error("switch statement may only contain one default case")
-                            .with_annotation(Annotation::primary(default_case.span()))
+                        Issue::error("A switch statement can only have one default case.")
                             .with_annotation(
-                                Annotation::secondary(previous).with_message("previous default case defined here"),
+                                Annotation::primary(default_case.span()).with_message("This is a duplicate default case."),
                             )
-                            .with_annotation(Annotation::secondary(switch.span()))
-                            .with_help("remove this default case"),
+                            .with_annotation(
+                                Annotation::secondary(previous).with_message("The first default case is defined here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(switch.span()).with_message("Switch statement containing the duplicate cases."),
+                            )
+                            .with_help("Remove this duplicate default case to ensure the switch statement is valid and unambiguous."),
                     );
                 } else {
                     last_default = Some(default_case.default.span);

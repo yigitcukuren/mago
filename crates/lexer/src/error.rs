@@ -28,11 +28,11 @@ impl HasSpan for SyntaxError {
 impl std::fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let message = match self {
-            Self::UnexpectedToken(token, _) => &format!("unexpected token `{}` (0x{:02X})", *token as char, token),
-            Self::UnrecognizedToken(token, _) => &format!("unrecognised token `{}` (0x{:02X})", *token as char, token),
+            Self::UnexpectedToken(token, _) => &format!("Unexpected token `{}` (0x{:02X})", *token as char, token),
+            Self::UnrecognizedToken(token, _) => &format!("Unrecognised token `{}` (0x{:02X})", *token as char, token),
         };
 
-        write!(f, "syntax error: {}", message)
+        write!(f, "{}", message)
     }
 }
 
@@ -43,6 +43,6 @@ impl From<SyntaxError> for Issue {
         let position = error.position();
         let span = Span::new(position, Position { offset: position.offset + 1, ..position });
 
-        Issue::error(error.to_string()).with_annotation(Annotation::primary(span))
+        Issue::error(error.to_string()).with_annotation(Annotation::primary(span).with_message("Syntax error."))
     }
 }

@@ -26,9 +26,12 @@ impl<'a> Walker<LintContext<'a>> for NoTagPairTerminatorRule {
             return;
         };
 
-        let issue = Issue::new(context.level(), "semicolon terminator is preferred over tag-pair terminator")
-            .with_annotation(Annotation::primary(close.span().join(open.span())))
-            .with_help("replace `?><?php` with a `;`");
+        let issue = Issue::new(context.level(), "Semicolon terminator is preferred over tag-pair terminator")
+            .with_annotation(
+                Annotation::primary(close.span().join(open.span()))
+                    .with_message("This tag-pair terminator `?><?php` is not recommended."),
+            )
+            .with_help("Replace `?><?php` with a `;`");
 
         context.report_with_fix(issue, |plan| {
             plan.replace(close.span().join(open.span()).to_range(), ";", SafetyClassification::Safe)

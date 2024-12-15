@@ -27,26 +27,15 @@ impl<'a> Walker<LintContext<'a>> for RequirePropertyTypeRule {
             return;
         }
 
-        let (class_like_kind, class_like_name, class_like_fqcn, class_like_span) =
-            context.get_class_like_details(property);
-
-        let variable = context.lookup(&property.first_variable().name);
+        let name = context.lookup(&property.first_variable().name);
 
         context.report(
-            Issue::new(
-                context.level(),
-                format!("{} property `{}::{}` is missing a type hint", class_like_kind, class_like_name, variable),
-            )
-            .with_annotation(Annotation::primary(property.span()))
-            .with_annotation(
-                Annotation::secondary(class_like_span)
-                    .with_message(format!("{} `{}` declared here", class_like_kind, class_like_fqcn)),
-            )
-            .with_note(format!(
-                "adding a type hint to {} properties improves code readability and helps prevent type errors.",
-                class_like_kind
-            ))
-            .with_help(format!("consider specifying a type hint for `{}::{}`.", class_like_name, variable)),
+            Issue::new(context.level(), format!("Property `{}` is missing a type hint.", name))
+                .with_annotation(
+                    Annotation::primary(property.span()).with_message(format!("Property `{}` is declared here.", name)),
+                )
+                .with_note("Adding a type hint to properties improves code readability and helps prevent type errors.")
+                .with_help(format!("Consider specifying a type hint for `{}`.", name)),
         );
     }
 }
