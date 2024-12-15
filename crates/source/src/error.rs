@@ -6,9 +6,6 @@ pub enum SourceError {
     IOError(std::io::Error),
 }
 
-unsafe impl Send for SourceError {}
-unsafe impl Sync for SourceError {}
-
 impl std::fmt::Display for SourceError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

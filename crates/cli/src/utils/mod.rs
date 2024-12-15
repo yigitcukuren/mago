@@ -1,5 +1,7 @@
 use std::error::Error;
 
+pub mod clap;
+
 pub fn print(error: impl Error) {
     mago_feedback::error!(target = "mago", "{}", error);
     mago_feedback::debug!(target = "mago", "{:#?}", error);

@@ -85,7 +85,9 @@ impl From<SyntaxError> for ParseError {
 }
 
 impl From<&ParseError> for Issue {
-    fn from(val: &ParseError) -> Self {
-        Issue::error(val.to_string()).with_annotation(Annotation::primary(val.span()))
+    fn from(error: &ParseError) -> Self {
+        let span = error.span();
+
+        Issue::error(error.to_string()).with_annotation(Annotation::primary(span))
     }
 }

@@ -982,6 +982,7 @@ dependencies = [
  "mago-source",
  "serde",
  "serde_json",
+ "strum",
  "termtree",
  "tokio",
 ]
@@ -1160,9 +1161,13 @@ dependencies = [
  "ahash",
  "codespan-reporting",
  "mago-fixer",
+ "mago-interner",
  "mago-source",
  "mago-span",
  "serde",
+ "serde_json",
+ "strum",
+ "termcolor",
 ]
 
 [[package]]
@@ -1217,7 +1222,6 @@ dependencies = [
 name = "mago-source"
 version = "0.0.8"
 dependencies = [
- "codespan-reporting",
  "dashmap",
  "mago-interner",
  "serde",

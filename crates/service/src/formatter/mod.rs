@@ -56,7 +56,7 @@ impl FormatterService {
 
                 async move {
                     // Step 1: load the source
-                    let source = manager.load(source_id)?;
+                    let source = manager.load(&source_id)?;
                     source_pb.inc(1);
 
                     // Step 2: parse the source

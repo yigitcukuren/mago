@@ -2,10 +2,6 @@ use std::collections::hash_map::Entry;
 use std::iter::Once;
 
 use ahash::HashMap;
-use codespan_reporting::diagnostic::Diagnostic;
-use codespan_reporting::diagnostic::Label;
-use codespan_reporting::diagnostic::LabelStyle;
-use codespan_reporting::diagnostic::Severity;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -13,11 +9,13 @@ use mago_fixer::FixPlan;
 use mago_source::SourceIdentifier;
 use mago_span::Span;
 
+mod internal;
+
+pub mod error;
 pub mod reporter;
 
 /// Represents the kind of annotation associated with an issue.
 #[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, Hash, PartialOrd, Deserialize, Serialize)]
-#[serde(tag = "type", content = "value")]
 pub enum AnnotationKind {
     /// A primary annotation, typically highlighting the main source of the issue.
     Primary,
@@ -27,7 +25,6 @@ pub enum AnnotationKind {
 
 /// An annotation associated with an issue, providing additional context or highlighting specific code spans.
 #[derive(Debug, PartialEq, Eq, Ord, Clone, Hash, PartialOrd, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
 pub struct Annotation {
     /// An optional message associated with the annotation.
     pub message: Option<String>,
@@ -39,7 +36,6 @@ pub struct Annotation {
 
 /// Represents the severity level of an issue.
 #[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, Hash, PartialOrd, Deserialize, Serialize)]
-#[serde(tag = "type", content = "value")]
 pub enum Level {
     /// A note, providing additional information or context.
     Note,
@@ -152,6 +148,11 @@ impl Annotation {
         self.message = Some(message.into());
 
         self
+    }
+
+    /// Returns `true` if this annotation is a primary annotation.
+    pub fn is_primary(&self) -> bool {
+        self.kind == AnnotationKind::Primary
     }
 }
 
@@ -429,66 +430,6 @@ impl IntoIterator for IssueCollection {
 
     fn into_iter(self) -> Self::IntoIter {
         self.issues.into_iter()
-    }
-}
-
-impl From<AnnotationKind> for LabelStyle {
-    fn from(kind: AnnotationKind) -> LabelStyle {
-        match kind {
-            AnnotationKind::Primary => LabelStyle::Primary,
-            AnnotationKind::Secondary => LabelStyle::Secondary,
-        }
-    }
-}
-
-impl From<Annotation> for Label<SourceIdentifier> {
-    fn from(annotation: Annotation) -> Label<SourceIdentifier> {
-        let mut label = Label::new(annotation.kind.into(), annotation.span.start.source, annotation.span);
-
-        if let Some(message) = annotation.message {
-            label.message = message;
-        }
-
-        label
-    }
-}
-
-impl From<Level> for Severity {
-    fn from(level: Level) -> Severity {
-        match level {
-            Level::Note => Severity::Note,
-            Level::Help => Severity::Help,
-            Level::Warning => Severity::Warning,
-            Level::Error => Severity::Error,
-        }
-    }
-}
-
-impl From<Issue> for Diagnostic<SourceIdentifier> {
-    fn from(issue: Issue) -> Diagnostic<SourceIdentifier> {
-        let mut diagnostic = Diagnostic::new(issue.level.into()).with_message(issue.message);
-
-        if let Some(code) = issue.code {
-            diagnostic.code = Some(code);
-        }
-
-        for annotation in issue.annotations {
-            diagnostic.labels.push(annotation.into());
-        }
-
-        for note in issue.notes {
-            diagnostic.notes.push(note);
-        }
-
-        if let Some(help) = issue.help {
-            diagnostic.notes.push(format!("help: {}", help));
-        }
-
-        if let Some(link) = issue.link {
-            diagnostic.notes.push(format!("see: {}", link));
-        }
-
-        diagnostic
     }
 }
 

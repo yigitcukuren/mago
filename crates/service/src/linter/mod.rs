@@ -128,7 +128,7 @@ impl LintService {
                 let fix_pb = fix_pb.clone();
 
                 async move {
-                    let source = source_manager.load(source)?;
+                    let source = source_manager.load(&source)?;
                     let source_content = interner.lookup(&source.content);
                     let result = utils::apply_changes(
                         &interner,
@@ -178,7 +178,7 @@ impl LintService {
 
                 async move {
                     // Step 1: load the source
-                    let source = manager.load(source_id)?;
+                    let source = manager.load(&source_id)?;
                     source_pb.inc(1);
 
                     // Step 2: build semantics

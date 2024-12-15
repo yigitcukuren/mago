@@ -18,7 +18,7 @@ impl AstService {
 
     ///  Parse the given bytes into an AST.
     pub async fn parse(&self, source: SourceIdentifier) -> Result<(Program, Option<ParseError>), SourceError> {
-        let source = self.source_manager.load(source)?;
+        let source = self.source_manager.load(&source)?;
 
         Ok(mago_parser::parse_source(&self.interner, &source))
     }

@@ -1,111 +1,64 @@
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::MutexGuard;
+use std::str::FromStr;
 
-pub use codespan_reporting::term::termcolor::*;
+use serde::Deserialize;
+use serde::Serialize;
+use strum::Display;
+use strum::VariantNames;
 
-use codespan_reporting::diagnostic::Diagnostic;
-use codespan_reporting::term;
-use codespan_reporting::term::Config;
-
-use mago_source::SourceIdentifier;
+use mago_interner::ThreadedInterner;
 use mago_source::SourceManager;
 
+use crate::error::ReportingError;
+use crate::internal::emitter::Emitter;
+use crate::internal::writer::ReportWriter;
 use crate::Issue;
 use crate::IssueCollection;
 use crate::Level;
 
+/// Defines the output target for the `ReportWriter`.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display, VariantNames)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum ReportingTarget {
+    /// Direct output to standard output (stdout).
+    #[default]
+    Stdout,
+    /// Direct output to standard error (stderr).
+    Stderr,
+}
+
+/// The format to use when writing the report.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display, VariantNames)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum ReportingFormat {
+    #[default]
+    Rich,
+    Medium,
+    Short,
+    Github,
+    Json,
+}
+
 #[derive(Clone)]
 pub struct Reporter {
-    writer: Arc<Mutex<StandardStream>>,
-    config: Arc<Config>,
+    interner: ThreadedInterner,
     manager: SourceManager,
+    target: ReportingTarget,
+    writer: ReportWriter,
 }
 
 impl Reporter {
-    pub fn new(manager: SourceManager) -> Self {
-        Self {
-            writer: Arc::new(Mutex::new(StandardStream::stdout(ColorChoice::Auto))),
-            config: Arc::new(Config::default()),
-            manager,
-        }
+    pub fn new(interner: ThreadedInterner, manager: SourceManager, target: ReportingTarget) -> Self {
+        Self { interner, manager, target, writer: ReportWriter::new(target) }
     }
 
-    pub fn report(&self, issue: Issue) {
-        let mut writer = Gaurd(self.writer.lock().expect("failed to aquire lock"));
-
-        let diagnostic: Diagnostic<SourceIdentifier> = issue.into();
-
-        term::emit(&mut writer, &self.config, &self.manager, &diagnostic).unwrap();
-    }
-
-    pub fn report_all(&self, issues: impl IntoIterator<Item = Issue>) -> Option<Level> {
-        let collection = IssueCollection::from(issues);
-        let mut writer = Gaurd(self.writer.lock().expect("failed to aquire lock"));
-
-        let highest_level = collection.get_highest_level();
-        let mut errors = 0;
-        let mut warnings = 0;
-        let mut notes = 0;
-        let mut help = 0;
-        let mut suggestions = 0;
-
-        for issue in collection {
-            match &issue.level {
-                Level::Note => {
-                    notes += 1;
-                }
-                Level::Help => {
-                    help += 1;
-                }
-                Level::Warning => {
-                    warnings += 1;
-                }
-                Level::Error => {
-                    errors += 1;
-                }
-            }
-
-            if !issue.suggestions.is_empty() {
-                suggestions += 1;
-            }
-
-            let diagnostic: Diagnostic<SourceIdentifier> = issue.into();
-
-            term::emit(&mut writer, &self.config, &self.manager, &diagnostic).unwrap();
-        }
-
-        if let Some(highest_level) = highest_level {
-            let total_issues = errors + warnings + notes + help;
-            let mut message_notes = vec![];
-            if errors > 0 {
-                message_notes.push(format!("{} error(s)", errors));
-            }
-
-            if warnings > 0 {
-                message_notes.push(format!("{} warning(s)", warnings));
-            }
-
-            if notes > 0 {
-                message_notes.push(format!("{} note(s)", notes));
-            }
-
-            if help > 0 {
-                message_notes.push(format!("{} help message(s)", help));
-            }
-
-            let mut diagnostic: Diagnostic<SourceIdentifier> = Diagnostic::new(highest_level.into())
-                .with_message(format!("found {} issues: {}", total_issues, message_notes.join(", ")));
-
-            if suggestions > 0 {
-                diagnostic =
-                    diagnostic.with_notes(vec![format!("{} issues contain auto-fix suggestions", suggestions)]);
-            }
-
-            term::emit(&mut writer, &self.config, &self.manager, &diagnostic).unwrap();
-        }
-
-        highest_level
+    pub fn report(
+        &self,
+        issues: impl IntoIterator<Item = Issue>,
+        format: ReportingFormat,
+    ) -> Result<Option<Level>, ReportingError> {
+        format.emit(&mut self.writer.lock(), &self.manager, &self.interner, IssueCollection::from(issues))
     }
 }
 
@@ -114,32 +67,37 @@ unsafe impl Sync for Reporter {}
 
 impl std::fmt::Debug for Reporter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Reporter").field("config", &self.config).field("manager", &self.manager).finish_non_exhaustive()
+        f.debug_struct("Reporter")
+            .field("interner", &self.interner)
+            .field("manager", &self.manager)
+            .field("target", &self.target)
+            .finish_non_exhaustive()
     }
 }
 
-struct Gaurd<'a>(MutexGuard<'a, StandardStream>);
+impl FromStr for ReportingTarget {
+    type Err = ReportingError;
 
-impl WriteColor for Gaurd<'_> {
-    fn set_color(&mut self, spec: &term::termcolor::ColorSpec) -> std::io::Result<()> {
-        self.0.set_color(spec)
-    }
-
-    fn reset(&mut self) -> std::io::Result<()> {
-        self.0.reset()
-    }
-
-    fn supports_color(&self) -> bool {
-        self.0.supports_color()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "stdout" | "out" => Ok(Self::Stdout),
+            "stderr" | "err" => Ok(Self::Stderr),
+            _ => Err(ReportingError::InvalidTarget(s.to_string())),
+        }
     }
 }
 
-impl std::io::Write for Gaurd<'_> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.write(buf)
-    }
+impl FromStr for ReportingFormat {
+    type Err = ReportingError;
 
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.0.flush()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "rich" => Ok(Self::Rich),
+            "medium" => Ok(Self::Medium),
+            "short" => Ok(Self::Short),
+            "github" => Ok(Self::Github),
+            "json" => Ok(Self::Json),
+            _ => Err(ReportingError::InvalidFormat(s.to_string())),
+        }
     }
 }

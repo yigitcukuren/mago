@@ -1,12 +1,7 @@
 use std::borrow::Cow;
-use std::cmp::Ordering;
-use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use codespan_reporting::files::line_starts;
-use codespan_reporting::files::Error;
-use codespan_reporting::files::Files;
 use dashmap::DashMap;
 use serde::Deserialize;
 use serde::Serialize;
@@ -196,14 +191,14 @@ impl SourceManager {
     /// # Returns
     ///
     /// The source with the given identifier, or an error if the source does not exist, or could not be loaded.
-    pub fn load(&self, source_id: SourceIdentifier) -> Result<Source, SourceError> {
-        let Some(mut entry) = self.sources.get_mut(&source_id) else {
-            return Err(SourceError::UnavailableSource(source_id));
+    pub fn load(&self, source_id: &SourceIdentifier) -> Result<Source, SourceError> {
+        let Some(mut entry) = self.sources.get_mut(source_id) else {
+            return Err(SourceError::UnavailableSource(*source_id));
         };
 
         match &entry.content {
             Some((content, size, lines)) => Ok(Source {
-                identifier: source_id,
+                identifier: *source_id,
                 path: entry.path.clone(),
                 content: *content,
                 size: *size,
@@ -230,7 +225,7 @@ impl SourceManager {
                 let size = content.len();
                 let content = self.interner.intern(content);
 
-                let source = Source { identifier: source_id, path: Some(path), content, size, lines: lines.clone() };
+                let source = Source { identifier: *source_id, path: Some(path), content, size, lines: lines.clone() };
 
                 v.content = Some((content, size, lines));
 
@@ -271,75 +266,17 @@ impl SourceManager {
     pub fn is_empty(&self) -> bool {
         self.sources.is_empty()
     }
-
-    fn get(&self, source_id: SourceIdentifier) -> Result<Source, Error> {
-        self.sources
-            .get(&source_id)
-            .map(|entry| {
-                let entry = entry.value();
-                let (content, size, lines) = entry
-                    .content
-                    .as_ref()
-                    .expect("content must be initialized when source entry is present in the map");
-
-                Source {
-                    identifier: source_id,
-                    path: entry.path.clone(),
-                    content: *content,
-                    size: *size,
-                    lines: lines.clone(),
-                }
-            })
-            .ok_or(Error::FileMissing)
-    }
 }
 
 unsafe impl Send for SourceManager {}
 unsafe impl Sync for SourceManager {}
 
-impl<'a> Files<'a> for SourceManager {
-    type FileId = SourceIdentifier;
-    type Name = &'a str;
-    type Source = &'a str;
-
-    fn name(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.get(file_id).map(|source| self.interner.lookup(&source.identifier.value()))
-    }
-
-    fn source(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.get(file_id).map(|source| self.interner.lookup(&source.content))
-    }
-
-    fn line_index(&self, file_id: SourceIdentifier, byte_index: usize) -> Result<usize, Error> {
-        let source = self.get(file_id)?;
-
-        Ok(source.line_number(byte_index))
-    }
-
-    fn line_range(&self, file_id: SourceIdentifier, line_index: usize) -> Result<Range<usize>, Error> {
-        let source = self.get(file_id)?;
-
-        codespan_line_range(&source.lines, source.size, line_index)
-    }
-}
-
-fn codespan_line_start(lines: &[usize], size: usize, line_index: usize) -> Result<usize, Error> {
-    match line_index.cmp(&lines.len()) {
-        Ordering::Less => Ok(lines.get(line_index).cloned().expect("failed despite previous check")),
-        Ordering::Equal => Ok(size),
-        Ordering::Greater => Err(Error::LineTooLarge { given: line_index, max: lines.len() - 1 }),
-    }
-}
-
-fn codespan_line_range(lines: &[usize], size: usize, line_index: usize) -> Result<Range<usize>, Error> {
-    let line_start = codespan_line_start(lines, size, line_index)?;
-    let next_line_start = codespan_line_start(lines, size, line_index + 1)?;
-
-    Ok(line_start..next_line_start)
-}
-
 impl<T: HasSource> HasSource for Box<T> {
     fn source(&self) -> SourceIdentifier {
         self.as_ref().source()
     }
+}
+
+fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
+    std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }

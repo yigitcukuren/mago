@@ -6,10 +6,13 @@ use mago_ast::node::NodeKind;
 use mago_ast::Node;
 use mago_interner::ThreadedInterner;
 use mago_reporting::reporter::Reporter;
+use mago_reporting::reporter::ReportingFormat;
+use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Issue;
 use mago_service::ast::AstService;
 use mago_source::SourceManager;
 
+use crate::enum_variants;
 use crate::utils::bail;
 
 #[derive(Parser, Debug)]
@@ -24,6 +27,12 @@ pub struct AstCommand {
 
     #[arg(long, help = "Outputs the result in JSON format.")]
     pub json: bool,
+
+    #[arg(long, default_value_t, help = "The issue reporting target to use.", ignore_case = true, value_parser = enum_variants!(ReportingTarget))]
+    pub reporting_target: ReportingTarget,
+
+    #[arg(long, default_value_t, help = "The issue reporting format to use.", ignore_case = true, value_parser = enum_variants!(ReportingFormat))]
+    pub reporting_format: ReportingFormat,
 }
 
 pub async fn execute(command: AstCommand) -> i32 {
@@ -32,11 +41,13 @@ pub async fn execute(command: AstCommand) -> i32 {
     // Check if the file exists and is readable
     if !file_path.exists() {
         mago_feedback::error!("file '{}' does not exist.", command.file);
+
         return 1;
     }
 
     if !file_path.is_file() {
         mago_feedback::error!("'{}' is not a valid file.", command.file);
+
         return 1;
     }
 
@@ -68,7 +79,9 @@ pub async fn execute(command: AstCommand) -> i32 {
         if let Some(error) = &error {
             let issue = Into::<Issue>::into(error);
 
-            Reporter::new(source_manager).report(issue);
+            Reporter::new(interner, source_manager, command.reporting_target)
+                .report([issue], command.reporting_format)
+                .unwrap_or_else(bail);
         }
     }
 

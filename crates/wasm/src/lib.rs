@@ -125,7 +125,7 @@ pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, Js
     let mut manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code, true);
 
-    let source = manager.load(source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (program, parse_error) = parse_source(&interner, &source);
 
     if let Some(err) = parse_error {
@@ -207,7 +207,7 @@ pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result
     let interner = ThreadedInterner::new();
     let mut manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code, true);
-    let source = manager.load(source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let semantics = Semantics::build(&interner, source);
     let mut formatted = None;
     if semantics.parse_error.is_none() {

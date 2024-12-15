@@ -2,11 +2,14 @@ use clap::Parser;
 
 use mago_interner::ThreadedInterner;
 use mago_reporting::reporter::Reporter;
+use mago_reporting::reporter::ReportingFormat;
+use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Level;
 use mago_service::config::Configuration;
 use mago_service::linter::LintService;
 use mago_service::source::SourceService;
 
+use crate::enum_variants;
 use crate::utils::bail;
 
 #[derive(Parser, Debug)]
@@ -24,6 +27,12 @@ If `mago.toml` is not found, the default configuration is used. The command outp
 pub struct LintCommand {
     #[arg(long, short, help = "Only show fixable issues", default_value_t = false)]
     pub only_fixable: bool,
+
+    #[arg(long, default_value_t, help = "The issue reporting target to use.", ignore_case = true, value_parser = enum_variants!(ReportingTarget))]
+    pub reporting_target: ReportingTarget,
+
+    #[arg(long, default_value_t, help = "The issue reporting format to use.", ignore_case = true, value_parser = enum_variants!(ReportingFormat))]
+    pub reporting_format: ReportingFormat,
 }
 
 pub async fn execute(command: LintCommand, configuration: Configuration) -> i32 {
@@ -36,10 +45,12 @@ pub async fn execute(command: LintCommand, configuration: Configuration) -> i32 
     let issues = lint_service.run().await.unwrap_or_else(bail);
     let issues_contain_errors = issues.get_highest_level().is_some_and(|level| level >= Level::Error);
 
+    let reporter = Reporter::new(interner, source_manager, command.reporting_target);
+
     if command.only_fixable {
-        Reporter::new(source_manager).report_all(issues.only_fixable());
+        reporter.report(issues.only_fixable(), command.reporting_format).unwrap_or_else(bail);
     } else {
-        Reporter::new(source_manager).report_all(issues);
+        reporter.report(issues, command.reporting_format).unwrap_or_else(bail);
     }
 
     if issues_contain_errors {
