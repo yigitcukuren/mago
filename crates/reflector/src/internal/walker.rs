@@ -99,7 +99,7 @@ impl<'a> MutWalker<Context<'a>> for ReflectionWalker {
         self.reflection.register_function_like(reflection);
     }
 
-    fn walk_constant(&mut self, constant: &Constant, context: &mut Context<'_>) {
+    fn walk_in_constant(&mut self, constant: &Constant, context: &mut Context<'_>) {
         let reflections = reflect_constant(constant, context);
 
         for reflection in reflections {
