@@ -8,7 +8,12 @@ use crate::reporter::ReportingFormat;
 use crate::IssueCollection;
 use crate::Level;
 
+mod utils;
+
+pub mod checkstyle;
 pub mod codespan;
+pub mod count;
+pub mod emacs;
 pub mod github;
 pub mod json;
 
@@ -56,6 +61,9 @@ impl Emitter for ReportingFormat {
             ReportingFormat::Short => codespan::short_format.emit(writer, sources, interner, issues),
             ReportingFormat::Github => github::github_format.emit(writer, sources, interner, issues),
             ReportingFormat::Json => json::json_format.emit(writer, sources, interner, issues),
+            ReportingFormat::Count => count::count_format.emit(writer, sources, interner, issues),
+            ReportingFormat::Checkstyle => checkstyle::checkstyle_format.emit(writer, sources, interner, issues),
+            ReportingFormat::Emacs => emacs::emacs_format.emit(writer, sources, interner, issues),
         }
     }
 }

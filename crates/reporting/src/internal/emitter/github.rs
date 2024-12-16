@@ -5,6 +5,7 @@ use mago_source::HasSource;
 use mago_source::SourceManager;
 
 use crate::error::ReportingError;
+use crate::internal::emitter::utils::long_message;
 use crate::IssueCollection;
 use crate::Level;
 
@@ -46,29 +47,10 @@ pub fn github_format(
             }
         };
 
-        let mut message = issue.message.clone();
-
         // we must use `%0A` instead of `\n`.
         //
         // see: https://github.com/actions/toolkit/issues/193
-        if !issue.notes.is_empty() {
-            message.push_str("%0A");
-
-            for note in issue.notes.iter() {
-                message.push_str("%0A");
-                message.push_str(note.as_str());
-            }
-        }
-
-        if let Some(help) = issue.help.as_ref() {
-            message.push_str("%0A%0AHelp: ");
-            message.push_str(help.as_str());
-        }
-
-        if let Some(link) = issue.link.as_ref() {
-            message.push_str("%0A%0AMore information: ");
-            message.push_str(link.as_str());
-        }
+        let message = long_message(issue).replace("\n", "%0A");
 
         writeln!(writer, "::{} {}::{}", level, properties, message)?;
     }

@@ -4,6 +4,7 @@ use std::iter::Once;
 use ahash::HashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use strum::Display;
 
 use mago_fixer::FixPlan;
 use mago_source::SourceIdentifier;
@@ -35,16 +36,16 @@ pub struct Annotation {
 }
 
 /// Represents the severity level of an issue.
-#[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, Hash, PartialOrd, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, Hash, PartialOrd, Deserialize, Serialize, Display)]
 pub enum Level {
-    /// A note, providing additional information or context.
-    Note,
-    /// A help message, suggesting possible solutions or further actions.
-    Help,
-    /// A warning, indicating a potential problem that may need attention.
-    Warning,
     /// An error, indicating a problem that prevents the code from functioning correctly.
     Error,
+    /// A warning, indicating a potential problem that may need attention.
+    Warning,
+    /// A help message, suggesting possible solutions or further actions.
+    Help,
+    /// A note, providing additional information or context.
+    Note,
 }
 
 /// Represents an issue identified in the code.

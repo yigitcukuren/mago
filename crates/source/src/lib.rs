@@ -84,9 +84,24 @@ impl Source {
     ///
     /// # Returns
     ///
-    /// The line number for the given byte offset.
+    /// The line number for the given byte offset (0-based index).
     pub fn line_number(&self, offset: usize) -> usize {
         self.lines.binary_search(&offset).unwrap_or_else(|next_line| next_line - 1)
+    }
+
+    /// Retrieve the column number for the given byte offset.
+    ///
+    /// # Parameters
+    ///
+    /// - `offset`: The byte offset to retrieve the column number for.
+    ///
+    /// # Returns
+    ///
+    /// The column number for the given byte offset (0-based index).
+    pub fn column_number(&self, offset: usize) -> usize {
+        let line_start = self.lines.binary_search(&offset).unwrap_or_else(|next_line| self.lines[next_line - 1]);
+
+        offset - line_start
     }
 }
 

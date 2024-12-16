@@ -38,6 +38,9 @@ pub enum ReportingFormat {
     Short,
     Github,
     Json,
+    Count,
+    Checkstyle,
+    Emacs,
 }
 
 #[derive(Clone)]
@@ -97,6 +100,9 @@ impl FromStr for ReportingFormat {
             "short" => Ok(Self::Short),
             "github" => Ok(Self::Github),
             "json" => Ok(Self::Json),
+            "count" => Ok(Self::Count),
+            "checkstyle" => Ok(Self::Checkstyle),
+            "emacs" => Ok(Self::Emacs),
             _ => Err(ReportingError::InvalidFormat(s.to_string())),
         }
     }

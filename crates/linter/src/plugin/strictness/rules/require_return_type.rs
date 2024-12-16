@@ -62,7 +62,7 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
         context.report(
             Issue::new(context.level(), "Arrow function is missing a return type hint.")
                 .with_annotation(
-                    Annotation::secondary(arrow_function.span()).with_message("Arrow function defined here."),
+                    Annotation::primary(arrow_function.span()).with_message("Arrow function defined here."),
                 )
                 .with_note("Type hints improve code readability and help prevent type-related errors.")
                 .with_help("Consider adding a return type hint to the arrow function."),
@@ -83,7 +83,7 @@ impl<'a> Walker<LintContext<'a>> for RequireReturnTypeRule {
         context.report(
             Issue::new(context.level(), format!("Method `{}` is missing a return type hint.", method_name))
                 .with_annotation(
-                    Annotation::secondary(method.span()).with_message(format!("Method `{}` defined here", method_name)),
+                    Annotation::primary(method.span()).with_message(format!("Method `{}` defined here", method_name)),
                 )
                 .with_note("Type hints improve code readability and help prevent type-related errors.")
                 .with_help(format!("Consider adding a return type hint to method `{}`.", method_name)),
