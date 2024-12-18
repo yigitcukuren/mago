@@ -277,9 +277,14 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     }
                     [b'/', b'*', asterisk] => {
                         let mut length = 2;
+                        let mut is_multiline = false;
                         loop {
                             match self.input.peek(length, 2) {
                                 [b'*', b'/'] => {
+                                    if length == 2 {
+                                        is_multiline = true;
+                                    }
+
                                     length += 2;
 
                                     break;
@@ -293,7 +298,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                             }
                         }
 
-                        if asterisk == &b'*' {
+                        if !is_multiline && asterisk == &b'*' {
                             (TokenKind::DocBlockComment, length)
                         } else {
                             (TokenKind::MultiLineComment, length)

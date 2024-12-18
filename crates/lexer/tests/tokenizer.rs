@@ -48,6 +48,24 @@ async fn test_casts() -> Result<(), SyntaxError> {
 }
 
 #[tokio::test]
+async fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
+    let code = b"<?php /**/ /***/ ?>";
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::MultiLineComment,
+        TokenKind::Whitespace,
+        TokenKind::DocBlockComment,
+        TokenKind::Whitespace,
+        TokenKind::CloseTag,
+    ];
+
+    test_lexer(code, expected).await.map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[tokio::test]
 async fn test_namespace() -> Result<(), SyntaxError> {
     let code = b"<?php use Foo\\{Bar, Baz}";
     let expected = vec![
