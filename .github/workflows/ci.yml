@@ -44,4 +44,5 @@ jobs:
         run: cargo test --workspace --locked --all-targets
 
       - name: cargo build
+        if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
         run: cargo build --workspace --release --locked --all-targets
