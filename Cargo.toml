@@ -90,6 +90,7 @@ wasm-bindgen = "0.2.97"
 serde-wasm-bindgen = "0.4"
 diffy = "0.4.0"
 termcolor = "1.4.1"
+indoc = "2"
 
 [dependencies]
 mago-cli = { workspace = true }

@@ -148,7 +148,7 @@ impl<'a> Format<'a> for Literal {
 
 impl<'a> Format<'a> for LiteralString {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, LiteralString, { Document::String(print_string(f, &self.value)) })
+        wrap!(f, self, LiteralString, { Document::String(print_string(f, &self.kind, &self.value)) })
     }
 }
 

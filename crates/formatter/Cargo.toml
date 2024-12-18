@@ -23,3 +23,8 @@ strum = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 bitflags = { workspace = true }
+
+[dev-dependencies]
+mago-parser = { workspace = true }
+indoc = { workspace = true }
+pretty_assertions = { workspace = true }

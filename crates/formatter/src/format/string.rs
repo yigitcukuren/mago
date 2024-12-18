@@ -1,3 +1,4 @@
+use mago_ast::LiteralStringKind;
 use mago_interner::StringIdentifier;
 
 use crate::Formatter;
@@ -58,12 +59,16 @@ fn make_string(raw_text: &str, enclosing_quote: char) -> String {
     result
 }
 
-pub(super) fn print_string<'a>(f: &Formatter<'a>, value: &StringIdentifier) -> &'a str {
+pub(super) fn print_string<'a>(f: &Formatter<'a>, kind: &LiteralStringKind, value: &StringIdentifier) -> &'a str {
     let text = f.lookup(value);
 
     let quote = unsafe { text.chars().next().unwrap_unchecked() };
     let raw_text = &text[1..text.len() - 1];
     let enclosing_quote = get_preferred_quote(raw_text, quote, f.settings.single_quote);
 
-    f.as_str(make_string(raw_text, enclosing_quote))
+    match kind {
+        LiteralStringKind::SingleQuoted if enclosing_quote == '\'' => text,
+        LiteralStringKind::DoubleQuoted if enclosing_quote == '"' => text,
+        _ => f.as_str(make_string(raw_text, enclosing_quote)),
+    }
 }
