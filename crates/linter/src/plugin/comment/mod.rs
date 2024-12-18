@@ -1,4 +1,5 @@
 use crate::plugin::comment::rules::docblock_syntax::DocblockSyntaxRule;
+use crate::plugin::comment::rules::no_empty_comments::NoEmptyCommentsRule;
 use crate::plugin::comment::rules::no_shell_style::NoShellStyleRule;
 use crate::plugin::comment::rules::no_trailing_whitespace::NoTrailingWhitespaceRule;
 use crate::plugin::comment::rules::no_untagged_fixme::NoUntaggedFixmeRule;
@@ -24,6 +25,7 @@ impl Plugin for CommentPlugin {
     fn get_rules(&self) -> Vec<Box<dyn Rule>> {
         vec![
             Box::new(NoUntaggedTodoRule),
+            Box::new(NoEmptyCommentsRule),
             Box::new(NoUntaggedFixmeRule),
             Box::new(NoShellStyleRule),
             Box::new(NoTrailingWhitespaceRule),
