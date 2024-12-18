@@ -12,6 +12,7 @@ use mago_span::Span;
 pub enum SyntaxError {
     UnexpectedToken(u8, Position),
     UnrecognizedToken(u8, Position),
+    UnexpectedEndOfFile(Position),
 }
 
 impl HasSpan for SyntaxError {
@@ -19,6 +20,7 @@ impl HasSpan for SyntaxError {
         let position = match self {
             Self::UnexpectedToken(_, p) => *p,
             Self::UnrecognizedToken(_, p) => *p,
+            Self::UnexpectedEndOfFile(p) => *p,
         };
 
         Span::new(position, Position { offset: position.offset + 1, ..position })
@@ -30,6 +32,7 @@ impl std::fmt::Display for SyntaxError {
         let message = match self {
             Self::UnexpectedToken(token, _) => &format!("Unexpected token `{}` (0x{:02X})", *token as char, token),
             Self::UnrecognizedToken(token, _) => &format!("Unrecognised token `{}` (0x{:02X})", *token as char, token),
+            Self::UnexpectedEndOfFile(_) => "Unexpected end of file",
         };
 
         write!(f, "{}", message)

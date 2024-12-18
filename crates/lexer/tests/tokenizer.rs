@@ -66,6 +66,34 @@ fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
 }
 
 #[test]
+fn test_unterminated_multiple_comment() {
+    let code = b"<?php /* hello";
+    let expected = vec![TokenKind::OpenTag, TokenKind::Whitespace];
+
+    match test_lexer(code, expected) {
+        Ok(_) => panic!("expected error"),
+        Err(SyntaxError::UnexpectedEndOfFile(position)) => {
+            assert_eq!(position.offset, 14);
+        }
+        Err(err) => panic!("unexpected error: {}", err),
+    }
+}
+
+#[test]
+fn test_unterminated_docblock_comment() {
+    let code = b"<?php /** hello";
+    let expected = vec![TokenKind::OpenTag, TokenKind::Whitespace];
+
+    match test_lexer(code, expected) {
+        Ok(_) => panic!("expected error"),
+        Err(SyntaxError::UnexpectedEndOfFile(position)) => {
+            assert_eq!(position.offset, 15);
+        }
+        Err(err) => panic!("unexpected error: {}", err),
+    }
+}
+
+#[test]
 fn test_namespace() -> Result<(), SyntaxError> {
     let code = b"<?php use Foo\\{Bar, Baz}";
     let expected = vec![
@@ -707,13 +735,25 @@ fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxE
     let mut lexer = Lexer::new(&interner, input);
 
     let mut tokens = Vec::new();
+    let mut error = None;
     while let Some(result) = lexer.advance() {
-        let token = result?;
+        let token = match result {
+            Ok(token) => token,
+            Err(err) => {
+                error = Some(err);
+
+                break;
+            }
+        };
 
         tokens.push(token);
     }
 
     assert_eq!(expected_kinds, tokens.iter().map(|t| t.kind).collect::<Vec<_>>());
+    if let Some(err) = error {
+        return Err(err);
+    }
+
     let mut found = String::new();
     for token in tokens.iter() {
         found.push_str(interner.lookup(&token.value));

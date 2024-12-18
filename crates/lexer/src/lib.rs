@@ -278,6 +278,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     [b'/', b'*', asterisk] => {
                         let mut length = 2;
                         let mut is_multiline = false;
+                        let mut terminated = false;
                         loop {
                             match self.input.peek(length, 2) {
                                 [b'*', b'/'] => {
@@ -287,6 +288,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
                                     length += 2;
 
+                                    terminated = true;
                                     break;
                                 }
                                 [_, ..] => {
@@ -296,6 +298,12 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                     break;
                                 }
                             }
+                        }
+
+                        if !terminated {
+                            self.input.consume(length);
+
+                            return Some(Err(SyntaxError::UnexpectedEndOfFile(self.input.position())));
                         }
 
                         if !is_multiline && asterisk == &b'*' {
