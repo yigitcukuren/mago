@@ -37,21 +37,12 @@ impl ReportWriter {
     /// Acquires a lock on the internal `StandardStream`, returning a `Gaurd` for performing write operations.
     ///
     /// # Returns
+    ///
     /// A `Gaurd` object, which implements `Write` and `WriteColor` traits for text and styled output.
     ///
     /// # Panics
+    ///
     /// Panics if the internal `Mutex` is poisoned.
-    ///
-    /// # Example
-    /// ```rust
-    /// use mago_reporting::{ReportWriter, Target};
-    /// use std::io::Write;
-    ///
-    /// let writer = ReportWriter::new(Target::Stdout);
-    /// let mut guard = writer.lock();
-    ///
-    /// writeln!(guard, "Hello, world!").unwrap();
-    /// ```
     pub fn lock(&self) -> Gaurd {
         Gaurd(self.inner.lock().expect("writer lock poisoned, this should never happen"))
     }

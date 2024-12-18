@@ -16,7 +16,7 @@ jobs:
           - os: windows-latest
             rust: nightly
           - os: macos-latest
-            rust: stable
+            rust: nightly
 
     runs-on: ${{ matrix.os }}
 
@@ -29,9 +29,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-
-      - name: add rustfmt and clippy
-        run: rustup component add rustfmt clippy
+          components: rustfmt, clippy
 
       - name: cargo check
         run: cargo check --workspace --locked

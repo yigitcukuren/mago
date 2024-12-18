@@ -9,8 +9,8 @@ use mago_token::TokenKind;
 use mago_lexer::error::SyntaxError;
 use mago_lexer::Lexer;
 
-#[tokio::test]
-async fn test_casts() -> Result<(), SyntaxError> {
+#[test]
+fn test_casts() -> Result<(), SyntaxError> {
     let code = b"hello <?= ( string ) + - / ??= ?-> ... ( int   ) (integer    ) (    double) &&  ?> world";
     let expected = vec![
         TokenKind::InlineText,
@@ -42,13 +42,13 @@ async fn test_casts() -> Result<(), SyntaxError> {
         TokenKind::InlineText,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
+#[test]
+fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
     let code = b"<?php /**/ /***/ ?>";
     let expected = vec![
         TokenKind::OpenTag,
@@ -60,13 +60,13 @@ async fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
         TokenKind::CloseTag,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_namespace() -> Result<(), SyntaxError> {
+#[test]
+fn test_namespace() -> Result<(), SyntaxError> {
     let code = b"<?php use Foo\\{Bar, Baz}";
     let expected = vec![
         TokenKind::OpenTag,
@@ -83,13 +83,13 @@ async fn test_namespace() -> Result<(), SyntaxError> {
         TokenKind::RightBrace,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_comments() -> Result<(), SyntaxError> {
+#[test]
+fn test_comments() -> Result<(), SyntaxError> {
     let code = b"
             Testing Comment Types:
             <?php
@@ -123,13 +123,13 @@ async fn test_comments() -> Result<(), SyntaxError> {
         TokenKind::InlineText,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_single_line_comments() -> Result<(), SyntaxError> {
+#[test]
+fn test_single_line_comments() -> Result<(), SyntaxError> {
     let code = b"<?php // this is a single-line comment ?> hello <?php // another single-line comment ?> world";
 
     let expected = vec![
@@ -147,13 +147,13 @@ async fn test_single_line_comments() -> Result<(), SyntaxError> {
         TokenKind::InlineText,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_keywords() -> Result<(), SyntaxError> {
+#[test]
+fn test_keywords() -> Result<(), SyntaxError> {
     let mut code: Vec<u8> = vec![b'<', b'?', b'p', b'h', b'p', b' '];
     let mut expected = vec![TokenKind::OpenTag, TokenKind::Whitespace];
     for (value, kind) in KEYWORD_TYPES.iter() {
@@ -170,13 +170,13 @@ async fn test_keywords() -> Result<(), SyntaxError> {
     expected.push(TokenKind::RightParenthesis);
     expected.push(TokenKind::Semicolon);
 
-    test_lexer(code.as_slice(), expected).await.map_err(|err| {
+    test_lexer(code.as_slice(), expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_halt() -> Result<(), SyntaxError> {
+#[test]
+fn test_halt() -> Result<(), SyntaxError> {
     let code = b"hello <?= echo + __halt_compiler ( ) ;  echo 'unreachable';";
     let expected = vec![
         TokenKind::InlineText,
@@ -196,13 +196,13 @@ async fn test_halt() -> Result<(), SyntaxError> {
         TokenKind::InlineText,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_identifiers() -> Result<(), SyntaxError> {
+#[test]
+fn test_identifiers() -> Result<(), SyntaxError> {
     let code = b"hello <?php FooBar Foo\\Bar Foo\\\\Bar::class;";
     let expected = vec![
         TokenKind::InlineText,
@@ -220,13 +220,13 @@ async fn test_identifiers() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_nss() -> Result<(), SyntaxError> {
+#[test]
+fn test_nss() -> Result<(), SyntaxError> {
     let code = b"<?php use Foo\\{};";
     let expected = vec![
         TokenKind::OpenTag,
@@ -240,13 +240,13 @@ async fn test_nss() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_numbers() -> Result<(), SyntaxError> {
+#[test]
+fn test_numbers() -> Result<(), SyntaxError> {
     let code = b"hello <?php 123 123.456 0x123 0b101 0o123 4e-2;";
     let expected = vec![
         TokenKind::InlineText,
@@ -266,13 +266,13 @@ async fn test_numbers() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_emojis() -> Result<(), SyntaxError> {
+#[test]
+fn test_emojis() -> Result<(), SyntaxError> {
     let code = "hello <?php final readonly class 🐘 { const 🦀 = 🐱 + 🦊; }".as_bytes();
     let expected = vec![
         TokenKind::InlineText,
@@ -304,13 +304,13 @@ async fn test_emojis() -> Result<(), SyntaxError> {
         TokenKind::RightBrace,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_single_quote_literal_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_single_quote_literal_string() -> Result<(), SyntaxError> {
     let code = b"hello <?php 'hello world';";
     let expected = vec![
         TokenKind::InlineText,
@@ -320,24 +320,24 @@ async fn test_single_quote_literal_string() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_partial_single_quote_literal_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_partial_single_quote_literal_string() -> Result<(), SyntaxError> {
     let code = b"hello <?php 'hello world";
     let expected =
         vec![TokenKind::InlineText, TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::PartialLiteralString];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_double_quote_literal_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_double_quote_literal_string() -> Result<(), SyntaxError> {
     let code = b"hello <?php \"hello world\";";
     let expected = vec![
         TokenKind::InlineText,
@@ -347,24 +347,24 @@ async fn test_double_quote_literal_string() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_partial_double_quote_literal_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_partial_double_quote_literal_string() -> Result<(), SyntaxError> {
     let code = b"hello <?php \"hello world";
     let expected =
         vec![TokenKind::InlineText, TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::PartialLiteralString];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_variables() -> Result<(), SyntaxError> {
+#[test]
+fn test_variables() -> Result<(), SyntaxError> {
     let code = b"hello <?php $foo $foo_bar $fooBar $foo123 $foo_123 $foo_123_bar $$bar ${bar};";
     let expected = vec![
         TokenKind::InlineText,
@@ -391,13 +391,13 @@ async fn test_variables() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_literal_nowdoc_heredoc() -> Result<(), SyntaxError> {
+#[test]
+fn test_literal_nowdoc_heredoc() -> Result<(), SyntaxError> {
     let code = b"
             hello
             <?php
@@ -435,13 +435,13 @@ async fn test_literal_nowdoc_heredoc() -> Result<(), SyntaxError> {
         TokenKind::Whitespace,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_heredoc() -> Result<(), SyntaxError> {
+#[test]
+fn test_heredoc() -> Result<(), SyntaxError> {
     let code = b"
                 hello
                 <?php
@@ -533,13 +533,13 @@ async fn test_heredoc() -> Result<(), SyntaxError> {
         TokenKind::Whitespace,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_double_quote_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_double_quote_string() -> Result<(), SyntaxError> {
     let code = b"
             hello
             <?php
@@ -630,13 +630,13 @@ async fn test_double_quote_string() -> Result<(), SyntaxError> {
         TokenKind::Whitespace,
     ];
 
-    test_lexer(code, expected).await.map_err(|err| {
+    test_lexer(code, expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_escape() -> Result<(), SyntaxError> {
+#[test]
+fn test_escape() -> Result<(), SyntaxError> {
     let code = r##"<?= "\033]8;;{$attr['href']}\033\\{$value}\033]8;;\033\\" . FOO;"##;
 
     let expected = vec![
@@ -663,24 +663,24 @@ async fn test_escape() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code.as_bytes(), expected).await.map_err(|err| {
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_sep_literal_num() -> Result<(), SyntaxError> {
+#[test]
+fn test_sep_literal_num() -> Result<(), SyntaxError> {
     let code = r##"<?= 1_200;"##;
 
     let expected = vec![TokenKind::EchoTag, TokenKind::Whitespace, TokenKind::LiteralInteger, TokenKind::Semicolon];
 
-    test_lexer(code.as_bytes(), expected).await.map_err(|err| {
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-#[tokio::test]
-async fn test_escape_in_string() -> Result<(), SyntaxError> {
+#[test]
+fn test_escape_in_string() -> Result<(), SyntaxError> {
     let code = r##"<?= "$foo->bar\nvar";"##;
 
     let expected = vec![
@@ -696,12 +696,12 @@ async fn test_escape_in_string() -> Result<(), SyntaxError> {
         TokenKind::Semicolon,
     ];
 
-    test_lexer(code.as_bytes(), expected).await.map_err(|err| {
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
         panic!("unexpected error: {}", err);
     })
 }
 
-async fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxError> {
+fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxError> {
     let interner = ThreadedInterner::new();
     let input = Input::new(SourceIdentifier::dummy(), code);
     let mut lexer = Lexer::new(&interner, input);

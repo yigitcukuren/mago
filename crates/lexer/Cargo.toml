@@ -23,5 +23,3 @@ strum = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true, features = ["test-util", "macros"] }
