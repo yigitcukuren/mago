@@ -4,6 +4,7 @@ use crate::plugin::safety::rules::no_ffi::NoFFIRule;
 use crate::plugin::safety::rules::no_global::NoGlobalRule;
 use crate::plugin::safety::rules::no_request_variable::NoRequestVariableRule;
 use crate::plugin::safety::rules::no_shell_execute_string::NoShellExecuteStringRule;
+use crate::plugin::safety::rules::no_unsafe_finally::NoUnsafeFinallyRule;
 
 use crate::plugin::Plugin;
 use crate::rule::Rule;
@@ -30,6 +31,7 @@ impl Plugin for SafetyPlugin {
             Box::new(NoShellExecuteStringRule),
             Box::new(NoEvalRule),
             Box::new(NoErrorControlOperatorRule),
+            Box::new(NoUnsafeFinallyRule),
         ]
     }
 }
