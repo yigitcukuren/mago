@@ -16,7 +16,7 @@ package.license = "MIT OR Apache-2.0"
 package.version = "0.0.12"
 package.homepage = "https://github.com/carthage-software/mago"
 package.repository = "https://github.com/carthage-software/mago"
-package.rust-version = "1.82.0"
+package.rust-version = "1.83.0"
 members = ["crates/*"]
 
 [workspace.lints.clippy]

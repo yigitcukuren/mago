@@ -56,11 +56,10 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs: crate_metadata
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         job:
           # Windows ( MinGW )
-          - { target: i686-pc-windows-gnu, os: windows-2019 }
           - { target: x86_64-pc-windows-gnu, os: windows-2019 }
           # Windows ( MSVC )
           - { target: i686-pc-windows-msvc, os: windows-2019 }
@@ -82,10 +81,10 @@ jobs:
           - { target: armv7-unknown-linux-musleabihf, os: ubuntu-20.04 }
           - { target: i686-unknown-linux-gnu, os: ubuntu-20.04 }
           - { target: i686-unknown-linux-musl, os: ubuntu-20.04 }
-          - { target: mips-unknown-linux-gnu, os: ubuntu-20.04 }
-          - { target: mips64-unknown-linux-gnuabi64, os: ubuntu-20.04 }
-          - { target: mipsel-unknown-linux-gnu, os: ubuntu-20.04 }
-          - { target: mips64el-unknown-linux-gnuabi64, os: ubuntu-20.04 }
+          - { target: mips-unknown-linux-gnu, os: ubuntu-20.04, nightly: true }
+          - { target: mips64-unknown-linux-gnuabi64, os: ubuntu-20.04, nightly: true }
+          - { target: mipsel-unknown-linux-gnu, os: ubuntu-20.04, nightly: true }
+          - { target: mips64el-unknown-linux-gnuabi64, os: ubuntu-20.04, nightly: true }
           - { target: powerpc-unknown-linux-gnu, os: ubuntu-20.04 }
           - { target: powerpc64-unknown-linux-gnu, os: ubuntu-20.04 }
           - { target: powerpc64le-unknown-linux-gnu, os: ubuntu-20.04 }
@@ -118,7 +117,9 @@ jobs:
       - name: install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ matrix.job.nightly == 'true' && 'nightly' || 'stable' }}
           targets: ${{ matrix.job.target }}
+          override: true
 
       - name: install cross
         if: startsWith(matrix.job.os, 'ubuntu')
@@ -234,7 +235,7 @@ jobs:
       - name: create Debian package
         id: debian-package
         shell: bash
-        if: startsWith(matrix.job.os, 'ubuntu')
+        if: startsWith(matrix.job.os, 'ubuntu') && !endsWith(matrix.job.target, 'bsd')
         run: |
           CLEAN_TAG="${{ steps.version.outputs.CLEAN_TAG }}"
           TARGET="${{ matrix.job.target }}"
@@ -245,14 +246,13 @@ jobs:
             *i686*) DPKG_ARCH="i686" ;;
             *aarch64*|*arm64*) DPKG_ARCH="arm64" ;;
             *arm*hf*) DPKG_ARCH="armhf" ;;
+            *arm*) DPKG_ARCH="armel" ;;
+            *powerpc64*) DPKG_ARCH="ppc64el" ;;
+            *powerpc*) DPKG_ARCH="powerpc" ;;
+            *s390x*) DPKG_ARCH="s390x" ;;
           esac
 
-          # Check if musl in target
-          if [[ "$TARGET" == *"musl"* ]]; then
-            DPKG_NAME="mago-${CLEAN_TAG}-musl-${DPKG_ARCH}.deb"
-          else
-            DPKG_NAME="mago-${CLEAN_TAG}-${DPKG_ARCH}.deb"
-          fi
+          DPKG_NAME="mago-${CLEAN_TAG}-${TARGET}.deb"
 
           echo "DPKG_NAME=${DPKG_NAME}" >> $GITHUB_OUTPUT
 
