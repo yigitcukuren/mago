@@ -1,5 +1,5 @@
 use mago_ast::ast::*;
-use mago_ast_utils::get_assignment_from_expression;
+use mago_ast_utils::assignment::get_assignment_from_expression;
 use mago_reporting::*;
 use mago_span::*;
 use mago_walker::Walker;

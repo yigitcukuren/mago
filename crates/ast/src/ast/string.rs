@@ -78,6 +78,16 @@ pub struct BracedExpressionStringPart {
     pub right_brace: Span,
 }
 
+impl CompositeString {
+    pub fn parts(&self) -> &Sequence<StringPart> {
+        match self {
+            CompositeString::ShellExecute(s) => &s.parts,
+            CompositeString::Interpolated(i) => &i.parts,
+            CompositeString::Document(d) => &d.parts,
+        }
+    }
+}
+
 impl HasSpan for CompositeString {
     fn span(&self) -> Span {
         match self {
