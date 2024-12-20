@@ -75,6 +75,7 @@ jobs:
           - { target: arm-unknown-linux-gnueabi, os: ubuntu-20.04 }
           - { target: arm-unknown-linux-gnueabihf, os: ubuntu-20.04 }
           - { target: armv7-unknown-linux-gnueabihf, os: ubuntu-20.04 }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-20.04, test: true }
           - { target: arm-unknown-linux-musleabi, os: ubuntu-20.04 }
           - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04 }
           - { target: armv7-unknown-linux-musleabihf, os: ubuntu-20.04 }
