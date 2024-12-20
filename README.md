@@ -58,6 +58,40 @@ If you're working with PHP versions prior to 8.3, please proceed with caution an
 
 ## Installation
 
+### One-Line Installation (Recommended)
+
+To quickly install the latest release of Mago for macOS or Linux, use the following command:
+
+#### Using `curl`:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
+```
+
+#### Using `wget`:
+
+```bash
+wget -qO- https://carthage.software/mago.sh | bash
+```
+
+#### Custom Installation Directory
+
+To specify a custom directory for the binary, use the --install-dir option:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash -s -- --install-dir="/.bin"
+```
+
+If the directory is not in your `PATH`, the script will provide instructions to add it.
+
+#### Installing with `sudo`
+
+If you need to install Mago system-wide, you can use `sudo` with the installation command:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | sudo bash
+```
+
 ### Pre-compiled Binaries
 
 You can find precompiled binaries for various platforms on our [Releases page](https://github.com/carthage-software/mago/releases).
