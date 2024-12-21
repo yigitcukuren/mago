@@ -38,6 +38,7 @@ pub fn run() -> ! {
         MagoCommand::Fix(cmd) => runtime.block_on(commands::fix::execute(cmd, configuration)),
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
         MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd)),
+        MagoCommand::SelfUpdate(cmd) => commands::self_update::execute(cmd, configuration),
     };
 
     exit(code)

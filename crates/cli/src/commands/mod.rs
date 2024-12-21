@@ -1,17 +1,19 @@
-use ast::AstCommand;
 use clap::builder::styling::AnsiColor;
 use clap::builder::styling::Effects;
 use clap::builder::Styles;
 use clap::Parser;
 
+use crate::commands::ast::AstCommand;
 use crate::commands::fix::FixCommand;
 use crate::commands::format::FormatCommand;
 use crate::commands::lint::LintCommand;
+use crate::commands::self_update::SelfUpdateCommand;
 
 pub mod ast;
 pub mod fix;
 pub mod format;
 pub mod lint;
+pub mod self_update;
 
 pub const CLAP_STYLING: Styles = Styles::styled()
     .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
@@ -50,4 +52,6 @@ pub enum MagoCommand {
     Format(FormatCommand),
     #[command(name = "ast")]
     Ast(AstCommand),
+    #[command(name = "self-update")]
+    SelfUpdate(SelfUpdateCommand),
 }

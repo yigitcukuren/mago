@@ -20,9 +20,12 @@ mago-source = { workspace = true }
 mago-service = { workspace = true }
 mago-feedback = { workspace = true }
 serde = { workspace = true }
-tokio = { workspace = true , features = ["rt", "rt-multi-thread", "time"] }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }
 ahash = { workspace = true }
 termtree = { workspace = true }
 serde_json = { workspace = true }
 strum = { workspace = true }
+reqwest = { workspace = true }
+tempfile = { workspace = true }
+self_update = { workspace = true }
