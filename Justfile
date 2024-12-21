@@ -44,6 +44,5 @@ publish:
     cargo publish -p mago-typing --allow-dirty
     cargo publish -p mago-reflector --allow-dirty
     cargo publish -p mago-linter --allow-dirty
-    cargo publish -p mago-service --allow-dirty
     cargo publish -p mago-wasm --allow-dirty
     cargo publish --allow-dirty

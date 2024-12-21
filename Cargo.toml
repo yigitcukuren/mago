@@ -1,6 +1,6 @@
 [package]
 name = "mago"
-version = "0.0.12"
+version = "0.0.13"
 edition = "2021"
 authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ rust-version = "1.83.0"
 package.edition = "2021"
 package.authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 package.license = "MIT OR Apache-2.0"
-package.version = "0.0.12"
+package.version = "0.0.13"
 package.homepage = "https://github.com/carthage-software/mago"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.83.0"
@@ -26,32 +26,32 @@ declare_interior_mutable_const = { level = "allow" }
 large_enum_variant = { level = "allow" }
 
 [workspace.dependencies]
-mago-ast = { path = "crates/ast", version = "0.0.12" }
-mago-ast-utils = { path = "crates/ast-utils", version = "0.0.12" }
-mago-casing = { path = "crates/casing", version = "0.0.12" }
-mago-composer = { path = "crates/composer", version = "0.0.12" }
-mago-docblock = { path = "crates/docblock", version = "0.0.12" }
-mago-feedback = { path = "crates/feedback", version = "0.0.12" }
-mago-fixer = { path = "crates/fixer", version = "0.0.12" }
-mago-formatter = { path = "crates/formatter", version = "0.0.12" }
-mago-interner = { path = "crates/interner", version = "0.0.12" }
-mago-lexer = { path = "crates/lexer", version = "0.0.12" }
-mago-linter = { path = "crates/linter", version = "0.0.12" }
-mago-names = { path = "crates/names", version = "0.0.12" }
-mago-parser = { path = "crates/parser", version = "0.0.12" }
-mago-reflection = { path = "crates/reflection", version = "0.0.12" }
-mago-reflector = { path = "crates/reflector", version = "0.0.12" }
-mago-reporting = { path = "crates/reporting", version = "0.0.12" }
-mago-semantics = { path = "crates/semantics", version = "0.0.12" }
-mago-source = { path = "crates/source", version = "0.0.12" }
-mago-span = { path = "crates/span", version = "0.0.12" }
-mago-symbol-table = { path = "crates/symbol-table", version = "0.0.12" }
-mago-token = { path = "crates/token", version = "0.0.12" }
-mago-traverser = { path = "crates/traverser", version = "0.0.12" }
-mago-trinary = { path = "crates/trinary", version = "0.0.12" }
-mago-typing = { path = "crates/typing", version = "0.0.12" }
-mago-walker = { path = "crates/walker", version = "0.0.12" }
-mago-wasm = { path = "crates/wasm", version = "0.0.12" }
+mago-ast = { path = "crates/ast", version = "0.0.13" }
+mago-ast-utils = { path = "crates/ast-utils", version = "0.0.13" }
+mago-casing = { path = "crates/casing", version = "0.0.13" }
+mago-composer = { path = "crates/composer", version = "0.0.13" }
+mago-docblock = { path = "crates/docblock", version = "0.0.13" }
+mago-feedback = { path = "crates/feedback", version = "0.0.13" }
+mago-fixer = { path = "crates/fixer", version = "0.0.13" }
+mago-formatter = { path = "crates/formatter", version = "0.0.13" }
+mago-interner = { path = "crates/interner", version = "0.0.13" }
+mago-lexer = { path = "crates/lexer", version = "0.0.13" }
+mago-linter = { path = "crates/linter", version = "0.0.13" }
+mago-names = { path = "crates/names", version = "0.0.13" }
+mago-parser = { path = "crates/parser", version = "0.0.13" }
+mago-reflection = { path = "crates/reflection", version = "0.0.13" }
+mago-reflector = { path = "crates/reflector", version = "0.0.13" }
+mago-reporting = { path = "crates/reporting", version = "0.0.13" }
+mago-semantics = { path = "crates/semantics", version = "0.0.13" }
+mago-source = { path = "crates/source", version = "0.0.13" }
+mago-span = { path = "crates/span", version = "0.0.13" }
+mago-symbol-table = { path = "crates/symbol-table", version = "0.0.13" }
+mago-token = { path = "crates/token", version = "0.0.13" }
+mago-traverser = { path = "crates/traverser", version = "0.0.13" }
+mago-trinary = { path = "crates/trinary", version = "0.0.13" }
+mago-typing = { path = "crates/typing", version = "0.0.13" }
+mago-walker = { path = "crates/walker", version = "0.0.13" }
+mago-wasm = { path = "crates/wasm", version = "0.0.13" }
 dashmap = { version = "6.1.0" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8.11" }
@@ -99,13 +99,12 @@ serde-wasm-bindgen = "0.4"
 diffy = "0.4.0"
 termcolor = "1.4.1"
 indoc = "2"
-reqwest = { version = "0.12.9", features = ["json"] }
-tempfile = "3.14.0"
 self_update = { version = "0.41.0", features = [
     "archive-tar",
     "archive-zip",
     "compression-flate2",
 ] }
+openssl = { version = "0.10", features = ["vendored"] }
 
 [lints]
 workspace = true
@@ -131,8 +130,6 @@ ahash = { workspace = true }
 termtree = { workspace = true }
 serde_json = { workspace = true }
 strum = { workspace = true }
-reqwest = { workspace = true }
-tempfile = { workspace = true }
 self_update = { workspace = true }
 async-walkdir = { workspace = true }
 futures = { workspace = true }
@@ -142,6 +139,9 @@ config = { workspace = true }
 toml = { workspace = true }
 num_cpus = { workspace = true }
 diffy = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+openssl = { workspace = true }
 
 [profile.release]
 opt-level = 3
