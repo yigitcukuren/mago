@@ -12,50 +12,6 @@ _Note: This project was previously named “Fennec” before being rebranded due
 > Mago is in an early stage of development. Many features are not yet implemented, and existing functionality may change, break, or stop working without notice.
 > While we are not actively promoting or advertising the project, we are working in public to share our progress with the community.
 
-## Roadmap
-
-### Core Functionality
-
-- [x] String Interning: [`crates/interner`](crates/interner)
-- [x] Lexer: [`crates/lexer`](crates/lexer) [`crates/token`](crates/token)
-- [x] AST: [`crates/ast`](crates/ast)
-- [x] Parser: [`crates/parser`](crates/parser)
-- [x] Source Management: [`crates/source`](crates/source)
-- [x] AST Traversal / Walk: [`crates/traverser`](crates/traverser) [`crates/walker`](crates/walker)
-- [x] Name Resolution: [`crates/names`](crates/names)
-- [x] Code Fixer: [`crates/fixer`](crates/fixer)
-- [x] Error Reporting: [`crates/reporting`](crates/reporting)
-- [x] Semantic Analysis: [`crates/semantics`](crates/semantics)
-- [x] Symbol Table: [`crates/symbol-table`](crates/symbol-table)
-- [x] Linter: [`crates/linter`](crates/linter)
-- [x] Services: [`crates/service`](crates/service)
-- [x] String Case Conversion: [`crates/casing`](crates/casing)
-- [x] Reflections: [`crates/reflection`](crates/reflection)
-- [x] Reflector: [`crates/reflector`](crates/reflector), [`crates/scanner`](crates/scanner)
-- [x] Type Inference: [`crates/typing`](crates/typing)
-- [x] Formatter: [`crates/formatter`](crates/formatter)
-- [ ] Static Analyzer
-- [ ] Refactoring
-- [ ] Code Generation
-- [ ] Documentation Generation
-- [x] Docblock Parser [`crates/docblock`](crates/docblock)
-
-### Tooling
-
-- [x] CLI Tool: [`crates/cli`](crates/cli)
-- [x] Web Assembly (WASM) Interface: [`crates/wasm`](crates/wasm)
-- [ ] Web Interface
-- [ ] Language Server Protocol
-- [ ] Editor Integration
-
-## PHP Version Compatibility
-
-Currently, **Mago** is built around PHP 8.3 and also supports PHP 8.4. While the linter and formatter may work with earlier versions of PHP, **we cannot guarantee compatibility**. They might suggest fixes or write code that is only compatible with PHP 8.3 and later.
-
-At this stage, there is no option to select a PHP version target, which means Mago operates under the assumption of modern PHP versions. In the future, we plan to introduce support for selecting a PHP version target. Once implemented, this feature should enable better compatibility with earlier PHP versions, potentially down to PHP 8.0 or even earlier.
-
-If you're working with PHP versions prior to 8.3, please proceed with caution and review suggested fixes or formatted code to ensure compatibility with your version.
-
 ## Installation
 
 ### One-Line Installation (Recommended)
@@ -114,6 +70,14 @@ git clone https://github.com/carthage-software/mago
 cd mago
 cargo install --path .
 ```
+
+## PHP Version Compatibility
+
+Currently, **Mago** is built around PHP 8.3 and also supports PHP 8.4. While the linter and formatter may work with earlier versions of PHP, **we cannot guarantee compatibility**. They might suggest fixes or write code that is only compatible with PHP 8.3 and later.
+
+At this stage, there is no option to select a PHP version target, which means Mago operates under the assumption of modern PHP versions. In the future, we plan to introduce support for selecting a PHP version target. Once implemented, this feature should enable better compatibility with earlier PHP versions, potentially down to PHP 8.0 or even earlier.
+
+If you're working with PHP versions prior to 8.3, please proceed with caution and review suggested fixes or formatted code to ensure compatibility with your version.
 
 ## Usage
 
