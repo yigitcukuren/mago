@@ -3,7 +3,6 @@ use clap::Parser;
 use mago_feedback::error;
 use mago_feedback::info;
 use mago_feedback::warn;
-use mago_service::config::Configuration;
 use self_update::cargo_crate_version;
 use self_update::errors::Error;
 use self_update::Status;
@@ -43,7 +42,7 @@ pub struct SelfUpdateCommand {
     pub tag: Option<String>,
 }
 
-pub fn execute(command: SelfUpdateCommand, _configuration: Configuration) -> i32 {
+pub fn execute(command: SelfUpdateCommand) -> i32 {
     info!("Current version: {}", CURRENT_VERSION);
 
     let mut status_builder = self_update::backends::github::Update::configure();

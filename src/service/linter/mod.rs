@@ -15,9 +15,9 @@ use mago_source::error::SourceError;
 use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 
-use crate::linter::config::LinterConfiguration;
-use crate::linter::config::LinterLevel;
-use crate::utils;
+use crate::service::linter::config::LinterConfiguration;
+use crate::service::linter::config::LinterLevel;
+use crate::service::utils;
 
 pub mod config;
 

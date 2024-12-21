@@ -6,7 +6,6 @@ pub enum ConfigurationError {
     CanonicalizingRootPath(std::path::PathBuf, std::io::Error),
     CanonicalizingSourcePath(std::path::PathBuf, std::io::Error),
     CanonicalizingIncludePath(std::path::PathBuf, std::io::Error),
-    CanonicalizingExcludePath(std::path::PathBuf, std::io::Error),
 }
 
 impl std::fmt::Display for ConfigurationError {
@@ -30,9 +29,6 @@ impl std::fmt::Display for ConfigurationError {
             ConfigurationError::CanonicalizingIncludePath(path, error) => {
                 write!(f, "failed to canonicalize include path '{}': {}", path.display(), error)
             }
-            ConfigurationError::CanonicalizingExcludePath(path, error) => {
-                write!(f, "failed to canonicalize exclude path '{}': {}", path.display(), error)
-            }
         }
     }
 }
@@ -46,7 +42,6 @@ impl std::error::Error for ConfigurationError {
             ConfigurationError::CanonicalizingRootPath(_, error) => Some(error),
             ConfigurationError::CanonicalizingSourcePath(_, error) => Some(error),
             ConfigurationError::CanonicalizingIncludePath(_, error) => Some(error),
-            ConfigurationError::CanonicalizingExcludePath(_, error) => Some(error),
         }
     }
 }

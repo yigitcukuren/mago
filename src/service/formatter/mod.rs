@@ -8,8 +8,8 @@ use mago_source::error::SourceError;
 use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 
-use crate::formatter::config::FormatterConfiguration;
-use crate::utils;
+use crate::service::formatter::config::FormatterConfiguration;
+use crate::service::utils;
 
 pub mod config;
 

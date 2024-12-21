@@ -43,7 +43,6 @@ mago-reflection = { path = "crates/reflection", version = "0.0.12" }
 mago-reflector = { path = "crates/reflector", version = "0.0.12" }
 mago-reporting = { path = "crates/reporting", version = "0.0.12" }
 mago-semantics = { path = "crates/semantics", version = "0.0.12" }
-mago-service = { path = "crates/service", version = "0.0.12" }
 mago-source = { path = "crates/source", version = "0.0.12" }
 mago-span = { path = "crates/span", version = "0.0.12" }
 mago-symbol-table = { path = "crates/symbol-table", version = "0.0.12" }
@@ -61,10 +60,15 @@ serde_json = { version = "1.0.128" }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.39.3", features = ["rt", "time"] }
 strum = { version = "0.26", features = ["derive"] }
-ordered-float = { version = "4.0", default-features = false, features = ["serde"] }
+ordered-float = { version = "4.0", default-features = false, features = [
+    "serde",
+] }
 pretty_assertions = { version = "1.4.1" }
 either = { version = "1.13.0" }
-codespan-reporting = { version = "0.11.1", features = ["serde", "serialization"] }
+codespan-reporting = { version = "0.11.1", features = [
+    "serde",
+    "serialization",
+] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 config = { version = "0.14.0", features = ["toml"] }
 toml = { version = "0.8.19" }
@@ -75,8 +79,17 @@ indicatif = { version = "0.17.8", features = ["tokio"] }
 glob-match = "0.2.1"
 paste = "1.0.15"
 criterion = "0.5.1"
-lasso = { version = "0.7.3", features = ["multi-threaded", "ahasher", "inline-more"] }
-clap = { version = "4.5.20", features = ["cargo", "derive", "unicode", "wrap_help"] }
+lasso = { version = "0.7.3", features = [
+    "multi-threaded",
+    "ahasher",
+    "inline-more",
+] }
+clap = { version = "4.5.20", features = [
+    "cargo",
+    "derive",
+    "unicode",
+    "wrap_help",
+] }
 futures = "0.3.31"
 async-walkdir = "2.0.0"
 termtree = "0.5.1"
@@ -88,15 +101,29 @@ termcolor = "1.4.1"
 indoc = "2"
 reqwest = { version = "0.12.9", features = ["json"] }
 tempfile = "3.14.0"
-self_update = { version = "0.41.0", features = ["archive-tar", "archive-zip", "compression-flate2"] }
+self_update = { version = "0.41.0", features = [
+    "archive-tar",
+    "archive-zip",
+    "compression-flate2",
+] }
+
+[lints]
+workspace = true
 
 [dependencies]
 mago-ast = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-source = { workspace = true }
-mago-service = { workspace = true }
 mago-feedback = { workspace = true }
+mago-semantics = { workspace = true }
+mago-linter = { workspace = true }
+mago-reflection = { workspace = true }
+mago-reflector = { workspace = true }
+mago-span = { workspace = true }
+mago-formatter = { workspace = true }
+mago-parser = { workspace = true }
+mago-fixer = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }
@@ -107,6 +134,14 @@ strum = { workspace = true }
 reqwest = { workspace = true }
 tempfile = { workspace = true }
 self_update = { workspace = true }
+async-walkdir = { workspace = true }
+futures = { workspace = true }
+glob-match = { workspace = true }
+tracing = { workspace = true }
+config = { workspace = true }
+toml = { workspace = true }
+num_cpus = { workspace = true }
+diffy = { workspace = true }
 
 [profile.release]
 opt-level = 3

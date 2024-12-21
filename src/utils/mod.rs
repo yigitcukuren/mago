@@ -3,11 +3,11 @@ use std::error::Error;
 pub mod clap;
 
 pub fn print(error: impl Error) {
-    mago_feedback::error!(target = "mago", "{}", error);
-    mago_feedback::debug!(target = "mago", "{:#?}", error);
+    mago_feedback::error!("{}", error);
+    mago_feedback::debug!("{:#?}", error);
 
     if let Some(source) = error.source() {
-        mago_feedback::debug!(target = "mago", "{:#?}", source);
+        mago_feedback::debug!("{:#?}", source);
     }
 }
 

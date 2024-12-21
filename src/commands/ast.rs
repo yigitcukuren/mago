@@ -9,10 +9,10 @@ use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Issue;
-use mago_service::ast::AstService;
 use mago_source::SourceManager;
 
 use crate::enum_variants;
+use crate::service::ast::AstService;
 use crate::utils::bail;
 
 #[derive(Parser, Debug)]

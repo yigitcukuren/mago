@@ -5,11 +5,11 @@ use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Level;
-use mago_service::config::Configuration;
-use mago_service::linter::LintService;
-use mago_service::source::SourceService;
 
 use crate::enum_variants;
+use crate::service::config::Configuration;
+use crate::service::linter::LintService;
+use crate::service::source::SourceService;
 use crate::utils::bail;
 
 #[derive(Parser, Debug)]

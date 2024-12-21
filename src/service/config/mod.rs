@@ -5,14 +5,14 @@ use num_cpus::get as get_logical_cpus;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::config::internal::Entry;
-use crate::formatter::config::FormatterConfiguration;
-use crate::linter::config::LinterConfiguration;
-use crate::source::config::SourceConfiguration;
+use crate::service::config::internal::Entry;
+use crate::service::formatter::config::FormatterConfiguration;
+use crate::service::linter::config::LinterConfiguration;
+use crate::service::source::config::SourceConfiguration;
 
 pub mod error;
 
-use crate::config::error::ConfigurationError;
+use crate::service::config::error::ConfigurationError;
 
 /// The name of the environment variable prefix for mago.
 pub const ENVIRONMENT_PREFIX: &str = "MAGO";
@@ -63,29 +63,6 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    /// Creates a new `Configuration` with the given source and linter configurations.
-    ///
-    /// # Arguments
-    ///
-    /// * `threads` - The number of threads to use.
-    /// * `stack_size` - The size of the stack for each thread.
-    /// * `source` - Configuration options for source discovery.
-    /// * `linter` - Configuration options for the linter.
-    /// * `format` - Configuration options for the formatter.
-    ///
-    /// # Returns
-    ///
-    /// A new `Configuration` with the given source and linter configurations.
-    pub fn new(
-        threads: usize,
-        stack_size: usize,
-        source: SourceConfiguration,
-        linter: LinterConfiguration,
-        format: FormatterConfiguration,
-    ) -> Self {
-        Self { threads, stack_size, source, linter, format }
-    }
-
     pub fn load() -> Result<Configuration, ConfigurationError> {
         use ::config::Config;
         use ::config::Environment;
@@ -134,8 +111,8 @@ mod internal {
     use ::config::builder::BuilderState;
     use ::config::ConfigBuilder;
 
-    use crate::linter::config::LinterConfiguration;
-    use crate::source::config::SourceConfiguration;
+    use crate::service::linter::config::LinterConfiguration;
+    use crate::service::source::config::SourceConfiguration;
 
     /// Internal trait for configuration entries.
     pub(super) trait Entry {

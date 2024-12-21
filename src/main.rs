@@ -5,13 +5,14 @@ use tokio::runtime::Builder;
 
 use mago_feedback::initialize_logger;
 use mago_feedback::LevelFilter;
-use mago_service::config::Configuration;
 
 use crate::commands::MagoCommand;
+use crate::service::config::Configuration;
 use crate::utils::bail;
 
-pub mod commands;
-pub mod utils;
+mod commands;
+mod service;
+mod utils;
 
 pub fn main() -> ! {
     // Set up the logger.
@@ -38,7 +39,7 @@ pub fn main() -> ! {
         MagoCommand::Fix(cmd) => runtime.block_on(commands::fix::execute(cmd, configuration)),
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
         MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd)),
-        MagoCommand::SelfUpdate(cmd) => commands::self_update::execute(cmd, configuration),
+        MagoCommand::SelfUpdate(cmd) => commands::self_update::execute(cmd),
     };
 
     exit(code)
