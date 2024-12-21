@@ -1448,7 +1448,22 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 name = "mago"
 version = "0.0.12"
 dependencies = [
- "mago-cli",
+ "ahash",
+ "clap",
+ "mago-ast",
+ "mago-feedback",
+ "mago-interner",
+ "mago-reporting",
+ "mago-service",
+ "mago-source",
+ "reqwest",
+ "self_update",
+ "serde",
+ "serde_json",
+ "strum",
+ "tempfile",
+ "termtree",
+ "tokio",
 ]
 
 [[package]]
@@ -1477,28 +1492,6 @@ name = "mago-casing"
 version = "0.0.12"
 dependencies = [
  "cruet",
-]
-
-[[package]]
-name = "mago-cli"
-version = "0.0.12"
-dependencies = [
- "ahash",
- "clap",
- "mago-ast",
- "mago-feedback",
- "mago-interner",
- "mago-reporting",
- "mago-service",
- "mago-source",
- "reqwest",
- "self_update",
- "serde",
- "serde_json",
- "strum",
- "tempfile",
- "termtree",
- "tokio",
 ]
 
 [[package]]
