@@ -6,8 +6,8 @@ use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Level;
 
+use crate::config::Configuration;
 use crate::enum_variants;
-use crate::service::config::Configuration;
 use crate::service::linter::LintService;
 use crate::service::source::SourceService;
 use crate::utils::bail;

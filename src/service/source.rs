@@ -9,9 +9,7 @@ use futures::StreamExt;
 use mago_interner::ThreadedInterner;
 use mago_source::SourceManager;
 
-use crate::service::source::config::SourceConfiguration;
-
-pub mod config;
+use crate::config::source::SourceConfiguration;
 
 #[derive(Debug)]
 pub struct SourceService {

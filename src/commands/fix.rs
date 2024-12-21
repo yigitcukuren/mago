@@ -2,7 +2,7 @@ use clap::Parser;
 
 use mago_interner::ThreadedInterner;
 
-use crate::service::config::Configuration;
+use crate::config::Configuration;
 use crate::service::linter::LintService;
 use crate::service::source::SourceService;
 use crate::utils::bail;

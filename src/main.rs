@@ -7,10 +7,11 @@ use mago_feedback::initialize_logger;
 use mago_feedback::LevelFilter;
 
 use crate::commands::MagoCommand;
-use crate::service::config::Configuration;
+use crate::config::Configuration;
 use crate::utils::bail;
 
 mod commands;
+mod config;
 mod service;
 mod utils;
 

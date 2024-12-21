@@ -1,7 +1,12 @@
+use config::builder::BuilderState;
+use config::ConfigBuilder;
 use serde::Deserialize;
 use serde::Serialize;
 
 use mago_formatter::settings::*;
+
+use crate::config::error::ConfigurationError;
+use crate::config::ConfigurationEntry;
 
 /// Configuration options for formatting source code.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -156,5 +161,11 @@ impl FormatterConfiguration {
                 .unwrap_or(d.preserve_multiline_binary_operations),
             method_chain_breaking_style: self.method_chain_breaking_style.unwrap_or(d.method_chain_breaking_style),
         }
+    }
+}
+
+impl ConfigurationEntry for FormatterConfiguration {
+    fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, ConfigurationError> {
+        Ok(builder)
     }
 }

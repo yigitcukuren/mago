@@ -15,11 +15,9 @@ use mago_source::error::SourceError;
 use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 
-use crate::service::linter::config::LinterConfiguration;
-use crate::service::linter::config::LinterLevel;
+use crate::config::linter::LinterConfiguration;
+use crate::config::linter::LinterLevel;
 use crate::service::utils;
-
-pub mod config;
 
 #[derive(Debug)]
 pub struct LintService {
