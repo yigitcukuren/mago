@@ -66,6 +66,90 @@ fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
 }
 
 #[test]
+fn test_heredoc_with_label_name_inside() -> Result<(), SyntaxError> {
+    let code = b"<?php
+
+$a = <<<PHP
+
+PHPDOC <-- this is part of the heredoc.
+
+PHP12  <-- so is this.
+
+PHP;
+
+echo $a;
+";
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::Variable,
+        TokenKind::Whitespace,
+        TokenKind::Equal,
+        TokenKind::Whitespace,
+        TokenKind::DocumentStart(DocumentKind::Heredoc),
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::DocumentEnd,
+        TokenKind::Semicolon,
+        TokenKind::Whitespace,
+        TokenKind::Echo,
+        TokenKind::Whitespace,
+        TokenKind::Variable,
+        TokenKind::Semicolon,
+        TokenKind::Whitespace,
+    ];
+
+    test_lexer(code, expected).map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[test]
+fn test_nowdoc_with_label_name_inside() -> Result<(), SyntaxError> {
+    let code = b"<?php
+
+$a = <<<'PHP'
+
+PHPDOC <-- this is part of the nowdoc.
+
+PHP12  <-- so is this.
+
+PHP;
+
+echo $a;
+";
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::Variable,
+        TokenKind::Whitespace,
+        TokenKind::Equal,
+        TokenKind::Whitespace,
+        TokenKind::DocumentStart(DocumentKind::Nowdoc),
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::StringPart,
+        TokenKind::DocumentEnd,
+        TokenKind::Semicolon,
+        TokenKind::Whitespace,
+        TokenKind::Echo,
+        TokenKind::Whitespace,
+        TokenKind::Variable,
+        TokenKind::Semicolon,
+        TokenKind::Whitespace,
+    ];
+
+    test_lexer(code, expected).map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[test]
 fn test_unterminated_multiple_comment() {
     let code = b"<?php /* hello";
     let expected = vec![TokenKind::OpenTag, TokenKind::Whitespace];

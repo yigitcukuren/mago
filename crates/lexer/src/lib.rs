@@ -759,7 +759,14 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                     only_whitespaces = false;
                                 }
                                 [_, ..] => {
-                                    if only_whitespaces && self.input.peek(length, label.len()) == label {
+                                    if only_whitespaces
+                                        && self.input.peek(length, label.len()) == label
+                                        && self
+                                            .input
+                                            .peek(length + label.len(), 1)
+                                            .get(0)
+                                            .is_none_or(|c| !c.is_ascii_alphanumeric())
+                                    {
                                         length += label.len();
                                         token_kind = TokenKind::DocumentEnd;
 
@@ -807,7 +814,14 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                 length += 1;
                             }
                             [_, ..] => {
-                                if only_whitespaces && self.input.peek(length, label.len()) == label {
+                                if only_whitespaces
+                                    && self.input.peek(length, label.len()) == label
+                                    && self
+                                        .input
+                                        .peek(length + label.len(), 1)
+                                        .get(0)
+                                        .is_none_or(|c| !c.is_ascii_alphanumeric())
+                                {
                                     length += label.len();
                                     terminated = true;
 
