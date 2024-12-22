@@ -106,7 +106,7 @@ pub(super) async fn process_sources(
     for handle in handles {
         let (semantic, reflections) = handle.await??;
 
-        codebase = mago_reflector::merge(codebase, reflections);
+        codebase = mago_reflector::merge(interner, codebase, reflections);
         semantics.push(semantic);
     }
 

@@ -17,8 +17,7 @@ pub fn reflect_function<'ast>(
     context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
 ) -> FunctionLikeReflection {
-    let value = *context.names.get(&function.name);
-    let name = Name::new(value, context.interner.lowered(&value), function.name.span);
+    let name = Name::new(*context.names.get(&function.name), function.name.span);
 
     FunctionLikeReflection {
         attribute_reflections: reflect_attributes(&function.attributes, context),

@@ -52,7 +52,7 @@ impl<'a> Walker<LintContext<'a>> for StrContainsRule {
         };
 
         let function_name = context.resolve_function_name(function_identifier);
-        if function_name != STRPOS {
+        if !function_name.eq_ignore_ascii_case(STRPOS) {
             return;
         }
 
@@ -65,19 +65,16 @@ impl<'a> Walker<LintContext<'a>> for StrContainsRule {
         .with_note("Using `str_contains` makes the code easier to understand and more expressive.");
 
         context.report_with_fix(issue, |plan| {
-            // Mark the fix as potentially unsafe due to possible redefinition of `strpos` in the namespace.
-            let safety = SafetyClassification::PotentiallyUnsafe;
-
             let function_span = function_identifier.span();
 
             // Replace `strpos` with `str_contains`
-            plan.replace(function_span.to_range(), STR_CONTAINS.to_string(), safety);
+            plan.replace(function_span.to_range(), STR_CONTAINS.to_string(), SafetyClassification::Safe);
 
             // Remove `!== false` part
             if left {
-                plan.delete(binary.operator.span().join(binary.rhs.span()).to_range(), safety);
+                plan.delete(binary.operator.span().join(binary.rhs.span()).to_range(), SafetyClassification::Safe);
             } else {
-                plan.delete(binary.lhs.span().join(binary.operator.span()).to_range(), safety);
+                plan.delete(binary.lhs.span().join(binary.operator.span()).to_range(), SafetyClassification::Safe);
             }
         });
     }

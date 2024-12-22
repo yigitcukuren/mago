@@ -319,6 +319,17 @@ mod internal {
         }
 
         #[inline(always)]
+        fn walk_anonymous_class<'ast>(
+            &self,
+            anonymous_class: &'ast AnonymousClass,
+            context: &mut (Vec<VariableReference>, &'a LintContext<'a>),
+        ) {
+            if let Some(argument_list) = anonymous_class.arguments.as_ref() {
+                self.walk_argument_list(argument_list, context);
+            }
+        }
+
+        #[inline(always)]
         fn walk_namespace<'ast>(&self, _: &'ast Namespace, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
         #[inline(always)]
@@ -335,14 +346,6 @@ mod internal {
 
         #[inline(always)]
         fn walk_function<'ast>(&self, _: &'ast Function, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
-
-        #[inline(always)]
-        fn walk_anonymous_class<'ast>(
-            &self,
-            _: &'ast AnonymousClass,
-            _: &mut (Vec<VariableReference>, &'a LintContext<'a>),
-        ) {
-        }
     }
 
     impl<'a> Walker<(bool, &'a LintContext<'a>)> for FunctionCallWalker<'a> {

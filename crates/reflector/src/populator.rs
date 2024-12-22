@@ -98,6 +98,10 @@ fn populate_class_like_reflection(
         populate_interface_data_from_parent_interface(interner, codebase, &mut reflection, parent_interface.value);
     }
 
+    for parent_interface in reflection.inheritance.direct_implemented_interfaces.clone() {
+        populate_interface_data_from_parent_interface(interner, codebase, &mut reflection, parent_interface.value);
+    }
+
     reflection.inheritance.all_extended_classes.shrink_to_fit();
     reflection.inheritance.all_implemented_interfaces.shrink_to_fit();
     reflection.inheritance.names.shrink_to_fit();
@@ -121,7 +125,8 @@ fn populate_interface_data_from_parent_interface(
     reflection: &mut ClassLikeReflection,
     parent_name_id: StringIdentifier,
 ) {
-    let Some(parent_name) = codebase.class_like_names.get(&parent_name_id).cloned() else {
+    let parent_name_id = interner.lowered(&parent_name_id);
+    let Some(parent_name) = codebase.class_like_names_lowercase.get(&parent_name_id).cloned() else {
         return;
     };
 
@@ -157,7 +162,8 @@ fn populate_data_from_parent_classlike(
     reflection: &mut ClassLikeReflection,
     parent_name_id: StringIdentifier,
 ) {
-    let Some(parent_name) = codebase.class_like_names.get(&parent_name_id).cloned() else {
+    let parent_name_id = interner.lowered(&parent_name_id);
+    let Some(parent_name) = codebase.class_like_names_lowercase.get(&parent_name_id).cloned() else {
         return;
     };
 
@@ -215,7 +221,8 @@ fn populate_data_from_trait(
     reflection: &mut ClassLikeReflection,
     trait_name_id: StringIdentifier,
 ) {
-    let Some(trait_name) = codebase.class_like_names.get(&trait_name_id).cloned() else {
+    let trait_name_id = interner.lowered(&trait_name_id);
+    let Some(trait_name) = codebase.class_like_names_lowercase.get(&trait_name_id).cloned() else {
         return;
     };
 
@@ -310,6 +317,10 @@ fn inherit_methods_from_parent(reflection: &mut ClassLikeReflection, parent_refl
         }
 
         if reflection.methods.declaring_members.contains_key(method_name) {
+            if let Some(overriding_method) = reflection.methods.members.get_mut(method_name) {
+                overriding_method.is_overriding = true;
+            }
+
             continue;
         }
 

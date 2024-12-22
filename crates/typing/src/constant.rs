@@ -287,8 +287,9 @@ impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
                     let short_name_id = self.interner.intern(short_name);
                     let full_name_id = self.interner.intern(full_name);
 
-                    let Some(constant) =
-                        codebase.get_constant(&full_name_id).or_else(|| codebase.get_constant(&short_name_id))
+                    let Some(constant) = codebase
+                        .get_constant(self.interner, &full_name_id)
+                        .or_else(|| codebase.get_constant(self.interner, &short_name_id))
                     else {
                         return mixed_kind(false);
                     };

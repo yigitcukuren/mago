@@ -27,12 +27,9 @@ impl<'a> Walker<LintContext<'a>> for MissingAssertDescriptionRule {
             return;
         };
 
-        let alias_used_in_code = context.lookup(&identifier.value());
-        let is_name_imported = context.is_name_imported(identifier);
-        let resolved_name = if is_name_imported { context.lookup_name(identifier) } else { alias_used_in_code };
-
+        let function_name = context.resolve_function_name(identifier);
         // we only care about the "assert" function
-        if "assert" != resolved_name {
+        if !function_name.eq_ignore_ascii_case("assert") {
             return;
         }
 

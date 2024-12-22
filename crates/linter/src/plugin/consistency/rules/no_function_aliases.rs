@@ -113,96 +113,28 @@ impl<'a> Walker<LintContext<'a>> for NoFunctionAliasesRule {
             return;
         };
 
-        // Name used in the code
-        let alias_used_in_code = context.lookup(&identifier.value());
-        // Check if the name is imported
-        let is_name_imported = context.is_name_imported(identifier);
-        // Resolved name (the actual function it refers to)
-        let resolved_name = if is_name_imported { context.lookup_name(identifier) } else { alias_used_in_code };
+        let function_name = context.resolve_function_name(identifier);
 
-        // Check if the resolved name is an alias
-        let resolved_name_lower = resolved_name.to_lowercase();
-
-        let original_name =
-            ALIAS_TO_FUNCTION.iter().find_map(
-                |&(alias, original)| {
-                    if alias == resolved_name_lower {
-                        Some(original)
-                    } else {
-                        None
-                    }
-                },
-            );
+        let original_name = ALIAS_TO_FUNCTION.iter().find_map(|&(alias, original)| {
+            if alias.eq_ignore_ascii_case(function_name) {
+                Some(original)
+            } else {
+                None
+            }
+        });
 
         if let Some(original_name) = original_name {
             // Build the diagnostic message
-            let mut issue = Issue::new(
-                context.level(),
-                if is_name_imported {
-                    if alias_used_in_code == original_name {
-                        // Special case: imported alias as the original function
-                        format!(
-                            "Function `{}` refers to alias function `{}`, which should not be used.",
-                            alias_used_in_code, resolved_name
-                        )
-                    } else {
-                        format!(
-                            "Function alias `{}` (imported as `{}`) should not be used.",
-                            resolved_name, alias_used_in_code
-                        )
-                    }
-                } else {
-                    format!("Function alias `{}` should not be used.", resolved_name)
-                },
-            )
-            .with_annotation(Annotation::primary(identifier.span()).with_message(if is_name_imported {
-                if alias_used_in_code == original_name {
-                    // Special case: imported alias as the original function
-                    format!(
-                        "Function `{}` refers to alias function `{}`, which should not be used.",
-                        alias_used_in_code, resolved_name
-                    )
-                } else {
-                    format!(
-                        "Function alias `{}` (imported as `{}`) should not be used.",
-                        resolved_name, alias_used_in_code
-                    )
-                }
-            } else {
-                format!("Function alias `{}` should not be used.", resolved_name)
-            }))
-            .with_note(format!("The function `{}` is an alias of `{}`.", resolved_name, original_name))
-            .with_help(format!("Consider using the function `{}` instead.", original_name));
-
-            if is_name_imported {
-                if alias_used_in_code != resolved_name {
-                    issue = issue.with_note(format!("`{}` refers to `{}`.", alias_used_in_code, resolved_name));
-                } else {
-                    // Special case: imported alias as the original function, e.g `use function i_am_the_alias as original_func;`
-                    issue = issue.with_note(format!(
-                        "You are importing the alias function `{}` as `{}`.",
-                        resolved_name, alias_used_in_code
-                    ));
-                    issue = issue.with_note(format!("Consider importing `{}` instead.", original_name));
-                }
-            }
+            let issue = Issue::new(context.level(), format!("Function alias `{}` should not be used.", function_name))
+                .with_annotation(
+                    Annotation::primary(identifier.span())
+                        .with_message(format!("This function is an alias of `{}`.", original_name)),
+                )
+                .with_note(format!("The function `{}` is an alias of `{}`.", function_name, original_name))
+                .with_help(format!("Consider using the function `{}` instead.", original_name));
 
             context.report_with_fix(issue, |p| {
-                p.replace(
-                    identifier.span().into(),
-                    format!("\\{}", original_name),
-                    if is_name_imported {
-                        // If the alias is imported, we can safely replace it as we are confident
-                        // that it is the alias.
-                        SafetyClassification::Safe
-                    } else {
-                        // If its not imported, we can't be sure if it's the alias or an override in the
-                        // current namespace, so we mark it as unsafe.
-                        //
-                        // TODO(azjezz): this case can be considered safe is we are in the global namespace.
-                        SafetyClassification::PotentiallyUnsafe
-                    },
-                )
+                p.replace(identifier.span().into(), format!("\\{}", original_name), SafetyClassification::Safe)
             });
         }
     }

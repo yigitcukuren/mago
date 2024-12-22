@@ -144,14 +144,14 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         if let Expression::Identifier(identifier) = function_call.function.as_ref() {
                             let (full_name, short_name) = resolve_name(self.interner, identifier.value());
 
-                            if let Some(function) = codebase.get_function(&full_name) {
+                            if let Some(function) = codebase.get_function(self.interner, &full_name) {
                                 return function.return_type_reflection.as_ref().map_or_else(
                                     || mixed_kind(false),
                                     |return_type| return_type.type_reflection.kind.clone(),
                                 );
                             }
 
-                            if let Some(function) = codebase.get_function(&short_name) {
+                            if let Some(function) = codebase.get_function(self.interner, &short_name) {
                                 return function.return_type_reflection.as_ref().map_or_else(
                                     || mixed_kind(false),
                                     |return_type| return_type.type_reflection.kind.clone(),
@@ -172,11 +172,15 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
 
                         if let Some(codebase) = self.codebase {
                             let class_like_reflection = match &object_kind {
-                                ObjectTypeKind::NamedObject { name, .. } => codebase.get_named_class_like(name),
+                                ObjectTypeKind::NamedObject { name, .. } => {
+                                    codebase.get_named_class_like(self.interner, name)
+                                }
                                 ObjectTypeKind::AnonymousObject { span } => {
                                     codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
                                 }
-                                ObjectTypeKind::EnumCase { enum_name, .. } => codebase.get_enum(enum_name),
+                                ObjectTypeKind::EnumCase { enum_name, .. } => {
+                                    codebase.get_enum(self.interner, enum_name)
+                                }
                                 _ => {
                                     return mixed_kind(false);
                                 }
@@ -205,11 +209,15 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
 
                         if let Some(codebase) = self.codebase {
                             let class_like_reflection = match &object_kind {
-                                ObjectTypeKind::NamedObject { name, .. } => codebase.get_named_class_like(name),
+                                ObjectTypeKind::NamedObject { name, .. } => {
+                                    codebase.get_named_class_like(self.interner, name)
+                                }
                                 ObjectTypeKind::AnonymousObject { span } => {
                                     codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
                                 }
-                                ObjectTypeKind::EnumCase { enum_name, .. } => codebase.get_enum(enum_name),
+                                ObjectTypeKind::EnumCase { enum_name, .. } => {
+                                    codebase.get_enum(self.interner, enum_name)
+                                }
                                 _ => {
                                     return mixed_kind(false);
                                 }
@@ -235,7 +243,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         {
                             let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(class_name) {
+                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
                                 if let Some(method) = class_reflection.get_method(&method.value) {
                                     return method.return_type_reflection.as_ref().map_or_else(
                                         || mixed_kind(false),
@@ -260,11 +268,15 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
 
                         if let Some(codebase) = self.codebase {
                             let class_like_reflection = match &object_kind {
-                                ObjectTypeKind::NamedObject { name, .. } => codebase.get_named_class_like(name),
+                                ObjectTypeKind::NamedObject { name, .. } => {
+                                    codebase.get_named_class_like(self.interner, name)
+                                }
                                 ObjectTypeKind::AnonymousObject { span } => {
                                     codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
                                 }
-                                ObjectTypeKind::EnumCase { enum_name, .. } => codebase.get_enum(enum_name),
+                                ObjectTypeKind::EnumCase { enum_name, .. } => {
+                                    codebase.get_enum(self.interner, enum_name)
+                                }
                                 _ => {
                                     return mixed_kind(false);
                                 }
@@ -301,11 +313,15 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
 
                         if let Some(codebase) = self.codebase {
                             let class_like_reflection = match &object_kind {
-                                ObjectTypeKind::NamedObject { name, .. } => codebase.get_named_class_like(name),
+                                ObjectTypeKind::NamedObject { name, .. } => {
+                                    codebase.get_named_class_like(self.interner, name)
+                                }
                                 ObjectTypeKind::AnonymousObject { span } => {
                                     codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
                                 }
-                                ObjectTypeKind::EnumCase { enum_name, .. } => codebase.get_enum(enum_name),
+                                ObjectTypeKind::EnumCase { enum_name, .. } => {
+                                    codebase.get_enum(self.interner, enum_name)
+                                }
                                 _ => {
                                     return mixed_kind(false);
                                 }
@@ -339,7 +355,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         {
                             let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(class_name) {
+                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
                                 if let Some(property) = class_reflection.get_property(&variable.name) {
                                     return property
                                         .type_reflection
@@ -366,7 +382,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         {
                             let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(class_name) {
+                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
                                 if let Some(constant) = class_reflection.get_constant(&constant.value) {
                                     return constant
                                         .type_reflection
@@ -391,12 +407,12 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         if let Expression::Identifier(name) = &function_closure_creation.function {
                             let (full_name, short_name) = resolve_name(self.interner, name.value());
 
-                            if let Some(function) = codebase.get_function(&full_name) {
+                            if let Some(function) = codebase.get_function(self.interner, &full_name) {
                                 return TypeKind::from(function);
                             }
 
                             // fallback to short name, welcome to PHP.
-                            if let Some(function) = codebase.get_function(&short_name) {
+                            if let Some(function) = codebase.get_function(self.interner, &short_name) {
                                 return TypeKind::from(function);
                             }
                         }
@@ -432,14 +448,14 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
 
                         let class_reflection = match object_kind {
                             ObjectTypeKind::NamedObject { name, .. } => {
-                                if let Some(class_like) = codebase.get_named_class_like(&name) {
+                                if let Some(class_like) = codebase.get_named_class_like(self.interner, &name) {
                                     class_like
                                 } else {
                                     return any_closure_kind();
                                 }
                             }
                             ObjectTypeKind::EnumCase { enum_name, .. } => {
-                                if let Some(class_like) = codebase.get_enum(&enum_name) {
+                                if let Some(class_like) = codebase.get_enum(self.interner, &enum_name) {
                                     class_like
                                 } else {
                                     return any_closure_kind();
@@ -476,7 +492,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         };
 
                         let class_name = self.names.get(class_name);
-                        let Some(class_reflection) = codebase.get_class(class_name) else {
+                        let Some(class_reflection) = codebase.get_class(self.interner, class_name) else {
                             return any_closure_kind();
                         };
 

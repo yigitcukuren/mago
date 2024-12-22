@@ -52,17 +52,21 @@ pub fn reflect(interner: &ThreadedInterner, source: &Source, program: &Program, 
 /// If any conflicts are found (e.g., duplicate functions, classes, or constants), they are recorded
 /// as issues in the returned result.
 #[inline]
-pub fn merge(mut reflection: CodebaseReflection, other_reflection: CodebaseReflection) -> CodebaseReflection {
+pub fn merge(
+    interner: &ThreadedInterner,
+    mut reflection: CodebaseReflection,
+    other_reflection: CodebaseReflection,
+) -> CodebaseReflection {
     for (_, function_like) in other_reflection.function_like_reflections.into_iter() {
-        reflection.register_function_like(function_like);
+        reflection.register_function_like(interner, function_like);
     }
 
     for (_, class_like) in other_reflection.class_like_reflections.into_iter() {
-        reflection.register_class_like(class_like);
+        reflection.register_class_like(interner, class_like);
     }
 
     for (_, constant) in other_reflection.constant_reflections.into_iter() {
-        reflection.register_constant(constant);
+        reflection.register_constant(interner, constant);
     }
 
     reflection

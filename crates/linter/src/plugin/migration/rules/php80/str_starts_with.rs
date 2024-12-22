@@ -53,7 +53,7 @@ impl<'a> Walker<LintContext<'a>> for StrStartsWithRule {
         };
 
         let function_name = context.resolve_function_name(function_identifier);
-        if function_name != STRPOS {
+        if !function_name.eq_ignore_ascii_case(STRPOS) {
             return;
         }
 
@@ -66,24 +66,20 @@ impl<'a> Walker<LintContext<'a>> for StrStartsWithRule {
         .with_note("Using `str_starts_with` makes the code easier to understand and more expressive.");
 
         context.report_with_fix(issue, |plan| {
-            // we can't guarantee that the replacement is safe, since `strpos` can be re-defined in
-            // the current namespace, so we'll mark it as potentially unsafe.
-            let safety = SafetyClassification::PotentiallyUnsafe;
-
             if !equal {
-                plan.insert(binary.span().start_position().offset, "!", safety);
+                plan.insert(binary.span().start_position().offset, "!", SafetyClassification::Safe);
             }
 
             let function_span = function_identifier.span();
 
-            plan.replace(function_span.to_range(), STR_STARTS_WITH.to_string(), safety);
+            plan.replace(function_span.to_range(), STR_STARTS_WITH.to_string(), SafetyClassification::Safe);
 
             if left {
                 // delete the `=== 0` part
-                plan.delete(binary.operator.span().join(binary.rhs.span()).to_range(), safety);
+                plan.delete(binary.operator.span().join(binary.rhs.span()).to_range(), SafetyClassification::Safe);
             } else {
                 // delete the `0 ===` part
-                plan.delete(binary.lhs.span().join(binary.operator.span()).to_range(), safety);
+                plan.delete(binary.lhs.span().join(binary.operator.span()).to_range(), SafetyClassification::Safe);
             }
         });
     }

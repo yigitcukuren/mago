@@ -47,3 +47,17 @@ pub struct InheritanceReflection {
     /// A lookup map of string identifiers to class-like names.
     pub names: HashMap<StringIdentifier, Name>,
 }
+
+impl InheritanceReflection {
+    pub fn implements_interfaces(&self) -> bool {
+        !self.all_implemented_interfaces.is_empty()
+    }
+
+    pub fn extends_classes(&self) -> bool {
+        !self.all_extended_classes.is_empty()
+    }
+
+    pub fn has_children(&self) -> bool {
+        !self.children.is_empty()
+    }
+}

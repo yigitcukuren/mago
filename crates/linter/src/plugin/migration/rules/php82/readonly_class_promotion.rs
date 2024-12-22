@@ -22,8 +22,13 @@ impl Rule for ReadonlyClassPromotionRule {
 
 impl<'a> Walker<LintContext<'a>> for ReadonlyClassPromotionRule {
     fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
-        // Check if the class is already marked readonly
-        if class.modifiers.contains_readonly() {
+        let name = context.semantics.names.get(&class.name);
+        let Some(reflection) = context.codebase.get_class(context.interner, name) else {
+            return;
+        };
+
+        // If the class is readonly, extends another class or has children, we can't promote it.
+        if reflection.is_readonly || reflection.inheritance.extends_classes() || reflection.inheritance.has_children() {
             return;
         }
 
@@ -66,27 +71,18 @@ impl<'a> Walker<LintContext<'a>> for ReadonlyClassPromotionRule {
             .with_note("Classes that contains only readonly properties can be marked readonly themselves.")
             .with_help("Add the `readonly` modifier to the class and remove `readonly` from all properties");
 
-        // Determine safety classification
-        let safety = if class.extends.is_some() {
-            SafetyClassification::Unsafe
-        } else if class.modifiers.contains_final() {
-            SafetyClassification::Safe
-        } else {
-            SafetyClassification::PotentiallyUnsafe
-        };
-
         context.report_with_fix(issue, |plan| {
             // Remove readonly from all properties
             for member in class.members.iter() {
                 if let ClassLikeMember::Property(property) = member {
                     if let Some(readonly) = property.modifiers().get_readonly() {
-                        plan.delete(readonly.span().to_range(), safety);
+                        plan.delete(readonly.span().to_range(), SafetyClassification::Safe);
                     }
                 }
             }
 
             // Add readonly keyword to the class
-            plan.insert(class.class.span.start_position().offset, "readonly ", safety);
+            plan.insert(class.class.span.start_position().offset, "readonly ", SafetyClassification::Safe);
         });
     }
 }

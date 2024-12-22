@@ -24,13 +24,11 @@ impl<'a> Walker<LintContext<'a>> for ClassRule {
         let mut issues = vec![];
 
         let name = context.lookup(&class.name.value);
-        let fqcn = context.lookup_name(&class.name);
 
         if !mago_casing::is_class_case(name) {
             let issue = Issue::new(context.level(), format!("Class name `{}` should be in class case.", name))
                 .with_annotations([
-                    Annotation::primary(class.name.span()).with_message("Class `{}` is declared here.".to_string()),
-                    Annotation::secondary(class.span()).with_message(format!("Class `{}` is defined here.", fqcn)),
+                    Annotation::primary(class.name.span()).with_message(format!("Class `{}` is declared here.", name))
                 ])
                 .with_note(format!("The class name `{}` does not follow class naming convention.", name))
                 .with_help(format!(
@@ -53,8 +51,7 @@ impl<'a> Walker<LintContext<'a>> for ClassRule {
                     format!("Abstract class name `{}` should be prefixed with `Abstract`.", name),
                 )
                 .with_annotations([
-                    Annotation::primary(class.name.span()).with_message("Class `{}` is declared here.".to_string()),
-                    Annotation::secondary(class.span()).with_message(format!("Class `{}` is defined here.", fqcn)),
+                    Annotation::primary(class.name.span()).with_message(format!("Class `{}` is declared here.", name))
                 ])
                 .with_note(format!("The abstract class name `{}` does not follow PSR naming convention.", name))
                 .with_help(format!("Consider renaming it to `{}` to adhere to the naming convention.", suggested_name)),

@@ -131,13 +131,13 @@ impl LintContext<'_> {
         // If no leading `\`, resolve based on the namespace hierarchy:
         // 1. Check if the fully qualified function name (FQFN) exists in the current context.
         let fqfn_id = self.semantics.names.get(&identifier.position());
-        if self.codebase.function_exists(&self.interner.lowered(fqfn_id)) {
+        if self.codebase.function_exists(self.interner, &fqfn_id) {
             // The FQFN exists, so return it.
             return self.lookup(fqfn_id);
         }
 
         // If FQFN doesn't exist, check if the global function name exists.
-        if !name.contains('\\') && self.codebase.function_exists(&self.interner.lowered(&name_id)) {
+        if !name.contains('\\') && self.codebase.function_exists(self.interner, &name_id) {
             // If global function name exists, return it.
             return name;
         }
@@ -189,13 +189,13 @@ impl LintContext<'_> {
         // If no leading `\`, resolve based on the namespace hierarchy:
         // 1. Check if the fully qualified constant name (FQCN) exists in the current context.
         let fqcn_id = self.semantics.names.get(&identifier.position());
-        if self.codebase.constant_exists(fqcn_id) {
+        if self.codebase.constant_exists(self.interner, fqcn_id) {
             // The FQCN exists, so return it.
             return self.lookup(fqcn_id);
         }
 
         // If FQCN doesn't exist, check if the global constant name exists.
-        if !name.contains('\\') && self.codebase.constant_exists(&name_id) {
+        if !name.contains('\\') && self.codebase.constant_exists(self.interner, &name_id) {
             // If global constant name exists,
             return name;
         }

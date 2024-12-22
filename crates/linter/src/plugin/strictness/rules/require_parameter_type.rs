@@ -1,4 +1,5 @@
 use mago_ast::ast::*;
+use mago_reflection::class_like::ClassLikeReflection;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_walker::Walker;
@@ -21,12 +22,8 @@ impl Rule for RequireParameterTypeRule {
     }
 }
 
-impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
-    fn walk_in_function_like_parameter<'ast>(
-        &self,
-        function_like_parameter: &'ast FunctionLikeParameter,
-        context: &mut LintContext<'a>,
-    ) {
+impl RequireParameterTypeRule {
+    fn report(function_like_parameter: &FunctionLikeParameter, context: &mut LintContext<'_>) {
         if function_like_parameter.hint.is_some() {
             return;
         }
@@ -42,5 +39,86 @@ impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
                 .with_note("Type hints improve code readability and help prevent type-related errors.")
                 .with_help(format!("Consider adding a type hint to parameter `{}`.", parameter_name)),
         );
+    }
+
+    fn report_class_like_members(
+        reflection: &ClassLikeReflection,
+        members: &[ClassLikeMember],
+        context: &mut LintContext<'_>,
+    ) {
+        for member in members {
+            let ClassLikeMember::Method(method) = member else {
+                continue;
+            };
+
+            let Some(method_reflection) = reflection.get_method(&method.name.value) else {
+                continue;
+            };
+
+            if method_reflection.is_overriding {
+                // This method is overriding a method from a parent class.
+                continue;
+            }
+
+            for parameter in method.parameters.parameters.iter() {
+                Self::report(parameter, context);
+            }
+        }
+    }
+}
+
+impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
+    fn walk_in_function(&self, function: &Function, context: &mut LintContext<'a>) {
+        for parameter in function.parameters.parameters.iter() {
+            Self::report(parameter, context);
+        }
+    }
+
+    fn walk_in_closure(&self, closure: &Closure, context: &mut LintContext<'a>) {
+        for parameter in closure.parameters.parameters.iter() {
+            Self::report(parameter, context);
+        }
+    }
+
+    fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut LintContext<'a>) {
+        for parameter in arrow_function.parameters.parameters.iter() {
+            Self::report(parameter, context);
+        }
+    }
+
+    fn walk_in_interface(&self, interface: &Interface, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&interface.name);
+        let Some(reflection) = context.codebase.get_interface(context.interner, name) else {
+            return;
+        };
+
+        Self::report_class_like_members(reflection, interface.members.as_slice(), context);
+    }
+
+    fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&class.name);
+        let Some(reflection) = context.codebase.get_class(context.interner, name) else {
+            return;
+        };
+
+        Self::report_class_like_members(reflection, class.members.as_slice(), context);
+    }
+
+    fn walk_in_enum(&self, r#enum: &Enum, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&r#enum.name);
+        let Some(reflection) = context.codebase.get_enum(context.interner, name) else {
+            return;
+        };
+
+        Self::report_class_like_members(reflection, r#enum.members.as_slice(), context);
+    }
+
+    fn walk_in_trait(&self, r#trait: &Trait, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&r#trait.name);
+        let Some(reflection) = context.codebase.get_trait(context.interner, name) else {
+            return;
+        };
+
+        Self::report_class_like_members(reflection, r#trait.members.as_slice(), context);
     }
 }

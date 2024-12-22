@@ -28,7 +28,7 @@ impl Rule for NoRequestAllRule {
 }
 
 impl<'a> Walker<LintContext<'a>> for NoRequestAllRule {
-    fn walk_in_block(&self, block: &Block, context: &mut LintContext<'a>) {
+    fn walk_block(&self, block: &Block, context: &mut LintContext<'a>) {
         let request_all_references = find_method_references_in_block(block, &|reference| {
             let ClassLikeMemberSelector::Identifier(method) = reference.get_selector() else {
                 return false;

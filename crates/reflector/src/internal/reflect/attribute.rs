@@ -16,11 +16,7 @@ pub fn reflect_attributes<'ast>(
     for attribute_list in attribute_lists.iter() {
         for attribute in attribute_list.attributes.iter() {
             let reflection = AttributeReflection {
-                name: {
-                    let value = *context.names.get(&attribute.name);
-
-                    Name { value, lower: context.interner.lowered(&value), span: attribute.name.span() }
-                },
+                name: Name::new(*context.names.get(&attribute.name), attribute.name.span()),
                 arguments: reflect_attribute_arguments(&attribute.arguments, context),
                 span: attribute.span(),
             };
@@ -48,11 +44,7 @@ pub fn reflect_attribute_arguments<'ast>(
                 span: arg.span(),
             },
             Argument::Named(arg) => AttributeArgumentReflection::Named {
-                name: {
-                    let value = arg.name.value;
-
-                    Name { value, lower: context.interner.lowered(&value), span: arg.name.span }
-                },
+                name: Name::new(arg.name.value, arg.name.span),
                 value_type_reflection: mago_typing::infere(context.interner, context.source, context.names, &arg.value),
                 span: arg.span(),
             },

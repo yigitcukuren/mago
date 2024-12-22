@@ -2,6 +2,7 @@ use std::collections::hash_map::Entry;
 
 use ahash::HashMap;
 use ahash::HashSet;
+use mago_interner::ThreadedInterner;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -26,13 +27,16 @@ pub mod r#type;
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct CodebaseReflection {
     pub constant_reflections: HashMap<Name, ConstantReflection>,
-    pub constant_identifiers: HashMap<StringIdentifier, Name>,
+    pub constant_names: HashMap<StringIdentifier, Name>,
+    pub constant_names_lowercase: HashMap<StringIdentifier, Name>,
 
     pub function_like_reflections: HashMap<FunctionLikeName, FunctionLikeReflection>,
-    pub function_identifiers: HashMap<StringIdentifier, FunctionLikeName>,
+    pub function_names: HashMap<StringIdentifier, FunctionLikeName>,
+    pub function_names_lowercase: HashMap<StringIdentifier, FunctionLikeName>,
 
     pub class_like_reflections: HashMap<ClassLikeName, ClassLikeReflection>,
     pub class_like_names: HashMap<StringIdentifier, ClassLikeName>,
+    pub class_like_names_lowercase: HashMap<StringIdentifier, ClassLikeName>,
 
     pub direct_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
     pub all_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
@@ -51,13 +55,15 @@ impl CodebaseReflection {
     /// If the constant already exists, it will not be added again.
     ///
     /// Returns `false` if the constant already exists.
-    pub fn register_constant(&mut self, constant: ConstantReflection) -> bool {
-        if self.constant_reflections.contains_key(&constant.name) {
+    pub fn register_constant(&mut self, interner: &ThreadedInterner, reflection: ConstantReflection) -> bool {
+        let lowercase_name = lower_constant_name(interner, &reflection.name.value);
+        if self.constant_names_lowercase.contains_key(&lowercase_name) {
             return false;
         }
 
-        self.constant_identifiers.insert(constant.name.value, constant.name);
-        self.constant_reflections.insert(constant.name, constant);
+        self.constant_names_lowercase.insert(lowercase_name, reflection.name);
+        self.constant_names.insert(reflection.name.value, reflection.name);
+        self.constant_reflections.insert(reflection.name, reflection);
 
         true
     }
@@ -67,19 +73,21 @@ impl CodebaseReflection {
     /// If the function-like entity already exists, it will not be added again.
     ///
     /// Returns `false` if the function-like entity already exists.
-    pub fn register_function_like(&mut self, function_like: FunctionLikeReflection) -> bool {
+    pub fn register_function_like(&mut self, interner: &ThreadedInterner, reflection: FunctionLikeReflection) -> bool {
         let mut exists = false;
 
-        if let FunctionLikeName::Function(id) = function_like.name {
-            if let Entry::Vacant(e) = self.function_identifiers.entry(id.lower) {
-                e.insert(function_like.name);
+        if let FunctionLikeName::Function(name) = reflection.name {
+            let lowercase_name = interner.lowered(&name.value);
+            if let Entry::Vacant(e) = self.function_names_lowercase.entry(lowercase_name) {
+                self.function_names.insert(name.value, reflection.name);
+                e.insert(reflection.name);
             } else {
                 exists = true;
             }
         }
 
         if !exists {
-            self.function_like_reflections.insert(function_like.name, function_like);
+            self.function_like_reflections.insert(reflection.name, reflection);
         }
 
         exists
@@ -90,34 +98,50 @@ impl CodebaseReflection {
     /// If the class-like entity already exists, it will not be added again.
     ///
     /// Returns `false` if the class-like entity already exists.
-    pub fn register_class_like(&mut self, class_like: ClassLikeReflection) -> bool {
+    pub fn register_class_like(&mut self, interner: &ThreadedInterner, reflection: ClassLikeReflection) -> bool {
         let mut exists = false;
 
-        match class_like.name {
-            ClassLikeName::Class(identifier) => {
-                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.lower) {
-                    e.insert(class_like.name);
+        match reflection.name {
+            ClassLikeName::Class(name) => {
+                let lowercase_name = interner.lowered(&name.value);
+
+                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
+                    self.class_like_names.insert(name.value, reflection.name);
+
+                    e.insert(reflection.name);
                 } else {
                     exists = true;
                 }
             }
-            ClassLikeName::Enum(identifier) => {
-                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.lower) {
-                    e.insert(class_like.name);
+            ClassLikeName::Enum(name) => {
+                let lowercase_name = interner.lowered(&name.value);
+
+                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
+                    self.class_like_names.insert(name.value, reflection.name);
+
+                    e.insert(reflection.name);
                 } else {
                     exists = true;
                 }
             }
-            ClassLikeName::Interface(identifier) => {
-                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.lower) {
-                    e.insert(class_like.name);
+            ClassLikeName::Interface(name) => {
+                let lowercase_name = interner.lowered(&name.value);
+
+                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
+                    self.class_like_names.insert(name.value, reflection.name);
+
+                    e.insert(reflection.name);
                 } else {
                     exists = true;
                 }
             }
-            ClassLikeName::Trait(identifier) => {
-                if let Entry::Vacant(e) = self.class_like_names.entry(identifier.lower) {
-                    e.insert(class_like.name);
+            ClassLikeName::Trait(name) => {
+                let lowercase_name = interner.lowered(&name.value);
+
+                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
+                    self.class_like_names.insert(name.value, reflection.name);
+
+                    e.insert(reflection.name);
                 } else {
                     exists = true;
                 }
@@ -126,59 +150,67 @@ impl CodebaseReflection {
         }
 
         if !exists {
-            self.class_like_reflections.insert(class_like.name, class_like);
+            self.class_like_reflections.insert(reflection.name, reflection);
         }
 
         exists
     }
 
-    /// Checks if a constant with the given name exists.
-    pub fn constant_exists(&self, name: &StringIdentifier) -> bool {
-        self.constant_identifiers.contains_key(name)
+    pub fn constant_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let id = lower_constant_name(interner, id);
+
+        self.constant_names_lowercase.contains_key(&id)
     }
 
-    /// Checks if a function with the given name exists.
-    pub fn function_exists(&self, name: &StringIdentifier) -> bool {
-        self.function_identifiers.contains_key(name)
+    pub fn function_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let id = interner.lowered(id);
+
+        self.function_names_lowercase.contains_key(&id)
     }
 
-    /// Checks if a class with the given name exists.
-    pub fn class_exists(&self, name: &StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(name), Some(ClassLikeName::Class(_)))
+    pub fn class_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let id = interner.lowered(id);
+
+        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Class(_)))
     }
 
-    /// Checks if an enum with the given name exists.
-    pub fn enum_exists(&self, name: &StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(name), Some(ClassLikeName::Enum(_)))
+    pub fn enum_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let id = interner.lowered(id);
+
+        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Enum(_)))
     }
 
-    /// Checks if an interface with the given name exists.
-    pub fn interface_exists(&self, name: &StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(name), Some(ClassLikeName::Interface(_)))
+    pub fn interface_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let name = interner.lowered(id);
+
+        matches!(self.class_like_names_lowercase.get(&name), Some(ClassLikeName::Interface(_)))
     }
 
-    /// Checks if a trait with the given name exists.
-    pub fn trait_exists(&self, name: &StringIdentifier) -> bool {
-        matches!(self.class_like_names.get(name), Some(ClassLikeName::Trait(_)))
+    pub fn trait_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
+        let id = interner.lowered(id);
+
+        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Trait(_)))
     }
 
-    /// Retrieves a constant by name, if it exists.
-    pub fn get_constant(&self, name: &StringIdentifier) -> Option<&ConstantReflection> {
-        if let Some(identifier) = self.constant_identifiers.get(name) {
-            self.constant_reflections.get(identifier)
+    pub fn get_constant(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ConstantReflection> {
+        let id = lower_constant_name(interner, id);
+
+        if let Some(name) = self.constant_names_lowercase.get(&id) {
+            self.constant_reflections.get(name)
         } else {
             None
         }
     }
 
-    /// Retrieves a function-like by its identifier, if it exists.
-    pub fn get_function_like(&self, identifier: FunctionLikeName) -> Option<&FunctionLikeReflection> {
-        self.function_like_reflections.get(&identifier)
+    pub fn get_function_like(&self, name: FunctionLikeName) -> Option<&FunctionLikeReflection> {
+        self.function_like_reflections.get(&name)
     }
 
     /// Retrieves a function by name, if it exists.
-    pub fn get_function(&self, identifier: &StringIdentifier) -> Option<&FunctionLikeReflection> {
-        if let Some(name) = self.function_identifiers.get(identifier) {
+    pub fn get_function(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&FunctionLikeReflection> {
+        let id = interner.lowered(id);
+
+        if let Some(name) = self.function_names.get(&id) {
             self.function_like_reflections.get(name)
         } else {
             None
@@ -214,50 +246,64 @@ impl CodebaseReflection {
     }
 
     /// Retrieves a class-like entity by its identifier, if it exists.
-    pub fn get_class_like(&self, identifier: ClassLikeName) -> Option<&ClassLikeReflection> {
-        self.class_like_reflections.get(&identifier)
+    pub fn get_class_like(&self, name: ClassLikeName) -> Option<&ClassLikeReflection> {
+        self.class_like_reflections.get(&name)
     }
 
     /// Retrieves a class-like entity by its name, if it exists.
-    pub fn get_named_class_like(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier) = self.class_like_names.get(name) {
-            self.class_like_reflections.get(identifier)
+    pub fn get_named_class_like(
+        &self,
+        interner: &ThreadedInterner,
+        id: &StringIdentifier,
+    ) -> Option<&ClassLikeReflection> {
+        let id = interner.lowered(id);
+
+        if let Some(name) = self.class_like_names_lowercase.get(&id) {
+            self.class_like_reflections.get(name)
         } else {
             None
         }
     }
 
     /// Retrieves a class by name, if it exists.
-    pub fn get_class(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Class(_)) = self.class_like_names.get(name) {
-            self.class_like_reflections.get(identifier)
+    pub fn get_class(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        let id = interner.lowered(id);
+
+        if let Some(name @ ClassLikeName::Class(_)) = self.class_like_names_lowercase.get(&id) {
+            self.class_like_reflections.get(name)
         } else {
             None
         }
     }
 
     /// Retrieves an enum by name, if it exists.
-    pub fn get_enum(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Enum(_)) = self.class_like_names.get(name) {
-            self.class_like_reflections.get(identifier)
+    pub fn get_enum(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        let id = interner.lowered(id);
+        
+        if let Some(name @ ClassLikeName::Enum(_)) = self.class_like_names_lowercase.get(&id) {
+            self.class_like_reflections.get(name)
         } else {
             None
         }
     }
 
     /// Retrieves an interface by name, if it exists.
-    pub fn get_interface(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Interface(_)) = self.class_like_names.get(name) {
-            self.class_like_reflections.get(identifier)
+    pub fn get_interface(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        let id = interner.lowered(id);
+        
+        if let Some(name @ ClassLikeName::Interface(_)) = self.class_like_names.get(&id) {
+            self.class_like_reflections.get(name)
         } else {
             None
         }
     }
 
     /// Retrieves a trait by name, if it exists.
-    pub fn get_trait(&self, name: &StringIdentifier) -> Option<&ClassLikeReflection> {
-        if let Some(identifier @ ClassLikeName::Trait(_)) = self.class_like_names.get(name) {
-            self.class_like_reflections.get(identifier)
+    pub fn get_trait(&self,interner: &ThreadedInterner,  id: &StringIdentifier) -> Option<&ClassLikeReflection> {
+        let id = interner.lowered(id);
+        
+        if let Some(name @ ClassLikeName::Trait(_)) = self.class_like_names.get(&id) {
+            self.class_like_reflections.get(name)
         } else {
             None
         }
@@ -306,4 +352,20 @@ impl CodebaseReflection {
             .max_by_key(|(_, class_like)| class_like.span.start.offset)
             .map(|(_, class_like)| class_like)
     }
+}
+
+fn lower_constant_name(interner: &ThreadedInterner, name: &StringIdentifier) -> StringIdentifier {
+    let name = interner.lookup(name);
+
+    let mut parts: Vec<_> = name.split('\\').map(str::to_owned).collect();
+    let total_parts = parts.len();
+    if total_parts > 1 {
+        parts = parts
+            .into_iter()
+            .enumerate()
+            .map(|(i, part)| if i < total_parts - 1 { part.to_ascii_lowercase() } else { part })
+            .collect::<Vec<_>>();
+    }
+
+    interner.intern(parts.join("\\"))
 }

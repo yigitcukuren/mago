@@ -24,7 +24,7 @@ impl<'a> Walker<LintContext<'a>> for UndefinedConstantRule {
         let identifier = &constant_access.name;
         let constant_name = context.resolve_constant_name(identifier);
         let constant_name_id = context.interner.intern(constant_name);
-        if context.codebase.constant_exists(&constant_name_id) {
+        if context.codebase.constant_exists(context.interner, &constant_name_id) {
             return;
         }
 

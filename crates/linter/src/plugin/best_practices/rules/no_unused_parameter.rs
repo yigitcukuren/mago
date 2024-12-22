@@ -16,6 +16,16 @@ const FUNC_GET_ARGS: &str = "func_get_args";
 #[derive(Clone, Debug)]
 pub struct NoUnusedParameterRule;
 
+impl Rule for NoUnusedParameterRule {
+    fn get_name(&self) -> &'static str {
+        "no-unused-parameter"
+    }
+
+    fn get_default_level(&self) -> Option<Level> {
+        Some(Level::Note)
+    }
+}
+
 impl NoUnusedParameterRule {
     fn report(
         &self,
@@ -23,6 +33,7 @@ impl NoUnusedParameterRule {
         function_like: &impl HasSpan,
         context: &mut LintContext,
         kind: &'static str,
+        should_fix: bool,
     ) {
         if parameter.ampersand.is_some() {
             return;
@@ -41,6 +52,12 @@ impl NoUnusedParameterRule {
             .with_note(format!("This parameter is declared but not used within the {}.", kind))
             .with_help("Consider prefixing the parameter with an underscore (`_`) to indicate that it is intentionally unused, or remove it if it is not needed.");
 
+        if !should_fix {
+            context.report(issue);
+
+            return;
+        }
+
         context.report_with_fix(issue, |plan| {
             plan.insert(
                 parameter.variable.span().start.offset + 1, // skip the leading `$`
@@ -48,16 +65,6 @@ impl NoUnusedParameterRule {
                 SafetyClassification::PotentiallyUnsafe,
             );
         });
-    }
-}
-
-impl Rule for NoUnusedParameterRule {
-    fn get_name(&self) -> &'static str {
-        "no-unused-parameter"
-    }
-
-    fn get_default_level(&self) -> Option<Level> {
-        Some(Level::Note)
     }
 }
 
@@ -77,7 +84,7 @@ impl<'a> Walker<LintContext<'a>> for NoUnusedParameterRule {
                 continue;
             }
 
-            self.report(parameter, function, context, "function");
+            self.report(parameter, function, context, "function", true);
         }
     }
 
@@ -96,41 +103,148 @@ impl<'a> Walker<LintContext<'a>> for NoUnusedParameterRule {
                 continue;
             }
 
-            self.report(parameter, closure, context, "closure");
+            self.report(parameter, closure, context, "closure", true);
         }
     }
 
-    fn walk_in_method<'ast>(&self, method: &'ast Method, context: &mut LintContext<'a>) {
-        let MethodBody::Concrete(block) = &method.body else {
+    fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&class.name);
+        let Some(reflection) = context.codebase.get_class(context.interner, name) else {
             return;
         };
 
-        if !context.option("methods").and_then(|o| o.as_bool()).unwrap_or(false) {
-            tracing::trace!("Skipping method parameters check because the rule is disabled for methods.");
+        for member in class.members.iter() {
+            let ClassLikeMember::Method(method) = member else {
+                continue;
+            };
 
-            return;
-        }
+            let MethodBody::Concrete(block) = &method.body else {
+                continue;
+            };
 
-        if potentially_contains_function_call(block, FUNC_GET_ARGS, context) {
-            // `func_get_args` is potentially used, so we can't determine if the parameters are unused
-            // in this case
+            let Some(method_reflection) = reflection.get_method(&method.name.value) else {
+                continue;
+            };
 
-            return;
-        }
-
-        let foreign_variables = get_foreign_variable_names(block, context);
-
-        for parameter in method.parameters.parameters.iter() {
-            // Skip promoted properties
-            if parameter.is_promoted_property() {
+            if method_reflection.is_overriding {
+                // This method is overriding a method from a parent class.
                 continue;
             }
 
-            if foreign_variables.contains(&parameter.variable.name) {
+            if potentially_contains_function_call(block, FUNC_GET_ARGS, context) {
+                // `func_get_args` is potentially used, so we can't determine if the parameters are unused
+                // in this case
                 continue;
             }
 
-            self.report(parameter, method, context, "method");
+            let foreign_variables = get_foreign_variable_names(block, context);
+
+            for parameter in method.parameters.parameters.iter() {
+                // Skip promoted properties
+                if parameter.is_promoted_property() {
+                    continue;
+                }
+
+                if foreign_variables.contains(&parameter.variable.name) {
+                    continue;
+                }
+
+                self.report(parameter, method, context, "method", true);
+            }
+        }
+    }
+
+    fn walk_in_enum(&self, r#enum: &Enum, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&r#enum.name);
+        let Some(reflection) = context.codebase.get_enum(context.interner, name) else {
+            return;
+        };
+
+        for member in r#enum.members.iter() {
+            let ClassLikeMember::Method(method) = member else {
+                continue;
+            };
+
+            let MethodBody::Concrete(block) = &method.body else {
+                continue;
+            };
+
+            let Some(method_reflection) = reflection.get_method(&method.name.value) else {
+                continue;
+            };
+
+            if method_reflection.is_overriding {
+                // This method is overriding a method from a parent class.
+                continue;
+            }
+
+            if potentially_contains_function_call(block, FUNC_GET_ARGS, context) {
+                // `func_get_args` is potentially used, so we can't determine if the parameters are unused
+                // in this case
+                continue;
+            }
+
+            let foreign_variables = get_foreign_variable_names(block, context);
+
+            for parameter in method.parameters.parameters.iter() {
+                // Skip promoted properties
+                if parameter.is_promoted_property() {
+                    continue;
+                }
+
+                if foreign_variables.contains(&parameter.variable.name) {
+                    continue;
+                }
+
+                self.report(parameter, method, context, "method", true);
+            }
+        }
+    }
+
+    fn walk_in_trait(&self, r#trait: &Trait, context: &mut LintContext<'a>) {
+        let name = context.semantics.names.get(&r#trait.name);
+        let Some(reflection) = context.codebase.get_trait(context.interner, name) else {
+            return;
+        };
+
+        for member in r#trait.members.iter() {
+            let ClassLikeMember::Method(method) = member else {
+                continue;
+            };
+
+            let MethodBody::Concrete(block) = &method.body else {
+                continue;
+            };
+
+            let Some(method_reflection) = reflection.get_method(&method.name.value) else {
+                continue;
+            };
+
+            if method_reflection.is_overriding {
+                // This method is overriding a method from a parent class.
+                continue;
+            }
+
+            if potentially_contains_function_call(block, FUNC_GET_ARGS, context) {
+                // `func_get_args` is potentially used, so we can't determine if the parameters are unused
+                // in this case
+                continue;
+            }
+
+            let foreign_variables = get_foreign_variable_names(block, context);
+
+            for parameter in method.parameters.parameters.iter() {
+                // Skip promoted properties
+                if parameter.is_promoted_property() {
+                    continue;
+                }
+
+                if foreign_variables.contains(&parameter.variable.name) {
+                    continue;
+                }
+
+                self.report(parameter, method, context, "method", true);
+            }
         }
     }
 
@@ -144,7 +258,7 @@ impl<'a> Walker<LintContext<'a>> for NoUnusedParameterRule {
 
         for parameter in arrow_function.parameters.parameters.iter() {
             if !is_variable_used_in_expression(&arrow_function.expression, context, parameter.variable.name) {
-                self.report(parameter, arrow_function, context, "arrow function");
+                self.report(parameter, arrow_function, context, "arrow function", true);
             }
         }
     }

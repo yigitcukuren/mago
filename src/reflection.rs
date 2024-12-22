@@ -47,7 +47,7 @@ pub async fn reflect_all_external_sources(
     let mut combined_reflection = CodebaseReflection::new();
     for task in reflection_tasks {
         let source_reflection = task.await??; // Await task completion and handle errors.
-        combined_reflection = mago_reflector::merge(combined_reflection, source_reflection);
+        combined_reflection = mago_reflector::merge(interner, combined_reflection, source_reflection);
     }
 
     Ok(combined_reflection)

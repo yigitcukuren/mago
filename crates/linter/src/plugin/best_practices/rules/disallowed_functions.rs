@@ -30,7 +30,7 @@ impl<'a> Walker<LintContext<'a>> for DisallowedFunctionsRule {
 
         // Check if the function is disallowed
         if let Some(disallowed_functions) = context.option("functions").and_then(|o| o.as_array()) {
-            if disallowed_functions.iter().any(|f| f.as_str().is_some_and(|f| f.eq(function_name))) {
+            if disallowed_functions.iter().any(|f| f.as_str().is_some_and(|f| f.eq_ignore_ascii_case(function_name))) {
                 let issue = Issue::new(context.level(), format!("Function `{}` is disallowed.", function_name))
                     .with_annotation(
                         Annotation::primary(function_call.span())
@@ -50,7 +50,7 @@ impl<'a> Walker<LintContext<'a>> for DisallowedFunctionsRule {
         // Check if the function is part of a disallowed extension
         if let Some(disallowed_extensions) = context.option("extensions").and_then(|o| o.as_array()) {
             let Some(extension) = EXTENSION_FUNCTIONS.into_iter().find_map(|(extension, function_names)| {
-                if function_names.iter().any(|f| function_name.eq(*f)) {
+                if function_names.iter().any(|f| function_name.eq_ignore_ascii_case(f)) {
                     Some(extension)
                 } else {
                     None

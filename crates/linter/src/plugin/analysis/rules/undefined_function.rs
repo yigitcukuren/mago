@@ -27,8 +27,7 @@ impl<'a> Walker<LintContext<'a>> for UndefinedFunctionRule {
 
         let function_name = context.resolve_function_name(identifier);
         let function_name_id = context.interner.intern(function_name);
-        let function_name_lower = context.interner.lowered(&function_name_id);
-        if context.codebase.function_exists(&function_name_lower) {
+        if context.codebase.function_exists(context.interner, &function_name_id) {
             return;
         }
 
