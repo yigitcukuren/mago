@@ -131,7 +131,7 @@ impl LintContext<'_> {
         // If no leading `\`, resolve based on the namespace hierarchy:
         // 1. Check if the fully qualified function name (FQFN) exists in the current context.
         let fqfn_id = self.semantics.names.get(&identifier.position());
-        if self.codebase.function_exists(self.interner, &fqfn_id) {
+        if self.codebase.function_exists(self.interner, fqfn_id) {
             // The FQFN exists, so return it.
             return self.lookup(fqfn_id);
         }

@@ -279,7 +279,7 @@ impl CodebaseReflection {
     /// Retrieves an enum by name, if it exists.
     pub fn get_enum(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
-        
+
         if let Some(name @ ClassLikeName::Enum(_)) = self.class_like_names_lowercase.get(&id) {
             self.class_like_reflections.get(name)
         } else {
@@ -290,7 +290,7 @@ impl CodebaseReflection {
     /// Retrieves an interface by name, if it exists.
     pub fn get_interface(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
-        
+
         if let Some(name @ ClassLikeName::Interface(_)) = self.class_like_names.get(&id) {
             self.class_like_reflections.get(name)
         } else {
@@ -299,9 +299,9 @@ impl CodebaseReflection {
     }
 
     /// Retrieves a trait by name, if it exists.
-    pub fn get_trait(&self,interner: &ThreadedInterner,  id: &StringIdentifier) -> Option<&ClassLikeReflection> {
+    pub fn get_trait(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
-        
+
         if let Some(name @ ClassLikeName::Trait(_)) = self.class_like_names.get(&id) {
             self.class_like_reflections.get(name)
         } else {
