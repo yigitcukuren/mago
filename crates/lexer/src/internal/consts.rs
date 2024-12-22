@@ -15,7 +15,7 @@ pub const CAST_TYPES: [(&[u8], TokenKind); 12] = [
     (b"(unset)", TokenKind::UnsetCast),
 ];
 
-pub const KEYWORD_TYPES: [(&[u8], TokenKind); 84] = [
+pub const KEYWORD_TYPES: [(&[u8], TokenKind); 85] = [
     (b"eval", TokenKind::Eval),
     (b"die", TokenKind::Die),
     (b"empty", TokenKind::Empty),
@@ -42,6 +42,7 @@ pub const KEYWORD_TYPES: [(&[u8], TokenKind); 84] = [
     (b"break", TokenKind::Break),
     (b"case", TokenKind::Case),
     (b"catch", TokenKind::Catch),
+    (b"callable", TokenKind::Callable),
     (b"class", TokenKind::Class),
     (b"clone", TokenKind::Clone),
     (b"continue", TokenKind::Continue),

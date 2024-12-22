@@ -66,6 +66,30 @@ fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
 }
 
 #[test]
+fn test_callable_token() -> Result<(), SyntaxError> {
+    let code = b"<?php function foo(callable $bar) {}";
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::Function,
+        TokenKind::Whitespace,
+        TokenKind::Identifier,
+        TokenKind::LeftParenthesis,
+        TokenKind::Callable,
+        TokenKind::Whitespace,
+        TokenKind::Variable,
+        TokenKind::RightParenthesis,
+        TokenKind::Whitespace,
+        TokenKind::LeftBrace,
+        TokenKind::RightBrace,
+    ];
+
+    test_lexer(code, expected).map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[test]
 fn test_heredoc_with_label_name_inside() -> Result<(), SyntaxError> {
     let code = b"<?php
 
