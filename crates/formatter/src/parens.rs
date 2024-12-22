@@ -164,7 +164,7 @@ impl<'a> Formatter<'a> {
                 return self.function_callee_expression_need_parenthesis(expression);
             }
 
-            return self.callee_expression_need_parenthesis(expression);
+            return self.callee_expression_need_parenthesis(expression, false);
         }
 
         if let Node::Call(call) = self.parent_node() {
@@ -189,17 +189,17 @@ impl<'a> Formatter<'a> {
                 // TODO(azjezz): we should add an option to remove parentheses.
                 return true;
             } else {
-                return self.callee_expression_need_parenthesis(expression);
+                return self.callee_expression_need_parenthesis(expression, false);
             }
         }
 
         if let Node::Instantiation(_) = self.parent_node() {
-            return self.callee_expression_need_parenthesis(expression);
+            return self.callee_expression_need_parenthesis(expression, true);
         }
 
         if let Node::ArrayAccess(access) = self.parent_node() {
             return if expression.span().end.offset < access.left_bracket.start.offset {
-                self.callee_expression_need_parenthesis(expression)
+                self.callee_expression_need_parenthesis(expression, false)
             } else {
                 false
             };
@@ -216,7 +216,7 @@ impl<'a> Formatter<'a> {
             };
 
             return if expression.span().end.offset < offset {
-                self.callee_expression_need_parenthesis(expression)
+                self.callee_expression_need_parenthesis(expression, false)
             } else {
                 false
             };
@@ -225,7 +225,11 @@ impl<'a> Formatter<'a> {
         false
     }
 
-    const fn callee_expression_need_parenthesis(&self, expression: &'a Expression) -> bool {
+    const fn callee_expression_need_parenthesis(&self, expression: &'a Expression, instantiation: bool) -> bool {
+        if instantiation && matches!(expression, Expression::Call(_)) {
+            return true;
+        }
+
         !matches!(
             expression,
             Expression::Literal(_)

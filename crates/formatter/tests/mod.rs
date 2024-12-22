@@ -4,7 +4,8 @@ use mago_parser::parse_source;
 use mago_source::error::SourceError;
 use mago_source::SourceManager;
 
-mod format;
+pub mod format;
+pub mod parens;
 
 pub fn test_format(code: impl AsRef<str>, expected: &str, settings: FormatSettings) -> Result<(), SourceError> {
     let interner = ThreadedInterner::new();
