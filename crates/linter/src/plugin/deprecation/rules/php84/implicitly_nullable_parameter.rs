@@ -44,11 +44,11 @@ impl<'a> Walker<LintContext<'a>> for ImplicitlyNullableParameterRule {
 
         let parameter_name = context.lookup(&function_like_parameter.variable.name);
         let current_hint = context.get_readable_hint(hint);
-        let replacement_hint = match hint {
-            Hint::Union(_) => format!("null|{}", current_hint),
-            Hint::Intersection(_) => format!("null|({})", current_hint),
-            Hint::Parenthesized(_) => format!("null|{}", current_hint),
-            _ => format!("?{}", current_hint),
+        let (prefix, resulting_hint) = match hint {
+            Hint::Union(_) => ("null|", format!("null|{}", current_hint)),
+            Hint::Intersection(_) => ("null|", format!("null|({})", current_hint)),
+            Hint::Parenthesized(_) => ("null|", format!("null|{}", current_hint)),
+            _ => ("null|", format!("?{}", current_hint)),
         };
 
         let issue = Issue::new(
@@ -61,12 +61,12 @@ impl<'a> Walker<LintContext<'a>> for ImplicitlyNullableParameterRule {
         )
         .with_help(format!(
             "Consider using an explicit nullable type hint ( `{}` ) or replacing the default value.",
-            replacement_hint
+            resulting_hint
         ))
         .with_note("Updating this will future-proof your code and align it with PHP 8.4 standards.");
 
         context.report_with_fix(issue, |plan| {
-            plan.replace(hint.span().to_range(), replacement_hint, SafetyClassification::Safe);
+            plan.insert(hint.span().start_position().offset, prefix, SafetyClassification::Safe);
         });
     }
 }
