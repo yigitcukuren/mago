@@ -8,7 +8,9 @@ pub fn main() -> io::Result<()> {
     println!("cargo:rustc-env=TARGET={}", std::env::var("TARGET").unwrap());
     // Determine the stubs directory and output path
     let stubs_dir = Path::new("stubs");
-    let output_file = stubs_dir.join("map.rs");
+
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
+    let output_file = Path::new(&out_dir).join("stubs_map.rs");
 
     // Ensure the stubs directory exists
     if !stubs_dir.exists() {

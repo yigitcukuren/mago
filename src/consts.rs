@@ -53,4 +53,4 @@ pub static CURRENT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     })
 });
 
-include!("../stubs/map.rs");
+include!(concat!(env!("OUT_DIR"), "/stubs_map.rs"));
