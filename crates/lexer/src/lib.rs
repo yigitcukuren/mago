@@ -764,7 +764,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                         && self
                                             .input
                                             .peek(length + label.len(), 1)
-                                            .get(0)
+                                            .first()
                                             .is_none_or(|c| !c.is_ascii_alphanumeric())
                                     {
                                         length += label.len();
@@ -819,7 +819,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                                     && self
                                         .input
                                         .peek(length + label.len(), 1)
-                                        .get(0)
+                                        .first()
                                         .is_none_or(|c| !c.is_ascii_alphanumeric())
                                 {
                                     length += label.len();
