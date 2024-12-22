@@ -707,40 +707,39 @@ fn parse_infix_expression(stream: &mut TokenStream<'_, '_>, lhs: Expression) -> 
 ///  * `($x == $y) = $z` is transformed to `$x == ($y = $z)`
 ///  * `($x && $y) = $z` is transformed to `$x && ($y = $z)`
 ///  * `($x + $y) = $z` is transformed to `$x + ($y = $z)`
-///
-/// This correction is necessary to ensure that the AST accurately reflects the
-/// intended order of operations.
-///
-/// See https://www.php.net/manual/en/language.operators.precedence.php for more information.
+///  * `((string) $bar) = $foo` is transformed to `(string) ($bar = $foo)`
 fn create_assignment_expression(lhs: Expression, operator: AssignmentOperator, rhs: Expression) -> Expression {
-    // If the left-hand side is a comparison or logical operation, we need to adjust the associativity
-    // of the assignment operation to ensure it is applied to the rightmost operand.
-    let Expression::Binary(operation) = lhs else {
-        return Expression::AssignmentOperation(Assignment { lhs: Box::new(lhs), operator, rhs: Box::new(rhs) });
-    };
+    match lhs {
+        Expression::UnaryPrefix(prefix) => Expression::UnaryPrefix(UnaryPrefix {
+            operator: prefix.operator,
+            operand: Box::new(create_assignment_expression(*prefix.operand, operator, rhs)),
+        }),
+        Expression::Binary(operation) => {
+            if operation.operator.is_comparison()
+                || operation.operator.is_logical()
+                || operation.operator.is_bitwise()
+                || operation.operator.is_arithmetic()
+            {
+                // make `($x == $y) = $z` into `$x == ($y = $z)`
+                let Binary { lhs: binary_lhs, operator: binary_operator, rhs: binary_rhs } = operation;
 
-    if operation.operator.is_comparison()
-        || operation.operator.is_logical()
-        || operation.operator.is_bitwise()
-        || operation.operator.is_arithmetic()
-    {
-        // make `($x == $y) = $z` into `$x == ($y = $z)`
-        let Binary { lhs: binary_lhs, operator: binary_operator, rhs: binary_rhs } = operation;
-
-        Expression::Binary(Binary {
-            lhs: binary_lhs,
-            operator: binary_operator,
-            rhs: Box::new(Expression::AssignmentOperation(Assignment {
-                lhs: binary_rhs,
-                operator,
-                rhs: Box::new(rhs),
-            })),
-        })
-    } else {
-        Expression::AssignmentOperation(Assignment {
-            lhs: Box::new(Expression::Binary(operation)),
-            operator,
-            rhs: Box::new(rhs),
-        })
+                Expression::Binary(Binary {
+                    lhs: binary_lhs,
+                    operator: binary_operator,
+                    rhs: Box::new(Expression::AssignmentOperation(Assignment {
+                        lhs: binary_rhs,
+                        operator,
+                        rhs: Box::new(rhs),
+                    })),
+                })
+            } else {
+                Expression::AssignmentOperation(Assignment {
+                    lhs: Box::new(Expression::Binary(operation)),
+                    operator,
+                    rhs: Box::new(rhs),
+                })
+            }
+        }
+        _ => Expression::AssignmentOperation(Assignment { lhs: Box::new(lhs), operator, rhs: Box::new(rhs) }),
     }
 }
