@@ -90,6 +90,63 @@ fn test_callable_token() -> Result<(), SyntaxError> {
 }
 
 #[test]
+fn test_assignment_operators() -> Result<(), SyntaxError> {
+    let code = b"<?php
+        =
+        +=
+        -=
+        *=
+        /=
+        %=
+        **=
+        .=
+        &=
+        |=
+        ^=
+        <<=
+        >>=
+        ??=
+    ";
+
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::Equal,
+        TokenKind::Whitespace,
+        TokenKind::PlusEqual,
+        TokenKind::Whitespace,
+        TokenKind::MinusEqual,
+        TokenKind::Whitespace,
+        TokenKind::AsteriskEqual,
+        TokenKind::Whitespace,
+        TokenKind::SlashEqual,
+        TokenKind::Whitespace,
+        TokenKind::PercentEqual,
+        TokenKind::Whitespace,
+        TokenKind::AsteriskAsteriskEqual,
+        TokenKind::Whitespace,
+        TokenKind::DotEqual,
+        TokenKind::Whitespace,
+        TokenKind::AmpersandEqual,
+        TokenKind::Whitespace,
+        TokenKind::PipeEqual,
+        TokenKind::Whitespace,
+        TokenKind::CaretEqual,
+        TokenKind::Whitespace,
+        TokenKind::LeftShiftEqual,
+        TokenKind::Whitespace,
+        TokenKind::RightShiftEqual,
+        TokenKind::Whitespace,
+        TokenKind::QuestionQuestionEqual,
+        TokenKind::Whitespace,
+    ];
+
+    test_lexer(code, expected).map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[test]
 fn test_heredoc_with_label_name_inside() -> Result<(), SyntaxError> {
     let code = b"<?php
 
