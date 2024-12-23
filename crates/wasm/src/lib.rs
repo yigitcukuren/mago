@@ -123,7 +123,7 @@ pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, Js
     let settings = get_format_settings(settings);
 
     let interner = ThreadedInterner::new();
-    let mut manager = SourceManager::new(interner.clone());
+    let manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code, true);
 
     let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -206,7 +206,7 @@ pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, Js
 pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result<JsValue, JsValue> {
     let settings = get_format_settings(format_settings);
     let interner = ThreadedInterner::new();
-    let mut manager = SourceManager::new(interner.clone());
+    let manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code, true);
     let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let semantics = Semantics::build(&interner, source);

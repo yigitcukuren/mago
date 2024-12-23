@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::path::PathBuf;
 
 use ahash::HashSet;
 use async_walkdir::Filtering;
@@ -50,10 +51,27 @@ pub async fn load(
         starting_paths.push((root.clone(), true));
     }
 
-    let excludes_set: HashSet<&String> = excludes.iter().collect();
+    let excludes_set: HashSet<Exclusion> = excludes
+        .iter()
+        .map(|exclude| {
+            // if it contains a wildcard, treat it as a pattern
+            if exclude.contains('*') {
+                Exclusion::Pattern(exclude.clone())
+            } else {
+                let path = Path::new(exclude);
+
+                if path.is_absolute() {
+                    Exclusion::Path(path.to_path_buf())
+                } else {
+                    Exclusion::Path(root.join(path))
+                }
+            }
+        })
+        .collect();
+
     let extensions: HashSet<&String> = extensions.iter().collect();
 
-    let mut manager = SourceManager::new(interner.clone());
+    let manager = SourceManager::new(interner.clone());
     for (path, user_defined) in starting_paths.into_iter() {
         let mut entries = WalkDir::new(path)
             // filter out .git directories
@@ -68,21 +86,31 @@ pub async fn load(
         // Check for errors after processing all entries in the current path
         while let Some(entry) = entries.next().await {
             let path = entry?.path();
+            if !path.is_file() {
+                continue;
+            }
 
+            // Skip user-defined sources if they are included in the `includes` list.
+            if user_defined && includes.iter().any(|include| path.starts_with(include)) {
+                continue;
+            }
+
+            // Skip excluded files and directories.
             if is_excluded(&path, &excludes_set) {
                 continue;
             }
 
-            if path.is_file() && is_accepted_file(&path, &extensions) {
-                let name = match path.strip_prefix(root) {
-                    Ok(rel_path) => rel_path.to_path_buf(),
-                    Err(_) => path.clone(),
-                };
-
-                let name_str = name.to_string_lossy().to_string();
-
-                manager.insert_path(name_str, path.clone(), user_defined);
+            // Skip files that do not have an accepted extension.
+            if !is_accepted_file(&path, &extensions) {
+                continue;
             }
+
+            let name = match path.strip_prefix(root) {
+                Ok(rel_path) => rel_path.display().to_string(),
+                Err(_) => path.display().to_string(),
+            };
+
+            manager.insert_path(name, path.clone(), user_defined);
         }
     }
 
@@ -95,8 +123,16 @@ pub async fn load(
     Ok(manager)
 }
 
-fn is_excluded(path: &Path, excludes: &HashSet<&String>) -> bool {
-    excludes.iter().any(|ex| path.ends_with(ex) || glob_match::glob_match(ex, path.to_string_lossy().as_ref()))
+fn is_excluded(path: &Path, excludes: &HashSet<Exclusion>) -> bool {
+    for exclusion in excludes {
+        return match exclusion {
+            Exclusion::Path(p) if path.starts_with(p) => true,
+            Exclusion::Pattern(p) if glob_match::glob_match(p, path.to_string_lossy().as_ref()) => true,
+            _ => continue,
+        };
+    }
+
+    false
 }
 
 fn is_accepted_file(path: &Path, extensions: &HashSet<&String>) -> bool {
@@ -105,4 +141,10 @@ fn is_accepted_file(path: &Path, extensions: &HashSet<&String>) -> bool {
     } else {
         path.extension().and_then(|s| s.to_str()).map(|ext| extensions.contains(&ext.to_string())).unwrap_or(false)
     }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq)]
+enum Exclusion {
+    Path(PathBuf),
+    Pattern(String),
 }

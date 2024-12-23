@@ -154,7 +154,7 @@ impl SourceManager {
     /// # Returns
     ///
     /// The identifier of the inserted source.
-    pub fn insert_content(&mut self, name: String, content: String, user_defined: bool) -> SourceIdentifier {
+    pub fn insert_content(&self, name: String, content: String, user_defined: bool) -> SourceIdentifier {
         if let Some(entry) = self.sources.iter().find(|entry| entry.name == name) {
             return *entry.key();
         }
