@@ -12,7 +12,10 @@ pub fn test_format(code: impl AsRef<str>, expected: &str, settings: FormatSettin
     let manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code.as_ref().to_string(), true);
     let source = manager.load(&source_id)?;
-    let (program, _) = parse_source(&interner, &source);
+    let (program, error) = parse_source(&interner, &source);
+
+    pretty_assertions::assert_eq!(error, None, "Error parsing code");
+
     let formatted = mago_formatter::format(settings, &interner, &source, &program);
 
     pretty_assertions::assert_eq!(expected, formatted, "Formatted code does not match expected");
