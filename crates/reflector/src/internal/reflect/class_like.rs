@@ -474,6 +474,7 @@ fn reflect_class_like_property<'ast>(
                     is_static,
                     item_span: item.span(),
                     definition_span: plain_property.span(),
+                    is_overriding: false,
                 })
             }
         }
@@ -583,6 +584,7 @@ fn reflect_class_like_property<'ast>(
                 is_static: false,
                 item_span: hooked_property.item.span(),
                 definition_span: hooked_property.span(),
+                is_overriding: false,
             })
         }
     }

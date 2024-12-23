@@ -263,6 +263,10 @@ fn inherit_properties_from_parent(reflection: &mut ClassLikeReflection, parent_r
 
     for (property_name, declaring_classlike) in &parent_reflection.properties.declaring_members {
         if reflection.properties.declaring_members.contains_key(property_name) {
+            if let Some(overriding_property) = reflection.properties.members.get_mut(property_name) {
+                overriding_property.is_overriding = true;
+            }
+
             continue;
         }
 

@@ -33,4 +33,5 @@ pub struct PropertyReflection {
     pub is_static: bool,
     pub item_span: Span,
     pub definition_span: Span,
+    pub is_overriding: bool,
 }
