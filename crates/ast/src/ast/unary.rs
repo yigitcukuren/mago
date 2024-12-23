@@ -57,6 +57,11 @@ pub struct UnaryPostfix {
 
 impl UnaryPrefixOperator {
     #[inline]
+    pub const fn is_error_control(&self) -> bool {
+        matches!(self, Self::ErrorControl(_))
+    }
+
+    #[inline]
     pub const fn is_constant(&self) -> bool {
         matches!(
             self,

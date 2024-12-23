@@ -27,5 +27,5 @@ pub fn test_callee_needs_parens() -> Result<(), SourceError> {
         $f = new (foo())();
     "#};
 
-    test_format(code, expected, FormatSettings { single_quote: true, ..Default::default() })
+    test_format(code, expected, FormatSettings::default())
 }

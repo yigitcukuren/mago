@@ -22,9 +22,9 @@ impl<'a> Formatter<'a> {
         }
 
         if self.called_or_accessed_node_needs_parenthesis(node)
-            || self.binarish_node_needs_parenthesis(node)
+            || self.binary_node_needs_parens(node)
+            || self.unary_prefix_node_needs_parens(node)
             || self.conditional_or_assignment_needs_parenthesis(node)
-            || self.cast_needs_parenthesis(node)
         {
             return true;
         }
@@ -44,19 +44,7 @@ impl<'a> Formatter<'a> {
         self.is_unary_or_binary_or_ternary(parent_node)
     }
 
-    fn cast_needs_parenthesis(&self, node: Node<'a>) -> bool {
-        if !matches!(node, Node::UnaryPrefix(operation) if operation.operator.is_cast()) {
-            return false;
-        }
-
-        let Some(parent_node) = self.nth_parent_kind(2) else {
-            return false;
-        };
-
-        self.is_unary_or_binary_or_ternary(parent_node)
-    }
-
-    fn binarish_node_needs_parenthesis(&self, node: Node<'a>) -> bool {
+    fn binary_node_needs_parens(&self, node: Node<'a>) -> bool {
         let operator = match node {
             Node::Binary(e) => &e.operator,
             _ => return false,
@@ -149,6 +137,35 @@ impl<'a> Formatter<'a> {
 
         if !should_flatten(operator, parent_operator) {
             return true;
+        }
+
+        false
+    }
+
+    fn unary_prefix_node_needs_parens(&self, node: Node<'a>) -> bool {
+        let operator = match node {
+            Node::UnaryPrefix(e) => &e.operator,
+            _ => return false,
+        };
+
+        if operator.is_error_control() {
+            let Some(parent_node) = self.nth_parent_kind(2) else {
+                return false;
+            };
+
+            let Node::Binary(binary) = parent_node else {
+                return false;
+            };
+
+            return node.span().end.offset < binary.operator.span().start.offset;
+        }
+
+        if operator.is_cast() {
+            let Some(parent_node) = self.nth_parent_kind(2) else {
+                return false;
+            };
+
+            return self.is_unary_or_binary_or_ternary(parent_node);
         }
 
         false
