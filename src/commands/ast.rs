@@ -22,27 +22,44 @@ use crate::error::Error;
 #[derive(Parser, Debug)]
 #[command(
     name = "ast",
-    about = "Parses a PHP file and prints its abstract syntax tree (AST).",
-    long_about = "The `ast` command takes a PHP file as input, parses it, and outputs the abstract syntax tree (AST). The output can be displayed in a tree format or JSON format based on user preference."
+    about = "parse and visualize the abstract syntax tree (AST) of a PHP file",
+    long_about = r#"
+The `ast` command parses a PHP file and outputs its abstract syntax tree (AST).
+
+This command helps you understand the structure of your PHP code and debug parsing issues.
+"#
 )]
 pub struct AstCommand {
     /// Path to the PHP file to be parsed.
-    #[arg(long, short = 'f', help = "The PHP file to parse.", required = true)]
+    #[arg(long, short = 'f', help = "specify the PHP file to parse", required = true)]
     pub file: String,
 
-    #[arg(long, help = "Includes names in the output.")]
+    /// Include resolved names in the output.
+    #[arg(long, help = "include resolved names in the output to show symbol resolution")]
     pub include_names: bool,
 
-    /// Outputs the AST in JSON format if specified.
-    #[arg(long, help = "Outputs the result in JSON format.")]
+    /// Output the AST in JSON format for integration with other tools.
+    #[arg(long, help = "output the AST in JSON format")]
     pub json: bool,
 
-    /// Specifies the issue reporting target to use.
-    #[arg(long, default_value_t, help = "The issue reporting target to use.", ignore_case = true, value_parser = enum_variants!(ReportingTarget))]
+    /// Specify where the results should be reported.
+    #[arg(
+        long,
+        default_value_t,
+        help = "specify where the results should be reported",
+        ignore_case = true,
+        value_parser = enum_variants!(ReportingTarget)
+    )]
     pub reporting_target: ReportingTarget,
 
-    /// Specifies the issue reporting format to use.
-    #[arg(long, default_value_t, help = "The issue reporting format to use.", ignore_case = true, value_parser = enum_variants!(ReportingFormat))]
+    /// Choose the format for reporting issues.
+    #[arg(
+        long,
+        default_value_t,
+        help = "choose the format for reporting issues",
+        ignore_case = true,
+        value_parser = enum_variants!(ReportingFormat)
+    )]
     pub reporting_format: ReportingFormat,
 }
 

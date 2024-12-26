@@ -23,20 +23,20 @@ use crate::utils;
 #[command(
     name = "format",
     aliases = ["fmt"],
-    about = "Format source files using defined rules.",
+    about = "format source files to match defined style rules",
     long_about = r#"
-The `format` command ensures that source files adhere to the formatting rules defined
-in the configuration file. Optionally, you can check if files are formatted correctly
-without applying changes.
+The `format` command applies consistent formatting to source files based on the rules defined in the configuration file.
+
+This command helps maintain a consistent codebase style, improving readability and collaboration.
 "#
 )]
 pub struct FormatCommand {
     /// Perform a dry run to check if files are already formatted.
-    #[arg(long, short = 'd', help = "Check if the source files are formatted correctly.")]
+    #[arg(long, short = 'd', help = "check if the source files are already formatted without making changes")]
     pub dry_run: bool,
 
     /// Specify the width of the printed source code for formatting purposes.
-    #[arg(long, short = 'w', help = "The width of the printed source code.", value_name = "WIDTH")]
+    #[arg(long, short = 'w', help = "set the maximum line width for the formatted source code", value_name = "WIDTH")]
     pub print_width: Option<usize>,
 }
 
