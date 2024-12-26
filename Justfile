@@ -35,9 +35,9 @@ publish:
     cargo publish -p mago-feedback --allow-dirty
     cargo publish -p mago-fixer --allow-dirty
     cargo publish -p mago-reporting --allow-dirty
-    cargo publish -p mago-formatter --allow-dirty
     cargo publish -p mago-lexer --allow-dirty
     cargo publish -p mago-parser --allow-dirty
+    cargo publish -p mago-formatter --allow-dirty
     cargo publish -p mago-names --allow-dirty
     cargo publish -p mago-symbol-table --allow-dirty
     cargo publish -p mago-semantics --allow-dirty
