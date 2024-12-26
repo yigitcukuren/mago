@@ -59,35 +59,37 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> Resul
         filter_fix_plans(&interner, issues, command.get_classification());
 
     let total = plans.len();
+    let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Magenta);
     let mut handles = Vec::with_capacity(total);
     for (source, plan) in plans.into_iter() {
         handles.push(tokio::spawn({
             let source_manager = source_manager.clone();
             let interner = interner.clone();
+            let progress_bar = progress_bar.clone();
 
             async move {
                 let source = source_manager.load(&source)?;
                 let source_content = interner.lookup(&source.content);
-
-                utils::apply_changes(
+                let result = utils::apply_changes(
                     &interner,
                     &source_manager,
                     &source,
                     plan.execute(source_content).get_fixed(),
                     command.dry_run,
-                )
+                );
+
+                progress_bar.inc(1);
+
+                result
             }
         }));
     }
 
-    let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Magenta);
     let mut changed = 0;
     for handle in handles {
         if handle.await?? {
             changed += 1;
         }
-
-        progress_bar.inc(1);
     }
 
     remove_progress_bar(progress_bar);

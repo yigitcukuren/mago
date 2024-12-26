@@ -107,6 +107,7 @@ async fn format_all(
     let sources: Vec<_> = source_manager.user_defined_source_ids().collect();
 
     let length = sources.len();
+    let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Magenta);
     let mut handles = Vec::with_capacity(length);
 
     // Spawn async tasks to format each source concurrently.
@@ -114,21 +115,25 @@ async fn format_all(
         handles.push(tokio::spawn({
             let interner = interner.clone();
             let manager = source_manager.clone();
+            let progress_bar = progress_bar.clone();
 
-            async move { format_source(&interner, &manager, &source, settings, dry_run) }
+            async move {
+                let result = format_source(&interner, &manager, &source, settings, dry_run);
+
+                progress_bar.inc(1);
+
+                result
+            }
         }));
     }
 
     let mut changed = 0;
-    let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Magenta);
 
     // Process each formatting task and update progress bar.
     for handle in handles {
         if handle.await?? {
             changed += 1;
         }
-
-        progress_bar.inc(1);
     }
 
     remove_progress_bar(progress_bar);

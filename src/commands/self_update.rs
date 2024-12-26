@@ -1,10 +1,10 @@
 use std::process::ExitCode;
 
 use clap::Parser;
-
-use mago_feedback::info;
 use self_update::backends::github::Update;
 use self_update::Status;
+
+use mago_feedback::info;
 
 use crate::consts::*;
 use crate::error::Error;

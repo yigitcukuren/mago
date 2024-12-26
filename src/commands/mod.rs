@@ -1,3 +1,4 @@
+use check::CheckCommand;
 use clap::builder::styling::AnsiColor;
 use clap::builder::styling::Effects;
 use clap::builder::Styles;
@@ -10,6 +11,7 @@ use crate::commands::lint::LintCommand;
 use crate::commands::self_update::SelfUpdateCommand;
 
 pub mod ast;
+pub mod check;
 pub mod fix;
 pub mod format;
 pub mod lint;
@@ -44,14 +46,16 @@ pub const CLAP_STYLING: Styles = Styles::styled()
 "#,
 )]
 pub enum MagoCommand {
+    #[command(name = "ast")]
+    Ast(AstCommand),
     #[command(name = "lint")]
     Lint(LintCommand),
     #[command(name = "fix")]
     Fix(FixCommand),
+    #[command(name = "check")]
+    Check(CheckCommand),
     #[command(name = "format")]
     Format(FormatCommand),
-    #[command(name = "ast")]
-    Ast(AstCommand),
     #[command(name = "self-update")]
     SelfUpdate(SelfUpdateCommand),
 }

@@ -81,7 +81,7 @@ pub(super) async fn process_sources(
     let sources: Vec<_> = manager.user_defined_source_ids().collect();
     let length = sources.len();
 
-    let progress_bar = create_progress_bar(length, "🧹  Linting", ProgressBarTheme::Cyan);
+    let progress_bar = create_progress_bar(length * 2, "🧹  Linting", ProgressBarTheme::Cyan);
 
     let mut codebase = reflect_all_external_sources(interner, manager).await?;
     let mut handles = Vec::with_capacity(length);
@@ -89,6 +89,7 @@ pub(super) async fn process_sources(
         handles.push(tokio::spawn({
             let interner = interner.clone();
             let manager = manager.clone();
+            let progress_bar = progress_bar.clone();
 
             async move {
                 // Step 1: load the source
@@ -96,6 +97,7 @@ pub(super) async fn process_sources(
                 // Step 2: build semantics
                 let semantics = Semantics::build(&interner, source);
                 let reflections = reflect(&interner, &semantics.source, &semantics.program, &semantics.names);
+                progress_bar.inc(1);
 
                 Result::<_, Error>::Ok((semantics, reflections))
             }
@@ -117,6 +119,7 @@ pub(super) async fn process_sources(
     for semantic in semantics {
         handles.push(tokio::spawn({
             let linter = linter.clone();
+            let progress_bar = progress_bar.clone();
 
             async move {
                 let mut issues = linter.lint(&semantic);
@@ -124,6 +127,8 @@ pub(super) async fn process_sources(
                 if let Some(error) = &semantic.parse_error {
                     issues.push(Into::<Issue>::into(error));
                 }
+
+                progress_bar.inc(1);
 
                 Result::<_, SourceError>::Ok(issues)
             }
