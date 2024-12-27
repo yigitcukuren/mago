@@ -34,7 +34,6 @@ pub struct ClassLikeReflection {
     pub properties: MemeberCollection<PropertyReflection>,
     pub methods: MemeberCollection<FunctionLikeReflection>,
     pub used_traits: HashSet<StringIdentifier>,
-    pub used_trait_names: HashMap<StringIdentifier, Name>,
     pub backing_type: Option<TypeReflection>,
     pub is_final: bool,
     pub is_readonly: bool,

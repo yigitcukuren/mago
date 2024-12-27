@@ -3,6 +3,7 @@ use std::collections::hash_map::Entry;
 use ahash::HashMap;
 use ahash::HashSet;
 use mago_interner::ThreadedInterner;
+use mago_span::HasSpan;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -28,15 +29,12 @@ pub mod r#type;
 pub struct CodebaseReflection {
     pub constant_reflections: HashMap<Name, ConstantReflection>,
     pub constant_names: HashMap<StringIdentifier, Name>,
-    pub constant_names_lowercase: HashMap<StringIdentifier, Name>,
 
     pub function_like_reflections: HashMap<FunctionLikeName, FunctionLikeReflection>,
     pub function_names: HashMap<StringIdentifier, FunctionLikeName>,
-    pub function_names_lowercase: HashMap<StringIdentifier, FunctionLikeName>,
 
     pub class_like_reflections: HashMap<ClassLikeName, ClassLikeReflection>,
     pub class_like_names: HashMap<StringIdentifier, ClassLikeName>,
-    pub class_like_names_lowercase: HashMap<StringIdentifier, ClassLikeName>,
 
     pub direct_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
     pub all_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
@@ -57,11 +55,11 @@ impl CodebaseReflection {
     /// Returns `false` if the constant already exists.
     pub fn register_constant(&mut self, interner: &ThreadedInterner, reflection: ConstantReflection) -> bool {
         let lowercase_name = lower_constant_name(interner, &reflection.name.value);
-        if self.constant_names_lowercase.contains_key(&lowercase_name) {
+        if self.constant_names.contains_key(&lowercase_name) {
             return false;
         }
 
-        self.constant_names_lowercase.insert(lowercase_name, reflection.name);
+        self.constant_names.insert(lowercase_name, reflection.name);
         self.constant_names.insert(reflection.name.value, reflection.name);
         self.constant_reflections.insert(reflection.name, reflection);
 
@@ -78,8 +76,7 @@ impl CodebaseReflection {
 
         if let FunctionLikeName::Function(name) = reflection.name {
             let lowercase_name = interner.lowered(&name.value);
-            if let Entry::Vacant(e) = self.function_names_lowercase.entry(lowercase_name) {
-                self.function_names.insert(name.value, reflection.name);
+            if let Entry::Vacant(e) = self.function_names.entry(lowercase_name) {
                 e.insert(reflection.name);
             } else {
                 exists = true;
@@ -105,9 +102,7 @@ impl CodebaseReflection {
             ClassLikeName::Class(name) => {
                 let lowercase_name = interner.lowered(&name.value);
 
-                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
-                    self.class_like_names.insert(name.value, reflection.name);
-
+                if let Entry::Vacant(e) = self.class_like_names.entry(lowercase_name) {
                     e.insert(reflection.name);
                 } else {
                     exists = true;
@@ -115,10 +110,7 @@ impl CodebaseReflection {
             }
             ClassLikeName::Enum(name) => {
                 let lowercase_name = interner.lowered(&name.value);
-
-                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
-                    self.class_like_names.insert(name.value, reflection.name);
-
+                if let Entry::Vacant(e) = self.class_like_names.entry(lowercase_name) {
                     e.insert(reflection.name);
                 } else {
                     exists = true;
@@ -127,9 +119,7 @@ impl CodebaseReflection {
             ClassLikeName::Interface(name) => {
                 let lowercase_name = interner.lowered(&name.value);
 
-                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
-                    self.class_like_names.insert(name.value, reflection.name);
-
+                if let Entry::Vacant(e) = self.class_like_names.entry(lowercase_name) {
                     e.insert(reflection.name);
                 } else {
                     exists = true;
@@ -138,9 +128,7 @@ impl CodebaseReflection {
             ClassLikeName::Trait(name) => {
                 let lowercase_name = interner.lowered(&name.value);
 
-                if let Entry::Vacant(e) = self.class_like_names_lowercase.entry(lowercase_name) {
-                    self.class_like_names.insert(name.value, reflection.name);
-
+                if let Entry::Vacant(e) = self.class_like_names.entry(lowercase_name) {
                     e.insert(reflection.name);
                 } else {
                     exists = true;
@@ -159,43 +147,43 @@ impl CodebaseReflection {
     pub fn constant_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let id = lower_constant_name(interner, id);
 
-        self.constant_names_lowercase.contains_key(&id)
+        self.constant_names.contains_key(&id)
     }
 
     pub fn function_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let id = interner.lowered(id);
 
-        self.function_names_lowercase.contains_key(&id)
+        self.function_names.contains_key(&id)
     }
 
     pub fn class_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let id = interner.lowered(id);
 
-        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Class(_)))
+        matches!(self.class_like_names.get(&id), Some(ClassLikeName::Class(_)))
     }
 
     pub fn enum_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let id = interner.lowered(id);
 
-        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Enum(_)))
+        matches!(self.class_like_names.get(&id), Some(ClassLikeName::Enum(_)))
     }
 
     pub fn interface_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let name = interner.lowered(id);
 
-        matches!(self.class_like_names_lowercase.get(&name), Some(ClassLikeName::Interface(_)))
+        matches!(self.class_like_names.get(&name), Some(ClassLikeName::Interface(_)))
     }
 
     pub fn trait_exists(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> bool {
         let id = interner.lowered(id);
 
-        matches!(self.class_like_names_lowercase.get(&id), Some(ClassLikeName::Trait(_)))
+        matches!(self.class_like_names.get(&id), Some(ClassLikeName::Trait(_)))
     }
 
     pub fn get_constant(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ConstantReflection> {
         let id = lower_constant_name(interner, id);
 
-        if let Some(name) = self.constant_names_lowercase.get(&id) {
+        if let Some(name) = self.constant_names.get(&id) {
             self.constant_reflections.get(name)
         } else {
             None
@@ -258,18 +246,23 @@ impl CodebaseReflection {
     ) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
 
-        if let Some(name) = self.class_like_names_lowercase.get(&id) {
+        if let Some(name) = self.class_like_names.get(&id) {
             self.class_like_reflections.get(name)
         } else {
             None
         }
     }
 
+    /// Retrieves an anonymous class by its span, if it exists.
+    pub fn get_anonymous_class(&self, node: &impl HasSpan) -> Option<&ClassLikeReflection> {
+        self.class_like_reflections.get(&ClassLikeName::AnonymousClass(node.span()))
+    }
+
     /// Retrieves a class by name, if it exists.
     pub fn get_class(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
 
-        if let Some(name @ ClassLikeName::Class(_)) = self.class_like_names_lowercase.get(&id) {
+        if let Some(name @ ClassLikeName::Class(_)) = self.class_like_names.get(&id) {
             self.class_like_reflections.get(name)
         } else {
             None
@@ -280,7 +273,7 @@ impl CodebaseReflection {
     pub fn get_enum(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
 
-        if let Some(name @ ClassLikeName::Enum(_)) = self.class_like_names_lowercase.get(&id) {
+        if let Some(name @ ClassLikeName::Enum(_)) = self.class_like_names.get(&id) {
             self.class_like_reflections.get(name)
         } else {
             None

@@ -33,20 +33,23 @@ pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -
             if let Some(extends) = &class.extends {
                 if let Some(first_parent) = extends.types.first() {
                     let parent = Name::new(*context.names.get(first_parent), first_parent.span());
+                    let parent_lowered = context.interner.lowered(&parent.value);
 
                     reflection.direct_extended_class = Some(parent);
                     reflection.all_extended_classes.insert(parent);
-                    reflection.names.insert(parent.value, parent);
+                    reflection.names.insert(parent_lowered, parent);
                 }
             }
 
             if let Some(impelemnts) = &class.implements {
                 for interface in impelemnts.types.iter() {
                     let interface = Name::new(*context.names.get(interface), interface.span());
+                    let interface_lowered = context.interner.lowered(&interface.value);
 
                     reflection.direct_implemented_interfaces.insert(interface);
                     reflection.all_implemented_interfaces.insert(interface);
                     reflection.names.insert(interface.value, interface);
+                    reflection.names.insert(interface_lowered, interface);
                 }
             }
 
@@ -62,7 +65,6 @@ pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -
         properties: MemeberCollection::empty(),
         methods: MemeberCollection::empty(),
         used_traits: Default::default(),
-        used_trait_names: Default::default(),
         is_populated: false,
         is_anonymous: false,
     };
@@ -84,20 +86,22 @@ pub fn reflect_anonymous_class<'ast>(
             if let Some(extends) = &class.extends {
                 if let Some(first_parent) = extends.types.first() {
                     let parent = Name::new(*context.names.get(first_parent), first_parent.span());
+                    let parent_lowered = context.interner.lowered(&parent.value);
 
                     reflection.direct_extended_class = Some(parent);
                     reflection.all_extended_classes.insert(parent);
-                    reflection.names.insert(parent.value, parent);
+                    reflection.names.insert(parent_lowered, parent);
                 }
             }
 
             if let Some(impelemnts) = &class.implements {
                 for interface in impelemnts.types.iter() {
                     let interface = Name::new(*context.names.get(interface), interface.span());
+                    let interface_lowered = context.interner.lowered(&interface.value);
 
                     reflection.direct_implemented_interfaces.insert(interface);
                     reflection.all_implemented_interfaces.insert(interface);
-                    reflection.names.insert(interface.value, interface);
+                    reflection.names.insert(interface_lowered, interface);
                 }
             }
 
@@ -113,7 +117,6 @@ pub fn reflect_anonymous_class<'ast>(
         properties: MemeberCollection::empty(),
         methods: MemeberCollection::empty(),
         used_traits: Default::default(),
-        used_trait_names: Default::default(),
         is_populated: false,
         is_anonymous: true,
     };
@@ -133,10 +136,11 @@ pub fn reflect_interface<'ast>(interface: &'ast Interface, context: &'ast mut Co
             if let Some(extends) = &interface.extends {
                 for interface in extends.types.iter() {
                     let interface = Name::new(*context.names.get(interface), interface.span());
+                    let interface_lowered = context.interner.lowered(&interface.value);
 
                     reflection.direct_implemented_interfaces.insert(interface);
                     reflection.all_implemented_interfaces.insert(interface);
-                    reflection.names.insert(interface.value, interface);
+                    reflection.names.insert(interface_lowered, interface);
                 }
             }
 
@@ -152,7 +156,6 @@ pub fn reflect_interface<'ast>(interface: &'ast Interface, context: &'ast mut Co
         properties: MemeberCollection::empty(),
         methods: MemeberCollection::empty(),
         used_traits: Default::default(),
-        used_trait_names: Default::default(),
         is_populated: false,
         is_anonymous: false,
     };
@@ -177,7 +180,6 @@ pub fn reflect_trait<'ast>(r#trait: &'ast Trait, context: &'ast mut Context<'_>)
         properties: MemeberCollection::empty(),
         methods: MemeberCollection::empty(),
         used_traits: Default::default(),
-        used_trait_names: Default::default(),
         is_populated: false,
         is_anonymous: false,
     };
@@ -197,10 +199,11 @@ pub fn reflect_enum<'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'_>) ->
             if let Some(impelemnts) = &r#enum.implements {
                 for interface in impelemnts.types.iter() {
                     let interface = Name::new(*context.names.get(interface), interface.span());
+                    let interface_lowered = context.interner.lowered(&interface.value);
 
                     reflection.direct_implemented_interfaces.insert(interface);
                     reflection.all_implemented_interfaces.insert(interface);
-                    reflection.names.insert(interface.value, interface);
+                    reflection.names.insert(interface_lowered, interface);
                 }
             }
 
@@ -219,7 +222,6 @@ pub fn reflect_enum<'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'_>) ->
         properties: MemeberCollection::empty(),
         methods: MemeberCollection::empty(),
         used_traits: Default::default(),
-        used_trait_names: Default::default(),
         is_populated: false,
         is_anonymous: false,
     };
@@ -240,8 +242,7 @@ fn reflect_class_like_members<'ast>(
                 for trait_name in trait_use.trait_names.iter() {
                     let name = Name::new(*context.names.get(trait_name), trait_name.span());
 
-                    reflection.used_traits.insert(name.value);
-                    reflection.used_trait_names.insert(name.value, name);
+                    reflection.used_traits.insert(context.interner.lowered(&name.value));
                 }
             }
             ClassLikeMember::Constant(class_like_constant) => {

@@ -105,6 +105,8 @@ fn populate_class_like_reflection(
     reflection.inheritance.all_extended_classes.shrink_to_fit();
     reflection.inheritance.all_implemented_interfaces.shrink_to_fit();
     reflection.inheritance.names.shrink_to_fit();
+    reflection.inheritance.require_extensions.shrink_to_fit();
+    reflection.inheritance.require_implementations.shrink_to_fit();
     reflection.constants.shrink_to_fit();
     reflection.properties.members.shrink_to_fit();
     reflection.properties.appering_members.shrink_to_fit();
@@ -126,7 +128,7 @@ fn populate_interface_data_from_parent_interface(
     parent_name_id: StringIdentifier,
 ) {
     let parent_name_id = interner.lowered(&parent_name_id);
-    let Some(parent_name) = codebase.class_like_names_lowercase.get(&parent_name_id).cloned() else {
+    let Some(parent_name) = codebase.class_like_names.get(&parent_name_id).cloned() else {
         return;
     };
 
@@ -163,7 +165,7 @@ fn populate_data_from_parent_classlike(
     parent_name_id: StringIdentifier,
 ) {
     let parent_name_id = interner.lowered(&parent_name_id);
-    let Some(parent_name) = codebase.class_like_names_lowercase.get(&parent_name_id).cloned() else {
+    let Some(parent_name) = codebase.class_like_names.get(&parent_name_id).cloned() else {
         return;
     };
 
@@ -178,8 +180,10 @@ fn populate_data_from_parent_classlike(
             continue;
         }
 
+        let identifier = extended_class.value;
+
         reflection.inheritance.all_extended_classes.insert(*extended_class);
-        reflection.inheritance.names.insert(extended_class.value, *extended_class);
+        reflection.inheritance.names.insert(interner.lowered(&identifier), *extended_class);
     }
 
     for implemented_interface in &parent_reflection.inheritance.all_implemented_interfaces {
@@ -187,17 +191,18 @@ fn populate_data_from_parent_classlike(
             continue;
         }
 
+        let identifier = implemented_interface.value;
+
         reflection.inheritance.all_implemented_interfaces.insert(*implemented_interface);
-        reflection.inheritance.names.insert(implemented_interface.value, *implemented_interface);
+        reflection.inheritance.names.insert(interner.lowered(&identifier), *implemented_interface);
     }
 
-    for (used_trait, used_trait_name) in &parent_reflection.used_trait_names {
+    for used_trait in &parent_reflection.used_traits {
         if reflection.used_traits.contains(used_trait) {
             continue;
         }
 
         reflection.used_traits.insert(*used_trait);
-        reflection.used_trait_names.insert(*used_trait, *used_trait_name);
     }
 
     for (constant_name, constant) in &parent_reflection.constants {
@@ -222,7 +227,7 @@ fn populate_data_from_trait(
     trait_name_id: StringIdentifier,
 ) {
     let trait_name_id = interner.lowered(&trait_name_id);
-    let Some(trait_name) = codebase.class_like_names_lowercase.get(&trait_name_id).cloned() else {
+    let Some(trait_name) = codebase.class_like_names.get(&trait_name_id).cloned() else {
         return;
     };
 
