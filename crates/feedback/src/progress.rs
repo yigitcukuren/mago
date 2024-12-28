@@ -1,3 +1,5 @@
+#![allow(clippy::literal_string_with_formatting_args)]
+
 use std::sync::LazyLock;
 
 use indicatif::MultiProgress;
