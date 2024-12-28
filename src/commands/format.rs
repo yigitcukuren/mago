@@ -9,6 +9,7 @@ use mago_formatter::format;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
 use mago_parser::parse_source;
+use mago_source::SourceCategory;
 use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 
@@ -104,7 +105,7 @@ async fn format_all(
     dry_run: bool,
 ) -> Result<usize, Error> {
     // Collect all user-defined sources.
-    let sources: Vec<_> = source_manager.user_defined_source_ids().collect();
+    let sources: Vec<_> = source_manager.source_ids_for_category(SourceCategory::UserDefined).collect();
 
     let length = sources.len();
     let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Magenta);

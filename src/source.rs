@@ -7,6 +7,7 @@ use async_walkdir::WalkDir;
 use futures::StreamExt;
 
 use mago_interner::ThreadedInterner;
+use mago_source::SourceCategory;
 use mago_source::SourceManager;
 
 use crate::config::source::SourceConfiguration;
@@ -110,13 +111,17 @@ pub async fn load(
                 Err(_) => path.display().to_string(),
             };
 
-            manager.insert_path(name, path.clone(), user_defined);
+            manager.insert_path(
+                name,
+                path.clone(),
+                if user_defined { SourceCategory::UserDefined } else { SourceCategory::External },
+            );
         }
     }
 
     if include_stubs {
         for (stub, content) in PHP_STUBS {
-            manager.insert_content(stub.to_owned(), content.to_owned(), false);
+            manager.insert_content(stub.to_owned(), content.to_owned(), SourceCategory::BuiltIn);
         }
     }
 

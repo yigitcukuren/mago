@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use mago_symbol_table::get_symbols;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -12,7 +11,9 @@ use mago_parser::parse_source;
 use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
 use mago_semantics::Semantics;
+use mago_source::SourceCategory;
 use mago_source::SourceManager;
+use mago_symbol_table::get_symbols;
 use mago_symbol_table::table::SymbolTable;
 
 /// Represents the result of analyzing and optionally formatting PHP code.
@@ -124,7 +125,7 @@ pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, Js
 
     let interner = ThreadedInterner::new();
     let manager = SourceManager::new(interner.clone());
-    let source_id = manager.insert_content("code.php".to_string(), code, true);
+    let source_id = manager.insert_content("code.php".to_string(), code, SourceCategory::UserDefined);
 
     let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (program, parse_error) = parse_source(&interner, &source);
@@ -207,7 +208,7 @@ pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result
     let settings = get_format_settings(format_settings);
     let interner = ThreadedInterner::new();
     let manager = SourceManager::new(interner.clone());
-    let source_id = manager.insert_content("code.php".to_string(), code, true);
+    let source_id = manager.insert_content("code.php".to_string(), code, SourceCategory::UserDefined);
     let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let semantics = Semantics::build(&interner, source);
     let mut formatted = None;

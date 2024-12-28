@@ -1,18 +1,19 @@
 use std::process::ExitCode;
 
 use clap::Parser;
-use mago_names::Names;
 use serde_json::json;
 use termtree::Tree;
 
 use mago_ast::node::NodeKind;
 use mago_ast::Node;
 use mago_interner::ThreadedInterner;
+use mago_names::Names;
 use mago_parser::parse_source;
 use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_reporting::Issue;
+use mago_source::SourceCategory;
 use mago_source::SourceManager;
 
 use crate::enum_variants;
@@ -97,7 +98,7 @@ pub async fn execute(command: AstCommand) -> Result<ExitCode, Error> {
     let source_manager = SourceManager::new(interner.clone());
 
     // Load the source file.
-    let source_id = source_manager.insert_path(command.file.clone(), file_path, true);
+    let source_id = source_manager.insert_path(command.file.clone(), file_path, SourceCategory::UserDefined);
     let source = source_manager.load(&source_id)?;
 
     // Parse the source file into an AST.

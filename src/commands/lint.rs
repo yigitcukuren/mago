@@ -19,6 +19,7 @@ use mago_reporting::IssueCollection;
 use mago_reporting::Level;
 use mago_semantics::Semantics;
 use mago_source::error::SourceError;
+use mago_source::SourceCategory;
 use mago_source::SourceManager;
 
 use crate::config::linter::LinterConfiguration;
@@ -26,7 +27,7 @@ use crate::config::linter::LinterLevel;
 use crate::config::Configuration;
 use crate::enum_variants;
 use crate::error::Error;
-use crate::reflection::reflect_all_external_sources;
+use crate::reflection::reflect_all_non_user_defined_sources;
 use crate::source;
 
 #[derive(Parser, Debug)]
@@ -149,11 +150,11 @@ pub(super) async fn lint_sources(
     configuration: &LinterConfiguration,
 ) -> Result<IssueCollection, Error> {
     // Collect all user-defined sources.
-    let sources: Vec<_> = manager.user_defined_source_ids().collect();
+    let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();
     let length = sources.len();
 
     let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Yellow);
-    let mut codebase = reflect_all_external_sources(interner, manager).await?;
+    let mut codebase = reflect_all_non_user_defined_sources(interner, manager).await?;
     let mut handles = Vec::with_capacity(length);
     for source_id in sources {
         handles.push(tokio::spawn({
@@ -224,7 +225,7 @@ pub(super) async fn check_sources(
     manager: &SourceManager,
 ) -> Result<IssueCollection, Error> {
     // Collect all user-defined sources.
-    let sources: Vec<_> = manager.user_defined_source_ids().collect();
+    let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();
     let length = sources.len();
 
     let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Yellow);
