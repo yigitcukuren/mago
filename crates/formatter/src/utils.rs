@@ -5,18 +5,18 @@ use crate::document::IndentIfBreak;
 use crate::Formatter;
 
 pub const fn has_naked_left_side(expression: &Expression) -> bool {
-    match expression {
-        Expression::Binary(_) => true,
-        Expression::UnaryPostfix(_) => true,
-        Expression::AssignmentOperation(_) => true,
-        Expression::Conditional(_) => true,
-        Expression::ArrayAccess(_) => true,
-        Expression::ArrayAppend(_) => true,
-        Expression::Call(_) => true,
-        Expression::Access(_) => true,
-        Expression::ClosureCreation(_) => true,
-        _ => false,
-    }
+    matches!(
+        expression,
+        Expression::Binary(_)
+            | Expression::UnaryPostfix(_)
+            | Expression::AssignmentOperation(_)
+            | Expression::Conditional(_)
+            | Expression::ArrayAccess(_)
+            | Expression::ArrayAppend(_)
+            | Expression::Call(_)
+            | Expression::Access(_)
+            | Expression::ClosureCreation(_)
+    )
 }
 
 pub const fn get_left_side(expression: &Expression) -> Option<&Expression> {
