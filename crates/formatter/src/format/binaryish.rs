@@ -174,18 +174,18 @@ pub(super) fn print_binaryish_expressions<'a>(
     parts
 }
 
-pub(super) const fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
+pub(super) fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
     if let Expression::Parenthesized(parenthesized) = expression {
         return should_inline_logical_or_coalesce_expression(&parenthesized.expression);
     }
 
     match expression {
         Expression::Binary(operation) => should_inline_logical_or_coalesce_rhs(&operation.rhs, &operation.operator),
-        _ => return false,
+        _ => false,
     }
 }
 
-pub(super) const fn should_inline_logical_or_coalesce_rhs(rhs: &Expression, operator: &BinaryOperator) -> bool {
+pub(super) fn should_inline_logical_or_coalesce_rhs(rhs: &Expression, operator: &BinaryOperator) -> bool {
     if !operator.is_logical() && !operator.is_null_coalesce() {
         return false;
     }

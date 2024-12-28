@@ -282,7 +282,7 @@ fn should_break_after_operator<'a>(f: &Formatter<'a>, rhs_expression: &'a Expres
                 condition = &parenthesized.expression;
             }
 
-            return condition.is_binary() && !should_inline_logical_or_coalesce_expression(&condition);
+            return condition.is_binary() && !should_inline_logical_or_coalesce_expression(condition);
         }
         Expression::AnonymousClass(anonymous_class) => {
             if !anonymous_class.attributes.is_empty() {

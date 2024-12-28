@@ -48,7 +48,7 @@ pub const fn get_left_side(expression: &Expression) -> Option<&Expression> {
     }
 }
 
-pub const fn is_non_empty_array_like_expression(mut expression: &Expression) -> bool {
+pub fn is_non_empty_array_like_expression(mut expression: &Expression) -> bool {
     while let Expression::Parenthesized(parenthesized) = expression {
         expression = &parenthesized.expression;
     }
@@ -56,7 +56,7 @@ pub const fn is_non_empty_array_like_expression(mut expression: &Expression) -> 
     match expression {
         Expression::Array(Array { elements, .. })
         | Expression::List(List { elements, .. })
-        | Expression::LegacyArray(LegacyArray { elements, .. }) => elements.len() > 0,
+        | Expression::LegacyArray(LegacyArray { elements, .. }) => !elements.is_empty(),
         _ => false,
     }
 }

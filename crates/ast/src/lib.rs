@@ -1,5 +1,3 @@
-#![feature(const_vec_string_slice)]
-
 use std::fmt::Debug;
 
 use serde::Deserialize;
