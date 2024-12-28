@@ -110,11 +110,18 @@ impl<'a> Formatter<'a> {
 
     pub(crate) fn grandparent_node(&self) -> Option<Node<'a>> {
         let len = self.stack.len();
+
         (len > 2).then(|| self.stack[len - 2 - 1])
+    }
+
+    pub(crate) fn great_grandparent_node(&self) -> Option<Node<'a>> {
+        let len = self.stack.len();
+        (len > 3).then(|| self.stack[len - 3 - 1])
     }
 
     pub(crate) fn nth_parent_kind(&self, n: usize) -> Option<Node<'a>> {
         let len = self.stack.len();
+
         (len > n).then(|| self.stack[len - n - 1])
     }
 

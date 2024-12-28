@@ -90,7 +90,7 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.inner.len()
     }
 
