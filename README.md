@@ -1,10 +1,6 @@
 # Mago: The Oxidized PHP Toolchain
 
-**Mago** (derived from [Mago (Punic: 𐤌𐤂‬𐤍‬, MGN)](<https://en.wikipedia.org/wiki/Mago_(agricultural_writer)>), a renowned Carthaginian figure) is a toolchain for PHP that aims to provide a set of tools to help developers write better code. Mago draws inspiration from the Rust programming language and its ecosystem, striving to bring similar convenience, reliability, and a great developer experience to the PHP world.
-
----
-
-_Note: This project was previously named “Fennec” before being rebranded due to a naming conflict._
+**Mago** is a comprehensive toolchain for PHP that helps developers write better code. Inspired by the Rust ecosystem, Mago brings convenience, reliability, and an exceptional developer experience to PHP projects of all sizes.
 
 ## Disclaimer
 
@@ -12,91 +8,28 @@ _Note: This project was previously named “Fennec” before being rebranded due
 > Mago is in an early stage of development. Many features are not yet implemented, and existing functionality may change, break, or stop working without notice.
 > While we are not actively promoting or advertising the project, we are working in public to share our progress with the community.
 
-## Installation
+## Features
 
-### One-Line Installation (Recommended)
+- Analyze and Lint: Identify issues in your codebase with customizable rules and plugins.
+- Automated Fixes: Apply fixes for lint issues to maintain a clean codebase.
+- Consistent Formatting: Standardize your code style with powerful formatting tools.
+- Semantic Checks: Ensure code correctness with robust semantic analysis.
+- AST Visualization: Explore your code’s structure with abstract syntax tree (AST) parsing.
 
-To quickly install the latest release of Mago for macOS or Linux, use the following command:
+## Get Started
 
-#### Using `curl`:
+Visit our documentation website to learn how to install, configure, and use Mago effectively:
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
-```
+[Mago Documentation](https://mago.carthage.software/):
 
-#### Using `wget`:
+- [Getting Started](https://mago.carthage.software/#/getting-started)
+- [Installation Guide](https://mago.carthage.software/#/getting-started/installation)
+- [Configuration Guide](https://mago.carthage.software/#/getting-started/configuration)
+- [CLI Commands](https://mago.carthage.software/#/getting-started/cli)
 
-```bash
-wget -qO- https://carthage.software/mago.sh | bash
-```
+## Community and Contributions
 
-#### Custom Installation Directory
-
-To specify a custom directory for the binary, use the --install-dir option:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash -s -- --install-dir="/.bin"
-```
-
-If the directory is not in your `PATH`, the script will provide instructions to add it.
-
-#### Installing with `sudo`
-
-If you need to install Mago system-wide, you can use `sudo` with the installation command:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | sudo bash
-```
-
-### Pre-compiled Binaries
-
-You can find precompiled binaries for various platforms on our [Releases page](https://github.com/carthage-software/mago/releases).
-Simply download the archive for your platform, extract it, and place the mago binary somewhere in your `PATH`.
-
-### Installation via Cargo
-
-If you have Rust installed, you can install Mago using Cargo:
-
-```bash
-cargo install mago
-```
-
-### Installation from source
-
-To install Mago from source, you can clone the repository and build the project using Cargo:
-
-```bash
-git clone https://github.com/carthage-software/mago
-cd mago
-cargo install --path .
-```
-
-## PHP Version Compatibility
-
-Currently, **Mago** is built around PHP 8.3 and also supports PHP 8.4. While the linter and formatter may work with earlier versions of PHP, **we cannot guarantee compatibility**. They might suggest fixes or write code that is only compatible with PHP 8.3 and later.
-
-At this stage, there is no option to select a PHP version target, which means Mago operates under the assumption of modern PHP versions. In the future, we plan to introduce support for selecting a PHP version target. Once implemented, this feature should enable better compatibility with earlier PHP versions, potentially down to PHP 8.0 or even earlier.
-
-If you're working with PHP versions prior to 8.3, please proceed with caution and review suggested fixes or formatted code to ensure compatibility with your version.
-
-## Usage
-
-For a quick start, you can refer to the example configuration files provided:
-
-- Simple configuration: [`examples/mago.toml`](examples/mago.toml)
-- Full configuration with all possible options: [`examples/mago-full.toml`](examples/mago-full.toml)
-
-You can try Mago by navigating to the [`examples`](examples) directory and running the linter on the sample PHP files:
-
-```bash
-cd examples
-mago lint
-mago fmt
-```
-
-This will analyze the PHP files located in the [`examples/src/`](examples/src) directory and display any linting errors.
-
-## How You Can Help
+### How You Can Help
 
 Mago is a community-driven project, and we’d love for you to join us! Here are some ways you can contribute:
 
@@ -106,13 +39,13 @@ Mago is a community-driven project, and we’d love for you to join us! Here are
 - _Sponsor the Project_: If you’d like to support Mago financially, consider sponsoring [@azjezz](https://github.com/azjezz). Every contribution helps!
 - _Help with Art_: Mago could use a logo! We’d appreciate the help of a skilled artist to create an original logo for Mago. (Please note that AI-generated art will not be accepted.)
 
-## Join the Mago Community
+### Join the Mago Community
 
 Got questions, feedback, or ideas? Join the Mago community on Discord to connect with other developers and stay up-to-date.
 
 [Join Here](https://discord.gg/mwyyjr27eu)
 
-## Inspiration
+### Inspiration
 
 Mago is inspired by several tools and projects that have significantly contributed to the development community:
 
@@ -123,7 +56,7 @@ Mago is inspired by several tools and projects that have significantly contribut
 
 These tools have inspired us and helped shape Mago's design and functionality.
 
-## Acknowledgements
+### Acknowledgements
 
 We would like to acknowledge the following PHP tools that have greatly helped hundreds of thousands of PHP developers in their journey,
 ourselves included:
