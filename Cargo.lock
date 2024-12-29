@@ -1637,6 +1637,7 @@ dependencies = [
  "mago-names",
  "mago-parser",
  "mago-reflection",
+ "mago-reporting",
  "mago-source",
  "mago-span",
  "mago-typing",
