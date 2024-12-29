@@ -10,16 +10,20 @@ use crate::error::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum LinterLevel {
+    #[serde(alias = "off")]
     Off,
+    #[serde(alias = "help")]
     Help,
+    #[serde(alias = "note")]
     Note,
+    #[serde(alias = "warning")]
     Warning,
+    #[serde(alias = "error")]
     Error,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LinterConfiguration {
-    pub level: Option<LinterLevel>,
     pub default_plugins: Option<bool>,
     pub plugins: Vec<String>,
     pub rules: Vec<LinterRuleConfiguration>,
@@ -39,7 +43,6 @@ impl ConfigurationEntry for LinterConfiguration {
         use ::config::ValueKind;
 
         let builder = builder
-            .set_default("linter.level", Value::new(None, ValueKind::Nil))?
             .set_default("linter.default_plugins", Value::new(None, ValueKind::Nil))?
             .set_default("linter.plugins", Value::new(None, ValueKind::Array(vec![])))?
             .set_default("linter.rules", Value::new(None, ValueKind::Array(vec![])))?;

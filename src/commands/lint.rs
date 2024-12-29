@@ -103,16 +103,6 @@ pub(super) fn create_linter(
 ) -> Linter {
     let mut settings = Settings::new();
 
-    if let Some(level) = configuration.level {
-        settings = match level {
-            LinterLevel::Off => settings.off(),
-            LinterLevel::Help => settings.with_level(Level::Help),
-            LinterLevel::Note => settings.with_level(Level::Note),
-            LinterLevel::Warning => settings.with_level(Level::Warning),
-            LinterLevel::Error => settings.with_level(Level::Error),
-        };
-    }
-
     if let Some(default_plugins) = configuration.default_plugins {
         settings = settings.with_default_plugins(default_plugins);
     }

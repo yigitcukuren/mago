@@ -7,7 +7,6 @@ use mago_reporting::Level;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Settings {
-    pub level: Option<Level>,
     pub default_plugins: bool,
     pub plugins: Vec<String>,
     pub rules: HashMap<String, RuleSettings>,
@@ -22,25 +21,11 @@ pub struct RuleSettings {
 
 impl Settings {
     pub fn new() -> Self {
-        Self { level: Some(Level::Error), default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.level.is_some()
+        Self { default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
     }
 
     pub fn get_rule_settings(&self, rule_name: &str) -> Option<&RuleSettings> {
         self.rules.get(rule_name)
-    }
-
-    pub fn off(mut self) -> Self {
-        self.level = None;
-        self
-    }
-
-    pub fn with_level(mut self, level: Level) -> Self {
-        self.level = Some(level);
-        self
     }
 
     pub fn with_default_plugins(mut self, default_plugins: bool) -> Self {
