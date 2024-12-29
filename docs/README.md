@@ -38,9 +38,9 @@ Mago aims to be fast, efficient, and easy to use, enabling developers to focus o
 
 ### Quick Links
 
-- [Getting Started](/getting-started/index.md): Learn how to install and use Mago.
-- [Formatter](/formatter/index.md): Automatically format your PHP code.
-- [Linter](/linter/index.md): Enforce coding standards and find potential issues.
+- [Getting Started](/getting-started/): Learn how to install and use Mago.
+- [Formatter](/formatter/): Automatically format your PHP code.
+- [Linter](/linter/): Enforce coding standards and find potential issues.
 
 ## 🌐 Community
 

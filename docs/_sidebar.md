@@ -1,34 +1,34 @@
 <!-- Getting Started -->
 
-- [Getting Started](getting-started/index.md)
+- [Getting Started](getting-started/)
   - [Installation](getting-started/installation.md)
   - [Configuration](getting-started/configuration.md)
   - [Command Line Interface](getting-started/cli.md)
 
 <!-- Formatter -->
 
-- [Formatter](formatter/index.md)
+- [Formatter](formatter/)
   - [Usage](formatter/usage.md)
   - [Settings](formatter/settings.md)
 
 <!-- Linter -->
 
-- [Linter](linter/index.md)
+- [Linter](linter/)
   - [Usage](linter/usage.md)
-  - [Plugins](linter/plugins/index.md)
+  - [Plugins](linter/plugins/)
     - [Analysis](linter/plugins/analysis.md)
     - [Best Practices](linter/plugins/best-practices.md)
 
 <!-- Contributing -->
 <!--
 
-- [Contributing](contributing/index.md)
+- [Contributing](contributing/)
   - [Development Guide](contributing/development.md)
   - [Testing Guide](contributing/testing.md)
 -->
 
 <!-- FAQ -->
 <!--
-- [FAQ](faq/index.md)
+- [FAQ](faq/)
   - [Troubleshooting](faq/troubleshooting.md)
 -->

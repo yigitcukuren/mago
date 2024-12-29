@@ -8,7 +8,7 @@ The Mago linter is a powerful tool designed to help you maintain and improve the
 
 Learn how to effectively use the linter to analyze and fix issues in your codebase.
 
-### [Plugins](linter/plugins/index.md)
+### [Plugins](linter/plugins/)
 
 Explore the available plugins that extend the linter's capabilities and enable additional checks and fixes.
 

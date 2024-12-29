@@ -39,8 +39,8 @@ includes = ["vendor"]
 After setting up your configuration, you can start using Mago's powerful commands:
 
 - CLI Commands: Learn how to use Mago's command-line interface in the [CLI Guide](getting-started/cli.md).
-- Formatters: Format your code with Mago's built-in formatters. Refer to the [Formatters Guide](formatter/index.md) for more information.
-- Linters: Analyze your code for potential issues using Mago's linters. Explore the [Linters Guide](linter/index.md) for details.
+- Formatters: Format your code with Mago's built-in formatters. Refer to the [Formatters Guide](formatter/) for more information.
+- Linters: Analyze your code for potential issues using Mago's linters. Explore the [Linters Guide](linter/) for details.
 
 ### Example Commands
 
