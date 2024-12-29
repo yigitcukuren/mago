@@ -131,6 +131,7 @@ pub fn reflect_function_like_parameter<'ast>(
             type_reflection: mago_typing::infere(context.interner, context.source, context.names, &d.value),
             span: d.span(),
         }),
+        span: parameter.span(),
     }
 }
 
