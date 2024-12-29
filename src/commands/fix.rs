@@ -20,7 +20,7 @@ use crate::utils;
 #[derive(Parser, Debug)]
 #[command(
     name = "fix",
-    about = "apply fixes for lint issues identified during linting",
+    about = "Apply fixes for lint issues identified during linting",
     long_about = r#"
 The `fix` command automatically applies fixes for issues identified during the linting process.
 
@@ -32,16 +32,16 @@ pub struct FixCommand {
     #[arg(
         long,
         short = 'u',
-        help = "apply fixes marked as unsafe, including those with potentially destructive changes"
+        help = "Apply fixes marked as unsafe, including those with potentially destructive changes"
     )]
     pub r#unsafe: bool,
 
     /// Apply fixes that are marked as potentially unsafe.
-    #[arg(long, short = 'p', help = "apply fixes marked as potentially unsafe, which may require manual review")]
+    #[arg(long, short = 'p', help = "Apply fixes marked as potentially unsafe, which may require manual review")]
     pub potentially_unsafe: bool,
 
     /// Run the command without writing any changes to disk.
-    #[arg(long, short = 'd', help = "preview the fixes without applying them, showing what changes would be made")]
+    #[arg(long, short = 'd', help = "Preview the fixes without applying them, showing what changes would be made")]
     pub dry_run: bool,
 }
 

@@ -12,7 +12,7 @@ use crate::error::Error;
 #[derive(Parser, Debug)]
 #[command(
     name = "self-update",
-    about = "check for updates or upgrade Mago to the latest version",
+    about = "Check for updates or upgrade Mago to the latest version",
     long_about = r#"
 The `self-update` command helps keep Mago up-to-date by checking for and applying the latest updates.
 
@@ -21,23 +21,23 @@ This command ensures you are always using the most recent version of Mago with t
 )]
 pub struct SelfUpdateCommand {
     /// Check for updates but do not install them.
-    #[arg(long, short, help = "check for updates without installing them")]
+    #[arg(long, short, help = "Check for updates without installing them")]
     pub check: bool,
 
     /// Disable progress bars during the update process.
-    #[arg(long, help = "disable progress bars")]
+    #[arg(long, help = "Disable progress bars")]
     pub no_progress: bool,
 
     /// Skip confirmation prompts during updates.
-    #[arg(long, help = "skip confirmation prompts")]
+    #[arg(long, help = "Skip confirmation prompts")]
     pub no_confirm: bool,
 
     /// Suppress update output information.
-    #[arg(long, help = "suppress output information during the update process")]
+    #[arg(long, help = "Suppress output information during the update process")]
     pub no_output: bool,
 
     /// Update to a specific version by providing the version tag.
-    #[arg(long, help = "update to a specific version", value_name = "VERSION_TAG")]
+    #[arg(long, help = "Update to a specific version", value_name = "VERSION_TAG")]
     pub tag: Option<String>,
 }
 

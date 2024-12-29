@@ -33,7 +33,7 @@ use crate::source;
 #[derive(Parser, Debug)]
 #[command(
     name = "lint",
-    about = "analyze and highlight issues in the project source code using configurable linting rules",
+    about = "Analyze and highlight issues in the project source code using configurable linting rules",
     long_about = r#"
 The `lint` command is a powerful tool for analyzing your PHP codebase. By default, it performs
 a full analysis, including parsing, semantic checks, and linting based on customizable rules.
@@ -45,18 +45,18 @@ or the default mode for a comprehensive analysis.
 )]
 pub struct LintCommand {
     /// Filter the output to only show issues that can be automatically fixed with `mago fix`.
-    #[arg(long, short = 'f', help = "filter the output to only show fixable issues", default_value_t = false)]
+    #[arg(long, short = 'f', help = "Filter the output to only show fixable issues", default_value_t = false)]
     pub fixable_only: bool,
 
     /// Perform only semantic analysis (parsing and semantic checks).
-    #[arg(long, short = 's', help = "only perform parsing and semantic checks", default_value_t = false)]
+    #[arg(long, short = 's', help = "Only perform parsing and semantic checks", default_value_t = false)]
     pub semantics_only: bool,
 
     /// Specify where the results should be reported.
     #[arg(
         long,
         default_value_t,
-        help = "specify where the results should be reported",
+        help = "Specify where the results should be reported",
         ignore_case = true,
         value_parser = enum_variants!(ReportingTarget)
     )]
@@ -66,7 +66,7 @@ pub struct LintCommand {
     #[arg(
         long,
         default_value_t,
-        help = "choose the format for reporting issues",
+        help = "Choose the format for reporting issues",
         ignore_case = true,
         value_parser = enum_variants!(ReportingFormat)
     )]

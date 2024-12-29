@@ -29,25 +29,23 @@ pub const CLAP_STYLING: Styles = Styles::styled()
     version,
     author,
     styles = CLAP_STYLING,
-    about = "the ultimate toolkit for PHP developers – analyze, fix, and refactor your code with style",
+    about = "Mago: The Oxidized PHP Toolchain
+
+Empower your PHP projects with the magic of Mago. Analyze, lint, format, and refactor
+with speed, precision, and elegance.",
     long_about = r#"
-----------------------------------------------------------------------------------------------
-  Welcome to Mago – the ultimate PHP toolkit, reimagined for the modern developer.
+Welcome to Mago!
 
-  Mago isn’t just a toolchain; it’s your secret weapon for taming PHP projects of any size.
-  Whether you're diving into a legacy codebase or crafting something cutting-edge,
-  Mago equips you with the tools to:
+Mago is your all-in-one PHP toolkit, designed to make your development experience faster, easier, and a bit magical.
 
-  🚀 Analyze, lint, and fix your code with unmatched speed and precision.
-  🎨 Format your PHP effortlessly for consistent, beautiful code.
-  🔍 Explore your code with powerful AST visualization.
-  🛠 Refactor smarter, not harder, with automated fixes.
-  🌐 Stay ahead with easy updates and blazing-fast performance.
+Here’s what makes Mago special:
 
-  Designed to make PHP development faster, easier, and just a bit magical.
+- Lint with Precision: Spot and fix issues in your code with powerful linting capabilities.
+- Effortless Formatting: Standardize your codebase with beautiful and consistent formatting.
+- Smarter Refactoring: Automate repetitive tasks and ensure semantic correctness.
+- Blazing Fast Performance: Built with Rust, Mago is optimized for speed and reliability.
 
-  Start transforming your workflow today. Learn more at: https://carthage.software/mago
-  ----------------------------------------------------------------------------------------------
+🛠  Start transforming your PHP workflow today! Explore the commands below to unleash the full power of Mago 💻
 "#)]
 pub enum MagoCommand {
     #[command(name = "ast")]
