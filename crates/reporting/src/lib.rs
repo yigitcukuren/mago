@@ -170,7 +170,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// use mago::reporting::Level;
+    /// use mago_reporting::Level;
     ///
     /// let level = Level::Error;
     /// assert_eq!(level.downgrade(), Level::Warning);
