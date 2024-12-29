@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_reporting::IssueCollection;
 use mago_source::HasSource;
 use mago_source::SourceIdentifier;
 use mago_span::HasSpan;
@@ -74,25 +75,33 @@ pub struct ClassLikeReflection {
 
     /// Indicates whether the reflection is fully populated with all metadata.
     pub is_populated: bool,
+
+    /// Issues encountered while processing the class-like entity.
+    pub issues: IssueCollection,
 }
 
 impl ClassLikeReflection {
+    /// Checks if this class-like entity is a trait.
     pub fn is_trait(&self) -> bool {
         matches!(self.name, ClassLikeName::Trait(_))
     }
 
+    /// Checks if this class-like entity is an interface.
     pub fn is_interface(&self) -> bool {
         matches!(self.name, ClassLikeName::Interface(_))
     }
 
+    /// Checks if this class-like entity is a class.
     pub fn is_class(&self) -> bool {
         matches!(self.name, ClassLikeName::Class(_))
     }
 
+    /// Checks if this class-like entity is an enum.
     pub fn is_enum(&self) -> bool {
         matches!(self.name, ClassLikeName::Enum(_))
     }
 
+    /// Checks if this class-like entity is a trait.
     pub fn is_anonymous_class(&self) -> bool {
         matches!(self.name, ClassLikeName::AnonymousClass(_))
     }
@@ -193,5 +202,10 @@ impl Reflection for ClassLikeReflection {
     /// all metadata for this entity.
     fn is_populated(&self) -> bool {
         self.is_populated
+    }
+
+    /// Returns the issues encountered while processing the class-like entity.
+    fn get_issues(&self) -> &IssueCollection {
+        &self.issues
     }
 }

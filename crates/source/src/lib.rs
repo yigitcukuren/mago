@@ -13,10 +13,26 @@ use crate::error::SourceError;
 
 pub mod error;
 
+/// Represents the category of the source for a PHP construct.
+///
+/// This enum categorizes the origin of a source, based on where it is are defined.
+/// The categories are useful for distinguishing between user-written code, vendor-provided libraries,
+/// and built-in PHP features.
+///
+/// # Variants
+///
+/// - `BuiltIn`: Represents a construct that is part of PHP's core or extension libraries.
+/// - `External`: Represents a construct defined in a vendor-provided or third-party library.
+/// - `UserDefined`: Represents a construct written by the user or part of the current project.
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum SourceCategory {
+    /// Represents a PHP construct that is part of the PHP core or extension libraries.
     BuiltIn,
+
+    /// Represents a PHP construct defined in vendor-provided or third-party libraries.
     External,
+
+    /// Represents a PHP construct written by the user or part of the current project.
     #[default]
     UserDefined,
 }

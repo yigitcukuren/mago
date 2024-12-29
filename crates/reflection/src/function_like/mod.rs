@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_reporting::IssueCollection;
 use mago_source::HasSource;
 use mago_source::SourceIdentifier;
 use mago_span::HasSpan;
@@ -21,7 +22,7 @@ pub mod r#return;
 ///
 /// This includes details about its parameters, return type, attributes, and various properties
 /// like visibility, overrides, and whether it supports specific PHP features.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct FunctionLikeReflection {
     /// Attributes associated with this function-like entity.
     pub attribute_reflections: Vec<AttributeReflection>,
@@ -84,6 +85,9 @@ pub struct FunctionLikeReflection {
 
     /// Indicate if this function-like entity is populated.
     pub is_populated: bool,
+
+    /// Collection of issues associated with this function-like entity.
+    pub issues: IssueCollection,
 }
 
 impl FunctionLikeReflection {
@@ -139,5 +143,10 @@ impl Reflection for FunctionLikeReflection {
     /// all metadata for this entity.
     fn is_populated(&self) -> bool {
         self.is_populated
+    }
+
+    /// Returns the issues encountered while processing the function-like entity.
+    fn get_issues(&self) -> &IssueCollection {
+        &self.issues
     }
 }

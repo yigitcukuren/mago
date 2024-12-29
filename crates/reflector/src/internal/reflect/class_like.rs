@@ -67,6 +67,7 @@ pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -
         used_traits: Default::default(),
         is_populated: false,
         is_anonymous: false,
+        issues: Default::default(),
     };
 
     reflect_class_like_members(&mut reflection, &class.members, context);
@@ -119,6 +120,7 @@ pub fn reflect_anonymous_class<'ast>(
         used_traits: Default::default(),
         is_populated: false,
         is_anonymous: true,
+        issues: Default::default(),
     };
 
     reflect_class_like_members(&mut reflection, &class.members, context);
@@ -158,6 +160,7 @@ pub fn reflect_interface<'ast>(interface: &'ast Interface, context: &'ast mut Co
         used_traits: Default::default(),
         is_populated: false,
         is_anonymous: false,
+        issues: Default::default(),
     };
 
     reflect_class_like_members(&mut reflection, &interface.members, context);
@@ -182,6 +185,7 @@ pub fn reflect_trait<'ast>(r#trait: &'ast Trait, context: &'ast mut Context<'_>)
         used_traits: Default::default(),
         is_populated: false,
         is_anonymous: false,
+        issues: Default::default(),
     };
 
     reflect_class_like_members(&mut reflection, &r#trait.members, context);
@@ -224,6 +228,7 @@ pub fn reflect_enum<'ast>(r#enum: &'ast Enum, context: &'ast mut Context<'_>) ->
         used_traits: Default::default(),
         is_populated: false,
         is_anonymous: false,
+        issues: Default::default(),
     };
 
     reflect_class_like_members(&mut reflection, &r#enum.members, context);
@@ -403,6 +408,7 @@ fn reflect_class_like_method<'ast>(
             is_overriding: false,
             span: method.span(),
             is_populated: false,
+            issues: Default::default(),
         },
     )
 }
@@ -573,6 +579,7 @@ fn reflect_class_like_property<'ast>(
                                 span: hook.span(),
                                 visibility_reflection: None,
                                 is_populated: false,
+                                issues: Default::default(),
                             },
                         );
                     }

@@ -2,6 +2,7 @@ use std::collections::hash_map::Entry;
 
 use ahash::HashMap;
 use ahash::HashSet;
+use mago_reporting::IssueCollection;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -37,8 +38,9 @@ pub trait Reflection: HasSpan + HasSource {
     /// Retrieves the `SourceCategory` for the entity.
     ///
     /// The `SourceCategory` indicates whether the entity belongs to one of the following:
+    ///
     /// - `BuiltIn`: A PHP construct that is part of the PHP core or standard library.
-    /// - `Vendor`: A construct defined in third-party or vendor-provided libraries.
+    /// - `External`: A construct defined in third-party or vendor-provided libraries.
     /// - `UserDefined`: A construct written by the user or part of the current project.
     ///
     /// # Returns
@@ -89,6 +91,19 @@ pub trait Reflection: HasSpan + HasSource {
     /// - `true` if the entity's metadata is fully populated.
     /// - `false` if additional processing is needed to populate the metadata.
     fn is_populated(&self) -> bool;
+
+    /// Retrieves any issues found during the population of the reflection.
+    ///
+    /// The returned `IssueCollection` contains errors, warnings, or notices
+    /// related to the metadata of the entity.
+    ///
+    /// This method is particularly useful for static analysis tools or compilers
+    /// to report potential problems in the code being analyzed.
+    ///
+    /// # Returns
+    ///
+    /// - A reference to an `IssueCollection` containing all detected issues.
+    fn get_issues(&self) -> &IssueCollection;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]

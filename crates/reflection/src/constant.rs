@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_reporting::IssueCollection;
 use mago_source::HasSource;
 use mago_source::SourceCategory;
 use mago_source::SourceIdentifier;
@@ -16,7 +17,7 @@ use crate::Reflection;
 /// A `ConstantReflection` provides metadata about a single constant, including its
 /// name, type, and location in the source code. Constants are uniquely identified
 /// and separated even when declared in a single statement, such as `const A = 1, B = 2;`.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct ConstantReflection {
     /// The name of the constant.
     pub name: Name,
@@ -32,6 +33,9 @@ pub struct ConstantReflection {
 
     /// Whether the reflection's metadata is fully populated.
     pub is_populated: bool,
+
+    /// Collection of issues related to the constant.
+    pub issues: IssueCollection,
 }
 
 impl HasSpan for ConstantReflection {
@@ -68,5 +72,10 @@ impl Reflection for ConstantReflection {
     /// the constant's metadata completely.
     fn is_populated(&self) -> bool {
         self.is_populated
+    }
+
+    /// Returns the issues encountered while processing the constant.
+    fn get_issues(&self) -> &IssueCollection {
+        &self.issues
     }
 }
