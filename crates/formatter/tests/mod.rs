@@ -25,7 +25,7 @@ pub fn test_format(code: impl AsRef<str>, expected: &str, settings: FormatSettin
     let code_source = manager.load(&code_id).expect("Failed to load code source");
     let (code_program, error) = parse_source(&interner, &code_source);
     assert_eq!(error, None, "Error parsing code");
-    let formatted_code = mago_formatter::format(settings, &interner, &code_source, &code_program);
+    let formatted_code = mago_formatter::format(&interner, &code_source, &code_program, settings);
     pretty_assertions::assert_eq!(expected, formatted_code, "Formatted code does not match expected");
 
     let formatted_code_id =
@@ -33,6 +33,6 @@ pub fn test_format(code: impl AsRef<str>, expected: &str, settings: FormatSettin
     let formatted_code_source = manager.load(&formatted_code_id).expect("Failed to load formatted code source");
     let (formatted_code_program, error) = parse_source(&interner, &formatted_code_source);
     assert_eq!(error, None, "Error parsing formatted code");
-    let reformatted_code = mago_formatter::format(settings, &interner, &formatted_code_source, &formatted_code_program);
+    let reformatted_code = mago_formatter::format(&interner, &formatted_code_source, &formatted_code_program, settings);
     pretty_assertions::assert_eq!(expected, reformatted_code, "Reformatted code does not match expected");
 }

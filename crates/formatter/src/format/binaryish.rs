@@ -64,7 +64,7 @@ pub(super) fn print_binaryish_expression<'a>(
         || matches!(grandparent, Some(Node::ArrowFunction(func)) if func.arrow.is_before(operator.span()))
         || matches!(grandparent, Some(Node::For(r#for)) if r#for.body.span().is_after(operator.span()))
         || (matches!(grandparent, Some(Node::Conditional(_)))
-            && !matches!(f.great_grandparent_node(), Some(Node::Return(_)) | Some(Node::Throw(_)))
+            && !matches!(f.great_grandparent_node(), Some(Node::Return(_) | Node::Throw(_)))
             && !is_at_call_like_expression(f));
 
     let should_indent_if_inlining =

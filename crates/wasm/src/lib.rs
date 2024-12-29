@@ -134,7 +134,7 @@ pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, Js
         return Err(JsValue::from_str(&err.to_string()));
     }
 
-    let formatted = mago_formatter::format(settings, &interner, &source, &program);
+    let formatted = mago_formatter::format(&interner, &source, &program, settings);
 
     Ok(JsValue::from_str(&formatted))
 }
@@ -213,7 +213,7 @@ pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result
     let semantics = Semantics::build(&interner, source);
     let mut formatted = None;
     if semantics.parse_error.is_none() {
-        formatted = Some(mago_formatter::format(settings, &interner, &semantics.source, &semantics.program));
+        formatted = Some(mago_formatter::format(&interner, &semantics.source, &semantics.program, settings));
     }
 
     let symbols = get_symbols(&interner, &semantics.program);

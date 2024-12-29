@@ -1,7 +1,6 @@
 use mago_ast::*;
 use mago_span::HasSpan;
 use mago_span::Span;
-use misc::has_new_line_in_range;
 
 use crate::comment::CommentFlags;
 use crate::document::*;
@@ -11,6 +10,7 @@ use crate::format::block::print_block_of_nodes;
 use crate::format::call_node::print_call_like_node;
 use crate::format::call_node::CallLikeNode;
 use crate::format::class_like::print_class_like_body;
+use crate::format::misc::has_new_line_in_range;
 use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_colon_delimited_body;
 use crate::format::misc::print_modifiers;

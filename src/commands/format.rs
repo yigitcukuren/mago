@@ -179,7 +179,7 @@ fn format_source(
             false
         }
         None => {
-            let formatted = format(settings, interner, &source, &program);
+            let formatted = format(interner, &source, &program, settings);
 
             utils::apply_changes(interner, manager, &source, formatted, dry_run)?
         }
