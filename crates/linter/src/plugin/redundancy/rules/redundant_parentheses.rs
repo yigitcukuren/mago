@@ -54,8 +54,6 @@ impl<'a> Walker<LintContext<'a>> for RedundantParenthesesRule {
             if let Expression::Parenthesized(rhs) = assignment.rhs.as_ref() {
                 self.report(rhs, context);
             }
-
-            return;
         }
     }
 
