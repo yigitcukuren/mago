@@ -1468,8 +1468,8 @@ dependencies = [
  "diffy",
  "futures",
  "glob-match",
+ "indicatif",
  "mago-ast",
- "mago-feedback",
  "mago-fixer",
  "mago-formatter",
  "mago-interner",
@@ -1493,6 +1493,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1541,15 +1542,6 @@ dependencies = [
  "mago-span",
  "serde",
  "tracing",
-]
-
-[[package]]
-name = "mago-feedback"
-version = "0.0.18"
-dependencies = [
- "indicatif",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1648,7 +1640,6 @@ version = "0.0.18"
 dependencies = [
  "either",
  "mago-ast",
- "mago-feedback",
  "mago-interner",
  "mago-lexer",
  "mago-reporting",

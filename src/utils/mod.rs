@@ -6,6 +6,9 @@ use mago_source::SourceManager;
 
 use crate::error::Error;
 
+pub mod logger;
+pub mod progress;
+
 /// Applies changes to the source file.
 ///
 /// If `dry_run` is `true`, it compares the original and modified content,
@@ -40,7 +43,7 @@ pub fn apply_changes(
         let source_name = interner.lookup(&source.identifier.0);
         let patch = diffy::create_patch(original_content, changed_code.as_str());
 
-        mago_feedback::progress::GLOBAL_PROGRESS_MANAGER.suspend(|| {
+        progress::GLOBAL_PROGRESS_MANAGER.suspend(|| {
             let formatter = PatchFormatter::new().with_color();
 
             println!("diff of '{}':", source_name);

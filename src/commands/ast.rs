@@ -82,13 +82,13 @@ pub async fn execute(command: AstCommand) -> Result<ExitCode, Error> {
 
     // Verify if the file exists and is readable.
     if !file_path.exists() {
-        mago_feedback::error!("File '{}' does not exist.", command.file);
+        tracing::error!("File '{}' does not exist.", command.file);
 
         return Ok(ExitCode::FAILURE);
     }
 
     if !file_path.is_file() {
-        mago_feedback::error!("The path '{}' is not a file.", command.file);
+        tracing::error!("The path '{}' is not a file.", command.file);
 
         return Ok(ExitCode::FAILURE);
     }

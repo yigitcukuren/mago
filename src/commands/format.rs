@@ -2,9 +2,6 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_feedback::create_progress_bar;
-use mago_feedback::remove_progress_bar;
-use mago_feedback::ProgressBarTheme;
 use mago_formatter::format;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
@@ -17,6 +14,9 @@ use crate::config::Configuration;
 use crate::error::Error;
 use crate::source;
 use crate::utils;
+use crate::utils::progress::create_progress_bar;
+use crate::utils::progress::remove_progress_bar;
+use crate::utils::progress::ProgressBarTheme;
 
 /// Represents the `format` command, which is responsible for formatting source files
 /// according to specified rules in the configuration file.
@@ -69,17 +69,17 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
 
     // Provide feedback and return appropriate exit code.
     if changed == 0 {
-        mago_feedback::info!("All source files are already formatted.");
+        tracing::info!("All source files are already formatted.");
 
         return Ok(ExitCode::SUCCESS);
     }
 
     Ok(if command.dry_run {
-        mago_feedback::info!("Found {} source files that need formatting.", changed);
+        tracing::info!("Found {} source files that need formatting.", changed);
 
         ExitCode::FAILURE
     } else {
-        mago_feedback::info!("Formatted {} source files successfully.", changed);
+        tracing::info!("Formatted {} source files successfully.", changed);
 
         ExitCode::SUCCESS
     })
@@ -108,7 +108,7 @@ async fn format_all(
     let sources: Vec<_> = source_manager.source_ids_for_category(SourceCategory::UserDefined).collect();
 
     let length = sources.len();
-    let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Magenta);
+    let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Green);
     let mut handles = Vec::with_capacity(length);
 
     // Spawn async tasks to format each source concurrently.

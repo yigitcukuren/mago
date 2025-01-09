@@ -2,9 +2,6 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_feedback::create_progress_bar;
-use mago_feedback::remove_progress_bar;
-use mago_feedback::ProgressBarTheme;
 use mago_interner::ThreadedInterner;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
@@ -29,6 +26,9 @@ use crate::enum_variants;
 use crate::error::Error;
 use crate::reflection::reflect_all_non_user_defined_sources;
 use crate::source;
+use crate::utils::progress::create_progress_bar;
+use crate::utils::progress::remove_progress_bar;
+use crate::utils::progress::ProgressBarTheme;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -178,7 +178,7 @@ pub(super) async fn lint_sources(
     remove_progress_bar(progress_bar);
 
     let linter = create_linter(interner, configuration, codebase);
-    let progress_bar = create_progress_bar(length, "🧹  Linting", ProgressBarTheme::Yellow);
+    let progress_bar = create_progress_bar(length, "🧹  Linting", ProgressBarTheme::Red);
     let mut handles = Vec::with_capacity(length);
     for semantic in semantics {
         handles.push(tokio::spawn({
@@ -218,7 +218,7 @@ pub(super) async fn check_sources(
     let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();
     let length = sources.len();
 
-    let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Yellow);
+    let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Magenta);
     let mut handles = Vec::with_capacity(length);
     for source_id in sources {
         handles.push(tokio::spawn({

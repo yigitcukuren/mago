@@ -34,7 +34,6 @@ publish:
     cargo publish -p mago-ast-utils --allow-dirty
     cargo publish -p mago-composer --allow-dirty
     cargo publish -p mago-docblock --allow-dirty
-    cargo publish -p mago-feedback --allow-dirty
     cargo publish -p mago-lexer --allow-dirty
     cargo publish -p mago-parser --allow-dirty
     cargo publish -p mago-formatter --allow-dirty

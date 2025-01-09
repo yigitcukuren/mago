@@ -6,7 +6,7 @@ use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt;
 use tracing_subscriber::EnvFilter;
 
-use crate::progress::GLOBAL_PROGRESS_MANAGER;
+use crate::utils::progress::GLOBAL_PROGRESS_MANAGER;
 
 /// Initializes the logger with the specified directive and environment variable.
 ///

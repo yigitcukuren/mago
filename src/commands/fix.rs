@@ -2,9 +2,6 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_feedback::create_progress_bar;
-use mago_feedback::remove_progress_bar;
-use mago_feedback::ProgressBarTheme;
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_interner::ThreadedInterner;
@@ -16,6 +13,9 @@ use crate::config::Configuration;
 use crate::error::Error;
 use crate::source;
 use crate::utils;
+use crate::utils::progress::create_progress_bar;
+use crate::utils::progress::remove_progress_bar;
+use crate::utils::progress::ProgressBarTheme;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -68,7 +68,7 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> Resul
         filter_fix_plans(&interner, issues, command.get_classification());
 
     let total = plans.len();
-    let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Magenta);
+    let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Cyan);
     let mut handles = Vec::with_capacity(total);
     for (source, plan) in plans.into_iter() {
         handles.push(tokio::spawn({
@@ -104,31 +104,31 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> Resul
     remove_progress_bar(progress_bar);
 
     if skipped_unsafe > 0 {
-        mago_feedback::warn!(
+        tracing::warn!(
             "Skipped {} fixes because they were marked as unsafe. To apply those fixes, use the `--unsafe` flag.",
             skipped_unsafe
         );
     }
 
     if skipped_potentially_unsafe > 0 {
-        mago_feedback::warn!(
+        tracing::warn!(
             "Skipped {} fixes because they were marked as potentially unsafe. To apply those fixes, use the `--potentially-unsafe` flag.",
             skipped_potentially_unsafe
         );
     }
 
     if changed == 0 {
-        mago_feedback::info!("No fixes were applied");
+        tracing::info!("No fixes were applied");
 
         return Ok(ExitCode::SUCCESS);
     }
 
     Ok(if command.dry_run {
-        mago_feedback::info!("Found {} fixes that can be applied", changed);
+        tracing::info!("Found {} fixes that can be applied", changed);
 
         ExitCode::FAILURE
     } else {
-        mago_feedback::info!("Applied {} fixes successfully", changed);
+        tracing::info!("Applied {} fixes successfully", changed);
 
         ExitCode::SUCCESS
     })
@@ -157,7 +157,7 @@ fn filter_fix_plans(
                     } else {
                         skipped_unsafe += 1;
 
-                        mago_feedback::warn!(
+                        tracing::warn!(
                             "Skipping a fix for `{}` because it contains unsafe changes.",
                             interner.lookup(&source.0)
                         );
@@ -171,7 +171,7 @@ fn filter_fix_plans(
                     } else {
                         skipped_potentially_unsafe += 1;
 
-                        mago_feedback::warn!(
+                        tracing::warn!(
                             "Skipping a fix for `{}` because it contains potentially unsafe changes.",
                             interner.lookup(&source.0)
                         );

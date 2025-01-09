@@ -29,7 +29,6 @@ mago-ast-utils = { path = "crates/ast-utils", version = "0.0.18" }
 mago-casing = { path = "crates/casing", version = "0.0.18" }
 mago-composer = { path = "crates/composer", version = "0.0.18" }
 mago-docblock = { path = "crates/docblock", version = "0.0.18" }
-mago-feedback = { path = "crates/feedback", version = "0.0.18" }
 mago-fixer = { path = "crates/fixer", version = "0.0.18" }
 mago-formatter = { path = "crates/formatter", version = "0.0.18" }
 mago-interner = { path = "crates/interner", version = "0.0.18" }
@@ -113,7 +112,6 @@ mago-ast = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-source = { workspace = true }
-mago-feedback = { workspace = true }
 mago-semantics = { workspace = true }
 mago-linter = { workspace = true }
 mago-reflection = { workspace = true }
@@ -140,6 +138,8 @@ toml = { workspace = true }
 num_cpus = { workspace = true }
 diffy = { workspace = true }
 tempfile = { workspace = true }
+tracing-subscriber = { workspace = true }
+indicatif = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 openssl = { workspace = true }

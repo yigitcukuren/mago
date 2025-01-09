@@ -1,5 +1,6 @@
 #![allow(unknown_lints)]
 #![allow(clippy::literal_string_with_formatting_args)]
+#![allow(dead_code)]
 
 use std::sync::LazyLock;
 

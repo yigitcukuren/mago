@@ -15,7 +15,6 @@ workspace = true
 [dependencies]
 mago-source = { workspace = true }
 mago-span = { workspace = true }
-mago-feedback = { workspace = true }
 mago-reporting = { workspace = true }
 mago-ast = { workspace = true }
 mago-token = { workspace = true }

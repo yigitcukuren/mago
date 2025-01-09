@@ -2,13 +2,12 @@ use std::process::ExitCode;
 
 use clap::Parser;
 use tokio::runtime::Builder;
-
-use mago_feedback::initialize_logger;
-use mago_feedback::LevelFilter;
+use tracing::level_filters::LevelFilter;
 
 use crate::commands::MagoCommand;
 use crate::config::Configuration;
 use crate::error::Error;
+use crate::utils::logger::initialize_logger;
 
 mod commands;
 mod config;

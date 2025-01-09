@@ -2,8 +2,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 
 use num_cpus::get as get_logical_cpus;
-
-use mago_feedback::error;
+use tracing::error;
 
 /// The current version of mago.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
