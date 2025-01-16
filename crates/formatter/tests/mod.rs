@@ -4,6 +4,7 @@ use mago_parser::parse_source;
 use mago_source::SourceCategory;
 use mago_source::SourceManager;
 
+pub mod comment;
 pub mod format;
 pub mod parens;
 

@@ -101,17 +101,23 @@ pub(super) fn print_colon_delimited_body<'a>(
 ) -> Document<'a> {
     let mut parts = vec![Document::String(":")];
 
-    let mut statements = print_statement_sequence(f, statements);
-    if !statements.is_empty() {
-        statements.insert(0, Document::Line(Line::hardline()));
-
-        parts.push(Document::Indent(statements));
+    let mut printed_statements = print_statement_sequence(f, statements);
+    if !printed_statements.is_empty() {
+        if let Some(Statement::ClosingTag(_)) = statements.first() {
+            printed_statements.insert(0, Document::String(" "));
+            parts.push(Document::Array(printed_statements));
+        } else {
+            printed_statements.insert(0, Document::Line(Line::hardline()));
+            parts.push(Document::Indent(printed_statements));
+        }
     }
 
     if let Some(comments) = f.print_dangling_comments(colon.join(terminator.span()), true) {
         parts.push(comments);
-    } else {
+    } else if !matches!(statements.last(), Some(Statement::OpeningTag(_))) {
         parts.push(Document::Line(Line::hardline()));
+    } else {
+        parts.push(Document::String(" "));
     }
 
     parts.push(end_keyword.format(f));

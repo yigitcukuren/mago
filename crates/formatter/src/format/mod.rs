@@ -130,6 +130,8 @@ impl<'a> Format<'a> for Statement {
 
 impl<'a> Format<'a> for OpeningTag {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
+        f.scripting_mode = true;
+
         wrap!(f, self, OpeningTag, {
             match &self {
                 OpeningTag::Full(tag) => tag.format(f),
@@ -142,8 +144,6 @@ impl<'a> Format<'a> for OpeningTag {
 
 impl<'a> Format<'a> for FullOpeningTag {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        f.scripting_mode = true;
-
         wrap!(f, self, FullOpeningTag, {
             Document::String(match f.settings.keyword_case {
                 CasingStyle::Lowercase => "<?php",
@@ -155,16 +155,12 @@ impl<'a> Format<'a> for FullOpeningTag {
 
 impl<'a> Format<'a> for ShortOpeningTag {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        f.scripting_mode = true;
-
         wrap!(f, self, ShortOpeningTag, { Document::String("<?") })
     }
 }
 
 impl<'a> Format<'a> for EchoOpeningTag {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        f.scripting_mode = true;
-
         wrap!(f, self, EchoOpeningTag, { Document::String("<?=") })
     }
 }
@@ -916,7 +912,7 @@ impl<'a> Format<'a> for Terminator {
         wrap!(f, self, Terminator, {
             match self {
                 Terminator::Semicolon(_) | Terminator::TagPair(_, _) => Document::String(";"),
-                Terminator::ClosingTag(t) => t.format(f),
+                Terminator::ClosingTag(t) => Document::Array(vec![Document::String(" "), t.format(f)]),
             }
         })
     }

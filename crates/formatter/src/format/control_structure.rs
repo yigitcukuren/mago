@@ -83,24 +83,71 @@ impl<'a> Format<'a> for IfColonDelimitedBody {
 
             let mut statements = print_statement_sequence(f, &self.statements);
             if !statements.is_empty() {
-                statements.insert(0, Document::Line(Line::hardline()));
-
-                parts.push(Document::Indent(statements));
+                if let Some(Statement::ClosingTag(_)) = self.statements.first() {
+                    statements.insert(0, Document::String(" "));
+                    parts.push(Document::Array(statements));
+                } else {
+                    statements.insert(0, Document::Line(Line::hardline()));
+                    parts.push(Document::Indent(statements));
+                }
             }
 
-            parts.push(Document::Line(Line::hardline()));
+            if !matches!(self.statements.last(), Some(Statement::OpeningTag(_))) {
+                parts.push(Document::Line(Line::hardline()));
+            } else {
+                parts.push(Document::String(" "));
+            }
+
             for else_if_clause in self.else_if_clauses.iter() {
                 parts.push(else_if_clause.format(f));
-                parts.push(Document::Line(Line::hardline()));
+                if !matches!(else_if_clause.statements.last(), Some(Statement::OpeningTag(_))) {
+                    parts.push(Document::Line(Line::hardline()));
+                } else {
+                    parts.push(Document::String(" "));
+                }
             }
 
             if let Some(else_clause) = &self.else_clause {
                 parts.push(else_clause.format(f));
-                parts.push(Document::Line(Line::hardline()));
+                if !matches!(else_clause.statements.last(), Some(Statement::OpeningTag(_))) {
+                    parts.push(Document::Line(Line::hardline()));
+                } else {
+                    parts.push(Document::String(" "));
+                }
             }
 
             parts.push(self.endif.format(f));
             parts.push(self.terminator.format(f));
+
+            Document::Group(Group::new(parts))
+        })
+    }
+}
+
+impl<'a> Format<'a> for IfColonDelimitedBodyElseIfClause {
+    fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
+        wrap!(f, self, IfColonDelimitedBodyElseIfClause, {
+            let mut parts = vec![self.elseif.format(f), Document::space()];
+
+            let condition = misc::print_condition(f, &self.condition);
+            let is_first_stmt_closing_tag = matches!(self.statements.first(), Some(Statement::ClosingTag(_)));
+            if is_first_stmt_closing_tag {
+                parts.push(Document::Indent(vec![condition, Document::String(":")]));
+            } else {
+                parts.push(condition);
+                parts.push(Document::String(":"));
+            }
+
+            let mut statements = print_statement_sequence(f, &self.statements);
+            if !statements.is_empty() {
+                if is_first_stmt_closing_tag {
+                    statements.insert(0, Document::String(" "));
+                    parts.push(Document::Array(statements));
+                } else {
+                    statements.insert(0, Document::Line(Line::hardline()));
+                    parts.push(Document::Indent(statements));
+                }
+            }
 
             Document::Group(Group::new(parts))
         })
@@ -114,31 +161,13 @@ impl<'a> Format<'a> for IfColonDelimitedBodyElseClause {
 
             let mut statements = print_statement_sequence(f, &self.statements);
             if !statements.is_empty() {
-                statements.insert(0, Document::Line(Line::hardline()));
-
-                parts.push(Document::Indent(statements));
-            }
-
-            Document::Group(Group::new(parts))
-        })
-    }
-}
-
-impl<'a> Format<'a> for IfColonDelimitedBodyElseIfClause {
-    fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, IfColonDelimitedBodyElseIfClause, {
-            let mut parts = vec![
-                self.elseif.format(f),
-                Document::space(),
-                misc::print_condition(f, &self.condition),
-                Document::String(":"),
-            ];
-
-            let mut statements = print_statement_sequence(f, &self.statements);
-            if !statements.is_empty() {
-                statements.insert(0, Document::Line(Line::hardline()));
-
-                parts.push(Document::Indent(statements));
+                if let Some(Statement::ClosingTag(_)) = self.statements.first() {
+                    statements.insert(0, Document::String(" "));
+                    parts.push(Document::Array(statements));
+                } else {
+                    statements.insert(0, Document::Line(Line::hardline()));
+                    parts.push(Document::Indent(statements));
+                }
             }
 
             Document::Group(Group::new(parts))

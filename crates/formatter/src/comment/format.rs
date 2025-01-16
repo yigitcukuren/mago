@@ -282,8 +282,8 @@ impl<'a> Formatter<'a> {
                 let rest = line.trim_start();
                 Cow::Owned(format!(" {}", rest))
             } else {
-                // Line does not have '*' after whitespaces, leave it as is
-                Cow::Borrowed(*line)
+                // Line does not have '*' after whitespaces, add it.
+                Cow::Owned(format!(" * {}", line.trim()))
             };
 
             processed_lines.push(processed_line);
