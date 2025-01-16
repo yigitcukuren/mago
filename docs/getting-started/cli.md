@@ -8,8 +8,10 @@ The Command Line Interface (CLI) is the primary way to interact with Mago. It pr
 
 The `format` command is used to format PHP files in your project according to the rules defined in your `mago.toml` configuration file.
 
-- Usage: `mago format [OPTIONS]`
-- Key Options:
+- Usage: `mago format [OPTIONS] [PATH]...`
+- Arguments:
+  - `PATH`: Format specific files or directories, overriding the source configuration.
+- Options:
   - `--dry-run`: Preview changes without modifying files.
 - Aliases: `mago fmt`
 
@@ -18,7 +20,7 @@ The `format` command is used to format PHP files in your project according to th
 The `lint` command is used to analyze PHP files in your project and report any issues found by the linter.
 
 - Usage: `mago lint [OPTIONS]`
-- Key Options:
+- Options:
   - `--fixable-only`: Only show issues that can be automatically fixed.
   - `--semantics-only`: Skip plugin-based rule checks and focus on code correctness.
   - `--reporting-format`: Specify the output format for issue reports (e.g., `rich`, `github`, `json`, `checkstyle`, ...).
@@ -29,7 +31,7 @@ The `lint` command is used to analyze PHP files in your project and report any i
 The `fix` command is used to automatically fix issues identified during linting.
 
 - Usage: `mago fix [OPTIONS]`
-- Key Options:
+- Options:
   - `--dry-run`: Preview changes without applying them.
   - `--unsafe`: Apply unsafe fixes.
   - `--potentially-unsafe`: Apply potentially unsafe fixes.

@@ -14,6 +14,38 @@ use crate::config::source::SourceConfiguration;
 use crate::consts::PHP_STUBS;
 use crate::error::Error;
 
+/// Load the source manager from the given files or directories,
+/// ignoring the `paths`, `includes`, and `excludes` configuration.
+///
+/// # Arguments
+///
+/// * `interner` - The interner to use for string interning.
+/// * `configuration` - The configuration to use for loading the sources.
+/// * `files` - The files to load into the source manager.
+///
+/// # Returns
+///
+/// A `Result` containing the new source manager or a `Error` if
+/// an error occurred during the build process.
+pub async fn from_paths(
+    interner: &ThreadedInterner,
+    configuration: &SourceConfiguration,
+    paths: Vec<PathBuf>,
+) -> Result<SourceManager, Error> {
+    let SourceConfiguration { root, extensions, .. } = configuration;
+
+    let manager = SourceManager::new(interner.clone());
+
+    let excludes_set = HashSet::default();
+    let extensions: HashSet<&str> = extensions.iter().map(|ext| ext.as_str()).collect();
+
+    for path in paths {
+        add_file_to_manager(&manager, path, root, &[], &excludes_set, &extensions, true);
+    }
+
+    Ok(manager)
+}
+
 /// Load the source manager by scanning and processing the sources
 /// as per the given configuration.
 ///
@@ -21,15 +53,17 @@ use crate::error::Error;
 ///
 /// * `interner` - The interner to use for string interning.
 /// * `configuration` - The configuration to use for loading the sources.
+/// * `include_externals` - Whether to include external sources in the source manager.
 /// * `include_stubs` - Whether to include stubs in the source manager.
 ///
 /// # Returns
 ///
-/// A `Result` containing the new source manager or a `SourceError` if
+/// A `Result` containing the new source manager or a `Error` if
 /// an error occurred during the build process.
 pub async fn load(
     interner: &ThreadedInterner,
     configuration: &SourceConfiguration,
+    include_externals: bool,
     include_stubs: bool,
 ) -> Result<SourceManager, Error> {
     let SourceConfiguration { root, paths, includes, excludes, extensions } = configuration;
@@ -37,22 +71,106 @@ pub async fn load(
     let mut starting_paths = Vec::new();
 
     if paths.is_empty() {
-        starting_paths.push((root.clone(), true));
+        starting_paths.push((root.to_path_buf(), true));
     } else {
         for source in paths {
             starting_paths.push((source.clone(), true));
         }
     }
 
-    for include in includes {
-        starting_paths.push((include.clone(), false));
+    if include_externals {
+        for include in includes {
+            starting_paths.push((include.clone(), false));
+        }
     }
 
-    if paths.is_empty() && includes.is_empty() {
-        starting_paths.push((root.clone(), true));
+    let excludes_set = create_excludes_set(excludes, root);
+    let extensions: HashSet<&str> = extensions.iter().map(|ext| ext.as_str()).collect();
+
+    let manager = SourceManager::new(interner.clone());
+    for (path, user_defined) in starting_paths.into_iter() {
+        add_path_to_manager(&manager, path, root, includes, &excludes_set, &extensions, user_defined).await?;
     }
 
-    let excludes_set: HashSet<Exclusion> = excludes
+    if include_stubs {
+        for (stub, content) in PHP_STUBS {
+            manager.insert_content(stub.to_owned(), content.to_owned(), SourceCategory::BuiltIn);
+        }
+    }
+
+    Ok(manager)
+}
+
+#[inline(always)]
+async fn add_path_to_manager(
+    manager: &SourceManager,
+    path: PathBuf,
+    root: &Path,
+    includes: &[PathBuf],
+    excludes_set: &HashSet<Exclusion>,
+    extensions: &HashSet<&str>,
+    user_defined: bool,
+) -> Result<(), Error> {
+    if path.is_file() {
+        add_file_to_manager(manager, path, root, includes, excludes_set, extensions, user_defined);
+
+        return Ok(());
+    }
+
+    let mut entries = WalkDir::new(path).filter(|entry| async move {
+        if entry.path().starts_with(".") {
+            Filtering::IgnoreDir
+        } else {
+            Filtering::Continue
+        }
+    });
+
+    while let Some(entry) = entries.next().await {
+        add_file_to_manager(manager, entry?.path(), root, includes, excludes_set, extensions, user_defined);
+    }
+
+    Ok(())
+}
+
+#[inline(always)]
+fn add_file_to_manager(
+    manager: &SourceManager,
+    path: PathBuf,
+    root: &Path,
+    includes: &[PathBuf],
+    excludes_set: &HashSet<Exclusion>,
+    extensions: &HashSet<&str>,
+    user_defined: bool,
+) {
+    if !path.is_file() {
+        return;
+    }
+
+    // Skip user-defined sources if they are included in the `includes` list.
+    if user_defined && includes.iter().any(|include| path.starts_with(include)) {
+        return;
+    }
+
+    // Skip excluded files and directories.
+    if is_excluded(&path, excludes_set) {
+        return;
+    }
+
+    // Skip files that do not have an accepted extension.
+    if !is_accepted_file(&path, extensions) {
+        return;
+    }
+
+    let name = match path.strip_prefix(root) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(_) => path.display().to_string(),
+    };
+
+    manager.insert_path(name, path, if user_defined { SourceCategory::UserDefined } else { SourceCategory::External });
+}
+
+fn create_excludes_set(excludes: &[String], root: &Path) -> HashSet<Exclusion> {
+    excludes
         .iter()
         .map(|exclude| {
             // if it contains a wildcard, treat it as a pattern
@@ -68,64 +186,7 @@ pub async fn load(
                 }
             }
         })
-        .collect();
-
-    let extensions: HashSet<&String> = extensions.iter().collect();
-
-    let manager = SourceManager::new(interner.clone());
-    for (path, user_defined) in starting_paths.into_iter() {
-        let mut entries = WalkDir::new(path)
-            // filter out .git directories
-            .filter(|entry| async move {
-                if entry.path().starts_with(".") {
-                    Filtering::IgnoreDir
-                } else {
-                    Filtering::Continue
-                }
-            });
-
-        // Check for errors after processing all entries in the current path
-        while let Some(entry) = entries.next().await {
-            let path = entry?.path();
-            if !path.is_file() {
-                continue;
-            }
-
-            // Skip user-defined sources if they are included in the `includes` list.
-            if user_defined && includes.iter().any(|include| path.starts_with(include)) {
-                continue;
-            }
-
-            // Skip excluded files and directories.
-            if is_excluded(&path, &excludes_set) {
-                continue;
-            }
-
-            // Skip files that do not have an accepted extension.
-            if !is_accepted_file(&path, &extensions) {
-                continue;
-            }
-
-            let name = match path.strip_prefix(root) {
-                Ok(rel_path) => rel_path.display().to_string(),
-                Err(_) => path.display().to_string(),
-            };
-
-            manager.insert_path(
-                name,
-                path.clone(),
-                if user_defined { SourceCategory::UserDefined } else { SourceCategory::External },
-            );
-        }
-    }
-
-    if include_stubs {
-        for (stub, content) in PHP_STUBS {
-            manager.insert_content(stub.to_owned(), content.to_owned(), SourceCategory::BuiltIn);
-        }
-    }
-
-    Ok(manager)
+        .collect()
 }
 
 fn is_excluded(path: &Path, excludes: &HashSet<Exclusion>) -> bool {
@@ -140,11 +201,11 @@ fn is_excluded(path: &Path, excludes: &HashSet<Exclusion>) -> bool {
     false
 }
 
-fn is_accepted_file(path: &Path, extensions: &HashSet<&String>) -> bool {
+fn is_accepted_file(path: &Path, extensions: &HashSet<&str>) -> bool {
     if extensions.is_empty() {
         path.extension().and_then(|s| s.to_str()).map(|ext| ext.eq_ignore_ascii_case("php")).unwrap_or(false)
     } else {
-        path.extension().and_then(|s| s.to_str()).map(|ext| extensions.contains(&ext.to_string())).unwrap_or(false)
+        path.extension().and_then(|s| s.to_str()).map(|ext| extensions.contains(ext)).unwrap_or(false)
     }
 }
 

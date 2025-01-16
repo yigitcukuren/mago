@@ -30,6 +30,16 @@ This command shows the proposed changes without applying them, allowing you to r
 
 > Note: The `format` command will exit with a non-zero status if any changes are planned.
 
+### Formatting Specific Files
+
+To format specific files or directories, pass them as arguments to the `format` command:
+
+```bash
+mago format path/to/file.php path/to/directory
+```
+
+This command formats only the specified files and directories, leaving other files untouched.
+
 ## Configuration
 
 The formatter's behavior can be customized using the `mago.toml` configuration file.

@@ -119,39 +119,49 @@ pub struct FormatterConfiguration {
 
 impl FormatterConfiguration {
     pub fn get_settings(&self) -> FormatSettings {
-        let d = FormatSettings::default();
+        let default = FormatSettings::default();
 
         FormatSettings {
-            print_width: self.print_width.unwrap_or(d.print_width),
-            tab_width: self.tab_width.unwrap_or(d.tab_width),
-            use_tabs: self.use_tabs.unwrap_or(d.use_tabs),
-            end_of_line: self.end_of_line.unwrap_or(d.end_of_line),
-            single_quote: self.single_quote.unwrap_or(d.single_quote),
-            trailing_comma: self.trailing_comma.unwrap_or(d.trailing_comma),
-            space_around_declare_equals: self.space_around_declare_equals.unwrap_or(d.space_around_declare_equals),
-            keyword_case: self.keyword_case.unwrap_or(d.keyword_case),
-            blank_line_after_open_tag: self.blank_line_after_open_tag.unwrap_or(d.blank_line_after_open_tag),
-            control_space_parens: self.control_space_parens.unwrap_or(d.control_space_parens),
-            closure_brace_style: self.closure_brace_style.unwrap_or(d.closure_brace_style),
-            function_brace_style: self.function_brace_style.unwrap_or(d.function_brace_style),
-            method_brace_style: self.method_brace_style.unwrap_or(d.method_brace_style),
-            classlike_brace_style: self.classlike_brace_style.unwrap_or(d.classlike_brace_style),
-            control_brace_style: self.control_brace_style.unwrap_or(d.control_brace_style),
-            space_before_closure_params: self.space_before_closure_params.unwrap_or(d.space_before_closure_params),
-            space_after_closure_use: self.space_after_closure_use.unwrap_or(d.space_after_closure_use),
+            print_width: self.print_width.unwrap_or(default.print_width),
+            tab_width: self.tab_width.unwrap_or(default.tab_width),
+            use_tabs: self.use_tabs.unwrap_or(default.use_tabs),
+            end_of_line: self.end_of_line.unwrap_or(default.end_of_line),
+            single_quote: self.single_quote.unwrap_or(default.single_quote),
+            trailing_comma: self.trailing_comma.unwrap_or(default.trailing_comma),
+            space_around_declare_equals: self
+                .space_around_declare_equals
+                .unwrap_or(default.space_around_declare_equals),
+            keyword_case: self.keyword_case.unwrap_or(default.keyword_case),
+            blank_line_after_open_tag: self.blank_line_after_open_tag.unwrap_or(default.blank_line_after_open_tag),
+            control_space_parens: self.control_space_parens.unwrap_or(default.control_space_parens),
+            closure_brace_style: self.closure_brace_style.unwrap_or(default.closure_brace_style),
+            function_brace_style: self.function_brace_style.unwrap_or(default.function_brace_style),
+            method_brace_style: self.method_brace_style.unwrap_or(default.method_brace_style),
+            classlike_brace_style: self.classlike_brace_style.unwrap_or(default.classlike_brace_style),
+            control_brace_style: self.control_brace_style.unwrap_or(default.control_brace_style),
+            space_before_closure_params: self
+                .space_before_closure_params
+                .unwrap_or(default.space_before_closure_params),
+            space_after_closure_use: self.space_after_closure_use.unwrap_or(default.space_after_closure_use),
             space_before_arrow_function_params: self
                 .space_before_arrow_function_params
-                .unwrap_or(d.space_before_arrow_function_params),
-            static_before_visibility: self.static_before_visibility.unwrap_or(d.static_before_visibility),
-            null_type_hint: self.null_type_hint.unwrap_or(d.null_type_hint),
-            type_spacing: self.type_spacing.unwrap_or(d.type_spacing),
-            method_chain_break_threshold: self.method_chain_break_threshold.unwrap_or(d.method_chain_break_threshold),
+                .unwrap_or(default.space_before_arrow_function_params),
+            static_before_visibility: self.static_before_visibility.unwrap_or(default.static_before_visibility),
+            null_type_hint: self.null_type_hint.unwrap_or(default.null_type_hint),
+            type_spacing: self.type_spacing.unwrap_or(default.type_spacing),
+            method_chain_break_threshold: self
+                .method_chain_break_threshold
+                .unwrap_or(default.method_chain_break_threshold),
             break_promoted_properties_list: self
                 .break_promoted_properties_list
-                .unwrap_or(d.break_promoted_properties_list),
-            space_concatenation: self.space_concatenation.unwrap_or(d.space_concatenation),
-            method_chain_breaking_style: self.method_chain_breaking_style.unwrap_or(d.method_chain_breaking_style),
-            line_before_binary_operator: self.line_before_binary_operator.unwrap_or(d.line_before_binary_operator),
+                .unwrap_or(default.break_promoted_properties_list),
+            space_concatenation: self.space_concatenation.unwrap_or(default.space_concatenation),
+            method_chain_breaking_style: self
+                .method_chain_breaking_style
+                .unwrap_or(default.method_chain_breaking_style),
+            line_before_binary_operator: self
+                .line_before_binary_operator
+                .unwrap_or(default.line_before_binary_operator),
         }
     }
 }

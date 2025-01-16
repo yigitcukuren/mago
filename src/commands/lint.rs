@@ -83,7 +83,8 @@ pub struct LintCommand {
 
 pub async fn execute(command: LintCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
-    let source_manager = source::load(&interner, &configuration.source, !command.semantics_only).await?;
+    let source_manager =
+        source::load(&interner, &configuration.source, !command.semantics_only, !command.semantics_only).await?;
 
     if let Some(rule) = &command.explain {
         return explain_rule(&interner, rule, &configuration.linter);

@@ -61,7 +61,7 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> Resul
     // Initialize the interner for managing identifiers.
     let interner = ThreadedInterner::new();
     // Load sources
-    let source_manager = source::load(&interner, &configuration.source, true).await?;
+    let source_manager = source::load(&interner, &configuration.source, true, true).await?;
 
     let issues = lint_sources(&interner, &source_manager, &configuration.linter).await?;
     let (plans, skipped_unsafe, skipped_potentially_unsafe) =

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
@@ -32,34 +33,35 @@ This command helps maintain a consistent codebase style, improving readability a
 "#
 )]
 pub struct FormatCommand {
+    /// Format specific files or directories, overriding the source configuration.
+    #[arg(help = "Format specific files or directories, overriding the source configuration")]
+    pub path: Vec<PathBuf>,
+
     /// Perform a dry run to check if files are already formatted.
     #[arg(long, short = 'd', help = "Check if the source files are already formatted without making changes")]
     pub dry_run: bool,
-
-    /// Specify the width of the printed source code for formatting purposes.
-    #[arg(long, short = 'w', help = "Set the maximum line width for the formatted source code", value_name = "WIDTH")]
-    pub print_width: Option<usize>,
 }
 
 /// Executes the format command with the provided configuration and options.
 ///
 /// # Arguments
+///
 /// * `command` - The `FormatCommand` structure containing user-specified options.
 /// * `configuration` - The application configuration loaded from file or defaults.
 ///
 /// # Returns
 ///
 /// Exit code: `0` if successful or no changes were needed, `1` if issues were found during the check.
-pub async fn execute(command: FormatCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+pub async fn execute(command: FormatCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     // Initialize the interner for managing identifiers.
     let interner = ThreadedInterner::new();
-    // Load sources
-    let source_manager = source::load(&interner, &configuration.source, false).await?;
 
-    // Update the print width in configuration if provided.
-    if let Some(width) = command.print_width {
-        configuration.format.print_width = Some(width);
-    }
+    // Load sources
+    let source_manager = if !command.path.is_empty() {
+        source::from_paths(&interner, &configuration.source, command.path).await?
+    } else {
+        source::load(&interner, &configuration.source, false, false).await?
+    };
 
     // Extract formatting settings from the configuration.
     let settings = configuration.format.get_settings();
