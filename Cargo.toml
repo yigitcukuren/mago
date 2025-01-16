@@ -1,6 +1,6 @@
 [package]
 name = "mago"
-version = "0.0.19"
+version = "0.0.20"
 edition = "2021"
 authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ rust-version = "1.83.0"
 package.edition = "2021"
 package.authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 package.license = "MIT OR Apache-2.0"
-package.version = "0.0.19"
+package.version = "0.0.20"
 package.homepage = "https://github.com/carthage-software/mago"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.83.0"
@@ -24,31 +24,31 @@ members = ["crates/*"]
 large_enum_variant = { level = "allow" }
 
 [workspace.dependencies]
-mago-ast = { path = "crates/ast", version = "0.0.19" }
-mago-ast-utils = { path = "crates/ast-utils", version = "0.0.19" }
-mago-casing = { path = "crates/casing", version = "0.0.19" }
-mago-composer = { path = "crates/composer", version = "0.0.19" }
-mago-docblock = { path = "crates/docblock", version = "0.0.19" }
-mago-fixer = { path = "crates/fixer", version = "0.0.19" }
-mago-formatter = { path = "crates/formatter", version = "0.0.19" }
-mago-interner = { path = "crates/interner", version = "0.0.19" }
-mago-lexer = { path = "crates/lexer", version = "0.0.19" }
-mago-linter = { path = "crates/linter", version = "0.0.19" }
-mago-names = { path = "crates/names", version = "0.0.19" }
-mago-parser = { path = "crates/parser", version = "0.0.19" }
-mago-reflection = { path = "crates/reflection", version = "0.0.19" }
-mago-reflector = { path = "crates/reflector", version = "0.0.19" }
-mago-reporting = { path = "crates/reporting", version = "0.0.19" }
-mago-semantics = { path = "crates/semantics", version = "0.0.19" }
-mago-source = { path = "crates/source", version = "0.0.19" }
-mago-span = { path = "crates/span", version = "0.0.19" }
-mago-symbol-table = { path = "crates/symbol-table", version = "0.0.19" }
-mago-token = { path = "crates/token", version = "0.0.19" }
-mago-traverser = { path = "crates/traverser", version = "0.0.19" }
-mago-trinary = { path = "crates/trinary", version = "0.0.19" }
-mago-typing = { path = "crates/typing", version = "0.0.19" }
-mago-walker = { path = "crates/walker", version = "0.0.19" }
-mago-wasm = { path = "crates/wasm", version = "0.0.19" }
+mago-ast = { path = "crates/ast", version = "0.0.20" }
+mago-ast-utils = { path = "crates/ast-utils", version = "0.0.20" }
+mago-casing = { path = "crates/casing", version = "0.0.20" }
+mago-composer = { path = "crates/composer", version = "0.0.20" }
+mago-docblock = { path = "crates/docblock", version = "0.0.20" }
+mago-fixer = { path = "crates/fixer", version = "0.0.20" }
+mago-formatter = { path = "crates/formatter", version = "0.0.20" }
+mago-interner = { path = "crates/interner", version = "0.0.20" }
+mago-lexer = { path = "crates/lexer", version = "0.0.20" }
+mago-linter = { path = "crates/linter", version = "0.0.20" }
+mago-names = { path = "crates/names", version = "0.0.20" }
+mago-parser = { path = "crates/parser", version = "0.0.20" }
+mago-reflection = { path = "crates/reflection", version = "0.0.20" }
+mago-reflector = { path = "crates/reflector", version = "0.0.20" }
+mago-reporting = { path = "crates/reporting", version = "0.0.20" }
+mago-semantics = { path = "crates/semantics", version = "0.0.20" }
+mago-source = { path = "crates/source", version = "0.0.20" }
+mago-span = { path = "crates/span", version = "0.0.20" }
+mago-symbol-table = { path = "crates/symbol-table", version = "0.0.20" }
+mago-token = { path = "crates/token", version = "0.0.20" }
+mago-traverser = { path = "crates/traverser", version = "0.0.20" }
+mago-trinary = { path = "crates/trinary", version = "0.0.20" }
+mago-typing = { path = "crates/typing", version = "0.0.20" }
+mago-walker = { path = "crates/walker", version = "0.0.20" }
+mago-wasm = { path = "crates/wasm", version = "0.0.20" }
 dashmap = { version = "6.1.0" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8.11" }
