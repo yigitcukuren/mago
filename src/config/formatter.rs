@@ -10,6 +10,7 @@ use crate::error::Error;
 
 /// Configuration options for formatting source code.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FormatterConfiguration {
     /// Specify the maximum line length that the printer will wrap on.
     #[serde(skip_serializing_if = "Option::is_none")]

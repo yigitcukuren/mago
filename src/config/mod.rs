@@ -23,6 +23,7 @@ pub mod source;
 
 /// Configuration options for mago.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Configuration {
     /// The number of threads to use.
     pub threads: usize,

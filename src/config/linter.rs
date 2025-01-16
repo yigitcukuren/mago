@@ -23,6 +23,7 @@ pub enum LinterLevel {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LinterConfiguration {
     pub default_plugins: Option<bool>,
     pub plugins: Vec<String>,

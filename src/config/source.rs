@@ -13,6 +13,7 @@ use crate::error::Error;
 
 /// Configuration options for source discovery.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SourceConfiguration {
     /// The root directory from which to start scanning.
     ///

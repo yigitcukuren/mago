@@ -18,10 +18,18 @@ mod reflection;
 mod source;
 mod utils;
 
-pub fn main() -> Result<ExitCode, Error> {
-    // Set up the logger.
+pub fn main() -> ExitCode {
     initialize_logger(if cfg!(debug_assertions) { LevelFilter::DEBUG } else { LevelFilter::INFO }, "MAGO_LOG");
 
+    run().unwrap_or_else(|error| {
+        tracing::error!("{}", error);
+
+        ExitCode::FAILURE
+    })
+}
+
+#[inline(always)]
+pub fn run() -> Result<ExitCode, Error> {
     // Load the configuration.
     let configuration = Configuration::load()?;
 

@@ -19,17 +19,17 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Source(error) => write!(f, "{}", error),
-            Self::Reporting(error) => write!(f, "{}", error),
-            Self::Walking(error) => write!(f, "{}", error),
-            Self::BuildingRuntime(error) => write!(f, "{}", error),
-            Self::BuildingConfiguration(error) => write!(f, "{}", error),
-            Self::DeserializingToml(error) => write!(f, "{}", error),
-            Self::SerializingToml(error) => write!(f, "{}", error),
-            Self::CanonicalizingPath(_, error) => write!(f, "{}", error),
-            Self::Join(error) => write!(f, "{}", error),
-            Self::Json(error) => write!(f, "{}", error),
-            Self::SelfUpdate(error) => write!(f, "{}", error),
+            Self::Source(error) => write!(f, "Failed to load source files: {}", error),
+            Self::Reporting(error) => write!(f, "Failed to report results: {}", error),
+            Self::Walking(error) => write!(f, "Failed to walk the source tree: {}", error),
+            Self::BuildingRuntime(error) => write!(f, "Failed to build the runtime: {}", error),
+            Self::BuildingConfiguration(error) => write!(f, "Failed to build the configuration: {}", error),
+            Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {}", error),
+            Self::SerializingToml(error) => write!(f, "Failed to serialize TOML: {}", error),
+            Self::CanonicalizingPath(_, error) => write!(f, "Failed to canonicalize path: {}", error),
+            Self::Join(error) => write!(f, "Failed to join tasks: {}", error),
+            Self::Json(error) => write!(f, "Failed to parse JSON: {}", error),
+            Self::SelfUpdate(error) => write!(f, "Failed to self update: {}", error),
         }
     }
 }
