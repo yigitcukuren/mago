@@ -47,7 +47,7 @@ The formatter's behavior can be customized using the `mago.toml` configuration f
 Example configuration:
 
 ```toml
-[formatter]
+[format]
 print_width = 80
 tab_width = 2
 function_brace_style = "same_line"

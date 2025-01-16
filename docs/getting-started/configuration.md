@@ -93,7 +93,7 @@ The extensions option specifies the file extensions to include in the search.
 
 ### Formatter Configuration
 
-The `[formatter]` section customizes how Mago formats your PHP code, including settings like line width, tab width, and indentation style.
+The `[format]` section customizes how Mago formats your PHP code, including settings like line width, tab width, and indentation style.
 
 For more details on the available formatter settings, see the [Formatter Settings](/formatter/settings.md) page.
 
@@ -102,7 +102,7 @@ For more details on the available formatter settings, see the [Formatter Setting
 - Example:
 
   ```toml
-  [formatter]
+  [format]
   print_width = 80
   tab_width = 2
   ```
