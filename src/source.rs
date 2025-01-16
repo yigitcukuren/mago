@@ -40,7 +40,7 @@ pub async fn from_paths(
     let extensions: HashSet<&str> = extensions.iter().map(|ext| ext.as_str()).collect();
 
     for path in paths {
-        add_file_to_manager(&manager, path, root, &[], &excludes_set, &extensions, true);
+        add_path_to_manager(&manager, path, root, &[], &excludes_set, &extensions, true).await?;
     }
 
     Ok(manager)
