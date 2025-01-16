@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
 use clap::Parser;
-
 use colored::Colorize;
+
 use mago_interner::ThreadedInterner;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;

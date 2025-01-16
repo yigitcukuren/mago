@@ -32,7 +32,7 @@ pub const ISSUE_URL: &str = "https://github.com/carthage-software/mago/issues/ne
 pub const ENVIRONMENT_PREFIX: &str = "MAGO";
 
 /// The name of the configuration file for mago.
-pub const CONFIGURATION_FILE: &str = "mago";
+pub const CONFIGURATION_FILE: &str = "mago.toml";
 
 /// The minimum stack size for each thread.
 pub const MINIMUM_STACK_SIZE: usize = 8 * 1024 * 1024;
