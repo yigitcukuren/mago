@@ -1469,7 +1469,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mago"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1509,7 +1509,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-interner",
  "mago-source",
@@ -1522,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1530,14 +1530,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "serde",
@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1557,7 +1557,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "criterion",
  "lasso",
@@ -1595,7 +1595,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1609,7 +1609,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "indoc",
@@ -1636,7 +1636,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1649,7 +1649,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "either",
  "mago-ast",
@@ -1669,7 +1669,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1683,7 +1683,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1701,7 +1701,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "codespan-reporting",
@@ -1717,7 +1717,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dashmap",
  "mago-interner",
@@ -1745,7 +1745,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-source",
  "serde",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1766,7 +1766,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1776,14 +1776,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "strum",
@@ -1791,7 +1791,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1806,7 +1806,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1814,7 +1814,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "getrandom",
  "mago-ast",
@@ -2680,9 +2680,9 @@ dependencies = [
 
 [[package]]
 name = "serde-wasm-bindgen"
-version = "0.4.5"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b4c031cd0d9014307d82b8abf653c0290fbdaeb4c02d00c63cf52f728628bf"
+checksum = "8302e169f0eddcc139c70f139d19d6467353af16f9fce27e8c30158036a1e16b"
 dependencies = [
  "js-sys",
  "serde",
