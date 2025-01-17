@@ -285,7 +285,7 @@ pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &LinterConf
         };
 
         let title = format!("{:2}. {}", i + 1, configured_rule.slug.underline());
-        let description = indent_multiline(configured_rule.rule.get_definition().description, "    ", false);
+        let description = indent_multiline(configured_rule.rule.get_definition().description, "      ", false);
         let explanation = format!("mago lint --explain {}", configured_rule.slug);
         let footer = format!("for more information, run {}", explanation.underline());
 
