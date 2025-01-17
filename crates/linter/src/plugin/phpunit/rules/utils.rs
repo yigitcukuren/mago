@@ -239,39 +239,32 @@ pub const ASSERTION_METHODS: [&str; 173] = [
     "assertXmlStringNotEqualsXmlString",
 ];
 
-pub fn find_assertion_references_in_method<'a>(
+#[inline]
+pub fn find_all_assertion_references_in_method<'a>(
     method: &'a Method,
     context: &LintContext<'_>,
 ) -> Vec<MethodReference<'a>> {
-    let MethodBody::Concrete(block) = &method.body else {
-        return vec![];
-    };
-
-    find_method_references_in_block(block, &|reference| {
-        let class_or_object = reference.get_class_or_object();
-
-        if let Expression::Variable(Variable::Direct(variable)) = class_or_object {
-            if context.lookup(&variable.name) != "$this" {
-                return false;
-            }
-        } else if !matches!(class_or_object, Expression::Static(_) | Expression::Self_(_)) {
-            return false;
-        }
-
-        let ClassLikeMemberSelector::Identifier(identifier) = reference.get_selector() else {
-            return false;
-        };
-
-        let name = context.lookup(&identifier.value);
-
-        ASSERTION_METHODS.contains(&name)
-    })
+    find_assertion_references_in_method(method, context, &ASSERTION_METHODS)
 }
 
+#[inline]
 pub fn find_testing_or_assertion_references_in_method<'a>(
     method: &'a Method,
     context: &LintContext<'_>,
 ) -> Vec<MethodReference<'a>> {
+    find_assertion_references_in_method(
+        method,
+        context,
+        ASSERTION_METHODS.into_iter().chain(TESTING_METHODS).collect::<Vec<_>>().as_slice(),
+    )
+}
+
+#[inline]
+pub fn find_assertion_references_in_method<'a>(
+    method: &'a Method,
+    context: &LintContext<'_>,
+    method_names: &[&str],
+) -> Vec<MethodReference<'a>> {
     let MethodBody::Concrete(block) = &method.body else {
         return vec![];
     };
@@ -293,6 +286,6 @@ pub fn find_testing_or_assertion_references_in_method<'a>(
 
         let name = context.lookup(&identifier.value);
 
-        ASSERTION_METHODS.contains(&name) || TESTING_METHODS.contains(&name)
+        method_names.iter().any(|&method_name| name.eq_ignore_ascii_case(method_name))
     })
 }

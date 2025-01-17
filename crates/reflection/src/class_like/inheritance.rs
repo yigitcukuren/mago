@@ -64,9 +64,31 @@ impl InheritanceReflection {
         !self.children.is_empty()
     }
 
+    pub fn is_instance_of(&self, interner: &ThreadedInterner, other: &ClassLikeReflection) -> bool {
+        let Some(other_name) = other.name.inner() else {
+            return false;
+        };
+
+        let other_identifier = interner.lowered(&other_name.value);
+        if let Some(this_name) = self.direct_extended_class {
+            let this_identifier = interner.lowered(&this_name.value);
+            if this_identifier == other_identifier {
+                return true;
+            }
+        }
+
+        let Some(other_fqcn) = self.names.get(&other_identifier) else {
+            return false;
+        };
+
+        self.all_extended_classes.contains(other_fqcn)
+            || self.all_implemented_interfaces.contains(other_fqcn)
+            || self.all_extended_interfaces.contains(other_fqcn)
+    }
+
     pub fn extends_class(&self, interner: &ThreadedInterner, other: &ClassLikeReflection) -> bool {
         let Some(name) = other.name.inner() else {
-            return false; // we can't extend a class have a name, i.e. anonymous class
+            return false; // we can't extend a class that does not have a name, i.e. anonymous class
         };
 
         let identifier = interner.lowered(&name.value);

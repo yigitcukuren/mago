@@ -1,5 +1,6 @@
 use crate::definition::PluginDefinition;
 use crate::plugin::phpunit::rules::consistency::assertions_style::AssertionsStyleRule;
+use crate::plugin::phpunit::rules::redundancy::redundant_instanceof::RedundantInstanceOfRule;
 use crate::plugin::phpunit::rules::strictness::strict_assertions::StrictAssertionsRule;
 
 use crate::plugin::Plugin;
@@ -20,6 +21,6 @@ impl Plugin for PHPUnitPlugin {
     }
 
     fn get_rules(&self) -> Vec<Box<dyn Rule>> {
-        vec![Box::new(AssertionsStyleRule), Box::new(StrictAssertionsRule)]
+        vec![Box::new(AssertionsStyleRule), Box::new(RedundantInstanceOfRule), Box::new(StrictAssertionsRule)]
     }
 }
