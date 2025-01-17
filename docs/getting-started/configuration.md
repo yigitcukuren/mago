@@ -137,7 +137,7 @@ The `plugins` option allows you to specify which linter plugins to enable.
 
   ```toml
   [linter]
-  plugins = ["symfony", "laravel", "phpunit"]
+  plugins = ["symfony", "laravel", "php-unit"]
   ```
 
 #### Rules

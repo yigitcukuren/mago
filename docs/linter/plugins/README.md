@@ -14,7 +14,7 @@ Mago's linter supports a variety of plugins to improve code quality, enforce bes
 - [Laravel](linter/plugins/laravel.md) _(Optional)_: Enforce rules specific to Laravel projects.
 - [Migration](linter/plugins/migration.md): Help migrate code to newer PHP versions.
 - [Naming](linter/plugins/naming.md): Enforce consistent naming conventions.
-- [PHPUnit](linter/plugins/phpunit.md) _(Optional)_: Improve PHPUnit test code quality.
+- [PHPUnit](linter/plugins/php-unit.md) _(Optional)_: Improve PHPUnit test code quality.
 - [Redundancy](linter/plugins/redundancy.md): Detect and eliminate redundant code.
 - [Safety](linter/plugins/safety.md): Identify unsafe coding patterns.
 - [Strictness](linter/plugins/strictness.md): Apply strict coding rules for rigorous projects.
