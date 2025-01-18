@@ -31,6 +31,36 @@ pub mod feature;
 pub struct PHPVersion(u32);
 
 impl PHPVersion {
+    /// The PHP 7.0 version.
+    pub const PHP70: PHPVersion = PHPVersion::new(7, 0, 0);
+
+    /// The PHP 7.1 version.
+    pub const PHP71: PHPVersion = PHPVersion::new(7, 1, 0);
+
+    /// The PHP 7.2 version.
+    pub const PHP72: PHPVersion = PHPVersion::new(7, 2, 0);
+
+    /// The PHP 7.3 version.
+    pub const PHP73: PHPVersion = PHPVersion::new(7, 3, 0);
+
+    /// The PHP 7.4 version.
+    pub const PHP74: PHPVersion = PHPVersion::new(7, 4, 0);
+
+    /// The PHP 8.0 version.
+    pub const PHP80: PHPVersion = PHPVersion::new(8, 0, 0);
+
+    /// The PHP 8.1 version.
+    pub const PHP81: PHPVersion = PHPVersion::new(8, 1, 0);
+
+    /// The PHP 8.2 version.
+    pub const PHP82: PHPVersion = PHPVersion::new(8, 2, 0);
+
+    /// The PHP 8.3 version.
+    pub const PHP83: PHPVersion = PHPVersion::new(8, 3, 0);
+
+    /// The PHP 8.4 version.
+    pub const PHP84: PHPVersion = PHPVersion::new(8, 4, 0);
+
     /// Creates a new `PHPVersion` from the provided `major`, `minor`, and `patch` values.
     ///
     /// The internal representation packs these three components into a single `u32`
