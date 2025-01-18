@@ -46,9 +46,10 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     let reflection = mago_reflector::reflect(&interner, &source, &semantics.program, &semantics.names);
 
     let mut php_version = PHPVersion::PHP84;
+    if let Some(version) = rule.get_definition().maximum_supported_php_version {
+        php_version = PHPVersion::from_version_id(version.to_version_id() - 1);
+    }
     if let Some(version) = rule.get_definition().minimum_supported_php_version {
-        php_version = version;
-    } else if let Some(version) = rule.get_definition().maximum_supported_php_version {
         php_version = version;
     }
 
