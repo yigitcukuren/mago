@@ -105,6 +105,7 @@ mago-span = { workspace = true }
 mago-formatter = { workspace = true }
 mago-parser = { workspace = true }
 mago-fixer = { workspace = true }
+mago-php-version = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }

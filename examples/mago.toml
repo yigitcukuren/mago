@@ -1,3 +1,5 @@
+php_version = "8.4"
+
 [source]
 paths = ["src"]
 includes = []

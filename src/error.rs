@@ -1,3 +1,4 @@
+use mago_php_version::PHPVersion;
 use mago_reporting::error::ReportingError;
 use mago_source::error::SourceError;
 
@@ -14,6 +15,8 @@ pub enum Error {
     Join(tokio::task::JoinError),
     Json(serde_json::Error),
     SelfUpdate(self_update::errors::Error),
+    PHPVersionIsTooOld(PHPVersion, PHPVersion),
+    PHPVersionIsTooNew(PHPVersion, PHPVersion),
 }
 
 impl std::fmt::Display for Error {
@@ -30,6 +33,12 @@ impl std::fmt::Display for Error {
             Self::Join(error) => write!(f, "Failed to join tasks: {}", error),
             Self::Json(error) => write!(f, "Failed to parse JSON: {}", error),
             Self::SelfUpdate(error) => write!(f, "Failed to self update: {}", error),
+            Self::PHPVersionIsTooOld(minimum, actual) => {
+                write!(f, "PHP version {} is not supported, minimum supported version is {}", actual, minimum)
+            }
+            Self::PHPVersionIsTooNew(maximum, actual) => {
+                write!(f, "PHP version {} is not supported, maximum supported version is {}", actual, maximum)
+            }
         }
     }
 }
@@ -48,6 +57,7 @@ impl std::error::Error for Error {
             Self::Join(error) => Some(error),
             Self::Json(error) => Some(error),
             Self::SelfUpdate(error) => Some(error),
+            _ => None,
         }
     }
 }

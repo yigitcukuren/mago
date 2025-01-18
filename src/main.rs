@@ -1,6 +1,8 @@
 use std::process::ExitCode;
 
 use clap::Parser;
+use consts::MAXIMUM_PHP_VERSION;
+use consts::MINIMUM_PHP_VERSION;
 use tokio::runtime::Builder;
 use tracing::level_filters::LevelFilter;
 
@@ -32,6 +34,14 @@ pub fn main() -> ExitCode {
 pub fn run() -> Result<ExitCode, Error> {
     // Load the configuration.
     let configuration = Configuration::load()?;
+
+    if configuration.php_version < MINIMUM_PHP_VERSION {
+        return Err(Error::PHPVersionIsTooOld(MINIMUM_PHP_VERSION, configuration.php_version));
+    }
+
+    if configuration.php_version > MAXIMUM_PHP_VERSION {
+        return Err(Error::PHPVersionIsTooNew(MAXIMUM_PHP_VERSION, configuration.php_version));
+    }
 
     // Create the runtime.
     let runtime = if configuration.threads <= 1 {

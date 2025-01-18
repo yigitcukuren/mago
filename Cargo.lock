@@ -1487,6 +1487,7 @@ dependencies = [
  "mago-linter",
  "mago-names",
  "mago-parser",
+ "mago-php-version",
  "mago-reflection",
  "mago-reflector",
  "mago-reporting",

@@ -4,6 +4,8 @@ use std::sync::LazyLock;
 use num_cpus::get as get_logical_cpus;
 use tracing::error;
 
+use mago_php_version::PHPVersion;
+
 /// The current version of mago.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -42,6 +44,15 @@ pub const DEFAULT_STACK_SIZE: usize = 36 * 1024 * 1024;
 
 /// The maximum stack size for each thread.
 pub const MAXIMUM_STACK_SIZE: usize = 256 * 1024 * 1024;
+
+/// The default number of threads to use.
+pub const DEFAULT_PHP_VERSION: PHPVersion = PHPVersion::PHP83;
+
+/// The minimum supported PHP version.
+pub const MINIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP83;
+
+/// The maximum supported PHP version.
+pub const MAXIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP84;
 
 /// The number of logical CPUs on the system.
 pub static LOGICAL_CPUS: LazyLock<usize> = LazyLock::new(get_logical_cpus);

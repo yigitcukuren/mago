@@ -11,6 +11,8 @@ use config::ValueKind;
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_php_version::PHPVersion;
+
 use crate::config::formatter::FormatterConfiguration;
 use crate::config::linter::LinterConfiguration;
 use crate::config::source::SourceConfiguration;
@@ -30,6 +32,9 @@ pub struct Configuration {
 
     /// The size of the stack for each thread.
     pub stack_size: usize,
+
+    /// The version of PHP to use.
+    pub php_version: PHPVersion,
 
     /// Configuration options for source discovery.
     pub source: SourceConfiguration,
@@ -70,9 +75,10 @@ impl Configuration {
     /// A new `Configuration` with the given root directory.
     pub fn from_root(root: PathBuf) -> Self {
         Self {
-            source: SourceConfiguration::from_root(root),
             threads: *LOGICAL_CPUS,
             stack_size: DEFAULT_STACK_SIZE,
+            php_version: DEFAULT_PHP_VERSION,
+            source: SourceConfiguration::from_root(root),
             linter: LinterConfiguration::default(),
             format: FormatterConfiguration::default(),
         }
@@ -92,7 +98,8 @@ impl ConfigurationEntry for Configuration {
     fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
         let mut builder = builder
             .set_default("threads", Value::new(None, ValueKind::U64(self.threads as u64)))?
-            .set_default("stack_size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?;
+            .set_default("stack_size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
+            .set_default("php_version", Value::new(None, ValueKind::String(self.php_version.to_string())))?;
 
         builder = self.source.configure(builder)?;
         builder = self.linter.configure(builder)?;
