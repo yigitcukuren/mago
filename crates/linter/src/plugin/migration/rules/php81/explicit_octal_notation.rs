@@ -18,6 +18,7 @@ pub struct ExplicitOctalNotationRule;
 impl Rule for ExplicitOctalNotationRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Explicit Octal Notation", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP81)
             .with_description(indoc! {"
                 Detects implicit octal numeral notation and suggests replacing it with explicit octal numeral notation.
             "})
@@ -42,10 +43,6 @@ impl Rule for ExplicitOctalNotationRule {
 
 impl<'a> Walker<LintContext<'a>> for ExplicitOctalNotationRule {
     fn walk_in_literal_integer(&self, literal_integer: &LiteralInteger, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP81 {
-            return;
-        }
-
         let literal_text = context.lookup(&literal_integer.raw);
         if !literal_text.starts_with('0') {
             return;

@@ -18,6 +18,7 @@ pub struct ReturnByReferenceFromVoidFunctionRule;
 impl Rule for ReturnByReferenceFromVoidFunctionRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Return By Reference From Void Function", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP82)
             .with_description(indoc! {"
                 Detects functions, methods, closures, arrow functions, and set property hooks that return by reference from a void function.
                 Such functions are considered deprecated; returning by reference from a void function is deprecated since PHP 8.0.
@@ -96,10 +97,6 @@ impl Rule for ReturnByReferenceFromVoidFunctionRule {
 
 impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     fn walk_in_function(&self, function: &Function, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP82 {
-            return;
-        }
-
         let Some(amperstand) = function.ampersand.as_ref() else {
             return;
         };

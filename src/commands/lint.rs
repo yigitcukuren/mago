@@ -178,7 +178,31 @@ pub(super) fn explain_rule(
     println!();
     println!("{}", rule_definition.description);
 
+    println!("{}:", "## PHP Version".bold().underline());
+    if let Some(minimum_supported_php_version) = rule_definition.minimum_supported_php_version {
+        println!(
+            "{} {} {}",
+            "- This rule requires PHP version".dimmed(),
+            minimum_supported_php_version.to_string().bold().green(),
+            "or higher.".dimmed()
+        );
+    } else {
+        println!("{}", "- This rule does not have any minimum PHP version requirements.".dimmed());
+    }
+
+    if let Some(maximum_supported_php_version) = rule_definition.maximum_supported_php_version {
+        println!(
+            "{} {} {}",
+            "- This rule supports PHP version".dimmed(),
+            maximum_supported_php_version.to_string().bold().red(),
+            "or lower.".dimmed()
+        );
+    } else {
+        println!("{}", "- This rule does not have any maximum PHP version requirements.".dimmed());
+    }
+
     if !rule_definition.options.is_empty() {
+        println!();
         println!("{}:", "## Configuration Options".bold().underline());
 
         for option in &rule_definition.options {
@@ -195,9 +219,7 @@ pub(super) fn explain_rule(
     }
 
     if !rule_definition.examples.is_empty() {
-        if !rule_definition.options.is_empty() {
-            println!();
-        }
+        println!();
 
         let correct_usages = rule_definition.examples.iter().filter(|ex| ex.valid).collect::<Vec<_>>();
         let incorrect_usages = rule_definition.examples.iter().filter(|ex| !ex.valid).collect::<Vec<_>>();

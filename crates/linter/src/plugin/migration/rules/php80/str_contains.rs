@@ -21,6 +21,7 @@ pub struct StrContainsRule;
 impl Rule for StrContainsRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Str Contains", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {"
                 Detects `strpos($a, $b) !== false` comparisons and suggests replacing them with `str_contains($a, $b)`
                 for improved readability and intent clarity.
@@ -56,10 +57,6 @@ impl Rule for StrContainsRule {
 
 impl<'a> Walker<LintContext<'a>> for StrContainsRule {
     fn walk_in_binary(&self, binary: &Binary, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP80 {
-            return;
-        }
-
         // Detect `strpos($a, $b) !== false`
         if !matches!(
             binary.operator,

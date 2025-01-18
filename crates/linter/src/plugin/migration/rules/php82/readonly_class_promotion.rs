@@ -23,6 +23,7 @@ pub struct ReadonlyClassPromotionRule;
 impl Rule for ReadonlyClassPromotionRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Readonly Class Promotion", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP82)
             .with_description(indoc! {"
                 Detects classes that contain only readonly properties and suggests promoting them to readonly classes.
                 Promoting classes to readonly classes can improve code readability and intent clarity.
@@ -85,10 +86,6 @@ impl Rule for ReadonlyClassPromotionRule {
 
 impl<'a> Walker<LintContext<'a>> for ReadonlyClassPromotionRule {
     fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP82 {
-            return;
-        }
-
         let name = context.semantics.names.get(&class.name);
         let Some(reflection) = context.codebase.get_class(context.interner, name) else {
             return;

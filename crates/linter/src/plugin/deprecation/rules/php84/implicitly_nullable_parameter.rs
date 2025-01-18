@@ -18,6 +18,7 @@ pub struct ImplicitlyNullableParameterRule;
 impl Rule for ImplicitlyNullableParameterRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Implicitly Nullable Parameter", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP84)
             .with_description(indoc! {"
                 Detects parameters that are implicitly nullable and rely on a deprecated feature.
                 Such parameters are considered deprecated; an explicit nullable type hint is recommended.
@@ -55,10 +56,6 @@ impl<'a> Walker<LintContext<'a>> for ImplicitlyNullableParameterRule {
         function_like_parameter: &FunctionLikeParameter,
         context: &mut LintContext<'a>,
     ) {
-        if context.php_version < PHPVersion::PHP84 {
-            return;
-        }
-
         let Some(hint) = function_like_parameter.hint.as_ref() else {
             return;
         };

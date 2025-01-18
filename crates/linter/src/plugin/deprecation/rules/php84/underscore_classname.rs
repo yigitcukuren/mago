@@ -17,6 +17,7 @@ pub struct UnderscoreClassNameRule;
 impl Rule for UnderscoreClassNameRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Underscore Class Name", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP84)
             .with_description(indoc! {"
                     Detects class, interface, trait, or enum declarations named `_`.
                     Such names are considered deprecated; a more descriptive identifier is recommended.
@@ -42,10 +43,6 @@ impl Rule for UnderscoreClassNameRule {
 
 impl<'a> Walker<LintContext<'a>> for UnderscoreClassNameRule {
     fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP84 {
-            return;
-        }
-
         let class_name = context.lookup(&class.name.value);
         if class_name != "_" {
             return;

@@ -115,6 +115,32 @@ impl Linter {
     pub fn add_rule(&mut self, plugin_slug: impl Into<String>, rule: Box<dyn Rule>) {
         let rule_definition = rule.get_definition();
 
+        if let Some(version) = rule_definition.minimum_supported_php_version {
+            if version > self.settings.php_version {
+                tracing::debug!(
+                    "Rule `{}` requires PHP version {} or higher, but the current version is {}. Skipping.",
+                    rule_definition.name,
+                    version,
+                    self.settings.php_version
+                );
+
+                return;
+            }
+        }
+
+        if let Some(version) = rule_definition.maximum_supported_php_version {
+            if version < self.settings.php_version {
+                tracing::debug!(
+                    "Rule `{}` requires PHP version {} or lower, but the current version is {}. Skipping.",
+                    rule_definition.name,
+                    version,
+                    self.settings.php_version
+                );
+
+                return;
+            }
+        }
+
         let plugin_slug = plugin_slug.into();
         let slug = format!("{}/{}", plugin_slug, rule_definition.get_slug());
 

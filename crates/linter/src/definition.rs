@@ -1,4 +1,5 @@
 use ahash::HashMap;
+use mago_php_version::PHPVersion;
 use serde::Serialize;
 use toml::Value;
 
@@ -60,6 +61,12 @@ pub struct RuleDefinition {
     /// A list of usage examples demonstrating valid or invalid code snippets.
     pub examples: Vec<RuleUsageExample>,
 
+    /// The minimum PHP version supported by this rule, if any.
+    pub minimum_supported_php_version: Option<PHPVersion>,
+
+    /// The maximum PHP version supported by this rule, if any.
+    pub maximum_supported_php_version: Option<PHPVersion>,
+
     /// Whether this rule is deprecated and should not be used.
     pub deprecated: bool,
 }
@@ -71,8 +78,10 @@ pub struct RuleDefinition {
 pub struct PluginDefinition {
     /// The short name of the plugin, used in slugs and references.
     pub name: &'static str,
+
     /// A brief description of the plugin’s purpose or the rules it contains.
     pub description: &'static str,
+
     /// Indicates whether this plugin should be considered enabled if not otherwise specified.
     pub enabled_by_default: bool,
 }
@@ -135,7 +144,16 @@ impl RuleDefinition {
     ///
     /// A `RuleDefinition` initialized with the given name, level, and no description, options, or examples.
     pub fn enabled(name: &'static str, level: Level) -> Self {
-        Self { name, level: Some(level), description: "", options: Vec::new(), examples: Vec::new(), deprecated: false }
+        Self {
+            name,
+            level: Some(level),
+            description: "",
+            options: Vec::new(),
+            examples: Vec::new(),
+            deprecated: false,
+            minimum_supported_php_version: None,
+            maximum_supported_php_version: None,
+        }
     }
 
     /// Constructs a `RuleDefinition` for a rule that is disabled by default.
@@ -149,7 +167,16 @@ impl RuleDefinition {
     /// A `RuleDefinition` initialized with the given name and no severity level (`None`),
     /// plus empty description, options, and examples.
     pub fn disabled(name: &'static str) -> Self {
-        Self { name, level: None, description: "", options: Vec::new(), examples: Vec::new(), deprecated: false }
+        Self {
+            name,
+            level: None,
+            description: "",
+            options: Vec::new(),
+            examples: Vec::new(),
+            deprecated: false,
+            minimum_supported_php_version: None,
+            maximum_supported_php_version: None,
+        }
     }
 
     /// Sets or updates the description of this rule, returning the modified `RuleDefinition`.
@@ -191,6 +218,34 @@ impl RuleDefinition {
     /// A modified `RuleDefinition` containing the new example.
     pub fn with_example(mut self, example: RuleUsageExample) -> Self {
         self.examples.push(example);
+        self
+    }
+
+    /// Sets the minimum PHP version supported by this rule.
+    ///
+    /// # Parameters
+    ///
+    /// * `version` - The minimum PHP version required to use this rule.
+    ///
+    /// # Returns
+    ///
+    /// A modified `RuleDefinition` with the minimum supported PHP version set.
+    pub fn with_minimum_supported_php_version(mut self, version: PHPVersion) -> Self {
+        self.minimum_supported_php_version = Some(version);
+        self
+    }
+
+    /// Sets the maximum PHP version supported by this rule.
+    ///
+    /// # Parameters
+    ///
+    /// * `version` - The maximum PHP version required to use this rule.
+    ///
+    /// # Returns
+    ///
+    /// A modified `RuleDefinition` with the maximum supported PHP version set.
+    pub fn with_maximum_supported_php_version(mut self, version: PHPVersion) -> Self {
+        self.maximum_supported_php_version = Some(version);
         self
     }
 

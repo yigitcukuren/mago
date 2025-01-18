@@ -17,6 +17,7 @@ pub struct OptionalParameterBeforeRequiredRule;
 impl Rule for OptionalParameterBeforeRequiredRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Optional Parameter Before Required", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {"
                 Detects optional parameters defined before required parameters in function-like declarations.
                 Such parameter order is considered deprecated; required parameters should precede optional parameters.
@@ -46,10 +47,6 @@ impl<'a> Walker<LintContext<'a>> for OptionalParameterBeforeRequiredRule {
         function_like_parameter_list: &FunctionLikeParameterList,
         context: &mut LintContext<'a>,
     ) {
-        if context.php_version < PHPVersion::PHP80 {
-            return;
-        }
-
         let mut optional_parameters = Vec::new();
 
         for parameter in function_like_parameter_list.parameters.iter() {

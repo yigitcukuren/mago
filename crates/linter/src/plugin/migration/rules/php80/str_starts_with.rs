@@ -21,6 +21,7 @@ pub struct StrStartsWithRule;
 impl Rule for StrStartsWithRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Str Starts With", Level::Warning)
+            .with_minimum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {"
                 Detects `strpos($a, $b) === 0` comparisons and suggests replacing them with `str_starts_with($a, $b)`
                 for improved readability and intent clarity.
@@ -56,10 +57,6 @@ impl Rule for StrStartsWithRule {
 
 impl<'a> Walker<LintContext<'a>> for StrStartsWithRule {
     fn walk_in_binary(&self, binary: &Binary, context: &mut LintContext<'a>) {
-        if context.php_version < PHPVersion::PHP80 {
-            return;
-        }
-
         let equal = match binary.operator {
             BinaryOperator::Identical(_) | BinaryOperator::Equal(_) => true,
             BinaryOperator::AngledNotEqual(_) | BinaryOperator::NotEqual(_) | BinaryOperator::NotIdentical(_) => false,
