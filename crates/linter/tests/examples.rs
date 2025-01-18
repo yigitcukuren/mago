@@ -4,6 +4,7 @@ use mago_linter::rule::Rule;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
 use mago_linter::Linter;
+use mago_php_version::PHPVersion;
 use mago_semantics::Semantics;
 use mago_source::SourceCategory::UserDefined;
 use mago_source::SourceManager;
@@ -44,7 +45,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     let source = source_manager.load(&source_id).unwrap();
     let reflection = mago_reflector::reflect(&interner, &source, &semantics.program, &semantics.names);
 
-    let settings = Settings::new().with_rule(format!("test/{}", definition.get_slug()), rule_settings);
+    let settings = Settings::new(PHPVersion::PHP84).with_rule(format!("test/{}", definition.get_slug()), rule_settings);
 
     let mut linter = Linter::new(settings, interner.clone(), reflection);
 

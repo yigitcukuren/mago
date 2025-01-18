@@ -2,6 +2,7 @@ use indoc::indoc;
 
 use mago_ast::ast::*;
 use mago_fixer::SafetyClassification;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::*;
 use mago_walker::Walker;
@@ -95,6 +96,10 @@ impl Rule for ReturnByReferenceFromVoidFunctionRule {
 
 impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     fn walk_in_function(&self, function: &Function, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let Some(amperstand) = function.ampersand.as_ref() else {
             return;
         };
@@ -111,6 +116,10 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     }
 
     fn walk_in_method(&self, method: &Method, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let Some(amperstand) = method.ampersand.as_ref() else {
             return;
         };
@@ -127,6 +136,10 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     }
 
     fn walk_in_closure(&self, closure: &Closure, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let Some(amperstand) = closure.ampersand.as_ref() else {
             return;
         };
@@ -143,6 +156,10 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     }
 
     fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let Some(amperstand) = arrow_function.ampersand.as_ref() else {
             return;
         };
@@ -159,6 +176,10 @@ impl<'a> Walker<LintContext<'a>> for ReturnByReferenceFromVoidFunctionRule {
     }
 
     fn walk_in_property_hook(&self, property_hook: &PropertyHook, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let name = context.lookup(&property_hook.name.value);
         if "set" != name {
             return;

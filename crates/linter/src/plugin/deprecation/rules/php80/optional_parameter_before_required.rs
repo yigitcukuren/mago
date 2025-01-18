@@ -1,6 +1,7 @@
 use indoc::indoc;
 
 use mago_ast::ast::*;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::*;
 use mago_walker::Walker;
@@ -45,6 +46,10 @@ impl<'a> Walker<LintContext<'a>> for OptionalParameterBeforeRequiredRule {
         function_like_parameter_list: &FunctionLikeParameterList,
         context: &mut LintContext<'a>,
     ) {
+        if context.php_version < PHPVersion::PHP80 {
+            return;
+        }
+
         let mut optional_parameters = Vec::new();
 
         for parameter in function_like_parameter_list.parameters.iter() {

@@ -1,4 +1,5 @@
 use indoc::indoc;
+use mago_php_version::PHPVersion;
 use toml::Value;
 
 use mago_ast::*;
@@ -84,6 +85,10 @@ impl Rule for ReadonlyClassPromotionRule {
 
 impl<'a> Walker<LintContext<'a>> for ReadonlyClassPromotionRule {
     fn walk_in_class(&self, class: &Class, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP82 {
+            return;
+        }
+
         let name = context.semantics.names.get(&class.name);
         let Some(reflection) = context.codebase.get_class(context.interner, name) else {
             return;

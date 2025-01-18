@@ -20,7 +20,6 @@ use mago_source::error::SourceError;
 use mago_source::SourceCategory;
 use mago_source::SourceManager;
 
-use crate::config::linter::LinterConfiguration;
 use crate::config::linter::LinterLevel;
 use crate::config::Configuration;
 use crate::enum_variants;
@@ -87,17 +86,17 @@ pub async fn execute(command: LintCommand, configuration: Configuration) -> Resu
         source::load(&interner, &configuration.source, !command.semantics_only, !command.semantics_only).await?;
 
     if let Some(rule) = &command.explain {
-        return explain_rule(&interner, rule, &configuration.linter);
+        return explain_rule(&interner, rule, &configuration);
     }
 
     if command.list_rules {
-        return list_rules(&interner, &configuration.linter);
+        return list_rules(&interner, &configuration);
     }
 
     let issues = if command.semantics_only {
         check_sources(&interner, &source_manager).await?
     } else {
-        lint_sources(&interner, &source_manager, &configuration.linter).await?
+        lint_sources(&interner, &source_manager, &configuration).await?
     };
 
     let issues_contain_errors = issues.get_highest_level().is_some_and(|level| level <= Level::Error);
@@ -115,18 +114,18 @@ pub async fn execute(command: LintCommand, configuration: Configuration) -> Resu
 
 pub(super) fn create_linter(
     interner: &ThreadedInterner,
-    configuration: &LinterConfiguration,
+    configuration: &Configuration,
     codebase: CodebaseReflection,
 ) -> Linter {
-    let mut settings = Settings::new();
+    let mut settings = Settings::new(configuration.php_version);
 
-    if let Some(default_plugins) = configuration.default_plugins {
+    if let Some(default_plugins) = configuration.linter.default_plugins {
         settings = settings.with_default_plugins(default_plugins);
     }
 
-    settings = settings.with_plugins(configuration.plugins.clone());
+    settings = settings.with_plugins(configuration.linter.plugins.clone());
 
-    for rule in &configuration.rules {
+    for rule in &configuration.linter.rules {
         let rule_settings = match rule.level {
             Some(linter_level) => match linter_level {
                 LinterLevel::Off => RuleSettings::disabled(),
@@ -158,7 +157,7 @@ pub(super) fn create_linter(
 pub(super) fn explain_rule(
     interner: &ThreadedInterner,
     rule: &str,
-    configuration: &LinterConfiguration,
+    configuration: &Configuration,
 ) -> Result<ExitCode, Error> {
     let linter = create_linter(interner, configuration, CodebaseReflection::new());
     let configured_rules = linter.get_configured_rules();
@@ -261,7 +260,7 @@ pub(super) fn explain_rule(
     Ok(ExitCode::SUCCESS)
 }
 
-pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &LinterConfiguration) -> Result<ExitCode, Error> {
+pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configuration) -> Result<ExitCode, Error> {
     let linter = create_linter(interner, configuration, CodebaseReflection::new());
     let configured_rules = linter.get_configured_rules();
     if configured_rules.is_empty() {
@@ -305,7 +304,7 @@ pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &LinterConf
 pub(super) async fn lint_sources(
     interner: &ThreadedInterner,
     manager: &SourceManager,
-    configuration: &LinterConfiguration,
+    configuration: &Configuration,
 ) -> Result<IssueCollection, Error> {
     // Collect all user-defined sources.
     let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();

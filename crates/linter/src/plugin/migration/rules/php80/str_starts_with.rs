@@ -2,6 +2,7 @@ use indoc::indoc;
 
 use mago_ast::*;
 use mago_fixer::SafetyClassification;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_walker::Walker;
@@ -55,6 +56,10 @@ impl Rule for StrStartsWithRule {
 
 impl<'a> Walker<LintContext<'a>> for StrStartsWithRule {
     fn walk_in_binary(&self, binary: &Binary, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP80 {
+            return;
+        }
+
         let equal = match binary.operator {
             BinaryOperator::Identical(_) | BinaryOperator::Equal(_) => true,
             BinaryOperator::AngledNotEqual(_) | BinaryOperator::NotEqual(_) | BinaryOperator::NotIdentical(_) => false,

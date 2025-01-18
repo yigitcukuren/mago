@@ -63,7 +63,7 @@ pub async fn execute(command: FixCommand, configuration: Configuration) -> Resul
     // Load sources
     let source_manager = source::load(&interner, &configuration.source, true, true).await?;
 
-    let issues = lint_sources(&interner, &source_manager, &configuration.linter).await?;
+    let issues = lint_sources(&interner, &source_manager, &configuration).await?;
     let (plans, skipped_unsafe, skipped_potentially_unsafe) =
         filter_fix_plans(&interner, issues, command.get_classification());
 

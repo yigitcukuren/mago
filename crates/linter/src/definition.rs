@@ -11,10 +11,13 @@ use mago_reporting::Level;
 pub struct RuleOptionDefinition {
     /// A short identifier for the option, such as `"Threshold"` or `"Syntax"`.
     pub name: &'static str,
+
     /// A user-facing string that indicates what kind of value is expected (e.g. `"integer"`).
     pub r#type: &'static str,
+
     /// A brief explanation of the option’s purpose and impact.
     pub description: &'static str,
+
     /// The default value for this option.
     pub default: Value,
 }
@@ -26,10 +29,13 @@ pub struct RuleOptionDefinition {
 pub struct RuleUsageExample {
     /// Indicates whether this snippet should pass or fail.
     pub valid: bool,
+
     /// A brief explanation of why this snippet is considered valid or invalid.
     pub description: &'static str,
+
     /// The code snippet to demonstrate the rule in practice (e.g., PHP code).
     pub snippet: &'static str,
+
     /// A map of configuration overrides applied to the rule for this snippet.
     pub options: HashMap<&'static str, Value>,
 }
@@ -41,14 +47,21 @@ pub struct RuleUsageExample {
 pub struct RuleDefinition {
     /// The short name of the rule, used in slugs and references.
     pub name: &'static str,
+
     /// The default severity level for this rule, if enabled.
     pub level: Option<Level>,
+
     /// A human-readable summary of the rule’s purpose and usage.
     pub description: &'static str,
+
     /// A list of configuration options recognized by this rule.
     pub options: Vec<RuleOptionDefinition>,
+
     /// A list of usage examples demonstrating valid or invalid code snippets.
     pub examples: Vec<RuleUsageExample>,
+
+    /// Whether this rule is deprecated and should not be used.
+    pub deprecated: bool,
 }
 
 /// Holds high-level information about a plugin. Plugins generally bundle multiple rules together,
@@ -122,7 +135,7 @@ impl RuleDefinition {
     ///
     /// A `RuleDefinition` initialized with the given name, level, and no description, options, or examples.
     pub fn enabled(name: &'static str, level: Level) -> Self {
-        Self { name, level: Some(level), description: "", options: Vec::new(), examples: Vec::new() }
+        Self { name, level: Some(level), description: "", options: Vec::new(), examples: Vec::new(), deprecated: false }
     }
 
     /// Constructs a `RuleDefinition` for a rule that is disabled by default.
@@ -136,7 +149,7 @@ impl RuleDefinition {
     /// A `RuleDefinition` initialized with the given name and no severity level (`None`),
     /// plus empty description, options, and examples.
     pub fn disabled(name: &'static str) -> Self {
-        Self { name, level: None, description: "", options: Vec::new(), examples: Vec::new() }
+        Self { name, level: None, description: "", options: Vec::new(), examples: Vec::new(), deprecated: false }
     }
 
     /// Sets or updates the description of this rule, returning the modified `RuleDefinition`.
@@ -178,6 +191,16 @@ impl RuleDefinition {
     /// A modified `RuleDefinition` containing the new example.
     pub fn with_example(mut self, example: RuleUsageExample) -> Self {
         self.examples.push(example);
+        self
+    }
+
+    /// Marks this rule as deprecated, meaning it should not be used.
+    ///
+    /// # Returns
+    ///
+    /// A modified `RuleDefinition` with the `deprecated` flag set to `true`.
+    pub fn deprecated(mut self) -> Self {
+        self.deprecated = true;
         self
     }
 

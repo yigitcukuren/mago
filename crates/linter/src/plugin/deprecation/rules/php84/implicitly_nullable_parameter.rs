@@ -2,6 +2,7 @@ use indoc::indoc;
 
 use mago_ast::ast::*;
 use mago_fixer::SafetyClassification;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::*;
 use mago_walker::Walker;
@@ -54,6 +55,10 @@ impl<'a> Walker<LintContext<'a>> for ImplicitlyNullableParameterRule {
         function_like_parameter: &FunctionLikeParameter,
         context: &mut LintContext<'a>,
     ) {
+        if context.php_version < PHPVersion::PHP84 {
+            return;
+        }
+
         let Some(hint) = function_like_parameter.hint.as_ref() else {
             return;
         };

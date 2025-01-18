@@ -2,6 +2,7 @@ use indoc::indoc;
 
 use mago_ast::*;
 use mago_fixer::SafetyClassification;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_walker::Walker;
@@ -41,6 +42,10 @@ impl Rule for ExplicitOctalNotationRule {
 
 impl<'a> Walker<LintContext<'a>> for ExplicitOctalNotationRule {
     fn walk_in_literal_integer(&self, literal_integer: &LiteralInteger, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP81 {
+            return;
+        }
+
         let literal_text = context.lookup(&literal_integer.raw);
         if !literal_text.starts_with('0') {
             return;

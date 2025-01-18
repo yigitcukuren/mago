@@ -1,3 +1,4 @@
+use mago_php_version::PHPVersion;
 use toml::value::Value;
 
 use mago_ast::Hint;
@@ -16,6 +17,7 @@ use crate::rule::ConfiguredRule;
 
 #[derive(Debug)]
 pub struct Context<'a> {
+    pub php_version: PHPVersion,
     pub interner: &'a ThreadedInterner,
     pub codebase: &'a CodebaseReflection,
     pub semantics: &'a Semantics,
@@ -23,12 +25,18 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(interner: &'a ThreadedInterner, codebase: &'a CodebaseReflection, semantics: &'a Semantics) -> Self {
-        Self { interner, codebase, semantics, issues: IssueCollection::default() }
+    pub fn new(
+        php_version: PHPVersion,
+        interner: &'a ThreadedInterner,
+        codebase: &'a CodebaseReflection,
+        semantics: &'a Semantics,
+    ) -> Self {
+        Self { php_version, interner, codebase, semantics, issues: IssueCollection::default() }
     }
 
     pub fn for_rule<'b>(&'b mut self, rule: &'b ConfiguredRule) -> LintContext<'b> {
         LintContext {
+            php_version: self.php_version,
             rule,
             interner: self.interner,
             codebase: self.codebase,
@@ -44,6 +52,7 @@ impl<'a> Context<'a> {
 
 #[derive(Debug)]
 pub struct LintContext<'a> {
+    pub php_version: PHPVersion,
     pub rule: &'a ConfiguredRule,
     pub interner: &'a ThreadedInterner,
     pub codebase: &'a CodebaseReflection,

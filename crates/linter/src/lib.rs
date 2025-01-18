@@ -202,7 +202,7 @@ impl Linter {
 
         tracing::debug!("Linting source `{}`...", source_name);
 
-        let mut context = Context::new(&self.interner, &self.codebase, semantics);
+        let mut context = Context::new(self.settings.php_version, &self.interner, &self.codebase, semantics);
 
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
         if configured_rules.is_empty() {

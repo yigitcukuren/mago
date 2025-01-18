@@ -3,11 +3,15 @@ use serde::Deserialize;
 use serde::Serialize;
 use toml::value::Value;
 
+use mago_php_version::PHPVersion;
 use mago_reporting::Level;
 
 /// `Settings` is a struct that holds all the configuration options for the linter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Settings {
+    /// The PHP version to lint against.
+    pub php_version: PHPVersion,
+
     /// Indicates whether all plugins that mark themselves as "default" are automatically enabled,
     /// in addition to those explicitly listed in [`plugins`].
     pub default_plugins: bool,
@@ -43,8 +47,8 @@ pub struct RuleSettings {
 }
 
 impl Settings {
-    pub fn new() -> Self {
-        Self { default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
+    pub fn new(php_version: PHPVersion) -> Self {
+        Self { php_version, default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
     }
 
     pub fn get_rule_settings(&self, rule_name: &str) -> Option<&RuleSettings> {
@@ -97,11 +101,5 @@ impl RuleSettings {
 
     pub fn get_option<'c>(&'c self, option_name: &str) -> Option<&'c Value> {
         self.options.get(option_name)
-    }
-}
-
-impl std::default::Default for Settings {
-    fn default() -> Self {
-        Self::new()
     }
 }

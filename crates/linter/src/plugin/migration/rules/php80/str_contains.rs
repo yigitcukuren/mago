@@ -2,6 +2,7 @@ use indoc::indoc;
 
 use mago_ast::*;
 use mago_fixer::SafetyClassification;
+use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_walker::Walker;
@@ -55,6 +56,10 @@ impl Rule for StrContainsRule {
 
 impl<'a> Walker<LintContext<'a>> for StrContainsRule {
     fn walk_in_binary(&self, binary: &Binary, context: &mut LintContext<'a>) {
+        if context.php_version < PHPVersion::PHP80 {
+            return;
+        }
+
         // Detect `strpos($a, $b) !== false`
         if !matches!(
             binary.operator,
