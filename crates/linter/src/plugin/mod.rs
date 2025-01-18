@@ -6,6 +6,7 @@ use crate::rule::Rule;
 pub mod analysis;
 pub mod best_practices;
 pub mod comment;
+pub mod compatibility;
 pub mod consistency;
 pub mod deprecation;
 pub mod laravel;
@@ -20,8 +21,10 @@ pub mod symfony;
 #[macro_export]
 macro_rules! foreach_plugin {
     ($do:expr) => {
+        $do($crate::plugin::analysis::AnalysisPlugin);
         $do($crate::plugin::best_practices::BestPracticesPlugin);
         $do($crate::plugin::comment::CommentPlugin);
+        $do($crate::plugin::compatibility::CompatibilityPlugin);
         $do($crate::plugin::consistency::ConsistencyPlugin);
         $do($crate::plugin::deprecation::DeprecationPlugin);
         $do($crate::plugin::laravel::LaravelPlugin);
@@ -29,7 +32,6 @@ macro_rules! foreach_plugin {
         $do($crate::plugin::naming::NamingPlugin);
         $do($crate::plugin::phpunit::PHPUnitPlugin);
         $do($crate::plugin::redundancy::RedundancyPlugin);
-        $do($crate::plugin::analysis::AnalysisPlugin);
         $do($crate::plugin::safety::SafetyPlugin);
         $do($crate::plugin::strictness::StrictnessPlugin);
         $do($crate::plugin::symfony::SymfonyPlugin);
@@ -40,6 +42,11 @@ macro_rules! foreach_plugin {
 ///
 /// A plugin is a collection of rules that are applied to the codebase.
 pub trait Plugin: Send + Sync + Debug {
+    /// Retrieves the definition of this plugin.
+    ///
+    /// # Returns
+    ///
+    /// A [`PluginDefinition`] object representing the plugin.
     fn get_definition(&self) -> PluginDefinition;
 
     /// Retrieves the list of rules associated with this plugin.

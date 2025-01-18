@@ -47,8 +47,13 @@ pub struct ConfiguredRule {
 /// A `Rule` defines the logic for checking a program or individual nodes within the AST (Abstract Syntax Tree)
 /// for specific patterns or issues and reporting diagnostics if any are found.
 ///
-/// Implementors of this trait should provide the rule's name and the logic for checking programs and nodes.
+/// Implementors of this trait should provide the rule's definition and the logic for checking programs and nodes.
 pub trait Rule: for<'a> Walker<LintContext<'a>> + Send + Sync + Debug {
+    /// Retrieves the definition of this rule.
+    ///
+    /// # Returns
+    ///
+    /// A [`RuleDefinition`] object representing the rule.
     fn get_definition(&self) -> RuleDefinition;
 
     /// Lint the entire program for this rule.
@@ -64,13 +69,6 @@ pub trait Rule: for<'a> Walker<LintContext<'a>> + Send + Sync + Debug {
     /// * `configuration` - The configuration for this specific rule.
     /// * `context` - The context for the linting process, which may contain shared state.
     fn lint(&self, program: &Program, context: &mut LintContext<'_>) {
-        if !program.source.category().is_user_defined() {
-            // Skip linting for non-user-defined programs by default
-            //
-            // Rules that need to lint non-user-defined programs should override this method
-            return;
-        }
-
         self.walk_program(program, context);
     }
 }

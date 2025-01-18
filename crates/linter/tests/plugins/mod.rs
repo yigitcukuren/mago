@@ -1,6 +1,7 @@
 pub mod analysis;
 pub mod best_practices;
 pub mod comment;
+pub mod compatibility;
 pub mod consistency;
 pub mod deprecation;
 pub mod laravel;

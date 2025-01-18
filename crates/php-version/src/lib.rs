@@ -219,19 +219,19 @@ impl PHPVersion {
             Feature::ConstantsInTraits
             | Feature::StrSplitReturnsEmptyArray
             | Feature::DisjunctiveNormalForm
-            | Feature::SupportsReadOnlyClasses
+            | Feature::ReadonlyClasses
             | Feature::NeverReturnTypeInArrowFunction
-            | Feature::SupportsPregCaptureOnlyNamedGroups => self.0 >= 0x08_02_00,
+            | Feature::PregCaptureOnlyNamedGroups => self.0 >= 0x08_02_00,
             Feature::InterfaceConstantImplicitlyFinal => self.0 < 0x08_01_00,
             Feature::ParameterTypeWidening => self.0 >= 0x07_02_00,
             Feature::AllUnicodeScalarCodePointsInMbSubstituteCharacter => self.0 >= 0x07_02_00,
             Feature::PassNoneEncodings => self.0 < 0x07_03_00,
             Feature::FinalConstants
-            | Feature::ReadOnlyProperties
+            | Feature::ReadonlyProperties
             | Feature::Enums
             | Feature::PureIntersectionTypes
             | Feature::TentativeReturnTypes
-            | Feature::FirstClassCallables
+            | Feature::ClosureCreation
             | Feature::ArrayUnpackingWithStringKeys
             | Feature::SerializableRequiresMagicMethods => self.0 >= 0x08_01_00,
             Feature::AsymmetricVisibility
