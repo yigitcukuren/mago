@@ -19,7 +19,7 @@ pub struct PromotedPropertiesFeatureRule;
 impl Rule for PromotedPropertiesFeatureRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Promoted Properties Feature", Level::Error)
-            .with_minimum_supported_php_version(PHPVersion::PHP80)
+            .with_maximum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {r#"
                 Detects usage of constructor property promotion, introduced in PHP 8.0.
                 This syntax allows property definitions in the constructor signature (e.g.

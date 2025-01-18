@@ -19,7 +19,7 @@ pub struct ClosureCreationFeatureRule;
 impl Rule for ClosureCreationFeatureRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Closure Creation Feature", Level::Error)
-            .with_minimum_supported_php_version(PHPVersion::PHP81)
+            .with_maximum_supported_php_version(PHPVersion::PHP81)
             .with_description(indoc! {r#"
                 Detects usage of the closure creation syntax (e.g. `$var = foo(...)`)
                 introduced in PHP 8.1. This feature allows creating a closure

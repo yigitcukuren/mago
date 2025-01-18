@@ -19,7 +19,7 @@ pub struct NamedArgumentsFeatureRule;
 impl Rule for NamedArgumentsFeatureRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Named Arguments Feature", Level::Error)
-            .with_minimum_supported_php_version(PHPVersion::PHP80)
+            .with_maximum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {r#"
                 Detects usage of named function arguments, introduced in PHP 8.0. This feature allows
                 calling functions like `foo(bar: 1, baz: 2)` rather than relying on positional parameters.

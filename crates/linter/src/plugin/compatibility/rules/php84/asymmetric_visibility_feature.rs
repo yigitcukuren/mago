@@ -19,7 +19,7 @@ pub struct AsymmetricVisibilityFeatureRule;
 impl Rule for AsymmetricVisibilityFeatureRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Asymmetric Visibility Feature", Level::Error)
-            .with_minimum_supported_php_version(PHPVersion::PHP84)
+            .with_maximum_supported_php_version(PHPVersion::PHP84)
             .with_description(indoc! {r#"
                 Detects usage of asymmetric visibility on properties or methods
                 (e.g., `public protected(set)`, `protected private(set)`), introduced in PHP 8.4.

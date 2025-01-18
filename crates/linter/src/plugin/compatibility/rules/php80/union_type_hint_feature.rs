@@ -21,7 +21,7 @@ pub struct UnionTypeHintFeatureRule;
 impl Rule for UnionTypeHintFeatureRule {
     fn get_definition(&self) -> RuleDefinition {
         RuleDefinition::enabled("Union Type Hint Feature", Level::Error)
-            .with_minimum_supported_php_version(PHPVersion::PHP80)
+            .with_maximum_supported_php_version(PHPVersion::PHP80)
             .with_description(indoc! {"
                 Detects usage of union type hints (e.g. `int|float` or `A|B`) which were introduced in PHP 8.0.
             "})
