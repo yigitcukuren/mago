@@ -47,7 +47,7 @@ impl PHPVersion {
     /// assert_eq!(version.patch(), 3);
     /// ```
     #[inline]
-    pub fn new(major: u32, minor: u32, patch: u32) -> Self {
+    pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
         Self((major << 16) | (minor << 8) | patch)
     }
 
@@ -66,7 +66,7 @@ impl PHPVersion {
     /// assert_eq!(version.to_string(), "8.4.0");
     /// ```
     #[inline]
-    pub fn from_version_id(version_id: u32) -> Self {
+    pub const fn from_version_id(version_id: u32) -> Self {
         Self(version_id)
     }
 
@@ -81,7 +81,7 @@ impl PHPVersion {
     /// assert_eq!(version.major(), 8);
     /// ```
     #[inline]
-    pub fn major(&self) -> u32 {
+    pub const fn major(&self) -> u32 {
         self.0 >> 16
     }
 
@@ -96,7 +96,7 @@ impl PHPVersion {
     /// assert_eq!(version.minor(), 2);
     /// ```
     #[inline]
-    pub fn minor(&self) -> u32 {
+    pub const fn minor(&self) -> u32 {
         (self.0 >> 8) & 0xff
     }
 
@@ -111,7 +111,7 @@ impl PHPVersion {
     /// assert_eq!(version.patch(), 13);
     /// ```
     #[inline]
-    pub fn patch(&self) -> u32 {
+    pub const fn patch(&self) -> u32 {
         self.0 & 0xff
     }
 
@@ -129,7 +129,7 @@ impl PHPVersion {
     /// assert!(version.is_at_least(7, 4, 30)); // 8.0.0 is newer than 7.4.30
     /// assert!(!version.is_at_least(8, 1, 0));
     /// ```
-    pub fn is_at_least(&self, major: u32, minor: u32, patch: u32) -> bool {
+    pub const fn is_at_least(&self, major: u32, minor: u32, patch: u32) -> bool {
         self.0 >= ((major << 16) | (minor << 8) | patch)
     }
 
@@ -149,7 +149,7 @@ impl PHPVersion {
     /// assert!(version.is_supported(Feature::NullCoalesceAssign));
     /// assert!(!version.is_supported(Feature::NamedArguments));
     /// ```
-    pub fn is_supported(&self, feature: Feature) -> bool {
+    pub const fn is_supported(&self, feature: Feature) -> bool {
         match feature {
             Feature::NullCoalesceAssign
             | Feature::ParameterContravariance
@@ -228,7 +228,7 @@ impl PHPVersion {
     /// assert!(version.is_deprecated(Feature::RequiredParameterAfterOptional));
     /// assert!(!version.is_deprecated(Feature::DynamicProperties)); // that is 8.2+
     /// ```
-    pub fn is_deprecated(&self, feature: Feature) -> bool {
+    pub const fn is_deprecated(&self, feature: Feature) -> bool {
         match feature {
             Feature::DynamicProperties => self.0 >= 0x08_02_00,
             Feature::ImplicitlyNullableParameterTypes => self.0 >= 0x08_04_00,
@@ -251,7 +251,7 @@ impl PHPVersion {
     /// let version = PHPVersion::new(8, 4, 0);
     /// assert_eq!(version.to_version_id(), 0x080400);
     /// ```
-    pub fn to_version_id(&self) -> u32 {
+    pub const fn to_version_id(&self) -> u32 {
         self.0
     }
 }
