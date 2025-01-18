@@ -193,9 +193,9 @@ pub(super) fn explain_rule(
     if let Some(maximum_supported_php_version) = rule_definition.maximum_supported_php_version {
         println!(
             "{} {} {}",
-            "- This rule supports PHP version".dimmed(),
-            maximum_supported_php_version.to_string().bold().red(),
-            "or lower.".dimmed()
+            "- This rule supports PHP versions up to".dimmed(),
+            maximum_supported_php_version.to_string().bold().green(),
+            "exclusive.".dimmed()
         );
     } else {
         println!("{}", "- This rule does not have any maximum PHP version requirements.".dimmed());

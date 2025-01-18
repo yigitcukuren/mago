@@ -61,10 +61,10 @@ pub struct RuleDefinition {
     /// A list of usage examples demonstrating valid or invalid code snippets.
     pub examples: Vec<RuleUsageExample>,
 
-    /// The minimum PHP version supported by this rule, if any.
+    /// The minimum PHP version supported by this rule (inclusive), if any.
     pub minimum_supported_php_version: Option<PHPVersion>,
 
-    /// The maximum PHP version supported by this rule, if any.
+    /// The maximum PHP version supported by this rule (exclusive), if any.
     pub maximum_supported_php_version: Option<PHPVersion>,
 
     /// Whether this rule is deprecated and should not be used.
@@ -221,7 +221,7 @@ impl RuleDefinition {
         self
     }
 
-    /// Sets the minimum PHP version supported by this rule.
+    /// Sets the minimum PHP version supported by this rule (inclusive).
     ///
     /// # Parameters
     ///
@@ -235,7 +235,7 @@ impl RuleDefinition {
         self
     }
 
-    /// Sets the maximum PHP version supported by this rule.
+    /// Sets the maximum PHP version supported by this rule (exclusive).
     ///
     /// # Parameters
     ///
@@ -268,6 +268,31 @@ impl RuleDefinition {
     /// in CLI commands, config files, or external documentation.
     pub fn get_slug(&self) -> String {
         mago_casing::to_kebab_case(self.name)
+    }
+
+    /// Checks whether this rule supports a given PHP version, based on its minimum and maximum
+    ///
+    /// # Parameters
+    ///
+    /// * `version` - The PHP version to check against this rule's supported range.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the rule supports the given PHP version, `false` otherwise.
+    pub fn supports_php_version(&self, version: PHPVersion) -> bool {
+        if let Some(min) = self.minimum_supported_php_version {
+            if version < min {
+                return false;
+            }
+        }
+
+        if let Some(max) = self.maximum_supported_php_version {
+            if version >= max {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
