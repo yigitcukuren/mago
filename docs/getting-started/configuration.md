@@ -21,6 +21,44 @@ excludes = ["**/src/**/*.generated.php", "tests/fixtures"]
 
 ## Configuration Options
 
+### General Settings
+
+#### Threads
+
+The `threads` option specifies the number of threads to use for parallel processing.
+
+- Default: The number of logical CPUs on the system.
+- Type: `integer`
+- Example:
+
+  ```toml
+  threads = 4
+  ```
+
+#### Stack Size
+
+The `stack_size` option specifies the stack size for each thread.
+
+- Default: `36_864_000` (36MB)
+- Type: `string`
+- Example:
+
+  ```toml
+  stack_size = "262144"
+  ```
+
+#### PHP Version
+
+The `php_version` option specifies the PHP version to use for linting and formatting.
+
+- Default: `8.3`
+- Type: `string`
+- Example:
+
+  ```toml
+  php_version = "8.4"
+  ```
+
 ### Source Configuration
 
 The `[source]` section controls how Mago discovers and processes files. It allows you to define the root directory,
