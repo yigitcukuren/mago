@@ -1668,6 +1668,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mago-php-version"
+version = "0.1.2"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "mago-reflection"
 version = "0.1.2"
 dependencies = [

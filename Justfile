@@ -20,6 +20,7 @@ fix:
 publish:
     # Note: the order of publishing is important, as some crates depend on others.
     cargo publish -p mago-casing --allow-dirty
+    cargo publish -p mago-php-version --allow-dirty
     cargo publish -p mago-fixer --allow-dirty
     cargo publish -p mago-trinary --allow-dirty
     cargo publish -p mago-interner --allow-dirty
