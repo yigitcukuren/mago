@@ -17,6 +17,10 @@ fix:
     cargo fix --allow-dirty --allow-staged
     cargo fmt --all -- --unstable-features
 
+# run tests
+test:
+    cargo test --workspace --locked --all-targets
+
 publish:
     # Note: the order of publishing is important, as some crates depend on others.
     cargo publish -p mago-casing --allow-dirty
