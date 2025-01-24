@@ -1469,7 +1469,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mago"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1510,7 +1510,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-interner",
  "mago-source",
@@ -1523,7 +1523,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1531,14 +1531,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1547,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1558,7 +1558,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1587,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1610,7 +1610,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1638,7 +1638,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1651,7 +1651,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1671,7 +1671,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1679,7 +1679,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1693,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1711,7 +1711,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "codespan-reporting",
@@ -1727,7 +1727,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1745,7 +1745,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "dashmap",
  "mago-interner",
@@ -1755,7 +1755,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1763,7 +1763,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1786,14 +1786,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "strum",
@@ -1801,7 +1801,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1816,7 +1816,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "getrandom",
  "mago-ast",
@@ -1999,9 +1999,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-probe"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "openssl-src"
@@ -3268,9 +3268,9 @@ checksum = "75b844d17643ee918803943289730bec8aac480150456169e647ed0b576ba539"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "11cd88e12b17c6494200a9c1b683a04fcac9573ed74cd1b62aeb2727c5592243"
 
 [[package]]
 name = "unicode-segmentation"
