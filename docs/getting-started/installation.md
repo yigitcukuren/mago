@@ -54,6 +54,57 @@ brew install mago
 
 ---
 
+## Installation via Composer
+
+If you're already using Composer in your PHP project, you can install Mago as a Composer dependency. Follow these steps:
+
+1. **Add Mago as a dependency**:
+   Run the following command in your terminal:
+
+   ```bash
+   composer require carthage-software/mago
+   ```
+
+2. **Enable the Mago plugin**:
+   Update your composer.json file to enable the Mago plugin by adding the following under the "config" section:
+
+   ```json
+   {
+     "config": {
+       "allow-plugins": {
+         "carthage-software/mago": true
+       }
+     }
+   }
+   ```
+
+3. **Install the Mago binary**:
+   Run the following command to install the Mago binary:
+
+   ```bash
+   composer mago:install-binary
+   ```
+
+4. **Run Mago**:
+   You can now use Mago through the vendor/bin directory:
+
+   ```bash
+   vendor/bin/mago --help
+   ```
+
+> ### Note on Performance
+>
+> When using Mago via Composer (`vendor/bin/mago`), performance on small-to-medium applications might seem slower compared to running the binary directly.
+> This is because the `vendor/bin/mago` script is a PHP file that proxies commands to the Mago binary. As a result, you're effectively running:
+>
+> - PHP (to process the script),
+> - The script itself,
+> - The Mago binary.
+>
+> This extra overhead might be noticeable in smaller applications, but it's less significant for larger projects.
+
+---
+
 ## Pre-compiled Binaries
 
 You can find precompiled binaries for various platforms on our [Releases page](https://github.com/carthage-software/mago/releases).
