@@ -82,26 +82,26 @@ impl Linter {
         let plugin_definition = plugin.get_definition();
         let plugin_slug = plugin_definition.get_slug();
 
-        tracing::debug!("Adding plugin `{plugin_slug}`...");
+        tracing::debug!("Loading plugin: {plugin_slug}");
 
-        let enabled = self.settings.plugins.iter().any(|p| p.eq(&plugin_slug));
+        let enabled = self.settings.plugins.iter().any(|p| p.eq_ignore_ascii_case(&plugin_slug));
         if !enabled {
             if self.settings.default_plugins && plugin_definition.enabled_by_default {
-                tracing::debug!("Enabling default plugin `{plugin_slug}`.");
+                tracing::debug!("Enabling default plugin: {plugin_slug}");
             } else {
-                tracing::debug!(
-                    "Plugin `{plugin_slug}` is not enabled in the configuration and is not a default plugin, skipping."
-                );
+                tracing::debug!("Plugin '{plugin_slug}' skipped, as it is not enabled by default or in the settings.",);
 
                 return;
             }
         } else {
-            tracing::debug!("Enabling plugin `{plugin_slug}`.");
+            tracing::debug!("Enabling plugin: {plugin_slug}");
         }
 
         for rule in plugin.get_rules() {
             self.add_rule(&plugin_slug, rule);
         }
+
+        tracing::debug!("Plugin '{plugin_slug}' loaded successfully.");
     }
 
     /// Adds a rule to the linter.
@@ -117,22 +117,37 @@ impl Linter {
         let plugin_slug = plugin_slug.into();
         let slug = format!("{}/{}", plugin_slug, rule_definition.get_slug());
 
-        tracing::debug!("Adding rule `{slug}`...");
+        tracing::debug!("Initializing rule `{slug}`...");
 
+        let settings = self.settings.get_rule_settings(slug.as_str());
         if !rule_definition.supports_php_version(self.settings.php_version) {
-            tracing::debug!("Rule `{slug}` does not support PHP version `{}`, skipping.", self.settings.php_version);
+            tracing::info!("Rule `{slug}` does not support PHP version `{}`.", self.settings.php_version);
+
+            if let Some(version) = rule_definition.minimum_supported_php_version {
+                tracing::info!("Rule `{slug}` requires PHP >= `{version}`.");
+            }
+
+            if let Some(version) = rule_definition.maximum_supported_php_version {
+                tracing::info!("Rule `{slug}` requires PHP < `{version}`.");
+            }
+
+            if settings.is_some() {
+                tracing::warn!("Configuration for rule `{slug}` ignored due to PHP version mismatch.");
+            }
+
+            tracing::debug!("Rule `{slug}` skipped due to PHP version mismatch.");
 
             return;
         }
 
-        let settings = self.settings.get_rule_settings(slug.as_str()).cloned().unwrap_or_else(|| {
+        let settings = settings.cloned().unwrap_or_else(|| {
             tracing::debug!("No configuration found for rule `{slug}`, using default.");
 
             RuleSettings::from_level(rule_definition.level)
         });
 
         if !settings.enabled {
-            tracing::debug!("Rule `{slug}` is configured to be off, skipping.");
+            tracing::debug!("Rule `{slug}` has been disabled.");
 
             return;
         }
@@ -142,14 +157,14 @@ impl Linter {
             None => match rule_definition.level {
                 Some(level) => level,
                 None => {
-                    tracing::debug!("Rule `{slug}` is disabled by default, skipping.");
+                    tracing::debug!("Rule `{slug}` is disabled");
 
                     return;
                 }
             },
         };
 
-        tracing::debug!("Enabling rule `{slug}` with level `{level:?}`.");
+        tracing::debug!("Rule `{slug}` is enabled with level `{level}`.");
 
         self.rules.write().expect("Unable to add rule: poisoned lock").push(ConfiguredRule {
             slug,
@@ -205,26 +220,29 @@ impl Linter {
     pub fn lint(&self, semantics: &Semantics) -> IssueCollection {
         let source_name = self.interner.lookup(&semantics.source.identifier.value());
 
-        tracing::debug!("Linting source `{}`...", source_name);
+        tracing::debug!("Initializing lint process for source: {}", source_name);
 
         let mut context = Context::new(self.settings.php_version, &self.interner, &self.codebase, semantics);
 
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
         if configured_rules.is_empty() {
-            tracing::warn!("No rules configured, skipping linting.");
+            tracing::warn!("Linting aborted - no rules configured.");
 
             return IssueCollection::new();
         }
 
-        tracing::debug!("Linting source `{}` with {} rules...", source_name, configured_rules.len());
+        tracing::debug!("Loaded {} linting rules for source: {}", configured_rules.len(), source_name);
 
         for configured_rule in configured_rules.iter() {
-            tracing::trace!("Running rule `{}`...", configured_rule.rule.get_definition().name);
+            let rule_name = configured_rule.rule.get_definition().name;
+            tracing::trace!("Executing rule: {}", rule_name);
 
             let mut lint_context = context.for_rule(configured_rule);
 
             configured_rule.rule.as_ref().lint(&semantics.program, &mut lint_context);
         }
+
+        tracing::debug!("Completed linting source: {}", source_name);
 
         context.take_issue_collection()
     }
