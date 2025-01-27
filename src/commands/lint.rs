@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
@@ -45,6 +46,10 @@ or the default mode for a comprehensive analysis.
 "#
 )]
 pub struct LintCommand {
+    /// Lint specific files or directories, overriding the source configuration.
+    #[arg(help = "Lint specific files or directories, overriding the source configuration")]
+    pub path: Vec<PathBuf>,
+
     /// Filter the output to only show issues that can be automatically fixed with `mago fix`.
     #[arg(long, short = 'f', help = "Filter the output to only show fixable issues", default_value_t = false)]
     pub fixable_only: bool,
@@ -85,8 +90,6 @@ pub struct LintCommand {
 
 pub async fn execute(command: LintCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
-    let source_manager =
-        source::load(&interner, &configuration.source, !command.semantics_only, !command.semantics_only).await?;
 
     if let Some(rule) = &command.explain {
         return explain_rule(&interner, rule, &configuration);
@@ -95,6 +98,13 @@ pub async fn execute(command: LintCommand, configuration: Configuration) -> Resu
     if command.list_rules {
         return list_rules(&interner, &configuration);
     }
+
+    // Load sources
+    let source_manager = if !command.path.is_empty() {
+        source::from_paths(&interner, &configuration.source, command.path, !command.semantics_only).await?
+    } else {
+        source::load(&interner, &configuration.source, !command.semantics_only, !command.semantics_only).await?
+    };
 
     let mut issues = if command.semantics_only {
         check_sources(&interner, &source_manager).await?

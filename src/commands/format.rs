@@ -58,7 +58,7 @@ pub async fn execute(command: FormatCommand, configuration: Configuration) -> Re
 
     // Load sources
     let source_manager = if !command.path.is_empty() {
-        source::from_paths(&interner, &configuration.source, command.path).await?
+        source::from_paths(&interner, &configuration.source, command.path, false).await?
     } else {
         source::load(&interner, &configuration.source, false, false).await?
     };

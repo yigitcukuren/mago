@@ -22,6 +22,7 @@ use crate::error::Error;
 /// * `interner` - The interner to use for string interning.
 /// * `configuration` - The configuration to use for loading the sources.
 /// * `files` - The files to load into the source manager.
+/// * `include_stubs` - Whether to include stubs in the source manager.
 ///
 /// # Returns
 ///
@@ -31,6 +32,7 @@ pub async fn from_paths(
     interner: &ThreadedInterner,
     configuration: &SourceConfiguration,
     paths: Vec<PathBuf>,
+    include_stubs: bool,
 ) -> Result<SourceManager, Error> {
     let SourceConfiguration { root, extensions, .. } = configuration;
 
@@ -41,6 +43,12 @@ pub async fn from_paths(
 
     for path in paths {
         add_path_to_manager(&manager, path, root, &[], &excludes_set, &extensions, true).await?;
+    }
+
+    if include_stubs {
+        for (stub, content) in PHP_STUBS {
+            manager.insert_content(stub.to_owned(), content.to_owned(), SourceCategory::BuiltIn);
+        }
     }
 
     Ok(manager)
@@ -111,7 +119,11 @@ async fn add_path_to_manager(
     extensions: &HashSet<&str>,
     user_defined: bool,
 ) -> Result<(), Error> {
-    if path.is_file() {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    if !path.is_dir() {
         add_file_to_manager(manager, path, root, includes, excludes_set, extensions, user_defined);
 
         return Ok(());
@@ -142,10 +154,6 @@ fn add_file_to_manager(
     extensions: &HashSet<&str>,
     user_defined: bool,
 ) {
-    if !path.is_file() {
-        return;
-    }
-
     // Skip user-defined sources if they are included in the `includes` list.
     if user_defined && includes.iter().any(|include| path.starts_with(include)) {
         return;
@@ -157,7 +165,7 @@ fn add_file_to_manager(
     }
 
     // Skip files that do not have an accepted extension.
-    if !is_accepted_file(&path, extensions) {
+    if path.is_file() && !is_accepted_file(&path, extensions) {
         return;
     }
 
