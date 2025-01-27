@@ -9,7 +9,6 @@ use config::FileFormat;
 use config::Value;
 use config::ValueKind;
 use serde::Deserialize;
-use serde::Serialize;
 
 use mago_php_version::PHPVersion;
 
@@ -24,7 +23,7 @@ pub mod linter;
 pub mod source;
 
 /// Configuration options for mago.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     /// The number of threads to use.
@@ -46,6 +45,15 @@ pub struct Configuration {
     /// Configuration options for the formatter.
     #[serde(default)]
     pub format: FormatterConfiguration,
+
+    /// The log filter.
+    ///
+    /// This is not a configuration option, but it is included here to allow specifying the log filter
+    /// in the environment using `MAGO_LOG`.
+    ///
+    /// If this field is to be removed, serde will complain about an unknown field in the configuration
+    /// when `MAGO_LOG` is set due to the `deny_unknown_fields` attribute and the use of `Environment` source.
+    log: Value,
 }
 
 impl Configuration {
@@ -81,6 +89,7 @@ impl Configuration {
             source: SourceConfiguration::from_root(root),
             linter: LinterConfiguration::default(),
             format: FormatterConfiguration::default(),
+            log: Value::new(None, ValueKind::Nil),
         }
     }
 }
