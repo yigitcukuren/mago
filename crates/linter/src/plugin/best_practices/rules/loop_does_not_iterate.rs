@@ -60,6 +60,24 @@ impl Rule for LoopDoesNotIterateRule {
                     }
                 "#},
             ))
+            .with_example(RuleUsageExample::valid(
+                "A `while` that condtionally continues",
+                indoc! {r#"
+                    <?php
+
+                    function get_first_command(MessageStream $stream): Message {
+                        while (true) {
+                            $message = $stream->next();
+
+                            if (!$message->isCommand()) {
+                                continue; // This conditional continue doesn't unconditionally terminate the loop.
+                            }
+
+                            return $message; // This return is conditional, so the loop isn't unconditionally terminated.
+                        }
+                    }
+                "#},
+            ))
             .with_example(RuleUsageExample::invalid(
                 "A `for` loop with an unconditional break immediately",
                 indoc! {r#"
@@ -169,7 +187,11 @@ enum LoopTerminator<'a> {
 }
 
 fn get_loop_terminator_from_statements(statements: &[Statement]) -> Option<LoopTerminator<'_>> {
-    for statement in statements.iter().rev() {
+    for statement in statements.iter() {
+        if might_skip_terminator(statement) {
+            return None;
+        }
+
         if let Some(terminator) = get_loop_terminator_from_statement(statement) {
             return Some(terminator);
         }
@@ -189,5 +211,72 @@ fn get_loop_terminator_from_statement(statement: &Statement) -> Option<LoopTermi
         },
         Statement::Return(return_stmt) => Some(LoopTerminator::Return(return_stmt)),
         _ => None,
+    }
+}
+
+fn might_skip_terminator(statement: &Statement) -> bool {
+    match statement {
+        Statement::Continue(_) | Statement::Goto(_) => true,
+        Statement::Block(block) => block.statements.iter().any(might_skip_terminator),
+        Statement::If(if_stmt) => match &if_stmt.body {
+            IfBody::Statement(body) => {
+                if might_skip_terminator(&body.statement) {
+                    return true;
+                }
+
+                if body.else_clause.as_ref().is_some_and(|clause| might_skip_terminator(&clause.statement)) {
+                    return true;
+                }
+
+                body.else_if_clauses.iter().any(|clause| might_skip_terminator(&clause.statement))
+            }
+            IfBody::ColonDelimited(body) => {
+                if body.statements.iter().any(might_skip_terminator) {
+                    return true;
+                }
+
+                if body.else_clause.as_ref().is_some_and(|clause| clause.statements.iter().any(might_skip_terminator)) {
+                    return true;
+                }
+
+                body.else_if_clauses.iter().any(|clause| clause.statements.iter().any(might_skip_terminator))
+            }
+        },
+        Statement::While(while_stmt) => match &while_stmt.body {
+            WhileBody::Statement(body) => might_skip_terminator(body.as_ref()),
+            WhileBody::ColonDelimited(body) => body.statements.iter().any(might_skip_terminator),
+        },
+        Statement::DoWhile(do_while_stmt) => might_skip_terminator(&do_while_stmt.statement),
+        Statement::For(for_stmt) => match &for_stmt.body {
+            ForBody::Statement(body) => might_skip_terminator(body.as_ref()),
+            ForBody::ColonDelimited(body) => body.statements.iter().any(might_skip_terminator),
+        },
+        Statement::Foreach(foreach_stmt) => match &foreach_stmt.body {
+            ForeachBody::Statement(body) => might_skip_terminator(body.as_ref()),
+            ForeachBody::ColonDelimited(body) => body.statements.iter().any(might_skip_terminator),
+        },
+        Statement::Namespace(namespace) => namespace.statements().iter().any(might_skip_terminator),
+        Statement::Declare(declare) => match &declare.body {
+            DeclareBody::Statement(body) => might_skip_terminator(body.as_ref()),
+            DeclareBody::ColonDelimited(body) => body.statements.iter().any(might_skip_terminator),
+        },
+        Statement::Try(try_stmt) => {
+            if try_stmt.block.statements.iter().any(might_skip_terminator) {
+                return true;
+            }
+
+            if try_stmt.catch_clauses.iter().any(|clause| clause.block.statements.iter().any(might_skip_terminator)) {
+                return true;
+            }
+
+            try_stmt
+                .finally_clause
+                .as_ref()
+                .is_some_and(|clause| clause.block.statements.iter().any(might_skip_terminator))
+        }
+        Statement::Switch(switch_stmt) => {
+            switch_stmt.body.cases().iter().any(|case| case.statements().iter().any(might_skip_terminator))
+        }
+        _ => false,
     }
 }
