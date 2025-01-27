@@ -1,4 +1,5 @@
 use indoc::indoc;
+use toml::Value;
 
 use mago_ast::ast::*;
 use mago_php_version::PHPVersion;
@@ -9,8 +10,14 @@ use mago_walker::Walker;
 
 use crate::context::LintContext;
 use crate::definition::RuleDefinition;
+use crate::definition::RuleOptionDefinition;
 use crate::definition::RuleUsageExample;
 use crate::rule::Rule;
+
+pub const IGNORE_PARAMETER_TYPE_FOR_CLOSURE: &str = "ignore_closure";
+pub const IGNORE_PARAMETER_TYPE_FOR_CLOSURE_DEFAULT: bool = false;
+pub const IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION: &str = "ignore_arrow_function";
+pub const IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION_DEFAULT: bool = false;
 
 #[derive(Clone, Debug)]
 pub struct RequireParameterTypeRule;
@@ -22,6 +29,18 @@ impl Rule for RequireParameterTypeRule {
             .with_description(indoc! {"
                 Detects parameters that are missing a type hint.
             "})
+            .with_option(RuleOptionDefinition {
+                name: IGNORE_PARAMETER_TYPE_FOR_CLOSURE,
+                r#type: "boolean",
+                description: "Whether to ignore parameters in closures.",
+                default: Value::Boolean(IGNORE_PARAMETER_TYPE_FOR_CLOSURE_DEFAULT),
+            })
+            .with_option(RuleOptionDefinition {
+                name: IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION,
+                r#type: "boolean",
+                description: "Whether to ignore parameters in arrow functions.",
+                default: Value::Boolean(IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION_DEFAULT),
+            })
             .with_example(RuleUsageExample::valid(
                 "A function with a parameter that has a type hint",
                 indoc! {r#"
@@ -44,6 +63,65 @@ impl Rule for RequireParameterTypeRule {
                     }
                 "#},
             ))
+            .with_example(RuleUsageExample::valid(
+                "A Closure with a parameter that has a type hint",
+                indoc! {r#"
+                    <?php
+
+                    $func = function (string $bar): void {
+                        // ...
+                    };
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "A Closure with a parameter that is missing a type hint",
+                indoc! {r#"
+                    <?php
+
+                    $func = function ($bar): void {
+                        // ...
+                    };
+                "#},
+            ))
+            .with_example(
+                RuleUsageExample::valid(
+                    "A Closure with a parameter that is missing a type hint, but the rule is configured to ignore it",
+                    indoc! {r#"
+                    <?php
+
+                    $func = function ($bar): void {
+                        // ...
+                    };
+                "#},
+                )
+                .with_option(IGNORE_PARAMETER_TYPE_FOR_CLOSURE, Value::Boolean(true)),
+            )
+            .with_example(RuleUsageExample::valid(
+                "An arrow function with a parameter that has a type hint",
+                indoc! {r#"
+                    <?php
+
+                    $func = fn(string $bar): string => $bar;
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "An arrow function with a parameter that is missing a type hint",
+                indoc! {r#"<?php
+
+                    $func = fn($bar): string => $bar;
+                "#},
+            ))
+            .with_example(
+                RuleUsageExample::valid(
+                    "An arrow function with a parameter that is missing a type hint, but the rule is configured to ignore it",
+                    indoc! {r#"
+                    <?php
+
+                    $func = fn($bar): string => $bar;
+                "#},
+                )
+                .with_option(IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION, Value::Boolean(true)),
+            )
     }
 }
 
@@ -100,12 +178,30 @@ impl<'a> Walker<LintContext<'a>> for RequireParameterTypeRule {
     }
 
     fn walk_in_closure(&self, closure: &Closure, context: &mut LintContext<'a>) {
+        let ignore_parameter_type_for_closure = context
+            .option(IGNORE_PARAMETER_TYPE_FOR_CLOSURE)
+            .and_then(|o| o.as_bool())
+            .unwrap_or(IGNORE_PARAMETER_TYPE_FOR_CLOSURE_DEFAULT);
+
+        if ignore_parameter_type_for_closure {
+            return;
+        }
+
         for parameter in closure.parameter_list.parameters.iter() {
             Self::report(parameter, context);
         }
     }
 
     fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut LintContext<'a>) {
+        let ignore_parameter_type_for_arrow_function = context
+            .option(IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION)
+            .and_then(|o| o.as_bool())
+            .unwrap_or(IGNORE_PARAMETER_TYPE_FOR_ARROW_FUNCTION_DEFAULT);
+
+        if ignore_parameter_type_for_arrow_function {
+            return;
+        }
+
         for parameter in arrow_function.parameter_list.parameters.iter() {
             Self::report(parameter, context);
         }
