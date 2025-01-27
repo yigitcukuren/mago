@@ -1,18 +1,23 @@
+php_version = "7.4"
+
 [source]
 paths = ["composer"]
 includes = ["vendor"]
 excludes = []
+extensions = ["php", ""]
 
 [linter]
-default_plugins = false
-plugins = [
-    "analysis",
-    "symfony",
-    "best-practices",
-    "comment",
-    "consistency",
-    "naming",
-    "redundancy",
-    "safety",
-    "strictness",
-]
+default_plugins = true
+plugins = ["symfony"]
+
+[[linter.rules]]
+name = "maintainability/cyclomatic-complexity"
+threshold = 20
+
+[[linter.rules]]
+name = "maintainability/kan-defect"
+threshold = 1.9
+
+[[linter.rules]]
+name = "maintainability/halstead"
+effort_threshold = 7000
