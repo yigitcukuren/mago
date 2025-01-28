@@ -5,6 +5,7 @@ use mago_linter::plugin::compatibility::rules::php80::promoted_properties_featur
 use mago_linter::plugin::compatibility::rules::php80::union_type_hint_feature::UnionTypeHintFeatureRule;
 use mago_linter::plugin::compatibility::rules::php81::closure_creation_feature::ClosureCreationFeatureRule;
 use mago_linter::plugin::compatibility::rules::php82::dnf_type_hint_feature::DnfTypeHintFeatureRule;
+use mago_linter::plugin::compatibility::rules::php82::readonly_class_feature::ReadonlyClassFeatureRule;
 use mago_linter::plugin::compatibility::rules::php82::trait_constants_feature::TraitConstantsFeatureRule;
 use mago_linter::plugin::compatibility::rules::php82::true_type_hint_feature::TrueTypeHintFeatureRule;
 use mago_linter::plugin::compatibility::rules::php83::typed_class_constant_feature::TypedClassConstantFeatureRule;
@@ -21,6 +22,7 @@ rule_test!(test_promoted_properties_feature, PromotedPropertiesFeatureRule);
 rule_test!(test_union_type_hint_feature, UnionTypeHintFeatureRule);
 rule_test!(test_closure_creation_feature, ClosureCreationFeatureRule);
 rule_test!(test_dnf_type_hint_feature, DnfTypeHintFeatureRule);
+rule_test!(test_readonly_class_feature, ReadonlyClassFeatureRule);
 rule_test!(test_trait_constants_feature, TraitConstantsFeatureRule);
 rule_test!(test_true_type_hint_feature, TrueTypeHintFeatureRule);
 rule_test!(test_typed_class_constant_feature, TypedClassConstantFeatureRule);

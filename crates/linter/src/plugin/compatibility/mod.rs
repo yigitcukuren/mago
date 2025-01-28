@@ -6,6 +6,7 @@ use crate::plugin::compatibility::rules::php80::promoted_properties_feature::Pro
 use crate::plugin::compatibility::rules::php80::union_type_hint_feature::UnionTypeHintFeatureRule;
 use crate::plugin::compatibility::rules::php81::closure_creation_feature::ClosureCreationFeatureRule;
 use crate::plugin::compatibility::rules::php82::dnf_type_hint_feature::DnfTypeHintFeatureRule;
+use crate::plugin::compatibility::rules::php82::readonly_class_feature::ReadonlyClassFeatureRule;
 use crate::plugin::compatibility::rules::php82::trait_constants_feature::TraitConstantsFeatureRule;
 use crate::plugin::compatibility::rules::php82::true_type_hint_feature::TrueTypeHintFeatureRule;
 use crate::plugin::compatibility::rules::php83::typed_class_constant_feature::TypedClassConstantFeatureRule;
@@ -45,6 +46,7 @@ impl Plugin for CompatibilityPlugin {
             Box::new(TraitConstantsFeatureRule),
             Box::new(TrueTypeHintFeatureRule),
             Box::new(DnfTypeHintFeatureRule),
+            Box::new(ReadonlyClassFeatureRule),
             // PHP 8.3
             Box::new(TypedClassConstantFeatureRule),
             // PHP 8.4
