@@ -114,22 +114,26 @@ impl Hint {
     /// Returns `true` if the type hint is a standalone type hint.
     ///
     /// Standalone type hints are type hints that cannot be wrapped inside another type hint.
-    pub fn is_standalone(&self) -> bool {
+    #[inline]
+    pub const fn is_standalone(&self) -> bool {
         matches!(self, Self::Mixed(_) | Self::Never(_) | Self::Void(_) | Self::Nullable(_))
     }
 
-    pub fn is_complex(&self) -> bool {
+    #[inline]
+    pub const fn is_complex(&self) -> bool {
         matches!(self, Self::Union(_) | Self::Intersection(_) | Self::Parenthesized(_) | Self::Nullable(_))
     }
 
     /// Returns `true` if the type hint is a nullable type hint.
     ///
     /// A nullable type hint is a type hint that is preceded by a question mark (`?`) character.
-    pub fn is_nullable(&self) -> bool {
+    #[inline]
+    pub const fn is_nullable(&self) -> bool {
         matches!(self, Self::Nullable(_))
     }
 
-    pub fn contains_null(&self) -> bool {
+    #[inline]
+    pub const fn contains_null(&self) -> bool {
         match self {
             Hint::Mixed(_) => true,
             Hint::Nullable(_) => true,
@@ -142,17 +146,20 @@ impl Hint {
     /// Returns `true` if the type is a bottom type.
     ///
     /// A bottom type is a type that has no instances.
-    pub fn is_bottom(&self) -> bool {
+    #[inline]
+    pub const fn is_bottom(&self) -> bool {
         matches!(self, Self::Never(_) | Self::Void(_))
     }
 
     /// Returns `true` if the type can be intersected with another type.
-    pub fn is_intersectable(&self) -> bool {
+    #[inline]
+    pub const fn is_intersectable(&self) -> bool {
         matches!(self, Self::Identifier(_) | Self::Parenthesized(_) | Self::Intersection(_))
     }
 
     /// Returns `true` if the type can be unioned with another type.
-    pub fn is_unionable(&self) -> bool {
+    #[inline]
+    pub const fn is_unionable(&self) -> bool {
         if let Hint::Intersection(_) = self {
             return false;
         }
@@ -161,19 +168,52 @@ impl Hint {
     }
 
     /// Returns `true` if the type can be wrapped in parentheses.
-    pub fn is_parenthesizable(&self) -> bool {
+    #[inline]
+    pub const fn is_parenthesizable(&self) -> bool {
         matches!(self, Self::Union(_) | Self::Intersection(_))
     }
 
     /// Returns `true` if the type is a scalar type.
     ///
     /// A scalar type is a type that represents a single value.
-    pub fn is_scalar(&self) -> bool {
+    #[inline]
+    pub const fn is_scalar(&self) -> bool {
         if let Hint::Union(union) = self {
             return union.left.is_scalar() && union.right.is_scalar();
         }
 
         matches!(self, Self::Bool(_) | Self::Float(_) | Self::Integer(_) | Self::String(_))
+    }
+
+    /// Returns `true` if the type is a union type.
+    ///
+    /// A union type is a type that is a union of multiple type hints separated by a pipe (`|`) character.
+    ///
+    /// If the type is wrapped in parentheses, this method will unwrap the parentheses and
+    ///  check if the unwrapped type is a union type.
+    #[inline]
+    pub const fn is_union(&self) -> bool {
+        match self {
+            Hint::Union(_) => true,
+            Hint::Parenthesized(parenthesized) => parenthesized.hint.is_union(),
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if the type is an intersection type.
+    ///
+    /// An intersection type is a type that is an intersection of multiple type hints separated by an ampersand (`&`)
+    ///  character.
+    ///
+    /// If the type is wrapped in parentheses, this method will unwrap the parentheses and
+    ///  check if the unwrapped type is an intersection type.
+    #[inline]
+    pub const fn is_intersection(&self) -> bool {
+        match self {
+            Hint::Intersection(_) => true,
+            Hint::Parenthesized(parenthesized) => parenthesized.hint.is_intersection(),
+            _ => false,
+        }
     }
 }
 
