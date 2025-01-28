@@ -29,7 +29,7 @@ impl std::fmt::Display for Error {
             Self::BuildingConfiguration(error) => write!(f, "Failed to build the configuration: {}", error),
             Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {}", error),
             Self::SerializingToml(error) => write!(f, "Failed to serialize TOML: {}", error),
-            Self::CanonicalizingPath(_, error) => write!(f, "Failed to canonicalize path: {}", error),
+            Self::CanonicalizingPath(path, error) => write!(f, "Failed to canonicalize path `{:?}`: {}", path, error),
             Self::Join(error) => write!(f, "Failed to join tasks: {}", error),
             Self::Json(error) => write!(f, "Failed to parse JSON: {}", error),
             Self::SelfUpdate(error) => write!(f, "Failed to self update: {}", error),

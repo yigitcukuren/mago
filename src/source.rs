@@ -138,7 +138,12 @@ async fn add_path_to_manager(
     });
 
     while let Some(entry) = entries.next().await {
-        add_file_to_manager(manager, entry?.path(), root, includes, excludes_set, extensions, user_defined);
+        let path = entry?.path();
+        if path.is_dir() {
+            continue;
+        }
+
+        add_file_to_manager(manager, path, root, includes, excludes_set, extensions, user_defined);
     }
 
     Ok(())
