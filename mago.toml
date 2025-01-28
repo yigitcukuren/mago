@@ -4,7 +4,6 @@ php_version = "7.4"
 paths = ["composer"]
 includes = ["vendor"]
 excludes = []
-extensions = ["php", ""]
 
 [linter]
 default_plugins = true
