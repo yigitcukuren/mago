@@ -60,7 +60,7 @@ impl Configuration {
     pub fn load() -> Result<Configuration, Error> {
         let builder = Config::builder()
             .add_source(File::with_name(CONFIGURATION_FILE).required(false).format(FileFormat::Toml))
-            .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX).try_parsing(true).list_separator(","));
+            .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX));
 
         let mut configuration = Configuration::from_root(CURRENT_DIR.to_path_buf())
             .configure(builder)?
