@@ -108,7 +108,8 @@ impl ConfigurationEntry for Configuration {
         let mut builder = builder
             .set_default("threads", Value::new(None, ValueKind::U64(self.threads as u64)))?
             .set_default("stack_size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
-            .set_default("php_version", Value::new(None, ValueKind::String(self.php_version.to_string())))?;
+            .set_default("php_version", Value::new(None, ValueKind::String(self.php_version.to_string())))?
+            .set_default("log", self.log)?;
 
         builder = self.source.configure(builder)?;
         builder = self.linter.configure(builder)?;
