@@ -11,5 +11,6 @@ pub mod naming;
 pub mod phpunit;
 pub mod redundancy;
 pub mod safety;
+pub mod security;
 pub mod strictness;
 pub mod symfony;

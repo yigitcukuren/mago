@@ -16,6 +16,7 @@ pub mod naming;
 pub mod phpunit;
 pub mod redundancy;
 pub mod safety;
+pub mod security;
 pub mod strictness;
 pub mod symfony;
 
@@ -35,6 +36,7 @@ macro_rules! foreach_plugin {
         $do($crate::plugin::phpunit::PHPUnitPlugin);
         $do($crate::plugin::redundancy::RedundancyPlugin);
         $do($crate::plugin::safety::SafetyPlugin);
+        $do($crate::plugin::security::SecurityPlugin);
         $do($crate::plugin::strictness::StrictnessPlugin);
         $do($crate::plugin::symfony::SymfonyPlugin);
     };
