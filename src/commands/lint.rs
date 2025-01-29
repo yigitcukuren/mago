@@ -126,7 +126,7 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
         lint_sources(&interner, &source_manager, &configuration).await?
     };
 
-    let issues_contain_errors = issues.get_highest_level().is_some_and(|level| level <= Level::Error);
+    let issues_contain_errors = issues.has_minimum_level(Level::Error);
 
     let reporter = Reporter::new(interner, source_manager, command.reporting_target);
 
