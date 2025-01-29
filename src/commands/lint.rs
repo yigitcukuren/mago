@@ -67,6 +67,12 @@ pub struct LintCommand {
     #[arg(long, help = "Sort the reported issues by level, code, and location")]
     pub sort: bool,
 
+    #[arg(short, long, help = "Do not load default plugins, only load the ones specified in the configuration.")]
+    pub no_default_plugins: bool,
+
+    #[arg(short, long, help = "Specify plugins to load, overriding the configuration.")]
+    pub plugins: Vec<String>,
+
     /// Specify where the results should be reported.
     #[arg(
         long,
@@ -88,8 +94,16 @@ pub struct LintCommand {
     pub reporting_format: ReportingFormat,
 }
 
-pub async fn execute(command: LintCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+pub async fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
+
+    if command.no_default_plugins {
+        configuration.linter.default_plugins = Some(false);
+    }
+
+    if !command.plugins.is_empty() {
+        configuration.linter.plugins = command.plugins;
+    }
 
     if let Some(rule) = &command.explain {
         return explain_rule(&interner, rule, &configuration);

@@ -119,7 +119,7 @@ async fn add_path_to_manager(
     extensions: &HashSet<&str>,
     user_defined: bool,
 ) -> Result<(), Error> {
-    if !path.exists() {
+    if !path.exists() || path.is_symlink() {
         return Ok(());
     }
 
@@ -139,7 +139,7 @@ async fn add_path_to_manager(
 
     while let Some(entry) = entries.next().await {
         let path = entry?.path();
-        if path.is_dir() {
+        if path.is_dir() || path.is_symlink() {
             continue;
         }
 
