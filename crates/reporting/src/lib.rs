@@ -39,14 +39,14 @@ pub struct Annotation {
 /// Represents the severity level of an issue.
 #[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, Hash, PartialOrd, Deserialize, Serialize, Display)]
 pub enum Level {
-    /// An error, indicating a problem that prevents the code from functioning correctly.
-    Error,
-    /// A warning, indicating a potential problem that may need attention.
-    Warning,
-    /// A help message, suggesting possible solutions or further actions.
-    Help,
     /// A note, providing additional information or context.
     Note,
+    /// A help message, suggesting possible solutions or further actions.
+    Help,
+    /// A warning, indicating a potential problem that may need attention.
+    Warning,
+    /// An error, indicating a problem that prevents the code from functioning correctly.
+    Error,
 }
 
 /// Represents an issue identified in the code.
@@ -404,22 +404,30 @@ impl IssueCollection {
         self.issues.len()
     }
 
+    /// Filters the issues in the collection to only include those with a severity level
+    /// lower than or equal to the given level.
     pub fn with_maximum_level(self, level: Level) -> Self {
         Self { issues: self.issues.into_iter().filter(|issue| issue.level <= level).collect() }
     }
 
+    /// Filters the issues in the collection to only include those with a severity level
+    ///  higher than or equal to the given level.
     pub fn with_minimum_level(self, level: Level) -> Self {
         Self { issues: self.issues.into_iter().filter(|issue| issue.level >= level).collect() }
     }
 
+    /// Returns `true` if the collection contains any issues with a severity level
+    ///  higher than or equal to the given level.
     pub fn has_minimum_level(&self, level: Level) -> bool {
         self.issues.iter().any(|issue| issue.level >= level)
     }
 
+    /// Returns the number of issues in the collection with the given severity level.
     pub fn get_level_count(&self, level: Level) -> usize {
         self.issues.iter().filter(|issue| issue.level == level).count()
     }
 
+    /// Returns the highest severity level of the issues in the collection.
     pub fn get_highest_level(&self) -> Option<Level> {
         self.issues.iter().map(|issue| issue.level).max()
     }
@@ -446,8 +454,8 @@ impl IssueCollection {
         let mut issues = self.issues;
 
         issues.sort_by(|a, b| match a.level.cmp(&b.level) {
-            Ordering::Less => Ordering::Greater,
-            Ordering::Greater => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Less => Ordering::Less,
             Ordering::Equal => match a.code.as_deref().cmp(&b.code.as_deref()) {
                 Ordering::Less => Ordering::Less,
                 Ordering::Greater => Ordering::Greater,
@@ -528,5 +536,143 @@ impl IntoIterator for Issue {
 impl FromIterator<Issue> for IssueCollection {
     fn from_iter<T: IntoIterator<Item = Issue>>(iter: T) -> Self {
         Self { issues: iter.into_iter().collect() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn test_highest_collection_level() {
+        let mut collection = IssueCollection::from(vec![]);
+        assert_eq!(collection.get_highest_level(), None);
+
+        collection.push(Issue::note("note"));
+        assert_eq!(collection.get_highest_level(), Some(Level::Note));
+
+        collection.push(Issue::help("help"));
+        assert_eq!(collection.get_highest_level(), Some(Level::Help));
+
+        collection.push(Issue::warning("warning"));
+        assert_eq!(collection.get_highest_level(), Some(Level::Warning));
+
+        collection.push(Issue::error("error"));
+        assert_eq!(collection.get_highest_level(), Some(Level::Error));
+    }
+
+    #[test]
+    pub fn test_level_downgrade() {
+        assert_eq!(Level::Error.downgrade(), Level::Warning);
+        assert_eq!(Level::Warning.downgrade(), Level::Help);
+        assert_eq!(Level::Help.downgrade(), Level::Note);
+        assert_eq!(Level::Note.downgrade(), Level::Note);
+    }
+
+    #[test]
+    pub fn test_issue_collection_with_maximum_level() {
+        let mut collection = IssueCollection::from(vec![
+            Issue::error("error"),
+            Issue::warning("warning"),
+            Issue::help("help"),
+            Issue::note("note"),
+        ]);
+
+        collection = collection.with_maximum_level(Level::Warning);
+        assert_eq!(collection.len(), 3);
+        assert_eq!(
+            collection.iter().map(|issue| issue.level).collect::<Vec<_>>(),
+            vec![Level::Warning, Level::Help, Level::Note]
+        );
+    }
+
+    #[test]
+    pub fn test_issue_collection_with_minimum_level() {
+        let mut collection = IssueCollection::from(vec![
+            Issue::error("error"),
+            Issue::warning("warning"),
+            Issue::help("help"),
+            Issue::note("note"),
+        ]);
+
+        collection = collection.with_minimum_level(Level::Warning);
+        assert_eq!(collection.len(), 2);
+        assert_eq!(collection.iter().map(|issue| issue.level).collect::<Vec<_>>(), vec![Level::Error, Level::Warning,]);
+    }
+
+    #[test]
+    pub fn test_issue_collection_has_minimum_level() {
+        let mut collection = IssueCollection::from(vec![]);
+
+        assert!(!collection.has_minimum_level(Level::Error));
+        assert!(!collection.has_minimum_level(Level::Warning));
+        assert!(!collection.has_minimum_level(Level::Help));
+        assert!(!collection.has_minimum_level(Level::Note));
+
+        collection.push(Issue::note("note"));
+
+        assert!(!collection.has_minimum_level(Level::Error));
+        assert!(!collection.has_minimum_level(Level::Warning));
+        assert!(!collection.has_minimum_level(Level::Help));
+        assert!(collection.has_minimum_level(Level::Note));
+
+        collection.push(Issue::help("help"));
+
+        assert!(!collection.has_minimum_level(Level::Error));
+        assert!(!collection.has_minimum_level(Level::Warning));
+        assert!(collection.has_minimum_level(Level::Help));
+        assert!(collection.has_minimum_level(Level::Note));
+
+        collection.push(Issue::warning("warning"));
+
+        assert!(!collection.has_minimum_level(Level::Error));
+        assert!(collection.has_minimum_level(Level::Warning));
+        assert!(collection.has_minimum_level(Level::Help));
+        assert!(collection.has_minimum_level(Level::Note));
+
+        collection.push(Issue::error("error"));
+
+        assert!(collection.has_minimum_level(Level::Error));
+        assert!(collection.has_minimum_level(Level::Warning));
+        assert!(collection.has_minimum_level(Level::Help));
+        assert!(collection.has_minimum_level(Level::Note));
+    }
+
+    #[test]
+    pub fn test_issue_collection_level_count() {
+        let mut collection = IssueCollection::from(vec![]);
+
+        assert_eq!(collection.get_level_count(Level::Error), 0);
+        assert_eq!(collection.get_level_count(Level::Warning), 0);
+        assert_eq!(collection.get_level_count(Level::Help), 0);
+        assert_eq!(collection.get_level_count(Level::Note), 0);
+
+        collection.push(Issue::error("error"));
+
+        assert_eq!(collection.get_level_count(Level::Error), 1);
+        assert_eq!(collection.get_level_count(Level::Warning), 0);
+        assert_eq!(collection.get_level_count(Level::Help), 0);
+        assert_eq!(collection.get_level_count(Level::Note), 0);
+
+        collection.push(Issue::warning("warning"));
+
+        assert_eq!(collection.get_level_count(Level::Error), 1);
+        assert_eq!(collection.get_level_count(Level::Warning), 1);
+        assert_eq!(collection.get_level_count(Level::Help), 0);
+        assert_eq!(collection.get_level_count(Level::Note), 0);
+
+        collection.push(Issue::help("help"));
+
+        assert_eq!(collection.get_level_count(Level::Error), 1);
+        assert_eq!(collection.get_level_count(Level::Warning), 1);
+        assert_eq!(collection.get_level_count(Level::Help), 1);
+        assert_eq!(collection.get_level_count(Level::Note), 0);
+
+        collection.push(Issue::note("note"));
+
+        assert_eq!(collection.get_level_count(Level::Error), 1);
+        assert_eq!(collection.get_level_count(Level::Warning), 1);
+        assert_eq!(collection.get_level_count(Level::Help), 1);
+        assert_eq!(collection.get_level_count(Level::Note), 1);
     }
 }
