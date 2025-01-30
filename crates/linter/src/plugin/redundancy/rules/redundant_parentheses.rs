@@ -63,6 +63,10 @@ impl<'a> Walker<LintContext<'a>> for RedundantParenthesesRule {
 
         if let Expression::AssignmentOperation(assignment) = statement_expression.expression.as_ref() {
             if let Expression::Parenthesized(rhs) = assignment.rhs.as_ref() {
+                if rhs.expression.is_binary() {
+                    return; // Allow parentheses around binary expressions on the right-hand side of an assignment.
+                }
+
                 self.report(rhs, context);
             }
         }
@@ -73,12 +77,20 @@ impl<'a> Walker<LintContext<'a>> for RedundantParenthesesRule {
         positional_argument: &'ast PositionalArgument,
         context: &mut LintContext<'a>,
     ) {
+        if positional_argument.ellipsis.is_some() {
+            return;
+        }
+
         if let Expression::Parenthesized(value) = &positional_argument.value {
             self.report(value, context);
         }
     }
 
     fn walk_in_named_argument<'ast>(&self, named_argument: &'ast NamedArgument, context: &mut LintContext<'a>) {
+        if named_argument.ellipsis.is_some() {
+            return;
+        }
+
         if let Expression::Parenthesized(value) = &named_argument.value {
             self.report(value, context);
         }
