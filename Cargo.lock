@@ -406,9 +406,9 @@ dependencies = [
 
 [[package]]
 name = "config"
-version = "0.15.6"
+version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e329294a796e9b22329669c1f433a746983f9e324e07f4ef135be81bb2262de4"
+checksum = "e26695492a475c4a091cfda61446d5ba01aac2e1dfbcd27a12fdd11aa2e32596"
 dependencies = [
  "async-trait",
  "convert_case",
@@ -671,9 +671,9 @@ checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 
 [[package]]
 name = "diffy"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b6bd697b0c2aa17602fa394088be5c4332bfe3e1f8abc2d4e5ed66f47ed3c37"
+checksum = "b545b8c50194bdd008283985ab0b31dba153cfd5b3066a92770634fbc0d7d291"
 dependencies = [
  "nu-ansi-term 0.50.1",
 ]
@@ -1481,7 +1481,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mago"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1522,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-interner",
  "mago-source",
@@ -1535,7 +1535,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1543,14 +1543,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1559,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1570,7 +1570,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1580,7 +1580,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1599,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1650,7 +1650,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1663,7 +1663,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1683,7 +1683,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1691,7 +1691,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1705,7 +1705,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1723,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "codespan-reporting",
@@ -1739,7 +1739,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1757,7 +1757,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "dashmap",
  "mago-interner",
@@ -1767,7 +1767,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1775,7 +1775,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1788,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1798,14 +1798,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "serde",
  "strum",
@@ -1813,7 +1813,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1828,7 +1828,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1836,7 +1836,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
@@ -2553,9 +2553,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.21"
+version = "0.23.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f287924602bf649d949c63dc8ac8b235fa5387d394020705b80c4eb597ce5b8"
+checksum = "9fb9263ab4eb695e42321db096e3b8fbd715a59b154d5c88d82db2175b681ba7"
 dependencies = [
  "once_cell",
  "ring",
@@ -3152,9 +3152,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.22"
+version = "0.22.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ae48d6208a266e853d946088ed816055e556cc6028c5e8e2b84d9fa5dd7c7f5"
+checksum = "02a8b472d1a3d7c18e2d61a489aee3453fd9031c33e4f55bd533f4a7adca1bee"
 dependencies = [
  "indexmap",
  "serde",
@@ -3491,9 +3491,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.26.7"
+version = "0.26.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d642ff16b7e79272ae451b7322067cdc17cadf68c23264be9d94a32319efe7e"
+checksum = "2210b291f7ea53617fbafcc4939f10914214ec15aace5ba62293a668f322c5c9"
 dependencies = [
  "rustls-pki-types",
 ]
@@ -3643,9 +3643,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"
-version = "0.6.25"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad699df48212c6cc6eb4435f35500ac6fd3b9913324f938aea302022ce19d310"
+checksum = "7e49d2d35d3fad69b39b94139037ecfb4f359f08958b9c11e7315ce770462419"
 dependencies = [
  "memchr",
 ]
