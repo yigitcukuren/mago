@@ -5,6 +5,10 @@ default:
 build:
     cargo build --release
 
+# build the webassembly module
+build-wasm:
+    cd crates/wasm && wasm-pack build --release --out-dir pkg
+
 # detect linting problems.
 lint:
     cargo fmt --all -- --check --unstable-features
