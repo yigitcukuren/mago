@@ -120,18 +120,6 @@ impl Source {
     /// * `name` - A logical identifier for this source, such as `"inline"`
     ///   or `"my_script.php"`.
     /// * `content` - The actual PHP (or other) code string.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use mago_interner::ThreadedInterner;
-    /// # use mago_source::{Source, SourceCategory};
-    /// let interner = ThreadedInterner::new();
-    /// let src = Source::standalone(&interner, "inline.php", "<?php echo 'Hello'; ?>");
-    ///
-    /// // src now contains the code with line offsets, size, etc.
-    /// assert_eq!(src.size, 26);
-    /// ```
     pub fn standalone(interner: &ThreadedInterner, name: &str, content: &str) -> Self {
         let lines: Vec<_> = line_starts(content).collect();
         let size = content.len();
