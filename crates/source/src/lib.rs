@@ -107,6 +107,45 @@ impl SourceIdentifier {
 }
 
 impl Source {
+    /// Creates a [`Source`] from a single piece of `content` without needing
+    /// a full [`SourceManager`].
+    ///
+    /// This is particularly useful for quick parsing or one-off analyses
+    /// where you do not need to manage multiple sources.
+    ///
+    /// # Arguments
+    ///
+    /// * `interner` - A reference to a [`ThreadedInterner`] used to intern
+    ///   the `content` and store string identifiers.
+    /// * `name` - A logical identifier for this source, such as `"inline"`
+    ///   or `"my_script.php"`.
+    /// * `content` - The actual PHP (or other) code string.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mago_interner::ThreadedInterner;
+    /// # use mago_source::{Source, SourceCategory};
+    /// let interner = ThreadedInterner::new();
+    /// let src = Source::standalone(&interner, "inline.php", "<?php echo 'Hello'; ?>");
+    ///
+    /// // src now contains the code with line offsets, size, etc.
+    /// assert_eq!(src.size, 26);
+    /// ```
+    pub fn standalone(interner: &ThreadedInterner, name: &str, content: &str) -> Self {
+        let lines: Vec<_> = line_starts(content).collect();
+        let size = content.len();
+        let content_id = interner.intern(content);
+
+        Self {
+            identifier: SourceIdentifier(interner.intern(name), SourceCategory::UserDefined),
+            path: None,
+            content: content_id,
+            size,
+            lines,
+        }
+    }
+
     /// Retrieve the line number for the given byte offset.
     ///
     /// # Parameters
