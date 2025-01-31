@@ -1,238 +1,190 @@
-use std::collections::HashSet;
+//! # Mago WASM Bindings
+//!
+//! This crate provides [wasm-bindgen] exports that wrap Mago’s internal
+//! functionality (formatter, parser, linter, etc.) so they can be called
+//! from JavaScript in a WebAssembly environment.
+//!
+//! ## Overview
+//!
+//! - **`mago_get_definitions`**: Returns metadata about all available
+//!   plugins and rules in Mago.
+//! - **`mago_analysis`**: Parses, lints, and optionally formats a given
+//!   PHP snippet and returns structured results.
+//! - **`mago_format`**: Formats a given PHP snippet according to the
+//!   specified [FormatSettings].
+//!
+//! See each function’s documentation below for details on usage and
+//! return values.
 
-use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-use mago_ast::Program;
 use mago_formatter::settings::FormatSettings;
-use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
+use mago_linter::definition::PluginDefinition;
+use mago_linter::definition::RuleDefinition;
+use mago_linter::plugin::Plugin;
+use mago_linter::settings::Settings;
 use mago_parser::parse_source;
-use mago_reporting::Issue;
-use mago_reporting::IssueCollection;
-use mago_semantics::Semantics;
+use mago_php_version::PHPVersion;
 use mago_source::SourceCategory;
 use mago_source::SourceManager;
-use mago_symbol_table::get_symbols;
-use mago_symbol_table::table::SymbolTable;
 
-/// Represents the result of analyzing and optionally formatting PHP code.
-///
-/// This struct encapsulates various aspects of the PHP code analysis process,
-/// providing detailed insights into the source code, including:
-/// - Interned strings used in the code.
-/// - Abstract syntax tree (AST).
-/// - Parse errors, if any.
-/// - Resolved names and their metadata.
-/// - Symbol table for classes, functions, constants, etc.
-/// - Formatted version of the source code (if no parse errors occurred).
-///
-/// This struct is serialized into JSON for use in WebAssembly and browser environments.
-#[derive(Debug, Clone, Serialize)]
-struct CodeInsight<'a> {
-    /// A set of interned strings used in the source code.
-    ///
-    /// Each string is represented as a tuple containing a `StringIdentifier` and the string value.
-    pub strings: HashSet<(StringIdentifier, &'a str)>,
+use crate::analysis::AnalysisResults;
 
-    /// The abstract syntax tree (AST) resulting from parsing the source code.
-    pub program: Program,
+/// The `analysis` module contains data structures and logic
+/// used to run combined parsing, linting, and formatting
+/// operations within this WASM crate.
+pub mod analysis;
 
-    /// An optional parse error, if one occurred during parsing.
-    pub parse_error: Option<Issue>,
-
-    /// The resolved names within the source code, used for identifier resolution.
-    ///
-    /// Each resolved name is represented as a tuple containing a byte offset and
-    /// a tuple containing a `StringIdentifier` and a boolean flag indicating whether the name was imported.
-    pub names: HashSet<(&'a usize, &'a (StringIdentifier, bool))>,
-
-    /// The symbol table containing definitions of classes, functions, constants, etc.
-    pub symbols: SymbolTable,
-
-    /// A collection of semantic issues found during analysis, such as invalid inheritance,
-    ///  improper returns, duplicate names, etc.
-    pub semantic_issues: IssueCollection,
-
-    /// The formatted version of the source code, if there were no parse errors.
-    pub formatted: Option<String>,
-}
-
-/// Formats PHP code using the Mago formatter.
+/// Returns an array (serialized to JS via [`JsValue`]) of **all** plugin
+/// definitions and their associated rules.
 ///
-/// This function takes a string of PHP code and optionally a JSON string representing formatting settings.
-/// It returns the formatted version of the code. If there are any parser errors, it returns the error message instead of the formatted code.
-///
-/// # Arguments
-///
-/// * `code` - A string slice containing the PHP code to format.
-/// * `settings` - An optional JSON string specifying formatting settings. If not provided or invalid, default settings will be used.
-///
-/// # Returns
-///
-/// A `Result<JsValue, JsValue>`:
-/// - On success: The formatted PHP code as a `JsValue` (string).
-/// - On failure: A `JsValue` (string) containing the parser error message.
-///
-/// # Formatting Settings
-///
-/// The `settings` parameter should be a JSON string matching the structure of the `FormatSettings` Rust struct.
-///
-/// If the `settings` parameter is not provided, the formatter will use the default settings.
-///
-/// # Example
-///
-/// ```javascript
-/// import init, { mago_format } from "./pkg/mago_wasm.js";
-///
-/// async function formatCode(phpCode, formatterSettings) {
-///     await init(); // Initialize the WASM module
-///     try {
-///         const formattedCode = mago_format(phpCode, formatterSettings);
-///         console.log("Formatted code:", formattedCode);
-///     } catch (err) {
-///         console.error("Error formatting code:", err);
-///     }
-/// }
-///
-/// const phpCode = "<?php echo 'Hello'; ?>";
-///
-/// // Example with custom settings
-/// const settings = JSON.stringify({
-///     print_width: 80,
-///     tab_width: 2,
-///     use_tabs: true,
-///     single_quote: true,
-/// });
-///
-/// formatCode(phpCode, settings);
-///
-/// // Example with default settings
-/// formatCode(phpCode, undefined);
-/// ```
+/// Each element in the returned array is a tuple:
+/// `(PluginDefinition, Vec<RuleDefinition>)`.
 ///
 /// # Errors
 ///
-/// If the input PHP code contains syntax errors or cannot be parsed, the function returns a
-/// parser error message as a `JsValue` containing the error description.
+/// Returns a [`JsValue`] error if the serialization to
+/// [`JsValue`] fails (unlikely).
 ///
-/// # Note
+/// # Example (JS Usage)
+/// ```js
+/// import init, { mago_get_definitions } from 'mago_wasm';
 ///
-/// This function is intended for use in a browser environment through WebAssembly.
+/// await init();
+/// const defs = mago_get_definitions();
+/// console.log(defs); // An array of plugin/rule definitions
+/// ```
 #[wasm_bindgen]
-pub fn mago_format(code: String, settings: Option<String>) -> Result<JsValue, JsValue> {
-    let settings = get_format_settings(settings);
+pub fn mago_get_definitions() -> Result<JsValue, JsValue> {
+    let mut plugins: Vec<(PluginDefinition, Vec<RuleDefinition>)> = Vec::new();
 
+    // Gather all plugin definitions and their rules
+    mago_linter::foreach_plugin!(|p| {
+        let plugin: Box<dyn Plugin> = Box::new(p);
+        let definition = plugin.get_definition();
+        let rules = plugin.get_rules().into_iter().map(|r| r.get_definition()).collect::<Vec<_>>();
+        plugins.push((definition, rules));
+    });
+
+    // Serialize to JS-friendly output
+    Ok(serde_wasm_bindgen::to_value(&plugins)?)
+}
+
+/// Performs a full “analysis” of the given `code` string:
+/// 1. **Parse** the PHP code and detect any syntax errors.
+/// 2. **Lint** the code using the provided linter settings.
+/// 3. **Optionally** format the code if `format_settings` is provided.
+///
+/// Returns an [`AnalysisResults`] object (serialized to JS), which
+/// contains any parse errors, semantic issues, linter issues, and
+/// the formatted code (if no syntax errors were encountered).
+///
+/// # Arguments
+///
+/// * `code` - A string containing the PHP code to analyze.
+/// * `format_settings` - A [`JsValue`] representing a
+///   [`FormatSettings`](mago_formatter::settings::FormatSettings)
+///   struct, or `null`/`undefined` to use the default settings.
+/// * `linter_settings` - A [`JsValue`] representing a
+///   [`Settings`](mago_linter::settings::Settings) struct, or
+///   `null`/`undefined` to use the default settings (PHP 8.4).
+///
+/// # Errors
+///
+/// Returns a [`JsValue`] (string) error if deserialization of
+/// the provided settings fails, or if parsing/analysis fails.
+///
+/// # Example (JS Usage)
+/// ```js
+/// import init, { mago_analysis } from 'mago_wasm';
+///
+/// await init();
+/// const code = `<?php echo "Hello World"; ?>`;
+/// const formatSettings = { indent_size: 2 };
+/// const linterSettings = { php_version: "8.1" };
+///
+/// const analysis = mago_analysis(code, formatSettings, linterSettings);
+/// console.log(analysis); // { parse_error: null, linter_issues: [...], formatted: "...", etc. }
+/// ```
+#[wasm_bindgen]
+pub fn mago_analysis(code: String, format_settings: JsValue, linter_settings: JsValue) -> Result<JsValue, JsValue> {
+    // Deserialize or use defaults
+    let linter_settings = if !linter_settings.is_undefined() && !linter_settings.is_null() {
+        serde_wasm_bindgen::from_value::<Settings>(linter_settings)?
+    } else {
+        Settings::new(PHPVersion::PHP84)
+    };
+
+    let format_settings = if !format_settings.is_undefined() && !format_settings.is_null() {
+        serde_wasm_bindgen::from_value::<FormatSettings>(format_settings)?
+    } else {
+        FormatSettings::default()
+    };
+
+    // Run analysis
+    let results = AnalysisResults::analyze(code, linter_settings, format_settings);
+
+    // Return the analysis result as a JS object
+    Ok(serde_wasm_bindgen::to_value(&results)?)
+}
+
+/// Formats the provided `code` string with the given
+/// [`FormatSettings`], returning the resulting string.
+///
+/// # Arguments
+///
+/// * `code` - The PHP code to be formatted.
+/// * `format_settings` - A [`JsValue`] representing
+///   a [`FormatSettings`](mago_formatter::settings::FormatSettings)
+///   struct, or `null`/`undefined` to use defaults.
+///
+/// # Errors
+///
+/// Returns a [`JsValue`] (string) error if the code is invalid
+/// (i.e., parse error) or if deserialization of `format_settings` fails.
+///
+/// # Example (JS Usage)
+/// ```js
+/// import init, { mago_format } from 'mago_wasm';
+///
+/// await init();
+/// const code = `<?php echo "Hello"; ?>`;
+/// const fmtSet = { indent_size: 4, max_line_length: 100 };
+///
+/// try {
+///   const formatted = mago_format(code, fmtSet);
+///   console.log(formatted);
+/// } catch (e) {
+///   console.error("Formatting failed:", e);
+/// }
+/// ```
+#[wasm_bindgen]
+pub fn mago_format(code: String, format_settings: JsValue) -> Result<JsValue, JsValue> {
+    // Deserialize or default
+    let settings = if !format_settings.is_undefined() && !format_settings.is_null() {
+        serde_wasm_bindgen::from_value::<FormatSettings>(format_settings)?
+    } else {
+        FormatSettings::default()
+    };
+
+    // Prepare interner and source manager
     let interner = ThreadedInterner::new();
     let manager = SourceManager::new(interner.clone());
     let source_id = manager.insert_content("code.php".to_string(), code, SourceCategory::UserDefined);
 
     let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    // Parse the code
     let (program, parse_error) = parse_source(&interner, &source);
 
     if let Some(err) = parse_error {
         return Err(JsValue::from_str(&err.to_string()));
     }
 
+    // Format the parsed program
     let formatted = mago_formatter::format(&interner, &source, &program, settings);
 
+    // Return the formatted string
     Ok(JsValue::from_str(&formatted))
-}
-
-/// Analyzes PHP code and returns detailed insights into its structure and formatting.
-///
-/// This function takes PHP code as input and provides a comprehensive analysis of it, including:
-///
-/// - Abstract syntax tree (AST).
-/// - Parse errors (if any).
-/// - Resolved names and their metadata.
-/// - Symbol table containing definitions of classes, functions, constants, etc.
-/// - Formatted code (if no parse errors occurred).
-///
-/// The result is returned as a `CodeInsight` struct serialized into JSON,
-/// making it suitable for browser environments through WebAssembly.
-///
-/// # Arguments
-///
-/// - `code` - A string containing the PHP code to analyze.
-/// - `format_settings` - An optional JSON string specifying formatting settings. If not provided or invalid, default settings will be used.
-///
-/// # Returns
-///
-/// A `Result<JsValue, JsValue>`:
-/// - On success: A `JsValue` containing the serialized `CodeInsight` object as JSON.
-/// - On failure: A `JsValue` containing an error message.
-///
-/// # Example
-///
-/// ```javascript
-/// import init, { mago_get_insight } from "./pkg/mago_wasm.js";
-///
-/// async function getCodeInsight(phpCode, formatterSettings) {
-///     await init(); // Initialize the WASM module
-///     try {
-///         const insights = mago_get_insight(phpCode, formatterSettings);
-///         console.log("Code insights:", JSON.parse(insights));
-///     } catch (err) {
-///         console.error("Error analyzing code:", err);
-///     }
-/// }
-///
-/// const phpCode = "<?php echo 'Hello'; ?>";
-///
-/// // Example with custom settings
-/// const settings = JSON.stringify({
-///     print_width: 80,
-///     tab_width: 2,
-///     use_tabs: true,
-///     single_quote: true,
-/// });
-///
-/// getCodeInsight(phpCode, settings);
-///
-/// // Example with default settings
-/// getCodeInsight(phpCode, undefined);
-/// ```
-///
-/// # Errors
-///
-/// If the input PHP code cannot be parsed, or if the source manager fails to load the source,
-/// the function returns an error message as a `JsValue`.
-///
-/// # Notes
-///
-/// - This function is designed for browser environments through WebAssembly.
-/// - It is suitable for interactive playgrounds or tools requiring in-depth PHP code analysis.
-#[wasm_bindgen]
-pub fn mago_get_insight(code: String, format_settings: Option<String>) -> Result<JsValue, JsValue> {
-    let settings = get_format_settings(format_settings);
-    let interner = ThreadedInterner::new();
-    let manager = SourceManager::new(interner.clone());
-    let source_id = manager.insert_content("code.php".to_string(), code, SourceCategory::UserDefined);
-    let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let semantics = Semantics::build(&interner, source);
-    let mut formatted = None;
-    if semantics.parse_error.is_none() {
-        formatted = Some(mago_formatter::format(&interner, &semantics.source, &semantics.program, settings));
-    }
-
-    let symbols = get_symbols(&interner, &semantics.program);
-
-    Ok(serde_wasm_bindgen::to_value(&CodeInsight {
-        strings: interner.all(),
-        program: semantics.program,
-        parse_error: semantics.parse_error.as_ref().map(|e| e.into()),
-        names: semantics.names.all(),
-        symbols,
-        semantic_issues: semantics.issues,
-        formatted,
-    })?)
-}
-
-fn get_format_settings(settings: Option<String>) -> FormatSettings {
-    if let Some(settings_json) = settings {
-        serde_json::from_str::<FormatSettings>(&settings_json).unwrap_or_default()
-    } else {
-        FormatSettings::default()
-    }
 }
