@@ -283,20 +283,20 @@ jobs:
           fakeroot dpkg-deb --build "${DPKG_DIR}" "${DPKG_PATH}"
 
       - name: "Artifact upload: tarball"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.PKG_NAME }}
           path: ${{ steps.package.outputs.PKG_PATH }}
 
       - name: "Artifact upload: WASM"
         if: matrix.job.target == 'x86_64-unknown-linux-gnu' && steps.wasm_package.outputs.WASM_PKG_NAME
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.wasm_package.outputs.WASM_PKG_NAME }}
           path: ${{ steps.wasm_package.outputs.WASM_PKG_PATH }}
 
       - name: "Artifact upload: Debian package"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: steps.debian-package.outputs.DPKG_NAME
         with:
           name: ${{ steps.debian-package.outputs.DPKG_NAME }}
