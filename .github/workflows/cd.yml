@@ -171,11 +171,11 @@ jobs:
         run: |
           cargo install wasm-pack --version 0.13.1 --locked
           cd crates/wasm
-          wasm-pack build --target web --no-typescript -d pkg --no-pack --release
+          wasm-pack build -d pkg --release
           cd ../..
           WASM_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/wasm"
           mkdir -p "${WASM_STAGING}"
-          cp crates/wasm/pkg/mago_wasm_bg.wasm crates/wasm/pkg/mago_wasm.js "${WASM_STAGING}/"
+          cp -r crates/wasm/pkg/* "${WASM_STAGING}/"
 
       - name: create tarball (main binary)
         id: package
