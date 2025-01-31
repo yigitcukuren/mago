@@ -54,7 +54,7 @@ impl<'a> Walker<LintContext<'a>> for RedundantStringConcatRule {
                 return;
             }
 
-            let dangerous = matches!(context.interner.lookup(&right.value)[1..].as_bytes(), [b'{', ..]);
+            let dangerous = matches!(&context.interner.lookup(&right.value).as_bytes()[1..], [b'{', ..]);
             if dangerous {
                 // $a = "\u" . "{1F418}";
                 // $b = "\u{1F418}";

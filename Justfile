@@ -11,9 +11,9 @@ build-wasm:
 
 # detect linting problems.
 lint:
-    cargo fmt --all -- --check --unstable-features
-    cargo clippy --workspace --all-targets --all-features -- -D warnings
-    cargo check --workspace --locked
+    cargo +nightly fmt --all -- --check --unstable-features
+    cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings
+    cargo +nightly check --workspace --locked
 
 # fix linting problems.
 fix:

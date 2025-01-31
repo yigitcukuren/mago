@@ -64,7 +64,7 @@ impl Semantics {
     /// # Parameters
     ///
     /// - `interner`: A reference to a `ThreadedInterner` used for string interning, which helps in
-    ///               efficiently handling string comparisons and memory usage.
+    ///   efficiently handling string comparisons and memory usage.
     /// - `source`: The `Source` object representing the PHP source code to be analyzed.
     ///
     /// # Returns
