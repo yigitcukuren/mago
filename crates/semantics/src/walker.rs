@@ -4159,7 +4159,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         function_like_parameter: &FunctionLikeParameter,
         context: &mut Context<'_>,
     ) {
-        if function_like_parameter.is_promoted_property() || !context.version.is_supported(Feature::PromotedProperties)
+        if function_like_parameter.is_promoted_property() && !context.version.is_supported(Feature::PromotedProperties)
         {
             context.report(
                 Issue::error("Promoted properties are only available in PHP 8.0 and above.").with_annotation(
