@@ -1512,7 +1512,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mago"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1553,7 +1553,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-interner",
  "mago-php-version",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1575,14 +1575,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "serde",
@@ -1591,7 +1591,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1612,7 +1612,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1631,7 +1631,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "criterion",
  "lasso",
@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1654,7 +1654,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "indoc",
@@ -1682,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1695,7 +1695,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "either",
  "mago-ast",
@@ -1715,7 +1715,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1723,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1737,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1755,7 +1755,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "blake3",
@@ -1772,7 +1772,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1791,7 +1791,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "dashmap",
  "mago-interner",
@@ -1801,7 +1801,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-source",
  "serde",
@@ -1809,7 +1809,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1822,7 +1822,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1832,14 +1832,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "serde",
  "strum",
@@ -1847,7 +1847,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1862,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1870,7 +1870,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
@@ -2911,9 +2911,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.96"
+version = "2.0.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
+checksum = "5dabd04e3b9a8c3c03d5e743f5ef5e1207befc9de704d477f7198cc28049763e"
 dependencies = [
  "proc-macro2",
  "quote",
