@@ -218,7 +218,9 @@ impl PHPVersion {
             | Feature::MixedTypeHint
             | Feature::MatchExpression
             | Feature::NullSafeOperator
-            | Feature::TrailingCommaInClosureUseList => self.0 >= 0x08_00_00,
+            | Feature::TrailingCommaInClosureUseList
+            | Feature::FalseCompoundTypeHint
+            | Feature::NullCompoundTypeHint => self.0 >= 0x08_00_00,
             Feature::FinalConstants
             | Feature::ReadonlyProperties
             | Feature::Enums

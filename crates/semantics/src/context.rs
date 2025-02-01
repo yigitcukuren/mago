@@ -18,11 +18,12 @@ pub struct Context<'a> {
     names: &'a Names,
     issues: IssueCollection,
     ancestors: Vec<Span>,
+    pub hint_depth: usize,
 }
 
 impl<'a> Context<'a> {
     pub fn new(interner: &'a ThreadedInterner, version: PHPVersion, program: &'a Program, names: &'a Names) -> Self {
-        Self { interner, version, program, names, issues: IssueCollection::default(), ancestors: vec![] }
+        Self { interner, version, program, names, issues: IssueCollection::default(), ancestors: vec![], hint_depth: 0 }
     }
 
     pub fn program(&self) -> Node<'a> {

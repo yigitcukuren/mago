@@ -2114,6 +2114,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_hint(&self, hint: &Hint, context: &mut Context<'_>) {
+        context.hint_depth += 1;
+
         match hint {
             Hint::Parenthesized(parenthesized_hint) => {
                 if !parenthesized_hint.hint.is_parenthesizable() {
@@ -2250,18 +2252,36 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         .with_help("Upgrade to PHP 8.2 or above to use the `true` type hint."),
                 );
             }
-            Hint::False(hint) if !context.version.is_supported(Feature::FalseTypeHint) => {
+            Hint::False(hint) if context.hint_depth == 1 && !context.version.is_supported(Feature::FalseTypeHint) => {
                 context.report(
                     Issue::error("The `false` type hint is only available in PHP 8.2 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`false` type hint used here."))
                         .with_help("Upgrade to PHP 8.2 or above to use the `false` type hint."),
                 );
             }
-            Hint::Null(hint) if !context.version.is_supported(Feature::NullTypeHint) => {
+            Hint::False(hint)
+                if context.hint_depth != 1 && !context.version.is_supported(Feature::FalseCompoundTypeHint) =>
+            {
+                context.report(
+                    Issue::error("The compound `false` type hint is only available in PHP 8.0 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`false` type hint used here."))
+                        .with_help("Upgrade to PHP 8.0 or above to use the `false` type hint."),
+                );
+            }
+            Hint::Null(hint) if context.hint_depth == 1 && !context.version.is_supported(Feature::NullTypeHint) => {
                 context.report(
                     Issue::error("The `null` type hint is only available in PHP 8.2 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`null` type hint used here."))
                         .with_help("Upgrade to PHP 8.2 or above to use the `null` type hint."),
+                );
+            }
+            Hint::Null(hint)
+                if context.hint_depth != 1 && !context.version.is_supported(Feature::NullCompoundTypeHint) =>
+            {
+                context.report(
+                    Issue::error("The compound `null` type hint is only available in PHP 8.0 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`null` type hint used here."))
+                        .with_help("Upgrade to PHP 8.0 or above to use the `null` type hint."),
                 );
             }
             Hint::Iterable(hint) if !context.version.is_supported(Feature::IterableTypeHint) => {
@@ -2315,6 +2335,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
             Issue::error("Disjunctive Normal Form (DNF) types are only available in PHP 8.2 and above.")
                 .with_annotation(Annotation::primary(hint.span()).with_message("DNF type used here.")),
         );
+    }
+
+    fn walk_out_hint(&self, _hint: &Hint, context: &mut Context<'_>) {
+        context.hint_depth -= 1;
     }
 
     fn walk_in_try(&self, r#try: &Try, context: &mut Context<'_>) {
