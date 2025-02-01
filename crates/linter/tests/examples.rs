@@ -6,8 +6,7 @@ use mago_linter::settings::Settings;
 use mago_linter::Linter;
 use mago_php_version::PHPVersion;
 use mago_semantics::Semantics;
-use mago_source::SourceCategory::UserDefined;
-use mago_source::SourceManager;
+use mago_source::Source;
 
 pub mod plugins;
 
@@ -30,7 +29,6 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     let definition = rule.get_definition();
 
     let interner = ThreadedInterner::new();
-    let source_manager = SourceManager::new(interner.clone());
 
     let mut rule_settings = RuleSettings::enabled();
     for (option, value) in usage_example.options.iter() {
@@ -38,12 +36,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     }
 
     let source_name = format!("{}.php", definition.get_slug());
-    let source_id = source_manager.insert_content(source_name, usage_example.snippet.to_string(), UserDefined);
-    let source = source_manager.load(&source_id).unwrap();
-
-    let semantics = Semantics::build(&interner, source);
-    let source = source_manager.load(&source_id).unwrap();
-    let reflection = mago_reflector::reflect(&interner, &source, &semantics.program, &semantics.names);
+    let source = Source::standalone(&interner, &source_name, usage_example.snippet);
 
     let mut php_version = PHPVersion::PHP84;
     if let Some(version) = rule.get_definition().maximum_supported_php_version {
@@ -53,12 +46,15 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
         php_version = version;
     }
 
+    let semantics = Semantics::build(&interner, php_version, source);
+    let reflection = mago_reflector::reflect(&interner, &semantics.source, &semantics.program, &semantics.names);
+
     let settings = Settings::new(php_version).with_rule(format!("test/{}", definition.get_slug()), rule_settings);
     let mut linter = Linter::new(settings, interner.clone(), reflection);
 
     linter.add_rule("test", rule);
 
-    let issues = linter.lint(&Semantics::build(&interner, source));
+    let issues = linter.lint(&semantics);
 
     if usage_example.valid {
         assert!(

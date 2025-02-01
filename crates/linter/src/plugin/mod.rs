@@ -6,7 +6,6 @@ use crate::rule::Rule;
 pub mod analysis;
 pub mod best_practices;
 pub mod comment;
-pub mod compatibility;
 pub mod consistency;
 pub mod deprecation;
 pub mod laravel;
@@ -26,7 +25,6 @@ macro_rules! foreach_plugin {
         $do($crate::plugin::analysis::AnalysisPlugin);
         $do($crate::plugin::best_practices::BestPracticesPlugin);
         $do($crate::plugin::comment::CommentPlugin);
-        $do($crate::plugin::compatibility::CompatibilityPlugin);
         $do($crate::plugin::consistency::ConsistencyPlugin);
         $do($crate::plugin::deprecation::DeprecationPlugin);
         $do($crate::plugin::laravel::LaravelPlugin);
