@@ -172,20 +172,41 @@ final class InstallMagoBinaryCommand extends BaseCommand
     private function detectPlatformInfo(ProcessExecutor $process_executor, string $version): array
     {
         $arch_name = strtolower(php_uname('m'));
-        $arch = match ($arch_name) {
-            'x86_64', 'amd64' => 'x86_64',
-            'arm64', 'aarch64' => 'aarch64',
-            'armv7l' => 'armv7',
-            'i386', 'i486', 'i586', 'i686' => 'i686',
-            'ppc' => 'powerpc',
-            'ppc64' => 'powerpc64',
-            'ppc64le' => 'powerpc64le',
-            's390x' => 's390x',
-            default
-                => throw new \RuntimeException(
-                "Unsupported machine architecture: {$arch_name}. Please open an issue on GitHub.",
-            ),
-        };
+        switch ($arch_name) {
+            case 'x86_64':
+            case 'amd64':
+                $arch = 'x86_64';
+                break;
+            case 'arm64':
+            case 'aarch64':
+                $arch = 'aarch64';
+                break;
+            case 'armv7l':
+                $arch = 'armv7';
+                break;
+            case 'i386':
+            case 'i486':
+            case 'i586':
+            case 'i686':
+                $arch = 'i686';
+                break;
+            case 'ppc':
+                $arch = 'powerpc';
+                break;
+            case 'ppc64':
+                $arch = 'powerpc64';
+                break;
+            case 'ppc64le':
+                $arch = 'powerpc64le';
+                break;
+            case 's390x':
+                $arch = 's390x';
+                break;
+            default:
+                throw new \RuntimeException(
+                    "Unsupported machine architecture: {$arch_name}. Please open an issue on GitHub.",
+                );
+        }
 
         $os = strtolower(php_uname('s'));
         $vendor = 'unknown';

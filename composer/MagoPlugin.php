@@ -90,12 +90,17 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
     private function isMagoPackageEvent(PackageEvent $event): bool
     {
         $operation = $event->getOperation();
-        $package = match (true) {
-            $operation instanceof UpdateOperation => $operation->getTargetPackage(),
-            $operation instanceof InstallOperation => $operation->getPackage(),
-            default => null,
-        };
+        $package = null;
+        if ($operation instanceof UpdateOperation) {
+            $package = $operation->getTargetPackage();
+        } elseif ($operation instanceof InstallOperation) {
+            $package = $operation->getPackage();
+        }
 
-        return self::PACKAGE_NAME === $package?->getName();
+        if ($package === null) {
+            return false;
+        }
+
+        return self::PACKAGE_NAME === $package->getName();
     }
 }
