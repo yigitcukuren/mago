@@ -203,9 +203,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
                 $arch = 's390x';
                 break;
             default:
-                throw new \RuntimeException(
-                    "Unsupported machine architecture: {$arch_name}. Please open an issue on GitHub.",
-                );
+                throw new \RuntimeException("Unsupported machine architecture: {$arch_name}. Please open an issue on GitHub.");
         }
 
         $os = strtolower(php_uname('s'));
