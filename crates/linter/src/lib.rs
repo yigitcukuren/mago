@@ -121,14 +121,14 @@ impl Linter {
 
         let settings = self.settings.get_rule_settings(slug.as_str());
         if !rule_definition.supports_php_version(self.settings.php_version) {
-            tracing::info!("Rule `{slug}` does not support PHP version `{}`.", self.settings.php_version);
+            tracing::debug!("Rule `{slug}` does not support PHP version `{}`.", self.settings.php_version);
 
             if let Some(version) = rule_definition.minimum_supported_php_version {
-                tracing::info!("Rule `{slug}` requires PHP >= `{version}`.");
+                tracing::debug!("Rule `{slug}` requires PHP >= `{version}`.");
             }
 
             if let Some(version) = rule_definition.maximum_supported_php_version {
-                tracing::info!("Rule `{slug}` requires PHP < `{version}`.");
+                tracing::debug!("Rule `{slug}` requires PHP < `{version}`.");
             }
 
             if settings.is_some() {
