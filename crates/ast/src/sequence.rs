@@ -154,6 +154,10 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
         self.tokens.last().is_some_and(|token| token.span.start >= self.last_span().unwrap().end)
     }
 
+    pub fn get_trailing_token(&self) -> Option<&Token> {
+        self.tokens.last().filter(|token| token.span.start >= self.last_span().unwrap().end)
+    }
+
     pub fn iter(&self) -> Iter<'_, T> {
         self.inner.iter()
     }

@@ -3,6 +3,7 @@
 use mago_ast::ast::*;
 use mago_ast::*;
 use mago_interner::StringIdentifier;
+use mago_php_version::feature::Feature;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_span::Span;
@@ -526,7 +527,7 @@ impl SemanticsWalker {
                         let item_name_id = property_concrete_item.variable.name;
                         let item_name = context.interner.lookup(&item_name_id);
 
-                        if !property_concrete_item.value.is_constant(false) {
+                        if !property_concrete_item.value.is_constant(context.version, false) {
                             context.report(
                                 Issue::error(format!(
                                     "Property `{}::{}` value contains a non-constant expression.",
@@ -1777,7 +1778,7 @@ impl SemanticsWalker {
         for item in class_like_constant.items.iter() {
             let item_name = context.interner.lookup(&item.name.value);
 
-            if !item.value.is_constant(false) {
+            if !item.value.is_constant(context.version, false) {
                 context.report(
                     Issue::error(format!(
                         "Constant `{}::{}` value contains a non-constant expression.",
@@ -2134,6 +2135,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
             }
             Hint::Nullable(nullable_hint) => {
+                if !context.version.is_supported(Feature::NullableTypeHint) {
+                    context.report(
+                        Issue::error("The `?` nullable type hint is only available in PHP 7.1 and above.")
+                            .with_annotation(
+                                Annotation::primary(hint.span()).with_message("`?` nullable type hint used here."),
+                            )
+                            .with_help("Upgrade to PHP 7.1 or above to use the `?` nullable type hint."),
+                    );
+                }
+
                 if nullable_hint.hint.is_standalone() || nullable_hint.hint.is_complex() {
                     let val = context.lookup_hint(&nullable_hint.hint);
 
@@ -2183,6 +2194,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
             }
             Hint::Intersection(intersection_hint) => {
+                if !context.version.is_supported(Feature::PureIntersectionTypes) {
+                    context.report(
+                        Issue::error("Intersection types are only available in PHP 8.1 and above.")
+                            .with_annotation(
+                                Annotation::primary(intersection_hint.span()).with_message("Intersection type used here."),
+                            )
+                            .with_note(
+                                "Intersection types allow combining multiple types into a single type, but are only available in PHP 8.2 and above.",
+                            )
+                            .with_help("Upgrade to PHP 8.2 or above to use intersection types."),
+                    );
+                }
+
                 if !intersection_hint.left.is_intersectable() {
                     let val = context.lookup_hint(&intersection_hint.left);
 
@@ -2219,8 +2243,78 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
             }
+            Hint::True(hint) if !context.version.is_supported(Feature::TrueTypeHint) => {
+                context.report(
+                    Issue::error("The `true` type hint is only available in PHP 8.2 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`true` type hint used here."))
+                        .with_help("Upgrade to PHP 8.2 or above to use the `true` type hint."),
+                );
+            }
+            Hint::False(hint) if !context.version.is_supported(Feature::FalseTypeHint) => {
+                context.report(
+                    Issue::error("The `false` type hint is only available in PHP 8.2 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`false` type hint used here."))
+                        .with_help("Upgrade to PHP 8.2 or above to use the `false` type hint."),
+                );
+            }
+            Hint::Null(hint) if !context.version.is_supported(Feature::NullTypeHint) => {
+                context.report(
+                    Issue::error("The `null` type hint is only available in PHP 8.2 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`null` type hint used here."))
+                        .with_help("Upgrade to PHP 8.2 or above to use the `null` type hint."),
+                );
+            }
+            Hint::Iterable(hint) if !context.version.is_supported(Feature::IterableTypeHint) => {
+                context.report(
+                    Issue::error("The `iterable` type hint is only available in PHP 7.1 and above.")
+                        .with_annotation(
+                            Annotation::primary(hint.span()).with_message("`iterable` type hint used here."),
+                        )
+                        .with_help("Upgrade to PHP 7.1 or above to use the `iterable` type hint."),
+                );
+            }
+            Hint::Void(hint) if !context.version.is_supported(Feature::VoidTypeHint) => {
+                context.report(
+                    Issue::error("The `void` type hint is only available in PHP 7.1 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`void` type hint used here."))
+                        .with_help("Upgrade to PHP 7.1 or above to use the `void` type hint."),
+                );
+            }
+            Hint::Mixed(hint) if !context.version.is_supported(Feature::MixedTypeHint) => {
+                context.report(
+                    Issue::error("The `mixed` type hint is only available in PHP 8.0 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`mixed` type hint used here."))
+                        .with_help("Upgrade to PHP 8.0 or above to use the `mixed` type hint."),
+                );
+            }
+            Hint::Never(hint) if !context.version.is_supported(Feature::NeverTypeHint) => {
+                context.report(
+                    Issue::error("The `never` type hint is only available in PHP 8.1 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("`never` type hint used here."))
+                        .with_help("Upgrade to PHP 8.1 or above to use the `never` type hint."),
+                );
+            }
             _ => {}
         }
+
+        if context.version.is_supported(Feature::DisjunctiveNormalForm) {
+            return;
+        }
+
+        let is_dnf = match hint {
+            Hint::Intersection(inter) if inter.left.is_union() || inter.right.is_union() => true,
+            Hint::Union(union) if union.left.is_intersection() || union.right.is_intersection() => true,
+            _ => false,
+        };
+
+        if !is_dnf {
+            return;
+        }
+
+        context.report(
+            Issue::error("Disjunctive Normal Form (DNF) types are only available in PHP 8.2 and above.")
+                .with_annotation(Annotation::primary(hint.span()).with_message("DNF type used here.")),
+        );
     }
 
     fn walk_in_try(&self, r#try: &Try, context: &mut Context<'_>) {
@@ -2429,6 +2523,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     last_readonly = Some(keyword.span);
                 }
+            }
+        }
+
+        if !context.version.is_supported(Feature::ReadonlyClasses) {
+            if let Some(modifier) = last_readonly {
+                let issue = Issue::error("Readonly classes are only available in PHP 8.2 and above.")
+                    .with_annotation(Annotation::primary(modifier.span()).with_message("Readonly modifier used here."));
+
+                context.report(issue);
             }
         }
 
@@ -2949,6 +3052,20 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Constant(class_like_constant) => {
+                    if !context.version.is_supported(Feature::ConstantsInTraits) {
+                        context.report(
+                            Issue::error("Constants in traits are only available in PHP 8.2 and above.")
+                                .with_annotation(
+                                    Annotation::primary(class_like_constant.span())
+                                        .with_message("Constant defined in trait."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(r#trait.span())
+                                        .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                                ),
+                        );
+                    }
+
                     self.process_class_like_constant(
                         class_like_constant,
                         r#trait.span(),
@@ -2964,6 +3081,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_enum(&self, r#enum: &Enum, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::Enums) {
+            context.report(
+                Issue::error("Enums are only available in PHP 8.1 and above.")
+                    .with_annotation(Annotation::primary(r#enum.span()).with_message("Enum defined here.")),
+            );
+        }
+
         let enum_name = context.interner.lookup(&r#enum.name.value);
         let enum_fqcn = context.lookup_name(&r#enum.name.span.start);
         let enum_is_backed = r#enum.backing_type_hint.is_some();
@@ -3233,6 +3357,21 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     last_readonly = Some(keyword.span);
+
+                    if !context.version.is_supported(Feature::ReadonlyAnonymousClasses) {
+                        context.report(
+                            Issue::error("Readonly anonymous classes are only available in PHP 8.3 and above.")
+                                .with_annotation(
+                                    Annotation::primary(keyword.span).with_message("Readonly modifier used here."),
+                                )
+                                .with_annotation(
+                                    Annotation::secondary(anonymous_class.span()).with_message(format!(
+                                        "Anonymous class `{}` defined here.",
+                                        ANONYMOUS_CLASS_NAME
+                                    )),
+                                ),
+                        );
+                    }
                 }
             }
         }
@@ -3413,6 +3552,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_attribute(&self, attribute: &Attribute, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::Attribute) {
+            context.report(
+                Issue::error("Attributes are only available in PHP 8.0 and above.")
+                    .with_annotation(Annotation::primary(attribute.span()).with_message("Attribute defined here."))
+                    .with_help("Upgrade to PHP 8.0 or above to use attributes."),
+            );
+        }
+
         let name = context.interner.lookup(&attribute.name.value());
         if let Some(list) = &attribute.arguments {
             for argument in list.arguments.iter() {
@@ -3437,7 +3584,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
 
-                if !value.is_constant(true) {
+                if !value.is_constant(context.version, true) {
                     context.report(
                         Issue::error(format!("Attribute `{}` argument contains a non-constant expression.", name))
                             .with_annotations([
@@ -3568,6 +3715,20 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
             }
         }
+
+        if !context.version.is_supported(Feature::TrailingCommaInFunctionCalls) {
+            if let Some(last_comma) = argument_list.arguments.get_trailing_token() {
+                context.report(
+                    Issue::error("Trailing comma in function calls is only available in PHP 7.3 and later.")
+                        .with_annotation(
+                            Annotation::primary(last_comma.span).with_message("Trailing comma found here."),
+                        )
+                        .with_help(
+                            "Remove the trailing comma to make the code compatible with PHP 7.2 and earlier versions, or upgrade to PHP 7.3 or later.",
+                        )
+                );
+            }
+        }
     }
 
     fn walk_in_closure(&self, closure: &Closure, context: &mut Context<'_>) {
@@ -3637,9 +3798,38 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             _ => {}
         }
+
+        if !context.version.is_supported(Feature::TrailingCommaInClosureUseList) {
+            let Some(use_clause) = &closure.use_clause else {
+                return;
+            };
+
+            let Some(trailing_comma) = use_clause.variables.get_trailing_token() else {
+                return;
+            };
+
+            context.report(
+                Issue::error("Trailing comma in closure use list is only available in PHP 8.0 and later.")
+                    .with_annotation(
+                        Annotation::primary(trailing_comma.span).with_message("Trailing comma found here."),
+                    )
+                    .with_help(
+                        "Remove the trailing comma to make the code compatible with PHP 7.4 and earlier versions, or upgrade to PHP 8.0 or later.",
+                    )
+            );
+        }
     }
 
     fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::ArrowFunctions) {
+            let issue = Issue::error("The `fn` keyword for arrow functions is only available in PHP 7.4 and later.")
+                .with_annotation(
+                    Annotation::primary(arrow_function.span()).with_message("Arrow function uses `fn` keyword."),
+                );
+
+            context.report(issue);
+        }
+
         self.process_promoted_properties_outside_constructor(&arrow_function.parameter_list, context);
 
         if let Some(return_hint) = &arrow_function.return_type_hint {
@@ -3648,19 +3838,37 @@ impl Walker<Context<'_>> for SemanticsWalker {
             // not return a value, in the case it throws or exits the process.
             //
             // see: https://3v4l.org/VgoiO
-            if let Hint::Void(_) = &return_hint.hint {
-                context.report(
-                    Issue::error("Arrow function cannot have a return type of `void`.")
+            match &return_hint.hint {
+                Hint::Void(_) => {
+                    context.report(
+                        Issue::error("Arrow function cannot have a return type of `void`.")
+                            .with_annotation(
+                                Annotation::primary(return_hint.hint.span())
+                                    .with_message("Return type `void` is not valid for an arrow function."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(arrow_function.r#fn.span)
+                                    .with_message("Arrow function defined here."),
+                            )
+                            .with_help("Remove the `void` return type hint, or replace it with a valid type."),
+                    );
+                }
+                Hint::Never(_) if !context.version.is_supported(Feature::NeverReturnTypeInArrowFunction) => {
+                    context.report(
+                        Issue::error(
+                            "The `never` return type in arrow functions is only available in PHP 8.2 and later.",
+                        )
                         .with_annotation(
                             Annotation::primary(return_hint.hint.span())
-                                .with_message("Return type `void` is not valid for an arrow function."),
+                                .with_message("Return type `never` is not valid for an arrow function."),
                         )
                         .with_annotation(
                             Annotation::secondary(arrow_function.r#fn.span)
                                 .with_message("Arrow function defined here."),
-                        )
-                        .with_help("Remove the `void` return type hint, or replace it with a valid type."),
-                );
+                        ),
+                    );
+                }
+                _ => {}
             }
         }
     }
@@ -3853,6 +4061,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_match(&self, r#match: &Match, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::MatchExpression) {
+            context.report(
+                Issue::error("Match expressions are only available in PHP 8.0 and above.")
+                    .with_annotation(Annotation::primary(r#match.span()).with_message("Match expression defined here."))
+                    .with_help("Upgrade to PHP 8.0 or above to use match expressions."),
+            );
+        }
+
         let mut last_default: Option<Span> = None;
 
         for arm in r#match.arms.iter() {
@@ -3903,6 +4119,339 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
             }
         }
+    }
+
+    fn walk_in_assignment(&self, assignment: &Assignment, context: &mut Context<'_>) {
+        let AssignmentOperator::Coalesce(operator) = assignment.operator else {
+            return;
+        };
+
+        if context.version.is_supported(Feature::NullCoalesceAssign) {
+            return;
+        }
+
+        context.report(
+            Issue::error("The `??=` (null coalesce assignment) operator is only available in PHP 7.4 and later.")
+                .with_annotation(
+                    Annotation::primary(operator.span())
+                        .with_message("Null coalesce assignment operator `??=` used here."),
+                )
+                .with_note(
+                    "Use a manual check-and-assignment approach if you need compatibility with older PHP versions.",
+                )
+                .with_help("Replace `$var ??= <default>` with `$var = $var ?? <default>`."),
+        );
+    }
+
+    fn walk_in_named_argument(&self, named_argument: &NamedArgument, context: &mut Context<'_>) {
+        if context.version.is_supported(Feature::NamedArguments) {
+            return;
+        }
+
+        context.report(
+            Issue::error("Named arguments are only available in PHP 8.0 and above.")
+                .with_annotation(Annotation::primary(named_argument.span()).with_message("Named argument used here.")),
+        );
+    }
+
+    fn walk_in_function_like_parameter(
+        &self,
+        function_like_parameter: &FunctionLikeParameter,
+        context: &mut Context<'_>,
+    ) {
+        if function_like_parameter.is_promoted_property() || !context.version.is_supported(Feature::PromotedProperties)
+        {
+            context.report(
+                Issue::error("Promoted properties are only available in PHP 8.0 and above.").with_annotation(
+                    Annotation::primary(function_like_parameter.span()).with_message("Promoted property used here."),
+                ),
+            );
+        }
+
+        if !context.version.is_supported(Feature::NativeUnionTypes) {
+            if let Some(Hint::Union(union_hint)) = &function_like_parameter.hint {
+                context.report(
+                Issue::error(
+                    "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above.",
+                )
+                .with_annotation(Annotation::primary(union_hint.span()).with_message("Union type hint used here."))
+                .with_note(
+                    "Union type hints are only available in PHP 8.0 and above. Consider using a different approach.",
+                ),
+            );
+            }
+        }
+    }
+
+    fn walk_in_function_like_return_type_hint(
+        &self,
+        function_like_return_type_hint: &FunctionLikeReturnTypeHint,
+        context: &mut Context<'_>,
+    ) {
+        match &function_like_return_type_hint.hint {
+            Hint::Union(union_hint) if !context.version.is_supported(Feature::NativeUnionTypes) => {
+                context.report(
+                    Issue::error(
+                        "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above."
+                    )
+                    .with_annotation(Annotation::primary(union_hint.span()).with_message("Union type hint used here."))
+                    .with_note(
+                        "Union type hints are only available in PHP 8.0 and above. Consider using a different approach.",
+                    )
+                    .with_help("Remove the union type hint to make the code compatible with PHP 7.4 and earlier versions, or upgrade to PHP 8.0 or later."),
+                );
+            }
+            Hint::Static(r#static) if !context.version.is_supported(Feature::StaticReturnTypeHint) => {
+                context.report(
+                    Issue::error("Static return type hints are only available in PHP 8.0 and above.").with_annotation(
+                        Annotation::primary(r#static.span()).with_message("Static return type hint used here."),
+                    )
+                    .with_help("Remove the static return type hint to make the code compatible with PHP 7.4 and earlier versions, or upgrade to PHP 8.0 or later."),
+                );
+            }
+            _ => {}
+        }
+    }
+
+    fn walk_in_property(&self, property: &Property, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::ReadonlyProperties) {
+            if let Some(readonly) = property.modifiers().get_readonly() {
+                context.report(
+                    Issue::error("Readonly properties are only available in PHP 8.1 and above.").with_annotation(
+                        Annotation::primary(readonly.span()).with_message("Readonly modifier used here."),
+                    ),
+                );
+            }
+        }
+
+        if !context.version.is_supported(Feature::TypedProperties) {
+            if let Some(hint) = property.hint() {
+                context.report(
+                    Issue::error("Typed properties are only available in PHP 7.4 and above.")
+                        .with_annotation(Annotation::primary(hint.span()).with_message("Type hint used here."))
+                        .with_help("Remove the type hint to make the code compatible with PHP 7.3 and earlier versions, or upgrade to PHP 7.4 or later."),
+                );
+            }
+        }
+    }
+
+    fn walk_in_plain_property(&self, plain_property: &PlainProperty, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::AsymmetricVisibility) {
+            if let Some(write_visibility) = plain_property.modifiers.get_first_write_visibility() {
+                context.report(
+                    Issue::error("Asymmetric visibility is only available in PHP 8.4 and above.").with_annotation(
+                        Annotation::primary(write_visibility.span()).with_message("Asymmetric visibility used here."),
+                    ),
+                );
+            };
+        }
+
+        if !context.version.is_supported(Feature::NativeUnionTypes) {
+            if let Some(Hint::Union(union_hint)) = &plain_property.hint {
+                context.report(
+                    Issue::error(
+                        "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above.",
+                    )
+                    .with_annotation(Annotation::primary(union_hint.span()).with_message("Union type hint used here."))
+                    .with_note(
+                        "Union type hints are only available in PHP 8.0 and above. Consider using a different approach.",
+                    ),
+                );
+            }
+        }
+    }
+
+    fn walk_in_hooked_property(&self, hooked_property: &HookedProperty, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::PropertyHooks) {
+            let issue = Issue::error("Hooked properties are only available in PHP 8.4 and above.").with_annotation(
+                Annotation::primary(hooked_property.span()).with_message("Hooked property declaration used here."),
+            );
+
+            context.report(issue);
+        }
+    }
+
+    fn walk_in_closure_creation(&self, closure_creation: &ClosureCreation, context: &mut Context<'_>) {
+        if context.version.is_supported(Feature::ClosureCreation) {
+            return;
+        }
+
+        context.report(
+            Issue::error("The closure creation syntax is only available in PHP 8.1 and above.").with_annotation(
+                Annotation::primary(closure_creation.span()).with_message("Closure creation syntax used here."),
+            ),
+        );
+    }
+
+    fn walk_in_class_like_constant(&self, class_like_constant: &ClassLikeConstant, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::TypedClassLikeConstants) {
+            let Some(type_hint) = &class_like_constant.hint else {
+                return;
+            };
+
+            context.report(
+                Issue::error("Typed class constants are only available in PHP 8.3 and above.")
+                    .with_annotation(Annotation::primary(type_hint.span()).with_message("Type hint used here.")),
+            );
+        }
+
+        if !context.version.is_supported(Feature::FinalConstants) {
+            if let Some(modifier) = class_like_constant.modifiers.get_final() {
+                context.report(
+                    Issue::error("Final class constants are only available in PHP 8.1 and above.").with_annotation(
+                        Annotation::primary(modifier.span()).with_message("Final modifier used here."),
+                    ),
+                );
+            }
+        }
+
+        if !context.version.is_supported(Feature::ClassLikeConstantVisibilityModifiers) {
+            if let Some(visibility) = class_like_constant.modifiers.get_first_visibility() {
+                context.report(
+                    Issue::error("Visibility modifiers for class constants are only available in PHP 7.1 and above.")
+                        .with_annotation(
+                            Annotation::primary(visibility.span()).with_message("Visibility modifier used here."),
+                        ),
+                );
+            }
+        }
+    }
+
+    fn walk_in_list(&self, list: &List, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::TrailingCommaInListSyntax) {
+            if let Some(token) = list.elements.get_trailing_token() {
+                context.report(
+                    Issue::error("Trailing comma in list syntax is only available in PHP 7.2 and above.")
+                        .with_annotation(Annotation::primary(token.span).with_message("Trailing comma used here."))
+                        .with_help("Upgrade to PHP 7.2 or later to use trailing commas in list syntax."),
+                );
+            }
+        }
+
+        if !context.version.is_supported(Feature::ListReferenceAssignment) {
+            for element in list.elements.iter() {
+                let value = match element {
+                    ArrayElement::KeyValue(kv) => kv.value.as_ref(),
+                    ArrayElement::Value(v) => v.value.as_ref(),
+                    _ => continue,
+                };
+
+                if let Expression::UnaryPrefix(UnaryPrefix {
+                    operator: UnaryPrefixOperator::Reference(reference),
+                    ..
+                }) = value
+                {
+                    context.report(
+                        Issue::error("Reference assignment in list syntax is only available in PHP 7.3 and above.")
+                            .with_annotation(
+                                Annotation::primary(reference.span()).with_message("Reference assignment used here."),
+                            )
+                            .with_help("Upgrade to PHP 7.3 or later to use reference assignment in list syntax."),
+                    );
+                }
+            }
+        }
+    }
+
+    fn walk_in_method_call(&self, method_call: &MethodCall, context: &mut Context<'_>) {
+        check_for_new_without_parenthesis(&method_call.object, context, "method call");
+    }
+
+    fn walk_in_null_safe_method_call(&self, null_safe_call: &NullSafeMethodCall, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::NullSafeOperator) {
+            context.report(
+                Issue::error("Nullsafe operator is available in PHP 8.0 and above.")
+                    .with_annotation(
+                        Annotation::primary(null_safe_call.question_mark_arrow)
+                            .with_message("Nullsafe operator used here."),
+                    )
+                    .with_help("Upgrade to PHP 8.0 or later to use nullsafe method calls."),
+            );
+        }
+
+        check_for_new_without_parenthesis(&null_safe_call.object, context, "nullsafe method call");
+    }
+
+    fn walk_in_property_access(&self, property_access: &PropertyAccess, context: &mut Context<'_>) {
+        check_for_new_without_parenthesis(&property_access.object, context, "property access");
+    }
+
+    fn walk_in_null_safe_property_access(&self, null_safe_access: &NullSafePropertyAccess, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::NullSafeOperator) {
+            context.report(
+                Issue::error("Nullsafe operator is available in PHP 8.0 and above.")
+                    .with_annotation(
+                        Annotation::primary(null_safe_access.question_mark_arrow)
+                            .with_message("Nullsafe operator used here."),
+                    )
+                    .with_help("Upgrade to PHP 8.0 or later to use nullsafe method calls."),
+            );
+        }
+
+        check_for_new_without_parenthesis(&null_safe_access.object, context, "nullsafe property access");
+    }
+
+    fn walk_in_unary_prefix_operator(&self, unary_prefix_operator: &UnaryPrefixOperator, context: &mut Context<'_>) {
+        if !context.version.is_supported(Feature::UnsetCast) {
+            if let UnaryPrefixOperator::UnsetCast(span, _) = unary_prefix_operator {
+                context.report(
+                    Issue::error("The `unset` cast is no longer supported in PHP 8.0 and later.")
+                        .with_annotation(Annotation::primary(*span).with_message("Unset cast used here.")),
+                );
+            }
+        }
+    }
+
+    fn walk_in_literal_expression(&self, literal_expression: &Literal, context: &mut Context<'_>) {
+        if context.version.is_supported(Feature::NumericLiteralSeparator) {
+            return;
+        }
+
+        let value = match literal_expression {
+            Literal::Integer(literal_integer) => &literal_integer.raw,
+            Literal::Float(literal_float) => &literal_float.raw,
+            _ => return,
+        };
+
+        if context.interner.lookup(value).contains('_') {
+            context.report(
+                Issue::error("Numeric literal separators are only available in PHP 7.4 and later.")
+                    .with_annotation(Annotation::primary(literal_expression.span()).with_message("Numeric literal used here."))
+                    .with_help("Remove the underscore separators to make the code compatible with PHP 7.3 and earlier versions, or upgrade to PHP 7.4 or later."),
+            );
+        }
+    }
+
+    fn walk_in_class_constant_access(&self, class_constant_access: &ClassConstantAccess, context: &mut Context<'_>) {
+        if context.version.is_supported(Feature::AccessClassOnObject) {
+            return;
+        }
+
+        // If the class is an identifier, static, self, or parent, it's fine.
+        if let Expression::Identifier(_) | Expression::Static(_) | Expression::Self_(_) | Expression::Parent(_) =
+            class_constant_access.class.as_ref()
+        {
+            return;
+        }
+
+        // If the constant is not an identifier, we don't care.
+        let ClassLikeConstantSelector::Identifier(local_identifier) = &class_constant_access.constant else {
+            return;
+        };
+
+        // If the constant is not `class`, we don't care.
+        let value = context.interner.lookup(&local_identifier.value);
+        if !value.eq_ignore_ascii_case("class") {
+            return;
+        }
+
+        context.report(
+            Issue::error("Accessing the `class` constant on an object is only available in PHP 8.0 and above.")
+                .with_annotation(
+                    Annotation::primary(class_constant_access.span()).with_message("`class` constant used here."),
+                )
+                .with_help("Use `get_class($object)` instead to make the code compatible with PHP 7.4 and earlier versions, or upgrade to PHP 8.0 or later."),
+        );
     }
 }
 
@@ -3961,4 +4510,25 @@ fn hint_contains_generator(context: &mut Context<'_>, hint: &Hint) -> bool {
         }
         _ => false,
     }
+}
+
+#[inline]
+fn check_for_new_without_parenthesis(object_expr: &Expression, context: &mut Context<'_>, operation: &str) {
+    if context.version.is_supported(Feature::NewWithoutParentheses) {
+        return;
+    }
+
+    let Expression::Instantiation(instantiation) = object_expr else {
+        return;
+    };
+
+    context.report(
+        Issue::error(format!(
+            "Direct {operation} on `new` expressions without parentheses is only available in PHP 8.4 and above."
+        ))
+        .with_annotation(
+            Annotation::primary(instantiation.span())
+                .with_message(format!("Unparenthesized `new` expression used for {operation}.")),
+        ),
+    );
 }

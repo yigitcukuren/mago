@@ -8,6 +8,7 @@ use mago_interner::ThreadedInterner;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
 use mago_linter::Linter;
+use mago_php_version::PHPVersion;
 use mago_reflection::CodebaseReflection;
 use mago_reflector::reflect;
 use mago_reporting::reporter::Reporter;
@@ -121,7 +122,7 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
     };
 
     let mut issues = if command.semantics_only {
-        check_sources(&interner, &source_manager).await?
+        check_sources(&interner, &source_manager, configuration.php_version).await?
     } else {
         lint_sources(&interner, &source_manager, &configuration).await?
     };
@@ -361,6 +362,7 @@ pub(super) async fn lint_sources(
     configuration: &Configuration,
 ) -> Result<IssueCollection, Error> {
     // Collect all user-defined sources.
+    let php_version = configuration.php_version;
     let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();
     let length = sources.len();
 
@@ -377,7 +379,7 @@ pub(super) async fn lint_sources(
                 // Step 1: load the source
                 let source = manager.load(&source_id)?;
                 // Step 2: build semantics
-                let semantics = Semantics::build(&interner, source);
+                let semantics = Semantics::build(&interner, php_version, source);
                 let reflections = reflect(&interner, &semantics.source, &semantics.program, &semantics.names);
                 progress_bar.inc(1);
 
@@ -434,6 +436,7 @@ pub(super) async fn lint_sources(
 pub(super) async fn check_sources(
     interner: &ThreadedInterner,
     manager: &SourceManager,
+    php_version: PHPVersion,
 ) -> Result<IssueCollection, Error> {
     // Collect all user-defined sources.
     let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined).collect();
@@ -449,7 +452,7 @@ pub(super) async fn check_sources(
 
             async move {
                 let source = manager.load(&source_id)?;
-                let semantics = Semantics::build(&interner, source);
+                let semantics = Semantics::build(&interner, php_version, source);
                 progress_bar.inc(1);
 
                 Result::<_, Error>::Ok(semantics)

@@ -15,6 +15,7 @@ workspace = true
 [dependencies]
 mago-source = { workspace = true }
 mago-span = { workspace = true }
+mago-php-version = { workspace = true }
 mago-token = { workspace = true }
 mago-interner = { workspace = true }
 serde = { workspace = true }

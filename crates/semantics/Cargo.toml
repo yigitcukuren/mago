@@ -17,6 +17,7 @@ mago-fixer = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-parser = { workspace = true }
+mago-php-version = { workspace = true }
 mago-walker = { workspace = true }
 mago-span = { workspace = true }
 mago-ast = { workspace = true }

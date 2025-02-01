@@ -23,6 +23,7 @@ use mago_ast::Program;
 use mago_interner::ThreadedInterner;
 use mago_names::Names;
 use mago_parser::error::ParseError;
+use mago_php_version::PHPVersion;
 use mago_reporting::IssueCollection;
 use mago_source::Source;
 use mago_source::SourceCategory;
@@ -65,6 +66,7 @@ impl Semantics {
     ///
     /// - `interner`: A reference to a `ThreadedInterner` used for string interning, which helps in
     ///   efficiently handling string comparisons and memory usage.
+    /// - `version`: The PHP version to use for semantic analysis.
     /// - `source`: The `Source` object representing the PHP source code to be analyzed.
     ///
     /// # Returns
@@ -79,7 +81,7 @@ impl Semantics {
     /// 2. **Name Resolution**: Resolves all the names in the AST, linking identifiers to their declarations.
     /// 3. **Symbol Table Construction**: Builds a symbol table containing all the symbols (classes, functions, constants, etc.) defined in the source code.
     /// 4. **Semantic Analysis**: Checks the AST for semantic correctness, such as type checking, scope rules, etc., and collects any issues.
-    pub fn build(interner: &ThreadedInterner, source: Source) -> Self {
+    pub fn build(interner: &ThreadedInterner, version: PHPVersion, source: Source) -> Self {
         // Parse the source code into an AST.
         // The parser returns a tuple containing the AST and an optional parse error.
         let (program, parse_error) = mago_parser::parse_source(interner, &source);
@@ -90,7 +92,7 @@ impl Semantics {
 
         // Perform semantic analysis and collect issues.
         // This includes checks for type correctness, proper usage of constructs, etc.
-        let mut context = Context::new(interner, &program, &names);
+        let mut context = Context::new(interner, version, &program, &names);
         SemanticsWalker.walk_program(&program, &mut context);
         let issues = context.take_issue_collection();
 

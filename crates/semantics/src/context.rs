@@ -3,6 +3,7 @@ use mago_ast::Node;
 use mago_ast::Program;
 use mago_interner::ThreadedInterner;
 use mago_names::Names;
+use mago_php_version::PHPVersion;
 use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
 use mago_span::HasSpan;
@@ -12,6 +13,7 @@ use mago_span::Span;
 #[derive(Debug)]
 pub struct Context<'a> {
     pub interner: &'a ThreadedInterner,
+    pub version: PHPVersion,
     program: &'a Program,
     names: &'a Names,
     issues: IssueCollection,
@@ -19,8 +21,8 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(interner: &'a ThreadedInterner, program: &'a Program, names: &'a Names) -> Self {
-        Self { interner, program, names, issues: IssueCollection::default(), ancestors: vec![] }
+    pub fn new(interner: &'a ThreadedInterner, version: PHPVersion, program: &'a Program, names: &'a Names) -> Self {
+        Self { interner, version, program, names, issues: IssueCollection::default(), ancestors: vec![] }
     }
 
     pub fn program(&self) -> Node<'a> {

@@ -181,11 +181,21 @@ impl PHPVersion {
     /// ```
     pub const fn is_supported(&self, feature: Feature) -> bool {
         match feature {
+            Feature::NullableTypeHint
+            | Feature::IterableTypeHint
+            | Feature::VoidTypeHint
+            | Feature::ClassLikeConstantVisibilityModifiers => self.0 >= 0x07_01_00,
+            Feature::TrailingCommaInListSyntax
+            | Feature::ParameterTypeWidening
+            | Feature::AllUnicodeScalarCodePointsInMbSubstituteCharacter => self.0 >= 0x07_02_00,
+            Feature::ListReferenceAssignment | Feature::TrailingCommaInFunctionCalls => self.0 >= 0x07_03_00,
             Feature::NullCoalesceAssign
             | Feature::ParameterContravariance
             | Feature::ReturnCovariance
             | Feature::PregUnmatchedAsNull
-            | Feature::ArrowFunctions => self.0 >= 0x070400,
+            | Feature::ArrowFunctions
+            | Feature::NumericLiteralSeparator
+            | Feature::TypedProperties => self.0 >= 0x070400,
             Feature::NonCapturingCatches
             | Feature::NativeUnionTypes
             | Feature::LessOverridenParametersWithVariadic
@@ -201,7 +211,44 @@ impl PHPVersion {
             | Feature::WarnsAboutFinalPrivateMethods
             | Feature::CastsNumbersToStringsOnLooseComparison
             | Feature::NonNumericStringAndIntegerIsFalseOnLooseComparison
-            | Feature::AbstractTraitMethods => self.0 >= 0x08_00_00,
+            | Feature::AbstractTraitMethods
+            | Feature::StaticReturnTypeHint
+            | Feature::AccessClassOnObject
+            | Feature::Attribute
+            | Feature::MixedTypeHint
+            | Feature::MatchExpression
+            | Feature::NullSafeOperator
+            | Feature::TrailingCommaInClosureUseList => self.0 >= 0x08_00_00,
+            Feature::FinalConstants
+            | Feature::ReadonlyProperties
+            | Feature::Enums
+            | Feature::PureIntersectionTypes
+            | Feature::TentativeReturnTypes
+            | Feature::NeverTypeHint
+            | Feature::ClosureCreation
+            | Feature::ArrayUnpackingWithStringKeys
+            | Feature::SerializableRequiresMagicMethods => self.0 >= 0x08_01_00,
+            Feature::ConstantsInTraits
+            | Feature::StrSplitReturnsEmptyArray
+            | Feature::DisjunctiveNormalForm
+            | Feature::ReadonlyClasses
+            | Feature::NeverReturnTypeInArrowFunction
+            | Feature::PregCaptureOnlyNamedGroups
+            | Feature::TrueTypeHint
+            | Feature::FalseTypeHint
+            | Feature::NullTypeHint => self.0 >= 0x08_02_00,
+            Feature::JsonValidate
+            | Feature::TypedClassLikeConstants
+            | Feature::DateTimeExceptions
+            | Feature::OverrideAttribute
+            | Feature::DynamicClassConstantAccess
+            | Feature::ReadonlyAnonymousClasses => self.0 >= 0x08_03_00,
+            Feature::AsymmetricVisibility
+            | Feature::LazyObjects
+            | Feature::HighlightStringDoesNotReturnFalse
+            | Feature::PropertyHooks
+            | Feature::NewWithoutParentheses => self.0 >= 0x08_04_00,
+            Feature::ClosureInConstantExpressions => self.0 >= 0x08_05_00,
             Feature::CallableInstanceMethods
             | Feature::LegacyConstructor
             | Feature::UnsetCast
@@ -211,35 +258,8 @@ impl PHPVersion {
             | Feature::CurlUrlOptionCheckingFileSchemeWithOpenBasedir
             | Feature::EmptyStringValidAliasForNoneInMbSubstituteCharacter
             | Feature::NumericStringValidArgInMbSubstituteCharacter => self.0 < 0x08_00_00,
-            Feature::JsonValidate
-            | Feature::TypedClassLikeConstants
-            | Feature::DateTimeExceptions
-            | Feature::OverrideAttribute
-            | Feature::DynamicClassConstantAccess
-            | Feature::ReadonlyAnonymousClasses => self.0 >= 0x08_03_00,
-            Feature::ConstantsInTraits
-            | Feature::StrSplitReturnsEmptyArray
-            | Feature::DisjunctiveNormalForm
-            | Feature::ReadonlyClasses
-            | Feature::NeverReturnTypeInArrowFunction
-            | Feature::PregCaptureOnlyNamedGroups => self.0 >= 0x08_02_00,
             Feature::InterfaceConstantImplicitlyFinal => self.0 < 0x08_01_00,
-            Feature::ParameterTypeWidening => self.0 >= 0x07_02_00,
-            Feature::AllUnicodeScalarCodePointsInMbSubstituteCharacter => self.0 >= 0x07_02_00,
             Feature::PassNoneEncodings => self.0 < 0x07_03_00,
-            Feature::FinalConstants
-            | Feature::ReadonlyProperties
-            | Feature::Enums
-            | Feature::PureIntersectionTypes
-            | Feature::TentativeReturnTypes
-            | Feature::ClosureCreation
-            | Feature::ArrayUnpackingWithStringKeys
-            | Feature::SerializableRequiresMagicMethods => self.0 >= 0x08_01_00,
-            Feature::AsymmetricVisibility
-            | Feature::LazyObjects
-            | Feature::HighlightStringDoesNotReturnFalse
-            | Feature::PropertyHooks => self.0 >= 0x08_04_00,
-            Feature::ClosureInConstantExpressions => self.0 >= 0x08_05_00,
             _ => true,
         }
     }

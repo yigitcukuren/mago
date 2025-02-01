@@ -109,7 +109,7 @@ impl AnalysisResults {
     pub fn analyze(code: String, linter_settings: Settings, format_settings: FormatSettings) -> Self {
         let interner = ThreadedInterner::new();
         let source = Source::standalone(&interner, "code.php", &code);
-        let semantics = Semantics::build(&interner, source);
+        let semantics = Semantics::build(&interner, linter_settings.php_version, source);
 
         let mut formatted = None;
         if semantics.parse_error.is_none() {
