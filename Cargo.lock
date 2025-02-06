@@ -187,7 +187,7 @@ checksum = "37672978ae0febce7516ae0a85b53e6185159a9a28787391eb63fc44ec36037d"
 dependencies = [
  "async-fs",
  "futures-lite",
- "thiserror 2.0.11",
+ "thiserror",
 ]
 
 [[package]]
@@ -293,9 +293,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bytes"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
+checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
 
 [[package]]
 name = "cast"
@@ -305,9 +305,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.2.11"
+version = "1.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4730490333d58093109dc02c23174c3f4d490998c3fed3cc8e82d57afedb9cf"
+checksum = "755717a7de9ec452bf7f3f1a3099085deabd7f2962b861dae91ecd7a365903d2"
 dependencies = [
  "shlex",
 ]
@@ -353,9 +353,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.27"
+version = "4.5.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "769b0145982b4b48713e01ec42d61614425f27b7058bda7180a3a41f30104796"
+checksum = "3e77c3243bd94243c03672cb5154667347c457ca271254724f9f393aee1c05ff"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -378,9 +378,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.24"
+version = "4.5.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54b755194d6389280185988721fffba69495eed5ee9feeee9a599b53db80318c"
+checksum = "bf4ced95c6f4a675af3da73304b9ac4ed991640c36374e4b46795c49e17cf1ed"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -1512,7 +1512,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mago"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-interner",
  "mago-php-version",
@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1576,14 +1576,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1592,7 +1592,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1613,7 +1613,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1641,7 +1641,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1656,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1684,7 +1684,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1717,7 +1717,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1725,7 +1725,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reference"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1737,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1751,7 +1751,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflector"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1769,7 +1769,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "blake3",
@@ -1786,7 +1786,7 @@ dependencies = [
 
 [[package]]
 name = "mago-semantics"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
@@ -1805,7 +1805,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "dashmap",
  "mago-interner",
@@ -1815,7 +1815,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1823,7 +1823,7 @@ dependencies = [
 
 [[package]]
 name = "mago-symbol-table"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1836,7 +1836,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1846,14 +1846,14 @@ dependencies = [
 
 [[package]]
 name = "mago-traverser"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
 ]
 
 [[package]]
 name = "mago-trinary"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "serde",
  "strum",
@@ -1861,7 +1861,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1876,7 +1876,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1884,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
@@ -2036,9 +2036,9 @@ checksum = "b410bbe7e14ab526a0e86877eb47c6996a2bd7746f027ba551028c925390e4e9"
 
 [[package]]
 name = "openssl"
-version = "0.10.69"
+version = "0.10.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5e534d133a060a3c19daec1eb3e98ec6f4685978834f2dbadfe2ec215bab64e"
+checksum = "61cfb4e166a8bb8c9b55c500bc2308550148ece889be90f609377e58140f42c6"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -2077,9 +2077,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.104"
+version = "0.9.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45abf306cbf99debc8195b66b7346498d7b10c210de50418b5ccd7ceba08c741"
+checksum = "8b22d5b84be05a8d6947c7cb71f7c849aa0f112acd4bf51c2a7c1c988ac0a9dc"
 dependencies = [
  "cc",
  "libc",
@@ -2159,7 +2159,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b7cafe60d6cf8e62e1b9b2ea516a089c008945bb5a275416789e7db0bc199dc"
 dependencies = [
  "memchr",
- "thiserror 2.0.11",
+ "thiserror",
  "ucd-trie",
 ]
 
@@ -2326,7 +2326,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror 2.0.11",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -2345,7 +2345,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.11",
+ "thiserror",
  "tinyvec",
  "tracing",
  "web-time",
@@ -2573,9 +2573,9 @@ checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
 
 [[package]]
 name = "rustc-hash"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7fb8039b3032c191086b10f11f319a6e99e1e82889c5cc6046f515c9db1d497"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustc_version"
@@ -2925,9 +2925,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.97"
+version = "2.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dabd04e3b9a8c3c03d5e743f5ef5e1207befc9de704d477f7198cc28049763e"
+checksum = "36147f1a48ae0ec2b5b3bc5b537d267457555a10dc06f3dbc8cb11ba3006d3b1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3006,31 +3006,11 @@ checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
 
 [[package]]
 name = "thiserror"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
-dependencies = [
- "thiserror-impl 1.0.69",
-]
-
-[[package]]
-name = "thiserror"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d452f284b73e6d76dd36758a0c8684b1d5be31f92b89d07fd5822175732206fc"
 dependencies = [
- "thiserror-impl 2.0.11",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -3179,9 +3159,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.19"
+version = "0.8.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1ed1f98e3fdc28d6d910e6737ae6ab1a93bf1985935a1193e68f93eeb68d24e"
+checksum = "cd87a5cdd6ffab733b2f74bc4fd7ee5fff6634124999ac278c35fc78c6120148"
 dependencies = [
  "serde",
  "serde_spanned",
@@ -3691,9 +3671,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e49d2d35d3fad69b39b94139037ecfb4f359f08958b9c11e7315ce770462419"
+checksum = "86e376c75f4f43f44db463cf729e0d3acbf954d13e22c51e26e4c264b4ab545f"
 dependencies = [
  "memchr",
 ]
@@ -3853,17 +3833,17 @@ dependencies = [
  "displaydoc",
  "indexmap",
  "memchr",
- "thiserror 2.0.11",
+ "thiserror",
  "time",
 ]
 
 [[package]]
 name = "zipsign-api"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6413a546ada9dbcd0b9a3e0b0880581279e35047bce9797e523b3408e1df607c"
+checksum = "8e7c724c3a8e5833aad6b7028f4f0989fa3a640ce799bf8c352f417b8ef9db3e"
 dependencies = [
  "base64 0.22.1",
  "ed25519-dalek",
- "thiserror 1.0.69",
+ "thiserror",
 ]
