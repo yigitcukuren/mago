@@ -24,12 +24,8 @@ pub fn main() -> io::Result<()> {
     // Prepare the map content
     let map_content = stubs_map
         .into_iter()
-        .filter_map(|(simplified_path, include_path)| {
-            if simplified_path.ends_with(".phpstorm.meta.php") {
-                None
-            } else {
-                Some(format!(r##"    (r#"{simplified_path}"#, include_str!("{include_path}"))"##))
-            }
+        .map(|(simplified_path, include_path)| {
+            format!(r##"    (r#"{simplified_path}"#, include_str!("{include_path}"))"##)
         })
         .collect::<Vec<_>>();
     let count = map_content.len();

@@ -11,16 +11,9 @@
  */
 class RedisCluster
 {
-    public const AFTER = 'after';
-    public const BEFORE = 'before';
-
     /**
      * Options
      */
-    public const OPT_SERIALIZER = 1;
-    public const OPT_PREFIX = 2;
-    public const OPT_READ_TIMEOUT = 3;
-    public const OPT_SCAN = 4;
     public const OPT_SLAVE_FAILOVER = 5;
 
     /**
@@ -32,54 +25,12 @@ class RedisCluster
     public const FAILOVER_DISTRIBUTE_SLAVES = 3;
 
     /**
-     * SCAN options
-     */
-    public const SCAN_NORETRY = 0;
-    public const SCAN_RETRY = 1;
-
-    /**
-     * @since 5.3.0
-     */
-    public const SCAN_PREFIX = 2;
-
-    /**
-     * @since 5.3.0
-     */
-    public const SCAN_NOPREFIX = 3;
-
-    /**
-     * Serializers
-     */
-    public const SERIALIZER_NONE = 0;
-    public const SERIALIZER_PHP = 1;
-    public const SERIALIZER_IGBINARY = 2;
-    public const SERIALIZER_MSGPACK = 3;
-    public const SERIALIZER_JSON = 4;
-
-    /**
-     * Multi
-     */
-    public const ATOMIC = 0;
-    public const MULTI = 1;
-    public const PIPELINE = 2;
-
-    /**
-     * Type
-     */
-    public const REDIS_NOT_FOUND = 0;
-    public const REDIS_STRING = 1;
-    public const REDIS_SET = 2;
-    public const REDIS_LIST = 3;
-    public const REDIS_ZSET = 4;
-    public const REDIS_HASH = 5;
-
-    /**
      * Creates a Redis Cluster client
      *
      * @param string|null   $name
      * @param array|null    $seeds
      * @param int|float     $timeout
-     * @param int|float     $readTimeout
+     * @param int|float     $read_timeout
      * @param bool          $persistent
      * @param mixed         $auth
      * @param array|null    $context
@@ -106,7 +57,7 @@ class RedisCluster
      * $redisClusterDev = new RedisCluster('test');
      * </pre>
      */
-    public function __construct($name, $seeds = null, $timeout = null, $readTimeout = null, $persistent = false, $auth = null, $context = null) {}
+    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null) {}
 
     /**
      * Disconnects from the RedisCluster instance, except when pconnect is used.

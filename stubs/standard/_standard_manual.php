@@ -9,7 +9,7 @@
  * @link https://php.net/manual/en/function.halt-compiler.php
  * @return void
  */
-function ___halt_compiler() {}
+function PS_UNRESERVE_PREFIX___halt_compiler() {}
 
 /**
  * (PHP 5.1)<br/>

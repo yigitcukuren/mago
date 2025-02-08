@@ -526,6 +526,12 @@ class Error implements Throwable
     public function __wakeup(): void {}
 }
 
+/**
+ * Is thrown when the type of an argument is correct but the value of it is incorrect. For example, passing a negative
+ * integer when the function expects a positive one, or passing an empty string/array when the function expects it to not be empty.
+ * @link https://www.php.net/manual/en/class.valueerror.php
+ * @since 8.0
+ */
 class ValueError extends Error {}
 
 /**
@@ -937,7 +943,7 @@ interface BackedEnum extends UnitEnum
      * case, if any. If there is no matching case defined, it will throw a
      * <code>ValueError</code>.
      * @param int|string $value
-     * @throws ValueError
+     * @throws ValueError if there is no matching case defined
      * @throws TypeError
      * @return static
      * @link https://www.php.net/manual/en/backedenum.from.php
@@ -968,15 +974,23 @@ interface IntBackedEnum extends BackedEnum
     public readonly int $value;
 
     /**
+     * Translates an int into the corresponding <code>Enum</code>
+     * case, if any. If there is no matching case defined, it will throw a
+     * <code>ValueError</code>.
      * @param int $value
      * @return static
+     * @throws ValueError if there is no matching case defined
+     * @link https://www.php.net/manual/en/backedenum.from.php
      */
     #[Pure]
     public static function from(int $value): static;
 
     /**
+     * Translates an int into the corresponding <code>Enum</code>
+     * case, if any. If there is no matching case defined, it will return null.
      * @param int $value
      * @return static|null
+     * @link https://www.php.net/manual/en/backedenum.tryfrom.php
      */
     #[Pure]
     public static function tryFrom(int $value): ?static;
@@ -992,9 +1006,25 @@ interface StringBackedEnum extends BackedEnum
 {
     public readonly string $value;
 
+    /**
+     * Translates a string into the corresponding <code>Enum</code>
+     * case, if any. If there is no matching case defined, it will throw a
+     * <code>ValueError</code>.
+     * @param string $value
+     * @return static
+     * @throws ValueError if there is no matching case defined
+     * @link https://www.php.net/manual/en/backedenum.from.php
+     */
     #[Pure]
     public static function from(string $value): static;
 
+    /**
+     * Translates a string or int into the corresponding <code>Enum</code>
+     * case, if any. If there is no matching case defined, it will return null.
+     * @param string $value
+     * @return static|null
+     * @link https://www.php.net/manual/en/backedenum.tryfrom.php
+     */
     #[Pure]
     public static function tryFrom(string $value): ?static;
 }
