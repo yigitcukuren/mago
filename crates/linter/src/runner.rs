@@ -65,45 +65,11 @@ impl<'a> Runner<'a> {
         }
     }
 
-    /// Executes the specified lint rule on the precomputed AST and reports unused ignore comments.
-    ///
-    /// This method creates a [`LintContext`] for the given rule and recursively lints the AST starting
-    /// from the root node. During the linting process, the rule's `lint_node` method is applied to each node,
-    /// and any issues discovered are added to the runner's issue collection. Prior to linting, the method filters
-    /// the list of available ignore comments to include only those whose directives match the rule's slug (case-insensitively).
-    ///
-    /// After linting, any ignore comments that remain in the context (i.e. they were not consumed by any node)
-    /// are reported as unused ignores. This helps users identify ignore directives that have no effect and may be
-    /// safely removed.
+    /// Executes the specified lint rule on the precomputed AST.
     ///
     /// # Parameters
     ///
-    /// - `configured_rule`: The lint rule configuration to execute. This configuration contains the rule's slug,
-    ///   which is used to match against ignore directive rules.
-    ///
-    /// # Behavior
-    ///
-    /// 1. **Filtering Ignores:**
-    ///    The method first filters the runner's list of ignore comments to retain only those whose directives
-    ///    match the rule's slug. These are then passed into the [`LintContext`].
-    ///
-    /// 2. **Linting the AST:**
-    ///    The AST is recursively traversed. If an ignore comment applies to a node, it is consumed and removed
-    ///    from the context to ensure it is not applied multiple times.
-    ///
-    /// 3. **Reporting Unused Ignores:**
-    ///    After linting, any ignore comments remaining in the context (i.e. unused) are reported as issues.
-    ///    These issues include annotations pointing to the ignore's source span along with help notes suggesting
-    ///    that the ignore directive be removed.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// // Assume `runner` is an instance of the lint runner,
-    /// // and `configured_rule` is a configured lint rule.
-    /// runner.run(&configured_rule);
-    /// // After running, any unused ignore comments will have been added to the issue collection.
-    /// ```
+    /// - `configured_rule`: The lint rule configuration to execute.
     pub fn run(&mut self, configured_rule: &ConfiguredRule) {
         let mut context = LintContext::new(
             self.php_version,
