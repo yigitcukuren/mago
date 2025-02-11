@@ -124,19 +124,22 @@ fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>) -> Result<Expression, 
         (T!["yield"], _) => Expression::Yield(parse_yield(stream)?),
         (T!["clone"], _) => Expression::Clone(parse_clone(stream)?),
         (T!["\""] | T!["<<<"] | T!["`"], ..) => Expression::CompositeString(parse_string(stream)?),
-        (T![Identifier | QualifiedIdentifier | FullyQualifiedIdentifier | "enum" | "from"], ..) => {
-            Expression::Identifier(identifier::parse_identifier(stream)?)
-        }
         (T!["("], _) => Expression::Parenthesized(Parenthesized {
             left_parenthesis: utils::expect_span(stream, T!["("])?,
             expression: Box::new(parse_expression(stream)?),
             right_parenthesis: utils::expect_span(stream, T![")"])?,
         }),
-        (T!["match"], _) => Expression::Match(parse_match(stream)?),
+        (T!["match"], Some(T!["("])) => Expression::Match(parse_match(stream)?),
         (T!["array"], Some(T!["("])) => Expression::LegacyArray(parse_legacy_array(stream)?),
         (T!["["], _) => Expression::Array(parse_array(stream)?),
-        (kind, _) if kind.is_magic_constant() => Expression::MagicConstant(parse_magic_constant(stream)?),
         (T!["$" | "${" | "$variable"], _) => variable::parse_variable(stream).map(Expression::Variable)?,
+        (kind, _) if kind.is_magic_constant() => Expression::MagicConstant(parse_magic_constant(stream)?),
+        (kind, ..)
+            if matches!(kind, T![Identifier | QualifiedIdentifier | FullyQualifiedIdentifier])
+                || kind.is_soft_reserved_identifier() =>
+        {
+            Expression::Identifier(identifier::parse_identifier(stream)?)
+        }
         _ => return Err(utils::unexpected(stream, Some(token), &[])),
     })
 }
