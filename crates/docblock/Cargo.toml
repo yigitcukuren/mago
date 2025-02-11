@@ -16,5 +16,4 @@ workspace = true
 mago-ast = { workspace = true }
 mago-span = { workspace = true }
 mago-interner = { workspace = true }
-tracing = { workspace = true }
 serde = { workspace = true }

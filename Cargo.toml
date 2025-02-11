@@ -103,7 +103,6 @@ mago-linter = { workspace = true }
 mago-reflection = { workspace = true }
 mago-names = { workspace = true }
 mago-reflector = { workspace = true }
-mago-span = { workspace = true }
 mago-formatter = { workspace = true }
 mago-parser = { workspace = true }
 mago-fixer = { workspace = true }

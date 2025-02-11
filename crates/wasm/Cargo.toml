@@ -17,11 +17,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 mago-ast = { workspace = true }
-mago-names = { workspace = true }
 mago-interner = { workspace = true }
 mago-reporting = { workspace = true }
 mago-semantics = { workspace = true }
-mago-reflection = { workspace = true }
 mago-reflector = { workspace = true }
 mago-source = { workspace = true }
 mago-parser = { workspace = true }
@@ -31,5 +29,4 @@ mago-formatter = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
 getrandom = { workspace = true }
-serde_json = { workspace = true }
 serde = { workspace = true }

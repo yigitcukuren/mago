@@ -1537,7 +1537,6 @@ dependencies = [
  "mago-reporting",
  "mago-semantics",
  "mago-source",
- "mago-span",
  "num_cpus",
  "openssl",
  "self_update",
@@ -1598,7 +1597,6 @@ dependencies = [
  "mago-interner",
  "mago-span",
  "serde",
- "tracing",
 ]
 
 [[package]]
@@ -1626,8 +1624,6 @@ dependencies = [
  "mago-token",
  "pretty_assertions",
  "serde",
- "strum",
- "tracing",
 ]
 
 [[package]]
@@ -1666,7 +1662,6 @@ dependencies = [
  "mago-docblock",
  "mago-fixer",
  "mago-interner",
- "mago-names",
  "mago-php-version",
  "mago-reflection",
  "mago-reflector",
@@ -1674,7 +1669,6 @@ dependencies = [
  "mago-semantics",
  "mago-source",
  "mago-span",
- "mago-symbol-table",
  "mago-walker",
  "regex",
  "serde",
@@ -1790,7 +1784,6 @@ version = "0.9.1"
 dependencies = [
  "mago-ast",
  "mago-ast-utils",
- "mago-fixer",
  "mago-interner",
  "mago-names",
  "mago-parser",
@@ -1798,7 +1791,6 @@ dependencies = [
  "mago-reporting",
  "mago-source",
  "mago-span",
- "mago-symbol-table",
  "mago-walker",
  "serde",
 ]
@@ -1891,17 +1883,14 @@ dependencies = [
  "mago-formatter",
  "mago-interner",
  "mago-linter",
- "mago-names",
  "mago-parser",
  "mago-php-version",
- "mago-reflection",
  "mago-reflector",
  "mago-reporting",
  "mago-semantics",
  "mago-source",
  "serde",
  "serde-wasm-bindgen",
- "serde_json",
  "wasm-bindgen",
 ]
 

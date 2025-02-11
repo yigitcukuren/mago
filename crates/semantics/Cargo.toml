@@ -13,7 +13,6 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-mago-fixer = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-parser = { workspace = true }
@@ -24,5 +23,4 @@ mago-ast = { workspace = true }
 mago-ast-utils = { workspace = true }
 mago-names = { workspace = true }
 mago-source = { workspace = true }
-mago-symbol-table = { workspace = true }
 serde = { workspace = true }
