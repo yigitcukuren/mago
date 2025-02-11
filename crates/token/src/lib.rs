@@ -340,7 +340,7 @@ impl Precedence {
 
 impl TokenKind {
     #[inline(always)]
-    pub fn is_keyword(&self) -> bool {
+    pub const fn is_keyword(&self) -> bool {
         matches!(
             self,
             TokenKind::Eval
@@ -432,7 +432,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_infix(&self) -> bool {
+    pub const fn is_infix(&self) -> bool {
         matches!(
             self,
             T!["**"
@@ -484,17 +484,17 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_postfix(&self) -> bool {
+    pub const fn is_postfix(&self) -> bool {
         matches!(self, T!["++" | "--" | "(" | "[" | "->" | "?->" | "::"])
     }
 
     #[inline(always)]
-    pub fn is_visibility_modifier(&self) -> bool {
+    pub const fn is_visibility_modifier(&self) -> bool {
         matches!(self, T!["public" | "protected" | "private" | "private(set)" | "protected(set)" | "public(set)"])
     }
 
     #[inline(always)]
-    pub fn is_modifier(&self) -> bool {
+    pub const fn is_modifier(&self) -> bool {
         matches!(
             self,
             T!["public"
@@ -511,7 +511,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_identifier_maybe_soft_reserved(&self) -> bool {
+    pub const fn is_identifier_maybe_soft_reserved(&self) -> bool {
         if let TokenKind::Identifier = self {
             true
         } else {
@@ -520,7 +520,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_identifier_maybe_reserved(&self) -> bool {
+    pub const fn is_identifier_maybe_reserved(&self) -> bool {
         if let TokenKind::Identifier = self {
             true
         } else {
@@ -529,12 +529,15 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_soft_reserved_identifier(&self) -> bool {
-        matches!(self, T!["parent" | "self" | "true" | "false" | "list" | "null" | "enum" | "from" | "readonly"],)
+    pub const fn is_soft_reserved_identifier(&self) -> bool {
+        matches!(
+            self,
+            T!["parent" | "self" | "true" | "false" | "list" | "null" | "enum" | "from" | "readonly" | "match"]
+        )
     }
 
     #[inline(always)]
-    pub fn is_reserved_identifier(&self) -> bool {
+    pub const fn is_reserved_identifier(&self) -> bool {
         if self.is_soft_reserved_identifier() {
             return true;
         }
@@ -625,7 +628,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_literal(&self) -> bool {
+    pub const fn is_literal(&self) -> bool {
         matches!(
             self,
             T!["true" | "false" | "null" | LiteralFloat | LiteralInteger | LiteralString | PartialLiteralString]
@@ -633,7 +636,7 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_magic_constant(&self) -> bool {
+    pub const fn is_magic_constant(&self) -> bool {
         matches!(
             self,
             T!["__CLASS__"
@@ -676,17 +679,17 @@ impl TokenKind {
     }
 
     #[inline(always)]
-    pub fn is_trivia(&self) -> bool {
+    pub const fn is_trivia(&self) -> bool {
         matches!(self, T![SingleLineComment | MultiLineComment | DocBlockComment | HashComment | Whitespace])
     }
 
     #[inline(always)]
-    pub fn is_comment(&self) -> bool {
+    pub const fn is_comment(&self) -> bool {
         matches!(self, T![SingleLineComment | MultiLineComment | DocBlockComment | HashComment])
     }
 
     #[inline(always)]
-    pub fn is_construct(&self) -> bool {
+    pub const fn is_construct(&self) -> bool {
         matches!(
             self,
             T!["isset"
