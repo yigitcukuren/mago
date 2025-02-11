@@ -101,7 +101,7 @@ pub struct LintCommand {
     #[arg(
         long,
         help = "List all the enabled rules alongside their descriptions",
-        conflicts_with = "list_rules",
+        conflicts_with = "explain",
         conflicts_with = "sort",
         conflicts_with = "fixable_only",
         conflicts_with = "semantics_only",
