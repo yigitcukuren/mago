@@ -7,7 +7,7 @@ use mago_php_version::feature::Feature;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_span::Span;
-use mago_walker::Walker;
+use mago_walker::MutWalker;
 
 use crate::consts::ANONYMOUS_CLASS_NAME;
 use crate::consts::CALL_MAGIC_METHOD;
@@ -37,9 +37,15 @@ use crate::consts::WAKEUP_MAGIC_METHOD;
 use crate::context::Context;
 
 #[derive(Clone, Debug)]
-pub struct SemanticsWalker;
+pub struct SemanticsWalker {
+    hint_depth: usize,
+}
 
 impl SemanticsWalker {
+    pub const fn new() -> Self {
+        Self { hint_depth: 0 }
+    }
+
     #[inline]
     fn process_extends(
         &self,
@@ -52,7 +58,7 @@ impl SemanticsWalker {
         context: &mut Context<'_>,
     ) {
         if extension_limit && extends.types.len() > 1 {
-            context.report(
+            context.issues.push(
                 Issue::error(format!(
                     "{} `{}` can only extend one other type, found {}.",
                     class_like_kind,
@@ -69,10 +75,10 @@ impl SemanticsWalker {
         }
 
         for extended_type in extends.types.iter() {
-            let extended_fqcn = context.lookup_name(&extended_type.span().start);
+            let extended_fqcn = context.get_name(&extended_type.span().start);
 
             if extended_fqcn.eq_ignore_ascii_case(class_like_fqcn) {
-                context.report(
+                context.issues.push(
                     Issue::error(format!("{} `{}` cannot extend itself.", class_like_kind, class_like_name))
                         .with_annotation(
                             Annotation::primary(extended_type.span()).with_message(format!(
@@ -97,7 +103,7 @@ impl SemanticsWalker {
                     .iter()
                     .any(|keyword| keyword.eq_ignore_ascii_case(extended_name))
             {
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "{} `{}` cannot extend reserved keyword `{}`.",
                         class_like_kind, class_like_name, extended_name
@@ -131,10 +137,10 @@ impl SemanticsWalker {
     ) {
         if check_for_self_implement {
             for implemented_type in implements.types.iter() {
-                let implemented_fqcn = context.lookup_name(&implemented_type.span().start);
+                let implemented_fqcn = context.get_name(&implemented_type.span().start);
 
                 if implemented_fqcn.eq_ignore_ascii_case(class_like_fqcn) {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("{} `{}` cannot implement itself.", class_like_kind, class_like_name))
                             .with_annotation(Annotation::primary(implemented_type.span()).with_message(format!(
                                 "{} `{}` implements itself here.",
@@ -158,7 +164,7 @@ impl SemanticsWalker {
                     .iter()
                     .any(|keyword| keyword.eq_ignore_ascii_case(implemented_name))
             {
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "{} `{}` cannot implement reserved keyword `{}`.",
                         class_like_kind, class_like_name, implemented_name
@@ -204,7 +210,7 @@ impl SemanticsWalker {
         for modifier in modifiers.iter() {
             match modifier {
                 Modifier::Abstract(_) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Property `{}::{}` cannot be declared abstract",
                             class_like_name, first_variable_name
@@ -225,7 +231,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Static(_) => {
                     if let Some(last_readonly) = last_readonly {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Readonly property `{}::{}` cannot be static.",
                                 class_like_name, first_variable_name
@@ -249,7 +255,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_static) = last_static {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Property `{}::{}` has multiple `static` modifiers.",
                                 class_like_name, first_variable_name
@@ -272,7 +278,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_visibility) = last_write_visibility {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "static property `{}::{}` cannot have a write visibility modifier.",
                                 class_like_name, first_variable_name
@@ -298,7 +304,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Readonly(_) => {
                     if let Some(last_static) = last_static {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Static property `{}::{}` cannot be readonly.",
                                 class_like_name, first_variable_name
@@ -322,7 +328,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_readonly) = last_readonly {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Property `{}::{}` has multiple `readonly` modifiers.",
                                 class_like_name, first_variable_name
@@ -348,7 +354,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Final(_) => {
                     if let Some(last_final) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Property has multiple `final` modifiers.")
                                 .with_annotation(
                                     Annotation::primary(modifier.span()).with_message("Duplicate `final` modifier."),
@@ -373,7 +379,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Private(_) | Modifier::Protected(_) | Modifier::Public(_) => {
                     if let Some(last_visibility) = last_read_visibility {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Property `{}::{}` has multiple visibility modifiers.",
                                 class_like_name, first_variable_name
@@ -399,7 +405,7 @@ impl SemanticsWalker {
                 }
                 Modifier::PrivateSet(_) | Modifier::ProtectedSet(_) | Modifier::PublicSet(_) => {
                     if let Some(last_visibility) = last_write_visibility {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Property `{}::{}` has multiple write visibility modifiers.",
                                 class_like_name, first_variable_name
@@ -424,7 +430,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_static) = last_static {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Static property `{}::{}` cannot have a write visibility modifier.",
                                 class_like_name, first_variable_name
@@ -456,7 +462,7 @@ impl SemanticsWalker {
                 let first = modifiers.first().unwrap();
                 let last = modifiers.last().unwrap();
 
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "Var property `{}::{}` cannot have modifiers.",
                         class_like_name, first_variable_name
@@ -480,9 +486,9 @@ impl SemanticsWalker {
 
         if let Some(hint) = property.hint() {
             if hint.is_bottom() {
-                let hint_name = context.lookup_hint(hint);
+                let hint_name = context.get_code_snippet(hint);
                 // cant be used on properties
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "Property `{}::{}` cannot have type `{}`.",
                         class_like_name, first_variable_name, hint_name
@@ -503,7 +509,7 @@ impl SemanticsWalker {
             }
         } else if let Some(readonly) = last_readonly {
             // readonly properties must have a type hint
-            context.report(
+            context.issues.push(
                 Issue::error(format!(
                     "Readonly property `{}::{}` must have a type hint.",
                     class_like_name, first_variable_name
@@ -528,7 +534,7 @@ impl SemanticsWalker {
                         let item_name = context.interner.lookup(&item_name_id);
 
                         if !property_concrete_item.value.is_constant(context.version, false) {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Property `{}::{}` value contains a non-constant expression.",
                                     class_like_name, item_name
@@ -551,7 +557,7 @@ impl SemanticsWalker {
                         }
 
                         if let Some(readonly) = last_readonly {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Readonly property `{}::{}` cannot have a default value.",
                                     class_like_name, item_name
@@ -584,7 +590,7 @@ impl SemanticsWalker {
                 let item_name = context.interner.lookup(&item_name_id);
 
                 if let Some(readonly) = last_readonly {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Hooked property `{}::{}` cannot be readonly.",
                             class_like_name, item_name
@@ -609,7 +615,7 @@ impl SemanticsWalker {
                 }
 
                 if let Some(r#static) = last_static {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Hooked property `{}::{}` cannot be static.", class_like_name, item_name))
                             .with_annotation(Annotation::primary(r#static).with_message(format!(
                                 "Property `{}::{}` is marked as static here.",
@@ -639,7 +645,7 @@ impl SemanticsWalker {
                         let first = hook.modifiers.first().unwrap();
                         let last = hook.modifiers.last().unwrap();
 
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Hook `{}` for property `{}::{}` cannot have modifiers.",
                                 name, class_like_name, item_name
@@ -661,7 +667,7 @@ impl SemanticsWalker {
 
                     if !class_like_is_interface {
                         if let PropertyHookBody::Abstract(property_hook_abstract_body) = &hook.body {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!("Non-abstract property hook `{}` must have a body.", name))
                                     .with_annotation(
                                         Annotation::primary(property_hook_abstract_body.span())
@@ -687,7 +693,7 @@ impl SemanticsWalker {
                         "set" => {
                             if let Some(parameters) = &hook.parameters {
                                 if parameters.parameters.len() != 1 {
-                                    context.report(
+                                    context.issues.push(
                                         Issue::error(format!(
                                             "Hook `{}` of property `{}::{}` must accept exactly one parameter, found {}.",
                                             name, class_like_name, item_name, parameters.parameters.len()
@@ -712,7 +718,7 @@ impl SemanticsWalker {
                                     let first_parameter_name = context.interner.lookup(&first_parameter.variable.name);
 
                                     if first_parameter.hint.is_none() {
-                                        context.report(
+                                        context.issues.push(
                                             Issue::error(format!(
                                                 "Parameter `{}` of hook `{}::{}::{}` must contain a type hint.",
                                                 first_parameter_name, class_like_name, item_name, name
@@ -743,7 +749,7 @@ impl SemanticsWalker {
                                     }
 
                                     if let Some(ellipsis) = first_parameter.ellipsis {
-                                        context.report(
+                                        context.issues.push(
                                             Issue::error(format!(
                                                 "Parameter `{}` of hook `{}::{}::{}` must not be variadic.",
                                                 first_parameter_name, class_like_name, item_name, name
@@ -780,7 +786,7 @@ impl SemanticsWalker {
                                     }
 
                                     if let Some(ampersand) = first_parameter.ampersand {
-                                        context.report(
+                                        context.issues.push(
                                             Issue::error(format!(
                                                 "Parameter `{}` of hook `{}::{}::{}` must not be pass-by-reference.",
                                                 first_parameter_name, class_like_name, item_name, name
@@ -817,7 +823,7 @@ impl SemanticsWalker {
                                     }
 
                                     if let Some(default_value) = &first_parameter.default_value {
-                                        context.report(
+                                        context.issues.push(
                                             Issue::error(format!(
                                                 "Parameter `{}` of hook `{}::{}::{}` must not have a default value.",
                                                 first_parameter_name, class_like_name, item_name, name
@@ -852,7 +858,7 @@ impl SemanticsWalker {
                         }
                         "get" => {
                             if let Some(parameters) = &hook.parameters {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Hook `{}` of property `{}::{}` must not have a parameters list.",
                                         name, class_like_name, item_name
@@ -879,7 +885,7 @@ impl SemanticsWalker {
                             }
                         }
                         _ => {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Hooked property `{}::{}` contains an unknwon hook `{}`, expected `set` or `get`.",
                                     class_like_name, item_name, name
@@ -904,7 +910,7 @@ impl SemanticsWalker {
 
                     if let Some((_, previous_span)) = hook_names.iter().find(|(previous, _)| previous.eq(&lowered_name))
                     {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Hook `{}` has already been defined for property `{}::{}`.",
                                 name, class_like_name, item_name
@@ -955,7 +961,7 @@ impl SemanticsWalker {
             match modifier {
                 Modifier::Static(_) => {
                     if let Some(last_static) = last_static {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "duplicate `static` modifier on method `{}::{}`",
                                 class_like_name, method_name
@@ -985,7 +991,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Final(_) => {
                     if let Some(abstract_modifier) = last_abstract {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "method `{}::{}` cannot be both `final` and `abstract`",
                                 class_like_name, method_name
@@ -1008,7 +1014,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_final) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "duplicate `final` modifier on method `{}::{}`",
                                 class_like_name, method_name
@@ -1036,7 +1042,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Abstract(_) => {
                     if let Some(final_modifier) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "method `{}::{}` cannot be both `final` and `abstract`",
                                 class_like_name, method_name
@@ -1059,7 +1065,7 @@ impl SemanticsWalker {
                     }
 
                     if let Some(last_abstract) = last_abstract {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "duplicate `abstract` modifier on method `{}::{}`",
                                 class_like_name, method_name
@@ -1088,7 +1094,7 @@ impl SemanticsWalker {
                     last_abstract = Some(modifier.span());
                 }
                 Modifier::Readonly(_) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error("`readonly` modifier is not allowed on methods".to_string())
                             .with_annotation(Annotation::primary(modifier.span()).with_message("`readonly` modifier"))
                             .with_annotation(
@@ -1107,7 +1113,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Private(_) | Modifier::Protected(_) | Modifier::Public(_) => {
                     if let Some(last_visibility) = last_visibility {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "duplicate visibility modifier on method `{}::{}`",
                                 class_like_name, method_name
@@ -1142,7 +1148,7 @@ impl SemanticsWalker {
                 Modifier::PrivateSet(k) | Modifier::ProtectedSet(k) | Modifier::PublicSet(k) => {
                     let modifier_name = context.interner.lookup(&k.value);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("`{}` modifier is not allowed on methods", modifier_name))
                             .with_annotation(
                                 Annotation::primary(modifier.span())
@@ -1196,7 +1202,7 @@ impl SemanticsWalker {
                             )
                         };
 
-                        context.report(
+                        context.issues.push(
                             Issue::error(message)
                                 .with_annotation(Annotation::primary(method.parameter_list.span()))
                                 .with_annotation(Annotation::secondary(method.span()).with_message(format!(
@@ -1212,7 +1218,7 @@ impl SemanticsWalker {
                 }
 
                 if *must_be_public && !is_public {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("magic method `{}::{}` must be public", class_like_name, method_name))
                             .with_annotation(
                                 Annotation::primary(last_visibility.unwrap())
@@ -1235,7 +1241,7 @@ impl SemanticsWalker {
 
                 match last_static.as_ref() {
                     Some(span) if !*must_be_static => {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "magic method `{}::{}` cannot be static",
                                 class_like_name, method_name
@@ -1256,7 +1262,7 @@ impl SemanticsWalker {
                         );
                     }
                     None if *must_be_static => {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("magic method `{}::{}` must be static", class_like_name, method_name))
                                 .with_annotation(Annotation::primary(method.name.span()))
                                 .with_annotation(
@@ -1274,7 +1280,7 @@ impl SemanticsWalker {
 
                 if !*can_have_return_type {
                     if let Some(hint) = &method.return_type_hint {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "magic method `{}::{}` cannot have a return type hint",
                                 class_like_name, method_name
@@ -1301,7 +1307,7 @@ impl SemanticsWalker {
         match &method.body {
             MethodBody::Abstract(method_abstract_body) => {
                 if !class_like_is_interface && !method.modifiers.contains_abstract() {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "non-abstract method `{}::{}` must have a concrete body",
                             class_like_name, method_name,
@@ -1318,7 +1324,7 @@ impl SemanticsWalker {
             }
             MethodBody::Concrete(body) => {
                 if let Some(abstract_modifier) = method.modifiers.get_abstract() {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "method `{}::{}` is abstract and cannot have a concrete body",
                             class_like_name, method_name,
@@ -1333,7 +1339,7 @@ impl SemanticsWalker {
                         ]),
                     );
                 } else if class_like_is_interface {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "interface method `{}::{}` is implicitly abstract and cannot have a concrete body",
                             class_like_name, method_name,
@@ -1360,7 +1366,7 @@ impl SemanticsWalker {
                     Hint::Void(_) => {
                         for r#return in returns {
                             if let Some(val) = &r#return.value {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "method `{}::{}` with return type of `void` must not return a value",
                                         class_like_name, method_name,
@@ -1383,7 +1389,7 @@ impl SemanticsWalker {
                     }
                     Hint::Never(_) => {
                         for r#return in returns {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "function `{}::{}` with return type of `never` must not return",
                                     class_like_name, method_name,
@@ -1406,7 +1412,7 @@ impl SemanticsWalker {
                     _ if !returns_generator(context, body, hint) => {
                         for r#return in returns {
                             if r#return.value.is_none() {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "method `{}::{}` with return type must return a value",
                                         class_like_name, method_name,
@@ -1468,7 +1474,7 @@ impl SemanticsWalker {
                                     format!("property `{}::{}` has already been defined", class_like_name, item_name)
                                 };
 
-                                context.report(
+                                context.issues.push(
                                     Issue::error(message)
                                         .with_annotation(Annotation::primary(item.variable().span()))
                                         .with_annotations([
@@ -1505,7 +1511,7 @@ impl SemanticsWalker {
                                 format!("property `{}::{}` has already been defined", class_like_name, item_name)
                             };
 
-                            context.report(
+                            context.issues.push(
                                 Issue::error(message)
                                     .with_annotation(Annotation::primary(item_variable.span()))
                                     .with_annotations([
@@ -1533,7 +1539,7 @@ impl SemanticsWalker {
                     if let Some((previous, _)) =
                         method_names.iter().find(|(_, previous_name)| method_name_lowered_id.eq(previous_name))
                     {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "{} method `{}::{}` has already been defined",
                                 class_like_kind, class_like_name, method_name
@@ -1570,7 +1576,7 @@ impl SemanticsWalker {
                                         )
                                     };
 
-                                    context.report(
+                                    context.issues.push(
                                         Issue::error(message)
                                             .with_annotation(Annotation::primary(parameter.variable.span()))
                                             .with_annotations([
@@ -1598,7 +1604,7 @@ impl SemanticsWalker {
 
                         if let Some((is_constant, name, span)) = constant_names.iter().find(|t| t.1.eq(&item_name)) {
                             if *is_constant {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "{} constant `{}::{}` has already been defined",
                                         class_like_kind, class_like_name, name,
@@ -1616,7 +1622,7 @@ impl SemanticsWalker {
                                     ]),
                                 );
                             } else {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "{} case `{}::{}` and constant `{}::{}` cannot have the same name",
                                         class_like_kind, class_like_name, name, class_like_name, name
@@ -1644,7 +1650,7 @@ impl SemanticsWalker {
 
                     if let Some((is_constant, name, span)) = constant_names.iter().find(|t| t.1.eq(&case_name)) {
                         if *is_constant {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "{} case `{}::{}` and constant `{}::{}` cannot have the same name",
                                     class_like_kind, class_like_name, name, class_like_name, name
@@ -1662,7 +1668,7 @@ impl SemanticsWalker {
                                 ]),
                             );
                         } else {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "{} case `{}::{}` has already been defined",
                                     class_like_kind, class_like_name, name,
@@ -1714,7 +1720,7 @@ impl SemanticsWalker {
                 | Modifier::PrivateSet(k)
                 | Modifier::ProtectedSet(k)
                 | Modifier::PublicSet(k) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "`{}` modifier is not allowed on constants",
                             context.interner.lookup(&k.value),
@@ -1732,7 +1738,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Final(_) => {
                     if let Some(last_final) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error("duplicate `final` modifier on constant")
                                 .with_annotation(Annotation::primary(modifier.span()))
                                 .with_annotations([
@@ -1753,7 +1759,7 @@ impl SemanticsWalker {
                 }
                 Modifier::Private(_) | Modifier::Protected(_) | Modifier::Public(_) => {
                     if let Some(last_visibility) = last_visibility {
-                        context.report(
+                        context.issues.push(
                             Issue::error("duplicate visibility modifier on constant")
                                 .with_annotation(Annotation::primary(modifier.span()))
                                 .with_annotations([
@@ -1779,7 +1785,7 @@ impl SemanticsWalker {
             let item_name = context.interner.lookup(&item.name.value);
 
             if !item.value.is_constant(context.version, false) {
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "Constant `{}::{}` value contains a non-constant expression.",
                         class_like_name, item_name
@@ -1806,7 +1812,7 @@ impl SemanticsWalker {
     ) {
         for parameter in parameter_list.parameters.iter() {
             if parameter.is_promoted_property() {
-                context.report(
+                context.issues.push(
                     Issue::error("Promoted properties are not allowed outside of constructors.")
                         .with_annotation(
                             Annotation::primary(parameter.span()).with_message("Promoted property found here."),
@@ -1818,24 +1824,24 @@ impl SemanticsWalker {
     }
 }
 
-impl Walker<Context<'_>> for SemanticsWalker {
-    fn walk_in_statement(&self, statement: &Statement, context: &mut Context<'_>) {
-        context.push_ancestor(statement.span());
+impl MutWalker<Context<'_>> for SemanticsWalker {
+    fn walk_in_statement(&mut self, statement: &Statement, context: &mut Context<'_>) {
+        context.ancestors.push(statement.span());
     }
 
-    fn walk_in_expression(&self, expression: &Expression, context: &mut Context<'_>) {
-        context.push_ancestor(expression.span());
+    fn walk_in_expression(&mut self, expression: &Expression, context: &mut Context<'_>) {
+        context.ancestors.push(expression.span());
     }
 
-    fn walk_out_statement(&self, _statement: &Statement, context: &mut Context<'_>) {
-        context.pop_ancestor();
+    fn walk_out_statement(&mut self, _statement: &Statement, context: &mut Context<'_>) {
+        context.ancestors.pop();
     }
 
-    fn walk_out_expression(&self, _expression: &Expression, context: &mut Context<'_>) {
-        context.pop_ancestor();
+    fn walk_out_expression(&mut self, _expression: &Expression, context: &mut Context<'_>) {
+        context.ancestors.pop();
     }
 
-    fn walk_in_program(&self, program: &Program, context: &mut Context<'_>) {
+    fn walk_in_program(&mut self, program: &Program, context: &mut Context<'_>) {
         let mut index = 0;
         let mut before = vec![];
 
@@ -1862,7 +1868,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let name = context.interner.lookup(&item.name.value);
 
                     if name.eq_ignore_ascii_case(STRICT_TYPES_DECLARE_DIRECTIVE) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Strict type declaration must be the first statement in the file.")
                                 .with_annotation(
                                     Annotation::primary(declare.span())
@@ -1902,7 +1908,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
 
             if let Statement::Namespace(namespace) = statement {
-                context.report(
+                context.issues.push(
                     Issue::error("Namespace must be the first statement in the file.")
                         .with_annotation(
                             Annotation::primary(namespace.span()).with_message("Namespace statement found here."),
@@ -1916,8 +1922,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
         }
 
-        let program = context.program();
-        let namespaces = program.filter_map(|node| if let Node::Namespace(ns) = node { Some(*ns) } else { None });
+        let namespaces =
+            Node::Program(context.program)
+                .filter_map(|node| if let Node::Namespace(ns) = node { Some(*ns) } else { None });
 
         let mut last_unbraced = None;
         let mut last_braced = None;
@@ -1931,7 +1938,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             match &namespace.body {
                 NamespaceBody::Implicit(body) => {
                     if namespace.name.is_none() {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Unbraced namespace must be named.")
                                 .with_annotation(
                                     Annotation::primary(namespace.span().join(body.terminator.span()))
@@ -1946,7 +1953,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                     last_unbraced = Some((namespace_span, body.span()));
                     if let Some((last_namespace_span, last_body_span)) = last_braced {
-                        context.report(
+                        context.issues.push(
                             Issue::error(
                                 "Cannot mix unbraced namespace declarations with braced namespace declarations.",
                             )
@@ -1970,7 +1977,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     last_braced = Some((namespace_span, body.span()));
 
                     if let Some((last_namespace_span, last_body_span)) = last_unbraced {
-                        context.report(
+                        context.issues.push(
                             Issue::error(
                                 "Cannot mix braced namespace declarations with unbraced namespace declarations.",
                             )
@@ -1994,8 +2001,8 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_short_opening_tag(&self, short_opening_tag: &ShortOpeningTag, context: &mut Context<'_>) {
-        context.report(
+    fn walk_in_short_opening_tag(&mut self, short_opening_tag: &ShortOpeningTag, context: &mut Context<'_>) {
+        context.issues.push(
             Issue::error("Short opening tag `<?` is no longer supported.")
                 .with_annotation(
                     Annotation::primary(short_opening_tag.span()).with_message("Short opening tag used here."),
@@ -2005,7 +2012,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         );
     }
 
-    fn walk_in_declare(&self, declare: &Declare, context: &mut Context<'_>) {
+    fn walk_in_declare(&mut self, declare: &Declare, context: &mut Context<'_>) {
         for item in declare.items.iter() {
             let name = context.interner.lookup(&item.name.value);
 
@@ -2017,7 +2024,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     };
 
                     if !matches!(value, Some(0) | Some(1)) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("The `strict_types` directive must be set to either `0` or `1`.")
                                 .with_annotation(
                                     Annotation::primary(item.value.span())
@@ -2028,11 +2035,11 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         );
                     }
 
-                    if context.get_ancestors_len() > 2 {
+                    if context.ancestors.len() > 2 {
                         // get the span of the parent, and label it.
-                        let parent = context.get_ancestor(context.get_ancestors_len() - 2);
+                        let parent = context.ancestors[context.ancestors.len() - 2];
 
-                        context.report(
+                        context.issues.push(
                             Issue::error("The `strict_types` directive must be declared at the top level.")
                                 .with_annotation(
                                     Annotation::primary(declare.span()).with_message("Directive declared here."),
@@ -2047,7 +2054,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 TICKS_DECLARE_DIRECTIVE => {
                     if !matches!(item.value, Expression::Literal(Literal::Integer(_))) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("The `ticks` directive must be set to a literal integer.")
                                 .with_annotation(
                                     Annotation::primary(item.value.span())
@@ -2060,7 +2067,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 ENCODING_DECLARE_DIRECTIVE => {
                     if !matches!(item.value, Expression::Literal(Literal::String(_))) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("The `encoding` declare directive must be set to a literal integer")
                                 .with_annotation(
                                     Annotation::primary(item.value.span())
@@ -2072,7 +2079,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
                 }
                 _ => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "`{}` is not a supported `declare` directive. Supported directives are: `{}`.",
                             name,
@@ -2092,12 +2099,12 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_namespace(&self, namespace: &Namespace, context: &mut Context<'_>) {
-        if context.get_ancestors_len() > 2 {
+    fn walk_in_namespace(&mut self, namespace: &Namespace, context: &mut Context<'_>) {
+        if context.ancestors.len() > 2 {
             // get the span of the parent, and label it.
-            let parent = context.get_ancestor(context.get_ancestors_len() - 2);
+            let parent = context.ancestors[context.ancestors.len() - 2];
 
-            context.report(
+            context.issues.push(
                 Issue::error("Namespace declaration must be at the top level.")
                     .with_annotation(
                         Annotation::primary(namespace.span())
@@ -2113,15 +2120,15 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_hint(&self, hint: &Hint, context: &mut Context<'_>) {
-        context.hint_depth += 1;
+    fn walk_in_hint(&mut self, hint: &Hint, context: &mut Context<'_>) {
+        self.hint_depth += 1;
 
         match hint {
             Hint::Parenthesized(parenthesized_hint) => {
                 if !parenthesized_hint.hint.is_parenthesizable() {
-                    let val = context.lookup_hint(&parenthesized_hint.hint);
+                    let val = context.get_code_snippet(&parenthesized_hint.hint);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be parenthesized.", val))
                             .with_annotation(
                                 Annotation::primary(parenthesized_hint.hint.span())
@@ -2138,7 +2145,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             Hint::Nullable(nullable_hint) => {
                 if !context.version.is_supported(Feature::NullableTypeHint) {
-                    context.report(
+                    context.issues.push(
                         Issue::error("The `?` nullable type hint is only available in PHP 7.1 and above.")
                             .with_annotation(
                                 Annotation::primary(hint.span()).with_message("`?` nullable type hint used here."),
@@ -2148,9 +2155,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
 
                 if nullable_hint.hint.is_standalone() || nullable_hint.hint.is_complex() {
-                    let val = context.lookup_hint(&nullable_hint.hint);
+                    let val = context.get_code_snippet(&nullable_hint.hint);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be nullable.", val))
                             .with_annotation(
                                 Annotation::primary(nullable_hint.hint.span()).with_message("Invalid nullable type."),
@@ -2164,9 +2171,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             Hint::Union(union_hint) => {
                 if !union_hint.left.is_unionable() {
-                    let val = context.lookup_hint(&union_hint.left);
+                    let val = context.get_code_snippet(&union_hint.left);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be part of a union.", val))
                             .with_annotation(
                                 Annotation::primary(union_hint.left.span()).with_message("Invalid union type."),
@@ -2180,9 +2187,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
 
                 if !union_hint.right.is_unionable() {
-                    let val = context.lookup_hint(&union_hint.right);
+                    let val = context.get_code_snippet(&union_hint.right);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be part of a union.", val))
                             .with_annotation(
                                 Annotation::primary(union_hint.right.span()).with_message("Invalid union type."),
@@ -2197,7 +2204,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             Hint::Intersection(intersection_hint) => {
                 if !context.version.is_supported(Feature::PureIntersectionTypes) {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Intersection types are only available in PHP 8.1 and above.")
                             .with_annotation(
                                 Annotation::primary(intersection_hint.span()).with_message("Intersection type used here."),
@@ -2210,9 +2217,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
 
                 if !intersection_hint.left.is_intersectable() {
-                    let val = context.lookup_hint(&intersection_hint.left);
+                    let val = context.get_code_snippet(&intersection_hint.left);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
                             .with_annotation(
                                 Annotation::primary(intersection_hint.left.span())
@@ -2228,9 +2235,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
 
                 if !intersection_hint.right.is_intersectable() {
-                    let val = context.lookup_hint(&intersection_hint.right);
+                    let val = context.get_code_snippet(&intersection_hint.right);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
                             .with_annotation(
                                 Annotation::primary(intersection_hint.right.span())
@@ -2246,46 +2253,46 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
             }
             Hint::True(hint) if !context.version.is_supported(Feature::TrueTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("The `true` type hint is only available in PHP 8.2 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`true` type hint used here."))
                         .with_help("Upgrade to PHP 8.2 or above to use the `true` type hint."),
                 );
             }
-            Hint::False(hint) if context.hint_depth == 1 && !context.version.is_supported(Feature::FalseTypeHint) => {
-                context.report(
+            Hint::False(hint) if self.hint_depth == 1 && !context.version.is_supported(Feature::FalseTypeHint) => {
+                context.issues.push(
                     Issue::error("The `false` type hint is only available in PHP 8.2 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`false` type hint used here."))
                         .with_help("Upgrade to PHP 8.2 or above to use the `false` type hint."),
                 );
             }
             Hint::False(hint)
-                if context.hint_depth != 1 && !context.version.is_supported(Feature::FalseCompoundTypeHint) =>
+                if self.hint_depth != 1 && !context.version.is_supported(Feature::FalseCompoundTypeHint) =>
             {
-                context.report(
+                context.issues.push(
                     Issue::error("The compound `false` type hint is only available in PHP 8.0 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`false` type hint used here."))
                         .with_help("Upgrade to PHP 8.0 or above to use the `false` type hint."),
                 );
             }
-            Hint::Null(hint) if context.hint_depth == 1 && !context.version.is_supported(Feature::NullTypeHint) => {
-                context.report(
+            Hint::Null(hint) if self.hint_depth == 1 && !context.version.is_supported(Feature::NullTypeHint) => {
+                context.issues.push(
                     Issue::error("The `null` type hint is only available in PHP 8.2 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`null` type hint used here."))
                         .with_help("Upgrade to PHP 8.2 or above to use the `null` type hint."),
                 );
             }
             Hint::Null(hint)
-                if context.hint_depth != 1 && !context.version.is_supported(Feature::NullCompoundTypeHint) =>
+                if self.hint_depth != 1 && !context.version.is_supported(Feature::NullCompoundTypeHint) =>
             {
-                context.report(
+                context.issues.push(
                     Issue::error("The compound `null` type hint is only available in PHP 8.0 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`null` type hint used here."))
                         .with_help("Upgrade to PHP 8.0 or above to use the `null` type hint."),
                 );
             }
             Hint::Iterable(hint) if !context.version.is_supported(Feature::IterableTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("The `iterable` type hint is only available in PHP 7.1 and above.")
                         .with_annotation(
                             Annotation::primary(hint.span()).with_message("`iterable` type hint used here."),
@@ -2294,21 +2301,21 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 );
             }
             Hint::Void(hint) if !context.version.is_supported(Feature::VoidTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("The `void` type hint is only available in PHP 7.1 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`void` type hint used here."))
                         .with_help("Upgrade to PHP 7.1 or above to use the `void` type hint."),
                 );
             }
             Hint::Mixed(hint) if !context.version.is_supported(Feature::MixedTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("The `mixed` type hint is only available in PHP 8.0 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`mixed` type hint used here."))
                         .with_help("Upgrade to PHP 8.0 or above to use the `mixed` type hint."),
                 );
             }
             Hint::Never(hint) if !context.version.is_supported(Feature::NeverTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("The `never` type hint is only available in PHP 8.1 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("`never` type hint used here."))
                         .with_help("Upgrade to PHP 8.1 or above to use the `never` type hint."),
@@ -2331,19 +2338,19 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         }
 
-        context.report(
+        context.issues.push(
             Issue::error("Disjunctive Normal Form (DNF) types are only available in PHP 8.2 and above.")
                 .with_annotation(Annotation::primary(hint.span()).with_message("DNF type used here.")),
         );
     }
 
-    fn walk_out_hint(&self, _hint: &Hint, context: &mut Context<'_>) {
-        context.hint_depth -= 1;
+    fn walk_out_hint(&mut self, _hint: &Hint, _context: &mut Context<'_>) {
+        self.hint_depth -= 1;
     }
 
-    fn walk_in_try(&self, r#try: &Try, context: &mut Context<'_>) {
+    fn walk_in_try(&mut self, r#try: &Try, context: &mut Context<'_>) {
         if r#try.catch_clauses.is_empty() && r#try.finally_clause.is_none() {
-            context.report(
+            context.issues.push(
                 Issue::error("Cannot use `try` without a `catch` or `finally` clause.")
                     .with_annotation(
                         Annotation::primary(r#try.span()).with_message("`try` statement without `catch` or `finally`."),
@@ -2355,13 +2362,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_property_hook(&self, property_hook: &PropertyHook, context: &mut Context<'_>) {
+    fn walk_in_property_hook(&mut self, property_hook: &PropertyHook, context: &mut Context<'_>) {
         if let Some(parameter_list) = &property_hook.parameters {
             self.process_promoted_properties_outside_constructor(parameter_list, context);
         }
     }
 
-    fn walk_in_method(&self, method: &Method, context: &mut Context<'_>) {
+    fn walk_in_method(&mut self, method: &Method, context: &mut Context<'_>) {
         let name = context.interner.lookup(&method.name.value);
         if name != "__construct" {
             self.process_promoted_properties_outside_constructor(&method.parameter_list, context);
@@ -2372,7 +2379,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         if let Some(abstract_modifier) = method.modifiers.get_abstract() {
             for parameter in method.parameter_list.parameters.iter() {
                 if parameter.is_promoted_property() {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Promoted properties are not allowed in abstract constructors.")
                             .with_annotation(
                                 Annotation::primary(parameter.span()).with_message("Promoted property used here."),
@@ -2390,16 +2397,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_class(&self, class: &Class, context: &mut Context<'_>) {
+    fn walk_in_class(&mut self, class: &Class, context: &mut Context<'_>) {
         let class_name = context.interner.lookup(&class.name.value);
-        let class_fqcn = context.lookup_name(&class.name.span.start);
+        let class_fqcn = context.get_name(&class.name.span.start);
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
                 .any(|keyword| keyword.eq_ignore_ascii_case(class_name))
         {
-            context.report(
+            context.issues.push(
                 Issue::error(format!("Class `{}` name cannot be a reserved keyword.", class_name))
                     .with_annotation(
                         Annotation::primary(class.name.span())
@@ -2420,7 +2427,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for modifier in class.modifiers.iter() {
             match &modifier {
                 Modifier::Static(_) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Class `{}` cannot have the `static` modifier.", class_name))
                             .with_annotation(
                                 Annotation::primary(modifier.span()).with_message("`static` modifier applied here."),
@@ -2440,7 +2447,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 | Modifier::PrivateSet(keyword) => {
                     let visibility_name = context.interner.lookup(&keyword.value);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Class `{}` cannot have the `{}` visibility modifier.",
                             class_name, visibility_name
@@ -2458,7 +2465,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Modifier::Final(keyword) => {
                     if let Some(span) = last_abstract {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Abstract class `{}` cannot have the `final` modifier.", class_name))
                                 .with_annotation(
                                     Annotation::primary(keyword.span()).with_message("`final` modifier applied here."),
@@ -2474,7 +2481,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     if let Some(span) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Class `{}` cannot have multiple `final` modifiers.", class_name))
                                 .with_annotation(
                                     Annotation::primary(keyword.span())
@@ -2493,7 +2500,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Modifier::Abstract(keyword) => {
                     if let Some(span) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Final class `{}` cannot have the `abstract` modifier.", class_name))
                                 .with_annotation(
                                     Annotation::primary(keyword.span())
@@ -2509,7 +2516,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     if let Some(span) = last_abstract {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Class `{}` cannot have multiple `abstract` modifiers.", class_name))
                                 .with_annotation(
                                     Annotation::primary(keyword.span())
@@ -2529,7 +2536,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Modifier::Readonly(keyword) => {
                     if let Some(span) = last_readonly {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Class `{}` cannot have multiple `readonly` modifiers.", class_name))
                                 .with_annotation(
                                     Annotation::primary(keyword.span())
@@ -2555,7 +2562,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 let issue = Issue::error("Readonly classes are only available in PHP 8.2 and above.")
                     .with_annotation(Annotation::primary(modifier.span()).with_message("Readonly modifier used here."));
 
-                context.report(issue);
+                context.issues.push(issue);
             }
         }
 
@@ -2572,7 +2579,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for memeber in class.members.iter() {
             match &memeber {
                 ClassLikeMember::EnumCase(case) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Class `{}` cannot contain enum cases.", class_name))
                             .with_annotation(Annotation::primary(case.span()).with_message("Enum case found in class."))
                             .with_annotation(
@@ -2586,7 +2593,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let method_name = context.interner.lookup(&method.name.value);
 
                     if !class.modifiers.contains_abstract() && method.modifiers.contains_abstract() {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Class `{}` contains an abstract method `{}`, so the class must be declared abstract.",
                                 class_name, method_name
@@ -2625,16 +2632,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_interface(&self, interface: &Interface, context: &mut Context<'_>) {
+    fn walk_in_interface(&mut self, interface: &Interface, context: &mut Context<'_>) {
         let interface_name = context.interner.lookup(&interface.name.value);
-        let interface_fqcn = context.lookup_name(&interface.name.span.start);
+        let interface_fqcn = context.get_name(&interface.name.span.start);
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
                 .any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
         {
-            context.report(
+            context.issues.push(
                 Issue::error(format!("Interface `{}` name cannot be a reserved keyword.", interface_name))
                     .with_annotation(
                         Annotation::primary(interface.name.span())
@@ -2672,7 +2679,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for memeber in interface.members.iter() {
             match &memeber {
                 ClassLikeMember::TraitUse(trait_use) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Interface `{}` cannot use traits.", interface_name))
                             .with_annotation(Annotation::primary(trait_use.span()).with_message("Trait use statement."))
                             .with_annotation(
@@ -2683,7 +2690,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::EnumCase(case) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Interface `{}` cannot contain enum cases.", interface_name))
                             .with_annotation(
                                 Annotation::primary(case.span())
@@ -2710,7 +2717,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     for visibility in visibilities {
                         let visibility_name = visibility.as_str(context.interner);
 
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Interface method `{}::{}` cannot have `{}` modifier.",
                                 interface_name, method_name, visibility_name
@@ -2732,7 +2739,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     if let MethodBody::Concrete(body) = &method.body {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Interface method `{}::{}` cannot have a body.",
                                 interface_name, method_name
@@ -2749,7 +2756,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Interface method `{}::{}` must not be abstract.",
                                 interface_name, method_name
@@ -2785,7 +2792,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 ClassLikeMember::Property(property) => {
                     match &property {
                         Property::Plain(plain_property) => {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Interface `{}` cannot have non-hooked properties.",
                                     interface_name
@@ -2826,7 +2833,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             for visibility in write_visibilities {
                                 let visibility_name = visibility.as_str(context.interner);
 
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Interface virtual property `{}::{}` must not specify asymmetric visibility.",
                                         interface_name, property_name,
@@ -2849,7 +2856,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             for visibility in non_public_read_visibilities {
                                 let visibility_name = visibility.as_str(context.interner);
 
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Interface virtual property `{}::{}` cannot have `{}` modifier.",
                                         interface_name, property_name, visibility_name,
@@ -2870,7 +2877,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             }
 
                             if !found_public {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Interface virtual property `{}::{}` must be declared public.",
                                         interface_name, property_name
@@ -2888,7 +2895,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             }
 
                             if let Some(abstract_modifier) = hooked_property.modifiers.get_abstract() {
-                                context.report(
+                                context.issues.push(
                                         Issue::error(format!(
                                             "Interface virtual property `{}::{}` cannot be abstract.",
                                             interface_name, property_name
@@ -2910,7 +2917,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                             }
 
                             if let PropertyItem::Concrete(item) = &hooked_property.item {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Interface virtual property `{}::{}` cannot have a default value.",
                                         interface_name, property_name
@@ -2935,7 +2942,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
                             for hook in hooked_property.hooks.hooks.iter() {
                                 if let PropertyHookBody::Concrete(property_hook_concrete_body) = &hook.body {
-                                    context.report(
+                                    context.issues.push(
                                         Issue::error(format!(
                                             "Interface virtual property `{}::{}` must be abstract.",
                                             interface_name, property_name
@@ -2980,7 +2987,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     for visibility in non_public_read_visibility.iter() {
                         let visibility_name = visibility.as_str(context.interner);
 
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Interface constant cannot have `{}` visibility modifier.",
                                 visibility_name,
@@ -3012,16 +3019,16 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_trait(&self, r#trait: &Trait, context: &mut Context<'_>) {
+    fn walk_in_trait(&mut self, r#trait: &Trait, context: &mut Context<'_>) {
         let class_like_name = context.interner.lookup(&r#trait.name.value);
-        let class_like_fqcn = context.lookup_name(&r#trait.name.span.start);
+        let class_like_fqcn = context.get_name(&r#trait.name.span.start);
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
                 .iter()
                 .any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
         {
-            context.report(
+            context.issues.push(
                 Issue::error(format!("Trait `{}` name cannot be a reserved keyword.", class_like_name))
                     .with_annotation(
                         Annotation::primary(r#trait.name.span())
@@ -3040,7 +3047,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for member in r#trait.members.iter() {
             match &member {
                 ClassLikeMember::EnumCase(case) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Trait `{}` cannot contain enum cases.", class_like_name))
                             .with_annotation(Annotation::primary(case.span()).with_message("Enum case defined here."))
                             .with_annotation(
@@ -3077,7 +3084,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 ClassLikeMember::Constant(class_like_constant) => {
                     if !context.version.is_supported(Feature::ConstantsInTraits) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Constants in traits are only available in PHP 8.2 and above.")
                                 .with_annotation(
                                     Annotation::primary(class_like_constant.span())
@@ -3104,22 +3111,22 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_enum(&self, r#enum: &Enum, context: &mut Context<'_>) {
+    fn walk_in_enum(&mut self, r#enum: &Enum, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::Enums) {
-            context.report(
+            context.issues.push(
                 Issue::error("Enums are only available in PHP 8.1 and above.")
                     .with_annotation(Annotation::primary(r#enum.span()).with_message("Enum defined here.")),
             );
         }
 
         let enum_name = context.interner.lookup(&r#enum.name.value);
-        let enum_fqcn = context.lookup_name(&r#enum.name.span.start);
+        let enum_fqcn = context.get_name(&r#enum.name.span.start);
         let enum_is_backed = r#enum.backing_type_hint.is_some();
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
         {
-            context.report(
+            context.issues.push(
                 Issue::error(format!("Enum `{}` name cannot be a reserved keyword.", enum_name))
                     .with_annotation(
                         Annotation::primary(r#enum.name.span())
@@ -3135,9 +3142,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if let Some(EnumBackingTypeHint { hint, .. }) = &r#enum.backing_type_hint {
             if !matches!(hint, Hint::String(_) | Hint::Integer(_)) {
-                let key = context.lookup_hint(hint);
+                let key = context.get_code_snippet(hint);
 
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "Enum `{}` backing type must be either `string` or `int`, but found `{}`.",
                         enum_name, key
@@ -3170,7 +3177,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     match &case.item {
                         EnumCaseItem::Unit(_) => {
                             if enum_is_backed {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Case `{}` of backed enum `{}` must have a value.",
                                         item_name, enum_name
@@ -3192,7 +3199,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         }
                         EnumCaseItem::Backed(item) => {
                             if !enum_is_backed {
-                                context.report(
+                                context.issues.push(
                                     Issue::error(format!(
                                         "Case `{}` of unbacked enum `{}` must not have a value.",
                                         item_name, enum_name
@@ -3225,7 +3232,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     if let Some(magic_method) =
                         MAGIC_METHODS.iter().find(|magic_method| magic_method.eq_ignore_ascii_case(method_name))
                     {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Enum `{}` cannot contain magic method `{}`.",
                                 enum_name, magic_method
@@ -3246,7 +3253,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Enum method `{}::{}` must not be abstract.", enum_name, method_name))
                                 .with_annotation(
                                     Annotation::primary(abstract_modifier.span())
@@ -3277,7 +3284,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 ClassLikeMember::Property(property) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Enum `{}` cannot have properties.", enum_name))
                             .with_annotation(
                                 Annotation::primary(property.span()).with_message("Property defined here."),
@@ -3306,7 +3313,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_anonymous_class(&self, anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
+    fn walk_in_anonymous_class(&mut self, anonymous_class: &AnonymousClass, context: &mut Context<'_>) {
         let mut last_final = None;
         let mut last_readonly = None;
 
@@ -3322,7 +3329,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 | Modifier::Private(_) => {
                     let modifier_name = modifier.as_str(context.interner);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Anonymous class `{}` cannot have the `{}` modifier.",
                             ANONYMOUS_CLASS_NAME, modifier_name
@@ -3340,7 +3347,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Modifier::Final(keyword) => {
                     if let Some(span) = last_final {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Anonymous class `{}` cannot have multiple `final` modifiers.",
                                 ANONYMOUS_CLASS_NAME
@@ -3364,7 +3371,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Modifier::Readonly(keyword) => {
                     if let Some(span) = last_readonly {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Anonymous class `{}` cannot have multiple `readonly` modifiers.",
                                 ANONYMOUS_CLASS_NAME
@@ -3383,7 +3390,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     last_readonly = Some(keyword.span);
 
                     if !context.version.is_supported(Feature::ReadonlyAnonymousClasses) {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Readonly anonymous classes are only available in PHP 8.3 and above.")
                                 .with_annotation(
                                     Annotation::primary(keyword.span).with_message("Readonly modifier used here."),
@@ -3436,7 +3443,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for member in anonymous_class.members.iter() {
             match &member {
                 ClassLikeMember::EnumCase(case) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Anonymous class `{}` cannot contain enum cases.", ANONYMOUS_CLASS_NAME))
                             .with_annotations([
                                 Annotation::primary(case.span()).with_message("Enum case defined here."),
@@ -3450,7 +3457,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     let method_name = context.interner.lookup(&method.name.value);
 
                     if let Some(abstract_modifier) = method.modifiers.get_abstract() {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Method `{}` in anonymous class `{}` must not be abstract.",
                                 method_name, ANONYMOUS_CLASS_NAME
@@ -3504,11 +3511,11 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_function(&self, function: &Function, context: &mut Context<'_>) {
+    fn walk_in_function(&mut self, function: &Function, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&function.parameter_list, context);
 
         let name = context.interner.lookup(&function.name.value);
-        let fqfn = context.lookup_name(&function.name.span.start);
+        let fqfn = context.get_name(&function.name.span.start);
 
         let hint = if let Some(return_hint) = &function.return_type_hint {
             &return_hint.hint
@@ -3522,7 +3529,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             Hint::Void(_) => {
                 for r#return in returns {
                     if let Some(val) = &r#return.value {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Function `{}` with return type `void` must not return a value.",
                                 name
@@ -3539,7 +3546,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             Hint::Never(_) => {
                 for r#return in returns {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Function `{}` with return type `never` must not return.", name))
                             .with_annotation(
                                 Annotation::primary(r#return.span()).with_message("Return statement found here."),
@@ -3555,7 +3562,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             _ if !returns_generator(context, &function.body, hint) => {
                 for r#return in returns {
                     if r#return.value.is_none() {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!("Function `{}` with a return type must return a value.", name))
                                 .with_annotation(
                                     Annotation::primary(r#return.span())
@@ -3575,9 +3582,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_attribute_list(&self, attribute_list: &AttributeList, context: &mut Context<'_>) {
+    fn walk_in_attribute_list(&mut self, attribute_list: &AttributeList, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::Attribute) {
-            context.report(
+            context.issues.push(
                 Issue::error("Attributes are only available in PHP 8.0 and above.")
                     .with_annotation(
                         Annotation::primary(attribute_list.span()).with_message("Attribute list used here."),
@@ -3587,7 +3594,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_attribute(&self, attribute: &Attribute, context: &mut Context<'_>) {
+    fn walk_in_attribute(&mut self, attribute: &Attribute, context: &mut Context<'_>) {
         let name = context.interner.lookup(&attribute.name.value());
         if let Some(list) = &attribute.arguments {
             for argument in list.arguments.iter() {
@@ -3599,7 +3606,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 };
 
                 if let Some(ellipsis) = ellipsis {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Cannot use argument unpacking in attribute arguments.")
                             .with_annotation(
                                 Annotation::primary(ellipsis.span()).with_message("Argument unpacking used here."),
@@ -3613,7 +3620,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
 
                 if !value.is_constant(context.version, true) {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!("Attribute `{}` argument contains a non-constant expression.", name))
                             .with_annotations([
                                 Annotation::primary(value.span()).with_message("Non-constant expression used here."),
@@ -3627,9 +3634,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_goto(&self, goto: &Goto, context: &mut Context<'_>) {
+    fn walk_in_goto(&mut self, goto: &Goto, context: &mut Context<'_>) {
         let all_labels =
-            context.program().filter_map(|node| if let Node::Label(label) = node { Some(*label) } else { None });
+            Node::Program(context.program)
+                .filter_map(|node| if let Node::Label(label) = node { Some(*label) } else { None });
 
         if all_labels.iter().any(|l| l.name.value == goto.label.value) {
             return;
@@ -3668,10 +3676,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
             ));
         }
 
-        context.report(issue);
+        context.issues.push(issue);
     }
 
-    fn walk_in_argument_list(&self, argument_list: &ArgumentList, context: &mut Context<'_>) {
+    fn walk_in_argument_list(&mut self, argument_list: &ArgumentList, context: &mut Context<'_>) {
         let mut last_named_argument: Option<Span> = None;
         let mut last_unpacking: Option<Span> = None;
 
@@ -3680,7 +3688,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 Argument::Positional(positional_argument) => {
                     if let Some(ellipsis) = positional_argument.ellipsis {
                         if let Some(last_named_argument) = last_named_argument {
-                            context.report(
+                            context.issues.push(
                                 Issue::error("Cannot use argument unpacking after a named argument.")
                                     .with_annotation(
                                         Annotation::primary(ellipsis.span()).with_message("Unpacking argument here."),
@@ -3695,7 +3703,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         last_unpacking = Some(ellipsis.span());
                     } else {
                         if let Some(named_argument) = last_named_argument {
-                            context.report(
+                            context.issues.push(
                                 Issue::error("Cannot use positional argument after a named argument.")
                                     .with_annotation(
                                         Annotation::primary(positional_argument.span())
@@ -3709,7 +3717,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                         }
 
                         if let Some(unpacking) = last_unpacking {
-                            context.report(
+                            context.issues.push(
                                 Issue::error("Cannot use positional argument after argument unpacking.")
                                     .with_annotation(
                                         Annotation::primary(positional_argument.span())
@@ -3725,7 +3733,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 }
                 Argument::Named(named_argument) => {
                     if let Some(ellipsis) = named_argument.ellipsis {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Cannot use argument unpacking in named arguments.")
                                 .with_annotation(
                                     Annotation::primary(ellipsis.span())
@@ -3746,7 +3754,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::TrailingCommaInFunctionCalls) {
             if let Some(last_comma) = argument_list.arguments.get_trailing_token() {
-                context.report(
+                context.issues.push(
                     Issue::error("Trailing comma in function calls is only available in PHP 7.3 and later.")
                         .with_annotation(
                             Annotation::primary(last_comma.span).with_message("Trailing comma found here."),
@@ -3759,7 +3767,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_closure(&self, closure: &Closure, context: &mut Context<'_>) {
+    fn walk_in_closure(&mut self, closure: &Closure, context: &mut Context<'_>) {
         self.process_promoted_properties_outside_constructor(&closure.parameter_list, context);
 
         let hint = if let Some(return_hint) = &closure.return_type_hint {
@@ -3774,7 +3782,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             Hint::Void(_) => {
                 for r#return in returns {
                     if let Some(val) = &r#return.value {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Closure with a return type of `void` must not return a value.")
                                 .with_annotation(
                                     Annotation::primary(val.span())
@@ -3792,7 +3800,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
             Hint::Never(_) => {
                 for r#return in returns {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Closure with a return type of `never` must not include a return statement.")
                             .with_annotation(
                                 Annotation::primary(r#return.span())
@@ -3810,7 +3818,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             _ if !returns_generator(context, &closure.body, hint) => {
                 for r#return in returns {
                     if r#return.value.is_none() {
-                        context.report(
+                        context.issues.push(
                             Issue::error("Closure with a return type must return a value.")
                                 .with_annotation(
                                     Annotation::primary(r#return.span()).with_message("Missing return value."),
@@ -3836,7 +3844,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 return;
             };
 
-            context.report(
+            context.issues.push(
                 Issue::error("Trailing comma in closure use list is only available in PHP 8.0 and later.")
                     .with_annotation(
                         Annotation::primary(trailing_comma.span).with_message("Trailing comma found here."),
@@ -3848,14 +3856,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_arrow_function(&self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
+    fn walk_in_arrow_function(&mut self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::ArrowFunctions) {
             let issue = Issue::error("The `fn` keyword for arrow functions is only available in PHP 7.4 and later.")
                 .with_annotation(
                     Annotation::primary(arrow_function.span()).with_message("Arrow function uses `fn` keyword."),
                 );
 
-            context.report(issue);
+            context.issues.push(issue);
         }
 
         self.process_promoted_properties_outside_constructor(&arrow_function.parameter_list, context);
@@ -3868,7 +3876,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             // see: https://3v4l.org/VgoiO
             match &return_hint.hint {
                 Hint::Void(_) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Arrow function cannot have a return type of `void`.")
                             .with_annotation(
                                 Annotation::primary(return_hint.hint.span())
@@ -3882,7 +3890,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     );
                 }
                 Hint::Never(_) if !context.version.is_supported(Feature::NeverReturnTypeInArrowFunction) => {
-                    context.report(
+                    context.issues.push(
                         Issue::error(
                             "The `never` return type in arrow functions is only available in PHP 8.2 and later.",
                         )
@@ -3902,7 +3910,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_function_like_parameter_list(
-        &self,
+        &mut self,
         function_like_parameter_list: &FunctionLikeParameterList,
         context: &mut Context<'_>,
     ) {
@@ -3913,7 +3921,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             if let Some(prev_span) =
                 parameters_seen.iter().find_map(|(n, s)| if parameter.variable.name.eq(n) { Some(s) } else { None })
             {
-                context.report(
+                context.issues.push(
                     Issue::error(format!("Parameter `{}` is already defined.", name))
                         .with_annotation(
                             Annotation::primary(parameter.variable.span())
@@ -3934,7 +3942,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             for modifier in parameter.modifiers.iter() {
                 match &modifier {
                     Modifier::Static(keyword) | Modifier::Final(keyword) | Modifier::Abstract(keyword) => {
-                        context.report(
+                        context.issues.push(
                             Issue::error(format!(
                                 "Parameter `{}` cannot have the `{}` modifier.",
                                 name,
@@ -3953,7 +3961,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
                     Modifier::Readonly(_) => {
                         if let Some(s) = last_readonly {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Parameter `{}` cannot have multiple `readonly` modifiers.",
                                     name
@@ -3973,7 +3981,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
                     Modifier::Public(_) | Modifier::Protected(_) | Modifier::Private(_) => {
                         if let Some(s) = last_read_visibility {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Parameter `{}` cannot have multiple visibility modifiers.",
                                     name
@@ -3993,7 +4001,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     }
                     Modifier::PrivateSet(_) | Modifier::ProtectedSet(_) | Modifier::PublicSet(_) => {
                         if let Some(s) = last_write_visibility {
-                            context.report(
+                            context.issues.push(
                                 Issue::error(format!(
                                     "Parameter `{}` cannot have multiple write visibility modifiers.",
                                     name
@@ -4016,7 +4024,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             }
 
             if let Some((n, s)) = last_variadic {
-                context.report(
+                context.issues.push(
                     Issue::error(format!(
                         "Invalid parameter order: parameter `{}` is defined after variadic parameter `{}`.",
                         name,
@@ -4040,7 +4048,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
             if let Some(ellipsis) = parameter.ellipsis {
                 if let Some(default) = &parameter.default_value {
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Invalid parameter definition: variadic parameter `{}` cannot have a default value.",
                             name
@@ -4065,9 +4073,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
             if let Some(hint) = &parameter.hint {
                 if hint.is_bottom() {
-                    let hint_name = context.lookup_hint(hint);
+                    let hint_name = context.get_code_snippet(hint);
 
-                    context.report(
+                    context.issues.push(
                         Issue::error(format!(
                             "Invalid parameter type: bottom type `{}` cannot be used as a parameter type.",
                             hint_name
@@ -4087,9 +4095,9 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_match(&self, r#match: &Match, context: &mut Context<'_>) {
+    fn walk_in_match(&mut self, r#match: &Match, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::MatchExpression) {
-            context.report(
+            context.issues.push(
                 Issue::error("Match expressions are only available in PHP 8.0 and above.")
                     .with_annotation(Annotation::primary(r#match.span()).with_message("Match expression defined here."))
                     .with_help("Upgrade to PHP 8.0 or above to use match expressions."),
@@ -4101,7 +4109,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         for arm in r#match.arms.iter() {
             if let MatchArm::Default(default_arm) = &arm {
                 if let Some(previous) = last_default {
-                    context.report(
+                    context.issues.push(
                         Issue::error("A match expression can only have one default arm.")
                             .with_annotation(
                                 Annotation::primary(default_arm.span())
@@ -4122,13 +4130,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_switch(&self, switch: &Switch, context: &mut Context<'_>) {
+    fn walk_in_switch(&mut self, switch: &Switch, context: &mut Context<'_>) {
         let mut last_default: Option<Span> = None;
 
         for case in switch.body.cases() {
             if let SwitchCase::Default(default_case) = &case {
                 if let Some(previous) = last_default {
-                    context.report(
+                    context.issues.push(
                         Issue::error("A switch statement can only have one default case.")
                             .with_annotation(
                                 Annotation::primary(default_case.span()).with_message("This is a duplicate default case."),
@@ -4148,7 +4156,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_assignment(&self, assignment: &Assignment, context: &mut Context<'_>) {
+    fn walk_in_assignment(&mut self, assignment: &Assignment, context: &mut Context<'_>) {
         let AssignmentOperator::Coalesce(operator) = assignment.operator else {
             return;
         };
@@ -4157,7 +4165,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         }
 
-        context.report(
+        context.issues.push(
             Issue::error("The `??=` (null coalesce assignment) operator is only available in PHP 7.4 and later.")
                 .with_annotation(
                     Annotation::primary(operator.span())
@@ -4170,25 +4178,25 @@ impl Walker<Context<'_>> for SemanticsWalker {
         );
     }
 
-    fn walk_in_named_argument(&self, named_argument: &NamedArgument, context: &mut Context<'_>) {
+    fn walk_in_named_argument(&mut self, named_argument: &NamedArgument, context: &mut Context<'_>) {
         if context.version.is_supported(Feature::NamedArguments) {
             return;
         }
 
-        context.report(
+        context.issues.push(
             Issue::error("Named arguments are only available in PHP 8.0 and above.")
                 .with_annotation(Annotation::primary(named_argument.span()).with_message("Named argument used here.")),
         );
     }
 
     fn walk_in_function_like_parameter(
-        &self,
+        &mut self,
         function_like_parameter: &FunctionLikeParameter,
         context: &mut Context<'_>,
     ) {
         if function_like_parameter.is_promoted_property() && !context.version.is_supported(Feature::PromotedProperties)
         {
-            context.report(
+            context.issues.push(
                 Issue::error("Promoted properties are only available in PHP 8.0 and above.").with_annotation(
                     Annotation::primary(function_like_parameter.span()).with_message("Promoted property used here."),
                 ),
@@ -4197,7 +4205,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::NativeUnionTypes) {
             if let Some(Hint::Union(union_hint)) = &function_like_parameter.hint {
-                context.report(
+                context.issues.push(
                 Issue::error(
                     "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above.",
                 )
@@ -4211,13 +4219,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
     }
 
     fn walk_in_function_like_return_type_hint(
-        &self,
+        &mut self,
         function_like_return_type_hint: &FunctionLikeReturnTypeHint,
         context: &mut Context<'_>,
     ) {
         match &function_like_return_type_hint.hint {
             Hint::Union(union_hint) if !context.version.is_supported(Feature::NativeUnionTypes) => {
-                context.report(
+                context.issues.push(
                     Issue::error(
                         "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above."
                     )
@@ -4229,7 +4237,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                 );
             }
             Hint::Static(r#static) if !context.version.is_supported(Feature::StaticReturnTypeHint) => {
-                context.report(
+                context.issues.push(
                     Issue::error("Static return type hints are only available in PHP 8.0 and above.").with_annotation(
                         Annotation::primary(r#static.span()).with_message("Static return type hint used here."),
                     )
@@ -4240,10 +4248,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_property(&self, property: &Property, context: &mut Context<'_>) {
+    fn walk_in_property(&mut self, property: &Property, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::ReadonlyProperties) {
             if let Some(readonly) = property.modifiers().get_readonly() {
-                context.report(
+                context.issues.push(
                     Issue::error("Readonly properties are only available in PHP 8.1 and above.").with_annotation(
                         Annotation::primary(readonly.span()).with_message("Readonly modifier used here."),
                     ),
@@ -4253,7 +4261,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::TypedProperties) {
             if let Some(hint) = property.hint() {
-                context.report(
+                context.issues.push(
                     Issue::error("Typed properties are only available in PHP 7.4 and above.")
                         .with_annotation(Annotation::primary(hint.span()).with_message("Type hint used here."))
                         .with_help("Remove the type hint to make the code compatible with PHP 7.3 and earlier versions, or upgrade to PHP 7.4 or later."),
@@ -4262,10 +4270,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_plain_property(&self, plain_property: &PlainProperty, context: &mut Context<'_>) {
+    fn walk_in_plain_property(&mut self, plain_property: &PlainProperty, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::AsymmetricVisibility) {
             if let Some(write_visibility) = plain_property.modifiers.get_first_write_visibility() {
-                context.report(
+                context.issues.push(
                     Issue::error("Asymmetric visibility is only available in PHP 8.4 and above.").with_annotation(
                         Annotation::primary(write_visibility.span()).with_message("Asymmetric visibility used here."),
                     ),
@@ -4275,7 +4283,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::NativeUnionTypes) {
             if let Some(Hint::Union(union_hint)) = &plain_property.hint {
-                context.report(
+                context.issues.push(
                     Issue::error(
                         "Union type hints (e.g. `int|float`) are only available in PHP 8.0 and above.",
                     )
@@ -4288,35 +4296,35 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_hooked_property(&self, hooked_property: &HookedProperty, context: &mut Context<'_>) {
+    fn walk_in_hooked_property(&mut self, hooked_property: &HookedProperty, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::PropertyHooks) {
             let issue = Issue::error("Hooked properties are only available in PHP 8.4 and above.").with_annotation(
                 Annotation::primary(hooked_property.span()).with_message("Hooked property declaration used here."),
             );
 
-            context.report(issue);
+            context.issues.push(issue);
         }
     }
 
-    fn walk_in_closure_creation(&self, closure_creation: &ClosureCreation, context: &mut Context<'_>) {
+    fn walk_in_closure_creation(&mut self, closure_creation: &ClosureCreation, context: &mut Context<'_>) {
         if context.version.is_supported(Feature::ClosureCreation) {
             return;
         }
 
-        context.report(
+        context.issues.push(
             Issue::error("The closure creation syntax is only available in PHP 8.1 and above.").with_annotation(
                 Annotation::primary(closure_creation.span()).with_message("Closure creation syntax used here."),
             ),
         );
     }
 
-    fn walk_in_class_like_constant(&self, class_like_constant: &ClassLikeConstant, context: &mut Context<'_>) {
+    fn walk_in_class_like_constant(&mut self, class_like_constant: &ClassLikeConstant, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::TypedClassLikeConstants) {
             let Some(type_hint) = &class_like_constant.hint else {
                 return;
             };
 
-            context.report(
+            context.issues.push(
                 Issue::error("Typed class constants are only available in PHP 8.3 and above.")
                     .with_annotation(Annotation::primary(type_hint.span()).with_message("Type hint used here.")),
             );
@@ -4324,7 +4332,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::FinalConstants) {
             if let Some(modifier) = class_like_constant.modifiers.get_final() {
-                context.report(
+                context.issues.push(
                     Issue::error("Final class constants are only available in PHP 8.1 and above.").with_annotation(
                         Annotation::primary(modifier.span()).with_message("Final modifier used here."),
                     ),
@@ -4334,7 +4342,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         if !context.version.is_supported(Feature::ClassLikeConstantVisibilityModifiers) {
             if let Some(visibility) = class_like_constant.modifiers.get_first_visibility() {
-                context.report(
+                context.issues.push(
                     Issue::error("Visibility modifiers for class constants are only available in PHP 7.1 and above.")
                         .with_annotation(
                             Annotation::primary(visibility.span()).with_message("Visibility modifier used here."),
@@ -4344,10 +4352,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_list(&self, list: &List, context: &mut Context<'_>) {
+    fn walk_in_list(&mut self, list: &List, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::TrailingCommaInListSyntax) {
             if let Some(token) = list.elements.get_trailing_token() {
-                context.report(
+                context.issues.push(
                     Issue::error("Trailing comma in list syntax is only available in PHP 7.2 and above.")
                         .with_annotation(Annotation::primary(token.span).with_message("Trailing comma used here."))
                         .with_help("Upgrade to PHP 7.2 or later to use trailing commas in list syntax."),
@@ -4368,7 +4376,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
                     ..
                 }) = value
                 {
-                    context.report(
+                    context.issues.push(
                         Issue::error("Reference assignment in list syntax is only available in PHP 7.3 and above.")
                             .with_annotation(
                                 Annotation::primary(reference.span()).with_message("Reference assignment used here."),
@@ -4380,13 +4388,13 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_method_call(&self, method_call: &MethodCall, context: &mut Context<'_>) {
+    fn walk_in_method_call(&mut self, method_call: &MethodCall, context: &mut Context<'_>) {
         check_for_new_without_parenthesis(&method_call.object, context, "method call");
     }
 
-    fn walk_in_null_safe_method_call(&self, null_safe_call: &NullSafeMethodCall, context: &mut Context<'_>) {
+    fn walk_in_null_safe_method_call(&mut self, null_safe_call: &NullSafeMethodCall, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::NullSafeOperator) {
-            context.report(
+            context.issues.push(
                 Issue::error("Nullsafe operator is available in PHP 8.0 and above.")
                     .with_annotation(
                         Annotation::primary(null_safe_call.question_mark_arrow)
@@ -4399,13 +4407,17 @@ impl Walker<Context<'_>> for SemanticsWalker {
         check_for_new_without_parenthesis(&null_safe_call.object, context, "nullsafe method call");
     }
 
-    fn walk_in_property_access(&self, property_access: &PropertyAccess, context: &mut Context<'_>) {
+    fn walk_in_property_access(&mut self, property_access: &PropertyAccess, context: &mut Context<'_>) {
         check_for_new_without_parenthesis(&property_access.object, context, "property access");
     }
 
-    fn walk_in_null_safe_property_access(&self, null_safe_access: &NullSafePropertyAccess, context: &mut Context<'_>) {
+    fn walk_in_null_safe_property_access(
+        &mut self,
+        null_safe_access: &NullSafePropertyAccess,
+        context: &mut Context<'_>,
+    ) {
         if !context.version.is_supported(Feature::NullSafeOperator) {
-            context.report(
+            context.issues.push(
                 Issue::error("Nullsafe operator is available in PHP 8.0 and above.")
                     .with_annotation(
                         Annotation::primary(null_safe_access.question_mark_arrow)
@@ -4418,10 +4430,14 @@ impl Walker<Context<'_>> for SemanticsWalker {
         check_for_new_without_parenthesis(&null_safe_access.object, context, "nullsafe property access");
     }
 
-    fn walk_in_unary_prefix_operator(&self, unary_prefix_operator: &UnaryPrefixOperator, context: &mut Context<'_>) {
+    fn walk_in_unary_prefix_operator(
+        &mut self,
+        unary_prefix_operator: &UnaryPrefixOperator,
+        context: &mut Context<'_>,
+    ) {
         if !context.version.is_supported(Feature::UnsetCast) {
             if let UnaryPrefixOperator::UnsetCast(span, _) = unary_prefix_operator {
-                context.report(
+                context.issues.push(
                     Issue::error("The `unset` cast is no longer supported in PHP 8.0 and later.")
                         .with_annotation(Annotation::primary(*span).with_message("Unset cast used here.")),
                 );
@@ -4429,7 +4445,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_literal_expression(&self, literal_expression: &Literal, context: &mut Context<'_>) {
+    fn walk_in_literal_expression(&mut self, literal_expression: &Literal, context: &mut Context<'_>) {
         if context.version.is_supported(Feature::NumericLiteralSeparator) {
             return;
         }
@@ -4441,7 +4457,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
         };
 
         if context.interner.lookup(value).contains('_') {
-            context.report(
+            context.issues.push(
                 Issue::error("Numeric literal separators are only available in PHP 7.4 and later.")
                     .with_annotation(Annotation::primary(literal_expression.span()).with_message("Numeric literal used here."))
                     .with_help("Remove the underscore separators to make the code compatible with PHP 7.3 and earlier versions, or upgrade to PHP 7.4 or later."),
@@ -4449,7 +4465,11 @@ impl Walker<Context<'_>> for SemanticsWalker {
         }
     }
 
-    fn walk_in_class_constant_access(&self, class_constant_access: &ClassConstantAccess, context: &mut Context<'_>) {
+    fn walk_in_class_constant_access(
+        &mut self,
+        class_constant_access: &ClassConstantAccess,
+        context: &mut Context<'_>,
+    ) {
         if context.version.is_supported(Feature::AccessClassOnObject) {
             return;
         }
@@ -4472,7 +4492,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
             return;
         }
 
-        context.report(
+        context.issues.push(
             Issue::error("Accessing the `class` constant on an object is only available in PHP 8.0 and above.")
                 .with_annotation(
                     Annotation::primary(class_constant_access.span()).with_message("`class` constant used here."),
@@ -4481,10 +4501,10 @@ impl Walker<Context<'_>> for SemanticsWalker {
         );
     }
 
-    fn walk_in_constant(&self, constant: &Constant, context: &mut Context<'_>) {
+    fn walk_in_constant(&mut self, constant: &Constant, context: &mut Context<'_>) {
         if !context.version.is_supported(Feature::ConstantAttribute) {
             for attribute_list in constant.attribute_lists.iter() {
-                context.report(
+                context.issues.push(
                     Issue::error("Constant attributes are only available in PHP 8.5 and above.")
                         .with_annotation(
                             Annotation::primary(attribute_list.span()).with_message("Attribute list used here."),
@@ -4496,7 +4516,7 @@ impl Walker<Context<'_>> for SemanticsWalker {
 
         for item in constant.items.iter() {
             if !item.value.is_constant(context.version, true) {
-                context.report(
+                context.issues.push(
                     Issue::error("Constant value must be a constant expression.")
                         .with_annotation(
                             Annotation::primary(item.value.span()).with_message("This is not a constant expression."),
@@ -4548,7 +4568,7 @@ fn returns_generator<'ast>(context: &mut Context<'_>, block: &'ast Block, hint: 
 fn hint_contains_generator(context: &mut Context<'_>, hint: &Hint) -> bool {
     match hint {
         Hint::Identifier(identifier) => {
-            let symbol = context.lookup_name(&identifier.span().start);
+            let symbol = context.get_name(&identifier.span().start);
 
             "generator".eq_ignore_ascii_case(symbol)
         }
@@ -4575,7 +4595,7 @@ fn check_for_new_without_parenthesis(object_expr: &Expression, context: &mut Con
         return;
     };
 
-    context.report(
+    context.issues.push(
         Issue::error(format!(
             "Direct {operation} on `new` expressions without parentheses is only available in PHP 8.4 and above."
         ))

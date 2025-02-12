@@ -27,7 +27,7 @@ use mago_php_version::PHPVersion;
 use mago_reporting::IssueCollection;
 use mago_source::Source;
 use mago_source::SourceCategory;
-use mago_walker::Walker;
+use mago_walker::MutWalker;
 
 use crate::context::Context;
 use crate::walker::SemanticsWalker;
@@ -92,8 +92,9 @@ impl Semantics {
 
         // Perform semantic analysis and collect issues.
         // This includes checks for type correctness, proper usage of constructs, etc.
-        let mut context = Context::new(interner, version, &program, &names);
-        SemanticsWalker.walk_program(&program, &mut context);
+        let mut context = Context::new(interner, &version, &program, &names, &source);
+        let mut walker = SemanticsWalker::new();
+        walker.walk_program(&program, &mut context);
         let issues = context.take_issue_collection();
 
         // Return the Semantics object containing all analysis results.

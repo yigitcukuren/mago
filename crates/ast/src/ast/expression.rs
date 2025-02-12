@@ -91,7 +91,7 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn is_constant(&self, version: PHPVersion, initilization: bool) -> bool {
+    pub fn is_constant(&self, version: &PHPVersion, initilization: bool) -> bool {
         match &self {
             Self::Binary(operation) => {
                 operation.operator.is_constant()
