@@ -45,11 +45,11 @@ pub const DEFAULT_STACK_SIZE: usize = 36 * 1024 * 1024;
 /// The maximum stack size for each thread.
 pub const MAXIMUM_STACK_SIZE: usize = 256 * 1024 * 1024;
 
-/// The default number of threads to use.
-pub const DEFAULT_PHP_VERSION: PHPVersion = PHPVersion::PHP83;
+/// The default php version.
+pub const DEFAULT_PHP_VERSION: PHPVersion = PHPVersion::PHP84;
 
 /// The minimum supported PHP version.
-pub const MINIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP74;
+pub const MINIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP72;
 
 /// The maximum supported PHP version.
 pub const MAXIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP84;

@@ -35,6 +35,9 @@ pub struct Configuration {
     /// The version of PHP to use.
     pub php_version: PHPVersion,
 
+    /// Whether to allow unsupported PHP versions.
+    pub allow_unsupported_php_version: bool,
+
     /// Configuration options for source discovery.
     pub source: SourceConfiguration,
 
@@ -86,6 +89,7 @@ impl Configuration {
             threads: *LOGICAL_CPUS,
             stack_size: DEFAULT_STACK_SIZE,
             php_version: DEFAULT_PHP_VERSION,
+            allow_unsupported_php_version: false,
             source: SourceConfiguration::from_root(root),
             linter: LinterConfiguration::default(),
             format: FormatterConfiguration::default(),
@@ -109,6 +113,7 @@ impl ConfigurationEntry for Configuration {
             .set_default("threads", Value::new(None, ValueKind::U64(self.threads as u64)))?
             .set_default("stack_size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
             .set_default("php_version", Value::new(None, ValueKind::String(self.php_version.to_string())))?
+            .set_default("allow_unsupported_php_version", self.allow_unsupported_php_version)?
             .set_default("log", self.log)?;
 
         builder = self.source.configure(builder)?;
