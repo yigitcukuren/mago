@@ -1,6 +1,7 @@
 use mago_linter::plugin::redundancy::rules::redundant_block::RedundantBlockRule;
 use mago_linter::plugin::redundancy::rules::redundant_closing_tag::RedudnantClosingTagRule;
 use mago_linter::plugin::redundancy::rules::redundant_continue::RedundantContinueRule;
+use mago_linter::plugin::redundancy::rules::redundant_file::RedundantFileRule;
 use mago_linter::plugin::redundancy::rules::redundant_final_method_modifier::RedundantFinalMethodModifierRule;
 use mago_linter::plugin::redundancy::rules::redundant_if_statement::RedundantIfStatementRule;
 use mago_linter::plugin::redundancy::rules::redundant_label::RedundantLabelRule;
@@ -21,3 +22,4 @@ rule_test!(test_redundant_method_override, RedundantMethodOverrideRule);
 rule_test!(test_redundant_noop, RedundantNoopRule);
 rule_test!(test_redundant_parentheses, RedundantParenthesesRule);
 rule_test!(test_redundant_string_concat, RedundantStringConcatRule);
+rule_test!(test_redundant_file, RedundantFileRule);
