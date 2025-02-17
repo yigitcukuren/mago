@@ -61,7 +61,7 @@ unsafe impl Key for StringIdentifier {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Interner {
     rodeo: Rodeo<StringIdentifier>,
 }
@@ -189,7 +189,7 @@ impl Interner {
 }
 
 /// A thread-safe interner, allowing multiple threads to concurrently intern strings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ThreadedInterner {
     rodeo: Arc<ThreadedRodeo<StringIdentifier>>,
 }

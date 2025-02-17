@@ -16,7 +16,7 @@ pub mod module;
 /// or from an empty state, and then add [`Module`]s one by one. When finished,
 /// calling [`build`] returns a fully constructed [`Project`] with all module reflections
 /// merged into a unified reflection.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ProjectBuilder {
     interner: ThreadedInterner,
     reflection: CodebaseReflection,
