@@ -113,7 +113,7 @@ fn is_statement_useful(statement: &Statement, context: &mut LintContext) -> bool
                     finally.block.statements.iter().any(|statement| is_statement_useful(statement, context))
                 })
         }
-        Statement::Expression(expression_statement) => is_expression_useful(&expression_statement.expression, context),
+        Statement::Expression(expression_statement) => is_expression_useful(&expression_statement.expression),
         Statement::Foreach(_)
         | Statement::For(_)
         | Statement::While(_)
@@ -131,39 +131,31 @@ fn is_statement_useful(statement: &Statement, context: &mut LintContext) -> bool
 }
 
 #[inline]
-fn is_expression_useful(expression: &Expression, context: &mut LintContext) -> bool {
+fn is_expression_useful(expression: &Expression) -> bool {
     match expression {
-        Expression::Binary(binary) => {
-            is_expression_useful(&binary.lhs, context) || is_expression_useful(&binary.rhs, context)
-        }
-        Expression::UnaryPrefix(unary_prefix) => is_expression_useful(&unary_prefix.operand, context),
-        Expression::UnaryPostfix(unary_postfix) => is_expression_useful(&unary_postfix.operand, context),
-        Expression::Parenthesized(parenthesized) => is_expression_useful(&parenthesized.expression, context),
+        Expression::Binary(binary) => is_expression_useful(&binary.lhs) || is_expression_useful(&binary.rhs),
+        Expression::UnaryPrefix(unary_prefix) => is_expression_useful(&unary_prefix.operand),
+        Expression::UnaryPostfix(unary_postfix) => is_expression_useful(&unary_postfix.operand),
+        Expression::Parenthesized(parenthesized) => is_expression_useful(&parenthesized.expression),
         Expression::Literal(_) => false,
         Expression::MagicConstant(_) => false,
         Expression::Variable(_) => false,
         Expression::Array(array) => array.elements.iter().any(|element| match element {
-            ArrayElement::KeyValue(el) => {
-                is_expression_useful(&el.key, context) || is_expression_useful(&el.value, context)
-            }
-            ArrayElement::Value(el) => is_expression_useful(&el.value, context),
-            ArrayElement::Variadic(el) => is_expression_useful(&el.value, context),
+            ArrayElement::KeyValue(el) => is_expression_useful(&el.key) || is_expression_useful(&el.value),
+            ArrayElement::Value(el) => is_expression_useful(&el.value),
+            ArrayElement::Variadic(el) => is_expression_useful(&el.value),
             ArrayElement::Missing(_) => false,
         }),
         Expression::List(list) => list.elements.iter().any(|element| match element {
-            ArrayElement::KeyValue(el) => {
-                is_expression_useful(&el.key, context) || is_expression_useful(&el.value, context)
-            }
-            ArrayElement::Value(el) => is_expression_useful(&el.value, context),
-            ArrayElement::Variadic(el) => is_expression_useful(&el.value, context),
+            ArrayElement::KeyValue(el) => is_expression_useful(&el.key) || is_expression_useful(&el.value),
+            ArrayElement::Value(el) => is_expression_useful(&el.value),
+            ArrayElement::Variadic(el) => is_expression_useful(&el.value),
             ArrayElement::Missing(_) => false,
         }),
         Expression::LegacyArray(array) => array.elements.iter().any(|element| match element {
-            ArrayElement::KeyValue(el) => {
-                is_expression_useful(&el.key, context) || is_expression_useful(&el.value, context)
-            }
-            ArrayElement::Value(el) => is_expression_useful(&el.value, context),
-            ArrayElement::Variadic(el) => is_expression_useful(&el.value, context),
+            ArrayElement::KeyValue(el) => is_expression_useful(&el.key) || is_expression_useful(&el.value),
+            ArrayElement::Value(el) => is_expression_useful(&el.value),
+            ArrayElement::Variadic(el) => is_expression_useful(&el.value),
             ArrayElement::Missing(_) => false,
         }),
         _ => true,

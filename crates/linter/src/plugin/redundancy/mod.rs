@@ -6,6 +6,7 @@ use crate::plugin::redundancy::rules::redundant_file::RedundantFileRule;
 use crate::plugin::redundancy::rules::redundant_final_method_modifier::RedundantFinalMethodModifierRule;
 use crate::plugin::redundancy::rules::redundant_if_statement::RedundantIfStatementRule;
 use crate::plugin::redundancy::rules::redundant_label::RedundantLabelRule;
+use crate::plugin::redundancy::rules::redundant_mathematical_operation::RedundantMathematicalOperationRule;
 use crate::plugin::redundancy::rules::redundant_method_override::RedundantMethodOverrideRule;
 use crate::plugin::redundancy::rules::redundant_noop::RedundantNoopRule;
 use crate::plugin::redundancy::rules::redundant_parentheses::RedundantParenthesesRule;
@@ -40,6 +41,7 @@ impl Plugin for RedundancyPlugin {
             Box::new(RedundantMethodOverrideRule),
             Box::new(RedundantFinalMethodModifierRule),
             Box::new(RedundantLabelRule),
+            Box::new(RedundantMathematicalOperationRule),
             Box::new(RedundantIfStatementRule),
             Box::new(RedundantWriteVisibilityRule),
         ]
