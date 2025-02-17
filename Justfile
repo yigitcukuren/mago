@@ -50,9 +50,9 @@ publish:
     cargo publish -p mago-parser --allow-dirty
     cargo publish -p mago-formatter --allow-dirty
     cargo publish -p mago-names --allow-dirty
-    cargo publish -p mago-reference --allow-dirty
     cargo publish -p mago-typing --allow-dirty
     cargo publish -p mago-project --allow-dirty
+    cargo publish -p mago-reference --allow-dirty
     cargo publish -p mago-linter --allow-dirty
     cargo publish -p mago-wasm --allow-dirty
     cargo publish --allow-dirty
