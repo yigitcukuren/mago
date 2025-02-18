@@ -5,6 +5,7 @@ use mago_linter::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesN
 use mago_linter::plugin::best_practices::rules::no_boolean_flag_parameter::NoBooleanFlagParameterRule;
 use mago_linter::plugin::best_practices::rules::no_boolean_literal_comparison::NoBooleanLiteralComparisonRule;
 use mago_linter::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
+use mago_linter::plugin::best_practices::rules::no_else_clause::NoElseClauseRule;
 use mago_linter::plugin::best_practices::rules::no_empty_catch_clause::NoEmptyCatchClauseRule;
 use mago_linter::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
 use mago_linter::plugin::best_practices::rules::no_goto::NoGotoRule;
@@ -22,6 +23,7 @@ rule_test!(test_loop_does_not_iterate, LoopDoesNotIterateRule);
 rule_test!(test_no_boolean_flag_parameter, NoBooleanFlagParameterRule);
 rule_test!(test_no_boolean_literal_comparison, NoBooleanLiteralComparisonRule);
 rule_test!(test_no_debug_symbols, NoDebugSymbolsRule);
+rule_test!(test_no_else_clause, NoElseClauseRule);
 rule_test!(test_no_empty_catch_clause, NoEmptyCatchClauseRule);
 rule_test!(test_no_empty_loop, NoEmptyLoopRule);
 rule_test!(test_no_goto, NoGotoRule);

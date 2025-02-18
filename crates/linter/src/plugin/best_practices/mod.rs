@@ -7,6 +7,7 @@ use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIter
 use crate::plugin::best_practices::rules::no_boolean_flag_parameter::NoBooleanFlagParameterRule;
 use crate::plugin::best_practices::rules::no_boolean_literal_comparison::NoBooleanLiteralComparisonRule;
 use crate::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
+use crate::plugin::best_practices::rules::no_else_clause::NoElseClauseRule;
 use crate::plugin::best_practices::rules::no_empty_catch_clause::NoEmptyCatchClauseRule;
 use crate::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
 use crate::plugin::best_practices::rules::no_goto::NoGotoRule;
@@ -45,6 +46,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(NoGotoRule),
             Box::new(NoHashEmojiRule),
             Box::new(NoDebugSymbolsRule),
+            Box::new(NoElseClauseRule),
             Box::new(NoEmptyCatchClauseRule),
             Box::new(NoMultiAssignmentsRule),
             Box::new(NoEmptyLoopRule),

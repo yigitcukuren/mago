@@ -6,6 +6,7 @@ pub mod loop_does_not_iterate;
 pub mod no_boolean_flag_parameter;
 pub mod no_boolean_literal_comparison;
 pub mod no_debug_symbols;
+pub mod no_else_clause;
 pub mod no_empty_catch_clause;
 pub mod no_empty_loop;
 pub mod no_goto;
