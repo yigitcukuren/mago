@@ -4,6 +4,7 @@ pub mod dont_catch_error;
 pub mod excessive_nesting;
 pub mod loop_does_not_iterate;
 pub mod no_debug_symbols;
+pub mod no_empty_catch_clause;
 pub mod no_empty_loop;
 pub mod no_goto;
 pub mod no_hash_emoji;

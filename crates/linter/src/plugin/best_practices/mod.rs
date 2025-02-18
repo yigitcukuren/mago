@@ -5,6 +5,7 @@ use crate::plugin::best_practices::rules::dont_catch_error::DontCatchErrorRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
 use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
 use crate::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
+use crate::plugin::best_practices::rules::no_empty_catch_clause::NoEmptyCatchClauseRule;
 use crate::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
 use crate::plugin::best_practices::rules::no_goto::NoGotoRule;
 use crate::plugin::best_practices::rules::no_hash_emoji::NoHashEmojiRule;
@@ -40,6 +41,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(NoGotoRule),
             Box::new(NoHashEmojiRule),
             Box::new(NoDebugSymbolsRule),
+            Box::new(NoEmptyCatchClauseRule),
             Box::new(NoMultiAssignmentsRule),
             Box::new(NoEmptyLoopRule),
             Box::new(UseWhileInsteadOfForRule),
