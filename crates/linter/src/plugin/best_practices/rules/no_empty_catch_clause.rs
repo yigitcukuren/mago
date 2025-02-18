@@ -5,7 +5,8 @@ use mago_reporting::*;
 use mago_span::HasSpan;
 
 use crate::context::LintContext;
-use crate::definition::{RuleDefinition, RuleUsageExample};
+use crate::definition::RuleDefinition;
+use crate::definition::RuleUsageExample;
 use crate::directive::LintDirective;
 use crate::rule::Rule;
 

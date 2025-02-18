@@ -4,6 +4,7 @@ use crate::plugin::best_practices::rules::disallowed_functions::DisallowedFuncti
 use crate::plugin::best_practices::rules::dont_catch_error::DontCatchErrorRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
 use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
+use crate::plugin::best_practices::rules::no_boolean_literal_comparison::NoBooleanLiteralComparisonRule;
 use crate::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
 use crate::plugin::best_practices::rules::no_empty_catch_clause::NoEmptyCatchClauseRule;
 use crate::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
@@ -38,6 +39,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(NoUnusedParameterRule),
             Box::new(ExcessiveNesting),
             Box::new(LoopDoesNotIterateRule),
+            Box::new(NoBooleanLiteralComparisonRule),
             Box::new(NoGotoRule),
             Box::new(NoHashEmojiRule),
             Box::new(NoDebugSymbolsRule),
