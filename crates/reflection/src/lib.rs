@@ -557,8 +557,8 @@ impl CodebaseReflection {
     ///
     /// - `Some(&ClassLikeReflection)` if the class-like entity exists.
     /// - `None` otherwise.
-    pub fn get_class_like(&self, name: ClassLikeName) -> Option<&ClassLikeReflection> {
-        self.class_like_reflections.get(&name)
+    pub fn get_class_like(&self, name: &ClassLikeName) -> Option<&ClassLikeReflection> {
+        self.class_like_reflections.get(name)
     }
 
     /// Retrieves a class-like reflection by its name, if it exists.
@@ -700,9 +700,13 @@ impl CodebaseReflection {
     /// - `None` otherwise.
     pub fn get_method<'a>(
         &'a self,
+        interner: &ThreadedInterner,
         class: &'a ClassLikeReflection,
         method: &StringIdentifier,
     ) -> Option<&'a FunctionLikeReflection> {
+        let lowercase = interner.lowered(method);
+        let method = class.methods.lowercase_member_names.get(&lowercase)?;
+
         class.methods.members.get(method).or_else(|| {
             let appering_in_class = class.methods.appering_members.get(method)?;
 

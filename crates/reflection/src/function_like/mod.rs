@@ -74,7 +74,7 @@ pub struct FunctionLikeReflection {
     /// Indicates if this function or method is pure.
     pub is_pure: bool,
 
-    /// Flags if this function or method overrides a method from a parent class.
+    /// Flags if this method overrides a method from a parent class.
     ///
     /// Always `false` for functions, arrow functions, and closures. For methods,
     /// it depends on whether they override a parent method.

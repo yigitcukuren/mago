@@ -176,7 +176,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                     codebase.get_named_class_like(self.interner, name)
                                 }
                                 ObjectTypeKind::AnonymousObject { span } => {
-                                    codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
+                                    codebase.get_class_like(&ClassLikeName::AnonymousClass(*span))
                                 }
                                 ObjectTypeKind::EnumCase { enum_name, .. } => {
                                     codebase.get_enum(self.interner, enum_name)
@@ -213,7 +213,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                     codebase.get_named_class_like(self.interner, name)
                                 }
                                 ObjectTypeKind::AnonymousObject { span } => {
-                                    codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
+                                    codebase.get_class_like(&ClassLikeName::AnonymousClass(*span))
                                 }
                                 ObjectTypeKind::EnumCase { enum_name, .. } => {
                                     codebase.get_enum(self.interner, enum_name)
@@ -272,7 +272,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                     codebase.get_named_class_like(self.interner, name)
                                 }
                                 ObjectTypeKind::AnonymousObject { span } => {
-                                    codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
+                                    codebase.get_class_like(&ClassLikeName::AnonymousClass(*span))
                                 }
                                 ObjectTypeKind::EnumCase { enum_name, .. } => {
                                     codebase.get_enum(self.interner, enum_name)
@@ -317,7 +317,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                     codebase.get_named_class_like(self.interner, name)
                                 }
                                 ObjectTypeKind::AnonymousObject { span } => {
-                                    codebase.get_class_like(ClassLikeName::AnonymousClass(*span))
+                                    codebase.get_class_like(&ClassLikeName::AnonymousClass(*span))
                                 }
                                 ObjectTypeKind::EnumCase { enum_name, .. } => {
                                     codebase.get_enum(self.interner, enum_name)
@@ -462,7 +462,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                 }
                             }
                             ObjectTypeKind::AnonymousObject { span } => {
-                                if let Some(class) = codebase.get_class_like(ClassLikeName::AnonymousClass(span)) {
+                                if let Some(class) = codebase.get_class_like(&ClassLikeName::AnonymousClass(span)) {
                                     class
                                 } else {
                                     return any_closure_kind();

@@ -229,15 +229,19 @@ fn reflect_class_like_members<'ast>(
                 }
 
                 reflection.methods.members.insert(name.value, meth_ref);
+                reflection.methods.lowercase_member_names.insert(context.interner.lowered(&name.value), name.value);
             }
             ClassLikeMember::Property(property) => {
                 let prop_refs = reflect_class_like_property(reflection, property, context);
                 for prop_ref in prop_refs {
+                    let name = prop_ref.name.member.value;
+
                     if prop_ref.read_visibility_reflection.map(|v| !v.is_private()).unwrap_or(true) {
-                        reflection.properties.inheritable_members.insert(prop_ref.name.member.value, reflection.name);
+                        reflection.properties.inheritable_members.insert(name, reflection.name);
                     }
 
-                    reflection.properties.members.insert(prop_ref.name.member.value, prop_ref);
+                    reflection.properties.members.insert(name, prop_ref);
+                    reflection.methods.lowercase_member_names.insert(context.interner.lowered(&name), name);
                 }
             }
         }

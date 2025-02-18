@@ -195,7 +195,9 @@ impl Rule for UndefinedFunctionOrMethodRule {
                 let method_name = context.interner.lookup(&method_identifier.value);
 
                 // If the method doesn't exist, check for __callStatic dynamic fallback
-                let Some(method_info) = context.codebase.get_method(class_like, &method_identifier.value) else {
+                let Some(method_info) =
+                    context.codebase.get_method(context.interner, class_like, &method_identifier.value)
+                else {
                     // If there's a __callStatic method, calls might be handled dynamically
                     if class_like.methods.appering_members.contains_key(&context.interner.intern("__callStatic")) {
                         let allow_dynamic_calls = context
@@ -361,7 +363,9 @@ impl Rule for UndefinedFunctionOrMethodRule {
                 let method_name = context.interner.lookup(&method_identifier.value);
 
                 // Check if the method is known, or if __callStatic can handle it
-                let Some(method_info) = context.codebase.get_method(class_like, &method_identifier.value) else {
+                let Some(method_info) =
+                    context.codebase.get_method(context.interner, class_like, &method_identifier.value)
+                else {
                     if class_like.methods.appering_members.contains_key(&context.interner.intern("__callStatic")) {
                         let allow_dynamic_calls = context
                             .option(ALLOW_DYNAMIC_STATIC_CALLS)
