@@ -14,7 +14,7 @@ pub struct ParameterNameRule;
 
 impl Rule for ParameterNameRule {
     fn get_definition(&self) -> RuleDefinition {
-        RuleDefinition::enabled("Parameter Name", Level::Warning)
+        RuleDefinition::enabled("Parameter Name", Level::Error)
             .with_description(indoc! {"
                 Ensures parameter names match their parent method declarations when overriding.
                 This prevents breaking named arguments in inherited method implementations.
