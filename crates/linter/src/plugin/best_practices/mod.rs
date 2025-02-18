@@ -1,6 +1,7 @@
 use crate::definition::PluginDefinition;
 use crate::plugin::best_practices::rules::combine_consecutive_issets::CombineConsecutiveIssetsRule;
 use crate::plugin::best_practices::rules::disallowed_functions::DisallowedFunctionsRule;
+use crate::plugin::best_practices::rules::dont_catch_error::DontCatchErrorRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
 use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
 use crate::plugin::best_practices::rules::no_debug_symbols::NoDebugSymbolsRule;
@@ -32,6 +33,7 @@ impl Plugin for BestPracticesPlugin {
         vec![
             Box::new(CombineConsecutiveIssetsRule),
             Box::new(DisallowedFunctionsRule),
+            Box::new(DontCatchErrorRule),
             Box::new(NoUnusedParameterRule),
             Box::new(ExcessiveNesting),
             Box::new(LoopDoesNotIterateRule),
