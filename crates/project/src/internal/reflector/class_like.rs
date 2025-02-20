@@ -217,19 +217,19 @@ fn reflect_class_like_members<'ast>(
             }
             ClassLikeMember::Method(method) => {
                 let (name, meth_ref) = reflect_class_like_method(reflection, method, context);
+                let lowercase_name = context.interner.lowered(&name.value);
 
                 // `__construct`, `__clone`, and trait methods are always inheritable
-                let name_value = context.interner.lookup(&name.value);
+                let name_value = context.interner.lookup(&lowercase_name);
                 if meth_ref.visibility_reflection.map(|v| !v.is_private()).unwrap_or(true)
-                    || name_value.eq_ignore_ascii_case("__construct")
-                    || name_value.eq_ignore_ascii_case("__clone")
+                    || name_value.eq("__construct")
+                    || name_value.eq("__clone")
                     || reflection.is_trait()
                 {
-                    reflection.methods.inheritable_members.insert(name.value, reflection.name);
+                    reflection.methods.inheritable_members.insert(lowercase_name, reflection.name);
                 }
 
-                reflection.methods.members.insert(name.value, meth_ref);
-                reflection.methods.lowercase_member_names.insert(context.interner.lowered(&name.value), name.value);
+                reflection.methods.members.insert(lowercase_name, meth_ref);
             }
             ClassLikeMember::Property(property) => {
                 let prop_refs = reflect_class_like_property(reflection, property, context);
@@ -241,7 +241,6 @@ fn reflect_class_like_members<'ast>(
                     }
 
                     reflection.properties.members.insert(name, prop_ref);
-                    reflection.methods.lowercase_member_names.insert(context.interner.lowered(&name), name);
                 }
             }
         }

@@ -704,13 +704,12 @@ impl CodebaseReflection {
         class: &'a ClassLikeReflection,
         method: &StringIdentifier,
     ) -> Option<&'a FunctionLikeReflection> {
-        let lowercase = interner.lowered(method);
-        let method = class.methods.lowercase_member_names.get(&lowercase)?;
+        let method = interner.lowered(method);
 
-        class.methods.members.get(method).or_else(|| {
-            let appering_in_class = class.methods.appering_members.get(method)?;
+        class.methods.members.get(&method).or_else(|| {
+            let appering_in_class = class.methods.appering_members.get(&method)?;
 
-            self.class_like_reflections.get(appering_in_class)?.methods.members.get(method)
+            self.class_like_reflections.get(appering_in_class)?.methods.members.get(&method)
         })
     }
 

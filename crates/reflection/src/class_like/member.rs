@@ -16,7 +16,6 @@ use crate::identifier::ClassLikeName;
 /// allowing reflection on declared, inherited, overridden, and inheritable members.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MemeberCollection<T: Eq + PartialEq> {
-    pub lowercase_member_names: HashMap<StringIdentifier, StringIdentifier>,
     pub members: HashMap<StringIdentifier, T>,
     pub appering_members: HashMap<StringIdentifier, ClassLikeName>,
     pub declaring_members: HashMap<StringIdentifier, ClassLikeName>,
@@ -27,7 +26,6 @@ pub struct MemeberCollection<T: Eq + PartialEq> {
 impl<T: Eq + PartialEq> Default for MemeberCollection<T> {
     fn default() -> Self {
         Self {
-            lowercase_member_names: Default::default(),
             members: Default::default(),
             appering_members: Default::default(),
             declaring_members: Default::default(),
