@@ -227,7 +227,7 @@ impl Rule for UndefinedFunctionOrMethodRule {
                 };
 
                 // Check if the method is truly static
-                if !method_info.is_static {
+                if !method_info.is_static && !method_name.eq_ignore_ascii_case("__construct") {
                     context.report(
                         Issue::new(
                             context.level(),
@@ -366,7 +366,7 @@ impl Rule for UndefinedFunctionOrMethodRule {
                 let Some(method_info) =
                     context.codebase.get_method(context.interner, class_like, &method_identifier.value)
                 else {
-                    if class_like.methods.appering_members.contains_key(&context.interner.intern("__callStatic")) {
+                    if class_like.methods.appering_members.contains_key(&context.interner.intern("__callstatic")) {
                         let allow_dynamic_calls = context
                             .option(ALLOW_DYNAMIC_STATIC_CALLS)
                             .and_then(|o| o.as_bool())
@@ -395,7 +395,7 @@ impl Rule for UndefinedFunctionOrMethodRule {
                 };
 
                 // Check if it's truly static
-                if !method_info.is_static {
+                if !method_info.is_static && !method_name.eq_ignore_ascii_case("__construct") {
                     context.report(
                         Issue::new(
                             context.level(),
