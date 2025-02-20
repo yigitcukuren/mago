@@ -1,6 +1,7 @@
 use indoc::indoc;
 
 use mago_ast::*;
+use mago_fixer::SafetyClassification;
 use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::HasSpan;
@@ -135,18 +136,18 @@ impl Rule for OverrideAttributeRule {
                 continue;
             };
 
-            let override_attribute = 'outer: {
-                for attribute_list in method.attribute_lists.iter() {
+            let (override_attribute, attribute_list_index) = 'outer: {
+                for (index, attribute_list) in method.attribute_lists.iter().enumerate() {
                     for attribute in attribute_list.attributes.iter() {
                         let name = context.lookup_name(&attribute.name);
 
                         if name.eq_ignore_ascii_case("Override") {
-                            break 'outer Some(attribute);
+                            break 'outer (Some(attribute), index);
                         }
                     }
                 }
 
-                None
+                (None, 0)
             };
 
             let name = context.interner.lookup(&method.name.value);
@@ -160,7 +161,14 @@ impl Rule for OverrideAttributeRule {
                         .with_note("PHP constructors don't override parent constructors.")
                         .with_help("Remove the `#[Override]` attribute from the constructor.");
 
-                    context.report(issue);
+                    context.propose(issue, |plan| {
+                        let attribute_list = &method.attribute_lists.as_slice()[attribute_list_index];
+                        if attribute_list.attributes.len() == 1 {
+                            plan.delete(attribute_list.span().to_range(), SafetyClassification::Safe);
+                        } else {
+                            plan.delete(attribute.span().to_range(), SafetyClassification::Safe);
+                        }
+                    });
                 }
 
                 continue;
@@ -184,7 +192,14 @@ impl Rule for OverrideAttributeRule {
                     .with_note("The attribute should only be used when explicitly overriding a parent method.")
                     .with_help(format!("Remove the `#[Override]` attribute from `{}` or verify inheritance.", name));
 
-                    context.report(issue);
+                    context.propose(issue, |plan| {
+                        let attribute_list = &method.attribute_lists.as_slice()[attribute_list_index];
+                        if attribute_list.attributes.len() == 1 {
+                            plan.delete(attribute_list.span().to_range(), SafetyClassification::Safe);
+                        } else {
+                            plan.delete(attribute.span().to_range(), SafetyClassification::Safe);
+                        }
+                    });
                 }
 
                 continue;
@@ -214,7 +229,21 @@ impl Rule for OverrideAttributeRule {
             .with_note("The `#[Override]` attribute clarifies intent and prevents accidental signature mismatches.")
             .with_help("Add `#[Override]` attribute to method declaration.");
 
-            context.report(issue);
+            context.propose(issue, |plan| {
+                let code = context.interner.lookup(&context.module.source.content);
+
+                let offset = method.span().start.offset;
+                let line_start_offset = context
+                    .module
+                    .source
+                    .get_line_start_offset(context.module.source.line_number(offset))
+                    .unwrap_or(offset);
+
+                let indent =
+                    code[line_start_offset..offset].chars().take_while(|c| c.is_whitespace()).collect::<String>();
+
+                plan.insert(method.span().start.offset, format!("#[\\Override]\n{indent}"), SafetyClassification::Safe);
+            });
         }
 
         LintDirective::default()
