@@ -174,7 +174,8 @@ impl Rule for OverrideAttributeRule {
                 continue;
             }
 
-            let Some(method_reflection) = reflection.methods.members.get(&method.name.value) else {
+            let lowercase_name = context.interner.lowered(&method.name.value);
+            let Some(method_reflection) = reflection.methods.members.get(&lowercase_name) else {
                 continue;
             };
 
