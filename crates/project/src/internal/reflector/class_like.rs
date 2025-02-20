@@ -124,8 +124,8 @@ pub fn reflect_interface<'ast>(interface: &'ast Interface, context: &'ast mut Co
                 let interface = Name::new(*context.names.get(interface), interface.span());
                 let interface_lowered = context.interner.lowered(&interface.value);
 
-                inheritance_reflection.direct_implemented_interfaces.insert(interface);
-                inheritance_reflection.all_implemented_interfaces.insert(interface);
+                inheritance_reflection.direct_extended_interfaces.insert(interface);
+                inheritance_reflection.all_extended_interfaces.insert(interface);
                 inheritance_reflection.names.insert(interface_lowered, interface);
             }
         }
