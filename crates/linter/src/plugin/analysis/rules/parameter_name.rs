@@ -98,13 +98,15 @@ impl Rule for ParameterNameRule {
                 continue;
             };
 
-            let name = context.interner.lookup(&method.name.value);
-            if name.eq_ignore_ascii_case("__construct") {
+            let method_name = context.interner.lowered(&method.name.value);
+            let method_name_str = context.interner.lookup(&method.name.value);
+
+            if method_name_str.eq_ignore_ascii_case("__construct") {
                 // Ignore constructors
                 continue;
             }
 
-            let Some(method_reflection) = reflection.methods.members.get(&method.name.value) else {
+            let Some(method_reflection) = reflection.methods.members.get(&method_name) else {
                 continue;
             };
 
@@ -112,7 +114,7 @@ impl Rule for ParameterNameRule {
                 continue;
             }
 
-            let Some(parent_class_names) = reflection.methods.overriden_members.get(&method.name.value) else {
+            let Some(parent_class_names) = reflection.methods.overriden_members.get(&method_name) else {
                 continue;
             };
 
@@ -124,7 +126,7 @@ impl Rule for ParameterNameRule {
                 continue;
             };
 
-            let Some(parent_method_reflection) = parent_reflection.methods.members.get(&method.name.value) else {
+            let Some(parent_method_reflection) = parent_reflection.methods.members.get(&method_name) else {
                 continue;
             };
 

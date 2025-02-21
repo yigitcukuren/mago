@@ -45,6 +45,23 @@ impl Rule for OverrideAttributeRule {
                     }
                 "#},
             ))
+            .with_example(RuleUsageExample::valid(
+                "Correct #[Override] usage in interface implementation",
+                indoc! {r#"
+                    <?php
+
+                    interface Processor {
+                        protected function processSomething(): void;
+                    }
+
+                    final class ProcessorImpl implements Processor {
+                        #[Override]
+                        protected function processSomething(): void {
+                            // Implementation
+                        }
+                    }
+                "#},
+            ))
             .with_example(RuleUsageExample::invalid(
                 "Missing #[Override] attribute in overriding method",
                 indoc! {r#"
@@ -56,6 +73,20 @@ impl Rule for OverrideAttributeRule {
 
                     class ChildClass extends ParentClass {
                         public function save(): void {}  // Missing attribute
+                    }
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "Missing #[Override] attribute in interface implementation",
+                indoc! {r#"
+                    <?php
+
+                    interface Processor {
+                        protected function processSomething(): void;
+                    }
+
+                    final class ProcessorImpl implements Processor {
+                        protected function processSomething(): void {}
                     }
                 "#},
             ))
@@ -208,7 +239,7 @@ impl Rule for OverrideAttributeRule {
                 continue;
             }
 
-            let Some(parent_class_names) = reflection.methods.overriden_members.get(&method.name.value) else {
+            let Some(parent_class_names) = reflection.methods.overriden_members.get(&lowercase_name) else {
                 continue;
             };
 
