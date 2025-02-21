@@ -228,6 +228,18 @@ impl Rule for UndefinedFunctionOrMethodRule {
 
                 // Check if the method is truly static
                 if !method_info.is_static && !method_name.eq_ignore_ascii_case("__construct") {
+                    // First, we need to check if we are currently inside the same class.
+                    if let Some(this) = context.scope.get_class_like_reflection(context) {
+                        if this.name.eq(&class_like.name)
+                            || this.inheritance.is_instance_of(context.interner, class_like)
+                        {
+                            // This is okay.
+                            //
+                            // See: https://3v4l.org/uBucN
+                            return LintDirective::Continue;
+                        }
+                    }
+
                     context.report(
                         Issue::new(
                             context.level(),
@@ -396,6 +408,18 @@ impl Rule for UndefinedFunctionOrMethodRule {
 
                 // Check if it's truly static
                 if !method_info.is_static && !method_name.eq_ignore_ascii_case("__construct") {
+                    // First, we need to check if we are currently inside the same class.
+                    if let Some(this) = context.scope.get_class_like_reflection(context) {
+                        if this.name.eq(&class_like.name)
+                            || this.inheritance.is_instance_of(context.interner, class_like)
+                        {
+                            // This is okay.
+                            //
+                            // See: https://3v4l.org/uBucN
+                            return LintDirective::Continue;
+                        }
+                    }
+
                     context.report(
                         Issue::new(
                             context.level(),
