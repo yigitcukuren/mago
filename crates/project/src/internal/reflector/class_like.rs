@@ -1,13 +1,13 @@
 use ahash::HashMap;
 
 use mago_ast::*;
+use mago_reflection::class_like::ClassLikeReflection;
 use mago_reflection::class_like::constant::ClassLikeConstantReflection;
 use mago_reflection::class_like::enum_case::EnumCaseReflection;
 use mago_reflection::class_like::inheritance::InheritanceReflection;
 use mago_reflection::class_like::member::ClassLikeMemberVisibilityReflection;
 use mago_reflection::class_like::property::PropertyDefaultValueReflection;
 use mago_reflection::class_like::property::PropertyReflection;
-use mago_reflection::class_like::ClassLikeReflection;
 use mago_reflection::function_like::FunctionLikeReflection;
 use mago_reflection::identifier::*;
 use mago_span::*;

@@ -2,8 +2,8 @@ use mago_ast::ast::DocumentKind as AstDocumentKind;
 use mago_ast::ast::*;
 use mago_ast::sequence::Sequence;
 use mago_token::DocumentKind;
-use mago_token::TokenKind;
 use mago_token::T;
+use mago_token::TokenKind;
 
 use crate::error::ParseError;
 use crate::internal::expression::parse_expression;
@@ -27,7 +27,7 @@ pub fn parse_string(stream: &mut TokenStream<'_, '_>) -> Result<CompositeString,
                     TokenKind::DocumentStart(DocumentKind::Heredoc),
                     TokenKind::DocumentStart(DocumentKind::Nowdoc),
                 ],
-            ))
+            ));
         }
     })
 }
@@ -66,7 +66,7 @@ pub fn parse_document_string(stream: &mut TokenStream<'_, '_>) -> Result<Documen
                 stream,
                 Some(current),
                 &[TokenKind::DocumentStart(DocumentKind::Heredoc), TokenKind::DocumentStart(DocumentKind::Nowdoc)],
-            ))
+            ));
         }
     };
 

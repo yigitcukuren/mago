@@ -1,12 +1,12 @@
 use mago_interner::ThreadedInterner;
+use mago_linter::Linter;
 use mago_linter::definition::RuleUsageExample;
 use mago_linter::rule::Rule;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
-use mago_linter::Linter;
 use mago_php_version::PHPVersion;
-use mago_project::module::Module;
 use mago_project::Project;
+use mago_project::module::Module;
 use mago_source::Source;
 
 pub mod plugins;

@@ -4,10 +4,10 @@ use mago_ast::*;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_names::Names;
+use mago_reflection::CodebaseReflection;
 use mago_reflection::identifier::ClassLikeName;
 use mago_reflection::identifier::FunctionLikeName;
 use mago_reflection::r#type::kind::*;
-use mago_reflection::CodebaseReflection;
 use mago_source::Source;
 use mago_span::HasPosition;
 use mago_span::HasSpan;
@@ -111,11 +111,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     }
                 }
 
-                if kinds.is_empty() {
-                    never_kind()
-                } else {
-                    union_kind(kinds.into_iter().collect())
-                }
+                if kinds.is_empty() { never_kind() } else { union_kind(kinds.into_iter().collect()) }
             }
             Expression::Construct(construct) => match construct {
                 Construct::Isset(_) => bool_kind(),

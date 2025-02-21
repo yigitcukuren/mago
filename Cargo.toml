@@ -1,7 +1,7 @@
 [package]
 name = "mago"
 version = "0.10.0"
-edition = "2021"
+edition = "2024"
 authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "A comprehensive suite of PHP tooling inspired by Rust’s approach, providing parsing, linting, formatting, and more through a unified CLI and library interface."
@@ -10,7 +10,7 @@ repository = "https://github.com/carthage-software/mago"
 rust-version = "1.85.0"
 
 [workspace]
-package.edition = "2021"
+package.edition = "2024"
 package.authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 package.license = "MIT OR Apache-2.0"
 package.version = "0.10.0"

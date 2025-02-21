@@ -1,4 +1,5 @@
 use crate::definition::PluginDefinition;
+use crate::plugin::Plugin;
 use crate::plugin::redundancy::rules::redundant_block::RedundantBlockRule;
 use crate::plugin::redundancy::rules::redundant_closing_tag::RedudnantClosingTagRule;
 use crate::plugin::redundancy::rules::redundant_continue::RedundantContinueRule;
@@ -12,7 +13,6 @@ use crate::plugin::redundancy::rules::redundant_noop::RedundantNoopRule;
 use crate::plugin::redundancy::rules::redundant_parentheses::RedundantParenthesesRule;
 use crate::plugin::redundancy::rules::redundant_string_concat::RedundantStringConcatRule;
 use crate::plugin::redundancy::rules::redundant_write_visibility::RedundantWriteVisibilityRule;
-use crate::plugin::Plugin;
 use crate::rule::Rule;
 
 pub mod rules;

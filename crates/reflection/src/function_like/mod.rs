@@ -7,13 +7,13 @@ use mago_source::SourceIdentifier;
 use mago_span::HasSpan;
 use mago_span::Span;
 
+use crate::Reflection;
 use crate::attribute::AttributeReflection;
 use crate::class_like::member::ClassLikeMemberVisibilityReflection;
 use crate::function_like::parameter::FunctionLikeParameterReflection;
 use crate::function_like::r#return::FunctionLikeReturnTypeReflection;
 use crate::identifier::FunctionLikeName;
 use crate::r#type::kind::Template;
-use crate::Reflection;
 
 pub mod parameter;
 pub mod r#return;

@@ -459,11 +459,7 @@ impl CodebaseReflection {
     pub fn get_constant(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&ConstantReflection> {
         let id = lower_constant_name(interner, id);
 
-        if let Some(name) = self.constant_names.get(&id) {
-            self.constant_reflections.get(name)
-        } else {
-            None
-        }
+        if let Some(name) = self.constant_names.get(&id) { self.constant_reflections.get(name) } else { None }
     }
 
     /// Retrieves a function-like reflection by its name, if it exists.
@@ -494,11 +490,7 @@ impl CodebaseReflection {
     pub fn get_function(&self, interner: &ThreadedInterner, id: &StringIdentifier) -> Option<&FunctionLikeReflection> {
         let id = interner.lowered(id);
 
-        if let Some(name) = self.function_names.get(&id) {
-            self.function_like_reflections.get(name)
-        } else {
-            None
-        }
+        if let Some(name) = self.function_names.get(&id) { self.function_like_reflections.get(name) } else { None }
     }
 
     /// Retrieves a closure reflection by its position, if it exists.
@@ -579,11 +571,7 @@ impl CodebaseReflection {
     ) -> Option<&ClassLikeReflection> {
         let id = interner.lowered(id);
 
-        if let Some(name) = self.class_like_names.get(&id) {
-            self.class_like_reflections.get(name)
-        } else {
-            None
-        }
+        if let Some(name) = self.class_like_names.get(&id) { self.class_like_reflections.get(name) } else { None }
     }
 
     /// Retrieves a class reflection by its name, if it exists.
