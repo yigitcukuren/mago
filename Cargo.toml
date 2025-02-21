@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = "A comprehensive suite of PHP tooling inspired by Rust’s approach, providing parsing, linting, formatting, and more through a unified CLI and library interface."
 homepage = "https://github.com/carthage-software/mago"
 repository = "https://github.com/carthage-software/mago"
-rust-version = "1.84.0"
+rust-version = "1.85.0"
 
 [workspace]
 package.edition = "2021"
@@ -16,7 +16,7 @@ package.license = "MIT OR Apache-2.0"
 package.version = "0.10.0"
 package.homepage = "https://github.com/carthage-software/mago"
 package.repository = "https://github.com/carthage-software/mago"
-package.rust-version = "1.84.0"
+package.rust-version = "1.85.0"
 members = ["crates/*"]
 
 [workspace.lints.clippy]
@@ -56,7 +56,7 @@ serde_json = { version = "1.0.138" }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.39.3", features = ["rt", "time"] }
 strum = { version = "0.27", features = ["derive"] }
-ordered-float = { version = "4.0", default-features = false, features = ["serde"] }
+ordered-float = { version = "5.0", default-features = false, features = ["serde"] }
 pretty_assertions = { version = "1.4.1" }
 either = { version = "1.13.0" }
 codespan-reporting = { version = "0.11.1", features = ["serde", "serialization"] }
