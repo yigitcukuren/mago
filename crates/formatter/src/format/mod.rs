@@ -18,6 +18,7 @@ use crate::format::misc::print_modifiers;
 use crate::format::parameters::print_function_like_parameters;
 use crate::format::statement::print_statement_sequence;
 use crate::settings::*;
+use crate::utils;
 use crate::utils::get_left_side;
 use crate::utils::has_naked_left_side;
 use crate::wrap;
@@ -71,13 +72,13 @@ impl<'a> Format<'a> for Program {
         f.leave_node();
 
         if f.scripting_mode {
-            parts.push(Document::Line(Line::hardline()));
+            parts.push(Document::Line(Line::hard()));
 
             if let Some(last_span) = self.trivia.last_span().or_else(|| self.statements.last_span()) {
                 let first_span = self.trivia.first_span().or_else(|| self.statements.first_span()).unwrap_or(last_span);
 
                 if let Some(comments) = f.print_dangling_comments(first_span.join(last_span), false) {
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                     parts.push(comments);
                 }
             }
@@ -177,7 +178,7 @@ impl<'a> Format<'a> for ClosingTag {
 
                 Document::empty()
             } else {
-                Document::String("?>")
+                Document::Array(vec![Document::LineSuffixBoundary, Document::String("?>")])
             }
         })
     }
@@ -187,7 +188,9 @@ impl<'a> Format<'a> for Inline {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         f.scripting_mode = false;
 
-        wrap!(f, self, Inline, { Document::String(f.lookup(&self.value)) })
+        wrap!(f, self, Inline, {
+            utils::replace_end_of_line(Document::String(f.interner.lookup(&self.value)), Separator::LiteralLine)
+        })
     }
 }
 
@@ -264,8 +267,8 @@ impl<'a> Format<'a> for Namespace {
             match &self.body {
                 NamespaceBody::Implicit(namespace_implicit_body) => {
                     parts.push(namespace_implicit_body.terminator.format(f));
-                    parts.push(Document::Line(Line::hardline()));
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
+                    parts.push(Document::Line(Line::hard()));
 
                     parts.extend(print_statement_sequence(f, &namespace_implicit_body.statements));
                 }
@@ -354,7 +357,7 @@ impl<'a> Format<'a> for UseItemSequence {
 
             Document::Group(Group::new(vec![
                 Document::Indent(Document::join(items, Separator::CommaLine)),
-                Document::Line(Line::softline()),
+                Document::Line(Line::soft()),
             ]))
         })
     }
@@ -379,7 +382,7 @@ impl<'a> Format<'a> for TypedUseItemList {
                 };
 
                 let mut items = Document::join(items, Separator::CommaLine);
-                items.insert(0, Document::Line(Line::softline()));
+                items.insert(0, Document::Line(Line::soft()));
 
                 contents.push(Document::Indent(items));
             }
@@ -387,7 +390,7 @@ impl<'a> Format<'a> for TypedUseItemList {
             if let Some(comments) = f.print_dangling_comments(self.left_brace.join(self.right_brace), true) {
                 contents.push(comments);
             } else {
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(Document::String("}"));
@@ -415,7 +418,7 @@ impl<'a> Format<'a> for MixedUseItemList {
                     Separator::CommaLine,
                 );
 
-                items.insert(0, Document::Line(Line::softline()));
+                items.insert(0, Document::Line(Line::soft()));
 
                 contents.push(Document::Indent(items));
             }
@@ -423,7 +426,7 @@ impl<'a> Format<'a> for MixedUseItemList {
             if let Some(comments) = f.print_dangling_comments(self.left_brace.join(self.right_brace), true) {
                 contents.push(comments);
             } else {
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(Document::String("}"));
@@ -456,7 +459,7 @@ impl<'a> Format<'a> for TypedUseItemSequence {
             };
 
             documents.push(Document::Indent(Document::join(items, Separator::CommaLine)));
-            documents.push(Document::Line(Line::softline()));
+            documents.push(Document::Line(Line::soft()));
 
             Document::Group(Group::new(documents))
         })
@@ -636,7 +639,7 @@ impl<'a> Format<'a> for ClassLikeConstant {
                         self.items.iter().map(|v| v.format(f)).collect(),
                         Separator::CommaLine,
                     )));
-                    contents.push(Document::Line(Line::softline()));
+                    contents.push(Document::Line(Line::soft()));
                 }
 
                 contents.push(self.terminator.format(f));
@@ -671,7 +674,7 @@ impl<'a> Format<'a> for EnumCase {
             let mut parts = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 parts.push(attribute_list.format(f));
-                parts.push(Document::Line(Line::hardline()));
+                parts.push(Document::Line(Line::hard()));
             }
 
             parts.push(self.case.format(f));
@@ -758,7 +761,7 @@ impl<'a> Format<'a> for PlainProperty {
                     if !contents.is_empty() {
                         items.insert(0, Document::Line(Line::default()));
                         contents.push(Document::Indent(items));
-                        contents.push(Document::Line(Line::softline()));
+                        contents.push(Document::Line(Line::soft()));
                     } else {
                         // we don't have any modifiers, so we don't need to indent, or add a line
                         contents.extend(items);
@@ -855,7 +858,7 @@ impl<'a> Format<'a> for Method {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
             }
 
             let mut signature = print_modifiers(f, &self.modifiers);
@@ -883,7 +886,7 @@ impl<'a> Format<'a> for Method {
                 body.push(match f.settings.method_brace_style {
                     BraceStyle::SameLine => Document::space(),
                     BraceStyle::NextLine => Document::IfBreak(
-                        IfBreak::new(Document::space(), Document::Line(Line::hardline())).with_id(signature_id),
+                        IfBreak::new(Document::space(), Document::Line(Line::hard())).with_id(signature_id),
                     ),
                 });
             }
@@ -1000,7 +1003,7 @@ impl<'a> Format<'a> for Interface {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
             }
 
             let signature = vec![
@@ -1017,9 +1020,7 @@ impl<'a> Format<'a> for Interface {
             let body = vec![
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
-                    BraceStyle::NextLine => {
-                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
-                    }
+                    BraceStyle::NextLine => Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent]),
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
@@ -1070,7 +1071,7 @@ impl<'a> Format<'a> for Class {
                     match f.settings.classlike_brace_style {
                         BraceStyle::SameLine => Document::space(),
                         BraceStyle::NextLine => {
-                            Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
+                            Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent])
                         }
                     },
                     print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
@@ -1088,16 +1089,14 @@ impl<'a> Format<'a> for Trait {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
             }
 
             let signature = vec![self.r#trait.format(f), Document::space(), self.name.format(f)];
             let body = vec![
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
-                    BraceStyle::NextLine => {
-                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
-                    }
+                    BraceStyle::NextLine => Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent]),
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
@@ -1117,7 +1116,7 @@ impl<'a> Format<'a> for Enum {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
             }
 
             let signature = vec![
@@ -1140,9 +1139,7 @@ impl<'a> Format<'a> for Enum {
             let body = vec![
                 match f.settings.classlike_brace_style {
                     BraceStyle::SameLine => Document::space(),
-                    BraceStyle::NextLine => {
-                        Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent])
-                    }
+                    BraceStyle::NextLine => Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent]),
                 },
                 print_class_like_body(f, &self.left_brace, &self.members, &self.right_brace),
             ];
@@ -1190,8 +1187,8 @@ impl<'a> Format<'a> for Return {
 
                 if return_argument_has_leading_comment(f, value) {
                     parts.push(Document::String("("));
-                    parts.push(Document::Indent(vec![Document::Line(Line::hardline()), value.format(f)]));
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Indent(vec![Document::Line(Line::hard()), value.format(f)]));
+                    parts.push(Document::Line(Line::hard()));
                     parts.push(Document::String(")"));
                 } else {
                     let mut expression = value;
@@ -1209,8 +1206,8 @@ impl<'a> Format<'a> for Return {
                     {
                         parts.push(Document::Group(Group::new(vec![
                             Document::IfBreak(IfBreak::then(Document::String("("))),
-                            Document::Indent(vec![Document::Line(Line::softline()), value.format(f)]),
-                            Document::Line(Line::softline()),
+                            Document::Indent(vec![Document::Line(Line::soft()), value.format(f)]),
+                            Document::Line(Line::soft()),
                             Document::IfBreak(IfBreak::then(Document::String(")"))),
                         ])));
                     } else {
@@ -1242,7 +1239,7 @@ impl<'a> Format<'a> for Echo {
                     self.values.iter().map(|v| v.format(f)).collect(),
                     Separator::CommaLine,
                 )));
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(self.terminator.format(f));
@@ -1286,7 +1283,7 @@ impl<'a> Format<'a> for Constant {
                         self.items.iter().map(|v| v.format(f)).collect(),
                         Separator::CommaLine,
                     )));
-                    contents.push(Document::Line(Line::softline()));
+                    contents.push(Document::Line(Line::soft()));
                 }
 
                 contents.push(self.terminator.format(f));
@@ -1521,7 +1518,7 @@ impl<'a> Format<'a> for AttributeList {
 
             if should_break {
                 let mut inner_conent = Document::join(attributes, Separator::CommaLine);
-                inner_conent.insert(0, Document::Line(Line::softline()));
+                inner_conent.insert(0, Document::Line(Line::soft()));
                 if f.settings.trailing_comma {
                     inner_conent.push(Document::IfBreak(IfBreak::then(Document::String(","))));
                 }
@@ -1531,7 +1528,7 @@ impl<'a> Format<'a> for AttributeList {
                 {
                     contents.push(comments);
                 } else {
-                    contents.push(Document::Line(Line::softline()));
+                    contents.push(Document::Line(Line::soft()));
                 }
             } else {
                 for (i, attribute) in attributes.into_iter().enumerate() {
@@ -1716,7 +1713,7 @@ impl<'a> Format<'a> for Function {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
             }
 
             let mut signature = vec![];
@@ -1744,7 +1741,7 @@ impl<'a> Format<'a> for Function {
                         BraceStyle::NextLine => Document::IfBreak(
                             IfBreak::new(
                                 Document::space(),
-                                Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent]),
+                                Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent]),
                             )
                             .with_id(signature_id),
                         ),
@@ -1821,7 +1818,7 @@ impl<'a> Format<'a> for Global {
                     self.variables.iter().map(|v| v.format(f)).collect(),
                     Separator::CommaLine,
                 )));
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(self.terminator.format(f));
@@ -1877,7 +1874,7 @@ impl<'a> Format<'a> for Static {
                     self.items.iter().map(|v| v.format(f)).collect(),
                     Separator::CommaLine,
                 )));
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(self.terminator.format(f));
@@ -1900,10 +1897,10 @@ impl<'a> Format<'a> for Unset {
                     values.push(Document::IfBreak(IfBreak::then(Document::String(","))));
                 }
 
-                values.insert(0, Document::Line(Line::softline()));
+                values.insert(0, Document::Line(Line::soft()));
 
                 contents.push(Document::Indent(values));
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(Document::String(")"));

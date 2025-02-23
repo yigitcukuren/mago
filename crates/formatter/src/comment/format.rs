@@ -112,7 +112,7 @@ impl<'a> Formatter<'a> {
             if self.has_newline(comment.end, /* backwards */ false) {
                 if self.has_newline(comment.start, /* backwards */ true) {
                     parts.push(Document::BreakParent);
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                 } else {
                     parts.push(Document::Line(Line::default()));
                 }
@@ -121,7 +121,7 @@ impl<'a> Formatter<'a> {
             };
         } else {
             parts.push(Document::BreakParent);
-            parts.push(Document::Line(Line::hardline()));
+            parts.push(Document::Line(Line::hard()));
         }
 
         if self
@@ -130,7 +130,7 @@ impl<'a> Formatter<'a> {
             .is_some_and(|i| self.has_newline(i, /* backwards */ false))
         {
             parts.push(Document::BreakParent);
-            parts.push(Document::Line(Line::hardline()));
+            parts.push(Document::Line(Line::hard()));
         }
     }
 
@@ -172,10 +172,10 @@ impl<'a> Formatter<'a> {
         {
             parts.push(printed);
             let suffix = {
-                let mut parts = vec![Document::BreakParent, Document::Line(Line::hardline())];
+                let mut parts = vec![Document::BreakParent, Document::Line(Line::hard())];
 
                 if self.is_previous_line_empty(comment.start) {
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                 }
 
                 parts
@@ -226,7 +226,7 @@ impl<'a> Formatter<'a> {
             // Comment within the span
             if comment.end <= range.end.offset {
                 if !indented && self.is_next_line_empty(span) {
-                    parts.push(Document::Array(vec![self.print_comment(comment), Document::Line(Line::hardline())]));
+                    parts.push(Document::Array(vec![self.print_comment(comment), Document::Line(Line::hard())]));
                 } else {
                     parts.push(self.print_comment(comment));
                 }
@@ -241,15 +241,15 @@ impl<'a> Formatter<'a> {
             return None;
         }
 
-        let document = Document::Array(Document::join(parts, Separator::Hardline));
+        let document = Document::Array(Document::join(parts, Separator::HardLine));
 
         Some(if indented {
             Document::Array(vec![
-                Document::Indent(vec![Document::BreakParent, Document::Line(Line::hardline()), document]),
-                Document::Line(Line::hardline()),
+                Document::Indent(vec![Document::BreakParent, Document::Line(Line::hard()), document]),
+                Document::Line(Line::hard()),
             ])
         } else {
-            Document::Array(vec![document, Document::Line(Line::hardline())])
+            Document::Array(vec![document, Document::Line(Line::hard())])
         })
     }
 
@@ -293,7 +293,7 @@ impl<'a> Formatter<'a> {
         for (i, processed_line) in processed_lines.iter().enumerate() {
             contents.push(Document::String(self.as_str(processed_line)));
             if i < processed_lines.len() - 1 {
-                contents.push(Document::Line(Line::hardline()));
+                contents.push(Document::Line(Line::hard()));
             }
         }
 

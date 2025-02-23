@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use ahash::HashMap;
 
 use mago_source::Source;
+use utils::get_string_width;
 
 use crate::document::Document;
 use crate::document::Fill;
@@ -16,6 +17,7 @@ use crate::printer::command::Mode;
 use crate::settings::FormatSettings;
 
 mod command;
+mod utils;
 
 pub struct Printer<'a> {
     settings: FormatSettings,
@@ -54,6 +56,7 @@ impl<'a> Printer<'a> {
 
     /// Turn Doc into a string
     pub fn print_doc_to_string(&mut self) {
+        let mut should_remeasure = false;
         while let Some(Command { indent, mut document, mode }) = self.commands.pop() {
             Self::propagate_breaks(&mut document);
 
@@ -61,10 +64,15 @@ impl<'a> Printer<'a> {
                 Document::String(s) => self.handle_str(s),
                 Document::Array(docs) => self.handle_array(indent, mode, docs),
                 Document::Indent(docs) => self.handle_indent(indent, mode, docs),
-                Document::Group(_) => self.handle_group(indent, mode, document),
+                Document::Group(_) => {
+                    should_remeasure = self.handle_group(indent, mode, document, should_remeasure);
+                }
                 Document::IndentIfBreak(docs) => self.handle_indent_if_break(indent, mode, docs),
-                Document::Line(line) => self.handle_line(line, indent, mode, document),
+                Document::Line(line) => {
+                    should_remeasure = self.handle_line(line, indent, mode, document, should_remeasure);
+                }
                 Document::LineSuffix(docs) => self.handle_line_suffix(indent, mode, docs),
+                Document::LineSuffixBoundary => self.handle_line_suffix_boundary(indent, mode),
                 Document::IfBreak(if_break) => self.handle_if_break(if_break, indent, mode),
                 Document::Fill(fill) => self.handle_fill(indent, mode, fill),
                 Document::BreakParent => { /* No op */ }
@@ -82,7 +90,7 @@ impl<'a> Printer<'a> {
 
     fn handle_str(&mut self, s: &str) {
         self.out.extend(s.as_bytes());
-        self.position += s.len();
+        self.position += get_string_width(s);
     }
 
     fn handle_array(&mut self, indent: Indent, mode: Mode, docs: Vec<Document<'a>>) {
@@ -93,64 +101,64 @@ impl<'a> Printer<'a> {
         self.commands.extend(docs.into_iter().rev().map(|doc| Command::new(Indent::new(indent.length + 1), mode, doc)));
     }
 
-    fn handle_group(&mut self, indent: Indent, mode: Mode, doc: Document<'a>) {
-        match mode {
-            Mode::Flat => {
-                let Document::Group(group) = doc else {
-                    unreachable!();
-                };
+    fn handle_group(&mut self, indent: Indent, mode: Mode, doc: Document<'a>, mut should_remeasure: bool) -> bool {
+        let Document::Group(group) = doc else {
+            unreachable!();
+        };
 
-                self.commands.extend(
-                    group
-                        .contents
-                        .into_iter()
-                        .rev()
-                        .map(|doc| Command::new(indent, if group.should_break { Mode::Break } else { mode }, doc)),
-                );
+        let should_break = group.should_break;
+        let group_id = group.id;
 
-                self.set_group_mode_from_last_cmd(group.id);
-            }
-            Mode::Break => {
-                let remaining_width = self.remaining_width();
-                let Document::Group(group) = &doc else {
-                    unreachable!();
-                };
-                let should_break = group.should_break;
-                let group_id = group.id;
-                let cmd = Command::new(indent, Mode::Flat, doc);
-                if !should_break && self.fits(&cmd, remaining_width) {
-                    self.commands.push(Command::new(indent, Mode::Flat, cmd.document));
-                } else {
-                    let Document::Group(group) = cmd.document else {
-                        unreachable!();
-                    };
+        if mode.is_flat() && !should_remeasure {
+            self.commands.extend(
+                group
+                    .contents
+                    .into_iter()
+                    .rev()
+                    .map(|doc| Command::new(indent, if should_break { Mode::Break } else { mode }, doc)),
+            );
 
-                    if let Some(mut expanded_states) = group.expanded_states {
-                        let most_expanded = expanded_states.pop().unwrap();
-                        if group.should_break {
-                            self.commands.push(Command::new(indent, Mode::Break, most_expanded));
+            self.set_group_mode_from_last_cmd(group_id);
 
-                            return;
-                        }
+            return should_remeasure;
+        }
 
-                        for state in expanded_states {
-                            let cmd = Command::new(indent, Mode::Flat, state);
-                            if self.fits(&cmd, remaining_width) {
-                                self.commands.push(cmd);
+        should_remeasure = false;
+        let remaining_width = self.remaining_width();
+        let cmd = Command::new(indent, Mode::Flat, Document::Group(group));
+        if !should_break && self.fits(&cmd, remaining_width) {
+            self.commands.push(Command::new(indent, Mode::Flat, cmd.document));
+        } else {
+            let Document::Group(group) = cmd.document else {
+                unreachable!();
+            };
 
-                                return;
-                            }
-                        }
+            if let Some(mut expanded_states) = group.expanded_states {
+                let most_expanded = expanded_states.pop().unwrap();
+                if should_break {
+                    self.commands.push(Command::new(indent, Mode::Break, most_expanded));
 
-                        self.commands.push(Command::new(indent, Mode::Break, most_expanded));
-                    } else {
-                        self.commands.push(Command::new(indent, Mode::Break, Document::Array(group.contents)));
+                    return should_remeasure;
+                }
+
+                for state in expanded_states {
+                    let cmd = Command::new(indent, Mode::Flat, state);
+                    if self.fits(&cmd, remaining_width) {
+                        self.commands.push(cmd);
+
+                        return should_remeasure;
                     }
                 }
 
-                self.set_group_mode_from_last_cmd(group_id);
+                self.commands.push(Command::new(indent, Mode::Break, most_expanded));
+            } else {
+                self.commands.push(Command::new(indent, Mode::Break, Document::Array(group.contents)));
             }
         }
+
+        self.set_group_mode_from_last_cmd(group_id);
+
+        should_remeasure
     }
 
     fn handle_indent_if_break(&mut self, indent: Indent, mode: Mode, doc: IndentIfBreak<'a>) {
@@ -170,39 +178,64 @@ impl<'a> Printer<'a> {
         }
     }
 
-    fn handle_line(&mut self, line: Line, indent: Indent, mode: Mode, doc: Document<'a>) {
-        if mode.is_flat() && !line.hard {
-            if !line.soft {
-                self.out.push(b' ');
-                self.position += 1;
-            }
+    fn handle_line(
+        &mut self,
+        line: Line,
+        indent: Indent,
+        mode: Mode,
+        doc: Document<'a>,
+        mut should_remeasure: bool,
+    ) -> bool {
+        if mode.is_flat() {
+            if !line.hard {
+                if !line.soft {
+                    self.out.push(b' ');
+                    self.position += 1;
+                }
 
-            return;
+                return should_remeasure;
+            } else {
+                should_remeasure = true;
+            }
         }
 
         if !self.line_suffix.is_empty() {
             self.commands.push(Command::new(indent, mode, doc));
             self.commands.extend(self.line_suffix.drain(..).rev());
 
-            return;
+            return should_remeasure;
         }
 
         if line.literal {
             self.out.extend(self.new_line.as_bytes());
             if !indent.root {
                 self.position = 0;
+            } else {
+                self.position = self.indent(indent.length);
             }
 
-            return;
+            return should_remeasure;
         }
 
         self.trim();
         self.out.extend(self.new_line.as_bytes());
         self.position = self.indent(indent.length);
+
+        should_remeasure
     }
 
     fn handle_line_suffix(&mut self, indent: Indent, mode: Mode, docs: Vec<Document<'a>>) {
         self.line_suffix.push(Command { indent, mode, document: Document::Array(docs) });
+    }
+
+    fn handle_line_suffix_boundary(&mut self, indent: Indent, mode: Mode) {
+        if !self.line_suffix.is_empty() {
+            self.commands.push(Command {
+                indent,
+                mode,
+                document: Document::Line(Line { hard: true, ..Line::default() }),
+            });
+        }
     }
 
     fn handle_if_break(&mut self, if_break: IfBreak<'a>, indent: Indent, mode: Mode) {
@@ -349,12 +382,11 @@ impl<'a> Printer<'a> {
         while let Some((mode, doc)) = queue.pop_front() {
             match doc {
                 Document::String(string) => {
-                    remaining_width -= string.len() as isize;
+                    remaining_width -= get_string_width(string) as isize;
                 }
                 Document::IndentIfBreak(IndentIfBreak { contents: docs, .. })
                 | Document::Indent(docs)
                 | Document::Array(docs) => {
-                    // Prepend docs to the queue
                     for d in docs.iter().rev() {
                         queue.push_front((mode, d));
                     }
@@ -392,6 +424,13 @@ impl<'a> Printer<'a> {
                     }
                 }
                 Document::LineSuffix(_) => {
+                    break;
+                }
+                Document::LineSuffixBoundary => {
+                    if !self.line_suffix.is_empty() {
+                        return false;
+                    }
+
                     break;
                 }
                 Document::BreakParent => {}

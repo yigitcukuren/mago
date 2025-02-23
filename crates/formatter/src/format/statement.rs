@@ -20,37 +20,11 @@ pub fn print_statement_sequence<'a>(f: &mut Formatter<'a>, stmts: &'a Sequence<S
 
         if !use_statements.is_empty() {
             parts.extend(print_use_statements(f, std::mem::take(&mut use_statements)));
-            parts.push(Document::Line(Line::hardline()));
-            parts.push(Document::Line(Line::hardline()));
+            parts.push(Document::Line(Line::hard()));
+            parts.push(Document::Line(Line::hard()));
         }
 
-        let mut should_add_space = false;
-
-        let should_add_new_line = match stmt {
-            Statement::ClosingTag(_) => false,
-            Statement::Inline(_) => false,
-            Statement::Expression(ExpressionStatement { terminator: Terminator::ClosingTag(_), .. }) => false,
-            Statement::OpeningTag(_) => {
-                if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset)) {
-                    should_add_space = !f.has_newline(index, false);
-                }
-
-                true
-            }
-            _ => {
-                if f.has_newline(stmt.span().end_position().offset, false) {
-                    true
-                } else if let Some(Statement::ClosingTag(tag)) = stmts.get(i + 1) {
-                    if f.skip_spaces_and_new_lines(Some(tag.span.end.offset), false).is_some() {
-                        should_add_space = true;
-                    }
-
-                    false
-                } else {
-                    true
-                }
-            }
-        };
+        let (should_add_new_line, should_add_space) = should_add_new_line_or_space_after_stmt(f, stmts, i, stmt);
 
         parts.push(stmt.format(f));
 
@@ -63,9 +37,9 @@ pub fn print_statement_sequence<'a>(f: &mut Formatter<'a>, stmts: &'a Sequence<S
         } else if should_add_new_line {
             if let Some(index) = last_non_noop_index {
                 if i != index {
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                     if f.is_next_line_empty(stmt.span()) {
-                        parts.push(Document::Line(Line::hardline()));
+                        parts.push(Document::Line(Line::hard()));
                     }
                 }
             }
@@ -77,6 +51,56 @@ pub fn print_statement_sequence<'a>(f: &mut Formatter<'a>, stmts: &'a Sequence<S
     }
 
     parts
+}
+
+fn should_add_new_line_or_space_after_stmt<'a>(
+    f: &mut Formatter<'a>,
+    stmts: &'a Sequence<Statement>,
+    i: usize,
+    stmt: &'a Statement,
+) -> (bool, bool) {
+    let mut should_add_space = false;
+
+    let should_add_line = match stmt {
+        Statement::ClosingTag(_) => false,
+        Statement::Inline(_) => false,
+        Statement::Expression(ExpressionStatement { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Echo(Echo { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Global(Global { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Static(Static { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Unset(Unset { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::HaltCompiler(HaltCompiler { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Goto(Goto { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Constant(Constant { terminator: Terminator::ClosingTag(_), .. }) => false,
+        Statement::Declare(Declare { body, .. }) => match body {
+            DeclareBody::Statement(statement) => {
+                return should_add_new_line_or_space_after_stmt(f, stmts, i, statement);
+            }
+            DeclareBody::ColonDelimited(_) => true,
+        },
+        Statement::OpeningTag(_) => {
+            if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset)) {
+                should_add_space = !f.has_newline(index, false);
+            }
+
+            true
+        }
+        _ => {
+            if f.has_newline(stmt.span().end_position().offset, false) {
+                true
+            } else if let Some(Statement::ClosingTag(tag)) = stmts.get(i + 1) {
+                if f.skip_spaces_and_new_lines(Some(tag.span.end.offset), false).is_some() {
+                    should_add_space = true;
+                }
+
+                false
+            } else {
+                true
+            }
+        }
+    };
+
+    (should_add_line, should_add_space)
 }
 
 fn print_use_statements<'a>(f: &mut Formatter<'a>, stmts: Vec<&'a Use>) -> Vec<Document<'a>> {
@@ -205,12 +229,12 @@ fn print_use_statements<'a>(f: &mut Formatter<'a>, stmts: Vec<&'a Use>) -> Vec<D
             }
 
             if !is_last_grouped_items || !is_last_group {
-                result_docs.push(Document::Line(Line::hardline()));
+                result_docs.push(Document::Line(Line::hard()));
             }
         }
 
         if !is_last_grouped_items {
-            result_docs.push(Document::Line(Line::hardline()));
+            result_docs.push(Document::Line(Line::hard()));
         }
     }
     result_docs

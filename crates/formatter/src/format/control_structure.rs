@@ -87,13 +87,13 @@ impl<'a> Format<'a> for IfColonDelimitedBody {
                     statements.insert(0, Document::String(" "));
                     parts.push(Document::Array(statements));
                 } else {
-                    statements.insert(0, Document::Line(Line::hardline()));
+                    statements.insert(0, Document::Line(Line::hard()));
                     parts.push(Document::Indent(statements));
                 }
             }
 
             if !matches!(self.statements.last(), Some(Statement::OpeningTag(_))) {
-                parts.push(Document::Line(Line::hardline()));
+                parts.push(Document::Line(Line::hard()));
             } else {
                 parts.push(Document::String(" "));
             }
@@ -101,7 +101,7 @@ impl<'a> Format<'a> for IfColonDelimitedBody {
             for else_if_clause in self.else_if_clauses.iter() {
                 parts.push(else_if_clause.format(f));
                 if !matches!(else_if_clause.statements.last(), Some(Statement::OpeningTag(_))) {
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                 } else {
                     parts.push(Document::String(" "));
                 }
@@ -110,7 +110,7 @@ impl<'a> Format<'a> for IfColonDelimitedBody {
             if let Some(else_clause) = &self.else_clause {
                 parts.push(else_clause.format(f));
                 if !matches!(else_clause.statements.last(), Some(Statement::OpeningTag(_))) {
-                    parts.push(Document::Line(Line::hardline()));
+                    parts.push(Document::Line(Line::hard()));
                 } else {
                     parts.push(Document::String(" "));
                 }
@@ -144,7 +144,7 @@ impl<'a> Format<'a> for IfColonDelimitedBodyElseIfClause {
                     statements.insert(0, Document::String(" "));
                     parts.push(Document::Array(statements));
                 } else {
-                    statements.insert(0, Document::Line(Line::hardline()));
+                    statements.insert(0, Document::Line(Line::hard()));
                     parts.push(Document::Indent(statements));
                 }
             }
@@ -165,7 +165,7 @@ impl<'a> Format<'a> for IfColonDelimitedBodyElseClause {
                     statements.insert(0, Document::String(" "));
                     parts.push(Document::Array(statements));
                 } else {
-                    statements.insert(0, Document::Line(Line::hardline()));
+                    statements.insert(0, Document::Line(Line::hard()));
                     parts.push(Document::Indent(statements));
                 }
             }
@@ -221,7 +221,7 @@ impl<'a> Format<'a> for For {
 
             contents.push(Document::Group(Group::new(vec![
                 Document::Indent(vec![
-                    Document::Line(Line::softline()),
+                    Document::Line(Line::soft()),
                     format_expressions(f, self.initializations.as_slice()),
                     Document::String(";"),
                     if self.conditions.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
@@ -230,7 +230,7 @@ impl<'a> Format<'a> for For {
                     if self.increments.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
                     format_expressions(f, self.increments.as_slice()),
                 ]),
-                Document::Line(Line::softline()),
+                Document::Line(Line::soft()),
             ])));
 
             contents.push(Document::String(")"));
@@ -286,7 +286,7 @@ impl<'a> Format<'a> for SwitchBody {
                 SwitchBody::BraceDelimited(b) => Document::Array(vec![
                     match f.settings.control_brace_style {
                         BraceStyle::SameLine => Document::space(),
-                        BraceStyle::NextLine => Document::Line(Line::hardline()),
+                        BraceStyle::NextLine => Document::Line(Line::hard()),
                     },
                     b.format(f),
                 ]),
@@ -301,13 +301,13 @@ impl<'a> Format<'a> for SwitchColonDelimitedBody {
         wrap!(f, self, SwitchColonDelimitedBody, {
             let mut contents = vec![Document::String(":")];
             for case in self.cases.iter() {
-                contents.push(Document::Indent(vec![Document::Line(Line::hardline()), case.format(f)]));
+                contents.push(Document::Indent(vec![Document::Line(Line::hard()), case.format(f)]));
             }
 
             if let Some(comment) = f.print_dangling_comments(self.colon.join(self.end_switch.span), true) {
                 contents.push(comment);
             } else {
-                contents.push(Document::Line(Line::hardline()));
+                contents.push(Document::Line(Line::hard()));
             }
 
             contents.push(self.end_switch.format(f));
@@ -345,7 +345,7 @@ impl<'a> Format<'a> for SwitchExpressionCase {
 
             let mut statements = print_statement_sequence(f, &self.statements);
             if !statements.is_empty() {
-                statements.insert(0, Document::Line(Line::hardline()));
+                statements.insert(0, Document::Line(Line::hard()));
 
                 parts.push(Document::Indent(statements));
             }
@@ -361,7 +361,7 @@ impl<'a> Format<'a> for SwitchDefaultCase {
             let mut parts = vec![self.default.format(f), self.separator.format(f)];
             let mut statements = print_statement_sequence(f, &self.statements);
             if !statements.is_empty() {
-                statements.insert(0, Document::Line(Line::hardline()));
+                statements.insert(0, Document::Line(Line::hard()));
 
                 parts.push(Document::Indent(statements));
             }

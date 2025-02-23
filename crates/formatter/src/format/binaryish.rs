@@ -55,8 +55,8 @@ pub(super) fn print_binaryish_expression<'a>(
         )
     {
         return Document::Group(Group::new(vec![
-            Document::Indent(vec![Document::Line(Line::softline()), Document::Array(parts)]),
-            Document::Line(Line::softline()),
+            Document::Indent(vec![Document::Line(Line::soft()), Document::Array(parts)]),
+            Document::Line(Line::soft()),
         ]));
     }
 
@@ -136,7 +136,7 @@ pub(super) fn print_binaryish_expressions<'a>(
     } else {
         vec![
             if line_before_operator {
-                Document::Line(if seperated { Line::default() } else { Line::softline() })
+                Document::Line(if seperated { Line::default() } else { Line::soft() })
             } else {
                 Document::String("")
             },
@@ -144,7 +144,7 @@ pub(super) fn print_binaryish_expressions<'a>(
             if line_before_operator {
                 Document::String(if seperated { " " } else { "" })
             } else {
-                Document::Line(if seperated { Line::default() } else { Line::softline() })
+                Document::Line(if seperated { Line::default() } else { Line::soft() })
             },
             right.format(f),
         ]

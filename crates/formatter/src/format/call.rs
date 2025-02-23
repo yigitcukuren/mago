@@ -74,7 +74,7 @@ pub(super) fn print_method_call_chain<'a>(method_chain: &MethodChain<'a>, f: &mu
 
     // Now handle the remaining method calls
     for chain_link in calls_iter {
-        let mut contents = vec![Document::Line(Line::hardline())];
+        let mut contents = vec![Document::Line(Line::hard())];
         contents.extend(match chain_link {
             CallLikeNode::Call(Call::Method(c)) => vec![Document::String("->"), c.method.format(f)],
             CallLikeNode::Call(Call::NullSafeMethod(c)) => vec![Document::String("?->"), c.method.format(f)],

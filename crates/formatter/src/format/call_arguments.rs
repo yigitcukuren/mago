@@ -55,8 +55,8 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
                 argument.push(Document::String(","));
 
                 if p.is_next_line_empty(element.span()) {
-                    argument.push(Document::Line(Line::hardline()));
-                    argument.push(Document::Line(Line::hardline()));
+                    argument.push(Document::Line(Line::hard()));
+                    argument.push(Document::Line(Line::hard()));
                     argument.push(Document::BreakParent);
                 } else {
                     argument.push(Document::Line(Line::default()));
@@ -181,12 +181,12 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
 
     let mut printed_arguments = get_printed_arguments(f, 0);
 
-    printed_arguments.insert(0, Document::Line(Line::softline()));
+    printed_arguments.insert(0, Document::Line(Line::soft()));
     contents.push(Document::Indent(printed_arguments));
     if f.settings.trailing_comma {
         contents.push(Document::IfBreak(IfBreak::then(Document::String(","))));
     }
-    contents.push(Document::Line(Line::softline()));
+    contents.push(Document::Line(Line::soft()));
     contents.push(Document::String(")"));
 
     Document::Group(Group::new(contents))

@@ -80,7 +80,7 @@ pub(super) fn print_assignment<'a>(
             lhs,
             Document::space(),
             operator,
-            Document::Indent(vec![Document::Line(Line::hardline()), rhs]),
+            Document::Indent(vec![Document::Line(Line::hard()), rhs]),
         ])),
         Layout::BreakAfterOperator => Document::Group(Group::new(vec![
             Document::Group(Group::new(vec![lhs])),

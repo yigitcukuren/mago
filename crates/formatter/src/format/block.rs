@@ -21,14 +21,14 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
         if length == 0 {
             Document::empty()
         } else {
-            let mut formatted = vec![Document::Line(Line::hardline())];
+            let mut formatted = vec![Document::Line(Line::hard())];
             for (i, item) in nodes.iter().enumerate() {
                 formatted.push(item.format(f));
 
                 if i < (length - 1) {
-                    formatted.push(Document::Line(Line::hardline()));
+                    formatted.push(Document::Line(Line::hard()));
                     if f.is_next_line_empty(item.span()) {
-                        formatted.push(Document::Line(Line::hardline()));
+                        formatted.push(Document::Line(Line::hard()));
                     }
                 }
             }
@@ -40,7 +40,7 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
     if let Some(comments) = f.print_dangling_comments(left_brace.join(*right_brace), true) {
         contents.push(comments);
     } else if length > 0 || !inline_empty {
-        contents.push(Document::Line(Line::hardline()));
+        contents.push(Document::Line(Line::hard()));
     }
 
     contents.push(Document::String("}"));
@@ -57,9 +57,18 @@ pub(super) fn print_block<'a>(
     let mut contents = vec![];
     contents.push(Document::String("{"));
     let has_body = stmts.iter().any(|stmt| !matches!(stmt, Statement::Noop(_)));
+    let has_inline_body = has_body && {
+        matches!((stmts.first(), stmts.last()), (Some(Statement::ClosingTag(_)), Some(Statement::OpeningTag(_))))
+    };
+
     let should_break = if has_body {
         let mut statements = statement::print_statement_sequence(f, stmts);
-        statements.insert(0, Document::Line(Line::hardline()));
+        if has_inline_body {
+            statements.insert(0, Document::space());
+        } else {
+            statements.insert(0, Document::Line(Line::hard()));
+        }
+
         contents.push(Document::Indent(statements));
         true
     } else {
@@ -95,8 +104,10 @@ pub(super) fn print_block<'a>(
 
     if let Some(comments) = f.print_dangling_comments(left_brace.join(*right_brace), true) {
         contents.push(comments);
+    } else if has_inline_body {
+        contents.push(Document::space());
     } else {
-        contents.push(Document::Line(Line::softline()));
+        contents.push(Document::Line(Line::soft()));
     }
 
     contents.push(Document::String("}"));

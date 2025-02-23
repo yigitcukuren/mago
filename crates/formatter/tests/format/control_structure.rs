@@ -22,9 +22,7 @@ pub fn test_inline_if() {
         <html>
             <?php if ($foo): ?>
                 Foo
-            <?php elseif (
-                $bar
-            ): ?>
+            <?php elseif ($bar): ?>
                 Bar
             <?php else: ?>
                 Neither
@@ -59,10 +57,6 @@ pub fn test_inline_if_no_indent() {
 
     test_format(code, expected, FormatSettings::default())
 }
-
-// ---------------------
-// WHILE
-// ---------------------
 
 #[test]
 pub fn test_inline_while() {

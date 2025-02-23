@@ -64,7 +64,7 @@ pub(super) fn print_function_like_parameters<'a>(
 
             if f.is_next_line_empty(parameter.span()) {
                 printed.push(Document::BreakParent);
-                printed.push(Document::Line(Line::hardline()));
+                printed.push(Document::Line(Line::hard()));
             }
         }
     }
@@ -78,7 +78,7 @@ pub(super) fn print_function_like_parameters<'a>(
     }
 
     if !parameter_list.parameters.is_empty() {
-        let mut contents = vec![Document::Line(Line::softline())];
+        let mut contents = vec![Document::Line(Line::soft())];
         contents.extend(printed);
         parts.push(Document::Indent(contents));
 
@@ -92,7 +92,7 @@ pub(super) fn print_function_like_parameters<'a>(
     {
         parts.push(comments);
     } else {
-        parts.push(Document::Line(Line::softline()));
+        parts.push(Document::Line(Line::soft()));
     }
 
     parts.push(Document::String(")"));

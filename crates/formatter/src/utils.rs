@@ -3,6 +3,7 @@ use mago_ast::*;
 use crate::Formatter;
 use crate::document::Document;
 use crate::document::IndentIfBreak;
+use crate::document::Separator;
 
 pub const fn has_naked_left_side(expression: &Expression) -> bool {
     matches!(
@@ -122,6 +123,14 @@ pub fn will_break(document: &mut Document<'_>) -> bool {
         | Document::IndentIfBreak(IndentIfBreak { contents: arr, .. }) => check_array(arr),
         Document::Fill(doc) => check_array(&mut doc.parts),
         Document::Line(doc) => doc.hard,
-        Document::String(_) => false,
+        Document::String(_) | Document::LineSuffixBoundary => false,
     }
+}
+
+pub fn replace_end_of_line(document: Document<'_>, replacement: Separator) -> Document<'_> {
+    let Document::String(text) = document else {
+        return document;
+    };
+
+    Document::Array(Document::join(text.split("\n").map(Document::String).collect(), replacement))
 }

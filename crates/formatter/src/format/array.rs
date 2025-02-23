@@ -92,7 +92,7 @@ pub(super) fn print_array_like<'a>(f: &mut Formatter<'a>, array_like: ArrayLike<
         return Document::Group(Group::new(vec![
             left_delimiter,
             if let Some(dangling_comments) = f.print_dangling_comments(array_like.span(), true) {
-                Document::Array(vec![dangling_comments, Document::Line(Line::softline())])
+                Document::Array(vec![dangling_comments, Document::Line(Line::soft())])
             } else {
                 Document::empty()
             },
@@ -112,7 +112,7 @@ pub(super) fn print_array_like<'a>(f: &mut Formatter<'a>, array_like: ArrayLike<
     parts.push(Document::Indent({
         let len = array_like.len();
         let mut indent_parts = vec![];
-        indent_parts.push(Document::Line(Line::softline()));
+        indent_parts.push(Document::Line(Line::soft()));
         for (i, doc) in array_like.iter(f).enumerate() {
             indent_parts.push(doc);
             if i == len - 1 {
@@ -133,7 +133,7 @@ pub(super) fn print_array_like<'a>(f: &mut Formatter<'a>, array_like: ArrayLike<
     if let Some(dangling_comments) = f.print_dangling_comments(array_like.span(), true) {
         parts.push(dangling_comments);
     } else {
-        parts.push(Document::Line(Line::softline()));
+        parts.push(Document::Line(Line::soft()));
     }
 
     parts.push(right_delimiter);

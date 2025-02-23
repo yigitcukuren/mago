@@ -107,7 +107,7 @@ pub(super) fn print_colon_delimited_body<'a>(
             printed_statements.insert(0, Document::String(" "));
             parts.push(Document::Array(printed_statements));
         } else {
-            printed_statements.insert(0, Document::Line(Line::hardline()));
+            printed_statements.insert(0, Document::Line(Line::hard()));
             parts.push(Document::Indent(printed_statements));
         }
     }
@@ -115,7 +115,7 @@ pub(super) fn print_colon_delimited_body<'a>(
     if let Some(comments) = f.print_dangling_comments(colon.join(terminator.span()), true) {
         parts.push(comments);
     } else if !matches!(statements.last(), Some(Statement::OpeningTag(_))) {
-        parts.push(Document::Line(Line::hardline()));
+        parts.push(Document::Line(Line::hard()));
     } else {
         parts.push(Document::String(" "));
     }
@@ -199,7 +199,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
     let mut contents = vec![];
     for attribute_list in lists {
         contents.push(attribute_list);
-        contents.push(Document::Line(Line::hardline()));
+        contents.push(Document::Line(Line::hard()));
     }
 
     Some(Document::Group(Group::new(contents).with_break(true)))
@@ -255,7 +255,7 @@ pub(super) fn adjust_clause<'a>(
             if force_space {
                 Document::Array(vec![Document::space(), clause])
             } else {
-                Document::Indent(vec![Document::BreakParent, Document::Line(Line::hardline()), clause])
+                Document::Indent(vec![Document::BreakParent, Document::Line(Line::hard()), clause])
             }
         }
     };
@@ -264,7 +264,7 @@ pub(super) fn adjust_clause<'a>(
         if is_block {
             Document::Array(vec![clause, Document::space()])
         } else {
-            Document::Indent(vec![Document::BreakParent, clause, Document::Line(Line::hardline())])
+            Document::Indent(vec![Document::BreakParent, clause, Document::Line(Line::hard())])
         }
     } else {
         clause
@@ -275,10 +275,10 @@ pub(super) fn print_condition<'a>(f: &mut Formatter<'a>, condition: &'a Expressi
     Document::Group(Group::new(vec![
         Document::String("("),
         Document::Indent(vec![
-            Document::Line(if f.settings.control_space_parens { Line::default() } else { Line::softline() }),
+            Document::Line(if f.settings.control_space_parens { Line::default() } else { Line::soft() }),
             condition.format(f),
         ]),
-        Document::Line(if f.settings.control_space_parens { Line::default() } else { Line::softline() }),
+        Document::Line(if f.settings.control_space_parens { Line::default() } else { Line::soft() }),
         Document::String(")"),
     ]))
 }

@@ -25,6 +25,7 @@ use crate::format::misc::print_condition;
 use crate::format::misc::print_modifiers;
 use crate::format::string::print_string;
 use crate::settings::*;
+use crate::utils;
 use crate::wrap;
 
 use crate::format::Format;
@@ -305,10 +306,10 @@ impl<'a> Format<'a> for IssetConstruct {
                     values.push(Document::IfBreak(IfBreak::then(Document::String(","))));
                 }
 
-                values.insert(0, Document::Line(Line::softline()));
+                values.insert(0, Document::Line(Line::soft()));
 
                 contents.push(Document::Indent(values));
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(Document::String(")"));
@@ -515,7 +516,7 @@ impl<'a> Format<'a> for ClosureUseClause {
             }
 
             let mut inner_conent = Document::join(variables, Separator::CommaLine);
-            inner_conent.insert(0, Document::Line(Line::softline()));
+            inner_conent.insert(0, Document::Line(Line::soft()));
             if f.settings.trailing_comma {
                 inner_conent.push(Document::IfBreak(IfBreak::then(Document::String(","))));
             }
@@ -525,7 +526,7 @@ impl<'a> Format<'a> for ClosureUseClause {
             {
                 contents.push(comments);
             } else {
-                contents.push(Document::Line(Line::softline()));
+                contents.push(Document::Line(Line::soft()));
             }
 
             contents.push(Document::String(")"));
@@ -541,7 +542,7 @@ impl<'a> Format<'a> for Closure {
             let mut attributes = vec![];
             for attribute_list in self.attribute_lists.iter() {
                 attributes.push(attribute_list.format(f));
-                attributes.push(Document::Line(Line::hardline()));
+                attributes.push(Document::Line(Line::hard()));
                 attributes.push(Document::BreakParent);
             }
 
@@ -580,7 +581,7 @@ impl<'a> Format<'a> for Closure {
                     match f.settings.closure_brace_style {
                         BraceStyle::SameLine => Document::space(),
                         BraceStyle::NextLine => Document::IfBreak(
-                            IfBreak::new(Document::space(), Document::Line(Line::hardline())).with_id(signature_id),
+                            IfBreak::new(Document::space(), Document::Line(Line::hard())).with_id(signature_id),
                         ),
                     },
                     self.body.format(f),
@@ -909,7 +910,7 @@ impl<'a> Format<'a> for DocumentString {
                 DocumentIndentation::Mixed(t, w) => t + w,
             };
 
-            contents.push(Document::Line(Line::hardline()));
+            contents.push(Document::Line(Line::hard()));
             for part in self.parts.iter() {
                 let formatted = match part {
                     StringPart::Literal(l) => {
@@ -921,11 +922,11 @@ impl<'a> Format<'a> for DocumentString {
                             part_contents.push(Document::String(line));
                         }
 
-                        part_contents = Document::join(part_contents, Separator::Hardline);
+                        part_contents = Document::join(part_contents, Separator::HardLine);
 
                         // if ends with a newline, add a newline
                         if content.ends_with('\n') {
-                            part_contents.push(Document::Line(Line::hardline()));
+                            part_contents.push(Document::Line(Line::hard()));
                         }
 
                         Document::Array(part_contents)
@@ -989,14 +990,21 @@ impl<'a> Format<'a> for StringPart {
 
 impl<'a> Format<'a> for LiteralStringPart {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
-        wrap!(f, self, LiteralStringPart, { Document::String(f.lookup(&self.value)) })
+        wrap!(f, self, LiteralStringPart, {
+            utils::replace_end_of_line(Document::String(f.interner.lookup(&self.value)), Separator::LiteralLine)
+        })
     }
 }
 
 impl<'a> Format<'a> for BracedExpressionStringPart {
     fn format(&'a self, f: &mut Formatter<'a>) -> Document<'a> {
         wrap!(f, self, BracedExpressionStringPart, {
-            Document::Group(Group::new(vec![Document::String("{"), self.expression.format(f), Document::String("}")]))
+            Document::Group(Group::new(vec![
+                Document::String("{"),
+                self.expression.format(f),
+                Document::LineSuffixBoundary,
+                Document::String("}"),
+            ]))
         })
     }
 }
@@ -1171,7 +1179,7 @@ impl<'a> Format<'a> for AnonymousClass {
                     BraceStyle::NextLine => Document::IfBreak(
                         IfBreak::new(
                             Document::space(),
-                            Document::Array(vec![Document::Line(Line::hardline()), Document::BreakParent]),
+                            Document::Array(vec![Document::Line(Line::hard()), Document::BreakParent]),
                         )
                         .with_id(signature_id),
                     ),

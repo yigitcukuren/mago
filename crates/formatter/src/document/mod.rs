@@ -27,6 +27,7 @@ pub enum Document<'a> {
     /// It's not practical to constantly check where the line ends to avoid accidentally printing some code at the end of a comment.
     /// `lineSuffix` buffers docs passed to it and flushes them before any new line.
     LineSuffix(Vec<Document<'a>>),
+    LineSuffixBoundary,
     /// Print something if the current `group` or the current element of `fill` breaks and something else if it doesn't.
     IfBreak(IfBreak<'a>),
     /// This is an alternative type of group which behaves like text layout:
@@ -47,14 +48,18 @@ pub struct Line {
 impl Line {
     /// Specify a line break.
     /// The difference from line is that if the expression fits on one line, it will be replaced with nothing.
-    pub fn softline() -> Self {
+    pub fn soft() -> Self {
         Self { soft: true, ..Self::default() }
     }
 
     /// Specify a line break that is **always** included in the output,
     /// no matter if the expression fits on one line or not.
-    pub fn hardline() -> Self {
+    pub fn hard() -> Self {
         Self { hard: true, ..Self::default() }
+    }
+
+    pub fn literal() -> Self {
+        Self { hard: true, literal: true, ..Default::default() }
     }
 }
 
@@ -154,8 +159,9 @@ impl<'a> IfBreak<'a> {
 #[derive(Clone, Copy)]
 pub enum Separator {
     #[allow(unused)]
-    Softline,
-    Hardline,
+    SoftLine,
+    HardLine,
+    LiteralLine,
     CommaLine, // [",", line]
     Space,
 }
@@ -202,8 +208,11 @@ impl<'a> Document<'a> {
             if i != 0 {
                 parts.push(match separator {
                     Separator::Space => Document::String(" "),
-                    Separator::Softline => Document::Line(Line::softline()),
-                    Separator::Hardline => Document::Line(Line::hardline()),
+                    Separator::SoftLine => Document::Line(Line::soft()),
+                    Separator::HardLine => Document::Line(Line::hard()),
+                    Separator::LiteralLine => {
+                        Document::Array(vec![Document::Line(Line::literal()), Document::BreakParent])
+                    }
                     Separator::CommaLine => {
                         Document::Array(vec![Document::String(","), Document::Line(Line::default())])
                     }
@@ -285,6 +294,7 @@ fn print_doc_to_debug(doc: &Document) -> String {
         Document::LineSuffix(docs) => {
             format!("lineSuffix({})", print_doc_to_debug(&Document::Array(docs.clone())))
         }
+        Document::LineSuffixBoundary => "lineSuffixBoundary".to_string(),
         Document::IfBreak(IfBreak { break_contents, flat_content, group_id }) => {
             let mut options = vec![];
             if let Some(id) = group_id {
