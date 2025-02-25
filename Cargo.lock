@@ -1513,7 +1513,7 @@ checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 
 [[package]]
 name = "mago"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1553,7 +1553,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-interner",
  "mago-php-version",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1575,14 +1575,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1591,7 +1591,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1601,7 +1601,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1611,7 +1611,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1629,7 +1629,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1638,7 +1638,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1653,7 +1653,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1678,7 +1678,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1691,7 +1691,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1710,7 +1710,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1718,7 +1718,7 @@ dependencies = [
 
 [[package]]
 name = "mago-project"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1738,7 +1738,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reference"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1750,7 +1750,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1764,7 +1764,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "blake3",
@@ -1781,7 +1781,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1793,7 +1793,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1801,7 +1801,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1811,7 +1811,7 @@ dependencies = [
 
 [[package]]
 name = "mago-trinary"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "serde",
  "strum",
@@ -1819,7 +1819,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1834,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1842,7 +1842,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
