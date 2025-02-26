@@ -32,6 +32,29 @@ pub fn test_expand_last_argument() {
 }
 
 #[test]
+pub fn test_expand_first_argument() {
+    let code = indoc! {r#"
+        <?php
+
+        return $propertyMetadata->withSchema(($this->addNullabilityToTypeDefinition)([
+            'type' => 'string',
+            'format' => 'decimal',
+        ], $type));
+    "#};
+
+    let expected = indoc! {r#"
+        <?php
+
+        return $propertyMetadata->withSchema(($this->addNullabilityToTypeDefinition)([
+            'type' => 'string',
+            'format' => 'decimal',
+        ], $type));
+    "#};
+
+    test_format(code, expected, FormatSettings::default());
+}
+
+#[test]
 pub fn test_hug_new() {
     let code = indoc! {r#"
         <?php

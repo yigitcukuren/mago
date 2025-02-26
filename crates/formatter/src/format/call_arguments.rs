@@ -238,7 +238,7 @@ fn should_expand_first_arg<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentLis
 
     match first_argument.value() {
         Expression::Closure(c) if c.use_clause.is_none() => {}
-        Expression::Match(_) => {}
+        Expression::Match(_) | Expression::Array(_) | Expression::LegacyArray(_) => {}
         _ => return false,
     };
 
