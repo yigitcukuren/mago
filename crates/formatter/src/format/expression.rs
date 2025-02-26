@@ -13,12 +13,12 @@ use crate::format::array::print_array_like;
 use crate::format::assignment::AssignmentLikeNode;
 use crate::format::assignment::print_assignment;
 use crate::format::binaryish;
-use crate::format::call::collect_member_access_chain;
-use crate::format::call::print_member_access_chain;
 use crate::format::call_arguments::print_argument_list;
 use crate::format::call_node::CallLikeNode;
 use crate::format::call_node::print_call_like_node;
 use crate::format::class_like::print_class_like_body;
+use crate::format::member_access::collect_member_access_chain;
+use crate::format::member_access::print_member_access_chain;
 use crate::format::misc;
 use crate::format::misc::print_attribute_list_sequence;
 use crate::format::misc::print_condition;
@@ -62,8 +62,7 @@ impl<'a> Format<'a> for Expression {
                 Expression::Clone(c) => c.format(f),
                 Expression::Call(c) => {
                     if let Some(access_chain) = collect_member_access_chain(self) {
-                        let chain_length = access_chain.accesses.len();
-                        if chain_length >= f.settings.method_chain_break_threshold {
+                        if access_chain.is_eligible_for_chaining() {
                             print_member_access_chain(&access_chain, f)
                         } else {
                             c.format(f)
@@ -74,8 +73,7 @@ impl<'a> Format<'a> for Expression {
                 }
                 Expression::Access(a) => {
                     if let Some(access_chain) = collect_member_access_chain(self) {
-                        let chain_length = access_chain.accesses.len();
-                        if chain_length >= f.settings.method_chain_break_threshold {
+                        if access_chain.is_eligible_for_chaining() {
                             print_member_access_chain(&access_chain, f)
                         } else {
                             a.format(f)

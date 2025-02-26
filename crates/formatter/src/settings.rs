@@ -382,14 +382,6 @@ pub struct FormatSettings {
     #[serde(default = "default_type_spacing")]
     pub type_spacing: usize,
 
-    /// The minimum length of a method call chain that triggers line-breaking formatting.
-    ///
-    /// When the number of chained method calls exceeds this threshold, the formatter will break the chain into multiple lines.
-    ///
-    /// Default: 4
-    #[serde(default = "default_method_chain_break_threshold")]
-    pub method_chain_break_threshold: usize,
-
     /// Whether to break a parameter list into multiple lines if it contains one or more promoted property even if it fits into a single line.
     ///
     /// Example:
@@ -650,7 +642,6 @@ impl Default for FormatSettings {
             static_before_visibility: false,
             null_type_hint: NullTypeHint::default(),
             type_spacing: default_type_spacing(),
-            method_chain_break_threshold: default_method_chain_break_threshold(),
             break_promoted_properties_list: true,
             space_concatenation: true,
             method_chain_breaking_style: MethodChainBreakingStyle::NextLine,
@@ -782,10 +773,6 @@ fn default_tab_width() -> usize {
 
 fn default_type_spacing() -> usize {
     0
-}
-
-fn default_method_chain_break_threshold() -> usize {
-    4
 }
 
 fn default_false() -> bool {

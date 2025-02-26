@@ -104,10 +104,6 @@ pub struct FormatterConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_spacing: Option<usize>,
 
-    /// The minimum length of a method call chain that triggers line-breaking formatting.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub method_chain_break_threshold: Option<usize>,
-
     /// Whether to break a parameter list into multiple lines if it contains a promoted property.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub break_promoted_properties_list: Option<bool>,
@@ -191,9 +187,6 @@ impl FormatterConfiguration {
             static_before_visibility: self.static_before_visibility.unwrap_or(default.static_before_visibility),
             null_type_hint: self.null_type_hint.unwrap_or(default.null_type_hint),
             type_spacing: self.type_spacing.unwrap_or(default.type_spacing),
-            method_chain_break_threshold: self
-                .method_chain_break_threshold
-                .unwrap_or(default.method_chain_break_threshold),
             break_promoted_properties_list: self
                 .break_promoted_properties_list
                 .unwrap_or(default.break_promoted_properties_list),

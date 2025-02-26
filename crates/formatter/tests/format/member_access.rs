@@ -56,3 +56,24 @@ pub fn test_chain_inside_conditional() {
 
     test_format(code, expected, FormatSettings { ..FormatSettings::default() });
 }
+
+#[test]
+pub fn test_short_chain() {
+    let code = indoc! {r#"
+        <?php
+
+        $this->addNullabilityToTypeDefinition = new ReflectionClass($decorated)->getProperty(
+            'addNullabilityToTypeDefinition'
+        )->getValue($decorated);
+    "#};
+
+    let expected = indoc! {r#"
+        <?php
+
+        $this->addNullabilityToTypeDefinition = new ReflectionClass($decorated)
+            ->getProperty('addNullabilityToTypeDefinition')
+            ->getValue($decorated);
+    "#};
+
+    test_format(code, expected, FormatSettings { ..Default::default() });
+}

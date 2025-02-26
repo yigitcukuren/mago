@@ -9,7 +9,7 @@ use crate::document::Group;
 use crate::document::Line;
 use crate::document::Separator;
 use crate::format::Format;
-use crate::format::call::collect_member_access_chain;
+use crate::format::member_access::collect_member_access_chain;
 use crate::format::statement::print_statement_sequence;
 use crate::settings::BraceStyle;
 
@@ -70,8 +70,7 @@ pub(super) fn should_hug_expression<'a>(f: &Formatter<'a>, expression: &'a Expre
 
     if let Expression::Call(_) = expression {
         // Don't hug calls if they are part of a member access chain
-        return collect_member_access_chain(expression)
-            .is_none_or(|chain| chain.accesses.len() < f.settings.method_chain_break_threshold);
+        return collect_member_access_chain(expression).is_none_or(|chain| !chain.is_eligible_for_chaining());
     }
 
     if let Expression::Instantiation(instantiation) = expression {

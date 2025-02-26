@@ -37,8 +37,33 @@ impl<'a> MemberAccess<'a> {
 
 impl MemberAccessChain<'_> {
     #[inline]
+    pub fn is_eligible_for_chaining(&self) -> bool {
+        let threshold = match self.base {
+            Expression::Variable(Variable::Direct(_)) | Expression::Identifier(_) => 4,
+            _ => 2,
+        };
+
+        self.get_number_of_method_calls() >= threshold
+    }
+
+    #[inline]
     fn is_first_link_static_method_call(&self) -> bool {
         matches!(self.accesses.first(), Some(MemberAccess::StaticMethodCall(_)))
+    }
+
+    #[inline]
+    pub fn get_number_of_method_calls(&self) -> usize {
+        self.accesses
+            .iter()
+            .filter(|access| {
+                matches!(
+                    access,
+                    MemberAccess::MethodCall(_)
+                        | MemberAccess::NullSafeMethodCall(_)
+                        | MemberAccess::StaticMethodCall(_)
+                )
+            })
+            .count()
     }
 
     #[inline]
