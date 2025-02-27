@@ -1,20 +1,20 @@
 use mago_ast::*;
 use mago_span::HasSpan;
 
-use crate::Formatter;
 use crate::document::Align;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
-use crate::format::Format;
+use crate::internal::FormatterState;
+use crate::internal::format::Format;
 
-pub fn print_statement_sequence<'a>(f: &mut Formatter<'a>, stmts: &'a Sequence<Statement>) -> Vec<Document<'a>> {
+pub fn print_statement_sequence<'a>(f: &mut FormatterState<'a>, stmts: &'a Sequence<Statement>) -> Vec<Document<'a>> {
     let stmts = stmts.nodes.iter().collect::<Vec<_>>();
 
     print_statement_slice(f, &stmts)
 }
 
-fn print_statement_slice<'a>(f: &mut Formatter<'a>, stmts: &[&'a Statement]) -> Vec<Document<'a>> {
+fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]) -> Vec<Document<'a>> {
     let mut use_statements: Vec<&'a Use> = Vec::new();
     let mut parts = vec![];
 
@@ -40,6 +40,7 @@ fn print_statement_slice<'a>(f: &mut Formatter<'a>, stmts: &[&'a Statement]) -> 
         if let Statement::OpeningTag(tag) = stmt {
             let offset = tag.span().start.offset;
             let line = f.source.line_number(offset);
+
             if let Some(line_start_offset) = f.source.get_line_start_offset(line) {
                 let c = &f.source_text[line_start_offset..offset];
                 let ws = c.chars().take_while(|c| c.is_whitespace()).collect::<String>();
@@ -86,7 +87,7 @@ fn print_statement_slice<'a>(f: &mut Formatter<'a>, stmts: &[&'a Statement]) -> 
 
 // New function to format statements with spacing and newlines
 fn format_statement_with_spacing<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     i: usize,
     stmt: &'a Statement,
     stmts: &[&'a Statement],
@@ -119,7 +120,7 @@ fn format_statement_with_spacing<'a>(
 }
 
 fn should_add_new_line_or_space_after_stmt<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     stmts: &[&'a Statement],
     i: usize,
     stmt: &'a Statement,
@@ -168,7 +169,7 @@ fn should_add_new_line_or_space_after_stmt<'a>(
     (should_add_line, should_add_space)
 }
 
-fn print_use_statements<'a>(f: &mut Formatter<'a>, stmts: Vec<&'a Use>) -> Vec<Document<'a>> {
+fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> Vec<Document<'a>> {
     let should_sort = f.settings.sort_uses;
     let should_separate = f.settings.separate_use_types;
     let should_expand = f.settings.expand_use_groups;
@@ -314,11 +315,11 @@ struct ExpandedUseItem<'a> {
     original_node: &'a Use,
 }
 
-fn expand_use<'a>(f: &mut Formatter<'a>, use_stmt: &'a Use, should_expand: bool) -> Vec<ExpandedUseItem<'a>> {
+fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: bool) -> Vec<ExpandedUseItem<'a>> {
     let mut expanded_items = Vec::new();
 
     fn expand_items<'a>(
-        f: &mut Formatter<'a>,
+        f: &mut FormatterState<'a>,
         items: &'a UseItems,
         current_namespace: Vec<&'a str>,
         use_type: Option<&'a UseType>,
@@ -417,7 +418,7 @@ fn expand_use<'a>(f: &mut Formatter<'a>, use_stmt: &'a Use, should_expand: bool)
     }
 
     fn expand_single_item<'a>(
-        f: &mut Formatter<'a>,
+        f: &mut FormatterState<'a>,
         item: &'a UseItem,
         mut current_namespace: Vec<&'a str>,
         use_type: Option<&'a UseType>,
@@ -442,7 +443,7 @@ fn expand_use<'a>(f: &mut Formatter<'a>, use_stmt: &'a Use, should_expand: bool)
     expanded_items
 }
 
-pub fn sort_use_items<'a>(f: &mut Formatter<'a>, items: impl Iterator<Item = &'a UseItem>) -> Vec<&'a UseItem> {
+pub fn sort_use_items<'a>(f: &mut FormatterState<'a>, items: impl Iterator<Item = &'a UseItem>) -> Vec<&'a UseItem> {
     let mut items = items.collect::<Vec<_>>();
     items.sort_by(|a, b| {
         let a_name = f.interner.lookup(&a.name.value());
@@ -455,7 +456,7 @@ pub fn sort_use_items<'a>(f: &mut Formatter<'a>, items: impl Iterator<Item = &'a
 }
 
 pub fn sort_maybe_typed_use_items<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     items: impl Iterator<Item = &'a MaybeTypedUseItem>,
 ) -> Vec<&'a MaybeTypedUseItem> {
     let mut items = items.collect::<Vec<_>>();

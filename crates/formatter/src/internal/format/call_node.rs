@@ -1,11 +1,11 @@
 use mago_ast::*;
 use mago_span::*;
 
-use crate::Formatter;
 use crate::document::Document;
 use crate::document::Group;
-use crate::format::Format;
-use crate::format::call_arguments::print_call_arguments;
+use crate::internal::FormatterState;
+use crate::internal::format::Format;
+use crate::internal::format::call_arguments::print_call_arguments;
 
 pub(super) enum CallLikeNode<'a> {
     Call(&'a Call),
@@ -54,7 +54,7 @@ impl HasSpan for CallLikeNode<'_> {
     }
 }
 
-pub(super) fn print_call_like_node<'a>(f: &mut Formatter<'a>, node: CallLikeNode<'a>) -> Document<'a> {
+pub(super) fn print_call_like_node<'a>(f: &mut FormatterState<'a>, node: CallLikeNode<'a>) -> Document<'a> {
     let mut parts = vec![];
 
     // format the callee-like expression

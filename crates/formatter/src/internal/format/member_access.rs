@@ -1,11 +1,11 @@
 use mago_ast::*;
 
-use crate::Formatter;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
-use crate::format::Format;
-use crate::parens::instantiation_needs_parens;
+use crate::internal::FormatterState;
+use crate::internal::format::Format;
+use crate::internal::parens::instantiation_needs_parens;
 
 use super::call_arguments::print_argument_list;
 
@@ -170,7 +170,7 @@ pub(super) fn collect_member_access_chain(expr: &Expression) -> Option<MemberAcc
 
 pub(super) fn print_member_access_chain<'a>(
     member_access_chain: &MemberAccessChain<'a>,
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
 ) -> Document<'a> {
     let base_document = member_access_chain.base.format(f);
     let mut parts = if base_needs_parerns(f, member_access_chain.base) {
@@ -254,7 +254,7 @@ pub(super) fn print_member_access_chain<'a>(
     Document::Group(Group::new(parts))
 }
 
-fn base_needs_parerns(f: &Formatter<'_>, base: &Expression) -> bool {
+fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
     if let Expression::Parenthesized(parenthesized) = base {
         return base_needs_parerns(f, &parenthesized.expression);
     }

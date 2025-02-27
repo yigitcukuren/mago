@@ -1,8 +1,7 @@
+use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
-use mago_parser::parse_source;
 use mago_php_version::PHPVersion;
-use mago_source::Source;
 
 pub mod comment;
 pub mod format;
@@ -40,17 +39,11 @@ pub fn test_format_with_version(
     settings: FormatSettings,
 ) {
     let interner = ThreadedInterner::new();
+    let formatter = Formatter::new(&interner, php_version, settings);
 
-    let code_source = Source::standalone(&interner, "code.php", code.as_ref());
-    let (code_program, error) = parse_source(&interner, &code_source);
-    assert_eq!(error, None, "Error parsing code");
-    let formatted_code = mago_formatter::format(&interner, &code_source, &code_program, php_version, settings);
+    let formatted_code = formatter.format_code("code.php", code.as_ref()).unwrap();
     pretty_assertions::assert_eq!(expected, formatted_code, "Formatted code does not match expected");
 
-    let formatted_code_source = Source::standalone(&interner, "formatted_code.php", &formatted_code);
-    let (formatted_code_program, error) = parse_source(&interner, &formatted_code_source);
-    assert_eq!(error, None, "Error parsing formatted code");
-    let reformatted_code =
-        mago_formatter::format(&interner, &formatted_code_source, &formatted_code_program, php_version, settings);
+    let reformatted_code = formatter.format_code("formatted_code.php", &formatted_code).unwrap();
     pretty_assertions::assert_eq!(expected, reformatted_code, "Reformatted code does not match expected");
 }

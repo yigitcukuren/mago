@@ -1,17 +1,17 @@
 use mago_ast::*;
 use mago_span::*;
 
-use crate::Format;
-use crate::Formatter;
-use crate::comment::CommentFlags;
 use crate::document::*;
-use crate::format::call_node::CallLikeNode;
-use crate::format::misc::should_hug_expression;
-use crate::utils::will_break;
+use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
+use crate::internal::format::Format;
+use crate::internal::format::call_node::CallLikeNode;
+use crate::internal::format::misc::should_hug_expression;
+use crate::internal::utils::will_break;
 
 use super::misc::is_string_word_type;
 
-pub(super) fn print_call_arguments<'a>(f: &mut Formatter<'a>, expression: &CallLikeNode<'a>) -> Document<'a> {
+pub(super) fn print_call_arguments<'a>(f: &mut FormatterState<'a>, expression: &CallLikeNode<'a>) -> Document<'a> {
     let Some(argument_list) = expression.arguments() else {
         return if (expression.is_instantiation() && f.settings.parentheses_in_new_expression)
             || (expression.is_exit_or_die_construct() && f.settings.parentheses_in_exit_and_die)
@@ -32,7 +32,7 @@ pub(super) fn print_call_arguments<'a>(f: &mut Formatter<'a>, expression: &CallL
     print_argument_list(f, argument_list)
 }
 
-pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a ArgumentList) -> Document<'a> {
+pub(super) fn print_argument_list<'a>(f: &mut FormatterState<'a>, argument_list: &'a ArgumentList) -> Document<'a> {
     let mut contents = vec![Document::String("(")];
     if argument_list.arguments.is_empty() {
         contents.extend(f.print_inner_comment(argument_list.span()));
@@ -41,7 +41,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
         return Document::Array(contents);
     }
 
-    let get_printed_arguments = |p: &mut Formatter<'a>, skip_index: isize| {
+    let get_printed_arguments = |p: &mut FormatterState<'a>, skip_index: isize| {
         let mut printed_arguments = vec![];
         let mut length = argument_list.arguments.len();
         let arguments: Box<dyn Iterator<Item = (usize, &'a Argument)>> = match skip_index {
@@ -82,7 +82,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
         printed_arguments
     };
 
-    let all_arguments_broken_out = |f: &mut Formatter<'a>| {
+    let all_arguments_broken_out = |f: &mut FormatterState<'a>| {
         let mut parts = vec![];
         parts.push(Document::String("("));
         parts.push(Document::Indent(vec![
@@ -145,7 +145,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
             printed_arguments.push(Document::Line(Line::default()));
         }
 
-        let get_last_doc = |p: &mut Formatter<'a>| {
+        let get_last_doc = |p: &mut FormatterState<'a>| {
             p.argument_state.expand_last_argument = true;
             let last_doc = argument_list.arguments.last().unwrap().format(p);
             p.argument_state.expand_last_argument = false;
@@ -205,7 +205,7 @@ pub(super) fn print_argument_list<'a>(f: &mut Formatter<'a>, argument_list: &'a 
     Document::Group(Group::new(contents))
 }
 
-fn should_inline_single_breaking_argument<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentList) -> bool {
+fn should_inline_single_breaking_argument<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     if argument_list.arguments.len() != 1 {
         return false;
     }
@@ -221,7 +221,7 @@ fn should_inline_single_breaking_argument<'a>(f: &Formatter<'a>, argument_list: 
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/3.3.3/src/language-js/print/call-arguments.js#L247-L272>
-fn should_expand_first_arg<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentList) -> bool {
+fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     if argument_list.arguments.len() != 2 {
         return false;
     }
@@ -250,7 +250,7 @@ fn should_expand_first_arg<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentLis
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/52829385bcc4d785e58ae2602c0b098a643523c9/src/language-js/print/call-arguments.js#L234-L258>
-fn should_expand_last_arg<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentList) -> bool {
+fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     let Some(last_argument) = argument_list.arguments.last() else { return false };
     if f.has_comment(last_argument.span(), CommentFlags::Leading | CommentFlags::Trailing) {
         return false;

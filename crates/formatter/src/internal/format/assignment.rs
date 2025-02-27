@@ -1,14 +1,14 @@
 use mago_ast::*;
 use mago_span::*;
 
-use crate::Formatter;
-use crate::comment::CommentFlags;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::IndentIfBreak;
 use crate::document::Line;
-use crate::format::Format;
-use crate::format::binaryish::should_inline_logical_or_coalesce_expression;
+use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
+use crate::internal::format::Format;
+use crate::internal::format::binaryish::should_inline_logical_or_coalesce_expression;
 
 /// Represents nodes in the Abstract Syntax Tree (AST) that involve assignment-like operations.
 #[derive(Debug, Clone, Copy)]
@@ -56,7 +56,7 @@ enum Layout {
 }
 
 pub(super) fn print_assignment<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     assignment_node: AssignmentLikeNode<'a>,
     lhs: Document<'a>,
     operator: Document<'a>,
@@ -119,7 +119,7 @@ pub(super) fn print_assignment<'a>(
 }
 
 fn choose_layout<'a, 'b>(
-    f: &Formatter<'a>,
+    f: &FormatterState<'a>,
     lhs: &'b Document<'a>,
     assignment_like_node: &'b AssignmentLikeNode<'a>,
     rhs_expression: &'a Expression,
@@ -226,7 +226,7 @@ fn is_arrow_function_variable_declarator(assignment_like_node: &AssignmentLikeNo
 
 const MIN_OVERLAP_FOR_BREAK: usize = 3;
 
-fn is_property_like_with_short_key<'a>(f: &Formatter<'a>, assignment_like_node: &AssignmentLikeNode<'a>) -> bool {
+fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_node: &AssignmentLikeNode<'a>) -> bool {
     let width = match assignment_like_node {
         AssignmentLikeNode::ClassLikeConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
         AssignmentLikeNode::ConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
@@ -256,7 +256,11 @@ fn is_property_like_with_short_key<'a>(f: &Formatter<'a>, assignment_like_node: 
 }
 
 /// <https://github.com/prettier/prettier/blob/eebf0e4b5ec8ac24393c56ced4b4819d4c551f31/src/language-js/print/assignment.js#L182>
-fn should_break_after_operator<'a>(f: &Formatter<'a>, rhs_expression: &'a Expression, has_short_key: bool) -> bool {
+fn should_break_after_operator<'a>(
+    f: &FormatterState<'a>,
+    rhs_expression: &'a Expression,
+    has_short_key: bool,
+) -> bool {
     if let Expression::Parenthesized(parenthesized) = rhs_expression {
         return should_break_after_operator(f, &parenthesized.expression, has_short_key);
     }
@@ -313,7 +317,7 @@ fn should_break_after_operator<'a>(f: &Formatter<'a>, rhs_expression: &'a Expres
     false
 }
 
-fn is_poorly_breakable_member_or_call_chain<'a>(f: &Formatter<'a>, rhs_expression: &'a Expression) -> bool {
+fn is_poorly_breakable_member_or_call_chain<'a>(f: &FormatterState<'a>, rhs_expression: &'a Expression) -> bool {
     let mut is_chain_expression = false;
     let mut is_identifier_or_variable = false;
     let mut call_argument_lists = vec![];
@@ -384,7 +388,7 @@ fn is_poorly_breakable_member_or_call_chain<'a>(f: &Formatter<'a>, rhs_expressio
     true
 }
 
-fn is_lone_short_argument_list<'a>(f: &Formatter<'a>, argument_list: &'a ArgumentList) -> bool {
+fn is_lone_short_argument_list<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     if let Some(first_argument) = argument_list.arguments.first() {
         if argument_list.arguments.len() == 1 {
             return is_lone_short_argument(f, first_argument.value());
@@ -398,7 +402,7 @@ fn is_lone_short_argument_list<'a>(f: &Formatter<'a>, argument_list: &'a Argumen
 
 const LONE_SHORT_ARGUMENT_THRESHOLD_RATE: f32 = 0.25;
 
-fn is_lone_short_argument<'a>(f: &Formatter<'a>, argument_value: &'a Expression) -> bool {
+fn is_lone_short_argument<'a>(f: &FormatterState<'a>, argument_value: &'a Expression) -> bool {
     let argument_span = argument_value.span();
     if f.has_comment(argument_span, CommentFlags::all()) {
         return false;

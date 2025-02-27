@@ -2,15 +2,15 @@ use mago_ast::*;
 use mago_span::HasSpan;
 use mago_span::Span;
 
-use crate::Formatter;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
-use crate::format::Format;
-use crate::format::statement;
+use crate::internal::FormatterState;
+use crate::internal::format::Format;
+use crate::internal::format::statement;
 
 pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     left_brace: &Span,
     nodes: &'a Sequence<T>,
     right_brace: &Span,
@@ -49,7 +49,7 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
 }
 
 pub(super) fn print_block<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     left_brace: &Span,
     stmts: &'a Sequence<Statement>,
     right_brace: &Span,
@@ -115,7 +115,7 @@ pub(super) fn print_block<'a>(
     Document::Group(Group::new(contents).with_break(should_break))
 }
 
-pub(super) fn print_block_body<'a>(f: &mut Formatter<'a>, stmts: &'a Sequence<Statement>) -> Option<Document<'a>> {
+pub(super) fn print_block_body<'a>(f: &mut FormatterState<'a>, stmts: &'a Sequence<Statement>) -> Option<Document<'a>> {
     let has_body = stmts.iter().any(|stmt| !matches!(stmt, Statement::Noop(_)));
 
     if has_body { Some(Document::Array(statement::print_statement_sequence(f, stmts))) } else { None }

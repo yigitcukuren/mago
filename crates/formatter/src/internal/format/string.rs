@@ -1,7 +1,7 @@
 use mago_ast::LiteralStringKind;
 use mago_interner::StringIdentifier;
 
-use crate::Formatter;
+use crate::internal::FormatterState;
 
 fn get_preferred_quote(raw: &str, enclosing_quote: char, prefer_single_quote: bool) -> char {
     let (preferred_quote_char, alternate_quote_char) = if prefer_single_quote { ('\'', '"') } else { ('"', '\'') };
@@ -55,7 +55,7 @@ fn make_string(raw_text: &str, enclosing_quote: char) -> String {
     result
 }
 
-pub(super) fn print_string<'a>(f: &Formatter<'a>, kind: &LiteralStringKind, value: &StringIdentifier) -> &'a str {
+pub(super) fn print_string<'a>(f: &FormatterState<'a>, kind: &LiteralStringKind, value: &StringIdentifier) -> &'a str {
     let text = f.lookup(value);
 
     let quote = unsafe { text.chars().next().unwrap_unchecked() };

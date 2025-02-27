@@ -18,12 +18,12 @@ mago-source = { workspace = true }
 mago-span = { workspace = true }
 mago-token = { workspace = true }
 mago-interner = { workspace = true }
+mago-parser = { workspace = true }
 mago-php-version = { workspace = true }
 ahash = { workspace = true }
 serde = { workspace = true }
 bitflags = { workspace = true }
 
 [dev-dependencies]
-mago-parser = { workspace = true }
 indoc = { workspace = true }
 pretty_assertions = { workspace = true }

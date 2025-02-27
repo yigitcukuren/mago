@@ -1,12 +1,10 @@
 use std::fmt;
 
-use serde::Serialize;
-
 use crate::document::group::GroupIdentifier;
 
 pub mod group;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum Document<'a> {
     String(&'a str),
     Array(Vec<Document<'a>>),
@@ -41,7 +39,13 @@ pub enum Document<'a> {
     Trim(Trim),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Align<'a> {
+    pub alignment: &'a str,
+    pub contents: Vec<Document<'a>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum Trim {
     /// Trims trailing whitespace characters (spaces and tabs) from the end of the document.
     Whitespace,
@@ -49,17 +53,47 @@ pub enum Trim {
     Newlines,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-pub struct Align<'a> {
-    pub alignment: &'a str,
-    pub contents: Vec<Document<'a>>,
-}
-
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct Line {
     pub hard: bool,
     pub soft: bool,
     pub literal: bool,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Group<'a> {
+    pub contents: Vec<Document<'a>>,
+    pub should_break: bool,
+    pub expanded_states: Option<Vec<Document<'a>>>,
+    pub id: Option<GroupIdentifier>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct IndentIfBreak<'a> {
+    pub contents: Vec<Document<'a>>,
+    pub group_id: Option<GroupIdentifier>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Fill<'a> {
+    pub parts: Vec<Document<'a>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct IfBreak<'a> {
+    pub break_contents: Box<Document<'a>>,
+    pub flat_content: Box<Document<'a>>,
+    pub group_id: Option<GroupIdentifier>,
+}
+
+#[derive(Clone, Copy)]
+pub enum Separator {
+    #[allow(unused)]
+    SoftLine,
+    HardLine,
+    LiteralLine,
+    CommaLine, // [",", line]
+    Space,
 }
 
 impl Line {
@@ -78,14 +112,6 @@ impl Line {
     pub fn literal() -> Self {
         Self { hard: true, literal: true, ..Default::default() }
     }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-pub struct Group<'a> {
-    pub contents: Vec<Document<'a>>,
-    pub should_break: bool,
-    pub expanded_states: Option<Vec<Document<'a>>>,
-    pub id: Option<GroupIdentifier>,
 }
 
 impl<'a> Group<'a> {
@@ -108,12 +134,6 @@ impl<'a> Group<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-pub struct IndentIfBreak<'a> {
-    pub contents: Vec<Document<'a>>,
-    pub group_id: Option<GroupIdentifier>,
-}
-
 impl<'a> IndentIfBreak<'a> {
     pub fn new(contents: Vec<Document<'a>>) -> Self {
         Self { contents, group_id: None }
@@ -123,11 +143,6 @@ impl<'a> IndentIfBreak<'a> {
         self.group_id = Some(id);
         self
     }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-pub struct Fill<'a> {
-    pub parts: Vec<Document<'a>>,
 }
 
 impl<'a> Fill<'a> {
@@ -151,13 +166,6 @@ impl<'a> Fill<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-pub struct IfBreak<'a> {
-    pub break_contents: Box<Document<'a>>,
-    pub flat_content: Box<Document<'a>>,
-    pub group_id: Option<GroupIdentifier>,
-}
-
 impl<'a> IfBreak<'a> {
     pub fn new(break_contents: Document<'a>, flat_content: Document<'a>) -> Self {
         Self { break_contents: Box::new(break_contents), flat_content: Box::new(flat_content), group_id: None }
@@ -171,16 +179,6 @@ impl<'a> IfBreak<'a> {
         self.group_id = Some(id);
         self
     }
-}
-
-#[derive(Clone, Copy)]
-pub enum Separator {
-    #[allow(unused)]
-    SoftLine,
-    HardLine,
-    LiteralLine,
-    CommaLine, // [",", line]
-    Space,
 }
 
 impl<'a> Document<'a> {
@@ -244,95 +242,90 @@ impl<'a> Document<'a> {
 
 impl fmt::Display for Document<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", print_doc_to_debug(self))
-    }
-}
+        match self {
+            Document::String(s) => write!(f, "{:?}", s),
+            Document::Array(docs) => {
+                let mut printed: Vec<String> = docs.iter().map(|d| d.to_string()).collect();
 
-fn print_doc_to_debug(doc: &Document) -> String {
-    match doc {
-        Document::String(s) => format!("{:?}", s),
-        Document::Array(docs) => {
-            let printed: Vec<String> = docs.iter().map(|d| print_doc_to_debug(d)).collect();
-            if printed.len() == 1 { printed[0].clone() } else { format!("[{}]", printed.join(", ")) }
-        }
-        Document::Indent(docs) => {
-            format!("indent({})", print_doc_to_debug(&Document::Array(docs.clone())))
-        }
-        Document::IndentIfBreak(IndentIfBreak { contents, group_id }) => {
-            let mut options = vec![];
-            if let Some(id) = group_id {
-                options.push(format!("groupId: {:?}", id));
+                if printed.len() == 1 {
+                    write!(f, "{}", printed.pop().unwrap())
+                } else {
+                    write!(f, "[{}]", printed.join(", "))
+                }
             }
-            let options_str =
-                if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
-            format!("indentIfBreak({}{})", print_doc_to_debug(&Document::Array(contents.clone())), options_str)
-        }
-        Document::Group(Group { contents, should_break, expanded_states, id }) => {
-            let mut options = vec![];
-            if *should_break {
-                options.push("shouldBreak: true".to_string());
+            Document::Indent(docs) => {
+                write!(f, "indent({})", Document::Array(docs.clone()))
             }
-            if let Some(id) = id {
-                options.push(format!("id: {:?}", id));
+            Document::IndentIfBreak(IndentIfBreak { contents, group_id }) => {
+                let mut options = vec![];
+                if let Some(id) = group_id {
+                    options.push(format!("groupId: {:?}", id));
+                }
+                let options_str =
+                    if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
+                write!(f, "indentIfBreak({}{})", Document::Array(contents.clone()), options_str)
             }
-            let expanded_states_str = if let Some(states) = expanded_states {
-                format!(
-                    "conditionalGroup([{}]",
-                    states.iter().map(|s| print_doc_to_debug(s)).collect::<Vec<_>>().join(", ")
-                )
-            } else {
-                String::new()
-            };
-            let options_str =
-                if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
+            Document::Group(Group { contents, should_break, expanded_states, id }) => {
+                let mut options = vec![];
+                if *should_break {
+                    options.push("shouldBreak: true".to_string());
+                }
+                if let Some(id) = id {
+                    options.push(format!("id: {:?}", id));
+                }
+                let expanded_states_str = if let Some(states) = expanded_states {
+                    format!(
+                        "conditionalGroup([{}]",
+                        states.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
+                    )
+                } else {
+                    String::new()
+                };
+                let options_str =
+                    if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
 
-            if expanded_states_str.is_empty() {
-                format!("group({}{})", print_doc_to_debug(&Document::Array(contents.clone())), options_str)
-            } else {
-                format!(
-                    "{}, {}{})",
-                    expanded_states_str,
-                    print_doc_to_debug(&Document::Array(contents.clone())),
-                    options_str,
-                )
+                if expanded_states_str.is_empty() {
+                    write!(f, "group({}{})", Document::Array(contents.clone()), options_str)
+                } else {
+                    write!(f, "{}, {}{})", expanded_states_str, Document::Array(contents.clone()), options_str,)
+                }
             }
-        }
-        Document::Line(line) => {
-            if line.literal {
-                "literalline".to_string()
-            } else if line.hard {
-                "hardline".to_string()
-            } else if line.soft {
-                "softline".to_string()
-            } else {
-                "line".to_string()
+            Document::Line(line) => {
+                if line.literal {
+                    write!(f, "literalLine")
+                } else if line.hard {
+                    write!(f, "hardline")
+                } else if line.soft {
+                    write!(f, "softline")
+                } else {
+                    write!(f, "line")
+                }
             }
-        }
-        Document::LineSuffix(docs) => {
-            format!("lineSuffix({})", print_doc_to_debug(&Document::Array(docs.clone())))
-        }
-        Document::LineSuffixBoundary => "lineSuffixBoundary".to_string(),
-        Document::IfBreak(IfBreak { break_contents, flat_content, group_id }) => {
-            let mut options = vec![];
-            if let Some(id) = group_id {
-                options.push(format!("groupId: {:?}", id));
+            Document::LineSuffix(docs) => {
+                write!(f, "lineSuffix({})", Document::Array(docs.clone()))
             }
-            let options_str =
-                if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
-            format!(
-                "ifBreak({}, {}{})",
-                print_doc_to_debug(break_contents),
-                print_doc_to_debug(flat_content),
-                options_str
-            )
+            Document::LineSuffixBoundary => write!(f, "lineSuffixBoundary"),
+            Document::IfBreak(IfBreak { break_contents, flat_content, group_id }) => {
+                let mut options = vec![];
+                if let Some(id) = group_id {
+                    options.push(format!("groupId: {:?}", id));
+                }
+                let options_str =
+                    if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
+
+                write!(f, "ifBreak({}, {}{})", break_contents, flat_content, options_str)
+            }
+            Document::Fill(Fill { parts }) => {
+                write!(f, "fill([{}])", parts.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "))
+            }
+            Document::BreakParent => write!(f, "breakParent"),
+            Document::Align(Align { alignment, contents }) => {
+                write!(f, "dedentToRoot(align({:?}, {}))", alignment, Document::Array(contents.clone()))
+            }
+            Document::Trim(trim) => match trim {
+                Trim::Whitespace => write!(f, "trim"),
+                Trim::Newlines => write!(f, "trimNewlines"),
+            },
         }
-        Document::Fill(Fill { parts }) => {
-            format!("fill([{}])", parts.iter().map(|p| print_doc_to_debug(p)).collect::<Vec<_>>().join(", "))
-        }
-        Document::BreakParent => "breakParent".to_string(),
-        Document::Align(Align { alignment, contents }) => {
-            format!("dedentToRoot(align({:?}, {}))", alignment, print_doc_to_debug(&Document::Array(contents.clone())))
-        }
-        Document::Trim(_) => "trim".to_string(),
     }
 }

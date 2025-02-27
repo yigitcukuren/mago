@@ -2,16 +2,16 @@ use std::borrow::Cow;
 
 use mago_span::Span;
 
-use crate::Formatter;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
 use crate::document::Separator;
+use crate::internal::FormatterState;
 
-use crate::comment::Comment;
-use crate::comment::CommentFlags;
+use crate::internal::comment::Comment;
+use crate::internal::comment::CommentFlags;
 
-impl<'a> Formatter<'a> {
+impl<'a> FormatterState<'a> {
     #[must_use]
     pub(crate) fn print_comments(
         &mut self,

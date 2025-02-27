@@ -1,14 +1,14 @@
 use mago_ast::*;
 use mago_span::Span;
 
-use crate::Formatter;
 use crate::document::Document;
+use crate::internal::FormatterState;
 use crate::settings::BraceStyle;
 
 use super::block::print_block_of_nodes;
 
 pub fn print_class_like_body<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     left_brace: &'a Span,
     class_like_members: &'a Sequence<ClassLikeMember>,
     right_brace: &'a Span,

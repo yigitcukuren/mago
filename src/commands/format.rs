@@ -3,7 +3,7 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_formatter::format;
+use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
 use mago_parser::parse_source;
@@ -186,7 +186,8 @@ fn format_source(
             false
         }
         None => {
-            let formatted = format(interner, &source, &program, php_version, settings);
+            let formatter = Formatter::new(interner, php_version, settings);
+            let formatted = formatter.format(&source, &program);
 
             utils::apply_changes(interner, manager, &source, formatted, dry_run)?
         }

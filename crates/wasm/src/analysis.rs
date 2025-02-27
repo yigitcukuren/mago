@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 
 use mago_ast::Program;
+use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
@@ -109,18 +110,14 @@ impl AnalysisResults {
     pub fn analyze(code: String, lint_settings: Settings, format_settings: FormatSettings) -> Self {
         let interner = ThreadedInterner::new();
         let source = Source::standalone(&interner, "code.php", &code);
-        let mut module = Module::build(&interner, lint_settings.php_version, source, ModuleBuildOptions::validation());
-        let program = module.parse(&interner);
+        let (mut module, program) =
+            Module::build_with_ast(&interner, lint_settings.php_version, source, ModuleBuildOptions::validation());
         let mut formatted = None;
         if module.parse_error.is_none() {
+            let formatter = Formatter::new(&interner, lint_settings.php_version, format_settings);
+
             // Only format if there are no parse errors
-            formatted = Some(mago_formatter::format(
-                &interner,
-                &module.source,
-                &program,
-                lint_settings.php_version,
-                format_settings,
-            ));
+            formatted = Some(formatter.format(&module.source, &program));
         }
 
         let linter =

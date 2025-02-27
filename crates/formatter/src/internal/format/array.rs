@@ -1,13 +1,13 @@
 use mago_ast::*;
 use mago_span::*;
 
-use crate::Formatter;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::IfBreak;
 use crate::document::Line;
-use crate::format::Format;
-use crate::format::misc;
+use crate::internal::FormatterState;
+use crate::internal::format::Format;
+use crate::internal::format::misc;
 
 use super::misc::is_string_word_type;
 use super::misc::should_hug_expression;
@@ -52,7 +52,7 @@ impl<'a> ArrayLike<'a> {
         matches!(self, Self::List(_) | Self::LegacyArray(_))
     }
 
-    fn prefix(&self, f: &mut Formatter<'a>) -> Option<Document<'a>> {
+    fn prefix(&self, f: &mut FormatterState<'a>) -> Option<Document<'a>> {
         match self {
             Self::List(list) => Some(list.list.format(f)),
             Self::LegacyArray(array) => Some(array.array.format(f)),
@@ -60,7 +60,7 @@ impl<'a> ArrayLike<'a> {
         }
     }
 
-    fn iter<'b>(&'b self, p: &'b mut Formatter<'a>) -> Box<dyn Iterator<Item = Document<'a>> + 'b> {
+    fn iter<'b>(&'b self, p: &'b mut FormatterState<'a>) -> Box<dyn Iterator<Item = Document<'a>> + 'b> {
         match self {
             Self::Array(array) => Box::new(array.elements.iter().map(|element| element.format(p))),
             Self::List(list) => Box::new(list.elements.iter().map(|element| element.format(p))),
@@ -79,7 +79,7 @@ impl HasSpan for ArrayLike<'_> {
     }
 }
 
-pub(super) fn print_array_like<'a>(f: &mut Formatter<'a>, array_like: ArrayLike<'a>) -> Document<'a> {
+pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: ArrayLike<'a>) -> Document<'a> {
     let left_delimiter = if let Some(prefix) = array_like.prefix(f) {
         Document::Array(vec![prefix, Document::String(if array_like.uses_parenthesis() { "(" } else { "[" })])
     } else {
@@ -148,7 +148,7 @@ pub(super) fn print_array_like<'a>(f: &mut Formatter<'a>, array_like: ArrayLike<
     Document::Group(Group::new(parts).with_break(should_break))
 }
 
-fn inline_single_element<'a>(f: &mut Formatter<'a>, array_like: &ArrayLike<'a>) -> Option<Document<'a>> {
+fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> Option<Document<'a>> {
     if array_like.len() != 1 {
         return None;
     }

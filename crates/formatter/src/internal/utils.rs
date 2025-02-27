@@ -1,10 +1,10 @@
 use mago_ast::*;
 
-use crate::Formatter;
 use crate::document::Align;
 use crate::document::Document;
 use crate::document::IndentIfBreak;
 use crate::document::Separator;
+use crate::internal::FormatterState;
 
 pub const fn has_naked_left_side(expression: &Expression) -> bool {
     matches!(
@@ -59,7 +59,7 @@ pub fn is_non_empty_array_like_expression(expression: &Expression) -> bool {
     }
 }
 
-pub fn is_at_call_like_expression(f: &Formatter<'_>) -> bool {
+pub fn is_at_call_like_expression(f: &FormatterState<'_>) -> bool {
     let Some(grant_parent) = f.grandparent_node() else {
         return false;
     };
@@ -85,7 +85,7 @@ pub const fn unwrap_parenthesized(mut expression: &Expression) -> &Expression {
     expression
 }
 
-pub fn is_at_callee(f: &Formatter<'_>) -> bool {
+pub fn is_at_callee(f: &FormatterState<'_>) -> bool {
     let Node::Expression(expression) = f.parent_node() else {
         return false;
     };

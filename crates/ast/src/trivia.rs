@@ -6,6 +6,8 @@ use mago_interner::StringIdentifier;
 use mago_span::HasSpan;
 use mago_span::Span;
 
+use crate::Sequence;
+
 /// Represents the kind of trivia.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
@@ -55,5 +57,12 @@ impl TriviaKind {
 impl HasSpan for Trivia {
     fn span(&self) -> Span {
         self.span
+    }
+}
+
+impl Sequence<Trivia> {
+    /// Returns an iterator over the comments in the sequence.
+    pub fn comments(&self) -> impl Iterator<Item = &Trivia> {
+        self.iter().filter(|trivia| trivia.kind.is_comment())
     }
 }

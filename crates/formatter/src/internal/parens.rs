@@ -3,12 +3,12 @@ use mago_php_version::feature::Feature;
 use mago_span::HasSpan;
 use mago_token::GetPrecedence;
 
-use crate::Formatter;
-use crate::binaryish::should_flatten;
 use crate::document::Document;
 use crate::document::Group;
+use crate::internal::FormatterState;
+use crate::internal::binaryish::should_flatten;
 
-impl<'a> Formatter<'a> {
+impl<'a> FormatterState<'a> {
     pub(crate) fn wrap_parens(&mut self, document: Document<'a>, node: Node<'a>) -> Document<'a> {
         if self.need_parens(node) {
             Document::Group(Group::new(vec![Document::String("("), document, Document::String(")")]))
@@ -301,7 +301,7 @@ impl<'a> Formatter<'a> {
     }
 }
 
-pub(crate) fn instantiation_needs_parens(f: &Formatter<'_>, i: &Instantiation) -> bool {
+pub(crate) fn instantiation_needs_parens(f: &FormatterState<'_>, i: &Instantiation) -> bool {
     if f.php_version.is_supported(Feature::NewWithoutParentheses) {
         if i.arguments.as_ref().is_none_or(|list| list.arguments.is_empty()) {
             if f.settings.parentheses_in_new_expression {

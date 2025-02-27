@@ -2,8 +2,6 @@ use std::collections::VecDeque;
 
 use ahash::HashMap;
 
-use mago_source::Source;
-
 use crate::document::Align;
 use crate::document::Document;
 use crate::document::Fill;
@@ -12,10 +10,10 @@ use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::document::Trim;
 use crate::document::group::GroupIdentifier;
-use crate::printer::command::Command;
-use crate::printer::command::Indentation;
-use crate::printer::command::Mode;
-use crate::printer::utils::get_string_width;
+use crate::internal::printer::command::Command;
+use crate::internal::printer::command::Indentation;
+use crate::internal::printer::command::Mode;
+use crate::internal::printer::utils::get_string_width;
 use crate::settings::FormatSettings;
 
 mod command;
@@ -33,10 +31,10 @@ pub struct Printer<'a> {
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(document: Document<'a>, source: &Source, settings: FormatSettings) -> Self {
+    pub fn new(document: Document<'a>, capacity_hint: usize, settings: FormatSettings) -> Self {
         // Preallocate for performance because the output will very likely
         // be the same size as the original text.
-        let out = Vec::with_capacity(source.size);
+        let out = Vec::with_capacity(capacity_hint);
         let cmds = vec![Command::new(Indentation::root(), Mode::Break, document)];
 
         Self {
@@ -58,7 +56,7 @@ impl<'a> Printer<'a> {
     }
 
     /// Turn Doc into a string
-    pub fn print_doc_to_string(&mut self) {
+    fn print_doc_to_string(&mut self) {
         let mut should_remeasure = false;
         while let Some(Command { indentation, mut document, mode }) = self.commands.pop() {
             Self::propagate_breaks(&mut document);
@@ -478,7 +476,7 @@ impl<'a> Printer<'a> {
         true
     }
 
-    pub fn propagate_breaks(doc: &mut Document<'_>) -> bool {
+    fn propagate_breaks(doc: &mut Document<'_>) -> bool {
         let check_array = |arr: &mut Vec<Document<'_>>| arr.iter_mut().rev().any(|doc| Self::propagate_breaks(doc));
 
         match doc {

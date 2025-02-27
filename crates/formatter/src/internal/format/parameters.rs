@@ -1,13 +1,13 @@
 use mago_ast::*;
 use mago_span::*;
 
-use crate::Formatter;
-use crate::comment::CommentFlags;
 use crate::document::*;
-use crate::format::Format;
+use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
+use crate::internal::format::Format;
 
 pub(super) fn should_hug_the_only_parameter<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     parameter_list: &'a FunctionLikeParameterList,
 ) -> bool {
     if parameter_list.parameters.len() != 1 {
@@ -39,7 +39,7 @@ pub(super) fn should_hug_the_only_parameter<'a>(
 }
 
 pub(super) fn print_function_like_parameters<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     parameter_list: &'a FunctionLikeParameterList,
 ) -> Document<'a> {
     let should_hug_the_parameters = should_hug_the_only_parameter(f, parameter_list);

@@ -16,6 +16,7 @@
 //! See each function’s documentation below for details on usage and
 //! return values.
 
+use mago_formatter::Formatter;
 use wasm_bindgen::prelude::*;
 
 use mago_formatter::settings::FormatSettings;
@@ -24,10 +25,7 @@ use mago_linter::definition::PluginDefinition;
 use mago_linter::definition::RuleDefinition;
 use mago_linter::plugin::Plugin;
 use mago_linter::settings::Settings;
-use mago_parser::parse_source;
 use mago_php_version::PHPVersion;
-use mago_source::SourceCategory;
-use mago_source::SourceManager;
 
 use crate::analysis::AnalysisResults;
 
@@ -170,21 +168,11 @@ pub fn mago_format(code: String, format_settings: JsValue) -> Result<JsValue, Js
 
     // Prepare interner and source manager
     let interner = ThreadedInterner::new();
-    let manager = SourceManager::new(interner.clone());
-    let source_id = manager.insert_content("code.php", code, SourceCategory::UserDefined);
 
-    let source = manager.load(&source_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
-
-    // Parse the code
-    let (program, parse_error) = parse_source(&interner, &source);
-
-    if let Some(err) = parse_error {
-        return Err(JsValue::from_str(&err.to_string()));
-    }
-
+    let formatter = Formatter::new(&interner, PHPVersion::PHP84, settings);
     // Format the parsed program
-    let formatted = mago_formatter::format(&interner, &source, &program, PHPVersion::PHP84, settings);
-
-    // Return the formatted string
-    Ok(JsValue::from_str(&formatted))
+    formatter
+        .format_code("code.php", &code)
+        .map(|s| JsValue::from_str(&s))
+        .map_err(|err| JsValue::from_str(&err.to_string()))
 }

@@ -2,15 +2,15 @@ use mago_ast::*;
 use mago_span::HasSpan;
 use mago_span::Span;
 
-use crate::Formatter;
-use crate::comment::CommentFlags;
 use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
 use crate::document::Separator;
-use crate::format::Format;
-use crate::format::member_access::collect_member_access_chain;
-use crate::format::statement::print_statement_sequence;
+use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
+use crate::internal::format::Format;
+use crate::internal::format::member_access::collect_member_access_chain;
+use crate::internal::format::statement::print_statement_sequence;
 use crate::settings::BraceStyle;
 
 pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> bool {
@@ -54,7 +54,7 @@ pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> boo
 /// # Performance
 ///
 /// O(1) for most checks, with potential O(n) recursion for nested expressions
-pub(super) fn should_hug_expression<'a>(f: &Formatter<'a>, expression: &'a Expression) -> bool {
+pub(super) fn should_hug_expression<'a>(f: &FormatterState<'a>, expression: &'a Expression) -> bool {
     if let Expression::Parenthesized(inner) = expression {
         return should_hug_expression(f, &inner.expression);
     }
@@ -161,7 +161,7 @@ pub(super) fn is_string_word_type(node: &Expression) -> bool {
 }
 
 pub(super) fn print_colon_delimited_body<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     colon: &'a Span,
     statements: &'a Sequence<Statement>,
     end_keyword: &'a Keyword,
@@ -194,7 +194,7 @@ pub(super) fn print_colon_delimited_body<'a>(
     Document::Group(Group::new(parts).with_break(true))
 }
 
-pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence<Modifier>) -> Vec<Document<'a>> {
+pub(super) fn print_modifiers<'a>(f: &mut FormatterState<'a>, modifiers: &'a Sequence<Modifier>) -> Vec<Document<'a>> {
     let mut printed_modifiers = vec![];
 
     if let Some(modifier) = modifiers.get_final() {
@@ -243,7 +243,7 @@ pub(super) fn print_modifiers<'a>(f: &mut Formatter<'a>, modifiers: &'a Sequence
 }
 
 pub(super) fn print_attribute_list_sequence<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     attribute_lists: &'a Sequence<AttributeList>,
     can_inline: bool,
 ) -> Option<Document<'a>> {
@@ -285,7 +285,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
     Some(Document::Group(Group::new(contents).with_break(true)))
 }
 
-pub(super) fn print_clause<'a>(f: &mut Formatter<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {
+pub(super) fn print_clause<'a>(f: &mut FormatterState<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {
     let clause = node.format(f);
     let clause = adjust_clause(f, node, clause, force_space);
 
@@ -293,7 +293,7 @@ pub(super) fn print_clause<'a>(f: &mut Formatter<'a>, node: &'a Statement, force
 }
 
 pub(super) fn adjust_clause<'a>(
-    f: &mut Formatter<'a>,
+    f: &mut FormatterState<'a>,
     node: &'a Statement,
     clause: Document<'a>,
     mut force_space: bool,
@@ -351,7 +351,7 @@ pub(super) fn adjust_clause<'a>(
     }
 }
 
-pub(super) fn print_condition<'a>(f: &mut Formatter<'a>, condition: &'a Expression) -> Document<'a> {
+pub(super) fn print_condition<'a>(f: &mut FormatterState<'a>, condition: &'a Expression) -> Document<'a> {
     Document::Group(Group::new(vec![
         Document::String("("),
         Document::Indent(vec![
