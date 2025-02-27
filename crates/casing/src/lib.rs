@@ -64,14 +64,44 @@ pub fn is_class_case(test_string: &str) -> bool {
 pub fn to_class_case(non_class_case_string: &str) -> String {
     // grab the prefix, which is the first N - 1 uppercase characters, leaving only one uppercase
     // character at the beginning of the string
-    let characters = non_class_case_string.chars();
+    let mut characters = non_class_case_string.chars();
     let mut prefix_length = 0;
-    for character in characters {
-        if character.is_uppercase() || character.is_numeric() {
+    loop {
+        let Some(character) = characters.next() else {
+            break;
+        };
+
+        if character.is_uppercase() {
             prefix_length += 1;
-        } else {
+            continue;
+        }
+
+        if character.is_numeric() {
+            prefix_length += 1;
+            continue;
+        }
+
+        if character.is_lowercase() {
+            prefix_length += 1;
+
+            loop {
+                let Some(character) = characters.next() else {
+                    break;
+                };
+
+                if character.is_lowercase() || character.is_numeric() {
+                    prefix_length += 1;
+                } else {
+                    break;
+                }
+            }
+
+            prefix_length += 1;
+
             break;
         }
+
+        break;
     }
 
     let options = cruet::case::CamelOptions {
