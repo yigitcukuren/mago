@@ -162,3 +162,63 @@ pub fn test_nesting_and_wrapping() {
 
     test_format(code, expected_super_narrow, FormatSettings { print_width: 40, ..Default::default() });
 }
+
+#[test]
+pub fn test_binary_wrapping() {
+    let code = indoc! {r#"
+        <?php
+
+        if (null === $crudControllerFqcn || null === $routeName = $thisssssss->findRouteName($dashboardControllerFqcndashboardControllerFqcndashboardControllerFqcn)) {
+        }
+
+        if ($this->adminRouteGenerator->usesPrettyUrls() && null !== $entityFqcnOrCrudControllerFqcn = $request->query->get(EA::CRUD_CONTROLLER_FQCN)) {
+        }
+    "#};
+
+    let expected = indoc! {r#"
+        <?php
+
+        if (
+            null === $crudControllerFqcn ||
+            null ===
+                ($routeName = $thisssssss->findRouteName(
+                    $dashboardControllerFqcndashboardControllerFqcndashboardControllerFqcn,
+                ))
+        ) {
+        }
+
+        if (
+            $this->adminRouteGenerator->usesPrettyUrls() &&
+            null !== ($entityFqcnOrCrudControllerFqcn = $request->query->get(EA::CRUD_CONTROLLER_FQCN))
+        ) {
+        }
+    "#};
+
+    test_format(code, expected, FormatSettings::default());
+}
+#[test]
+pub fn test_logical_within_parens() {
+    let code = indoc! {r#"
+        <?php
+
+        $limit = 10;
+        $position = 0;
+        while (1 < $limit && null !== $position) {
+            $limit--;
+            $position++;
+        }
+    "#};
+
+    let expected = indoc! {r#"
+        <?php
+
+        $limit = 10;
+        $position = 0;
+        while (1 < $limit && null !== $position) {
+            $limit--;
+            $position++;
+        }
+    "#};
+
+    test_format(code, expected, FormatSettings::default());
+}

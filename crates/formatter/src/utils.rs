@@ -50,12 +50,8 @@ pub const fn get_left_side(expression: &Expression) -> Option<&Expression> {
     }
 }
 
-pub fn is_non_empty_array_like_expression(mut expression: &Expression) -> bool {
-    while let Expression::Parenthesized(parenthesized) = expression {
-        expression = &parenthesized.expression;
-    }
-
-    match expression {
+pub fn is_non_empty_array_like_expression(expression: &Expression) -> bool {
+    match unwrap_parenthesized(expression) {
         Expression::Array(Array { elements, .. })
         | Expression::List(List { elements, .. })
         | Expression::LegacyArray(LegacyArray { elements, .. }) => !elements.is_empty(),
@@ -78,6 +74,15 @@ pub fn is_at_call_like_expression(f: &Formatter<'_>) -> bool {
             | Node::MethodClosureCreation(_)
             | Node::StaticMethodClosureCreation(_)
     )
+}
+
+#[inline]
+pub const fn unwrap_parenthesized(mut expression: &Expression) -> &Expression {
+    while let Expression::Parenthesized(parenthesized) = expression {
+        expression = &parenthesized.expression;
+    }
+
+    expression
 }
 
 pub fn is_at_callee(f: &Formatter<'_>) -> bool {

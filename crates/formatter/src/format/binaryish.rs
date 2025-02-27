@@ -12,6 +12,7 @@ use crate::format::Format;
 use crate::utils::is_at_call_like_expression;
 use crate::utils::is_at_callee;
 use crate::utils::is_non_empty_array_like_expression;
+use crate::utils::unwrap_parenthesized;
 
 pub(super) fn print_binaryish_expression<'a>(
     f: &mut Formatter<'a>,
@@ -19,11 +20,24 @@ pub(super) fn print_binaryish_expression<'a>(
     operator: &'a BinaryOperator,
     right: &'a Expression,
 ) -> Document<'a> {
-    let parent = f.parent_node();
+    let left = unwrap_parenthesized(left);
+    let right = unwrap_parenthesized(right);
+
     let grandparent = f.grandparent_node();
 
-    let is_inside_parenthesis =
-        matches!(parent, Node::If(_) | Node::While(_) | Node::Switch(_) | Node::DoWhile(_) | Node::Match(_));
+    let is_inside_parenthesis = matches!(
+        grandparent,
+        Some(
+            Node::If(_)
+                | Node::IfStatementBodyElseIfClause(_)
+                | Node::IfColonDelimitedBodyElseIfClause(_)
+                | Node::While(_)
+                | Node::Switch(_)
+                | Node::DoWhile(_)
+                | Node::Match(_)
+        )
+    );
+
     let parts = print_binaryish_expressions(f, left, operator, right, is_inside_parenthesis, false);
 
     //   if (
@@ -105,6 +119,9 @@ pub(super) fn print_binaryish_expressions<'a>(
     is_inside_parenthesis: bool,
     is_nested: bool,
 ) -> Vec<Document<'a>> {
+    let left = unwrap_parenthesized(left);
+    let right = unwrap_parenthesized(right);
+
     let mut parts = vec![];
     if let Expression::Binary(binary) = left {
         if should_flatten(operator, &binary.operator) {
@@ -175,11 +192,7 @@ pub(super) fn print_binaryish_expressions<'a>(
 }
 
 pub(super) fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
-    if let Expression::Parenthesized(parenthesized) = expression {
-        return should_inline_logical_or_coalesce_expression(&parenthesized.expression);
-    }
-
-    match expression {
+    match unwrap_parenthesized(expression) {
         Expression::Binary(operation) => should_inline_logical_or_coalesce_rhs(&operation.rhs, &operation.operator),
         _ => false,
     }
