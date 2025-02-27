@@ -388,9 +388,7 @@ impl<'a> Format<'a> for While {
             Document::Array(vec![
                 self.r#while.format(f),
                 Document::space(),
-                Document::String("("),
-                self.condition.format(f),
-                Document::String(")"),
+                misc::print_condition(f, &self.condition),
                 self.body.format(f),
             ])
         })
