@@ -253,14 +253,26 @@ pub(super) fn print_attribute_list_sequence<'a>(
 
     let mut lists = vec![];
     let mut has_new_line = false;
+    let mut has_potentially_long_attribute = false;
     for attribute_list in attribute_lists.iter() {
+        if !has_potentially_long_attribute {
+            for attribute in attribute_list.attributes.iter() {
+                has_potentially_long_attribute =
+                    !attribute.arguments.as_ref().is_none_or(|args| args.arguments.is_empty());
+
+                if has_potentially_long_attribute {
+                    break;
+                }
+            }
+        }
+
         lists.push(attribute_list.format(f));
 
-        has_new_line = f.is_next_line_empty(attribute_list.span());
+        has_new_line = has_new_line || f.is_next_line_empty(attribute_list.span());
     }
 
     // if there is a single attribute list, we can inline it
-    if can_inline && !has_new_line && lists.len() == 1 {
+    if can_inline && !has_new_line && lists.len() == 1 && !has_potentially_long_attribute {
         return Some(Document::Group(Group::new(vec![lists.remove(0), Document::Line(Line::default())])));
     }
 

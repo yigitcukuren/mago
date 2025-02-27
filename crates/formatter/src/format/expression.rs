@@ -1142,7 +1142,7 @@ impl<'a> Format<'a> for AnonymousClass {
         wrap!(f, self, AnonymousClass, {
             let initialization = {
                 let mut contents = vec![Document::BreakParent, self.new.format(f)];
-                if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attribute_lists, true) {
+                if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attribute_lists, false) {
                     contents.push(Document::Line(Line::default()));
                     contents.push(attributes);
                 } else {

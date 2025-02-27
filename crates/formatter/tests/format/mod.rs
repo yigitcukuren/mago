@@ -454,3 +454,44 @@ pub fn test_space_before_enum_backing_type_colon() {
         FormatSettings { space_before_enum_backing_type_hint_colon: true, ..Default::default() },
     )
 }
+
+#[test]
+pub fn test_parameter_attributes() {
+    let code = indoc! {r#"
+        <?php
+
+        class Foo {
+            public function __construct(
+                #[BarAttr(['type' => Bar::class])]
+                private Bar $bar,
+                #[BazAttr(['type' => Baz::class])]
+                private Baz $baz,
+                #[QuxAttr(['type' => Qux::class])]
+                private Qux $qux,
+                #[QuuxAttr(['type' => Quux::class])]
+                private Quux $quux,
+            ) {}
+        }
+    "#};
+
+    let expected = indoc! {r#"
+        <?php
+
+        class Foo
+        {
+            public function __construct(
+                #[BarAttr(['type' => Bar::class])]
+                private Bar $bar,
+                #[BazAttr(['type' => Baz::class])]
+                private Baz $baz,
+                #[QuxAttr(['type' => Qux::class])]
+                private Qux $qux,
+                #[QuuxAttr(['type' => Quux::class])]
+                private Quux $quux,
+            ) {
+            }
+        }
+    "#};
+
+    test_format(code, expected, FormatSettings::default())
+}
