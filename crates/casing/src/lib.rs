@@ -81,7 +81,7 @@ pub fn to_class_case(non_class_case_string: &str) -> String {
             continue;
         }
 
-        if character.is_lowercase() {
+        if character.is_lowercase() && prefix_length > 0 {
             prefix_length += 1;
 
             loop {
