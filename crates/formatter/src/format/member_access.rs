@@ -38,12 +38,27 @@ impl<'a> MemberAccess<'a> {
 impl MemberAccessChain<'_> {
     #[inline]
     pub fn is_eligible_for_chaining(&self) -> bool {
-        let threshold = match self.base {
-            Expression::Variable(Variable::Direct(_)) | Expression::Identifier(_) => 4,
-            _ => 2,
-        };
-
-        self.get_number_of_method_calls() >= threshold
+        match self.base {
+            Expression::Variable(Variable::Direct(_)) | Expression::Identifier(_) => {
+                if let (
+                    Some(MemberAccess::MethodCall(_) | MemberAccess::NullSafeMethodCall(_)),
+                    Some(
+                        MemberAccess::MethodCall(MethodCall { argument_list, .. })
+                        | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. }),
+                    ),
+                ) = (self.accesses.first(), self.accesses.last())
+                {
+                    if argument_list.arguments.len() <= 1 {
+                        self.get_number_of_method_calls() >= 3
+                    } else {
+                        self.get_number_of_method_calls() >= 4
+                    }
+                } else {
+                    self.get_number_of_method_calls() >= 4
+                }
+            }
+            _ => self.get_number_of_method_calls() >= 2,
+        }
     }
 
     #[inline]
@@ -85,7 +100,10 @@ impl MemberAccessChain<'_> {
                         if pattern_start_index.is_none() {
                             pattern_start_index = Some(i - 1);
                         }
+                    } else {
+                        pm_count = 0;
                     }
+
                     last_was_p = false;
                 }
                 _ => {
