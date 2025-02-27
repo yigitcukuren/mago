@@ -62,6 +62,8 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
 
     let mut issues = Vec::new();
     for module in modules {
+        assert!(module.parse_error.is_none(), "Failed to parse module: {:?}", module.parse_error);
+
         issues.extend(linter.lint(&module));
     }
 
