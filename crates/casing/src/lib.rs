@@ -26,6 +26,12 @@ pub use cruet::case::train::to_train_case;
 /// assert!(is_class_case("Foo"));
 /// assert!(is_class_case("FooBarIsAReallyReallyLongString"));
 /// assert!(is_class_case("FooBarIsAReallyReallyLongStrings"));
+/// assert!(is_class_case("UInt"));
+/// assert!(is_class_case("Uint"));
+/// assert!(is_class_case("Http2Client"));
+/// assert!(is_class_case("Fl3xxSomething"));
+/// assert!(is_class_case("IsUT8Test"));
+/// assert!(is_class_case("HTTP2Client"));
 ///
 /// assert!(!is_class_case("foo"));
 /// assert!(!is_class_case("foo-bar-string-that-is-really-really-long"));
@@ -51,6 +57,8 @@ pub fn is_class_case(test_string: &str) -> bool {
 /// assert_eq!(to_class_case("UInt"), "UInt");
 /// assert_eq!(to_class_case("Uint"), "Uint");
 /// assert_eq!(to_class_case("Http2Client"), "Http2Client");
+/// assert_eq!(to_class_case("Fl3xxSomething"), "Fl3xxSomething");
+/// assert_eq!(to_class_case("IsUT8Test"), "IsUT8Test");
 /// assert_eq!(to_class_case("HTTP2Client"), "HTTP2Client");
 /// assert_eq!(to_class_case("FooBar"), "FooBar");
 /// assert_eq!(to_class_case("FooBars"), "FooBars");
@@ -96,32 +104,34 @@ pub fn to_class_case(non_class_case_string: &str) -> String {
                 }
             }
 
-            prefix_length += 1;
-
             break;
         }
 
         break;
     }
 
-    let options = cruet::case::CamelOptions {
-        new_word: true,
-        last_char: ' ',
-        first_word: false,
-        injectable_char: ' ',
-        has_seperator: false,
-        inverted: false,
-        concat_num: true,
-    };
-
-    if prefix_length == 0 {
-        return cruet::case::to_case_camel_like(non_class_case_string, options);
+    let prefix = &non_class_case_string[..prefix_length];
+    let remaining = &non_class_case_string[prefix_length..];
+    if remaining.is_empty() {
+        return prefix.to_string();
     }
 
-    let prefix = &non_class_case_string[..prefix_length - 1];
-    let remaining = &non_class_case_string[prefix_length - 1..];
+    if prefix.is_empty() {
+        return cruet::case::to_case_camel_like(
+            non_class_case_string,
+            cruet::case::CamelOptions {
+                new_word: true,
+                last_char: ' ',
+                first_word: false,
+                injectable_char: ' ',
+                has_seperator: false,
+                inverted: false,
+                concat_num: true,
+            },
+        );
+    }
 
-    let mut class_name = cruet::case::to_case_camel_like(remaining, options);
+    let mut class_name = crate::to_class_case(remaining);
     class_name.insert_str(0, prefix);
 
     class_name
