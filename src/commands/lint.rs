@@ -4,6 +4,8 @@ use std::process::ExitCode;
 use clap::Parser;
 use colored::Colorize;
 
+use mago_fixer::FixPlan;
+use mago_fixer::SafetyClassification;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
 use mago_linter::settings::RuleSettings;
@@ -21,6 +23,7 @@ use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_source::SourceCategory;
+use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
 use mago_source::error::SourceError;
 
@@ -30,6 +33,7 @@ use crate::enum_variants;
 use crate::error::Error;
 use crate::reflection::reflect_non_user_sources;
 use crate::source;
+use crate::utils;
 use crate::utils::indent_multiline;
 use crate::utils::progress::ProgressBarTheme;
 use crate::utils::progress::create_progress_bar;
@@ -139,13 +143,48 @@ pub struct LintCommand {
     )]
     pub plugins: Vec<String>,
 
+    #[arg(
+        long,
+        help = "Apply fixes to the source code where possible.",
+        conflicts_with = "semantics_only",
+        conflicts_with = "compilation",
+        conflicts_with = "fixable_only"
+    )]
+    pub fix: bool,
+
+    /// Apply fixes that are marked as unsafe, including potentially unsafe fixes.
+    #[arg(
+        long,
+        help = "Apply fixes marked as unsafe, including those with potentially destructive changes",
+        requires = "fix"
+    )]
+    pub r#unsafe: bool,
+
+    /// Apply fixes that are marked as potentially unsafe.
+    #[arg(long, help = "Apply fixes marked as potentially unsafe, which may require manual review", requires = "fix")]
+    pub potentially_unsafe: bool,
+
+    /// Run the command without writing any changes to disk.
+    #[arg(
+        long,
+        short = 'd',
+        help = "Preview the fixes without applying them, showing what changes would be made",
+        requires = "fix"
+    )]
+    pub dry_run: bool,
+
     /// Specify where the results should be reported.
     #[arg(
         long,
         default_value_t,
         help = "Specify where the results should be reported",
         ignore_case = true,
-        value_parser = enum_variants!(ReportingTarget)
+        value_parser = enum_variants!(ReportingTarget),
+        conflicts_with = "explain",
+        conflicts_with = "list_rules",
+        conflicts_with = "fix",
+        conflicts_with = "unsafe",
+        conflicts_with = "potentially_unsafe",
     )]
     pub reporting_target: ReportingTarget,
 
@@ -155,13 +194,33 @@ pub struct LintCommand {
         default_value_t,
         help = "Choose the format for reporting issues",
         ignore_case = true,
-        value_parser = enum_variants!(ReportingFormat)
+        value_parser = enum_variants!(ReportingFormat),
+        conflicts_with = "explain",
+        conflicts_with = "list_rules",
+        conflicts_with = "fix",
+        conflicts_with = "unsafe",
+        conflicts_with = "potentially_unsafe",
     )]
     pub reporting_format: ReportingFormat,
 }
 
+impl LintCommand {
+    pub const fn get_fix_classification(&self) -> SafetyClassification {
+        if self.r#unsafe {
+            SafetyClassification::Unsafe
+        } else if self.potentially_unsafe {
+            SafetyClassification::PotentiallyUnsafe
+        } else {
+            SafetyClassification::Safe
+        }
+    }
+}
+
 pub async fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
+
+    // Determine the safety classification for the fixes.
+    let fix_classification = command.get_fix_classification();
 
     if command.no_default_plugins {
         configuration.linter.default_plugins = Some(false);
@@ -194,6 +253,41 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
         lint_check(&interner, &source_manager, &configuration).await?
     };
 
+    if command.fix {
+        let (changed, skipped_unsafe, skipped_potentially_unsafe) =
+            fix_issues(&interner, &source_manager, issues, fix_classification, command.dry_run).await?;
+
+        if skipped_unsafe > 0 {
+            tracing::warn!(
+                "Skipped {} fixes because they were marked as unsafe. To apply those fixes, use the `--unsafe` flag.",
+                skipped_unsafe
+            );
+        }
+
+        if skipped_potentially_unsafe > 0 {
+            tracing::warn!(
+                "Skipped {} fixes because they were marked as potentially unsafe. To apply those fixes, use the `--potentially-unsafe` flag.",
+                skipped_potentially_unsafe
+            );
+        }
+
+        if changed == 0 {
+            tracing::info!("No fixes were applied");
+
+            return Ok(ExitCode::SUCCESS);
+        }
+
+        return Ok(if command.dry_run {
+            tracing::info!("Found {} fixes that can be applied", changed);
+
+            ExitCode::FAILURE
+        } else {
+            tracing::info!("Applied {} fixes successfully", changed);
+
+            ExitCode::SUCCESS
+        });
+    }
+
     let issues_contain_errors = issues.has_minimum_level(Level::Error);
 
     let reporter = Reporter::new(interner, source_manager, command.reporting_target);
@@ -211,6 +305,7 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
     Ok(if issues_contain_errors { ExitCode::FAILURE } else { ExitCode::SUCCESS })
 }
 
+#[inline]
 pub(super) fn create_linter(
     interner: &ThreadedInterner,
     configuration: &Configuration,
@@ -253,6 +348,7 @@ pub(super) fn create_linter(
 ///
 /// The overall structure and text remain the same as before; we only add
 /// color styling to improve readability.
+#[inline]
 pub(super) fn explain_rule(
     interner: &ThreadedInterner,
     rule: &str,
@@ -382,6 +478,7 @@ pub(super) fn explain_rule(
     Ok(ExitCode::SUCCESS)
 }
 
+#[inline]
 pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configuration) -> Result<ExitCode, Error> {
     let linter = create_linter(interner, configuration, CodebaseReflection::new());
     let configured_rules = linter.get_configured_rules();
@@ -599,4 +696,111 @@ pub(super) async fn compilation_check(
     remove_progress_bar(scan_progress);
 
     Ok(IssueCollection::from(results.into_iter()))
+}
+
+#[inline]
+pub(super) async fn fix_issues(
+    interner: &ThreadedInterner,
+    source_manager: &SourceManager,
+    issues: IssueCollection,
+    fix_classification: SafetyClassification,
+    dry_run: bool,
+) -> Result<(usize, usize, usize), Error> {
+    let (plans, skipped_unsafe, skipped_potentially_unsafe) = filter_fix_plans(interner, issues, fix_classification);
+
+    let total = plans.len();
+    let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Cyan);
+    let mut handles = Vec::with_capacity(total);
+    for (source, plan) in plans.into_iter() {
+        handles.push(tokio::spawn({
+            let source_manager = source_manager.clone();
+            let interner = interner.clone();
+            let progress_bar = progress_bar.clone();
+
+            async move {
+                let source = source_manager.load(&source)?;
+                let source_content = interner.lookup(&source.content);
+                let result = utils::apply_changes(
+                    &interner,
+                    &source_manager,
+                    &source,
+                    plan.execute(source_content).get_fixed(),
+                    dry_run,
+                );
+
+                progress_bar.inc(1);
+
+                result
+            }
+        }));
+    }
+
+    let mut changed = 0;
+    for handle in handles {
+        if handle.await?? {
+            changed += 1;
+        }
+    }
+
+    remove_progress_bar(progress_bar);
+
+    Ok((changed, skipped_unsafe, skipped_potentially_unsafe))
+}
+
+#[inline]
+pub(super) fn filter_fix_plans(
+    interner: &ThreadedInterner,
+    issues: IssueCollection,
+    classification: SafetyClassification,
+) -> (Vec<(SourceIdentifier, FixPlan)>, usize, usize) {
+    let mut skipped_unsafe = 0;
+    let mut skipped_potentially_unsafe = 0;
+
+    let mut results = vec![];
+    for (source, plan) in issues.to_fix_plans() {
+        if plan.is_empty() {
+            continue;
+        }
+
+        let mut operations = vec![];
+        for operation in plan.take_operations() {
+            match operation.get_safety_classification() {
+                SafetyClassification::Unsafe => {
+                    if classification == SafetyClassification::Unsafe {
+                        operations.push(operation);
+                    } else {
+                        skipped_unsafe += 1;
+
+                        tracing::warn!(
+                            "Skipping a fix for `{}` because it contains unsafe changes.",
+                            interner.lookup(&source.0)
+                        );
+                    }
+                }
+                SafetyClassification::PotentiallyUnsafe => {
+                    if classification == SafetyClassification::Unsafe
+                        || classification == SafetyClassification::PotentiallyUnsafe
+                    {
+                        operations.push(operation);
+                    } else {
+                        skipped_potentially_unsafe += 1;
+
+                        tracing::warn!(
+                            "Skipping a fix for `{}` because it contains potentially unsafe changes.",
+                            interner.lookup(&source.0)
+                        );
+                    }
+                }
+                SafetyClassification::Safe => {
+                    operations.push(operation);
+                }
+            }
+        }
+
+        if !operations.is_empty() {
+            results.push((source, FixPlan::from_operations(operations)));
+        }
+    }
+
+    (results, skipped_unsafe, skipped_potentially_unsafe)
 }

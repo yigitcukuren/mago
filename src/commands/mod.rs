@@ -1,3 +1,5 @@
+#![expect(deprecated)]
+
 use clap::Parser;
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;

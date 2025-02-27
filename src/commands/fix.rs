@@ -1,13 +1,12 @@
+#![expect(deprecated)]
+
 use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_interner::ThreadedInterner;
-use mago_reporting::IssueCollection;
-use mago_source::SourceIdentifier;
 
 use crate::commands::lint::lint_check;
 use crate::config::Configuration;
@@ -28,6 +27,7 @@ The `fix` command automatically applies fixes for issues identified during the l
 This command streamlines the process of addressing lint issues, improving code quality and consistency.
 "#
 )]
+#[deprecated(note = "Use the `mago lint --fix` command instead")]
 pub struct FixCommand {
     /// Lint specific files or directories, overriding the source configuration.
     #[arg(help = "Lint specific files or directories, overriding the source configuration")]
@@ -65,6 +65,10 @@ impl FixCommand {
 }
 
 pub async fn execute(command: FixCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+    tracing::warn!(
+        "The `fix` command is deprecated and will be removed in a future release. Use the `mago lint --fix` command instead."
+    );
+
     // Initialize the interner for managing identifiers.
     let interner = ThreadedInterner::new();
 
@@ -87,7 +91,8 @@ pub async fn execute(command: FixCommand, mut configuration: Configuration) -> R
     };
 
     let issues = lint_check(&interner, &source_manager, &configuration).await?;
-    let (plans, skipped_unsafe, skipped_potentially_unsafe) = filter_fix_plans(&interner, issues, classification);
+    let (plans, skipped_unsafe, skipped_potentially_unsafe) =
+        super::lint::filter_fix_plans(&interner, issues, classification);
 
     let total = plans.len();
     let progress_bar = create_progress_bar(total, "✨  Fixing", ProgressBarTheme::Cyan);
@@ -154,61 +159,4 @@ pub async fn execute(command: FixCommand, mut configuration: Configuration) -> R
 
         ExitCode::SUCCESS
     })
-}
-
-fn filter_fix_plans(
-    interner: &ThreadedInterner,
-    issues: IssueCollection,
-    classification: SafetyClassification,
-) -> (Vec<(SourceIdentifier, FixPlan)>, usize, usize) {
-    let mut skipped_unsafe = 0;
-    let mut skipped_potentially_unsafe = 0;
-
-    let mut results = vec![];
-    for (source, plan) in issues.to_fix_plans() {
-        if plan.is_empty() {
-            continue;
-        }
-
-        let mut operations = vec![];
-        for operation in plan.take_operations() {
-            match operation.get_safety_classification() {
-                SafetyClassification::Unsafe => {
-                    if classification == SafetyClassification::Unsafe {
-                        operations.push(operation);
-                    } else {
-                        skipped_unsafe += 1;
-
-                        tracing::warn!(
-                            "Skipping a fix for `{}` because it contains unsafe changes.",
-                            interner.lookup(&source.0)
-                        );
-                    }
-                }
-                SafetyClassification::PotentiallyUnsafe => {
-                    if classification == SafetyClassification::Unsafe
-                        || classification == SafetyClassification::PotentiallyUnsafe
-                    {
-                        operations.push(operation);
-                    } else {
-                        skipped_potentially_unsafe += 1;
-
-                        tracing::warn!(
-                            "Skipping a fix for `{}` because it contains potentially unsafe changes.",
-                            interner.lookup(&source.0)
-                        );
-                    }
-                }
-                SafetyClassification::Safe => {
-                    operations.push(operation);
-                }
-            }
-        }
-
-        if !operations.is_empty() {
-            results.push((source, FixPlan::from_operations(operations)));
-        }
-    }
-
-    (results, skipped_unsafe, skipped_potentially_unsafe)
 }
