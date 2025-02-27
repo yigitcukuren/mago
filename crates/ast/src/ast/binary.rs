@@ -142,6 +142,11 @@ impl BinaryOperator {
     }
 
     #[inline]
+    pub const fn is_elvis(&self) -> bool {
+        matches!(self, Self::Elvis(_))
+    }
+
+    #[inline]
     pub fn as_str<'a>(&self, interner: &'a ThreadedInterner) -> &'a str {
         match self {
             Self::Addition(_) => "+",

@@ -723,7 +723,7 @@ fn create_assignment_expression(lhs: Expression, operator: AssignmentOperator, r
                 Expression::Binary(Binary {
                     lhs: binary_lhs,
                     operator: binary_operator,
-                    rhs: Box::new(Expression::Assignment(Assignment { lhs: binary_rhs, operator, rhs: Box::new(rhs) })),
+                    rhs: Box::new(create_assignment_expression(*binary_rhs, operator, rhs)),
                 })
             } else {
                 Expression::Assignment(Assignment {
