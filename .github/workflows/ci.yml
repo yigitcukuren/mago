@@ -28,6 +28,23 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
 
+      - name: cache rust toolchain
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-rust-${{ matrix.rust }}
+          shared-key: ${{ runner.os }}-rust-${{ matrix.rust }}
+          cache-on-failure: true
+
+      - name: cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
+
       - name: cargo check
         if: matrix.os == 'macos-latest'
         run: cargo check --workspace --locked
