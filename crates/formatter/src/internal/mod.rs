@@ -231,7 +231,7 @@ impl<'a> FormatterState<'a> {
         if matches!(c, b'\n') {
             return Some(if backwards { start_index - 1 } else { start_index + 1 });
         }
-        
+
         if matches!(c, b'\r') {
             let next_index = if backwards { start_index - 1 } else { start_index + 1 };
             let next_c = if backwards {
