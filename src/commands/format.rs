@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -8,9 +9,11 @@ use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
 use mago_parser::parse_source;
 use mago_php_version::PHPVersion;
+use mago_source::Source;
 use mago_source::SourceCategory;
 use mago_source::SourceIdentifier;
 use mago_source::SourceManager;
+use mago_source::error::SourceError;
 
 use crate::config::Configuration;
 use crate::error::Error;
@@ -41,6 +44,9 @@ pub struct FormatCommand {
     /// Perform a dry run to check if files are already formatted.
     #[arg(long, short = 'd', help = "Check if the source files are already formatted without making changes")]
     pub dry_run: bool,
+
+    #[arg(long, short = 'i', help = "Read input from STDIN, format it, and write to STDOUT")]
+    pub stdin_input: bool,
 }
 
 /// Executes the format command with the provided configuration and options.
@@ -58,6 +64,25 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
     let interner = ThreadedInterner::new();
 
     configuration.source.excludes.extend(std::mem::take(&mut configuration.format.excludes));
+
+    if command.stdin_input {
+        let source = create_source_from_stdin(&interner)?;
+        let settings = configuration.format.get_settings();
+        let formatter = Formatter::new(&interner, configuration.php_version, settings);
+
+        return Ok(match formatter.format_source(&source) {
+            Ok(formatted) => {
+                println!("{}", formatted);
+
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                tracing::error!("Failed to format source: {}", error);
+
+                ExitCode::FAILURE
+            }
+        });
+    }
 
     // Load sources
     let source_manager = if !command.path.is_empty() {
@@ -194,4 +219,20 @@ fn format_source(
     };
 
     Ok(changed)
+}
+
+/// Creates a standalone source from standard input.
+///
+/// # Arguments
+///
+/// * `interner` - The interner to manage source identifiers.
+///
+/// # Returns
+///
+/// A result containing the standalone source or an error.
+fn create_source_from_stdin(interner: &ThreadedInterner) -> Result<Source, Error> {
+    let mut content = String::new();
+    std::io::stdin().read_to_string(&mut content).map_err(|e| Error::Source(SourceError::IOError(e)))?;
+
+    Ok(Source::standalone(interner, "<stdin>", &content))
 }
