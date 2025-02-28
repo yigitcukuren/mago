@@ -231,6 +231,19 @@ impl<'a> FormatterState<'a> {
         if matches!(c, b'\n') {
             return Some(if backwards { start_index - 1 } else { start_index + 1 });
         }
+        
+        if matches!(c, b'\r') {
+            let next_index = if backwards { start_index - 1 } else { start_index + 1 };
+            let next_c = if backwards {
+                self.source_text[..=next_index].bytes().next_back()
+            } else {
+                self.source_text[next_index..].bytes().next()
+            }?;
+
+            if matches!(next_c, b'\n') {
+                return Some(if backwards { start_index - 2 } else { start_index + 2 });
+            }
+        }
 
         Some(start_index)
     }
@@ -248,7 +261,26 @@ impl<'a> FormatterState<'a> {
 
     #[inline]
     fn split_lines(slice: &'a str) -> Vec<&'a str> {
-        slice.split_inclusive('\n').map(|line| line.trim_end_matches('\n').trim_end_matches('\r')).collect()
+        let mut lines = Vec::new();
+        let mut remaining = slice;
+
+        while !remaining.is_empty() {
+            if let Some(pos) = remaining.find("\r\n") {
+                lines.push(&remaining[..pos]);
+                remaining = &remaining[pos + 2..];
+            } else if let Some(pos) = remaining.find('\n') {
+                lines.push(&remaining[..pos]);
+                remaining = &remaining[pos + 1..];
+            } else {
+                // No more newlines
+                if !remaining.is_empty() {
+                    lines.push(remaining);
+                }
+                break;
+            }
+        }
+
+        lines
     }
 
     #[inline]
