@@ -22,7 +22,10 @@
 <!-- Recipes -->
 
 - [Recipes](recipes/)
-  - [CI](recipes/ci.md) 
+  - [CI](recipes/ci.md)
+  - Editor Integration
+    - [VS Code](recipes/editor-integration/vs-code.md)
+    - [Zed](recipes/editor-integration/zed.md)
 
 <!-- Contributing -->
 <!--
