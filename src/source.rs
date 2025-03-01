@@ -34,7 +34,7 @@ pub async fn from_paths(
     paths: Vec<PathBuf>,
     include_stubs: bool,
 ) -> Result<SourceManager, Error> {
-    let SourceConfiguration { root, extensions, .. } = configuration;
+    let SourceConfiguration { workspace: root, extensions, .. } = configuration;
 
     let manager = SourceManager::new(interner.clone());
 
@@ -74,7 +74,7 @@ pub async fn load(
     include_externals: bool,
     include_stubs: bool,
 ) -> Result<SourceManager, Error> {
-    let SourceConfiguration { root, paths, includes, excludes, extensions } = configuration;
+    let SourceConfiguration { workspace: root, paths, includes, excludes, extensions } = configuration;
 
     let mut starting_paths = Vec::new();
 

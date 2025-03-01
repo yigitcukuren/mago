@@ -1,23 +1,50 @@
 # Configuration
 
-Mago uses a configuration file named `mago.toml` to define how it discovers, processes, formats,
-and lint your project files. This file should be placed in the root directory of your project,
-as Mago expects to find it in the same directory you run the tool from.
+Mago can be configured using a `mago.toml` file, environment variables, or command-line arguments.
 
-The configuration options are flexible and allow you to customize paths, exclusions, inclusions,
-and rules for formatting and linting.
-Below is a detailed but simplified explanation to help you set up your configuration file effectively.
+## Configuration File
 
-## General Example
+The configuration file is a TOML file named `mago.toml`. Mago will search for this file in the workspace directory.
+You can specify a different configuration file using the `--config` command-line argument.
 
-Here’s a minimal example of what a mago.toml file might look like:
+Here's an example of a `mago.toml` file:
 
 ```toml
 [source]
 paths = ["src", "tests"]
-includes = ["vendor"]
 excludes = ["**/src/**/*.generated.php", "tests/fixtures"]
+
+[format]
+print_width = 80
+
+[linter]
+plugins = ["php-unit"]
+
+[[linter.rules]]
+name = "best-practices/excessive-nesting"
+level = "warning"
+threshold = 5
 ```
+
+## Environment Variables
+
+Mago supports the following environment variables:
+
+- `MAGO_PHP_VERSION`: The PHP version to use for linting and formatting.
+- `MAGO_THREADS`: The number of threads to use for parallel processing.
+- `MAGO_STACK_SIZE`: The stack size for each thread.
+- `MAGO_LOG`: The log level for Mago (`"error"`, `"warning"`, `"info"`, `"debug"`, or `"trace"`).
+- `MAGO_ALLOW_UNSUPPORTED_PHP_VERSION`: Whether to allow unsupported PHP versions (`"true"` or `"false"`).
+
+## Command-Line Arguments
+
+Mago supports the following global command-line arguments:
+
+- `--workspace`: The path to the workspace directory. This is the root directory of your project. If not specified, defaults to the current working directory. This argument also controls where the configuration file is loaded from. This value overrides the `source.workspace` setting in the configuration file.
+- `--config`: The path to the configuration file. If not specified, Mago will search for a` mago.toml` file in the workspace directory.
+- `--php-version`: The PHP version to use for parsing and analysis. This should be a valid PHP version number (e.g., `"8.3"`, `"8.4"`). This value overrides the `php_version` setting in the configuration file and the `MAGO_PHP_VERSION` environment variable.
+- `--threads`: The number of threads to use for parallel processing. This value overrides the `threads` setting in the configuration file and the `MAGO_THREADS` environment variable.
+- `--allow-unsupported-php-version`: Whether to allow unsupported PHP versions. This value overrides the `allow_unsupported_php_version` setting in the configuration file and the `MAGO_ALLOW_UNSUPPORTED_PHP_VERSION` environment variable.
 
 ## Configuration Options
 
@@ -59,29 +86,39 @@ The `php_version` option specifies the PHP version to use for linting and format
   php_version = "8.4"
   ```
 
+#### Allow Unsupported PHP Version
+
+The `allow_unsupported_php_version` option specifies whether to allow unsupported PHP versions.
+
+- Default: `false`
+- Type: `boolean`
+- Example:
+
+  ```toml
+  allow_unsupported_php_version = true
+  ```
+
 ### Source Configuration
 
-The `[source]` section controls how Mago discovers and processes files. It allows you to define the root directory,
-specific paths to scan, additional inclusions, and exclusions.
+The `[source]` section controls how Mago discovers and processes files.
 
-#### Root Directory
+#### Workspace Directory
 
-The `root` option defines the base directory for file discovery. If omitted, Mago defaults to the current working directory.
-Typically, this is the root of your project.
+The `workspace` setting specifies the root directory of your project. This is where Mago will search for PHP source files, unless specific paths are defined in the `paths` setting.
 
-- Default: `.` (current working directory)
+- Default: Current working directory
 - Type: `string`
 - Example:
 
   ```toml
-  root = "/path/to/project"
+  workspace = "."
   ```
 
-If not set, Mago uses the directory where the command is run.
+Unlike the `--workspace` command-line argument, this setting does not affect where the configuration file is loaded from, as the configuration file has already been loaded at this point. If the `--workspace` command-line argument is provided, this setting will be overridden.
 
 #### Paths
 
-The `paths` option specifies which directories to scan for files. If no paths are defined, Mago will scan the entire root directory.
+The `paths` option specifies which directories to scan for files. If no paths are defined, Mago will scan the entire workspace directory.
 
 - Default: `[]`
 - Type: `array of strings`
@@ -92,6 +129,8 @@ The `paths` option specifies which directories to scan for files. If no paths ar
   ```
 
 Use this to limit Mago’s search scope to specific directories.
+
+**Note**: If any of the `source.paths` are relative, they are considered to be relative to the `source.workspace` directory.
 
 #### Includes
 
@@ -105,6 +144,8 @@ The includes option is for adding extra files or directories that are not part o
   includes = ["vendor"]
   ```
 
+**Note**: If any of the `source.includes` paths are relative, they are considered to be relative to the `source.workspace` directory.
+
 #### Excludes
 
 The excludes option allows you to define patterns or paths to skip during file discovery. Patterns can include wildcards (\*) for more flexibility.
@@ -116,6 +157,8 @@ The excludes option allows you to define patterns or paths to skip during file d
   ```toml
   excludes = ["tests/fixtures", "**/src/**/*.generated.php"]
   ```
+
+**Note**: If any of the `source.excludes` paths are relative, they are considered to be relative to the `source.workspace` directory.
 
 #### Extensions
 
@@ -147,6 +190,8 @@ For more details on the available formatter settings, see the [Formatter Setting
   print_width = 80
   tab_width = 2
   ```
+
+**Note**: If any of the `format.excludes` paths are relative, they are considered to be relative to the `source.workspace` directory.
 
 ### Linter Configuration
 

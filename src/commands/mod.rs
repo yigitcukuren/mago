@@ -82,7 +82,13 @@ Get started by exploring the commands below!
 pub struct CliArguments {
     #[arg(
         long,
-        help = "The path to the configuration file. If not specified, Mago will search for a `mago.toml` file in the current directory."
+        help = "The path to the workspace directory. This is the root directory of your project. If not specified, defaults to the current working directory."
+    )]
+    pub workspace: Option<PathBuf>,
+
+    #[arg(
+        long,
+        help = "The path to the configuration file. If not specified, Mago will search for a `mago.toml` file in the workspace directory."
     )]
     pub config: Option<PathBuf>,
 

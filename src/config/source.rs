@@ -15,14 +15,14 @@ use crate::error::Error;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SourceConfiguration {
-    /// The root directory from which to start scanning.
+    /// The workspace directory from which to start scanning.
     ///
     /// Defaults to the current working directory.
-    pub root: PathBuf,
+    pub workspace: PathBuf,
 
     /// Paths to user defined source files.
     ///
-    /// If empty, all files in the root directory are included.
+    /// If empty, all files in the workspace directory are included.
     ///
     /// Defaults to `[]`.
     pub paths: Vec<PathBuf>,
@@ -44,24 +44,27 @@ pub struct SourceConfiguration {
 }
 
 impl SourceConfiguration {
-    /// Creates a new `SourceConfiguration` with the given root directory.
+    /// Creates a new `SourceConfiguration` with the given workspace directory.
     ///
     /// # Arguments
     ///
-    /// * `root` - The root directory from which to start scanning.
+    /// * `workspace` - The workspace directory from which to start scanning.
     ///
     /// # Returns
     ///
-    /// A new `SourceConfiguration` with the given root directory.
-    pub fn from_root(root: PathBuf) -> Self {
-        Self { root, paths: vec![], includes: vec![], excludes: vec![], extensions: vec![] }
+    /// A new `SourceConfiguration` with the given workspace directory.
+    pub fn from_workspace(workspace: PathBuf) -> Self {
+        Self { workspace, paths: vec![], includes: vec![], excludes: vec![], extensions: vec![] }
     }
 }
 
 impl ConfigurationEntry for SourceConfiguration {
     fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
         builder
-            .set_default("source.root", Value::new(None, ValueKind::String(self.root.to_string_lossy().to_string())))?
+            .set_default(
+                "source.workspace",
+                Value::new(None, ValueKind::String(self.workspace.to_string_lossy().to_string())),
+            )?
             .set_default("source.paths", Value::new(None, ValueKind::Array(vec![])))?
             .set_default("source.includes", Value::new(None, ValueKind::Array(vec![])))?
             .set_default("source.excludes", Value::new(None, ValueKind::Array(vec![])))?
@@ -73,17 +76,18 @@ impl ConfigurationEntry for SourceConfiguration {
     }
 
     fn normalize(&mut self) -> Result<(), Error> {
-        // Make root absolute if not already
-        let root = if !self.root.is_absolute() { (*CURRENT_DIR).join(&self.root) } else { self.root.clone() };
+        // Make workspace absolute if not already
+        let workspace =
+            if !self.workspace.is_absolute() { (*CURRENT_DIR).join(&self.workspace) } else { self.workspace.clone() };
 
-        self.root = root.canonicalize().map_err(|e| Error::CanonicalizingPath(root, e))?;
+        self.workspace = workspace.canonicalize().map_err(|e| Error::CanonicalizingPath(workspace, e))?;
 
         // Normalize source paths
         self.paths = self
             .paths
             .iter()
             .map(|p| {
-                let path = if p.is_absolute() { p.clone() } else { self.root.join(p) };
+                let path = if p.is_absolute() { p.clone() } else { self.workspace.join(p) };
 
                 path.canonicalize().map_err(|e| Error::CanonicalizingPath(p.clone(), e))
             })
@@ -94,7 +98,7 @@ impl ConfigurationEntry for SourceConfiguration {
             .includes
             .iter()
             .map(|p| {
-                let path = if p.is_absolute() { p.clone() } else { self.root.join(p) };
+                let path = if p.is_absolute() { p.clone() } else { self.workspace.join(p) };
 
                 path.canonicalize().map_err(|e| Error::CanonicalizingPath(p.clone(), e))
             })

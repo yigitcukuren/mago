@@ -72,6 +72,7 @@ impl Configuration {
     ///
     /// # Arguments
     ///
+    /// * `workspace` - An optional path to the workspace directory.
     /// * `file` - An optional path to a TOML configuration file.
     /// * `php_version` - An optional PHP version to use for the configuration.
     /// * `threads` - An optional number of threads to use for linting and formatting.
@@ -81,19 +82,22 @@ impl Configuration {
     ///
     /// A `Result` containing the loaded `Configuration`, or an `Error` if the configuration could not be loaded or validated.
     pub fn load(
+        workspace: Option<PathBuf>,
         file: Option<PathBuf>,
         php_version: Option<PHPVersion>,
         threads: Option<usize>,
         allow_unsupported_php_version: bool,
     ) -> Result<Configuration, Error> {
+        let workspace_dir = workspace.clone().unwrap_or_else(|| CURRENT_DIR.to_path_buf());
+
         let builder = Config::builder()
             .add_source(match file {
                 Some(file) => File::from(file).required(true).format(FileFormat::Toml),
-                None => File::with_name(CONFIGURATION_FILE).required(false).format(FileFormat::Toml),
+                None => File::from(workspace_dir.join(CONFIGURATION_FILE)).required(false).format(FileFormat::Toml),
             })
             .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX));
 
-        let mut configuration = Configuration::from_root(CURRENT_DIR.to_path_buf());
+        let mut configuration = Configuration::from_workspace(workspace_dir);
 
         configuration = configuration.configure(builder)?.build()?.try_deserialize::<Configuration>()?;
 
@@ -115,27 +119,33 @@ impl Configuration {
             configuration.threads = threads;
         }
 
+        if let Some(workspace) = workspace {
+            tracing::info!("Overriding workspace directory with {}.", workspace.display());
+
+            configuration.source.workspace = workspace;
+        }
+
         configuration.normalize()?;
 
         Ok(configuration)
     }
 
-    /// Creates a new `Configuration` with the given root directory.
+    /// Creates a new `Configuration` with the given workspace directory.
     ///
     /// # Arguments
     ///
-    /// * `root` - The root directory from which to start scanning.
+    /// * `workspace` - The workspace directory from which to start scanning.
     ///
     /// # Returns
     ///
-    /// A new `Configuration` with the given root directory.
-    pub fn from_root(root: PathBuf) -> Self {
+    /// A new `Configuration` with the given workspace directory.
+    pub fn from_workspace(workspace: PathBuf) -> Self {
         Self {
             threads: *LOGICAL_CPUS,
             stack_size: DEFAULT_STACK_SIZE,
             php_version: DEFAULT_PHP_VERSION,
             allow_unsupported_php_version: false,
-            source: SourceConfiguration::from_root(root),
+            source: SourceConfiguration::from_workspace(workspace),
             linter: LinterConfiguration::default(),
             format: FormatterConfiguration::default(),
             log: Value::new(None, ValueKind::Nil),

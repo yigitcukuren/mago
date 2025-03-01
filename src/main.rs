@@ -36,10 +36,10 @@ pub fn run() -> Result<ExitCode, Error> {
     let arguments = CliArguments::parse();
 
     let php_version = arguments.get_php_version()?;
-    let CliArguments { config, threads, allow_unsupported_php_version, command, .. } = arguments;
+    let CliArguments { workspace, config, threads, allow_unsupported_php_version, command, .. } = arguments;
 
     // Load the configuration.
-    let configuration = Configuration::load(config, php_version, threads, allow_unsupported_php_version)?;
+    let configuration = Configuration::load(workspace, config, php_version, threads, allow_unsupported_php_version)?;
 
     if !configuration.allow_unsupported_php_version {
         if configuration.php_version < MINIMUM_PHP_VERSION {
