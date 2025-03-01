@@ -36,13 +36,13 @@ pub const ENVIRONMENT_PREFIX: &str = "MAGO";
 /// The name of the configuration file for mago.
 pub const CONFIGURATION_FILE: &str = "mago.toml";
 
-/// The minimum stack size for each thread.
+/// The minimum stack size for each thread (8 MB).
 pub const MINIMUM_STACK_SIZE: usize = 8 * 1024 * 1024;
 
-/// The default stack size for each thread.
+/// The default stack size for each thread (36 MB).
 pub const DEFAULT_STACK_SIZE: usize = 36 * 1024 * 1024;
 
-/// The maximum stack size for each thread.
+/// The maximum stack size for each thread (256 MB).
 pub const MAXIMUM_STACK_SIZE: usize = 256 * 1024 * 1024;
 
 /// The default php version.

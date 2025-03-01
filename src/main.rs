@@ -4,6 +4,7 @@ use clap::Parser;
 use tokio::runtime::Builder;
 use tracing::level_filters::LevelFilter;
 
+use crate::commands::CliArguments;
 use crate::commands::MagoCommand;
 use crate::config::Configuration;
 use crate::consts::MAXIMUM_PHP_VERSION;
@@ -32,8 +33,13 @@ pub fn main() -> ExitCode {
 
 #[inline(always)]
 pub fn run() -> Result<ExitCode, Error> {
+    let arguments = CliArguments::parse();
+
+    let php_version = arguments.get_php_version()?;
+    let CliArguments { config, threads, allow_unsupported_php_version, command, .. } = arguments;
+
     // Load the configuration.
-    let configuration = Configuration::load()?;
+    let configuration = Configuration::load(config, php_version, threads, allow_unsupported_php_version)?;
 
     if !configuration.allow_unsupported_php_version {
         if configuration.php_version < MINIMUM_PHP_VERSION {
@@ -57,7 +63,7 @@ pub fn run() -> Result<ExitCode, Error> {
             .map_err(Error::BuildingRuntime)?
     };
 
-    match MagoCommand::parse() {
+    match command {
         MagoCommand::Lint(cmd) => runtime.block_on(commands::lint::execute(cmd, configuration)),
         MagoCommand::Fix(cmd) => runtime.block_on(commands::fix::execute(cmd, configuration)),
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),

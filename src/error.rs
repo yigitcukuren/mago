@@ -1,4 +1,5 @@
 use mago_php_version::PHPVersion;
+use mago_php_version::error::ParsingError;
 use mago_reporting::error::ReportingError;
 use mago_source::error::SourceError;
 
@@ -17,6 +18,7 @@ pub enum Error {
     SelfUpdate(self_update::errors::Error),
     PHPVersionIsTooOld(PHPVersion, PHPVersion),
     PHPVersionIsTooNew(PHPVersion, PHPVersion),
+    InvalidPHPVersion(String, ParsingError),
 }
 
 impl std::fmt::Display for Error {
@@ -39,6 +41,9 @@ impl std::fmt::Display for Error {
             Self::PHPVersionIsTooNew(maximum, actual) => {
                 write!(f, "PHP version {} is not supported, maximum supported version is {}", actual, maximum)
             }
+            Self::InvalidPHPVersion(version, error) => {
+                write!(f, "Invalid PHP version `{}`: {}", version, error)
+            }
         }
     }
 }
@@ -57,6 +62,7 @@ impl std::error::Error for Error {
             Self::Join(error) => Some(error),
             Self::Json(error) => Some(error),
             Self::SelfUpdate(error) => Some(error),
+            Self::InvalidPHPVersion(_, error) => Some(error),
             _ => None,
         }
     }

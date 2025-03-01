@@ -60,15 +60,60 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    pub fn load() -> Result<Configuration, Error> {
+    /// Loads the configuration from a file or environment variables.
+    ///
+    /// This function attempts to load the configuration from the following sources, in order of precedence:
+    ///
+    /// 1. A TOML file specified by the `file` argument.
+    /// 2. A TOML file named `mago.toml` in the current directory.
+    /// 3. Environment variables with the prefix `MAGO_`.
+    ///
+    /// The loaded configuration is then normalized and validated.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - An optional path to a TOML configuration file.
+    /// * `php_version` - An optional PHP version to use for the configuration.
+    /// * `threads` - An optional number of threads to use for linting and formatting.
+    /// * `allow_unsupported_php_version` - Whether to allow unsupported PHP versions.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the loaded `Configuration`, or an `Error` if the configuration could not be loaded or validated.
+    pub fn load(
+        file: Option<PathBuf>,
+        php_version: Option<PHPVersion>,
+        threads: Option<usize>,
+        allow_unsupported_php_version: bool,
+    ) -> Result<Configuration, Error> {
         let builder = Config::builder()
-            .add_source(File::with_name(CONFIGURATION_FILE).required(false).format(FileFormat::Toml))
+            .add_source(match file {
+                Some(file) => File::from(file).required(true).format(FileFormat::Toml),
+                None => File::with_name(CONFIGURATION_FILE).required(false).format(FileFormat::Toml),
+            })
             .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX));
 
-        let mut configuration = Configuration::from_root(CURRENT_DIR.to_path_buf())
-            .configure(builder)?
-            .build()?
-            .try_deserialize::<Configuration>()?;
+        let mut configuration = Configuration::from_root(CURRENT_DIR.to_path_buf());
+
+        configuration = configuration.configure(builder)?.build()?.try_deserialize::<Configuration>()?;
+
+        if allow_unsupported_php_version && !configuration.allow_unsupported_php_version {
+            tracing::warn!("Allowing unsupported PHP versions.");
+
+            configuration.allow_unsupported_php_version = true;
+        }
+
+        if let Some(php_version) = php_version {
+            tracing::info!("Overriding PHP version with {}.", php_version);
+
+            configuration.php_version = php_version;
+        }
+
+        if let Some(threads) = threads {
+            tracing::info!("Overriding thread count with {}.", threads);
+
+            configuration.threads = threads;
+        }
 
         configuration.normalize()?;
 
