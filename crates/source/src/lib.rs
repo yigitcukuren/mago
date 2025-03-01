@@ -426,5 +426,8 @@ impl<T: HasSource> HasSource for Box<T> {
 /// Returns an iterator over the starting byte offsets of each line in `source`.
 #[inline(always)]
 fn line_starts(source: &str) -> impl Iterator<Item = usize> + '_ {
-    std::iter::once(0).chain(memchr::memchr_iter(b'\n', source.as_bytes()).map(|i| i + 1))
+    let bytes = source.as_bytes();
+
+    std::iter::once(0)
+        .chain(memchr::memchr_iter(b'\n', bytes).map(|i| if i > 0 && bytes[i - 1] == b'\r' { i } else { i + 1 }))
 }
