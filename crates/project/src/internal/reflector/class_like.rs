@@ -19,6 +19,8 @@ use crate::internal::reflector::function_like::reflect_function_like_return_type
 use crate::internal::reflector::r#type::maybe_reflect_hint;
 use crate::internal::reflector::r#type::reflect_hint;
 
+use super::should_reflect_element;
+
 #[inline]
 pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -> ClassLikeReflection {
     let name = ClassLikeName::Class(Name::new(*context.names.get(&class.name), class.name.span));
@@ -216,20 +218,21 @@ fn reflect_class_like_members<'ast>(
                 reflection.cases.insert(case_ref.name.member.value, case_ref);
             }
             ClassLikeMember::Method(method) => {
-                let (name, meth_ref) = reflect_class_like_method(reflection, method, context);
-                let lowercase_name = context.interner.lowered(&name.value);
+                if let Some((name, meth_ref)) = reflect_class_like_method(reflection, method, context) {
+                    let lowercase_name = context.interner.lowered(&name.value);
 
-                // `__construct`, `__clone`, and trait methods are always inheritable
-                let name_value = context.interner.lookup(&lowercase_name);
-                if meth_ref.visibility_reflection.map(|v| !v.is_private()).unwrap_or(true)
-                    || name_value.eq("__construct")
-                    || name_value.eq("__clone")
-                    || reflection.is_trait()
-                {
-                    reflection.methods.inheritable_members.insert(lowercase_name, reflection.name);
+                    // `__construct`, `__clone`, and trait methods are always inheritable
+                    let name_value = context.interner.lookup(&lowercase_name);
+                    if meth_ref.visibility_reflection.map(|v| !v.is_private()).unwrap_or(true)
+                        || name_value.eq("__construct")
+                        || name_value.eq("__clone")
+                        || reflection.is_trait()
+                    {
+                        reflection.methods.inheritable_members.insert(lowercase_name, reflection.name);
+                    }
+
+                    reflection.methods.members.insert(lowercase_name, meth_ref);
                 }
-
-                reflection.methods.members.insert(lowercase_name, meth_ref);
             }
             ClassLikeMember::Property(property) => {
                 let prop_refs = reflect_class_like_property(reflection, property, context);
@@ -316,7 +319,11 @@ fn reflect_class_like_method<'ast>(
     class_like: &mut ClassLikeReflection,
     method: &'ast Method,
     context: &'ast mut Context<'_>,
-) -> (Name, FunctionLikeReflection) {
+) -> Option<(Name, FunctionLikeReflection)> {
+    if !should_reflect_element(context, &method.attribute_lists) {
+        return None;
+    }
+
     let name = Name::new(method.name.value, method.name.span);
 
     let (has_yield, has_throws, is_abstract) = match &method.body {
@@ -328,7 +335,7 @@ fn reflect_class_like_method<'ast>(
 
     let visibility_reflection = modifier_to_visibility(method.modifiers.get_first_read_visibility());
 
-    (
+    Some((
         name,
         FunctionLikeReflection {
             attribute_reflections: reflect_attributes(&method.attribute_lists, context),
@@ -356,7 +363,7 @@ fn reflect_class_like_method<'ast>(
             is_populated: false,
             issues: Default::default(),
         },
-    )
+    ))
 }
 
 #[inline]

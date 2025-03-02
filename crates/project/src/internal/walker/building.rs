@@ -154,9 +154,10 @@ impl MutWalker<Context<'_>> for ModuleBuildingWalker {
 
     #[inline]
     fn walk_in_function(&mut self, function: &Function, context: &mut Context<'_>) {
-        self.reflection
-            .register_function_like(context.interner, reflect_function(function, context, self.scope.last()));
-        checker::function_like::check_function(function, context);
+        if let Some(reflection) = reflect_function(function, context, self.scope.last()) {
+            self.reflection.register_function_like(context.interner, reflection);
+            checker::function_like::check_function(function, context);
+        }
     }
 
     #[inline]

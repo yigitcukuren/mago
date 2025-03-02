@@ -23,9 +23,9 @@ impl ModuleReflectionWalker {
 impl<'a> MutWalker<Context<'a>> for ModuleReflectionWalker {
     #[inline]
     fn walk_in_function(&mut self, function: &Function, context: &mut Context<'_>) {
-        let reflection = reflect_function(function, context, self.scope.last());
-
-        self.reflection.register_function_like(context.interner, reflection);
+        if let Some(reflection) = reflect_function(function, context, self.scope.last()) {
+            self.reflection.register_function_like(context.interner, reflection);
+        }
     }
 
     #[inline]

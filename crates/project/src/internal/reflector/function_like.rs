@@ -12,15 +12,21 @@ use crate::internal::reflector::attribute::reflect_attributes;
 use crate::internal::reflector::r#type::maybe_reflect_hint;
 use crate::internal::reflector::r#type::reflect_hint;
 
+use super::should_reflect_element;
+
 #[inline]
 pub fn reflect_function<'ast>(
     function: &'ast Function,
     context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
-) -> FunctionLikeReflection {
+) -> Option<FunctionLikeReflection> {
+    if !should_reflect_element(context, &function.attribute_lists) {
+        return None;
+    }
+
     let name = Name::new(*context.names.get(&function.name), function.name.span);
 
-    FunctionLikeReflection {
+    Some(FunctionLikeReflection {
         attribute_reflections: reflect_attributes(&function.attribute_lists, context),
         visibility_reflection: None,
         name: FunctionLikeName::Function(name),
@@ -41,7 +47,7 @@ pub fn reflect_function<'ast>(
         span: function.span(),
         is_populated: false,
         issues: Default::default(),
-    }
+    })
 }
 
 #[inline]
@@ -116,7 +122,9 @@ pub fn reflect_function_like_parameter_list<'ast>(
 ) -> Vec<FunctionLikeParameterReflection> {
     let mut parameters = vec![];
     for parameter in parameter_list.parameters.iter() {
-        parameters.push(reflect_function_like_parameter(parameter, context, scope));
+        if let Some(parameter) = reflect_function_like_parameter(parameter, context, scope) {
+            parameters.push(parameter);
+        }
     }
 
     parameters
@@ -127,8 +135,12 @@ pub fn reflect_function_like_parameter<'ast>(
     parameter: &'ast FunctionLikeParameter,
     context: &'ast mut Context<'_>,
     scope: Option<&ClassLikeReflection>,
-) -> FunctionLikeParameterReflection {
-    FunctionLikeParameterReflection {
+) -> Option<FunctionLikeParameterReflection> {
+    if !should_reflect_element(context, &parameter.attribute_lists) {
+        return None;
+    }
+
+    Some(FunctionLikeParameterReflection {
         attribute_reflections: reflect_attributes(&parameter.attribute_lists, context),
         type_reflection: maybe_reflect_hint(&parameter.hint, context, scope),
         name: parameter.variable.name,
@@ -140,7 +152,7 @@ pub fn reflect_function_like_parameter<'ast>(
             span: d.span(),
         }),
         span: parameter.span(),
-    }
+    })
 }
 
 #[inline]
