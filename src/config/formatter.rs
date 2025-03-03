@@ -51,10 +51,6 @@ pub struct FormatterConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub keyword_case: Option<CasingStyle>,
 
-    /// Blank line after the opening PHP tag.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blank_line_after_open_tag: Option<bool>,
-
     /// In a control structure expression, is there a space after the opening parenthesis
     ///  and a space before the closing parenthesis?
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -170,7 +166,6 @@ impl FormatterConfiguration {
                 .space_around_declare_equals
                 .unwrap_or(default.space_around_declare_equals),
             keyword_case: self.keyword_case.unwrap_or(default.keyword_case),
-            blank_line_after_open_tag: self.blank_line_after_open_tag.unwrap_or(default.blank_line_after_open_tag),
             control_space_parens: self.control_space_parens.unwrap_or(default.control_space_parens),
             closure_brace_style: self.closure_brace_style.unwrap_or(default.closure_brace_style),
             function_brace_style: self.function_brace_style.unwrap_or(default.function_brace_style),

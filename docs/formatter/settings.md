@@ -103,18 +103,6 @@ Specifies the case to use for keywords.
   keyword_case = "uppercase"
   ```
 
-### `blank_line_after_open_tag`
-
-Adds a blank line after the opening tag of a PHP file.
-
-- Default: `true`
-- Type: `boolean`
-- Example:
-
-  ```toml
-  blank_line_after_open_tag = false
-  ```
-
 ### `control_space_parens`
 
 Controls whether spaces are added inside parentheses in control structures.

@@ -98,22 +98,6 @@ pub struct FormatSettings {
     #[serde(default)]
     pub keyword_case: CasingStyle,
 
-    /// Blank line after the opening PHP tag.
-    ///
-    /// When enabled, the formatter will add a blank line after the opening PHP tag.
-    ///
-    /// Example:
-    ///
-    /// ```php
-    /// <?php
-    ///
-    /// echo 'Hello, world!';
-    /// ```
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub blank_line_after_open_tag: bool,
-
     /// In a control structure expression, is there a space after the opening parenthesis
     ///  and a space before the closing parenthesis?
     ///
@@ -629,7 +613,6 @@ impl Default for FormatSettings {
             trailing_comma: true,
             space_around_declare_equals: false,
             keyword_case: CasingStyle::default(),
-            blank_line_after_open_tag: true,
             control_space_parens: false,
             closure_brace_style: BraceStyle::SameLine,
             function_brace_style: BraceStyle::NextLine,
