@@ -58,6 +58,7 @@ pub enum Precedence {
     Clone,
     CallDim,
     New,
+    ArrayDim,
     ObjectAccess,
 }
 
@@ -314,7 +315,8 @@ impl Precedence {
     pub fn postfix(kind: &TokenKind) -> Self {
         match kind {
             T!["++" | "--"] => Self::Prefix,
-            T!["(" | "["] => Self::CallDim,
+            T!["("] => Self::CallDim,
+            T!["["] => Self::ArrayDim,
             T!["->" | "?->" | "::"] => Self::ObjectAccess,
             _ => Self::Lowest,
         }
