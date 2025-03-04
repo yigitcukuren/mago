@@ -170,9 +170,9 @@ checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
-version = "0.1.86"
+version = "0.1.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "644dd749086bf3771a2fbc5f256fdb982d53f011c7d5d560304eafeecebce79d"
+checksum = "d556ec1359574147ec0c4fc5eb525f3f23263a592b1a9c07e0a75b427de55c97"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1156,9 +1156,9 @@ dependencies = [
 
 [[package]]
 name = "httparse"
-version = "1.10.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2d708df4e7140240a16cd6ab0ab65c972d7433ab77819ea693fde9c43811e2a"
+checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
 
 [[package]]
 name = "hyper"
@@ -1398,9 +1398,9 @@ dependencies = [
 
 [[package]]
 name = "indoc"
-version = "2.0.5"
+version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
+checksum = "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
 
 [[package]]
 name = "ipnet"
@@ -1436,9 +1436,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
+checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
 name = "js-sys"
@@ -1525,7 +1525,7 @@ checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 
 [[package]]
 name = "mago"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-interner",
  "mago-php-version",
@@ -1581,7 +1581,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1589,14 +1589,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1605,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1615,7 +1615,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1625,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1643,7 +1643,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1652,7 +1652,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1667,7 +1667,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1692,7 +1692,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1705,7 +1705,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1724,7 +1724,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1732,7 +1732,7 @@ dependencies = [
 
 [[package]]
 name = "mago-project"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1752,7 +1752,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reference"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1764,7 +1764,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1778,7 +1778,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "blake3",
@@ -1795,7 +1795,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1807,7 +1807,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1815,7 +1815,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1825,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "mago-trinary"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "serde",
  "strum",
@@ -1833,7 +1833,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1848,7 +1848,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1856,7 +1856,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
@@ -2210,9 +2210,9 @@ dependencies = [
 
 [[package]]
 name = "pkg-config"
-version = "0.3.31"
+version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
+checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plotters"
@@ -2275,9 +2275,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.93"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60946a68e5f9d28b0dc1c21bb8a97ee7d018a8b322fa57838ba31cc878e22d99"
+checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
 dependencies = [
  "unicode-ident",
 ]
@@ -2345,9 +2345,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.38"
+version = "1.0.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e4dccaaaf89514f546c693ddc140f729f958c247918a13380cccc6078391acc"
+checksum = "c1f1914ce909e1658d9907913b4b91947430c7d9be598b15a1912935b8c04801"
 dependencies = [
  "proc-macro2",
 ]
@@ -2406,9 +2406,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.9"
+version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82b568323e98e49e2a0899dcee453dd679fae22d69adf9b11dd508d1549b7e2f"
+checksum = "0b8c0c260b63a8219631167be35e6a988e9554dbd323f8bd08439c8ed1302bd1"
 dependencies = [
  "bitflags",
 ]
@@ -2621,15 +2621,15 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.19"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
+checksum = "eded382c5f5f786b989652c49544c4877d9f015cc22e145a5ea8ea66c2921cd2"
 
 [[package]]
 name = "ryu"
-version = "1.0.19"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ea1a2d0a644769cc99faa24c3ad26b379b786fe7c36fd3c546254801650e6dd"
+checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
 
 [[package]]
 name = "same-file"
@@ -2715,9 +2715,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.25"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f79dfe2d285b0488816f30e700a7438c5a73d816b5b7d3ac72fbc48b0d185e03"
+checksum = "56e6fa9c48d24d85fb3de5ad847117517440f6beceb7798af16b4a87d616b8d0"
 
 [[package]]
 name = "serde"
@@ -2752,9 +2752,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.139"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44f86c3acccc9c65b153fe1b85a3be07fe5515274ec9f0653b4a0875731c72a6"
+checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
 dependencies = [
  "itoa",
  "memchr",
@@ -2902,9 +2902,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.98"
+version = "2.0.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36147f1a48ae0ec2b5b3bc5b537d267457555a10dc06f3dbc8cb11ba3006d3b1"
+checksum = "e02e925281e18ffd9d640e234264753c43edc62d64b2d4cf898f1bc5e75f3fc2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3308,9 +3308,9 @@ checksum = "75b844d17643ee918803943289730bec8aac480150456169e647ed0b576ba539"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00e2473a93778eb0bad35909dff6a10d28e63f792f16ed15e404fca9d5eeedbe"
+checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 
 [[package]]
 name = "unicode-segmentation"
