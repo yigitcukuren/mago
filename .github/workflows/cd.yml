@@ -227,7 +227,7 @@ jobs:
 
           WASM_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/wasm"
           pushd "${WASM_STAGING}" >/dev/null
-          tar czf "${WASM_PKG_NAME}" mago_wasm_bg.wasm mago_wasm.js
+          tar czf "${WASM_PKG_NAME}" mago_wasm.d.ts mago_wasm.js mago_wasm_bg.js mago_wasm_bg.wasm package.json
           popd >/dev/null
 
           echo "WASM_PKG_PATH=${WASM_STAGING}/${WASM_PKG_NAME}" >> $GITHUB_OUTPUT
