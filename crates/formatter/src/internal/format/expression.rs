@@ -23,6 +23,7 @@ use crate::internal::format::misc;
 use crate::internal::format::misc::print_attribute_list_sequence;
 use crate::internal::format::misc::print_condition;
 use crate::internal::format::misc::print_modifiers;
+use crate::internal::format::return_value::format_return_value;
 use crate::internal::format::string::print_string;
 use crate::internal::utils;
 use crate::settings::*;
@@ -419,12 +420,6 @@ impl<'a> Format<'a> for DieConstruct {
     }
 }
 
-impl<'a> Format<'a> for ArgumentList {
-    fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
-        wrap!(f, self, ArgumentList, { print_argument_list(f, self) })
-    }
-}
-
 impl<'a> Format<'a> for Argument {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, Argument, {
@@ -620,7 +615,7 @@ impl<'a> Format<'a> for ArrowFunction {
             }
 
             contents.push(Document::String(" => "));
-            contents.push(self.expression.format(f));
+            contents.push(format_return_value(f, self.expression.as_ref()));
 
             if let Some(attributes) = attributes {
                 Document::Group(Group::new(vec![attributes, Document::Group(Group::new(contents))]))
@@ -1158,8 +1153,8 @@ impl<'a> Format<'a> for AnonymousClass {
             }
 
             signature.push(self.class.format(f));
-            if let Some(arguments) = &self.arguments {
-                signature.push(arguments.format(f));
+            if let Some(argument_list) = &self.arguments {
+                signature.push(print_argument_list(f, argument_list));
             }
 
             if let Some(extends) = &self.extends {
