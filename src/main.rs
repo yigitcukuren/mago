@@ -34,6 +34,9 @@ pub fn main() -> ExitCode {
 #[inline(always)]
 pub fn run() -> Result<ExitCode, Error> {
     let arguments = CliArguments::parse();
+    if let MagoCommand::SelfUpdate(cmd) = arguments.command {
+        return commands::self_update::execute(cmd);
+    }
 
     let php_version = arguments.get_php_version()?;
     let CliArguments { workspace, config, threads, allow_unsupported_php_version, command, .. } = arguments;
@@ -70,6 +73,8 @@ pub fn run() -> Result<ExitCode, Error> {
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
         MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd)),
         MagoCommand::Find(find) => runtime.block_on(commands::find::execute(find, configuration)),
-        MagoCommand::SelfUpdate(cmd) => commands::self_update::execute(cmd),
+        MagoCommand::SelfUpdate(_) => {
+            unreachable!("The self-update command should have been handled before this point.")
+        }
     }
 }
