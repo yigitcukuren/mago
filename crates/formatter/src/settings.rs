@@ -272,8 +272,8 @@ pub struct FormatSettings {
     /// $closure = fn() => 'Hello, world!';
     /// ```
     ///
-    /// Default: true
-    #[serde(default = "default_true")]
+    /// Default: false
+    #[serde(default = "default_false")]
     pub space_before_arrow_function_params: bool,
 
     /// Whether to put the `static` keyword before the visibility keyword.

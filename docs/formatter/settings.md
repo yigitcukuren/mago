@@ -191,12 +191,12 @@ Controls whether a space is added after the `use` keyword in closures.
 
 Controls whether a space is added before the parameter list in arrow functions.
 
-- Default: `true`
+- Default: `false`
 - Type: `boolean`
 - Example:
 
   ```toml
-  space_before_arrow_function_params = false
+  space_before_arrow_function_params = true
   ```
 
 ### `static_before_visibility`
