@@ -121,13 +121,13 @@ jobs:
           targets: ${{ matrix.job.target }}
 
       - name: install cross
-        if: startsWith(matrix.job.os, 'ubuntu')
+        if: startsWith(matrix.job.os, 'ubuntu') && matrix.job.target != 'x86_64-unknown-linux-gnu'
         uses: taiki-e/install-action@v2
         with:
           tool: cross
 
       - name: overwrite build command env variable (for cross)
-        if: startsWith(matrix.job.os, 'ubuntu')
+        if: startsWith(matrix.job.os, 'ubuntu') && matrix.job.target != 'x86_64-unknown-linux-gnu'
         shell: bash
         run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
