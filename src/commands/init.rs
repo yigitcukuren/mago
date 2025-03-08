@@ -149,11 +149,14 @@ fn generate_config_from_composer(composer_file: &Path) -> Result<String, Error> 
     let composer_json = std::fs::read_to_string(composer_file).map_err(Error::ReadingComposerJson)?;
     let composer = ComposerPackage::from_str(&composer_json).map_err(Error::ParsingComposerJson)?;
 
+    // Get the workspace directory (parent of composer.json)
+    let workspace = composer_file.parent().unwrap_or_else(|| Path::new("."));
+
     // Extract PHP version
     let php_version = extract_php_version_from_composer(&composer);
 
     // Extract paths from autoload configuration
-    let paths = extract_paths_from_composer(&composer);
+    let paths = extract_paths_from_composer(&composer, workspace);
 
     // Standard include path for Composer projects
     let includes = vec!["vendor".to_string()];
@@ -198,7 +201,7 @@ fn extract_php_version_from_composer(composer: &ComposerPackage) -> String {
 /// # Returns
 ///
 /// A vector of path strings
-fn extract_paths_from_composer(composer: &ComposerPackage) -> Vec<String> {
+fn extract_paths_from_composer(composer: &ComposerPackage, workspace: &Path) -> Vec<String> {
     let mut paths = match composer.autoload.as_ref() {
         Some(autoload) => autoload.psr_4.iter().flat_map(|(_, v)| get_autoload_value(v)).collect::<Vec<_>>(),
         None => vec![],
@@ -208,7 +211,68 @@ fn extract_paths_from_composer(composer: &ComposerPackage) -> Vec<String> {
         paths.extend(autoload.psr_4.iter().flat_map(|(_, v)| get_autoload_dev_value(v)));
     }
 
-    paths
+    // Filter out non-existent paths
+    let existing_paths: Vec<String> = paths.into_iter().filter(|p| workspace.join(p).exists()).collect();
+
+    // Deduplicate paths, keeping only parent paths
+    deduplicate_paths(existing_paths)
+}
+
+/// Deduplicates paths by removing child paths when parent paths are present.
+///
+/// # Arguments
+///
+/// * `paths` - Vector of path strings to deduplicate
+///
+/// # Returns
+///
+/// A vector of deduplicated path strings
+fn deduplicate_paths(paths: Vec<String>) -> Vec<String> {
+    if paths.is_empty() {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+
+    // Create normalized paths for comparison
+    let normalized_paths: Vec<String> = paths
+        .iter()
+        .map(|p| {
+            let mut path = p.clone();
+            if !path.ends_with('/') {
+                path.push('/');
+            }
+
+            path
+        })
+        .collect();
+
+    // Check each path to see if it's a parent of another path
+    for (i, path) in normalized_paths.iter().enumerate() {
+        let original_path = &paths[i];
+
+        // Check if this path is a prefix of any other path
+        let is_parent = normalized_paths.iter().enumerate().any(|(j, other)| i != j && other.starts_with(path));
+
+        // If this path is not a parent of any other path, check if it's a child
+        if !is_parent {
+            let is_child = normalized_paths.iter().enumerate().any(|(j, other)| i != j && path.starts_with(other));
+
+            // Only add paths that are not children of other paths
+            if !is_child {
+                result.push(original_path.clone());
+            }
+        } else {
+            // If it's a parent, include it
+            result.push(original_path.clone());
+        }
+    }
+
+    // Remove duplicates (exact matches)
+    result.sort();
+    result.dedup();
+
+    result
 }
 
 /// Detects which plugins should be enabled based on composer dependencies.
