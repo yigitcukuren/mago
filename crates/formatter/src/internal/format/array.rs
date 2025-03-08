@@ -371,12 +371,16 @@ fn format_elements_with_alignment<'a>(
 }
 
 fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> bool {
+    // Arbitrary limit to prevent excessive column width
+    const WIGGLE_ROOM: usize = 20;
+
     let elements = array_like.elements();
     if elements.len() < 2 {
         return false; // Need at least two rows for table style to make sense
     }
 
-    let mut row_size = None;
+    let mut row_size = 0;
+    let mut sizes = Vec::new();
     let mut maximum_width = 0;
 
     // Check if all elements are nested arrays with consistent row sizes
@@ -393,17 +397,8 @@ fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) ->
                     let size = elements.len();
 
                     // Check if row size is consistent
-                    if let Some(existing_size) = row_size {
-                        if existing_size != size {
-                            return false;
-                        }
-                    } else {
-                        if size < 2 {
-                            return false; // Need at least two columns
-                        }
-
-                        row_size = Some(size);
-                    }
+                    row_size = row_size.max(size);
+                    sizes.push(size);
 
                     // Check if all inner elements are simple (strings, numbers, etc.)
                     let mut elements_width = 0;
@@ -424,8 +419,7 @@ fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) ->
                     }
 
                     let total_width = elements_width + ((size - 1) * 2);
-                    // `20` is an arbitrary limit to prevent excessive column width
-                    if total_width > (f.settings.print_width - 20) {
+                    if total_width > (f.settings.print_width - WIGGLE_ROOM) {
                         return false; // Exceeds column width limit
                     }
 
@@ -438,21 +432,30 @@ fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) ->
         }
     }
 
-    if maximum_width < 20 {
+    if maximum_width < WIGGLE_ROOM {
         return false; // Too narrow to be a table
     }
 
-    // Check if row size is within reasonable bounds (2-10 columns)
-    match row_size {
-        Some(size) => (3..=12).contains(&size),
-        None => false,
+    // Check if row size is within reasonable bounds (3-10 columns)
+    if !(3..=12).contains(&row_size) {
+        println!("Row size: {}", row_size);
+
+        return false;
     }
+
+    // At least 60% of the rows should have the same size
+    let is = (sizes.iter().filter(|size| **size == row_size).count() as f64) / (sizes.len() as f64) >= 0.6;
+
+    println!("Row size: {}", row_size);
+    println!("Sizes: {:?}", sizes);
+    println!("Is: {}", is);
+
+    is
 }
 
 fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> Option<Vec<usize>> {
     let elements = array_like.elements();
-    let mut row_size = None;
-    let mut column_maximum_widths = Vec::new();
+    let mut row_size = 0;
 
     // First pass: determine consistent row size and initialize column widths
     for element in elements {
@@ -463,14 +466,7 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
                 {
                     let size = elements.len();
 
-                    if let Some(existing_size) = row_size {
-                        if existing_size != size {
-                            return None; // Inconsistent row sizes
-                        }
-                    } else {
-                        row_size = Some(size);
-                        column_maximum_widths = vec![0; size];
-                    }
+                    row_size = row_size.max(size);
                 } else {
                     return None; // Not a nested array
                 }
@@ -478,6 +474,8 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
             _ => return None, // Only support Value elements
         }
     }
+
+    let mut column_maximum_widths = vec![0; row_size];
 
     // Second pass: calculate maximum width for each column
     for element in elements {
@@ -506,17 +504,43 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
 fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) -> Option<usize> {
     Some(match element {
         Expression::Literal(literal) => match literal {
-            Literal::String(literal_string) => f.interner.lookup(&literal_string.value).width(),
+            Literal::String(literal_string) => width(f.interner.lookup(&literal_string.value)),
             Literal::Integer(literal_integer) => f.interner.lookup(&literal_integer.raw).width(),
             Literal::Float(literal_float) => f.interner.lookup(&literal_float.raw).width(),
             Literal::True(_) => 4,
             Literal::False(_) => 5,
             Literal::Null(_) => 4,
         },
-        Expression::MagicConstant(magic_constant) => f.interner.lookup(&magic_constant.value().value).width(),
+        Expression::MagicConstant(magic_constant) => width(f.interner.lookup(&magic_constant.value().value)),
         Expression::ConstantAccess(ConstantAccess { name: Identifier::Local(local) })
-        | Expression::Identifier(Identifier::Local(local)) => f.interner.lookup(&local.value).width(),
-        Expression::Variable(Variable::Direct(variable)) => f.interner.lookup(&variable.name).width(),
+        | Expression::Identifier(Identifier::Local(local)) => width(f.interner.lookup(&local.value)),
+        Expression::Variable(Variable::Direct(variable)) => width(f.interner.lookup(&variable.name)),
+        Expression::Call(Call::Function(FunctionCall { function, argument_list })) => {
+            if !argument_list.arguments.is_empty() {
+                return None;
+            }
+
+            return get_element_width(f, function).map(|width| width + 2);
+        }
+        Expression::Call(Call::StaticMethod(StaticMethodCall {
+            class,
+            method: ClassLikeMemberSelector::Identifier(method),
+            argument_list,
+            ..
+        })) => {
+            if !argument_list.arguments.is_empty() {
+                return None;
+            }
+
+            return get_element_width(f, class).map(|class| class + 2 + width(f.interner.lookup(&method.value)) + 2);
+        }
+        Expression::Access(Access::ClassConstant(ClassConstantAccess {
+            class,
+            constant: ClassLikeConstantSelector::Identifier(constant),
+            ..
+        })) => {
+            return get_element_width(f, class).map(|class| class + 2 + width(f.interner.lookup(&constant.value)) + 2);
+        }
         _ => {
             return None;
         }
@@ -525,7 +549,7 @@ fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) ->
 
 fn get_document_width(doc: &Document<'_>) -> usize {
     match doc {
-        Document::String(s) => s.width(),
+        Document::String(s) => width(s),
         Document::Array(docs) => docs.iter().map(get_document_width).sum(),
         Document::Group(group) => group.contents.iter().map(get_document_width).sum(),
         Document::Indent(docs) => docs.iter().map(get_document_width).sum(),
@@ -535,5 +559,16 @@ fn get_document_width(doc: &Document<'_>) -> usize {
             get_document_width(&if_break.break_contents).max(get_document_width(&if_break.flat_content))
         }
         _ => 0,
+    }
+}
+
+#[inline]
+fn width(s: &str) -> usize {
+    if s.contains("الله") {
+        // The word "الله" is a special case, as it is usually rendered as a single glyph
+        // while being 4 characters wide. This is a hack to handle this case.
+        s.replace("الله", "_").width()
+    } else {
+        s.width()
     }
 }
