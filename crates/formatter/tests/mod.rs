@@ -110,3 +110,4 @@ test_case!(array_alignment);
 test_case!(binary_alignment);
 test_case!(binary_alignment_before_op);
 test_case!(chain_comments);
+test_case!(literal_concat_parens);

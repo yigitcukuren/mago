@@ -22,12 +22,22 @@ impl<'a> FormatterState<'a> {
             return false;
         }
 
-        if self.called_or_accessed_node_needs_parenthesis(node)
+        self.called_or_accessed_node_needs_parenthesis(node)
             || self.binary_node_needs_parens(node)
             || self.unary_prefix_node_needs_parens(node)
             || self.conditional_or_assignment_needs_parenthesis(node)
-        {
-            return true;
+            || self.literal_needs_parens(node)
+    }
+
+    fn literal_needs_parens(&self, node: Node<'a>) -> bool {
+        let Node::Literal(Literal::Integer(_) | Literal::Float(_)) = node else {
+            return false;
+        };
+
+        if let Some(Node::Binary(binary)) = self.nth_parent_kind(2) {
+            if let BinaryOperator::StringConcat(_) = binary.operator {
+                return true;
+            }
         }
 
         false
@@ -67,6 +77,12 @@ impl<'a> FormatterState<'a> {
                 if let BinaryOperator::Elvis(_) = e.operator {
                     // Add parentheses if parent is an elvis operator.
                     return true;
+                }
+
+                if let BinaryOperator::StringConcat(_) = e.operator {
+                    // Add parentheses if parent is a string concat operator,
+                    //  unless the child is a string concat operator as well.
+                    return !matches!(operator, BinaryOperator::StringConcat(_));
                 }
 
                 &e.operator
