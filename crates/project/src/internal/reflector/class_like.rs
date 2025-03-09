@@ -539,13 +539,19 @@ fn reflect_class_like_property<'ast>(
 }
 
 #[inline]
-pub const fn modifier_to_visibility(modifier: Option<&Modifier>) -> Option<ClassLikeMemberVisibilityReflection> {
+pub fn modifier_to_visibility(modifier: Option<&Modifier>) -> Option<ClassLikeMemberVisibilityReflection> {
     let Some(m) = modifier else { return None };
 
     Some(match m {
-        Modifier::Public(m) => ClassLikeMemberVisibilityReflection::Public { span: m.span },
-        Modifier::Protected(m) => ClassLikeMemberVisibilityReflection::Protected { span: m.span },
-        Modifier::Private(m) => ClassLikeMemberVisibilityReflection::Private { span: m.span },
-        _ => unreachable!(),
+        Modifier::Public(m) | Modifier::PublicSet(m) => ClassLikeMemberVisibilityReflection::Public { span: m.span },
+        Modifier::Protected(m) | Modifier::ProtectedSet(m) => {
+            ClassLikeMemberVisibilityReflection::Protected { span: m.span }
+        }
+        Modifier::Private(m) | Modifier::PrivateSet(m) => ClassLikeMemberVisibilityReflection::Private { span: m.span },
+        _ => {
+            unreachable!(
+                "Modifier should be one of `Public`, `PublicSet`, `Protected`, `ProtectedSet`, `Private`, or `PrivateSet`."
+            )
+        }
     })
 }
