@@ -1,6 +1,6 @@
 [package]
 name = "mago"
-version = "0.18.1"
+version = "0.19.0"
 edition = "2024"
 authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ rust-version = "1.85.0"
 package.edition = "2024"
 package.authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
 package.license = "MIT OR Apache-2.0"
-package.version = "0.18.1"
+package.version = "0.19.0"
 package.homepage = "https://github.com/carthage-software/mago"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.85.0"
@@ -23,32 +23,32 @@ members = ["crates/*"]
 large_enum_variant = { level = "allow" }
 
 [workspace.dependencies]
-mago-ast = { path = "crates/ast", version = "0.18.1" }
-mago-ast-utils = { path = "crates/ast-utils", version = "0.18.1" }
-mago-casing = { path = "crates/casing", version = "0.18.1" }
-mago-composer = { path = "crates/composer", version = "0.18.1" }
-mago-docblock = { path = "crates/docblock", version = "0.18.1" }
-mago-fixer = { path = "crates/fixer", version = "0.18.1" }
-mago-formatter = { path = "crates/formatter", version = "0.18.1" }
-mago-interner = { path = "crates/interner", version = "0.18.1" }
-mago-lexer = { path = "crates/lexer", version = "0.18.1" }
-mago-linter = { path = "crates/linter", version = "0.18.1" }
-mago-names = { path = "crates/names", version = "0.18.1" }
-mago-parser = { path = "crates/parser", version = "0.18.1" }
-mago-reflection = { path = "crates/reflection", version = "0.18.1" }
-mago-reporting = { path = "crates/reporting", version = "0.18.1" }
-mago-project = { path = "crates/project", version = "0.18.1" }
-mago-source = { path = "crates/source", version = "0.18.1" }
-mago-span = { path = "crates/span", version = "0.18.1" }
-mago-symbol-table = { path = "crates/symbol-table", version = "0.18.1" }
-mago-token = { path = "crates/token", version = "0.18.1" }
-mago-traverser = { path = "crates/traverser", version = "0.18.1" }
-mago-trinary = { path = "crates/trinary", version = "0.18.1" }
-mago-typing = { path = "crates/typing", version = "0.18.1" }
-mago-walker = { path = "crates/walker", version = "0.18.1" }
-mago-wasm = { path = "crates/wasm", version = "0.18.1" }
-mago-php-version = { path = "crates/php-version", version = "0.18.1" }
-mago-reference = { path = "crates/reference", version = "0.18.1" }
+mago-ast = { path = "crates/ast", version = "0.19.0" }
+mago-ast-utils = { path = "crates/ast-utils", version = "0.19.0" }
+mago-casing = { path = "crates/casing", version = "0.19.0" }
+mago-composer = { path = "crates/composer", version = "0.19.0" }
+mago-docblock = { path = "crates/docblock", version = "0.19.0" }
+mago-fixer = { path = "crates/fixer", version = "0.19.0" }
+mago-formatter = { path = "crates/formatter", version = "0.19.0" }
+mago-interner = { path = "crates/interner", version = "0.19.0" }
+mago-lexer = { path = "crates/lexer", version = "0.19.0" }
+mago-linter = { path = "crates/linter", version = "0.19.0" }
+mago-names = { path = "crates/names", version = "0.19.0" }
+mago-parser = { path = "crates/parser", version = "0.19.0" }
+mago-reflection = { path = "crates/reflection", version = "0.19.0" }
+mago-reporting = { path = "crates/reporting", version = "0.19.0" }
+mago-project = { path = "crates/project", version = "0.19.0" }
+mago-source = { path = "crates/source", version = "0.19.0" }
+mago-span = { path = "crates/span", version = "0.19.0" }
+mago-symbol-table = { path = "crates/symbol-table", version = "0.19.0" }
+mago-token = { path = "crates/token", version = "0.19.0" }
+mago-traverser = { path = "crates/traverser", version = "0.19.0" }
+mago-trinary = { path = "crates/trinary", version = "0.19.0" }
+mago-typing = { path = "crates/typing", version = "0.19.0" }
+mago-walker = { path = "crates/walker", version = "0.19.0" }
+mago-wasm = { path = "crates/wasm", version = "0.19.0" }
+mago-php-version = { path = "crates/php-version", version = "0.19.0" }
+mago-reference = { path = "crates/reference", version = "0.19.0" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8.11" }
 getrandom = { version = "0.2", features = ["js"] }

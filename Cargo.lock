@@ -1506,12 +1506,6 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab"
-
-[[package]]
-name = "linux-raw-sys"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6db9c683daf087dc577b7506e9695b3d556a9f3849903fa28186283afd6809e9"
@@ -1540,7 +1534,7 @@ checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 
 [[package]]
 name = "mago"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1582,7 +1576,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-interner",
  "mago-php-version",
@@ -1596,7 +1590,7 @@ dependencies = [
 
 [[package]]
 name = "mago-ast-utils"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-ast",
  "mago-span",
@@ -1604,14 +1598,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1620,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1630,7 +1624,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1640,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1659,7 +1653,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1668,7 +1662,7 @@ dependencies = [
 
 [[package]]
 name = "mago-lexer"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-interner",
  "mago-reporting",
@@ -1683,7 +1677,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1708,7 +1702,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1721,7 +1715,7 @@ dependencies = [
 
 [[package]]
 name = "mago-parser"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "either",
  "mago-ast",
@@ -1740,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1748,7 +1742,7 @@ dependencies = [
 
 [[package]]
 name = "mago-project"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1768,7 +1762,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reference"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-ast",
  "mago-interner",
@@ -1780,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1794,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "blake3",
@@ -1811,7 +1805,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1823,7 +1817,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1831,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "mago-token"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-interner",
  "mago-span",
@@ -1841,7 +1835,7 @@ dependencies = [
 
 [[package]]
 name = "mago-trinary"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "serde",
  "strum",
@@ -1849,7 +1843,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "ahash",
  "mago-ast",
@@ -1864,7 +1858,7 @@ dependencies = [
 
 [[package]]
 name = "mago-walker"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "mago-ast",
  "paste",
@@ -1872,7 +1866,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.18.1"
+version = "0.19.0"
 dependencies = [
  "getrandom 0.2.15",
  "mago-ast",
@@ -2581,19 +2575,6 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
-dependencies = [
- "bitflags",
- "errno",
- "libc",
- "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "rustix"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dade4812df5c384711475be5fcd8c162555352945401aed22a35bffeab61f657"
@@ -2601,7 +2582,7 @@ dependencies = [
  "bitflags",
  "errno",
  "libc",
- "linux-raw-sys 0.9.2",
+ "linux-raw-sys",
  "windows-sys 0.59.0",
 ]
 
@@ -2981,7 +2962,7 @@ dependencies = [
  "fastrand",
  "getrandom 0.3.1",
  "once_cell",
- "rustix 1.0.1",
+ "rustix",
  "windows-sys 0.59.0",
 ]
 
@@ -2996,11 +2977,11 @@ dependencies = [
 
 [[package]]
 name = "terminal_size"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5352447f921fda68cf61b4101566c0bdb5104eff6804d0678e5227580ab6a4e9"
+checksum = "45c6481c4829e4cc63825e62c49186a34538b7b2750b73b266581ffb612fb5ed"
 dependencies = [
- "rustix 0.38.44",
+ "rustix",
  "windows-sys 0.59.0",
 ]
 
@@ -3732,7 +3713,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d65cbf2f12c15564212d48f4e3dfb87923d25d611f2aed18f4cb23f0413d89e"
 dependencies = [
  "libc",
- "rustix 1.0.1",
+ "rustix",
 ]
 
 [[package]]
