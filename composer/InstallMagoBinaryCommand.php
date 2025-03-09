@@ -166,6 +166,9 @@ final class InstallMagoBinaryCommand extends BaseCommand
     }
 
     /**
+     * @mago-expect best-practices/no-else-clause
+     * @mago-expect best-practices/no-boolean-literal-comparison
+     *
      * @return array{platform: string, executable: string, storage_dir: string}
      */
     private function detectPlatformInfo(ProcessExecutor $process_executor, string $version): array

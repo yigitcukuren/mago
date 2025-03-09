@@ -64,6 +64,9 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
         ];
     }
 
+    /**
+     * @mago-expect strictness/no-shorthand-ternary
+     */
     public function onPackageEvent(PackageEvent $event): void
     {
         if (!$this->isMagoPackageEvent($event)) {
@@ -87,6 +90,9 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
         ]));
     }
 
+    /**
+     * @mago-expect best-practices/no-else-clause
+     */
     private function isMagoPackageEvent(PackageEvent $event): bool
     {
         $operation = $event->getOperation();
