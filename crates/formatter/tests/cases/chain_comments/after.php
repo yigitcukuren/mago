@@ -18,6 +18,10 @@ final class MenuFactory implements MenuFactoryInterface
                 ->unsetAll()
                 // set any other parameters defined by the menu item
                 ->setAll($routeParameters);
+
+            $mainTemplate = $this->cleanupTemplate($template)
+                // Cleanup head, we'll insert it after having parsed the DOM
+                ->replaceRegex('/<head>((.|\n)*?)<\/head>/', '<head></head>');
         }
     }
 }

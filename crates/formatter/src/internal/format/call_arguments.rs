@@ -415,13 +415,14 @@ fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argumen
             || penultimate_argument_comments
             || matches!(penultimate_argument, Some(argument) if argument.value().node_kind() != last_argument_value.node_kind()))
         && (argument_list.arguments.len() != 2
-            ||penultimate_argument_comments
+            || penultimate_argument_comments
             || !matches!(last_argument_value, Expression::Array(_) | Expression::LegacyArray(_))
             || !matches!(penultimate_argument.map(|a| a.value()), Some(Expression::Closure(c)) if c.use_clause.is_none()))
         && (argument_list.arguments.len() != 2
             || penultimate_argument_comments
             || !matches!(penultimate_argument.map(|a| a.value()), Some(Expression::Array(_) | Expression::LegacyArray(_)))
-            || !matches!(last_argument_value, Expression::Closure(c) if c.use_clause.is_none()))
+            || !matches!(last_argument_value, Expression::Closure(c) if c.use_clause.is_none())
+        )
 }
 
 fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {

@@ -93,6 +93,31 @@ impl ClassLikeName {
             ClassLikeName::Trait(_) => "Trait",
         }
     }
+
+    #[inline]
+    pub const fn is_class(&self) -> bool {
+        matches!(self, ClassLikeName::Class(_))
+    }
+
+    #[inline]
+    pub const fn is_interface(&self) -> bool {
+        matches!(self, ClassLikeName::Interface(_))
+    }
+
+    #[inline]
+    pub const fn is_enum(&self) -> bool {
+        matches!(self, ClassLikeName::Enum(_))
+    }
+
+    #[inline]
+    pub const fn is_trait(&self) -> bool {
+        matches!(self, ClassLikeName::Trait(_))
+    }
+
+    #[inline]
+    pub const fn is_anonymous_class(&self) -> bool {
+        matches!(self, ClassLikeName::AnonymousClass(_))
+    }
 }
 
 impl ClassLikeMemberName {

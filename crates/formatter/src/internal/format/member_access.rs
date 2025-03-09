@@ -11,6 +11,8 @@ use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::parens::instantiation_needs_parens;
 use crate::internal::utils::unwrap_parenthesized;
 
+use super::misc;
+
 #[derive(Debug)]
 pub(super) struct MemberAccessChain<'a> {
     pub base: &'a Expression,
@@ -27,7 +29,44 @@ pub(super) enum MemberAccess<'a> {
 }
 
 impl<'a> MemberAccess<'a> {
-    pub fn get_arguments_list(&self) -> Option<&'a ArgumentList> {
+    #[inline]
+    const fn is_property_access(&self) -> bool {
+        matches!(self, MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_))
+    }
+
+    #[inline]
+    const fn get_operator_as_str(&self) -> &'static str {
+        match self {
+            MemberAccess::PropertyAccess(_) | MemberAccess::MethodCall(_) => "->",
+            MemberAccess::NullSafePropertyAccess(_) | MemberAccess::NullSafeMethodCall(_) => "?->",
+            MemberAccess::StaticMethodCall(_) => "::",
+        }
+    }
+
+    #[inline]
+    const fn get_operator_span(&self) -> Span {
+        match self {
+            MemberAccess::PropertyAccess(c) => c.arrow,
+            MemberAccess::NullSafePropertyAccess(c) => c.question_mark_arrow,
+            MemberAccess::MethodCall(c) => c.arrow,
+            MemberAccess::NullSafeMethodCall(c) => c.question_mark_arrow,
+            MemberAccess::StaticMethodCall(c) => c.double_colon,
+        }
+    }
+
+    #[inline]
+    const fn get_selector(&self) -> &'a ClassLikeMemberSelector {
+        match self {
+            MemberAccess::PropertyAccess(c) => &c.property,
+            MemberAccess::NullSafePropertyAccess(c) => &c.property,
+            MemberAccess::MethodCall(c) => &c.method,
+            MemberAccess::NullSafeMethodCall(c) => &c.method,
+            MemberAccess::StaticMethodCall(c) => &c.method,
+        }
+    }
+
+    #[inline]
+    fn get_arguments_list(&self) -> Option<&'a ArgumentList> {
         match self {
             MemberAccess::MethodCall(call) => Some(&call.argument_list),
             MemberAccess::NullSafeMethodCall(call) => Some(&call.argument_list),
@@ -59,6 +98,14 @@ impl MemberAccessChain<'_> {
 
     #[inline]
     pub fn is_eligible_for_chaining(&self, f: &FormatterState) -> bool {
+        if f.settings.preserve_breaking_member_access_chain && self.is_already_broken(f) {
+            return true;
+        }
+
+        if self.has_comments_in_chain(f) {
+            return true;
+        }
+
         let score = self.get_eligibility_score();
         let threshold = 'threshold: {
             match self.base {
@@ -114,6 +161,75 @@ impl MemberAccessChain<'_> {
     }
 
     #[inline]
+    fn is_already_broken(&self, f: &FormatterState) -> bool {
+        for (i, access) in self.accesses.iter().enumerate() {
+            if i == 0 {
+                continue; // Skip the first access since we need previous selector
+            }
+
+            let prev_access = &self.accesses[i - 1];
+            let prev_selector = prev_access.get_selector();
+            let prev_selector_end = match prev_access.get_arguments_list() {
+                Some(args) => args.span().end,
+                None => prev_selector.span().end,
+            };
+
+            let current_op_span = access.get_operator_span();
+
+            if misc::has_new_line_in_range(f.source_text, prev_selector_end.offset, current_op_span.start.offset) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    #[inline]
+    fn has_comments_in_chain(&self, f: &FormatterState) -> bool {
+        // Check if there are comments after the base expression
+        if let Some(first_access) = self.accesses.first() {
+            let base_end = self.base.span().end;
+            let first_op_start = first_access.get_operator_span().start;
+
+            // Check for comments between base and first operator
+            if f.has_inner_comment(Span::new(base_end, first_op_start)) {
+                return true;
+            }
+        }
+
+        // Check for comments between chain elements
+        for (i, access) in self.accesses.iter().enumerate() {
+            if i == 0 {
+                continue; // Skip the first access as we already checked between base and it
+            }
+
+            let prev_access = &self.accesses[i - 1];
+            let prev_selector = prev_access.get_selector();
+            let prev_end = match prev_access.get_arguments_list() {
+                Some(args) => args.span().end,
+                None => prev_selector.span().end,
+            };
+
+            let current_op_start = access.get_operator_span().start;
+
+            // Check for comments between previous selector/args and current operator
+            if f.has_inner_comment(Span::new(prev_end, current_op_start)) {
+                return true;
+            }
+
+            // Check for comments between operator and selector
+            let op_end = access.get_operator_span().end;
+            let selector_start = access.get_selector().span().start;
+
+            if f.has_inner_comment(Span::new(op_end, selector_start)) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    #[inline]
     fn must_break(&self, f: &FormatterState) -> bool {
         if self.is_first_link_static_method_call() && self.accesses.len() > 3 {
             return true;
@@ -137,21 +253,7 @@ impl MemberAccessChain<'_> {
             return must_break;
         }
 
-        for link in &self.accesses {
-            let span = match link {
-                MemberAccess::PropertyAccess(c) => c.arrow,
-                MemberAccess::NullSafePropertyAccess(c) => c.question_mark_arrow,
-                MemberAccess::MethodCall(c) => c.arrow,
-                MemberAccess::NullSafeMethodCall(c) => c.question_mark_arrow,
-                MemberAccess::StaticMethodCall(c) => c.double_colon,
-            };
-
-            if f.has_newline(span.start.offset, /* backwards */ true) {
-                return true;
-            }
-        }
-
-        false
+        self.is_already_broken(f)
     }
 
     #[inline]
@@ -204,29 +306,29 @@ pub(super) fn collect_member_access_chain(expr: &Expression) -> Option<MemberAcc
             Expression::Call(Call::StaticMethod(static_method_call)) if !member_access.is_empty() => {
                 member_access.push(MemberAccess::StaticMethodCall(static_method_call));
 
-                current_expr = &static_method_call.class;
+                current_expr = unwrap_parenthesized(&static_method_call.class);
 
                 break;
             }
             Expression::Access(Access::Property(property_access)) => {
                 member_access.push(MemberAccess::PropertyAccess(property_access));
 
-                current_expr = &property_access.object;
+                current_expr = unwrap_parenthesized(&property_access.object);
             }
             Expression::Access(Access::NullSafeProperty(null_safe_property_access)) => {
                 member_access.push(MemberAccess::NullSafePropertyAccess(null_safe_property_access));
 
-                current_expr = &null_safe_property_access.object;
+                current_expr = unwrap_parenthesized(&null_safe_property_access.object);
             }
             Expression::Call(Call::Method(method_call)) => {
                 member_access.push(MemberAccess::MethodCall(method_call));
 
-                current_expr = &method_call.object;
+                current_expr = unwrap_parenthesized(&method_call.object);
             }
             Expression::Call(Call::NullSafeMethod(null_safe_method_call)) => {
                 member_access.push(MemberAccess::NullSafeMethodCall(null_safe_method_call));
 
-                current_expr = &null_safe_method_call.object;
+                current_expr = unwrap_parenthesized(&null_safe_method_call.object);
             }
             _ => {
                 break;
@@ -263,21 +365,21 @@ pub(super) fn print_member_access_chain<'a>(
     {
         if let Some(first_chain_link) = accesses_iter.next() {
             // Format the base object and first method call together
-            let (operator, method) = match first_chain_link {
-                MemberAccess::PropertyAccess(c) => (format_op(f, c.arrow, "->"), c.property.format(f)),
-                MemberAccess::NullSafePropertyAccess(c) => {
-                    (format_op(f, c.question_mark_arrow, "?->"), c.property.format(f))
-                }
-                MemberAccess::MethodCall(c) => (format_op(f, c.arrow, "->"), c.method.format(f)),
-                MemberAccess::NullSafeMethodCall(c) => (format_op(f, c.question_mark_arrow, "?->"), c.method.format(f)),
-                MemberAccess::StaticMethodCall(c) => (format_op(f, c.double_colon, "::"), c.method.format(f)),
-            };
+            parts.push(format_op(f, first_chain_link.get_operator_span(), first_chain_link.get_operator_as_str()));
 
-            parts.push(operator);
-            parts.push(method);
+            let selector = first_chain_link.get_selector();
+            parts.push(selector.format(f));
+            if let Some(comments) = f.print_trailing_comments(selector.span()) {
+                parts.push(comments);
+            }
 
             if let Some(argument_list) = first_chain_link.get_arguments_list() {
-                parts.push(Document::Group(Group::new(vec![print_argument_list(f, argument_list, false)])));
+                let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
+                if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
+                    formatted_argument_list.push(comments);
+                }
+
+                parts.push(Document::Group(Group::new(formatted_argument_list)));
             }
         }
     }
@@ -295,36 +397,9 @@ pub(super) fn print_member_access_chain<'a>(
             vec![] // No newline if in fluent chain and last was property
         };
 
-        let (operator, selector) = match chain_link {
-            MemberAccess::PropertyAccess(c) => {
-                last_was_property = true;
-
-                (format_op(f, c.arrow, "->"), &c.property)
-            }
-            MemberAccess::NullSafePropertyAccess(c) => {
-                last_was_property = true;
-                (format_op(f, c.question_mark_arrow, "?->"), &c.property)
-            }
-            MemberAccess::MethodCall(c) => {
-                last_was_property = false;
-                (format_op(f, c.arrow, "->"), &c.method)
-            }
-            MemberAccess::NullSafeMethodCall(c) => {
-                last_was_property = false;
-                (format_op(f, c.question_mark_arrow, "?->"), &c.method)
-            }
-            MemberAccess::StaticMethodCall(c) => {
-                last_was_property = false;
-                (format_op(f, c.double_colon, "::"), &c.method)
-            }
-        };
-
-        contents.push(operator);
+        contents.push(format_op(f, chain_link.get_operator_span(), chain_link.get_operator_as_str()));
+        let selector = chain_link.get_selector();
         contents.push(selector.format(f));
-        if let Some(comments) = f.print_trailing_comments(selector.span()) {
-            contents.push(comments);
-        }
-
         if let Some(argument_list) = chain_link.get_arguments_list() {
             let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
             if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
@@ -335,6 +410,8 @@ pub(super) fn print_member_access_chain<'a>(
         }
 
         parts.push(Document::Indent(contents));
+
+        last_was_property = chain_link.is_property_access();
     }
 
     if member_access_chain.must_break(f) {
@@ -369,6 +446,7 @@ fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
 
 fn format_op<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
     let leading = f.print_leading_comments(span);
+
     let doc = Document::String(operator);
     let doc = f.print_comments(leading, doc, None);
 

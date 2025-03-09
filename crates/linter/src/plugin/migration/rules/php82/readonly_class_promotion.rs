@@ -104,6 +104,11 @@ impl Rule for ReadonlyClassPromotionRule {
         let mut property_count = 0;
         for member in class.members.iter() {
             match member {
+                ClassLikeMember::TraitUse(_) => {
+                    // We can't promote classes that use traits
+
+                    return LintDirective::default();
+                }
                 ClassLikeMember::Property(property) => {
                     property_count += 1;
                     if !property.modifiers().contains_readonly() {

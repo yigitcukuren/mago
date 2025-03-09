@@ -21,4 +21,13 @@ final class EntityRepository implements EntityRepositoryInterface {
             }
         }
     }
+    
+    
+    private function isValidBoolean(mixed $value): bool
+   {
+       return (
+           $value === false || $value === 'false' || $value === 0 || $value === '0' ||
+           $value === true || $value === 'true' || $value === 1 || $value === '1'
+       );
+   }
 }

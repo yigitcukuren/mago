@@ -540,9 +540,7 @@ fn reflect_class_like_property<'ast>(
 
 #[inline]
 pub fn modifier_to_visibility(modifier: Option<&Modifier>) -> Option<ClassLikeMemberVisibilityReflection> {
-    let Some(m) = modifier else { return None };
-
-    Some(match m {
+    Some(match modifier? {
         Modifier::Public(m) | Modifier::PublicSet(m) => ClassLikeMemberVisibilityReflection::Public { span: m.span },
         Modifier::Protected(m) | Modifier::ProtectedSet(m) => {
             ClassLikeMemberVisibilityReflection::Protected { span: m.span }

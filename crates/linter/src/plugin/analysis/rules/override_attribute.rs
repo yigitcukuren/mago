@@ -243,7 +243,7 @@ impl Rule for OverrideAttributeRule {
                 continue;
             };
 
-            let Some(parent_class_name) = parent_class_names.iter().next() else {
+            let Some(parent_class_name) = parent_class_names.iter().find(|c| !c.is_trait()) else {
                 continue;
             };
 

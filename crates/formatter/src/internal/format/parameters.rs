@@ -63,7 +63,8 @@ pub(super) fn print_function_like_parameters<'a>(
         }
 
         if f.settings.preserve_breaking_parameter_list
-            && parameter_list.parameters.len() > 1
+            && (parameter_list.parameters.len() > 1
+                || parameter_list.parameters.iter().any(|p| p.is_promoted_property()))
             && misc::has_new_line_in_range(
                 f.source_text,
                 parameter_list.left_parenthesis.start.offset,
