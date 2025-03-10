@@ -181,7 +181,7 @@ impl<'a> FormatterState<'a> {
     ) -> Comment {
         let printed = self.print_comment(comment);
 
-        if previous.is_some_and(|c| c.has_line_suffix && !c.is_block)
+        if previous.is_some_and(|c| c.has_line_suffix && !c.is_inline_comment())
             || self.has_newline(comment.start, /* backwards */ true)
         {
             parts.push(printed);
@@ -200,7 +200,7 @@ impl<'a> FormatterState<'a> {
             return comment.with_line_suffix(true);
         }
 
-        if !comment.is_block || comment.is_single_line || previous.is_some_and(|c| c.has_line_suffix) {
+        if comment.is_inline_comment() || previous.is_some_and(|c| c.has_line_suffix) {
             parts.push(Document::LineSuffix(vec![Document::space(), printed]));
 
             return comment.with_line_suffix(true);
@@ -299,7 +299,7 @@ impl<'a> FormatterState<'a> {
     fn print_comment(&self, comment: Comment) -> Document<'a> {
         let content = &self.source_text[comment.start..comment.end];
 
-        if !comment.is_block {
+        if comment.is_inline_comment() {
             return Document::String(content);
         }
 

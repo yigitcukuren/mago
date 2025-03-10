@@ -58,4 +58,8 @@ impl Comment {
 
         true
     }
+
+    pub fn is_inline_comment(&self) -> bool {
+        !self.is_block || self.is_single_line
+    }
 }

@@ -6,6 +6,7 @@ use crate::document::Document;
 use crate::document::Group;
 use crate::document::Line;
 use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 
 pub fn print_statement_sequence<'a>(f: &mut FormatterState<'a>, stmts: &'a Sequence<Statement>) -> Vec<Document<'a>> {
@@ -154,10 +155,8 @@ fn should_add_new_line_or_space_after_stmt<'a>(
         _ => {
             if f.has_newline(stmt.span().end_position().offset, false) {
                 true
-            } else if let Some(Statement::ClosingTag(tag)) = stmts.get(i + 1) {
-                if f.skip_spaces_and_new_lines(Some(tag.span.end.offset), false).is_some() {
-                    should_add_space = true;
-                }
+            } else if let Some(Statement::ClosingTag(_)) = stmts.get(i + 1) {
+                should_add_space = !f.has_comment(stmt.span(), CommentFlags::Trailing);
 
                 false
             } else {

@@ -78,6 +78,7 @@ final readonly class Awaitable implements PromiseInterface
                 } catch (Throwable $throwable) {
                     $iterator->error($throwable);
                 }
+
                 // @codeCoverageIgnoreEnd
             });
         }

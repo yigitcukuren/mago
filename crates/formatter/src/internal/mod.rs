@@ -146,13 +146,13 @@ impl<'a> FormatterState<'a> {
             idx = self.skip_spaces(idx, /* backwards */ false);
         }
 
-        idx = self.skip_single_line_comments(idx);
+        idx = self.skip_inline_comments(idx);
         idx = self.skip_newline(idx, /* backwards */ false);
         idx.is_some_and(|idx| self.has_newline(idx, /* backwards */ false))
     }
 
     #[inline]
-    fn skip_single_line_comments(&self, start_index: Option<usize>) -> Option<usize> {
+    fn skip_inline_comments(&self, start_index: Option<usize>) -> Option<usize> {
         let start_index = start_index?;
         if start_index + 1 >= self.source_text.len() {
             return Some(start_index); // Not enough characters to check for comment
@@ -162,16 +162,32 @@ impl<'a> FormatterState<'a> {
             || (self.source_text[start_index..].starts_with("#")
                 && !self.source_text[start_index + 1..].starts_with("["))
         {
-            self.skip_everything_but_new_line(Some(start_index), false)
-        } else {
-            Some(start_index)
+            return self.skip_everything_but_new_line(Some(start_index), false);
         }
+
+        if self.source_text[start_index..].starts_with("/*") {
+            // Find the closing */
+            if let Some(end_pos) = self.source_text[start_index + 2..].find("*/") {
+                let end_index = start_index + 2 + end_pos + 2; // +2 for the "*/" itself
+
+                // Check if there's a newline between /* and */
+                let comment_text = &self.source_text[start_index..end_index];
+                if !comment_text.contains('\n') && !comment_text.contains('\r') {
+                    return Some(end_index);
+                }
+
+                // If there's a newline, we don't consider it an inline comment
+                // so we don't skip it
+            }
+        }
+
+        Some(start_index)
     }
 
     #[inline]
     fn skip_to_line_end(&self, start_index: Option<usize>) -> Option<usize> {
         let mut index = self.skip(start_index, false, |c| matches!(c, b' ' | b'\t' | b',' | b';'));
-        index = self.skip_single_line_comments(index);
+        index = self.skip_inline_comments(index);
         index
     }
 

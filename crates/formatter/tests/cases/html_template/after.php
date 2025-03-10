@@ -10,7 +10,8 @@
     $level1 = 'Level 1';
     ?>
     <div class="level1">
-        <?php echo $level1 /* hrrr */; ?>
+        <?php echo $level1; /* hrrr */
+        ?>
         <?php
 
         // This is a comment
