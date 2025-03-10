@@ -21,6 +21,9 @@ members = ["crates/*"]
 
 [workspace.lints.clippy]
 large_enum_variant = { level = "allow" }
+print_stdout = { level = "forbid"}
+print_stderr = { level = "forbid"}
+dbg_macro = { level = "forbid"}
 
 [workspace.dependencies]
 mago-ast = { path = "crates/ast", version = "0.19.3" }
@@ -90,9 +93,6 @@ memchr = "2.7.4"
 parking_lot = "0.12.3"
 dialoguer = "0.11.0"
 unicode-width = { version = "0.2.0", default-features = false }
-
-[lints]
-workspace = true
 
 [dependencies]
 mago-ast = { workspace = true }
