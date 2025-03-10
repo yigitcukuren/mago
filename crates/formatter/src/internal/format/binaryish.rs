@@ -4,6 +4,7 @@ use node::NodeKind;
 
 use crate::document::Document;
 use crate::document::Group;
+use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::internal::FormatterState;
 use crate::internal::binaryish::should_flatten;
@@ -105,7 +106,7 @@ pub(super) fn print_binaryish_expression<'a>(
     // Don't include the initial expression in the indentation
     // level. The first item is guaranteed to be the first
     // left-most expression.
-    head_parts.push(Document::Indent(tail_parts));
+    head_parts.push(Document::IndentIfBreak(IndentIfBreak::new(tail_parts)));
 
     Document::Group(Group::new(head_parts))
 }
@@ -180,7 +181,16 @@ pub(super) fn print_binaryish_expressions<'a>(
 
 pub(super) fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
     match unwrap_parenthesized(expression) {
-        Expression::Binary(operation) => should_inline_logical_or_coalesce_rhs(&operation.rhs, &operation.operator),
+        Expression::Binary(operation) => {
+            if should_inline_logical_or_coalesce_rhs(&operation.rhs, &operation.operator) {
+                return true;
+            }
+
+            match operation.lhs.as_ref() {
+                Expression::Binary(_) => should_inline_logical_or_coalesce_expression(&operation.lhs),
+                left => should_inline_logical_or_coalesce_rhs(left, &operation.operator),
+            }
+        }
         _ => false,
     }
 }

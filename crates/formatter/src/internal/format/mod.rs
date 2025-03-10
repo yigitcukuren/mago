@@ -1729,9 +1729,11 @@ impl<'a> Format<'a> for TryCatchClause {
             Document::Group(Group::new(vec![
                 self.catch.format(f),
                 Document::space(),
+                f.print_leading_comments(self.left_parenthesis).unwrap_or(Document::empty()),
                 Document::String("("),
                 Document::Group(Group::new(context)),
                 Document::String(")"),
+                f.print_trailing_comments(self.right_parenthesis).unwrap_or(Document::empty()),
                 Document::space(),
                 self.block.format(f),
             ]))

@@ -9,9 +9,9 @@ use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::binaryish::should_inline_logical_or_coalesce_expression;
+use crate::internal::format::member_access::collect_member_access_chain;
+use crate::internal::format::misc::is_simple_expression;
 use crate::internal::utils::unwrap_parenthesized;
-
-use super::member_access::collect_member_access_chain;
 
 /// Represents nodes in the Abstract Syntax Tree (AST) that involve assignment-like operations.
 #[derive(Debug, Clone, Copy)]
@@ -166,6 +166,12 @@ fn choose_layout<'a, 'b>(
         }
     }
 
+    if let Expression::Binary(Binary { lhs, rhs, .. }) = rhs_expression {
+        if is_member_chain_or_single_arg_call(f, lhs.as_ref()) && is_simple_expression(rhs.as_ref()) {
+            return Layout::NeverBreakAfterOperator;
+        }
+    }
+
     let can_break_left_doc = lhs.can_break();
     if is_complex_destructuring(assignment_like_node)
         || (is_arrow_function_variable_declarator(assignment_like_node) && can_break_left_doc)
@@ -195,7 +201,40 @@ fn choose_layout<'a, 'b>(
     Layout::Fluid
 }
 
-fn is_assignment(expression: &Expression) -> bool {
+#[inline]
+fn is_member_chain_or_single_arg_call<'a>(f: &FormatterState<'a>, expr: &'a Expression) -> bool {
+    let is_chain = |e| collect_member_access_chain(e).is_some_and(|c| c.is_eligible_for_chaining(f));
+
+    if is_chain(expr) {
+        return true;
+    }
+
+    if let Expression::Call(call) = expr {
+        if let Call::Function(function_call) = call {
+            if function_call.argument_list.arguments.len() == 1 {
+                if let Some(arg) = function_call.argument_list.arguments.first() {
+                    if is_chain(arg.value()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        if let Call::Method(method_call) = call {
+            if method_call.argument_list.arguments.len() == 1 {
+                if let Some(arg) = method_call.argument_list.arguments.first() {
+                    if is_chain(arg.value()) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+#[inline]
+const fn is_assignment(expression: &Expression) -> bool {
     matches!(expression, Expression::Assignment(_))
 }
 
@@ -203,6 +242,7 @@ fn is_assignment(expression: &Expression) -> bool {
 ///
 /// A destruction assignment is considered complex if it has more than two elements
 ///  and at least one of them is a key-value pair.
+#[inline]
 fn is_complex_destructuring(assignment_like_node: &AssignmentLikeNode<'_>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
@@ -221,6 +261,7 @@ fn is_complex_destructuring(assignment_like_node: &AssignmentLikeNode<'_>) -> bo
     }
 }
 
+#[inline]
 fn is_arrow_function_variable_declarator(assignment_like_node: &AssignmentLikeNode<'_>) -> bool {
     match assignment_like_node {
         AssignmentLikeNode::AssignmentOperation(assignment) => {
@@ -235,6 +276,7 @@ fn is_arrow_function_variable_declarator(assignment_like_node: &AssignmentLikeNo
 
 const MIN_OVERLAP_FOR_BREAK: usize = 3;
 
+#[inline]
 fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_node: &AssignmentLikeNode<'a>) -> bool {
     let width = match assignment_like_node {
         AssignmentLikeNode::ClassLikeConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
@@ -264,6 +306,7 @@ fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_n
     width < f.settings.tab_width + MIN_OVERLAP_FOR_BREAK
 }
 
+#[inline]
 fn should_break_after_operator<'a>(
     f: &FormatterState<'a>,
     rhs_expression: &'a Expression,
@@ -328,6 +371,7 @@ fn should_break_after_operator<'a>(
     false
 }
 
+#[inline]
 fn is_poorly_breakable_member_or_call_chain<'a>(f: &FormatterState<'a>, rhs_expression: &'a Expression) -> bool {
     if collect_member_access_chain(rhs_expression).is_some_and(|c| c.is_eligible_for_chaining(f)) {
         return false;
@@ -403,6 +447,7 @@ fn is_poorly_breakable_member_or_call_chain<'a>(f: &FormatterState<'a>, rhs_expr
     true
 }
 
+#[inline]
 fn is_lone_short_argument_list<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     if let Some(first_argument) = argument_list.arguments.first() {
         if argument_list.arguments.len() == 1 {
@@ -417,6 +462,7 @@ fn is_lone_short_argument_list<'a>(f: &FormatterState<'a>, argument_list: &'a Ar
 
 const LONE_SHORT_ARGUMENT_THRESHOLD_RATE: f32 = 0.25;
 
+#[inline]
 fn is_lone_short_argument<'a>(f: &FormatterState<'a>, argument_value: &'a Expression) -> bool {
     let argument_span = argument_value.span();
     if f.has_comment(argument_span, CommentFlags::all()) {

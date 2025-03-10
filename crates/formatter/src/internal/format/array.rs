@@ -125,6 +125,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
     if array_like.is_empty() {
         if let Some(dangling_comments) = f.print_dangling_comments(array_like.span(), true) {
             parts.push(dangling_comments);
+        } else {
             parts.push(Document::Line(Line::soft()));
         }
 

@@ -810,6 +810,9 @@ impl<'a> Format<'a> for Match {
             };
 
             contents.push(Document::String("{"));
+            if let Some(comments) = f.print_trailing_comments(self.left_brace) {
+                contents.push(comments);
+            }
 
             if !self.arms.is_empty() {
                 let mut inner_contents =
@@ -829,6 +832,9 @@ impl<'a> Format<'a> for Match {
             }
 
             contents.push(Document::String("}"));
+            if let Some(comments) = f.print_trailing_comments(self.right_brace) {
+                contents.push(comments);
+            }
 
             Document::Group(Group::new(contents).with_break(true))
         })

@@ -125,6 +125,7 @@ test_case!(preserve_breaking_attribute_list_disabled);
 test_case!(preserve_breaking_conditional_expression);
 test_case!(preserve_breaking_conditional_expression_disabled);
 test_case!(hooks_always_break);
+test_case!(comments_are_preserved);
 
 // GitHub issue test cases
 test_case!(issue_122);

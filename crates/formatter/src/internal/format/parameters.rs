@@ -5,8 +5,7 @@ use crate::document::*;
 use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
-
-use super::misc;
+use crate::internal::format::misc;
 
 pub(super) fn should_hug_the_only_parameter<'a>(
     f: &mut FormatterState<'a>,

@@ -17,25 +17,26 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
     inline_empty: bool,
 ) -> Document<'a> {
     let length = nodes.len();
-    let mut contents = vec![Document::String("{"), {
-        if length == 0 {
-            Document::empty()
-        } else {
-            let mut formatted = vec![Document::Line(Line::hard())];
-            for (i, item) in nodes.iter().enumerate() {
-                formatted.push(item.format(f));
+    let mut contents = vec![Document::String("{")];
+    if let Some(c) = f.print_trailing_comments(*left_brace) {
+        contents.push(c);
+    }
 
-                if i < (length - 1) {
+    if length != 0 {
+        let mut formatted = vec![Document::Line(Line::hard())];
+        for (i, item) in nodes.iter().enumerate() {
+            formatted.push(item.format(f));
+
+            if i < (length - 1) {
+                formatted.push(Document::Line(Line::hard()));
+                if f.is_next_line_empty(item.span()) {
                     formatted.push(Document::Line(Line::hard()));
-                    if f.is_next_line_empty(item.span()) {
-                        formatted.push(Document::Line(Line::hard()));
-                    }
                 }
             }
-
-            Document::Indent(formatted)
         }
-    }];
+
+        contents.push(Document::Indent(formatted));
+    }
 
     if let Some(comments) = f.print_dangling_comments(left_brace.join(*right_brace), true) {
         contents.push(comments);
@@ -44,6 +45,9 @@ pub(super) fn print_block_of_nodes<'a, T: Format<'a> + HasSpan>(
     }
 
     contents.push(Document::String("}"));
+    if let Some(comments) = f.print_trailing_comments(*right_brace) {
+        contents.push(comments);
+    }
 
     Document::Group(Group::new(contents))
 }
@@ -56,6 +60,10 @@ pub(super) fn print_block<'a>(
 ) -> Document<'a> {
     let mut contents = vec![];
     contents.push(Document::String("{"));
+    if let Some(c) = f.print_trailing_comments(*left_brace) {
+        contents.push(c);
+    }
+
     let has_body = stmts.iter().any(|stmt| !matches!(stmt, Statement::Noop(_)));
     let has_inline_body = has_body && {
         matches!((stmts.first(), stmts.last()), (Some(Statement::ClosingTag(_)), Some(Statement::OpeningTag(_))))
@@ -112,6 +120,9 @@ pub(super) fn print_block<'a>(
     }
 
     contents.push(Document::String("}"));
+    if let Some(comments) = f.print_trailing_comments(*right_brace) {
+        contents.push(comments);
+    }
 
     Document::Group(Group::new(contents).with_break(should_break))
 }

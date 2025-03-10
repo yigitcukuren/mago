@@ -8,10 +8,9 @@ use crate::document::Line;
 use crate::internal::FormatterState;
 use crate::internal::format::Format;
 use crate::internal::format::call_arguments::print_argument_list;
+use crate::internal::format::misc;
 use crate::internal::parens::instantiation_needs_parens;
 use crate::internal::utils::unwrap_parenthesized;
-
-use super::misc;
 
 #[derive(Debug)]
 pub(super) struct MemberAccessChain<'a> {
