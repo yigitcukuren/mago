@@ -44,7 +44,7 @@ impl<'a> FormatterState<'a> {
 
         while let Some(comment) = peekable_trivias.peek() {
             let mut should_break = true;
-            let comment = Comment::from_trivia(comment);
+            let comment = Comment::from_trivia(self.source, comment);
 
             if filter(&comment) {
                 if comment.end <= range.start.offset {
@@ -88,7 +88,7 @@ impl<'a> FormatterState<'a> {
         let peekable_trivias = self.comments.clone();
 
         for comment in peekable_trivias {
-            let comment = Comment::from_trivia(&comment);
+            let comment = Comment::from_trivia(self.source, &comment);
             if comment.start >= range.start.offset && comment.end <= range.end.offset {
                 return true;
             }
@@ -101,7 +101,7 @@ impl<'a> FormatterState<'a> {
     pub(crate) fn print_leading_comments(&mut self, range: Span) -> Option<Document<'a>> {
         let mut parts = vec![];
         while let Some(comment) = self.comments.peek() {
-            let comment = Comment::from_trivia(comment);
+            let comment = Comment::from_trivia(self.source, comment);
             // Comment before the span
             if comment.end <= range.start.offset {
                 self.comments.next();
@@ -153,7 +153,7 @@ impl<'a> FormatterState<'a> {
         let mut parts = vec![];
         let mut previous_comment: Option<Comment> = None;
         while let Some(comment) = self.comments.peek() {
-            let comment = Comment::from_trivia(comment);
+            let comment = Comment::from_trivia(self.source, comment);
             // Trailing comment if there is nothing in between.
             if range.end.offset < comment.start
                 && self.source_text[range.end.offset..comment.start].chars().all(|c| c == ' ' || c == ';' || c == ',')
@@ -200,7 +200,7 @@ impl<'a> FormatterState<'a> {
             return comment.with_line_suffix(true);
         }
 
-        if !comment.is_block || previous.is_some_and(|c| c.has_line_suffix) {
+        if !comment.is_block || comment.is_single_line || previous.is_some_and(|c| c.has_line_suffix) {
             parts.push(Document::LineSuffix(vec![Document::space(), printed]));
 
             return comment.with_line_suffix(true);
@@ -217,7 +217,7 @@ impl<'a> FormatterState<'a> {
         let mut must_break = false;
         while let Some(comment) = self.comments.peek() {
             let span = comment.span;
-            let comment = Comment::from_trivia(comment);
+            let comment = Comment::from_trivia(self.source, comment);
             // Comment within the span
             if comment.start >= range.start.offset && comment.end <= range.end.offset {
                 must_break = must_break || !comment.is_block;
@@ -264,7 +264,7 @@ impl<'a> FormatterState<'a> {
         let mut parts = vec![];
         while let Some(comment) = self.comments.peek() {
             let span = comment.span;
-            let comment = Comment::from_trivia(comment);
+            let comment = Comment::from_trivia(self.source, comment);
             // Comment within the span
             if comment.end <= range.end.offset {
                 if !indented && self.is_next_line_empty(span) {

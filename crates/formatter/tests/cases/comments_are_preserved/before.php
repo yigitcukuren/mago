@@ -119,3 +119,17 @@ goto a; // comment
 a: // comment
 
 echo 1; // comment
+
+function foo() // comment
+{ // comment
+    // comment
+} // comment
+
+function foo() // comment
+{ // comment
+    if (1) { // comment
+        // comment
+    } // comment
+
+    // comment
+} // comment
