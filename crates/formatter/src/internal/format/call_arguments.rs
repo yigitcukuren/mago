@@ -13,7 +13,7 @@ use crate::internal::format::misc::should_hug_expression;
 use crate::internal::utils::could_expand_value;
 use crate::internal::utils::will_break;
 
-pub(super) fn print_call_arguments<'a>(f: &mut FormatterState<'a>, expression: &CallLikeNode<'a>) -> Document<'a> {
+pub(super) fn print_call_arguments<'a>(f: &mut FormatterState<'a>, expression: CallLikeNode<'a>) -> Document<'a> {
     let Some(argument_list) = expression.arguments() else {
         return if (expression.is_instantiation() && f.settings.parentheses_in_new_expression)
             || (expression.is_exit_or_die_construct() && f.settings.parentheses_in_exit_and_die)

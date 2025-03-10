@@ -4,6 +4,7 @@ use mago_span::Span;
 
 use crate::document::Document;
 use crate::document::Group;
+use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::internal::FormatterState;
 use crate::internal::format::Format;
@@ -161,6 +162,16 @@ impl MemberAccessChain<'_> {
 
     #[inline]
     fn is_already_broken(&self, f: &FormatterState) -> bool {
+        // Check if there are comments after the base expression
+        if let Some(first_access) = self.accesses.first() {
+            let base_end = self.base.span().end;
+            let first_op_start = first_access.get_operator_span().start;
+
+            if misc::has_new_line_in_range(f.source_text, base_end.offset, first_op_start.offset) {
+                return true;
+            }
+        }
+
         for (i, access) in self.accesses.iter().enumerate() {
             if i == 0 {
                 continue; // Skip the first access since we need previous selector
@@ -358,13 +369,18 @@ pub(super) fn print_member_access_chain<'a>(
     let mut accesses_iter = member_access_chain.accesses.iter();
 
     // Handle the first method call
+
     if !f.settings.method_chain_breaking_style.is_next_line()
         || member_access_chain.is_first_link_static_method_call()
         || matches!(member_access_chain.base, Expression::Variable(Variable::Direct(variable)) if f.interner.lookup(&variable.name) == "$this")
     {
         if let Some(first_chain_link) = accesses_iter.next() {
             // Format the base object and first method call together
-            parts.push(format_op(f, first_chain_link.get_operator_span(), first_chain_link.get_operator_as_str()));
+            parts.push(format_access_operator(
+                f,
+                first_chain_link.get_operator_span(),
+                first_chain_link.get_operator_as_str(),
+            ));
 
             let selector = first_chain_link.get_selector();
             parts.push(selector.format(f));
@@ -385,18 +401,20 @@ pub(super) fn print_member_access_chain<'a>(
 
     let fluent_access_chain_start = member_access_chain.find_fluent_access_chain_start();
     let mut last_was_property = false;
+    let must_break = member_access_chain.must_break(f);
+    let group_id = f.next_id();
 
     // Now handle the remaining method calls
     for (i, chain_link) in accesses_iter.enumerate() {
         let is_in_fluent_chain = fluent_access_chain_start.is_some_and(|start| i >= start);
 
         let mut contents = if !is_in_fluent_chain || !last_was_property {
-            vec![Document::Line(Line::soft())]
+            if must_break { vec![Document::Line(Line::hard())] } else { vec![Document::Line(Line::soft())] }
         } else {
             vec![] // No newline if in fluent chain and last was property
         };
 
-        contents.push(format_op(f, chain_link.get_operator_span(), chain_link.get_operator_as_str()));
+        contents.push(format_access_operator(f, chain_link.get_operator_span(), chain_link.get_operator_as_str()));
         let selector = chain_link.get_selector();
         contents.push(selector.format(f));
         if let Some(argument_list) = chain_link.get_arguments_list() {
@@ -408,17 +426,21 @@ pub(super) fn print_member_access_chain<'a>(
             contents.push(Document::Group(Group::new(formatted_argument_list)));
         }
 
-        parts.push(Document::Indent(contents));
+        if must_break {
+            parts.push(Document::Indent(contents));
+        } else {
+            parts.push(Document::IndentIfBreak(IndentIfBreak::new(contents).with_id(group_id)));
+        }
 
         last_was_property = chain_link.is_property_access();
     }
 
-    if member_access_chain.must_break(f) {
+    if must_break && !matches!(f.parent_node(), Node::Binary(_)) {
         parts.push(Document::BreakParent);
     }
 
     // Wrap everything in a group to manage line breaking
-    Document::Group(Group::new(parts))
+    Document::Group(Group::new(parts).with_id(group_id))
 }
 
 fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
@@ -443,7 +465,7 @@ fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
     }
 }
 
-fn format_op<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
+pub(super) fn format_access_operator<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
     let leading = f.print_leading_comments(span);
 
     let doc = Document::String(operator);
