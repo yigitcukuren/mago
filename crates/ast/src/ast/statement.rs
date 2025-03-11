@@ -103,10 +103,14 @@ impl Statement {
                 .map_or(implicit.terminator.is_closing_tag(), |statement| statement.terminates_scripting()),
             Statement::Use(r#use) => r#use.terminator.is_closing_tag(),
             Statement::Goto(goto) => goto.terminator.is_closing_tag(),
-            Statement::Declare(Declare { body: DeclareBody::Statement(stmt), .. })
-            | Statement::For(For { body: ForBody::Statement(stmt), .. })
-            | Statement::Foreach(Foreach { body: ForeachBody::Statement(stmt), .. })
-            | Statement::While(While { body: WhileBody::Statement(stmt), .. }) => stmt.terminates_scripting(),
+            Statement::Declare(Declare { body: DeclareBody::Statement(b), .. }) => b.terminates_scripting(),
+            Statement::Declare(Declare { body: DeclareBody::ColonDelimited(b), .. }) => b.terminator.is_closing_tag(),
+            Statement::For(For { body: ForBody::Statement(b), .. }) => b.terminates_scripting(),
+            Statement::For(For { body: ForBody::ColonDelimited(b), .. }) => b.terminator.is_closing_tag(),
+            Statement::Foreach(Foreach { body: ForeachBody::Statement(b), .. }) => b.terminates_scripting(),
+            Statement::Foreach(Foreach { body: ForeachBody::ColonDelimited(b), .. }) => b.terminator.is_closing_tag(),
+            Statement::While(While { body: WhileBody::Statement(b), .. }) => b.terminates_scripting(),
+            Statement::While(While { body: WhileBody::ColonDelimited(b), .. }) => b.terminator.is_closing_tag(),
             Statement::DoWhile(do_while) => do_while.terminator.is_closing_tag(),
             Statement::Continue(cont) => cont.terminator.is_closing_tag(),
             Statement::Break(brk) => brk.terminator.is_closing_tag(),
@@ -118,13 +122,14 @@ impl Statement {
                     .last()
                     .map_or(stmt.statement.terminates_scripting(), |clause| clause.statement.terminates_scripting()),
             },
+            Statement::If(If { body: IfBody::ColonDelimited(body), .. }) => body.terminator.is_closing_tag(),
             Statement::Return(ret) => ret.terminator.is_closing_tag(),
             Statement::Expression(expression_statement) => expression_statement.terminator.is_closing_tag(),
             Statement::Echo(echo) => echo.terminator.is_closing_tag(),
             Statement::Global(global) => global.terminator.is_closing_tag(),
             Statement::Static(r#static) => r#static.terminator.is_closing_tag(),
-            Statement::HaltCompiler(halt_compiler) => halt_compiler.terminator.is_closing_tag(),
             Statement::Unset(unset) => unset.terminator.is_closing_tag(),
+            Statement::HaltCompiler(_) => true,
             _ => false,
         }
     }

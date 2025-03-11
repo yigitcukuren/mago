@@ -51,6 +51,33 @@ pub struct ClassLikeMemberExpressionSelector {
     pub right_brace: Span,
 }
 
+impl ClassLikeMember {
+    #[inline(always)]
+    pub const fn is_trait_use(&self) -> bool {
+        matches!(self, ClassLikeMember::TraitUse(_))
+    }
+
+    #[inline(always)]
+    pub const fn is_constant(&self) -> bool {
+        matches!(self, ClassLikeMember::Constant(_))
+    }
+
+    #[inline(always)]
+    pub const fn is_property(&self) -> bool {
+        matches!(self, ClassLikeMember::Property(_))
+    }
+
+    #[inline(always)]
+    pub const fn is_enum_case(&self) -> bool {
+        matches!(self, ClassLikeMember::EnumCase(_))
+    }
+
+    #[inline(always)]
+    pub const fn is_method(&self) -> bool {
+        matches!(self, ClassLikeMember::Method(_))
+    }
+}
+
 impl Sequence<ClassLikeMember> {
     pub fn contains_trait_uses(&self) -> bool {
         self.iter().any(|member| matches!(member, ClassLikeMember::TraitUse(_)))

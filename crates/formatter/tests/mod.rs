@@ -132,3 +132,7 @@ test_case!(issue_122);
 test_case!(issue_123);
 test_case!(issue_128);
 test_case!(issue_130);
+test_case!(issue_138);
+test_case!(issue_149);
+test_case!(issue_150);
+test_case!(issue_151);

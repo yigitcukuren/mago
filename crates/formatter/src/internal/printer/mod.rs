@@ -74,7 +74,9 @@ impl<'a> Printer<'a> {
                     should_remeasure = self.handle_line(line, indentation, mode, document, should_remeasure);
                 }
                 Document::LineSuffix(docs) => self.handle_line_suffix(indentation, mode, docs),
-                Document::LineSuffixBoundary => self.handle_line_suffix_boundary(indentation, mode),
+                Document::LineSuffixBoundary => {
+                    should_remeasure = self.handle_line_suffix_boundary(indentation, mode, should_remeasure);
+                }
                 Document::IfBreak(if_break) => self.handle_if_break(if_break, indentation, mode),
                 Document::Fill(fill) => self.handle_fill(indentation, mode, fill),
                 Document::BreakParent => { /* No op */ }
@@ -269,14 +271,20 @@ impl<'a> Printer<'a> {
         self.line_suffix.push(Command { indentation, mode, document: Document::Array(docs) });
     }
 
-    fn handle_line_suffix_boundary(&mut self, indentation: Indentation<'a>, mode: Mode) {
+    fn handle_line_suffix_boundary(
+        &mut self,
+        indentation: Indentation<'a>,
+        mode: Mode,
+        mut should_remeasure: bool,
+    ) -> bool {
         if !self.line_suffix.is_empty() {
-            self.commands.push(Command {
-                indentation,
-                mode,
-                document: Document::Line(Line { hard: true, ..Line::default() }),
-            });
+            self.commands.push(Command::new(indentation, mode, Document::space()));
+            self.commands.extend(self.line_suffix.drain(..).rev());
+
+            should_remeasure = true;
         }
+
+        should_remeasure
     }
 
     fn handle_if_break(&mut self, if_break: IfBreak<'a>, indentation: Indentation<'a>, mode: Mode) {

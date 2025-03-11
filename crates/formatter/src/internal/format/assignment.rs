@@ -364,7 +364,7 @@ fn should_break_after_operator<'a>(
         };
     }
 
-    if current_expression.is_string_literal() || is_poorly_breakable_member_or_call_chain(f, rhs_expression) {
+    if is_poorly_breakable_member_or_call_chain(f, rhs_expression) {
         return true;
     };
 

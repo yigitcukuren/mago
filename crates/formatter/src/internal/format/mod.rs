@@ -938,7 +938,7 @@ impl<'a> Format<'a> for Terminator {
         wrap!(f, self, Terminator, {
             match self {
                 Terminator::Semicolon(_) | Terminator::TagPair(_, _) => Document::String(";"),
-                Terminator::ClosingTag(t) => Document::Array(vec![Document::String(" "), t.format(f)]),
+                Terminator::ClosingTag(t) => Document::Array(vec![Document::space(), t.format(f)]),
             }
         })
     }

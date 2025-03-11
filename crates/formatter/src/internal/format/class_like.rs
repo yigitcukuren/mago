@@ -1,9 +1,12 @@
 use mago_ast::*;
+use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::document::Document;
+use crate::document::Group;
+use crate::document::Line;
 use crate::internal::FormatterState;
-use crate::internal::format::block::print_block_of_nodes;
+use crate::internal::format::Format;
 use crate::settings::BraceStyle;
 
 pub fn print_class_like_body<'a>(
@@ -17,5 +20,45 @@ pub fn print_class_like_body<'a>(
         BraceStyle::NextLine => false,
     };
 
-    print_block_of_nodes(f, left_brace, class_like_members, right_brace, inline_empty)
+    let length = class_like_members.len();
+    let mut contents = vec![Document::String("{")];
+    if let Some(c) = f.print_trailing_comments(*left_brace) {
+        contents.push(c);
+    }
+
+    if length != 0 {
+        let mut members = vec![Document::Line(Line::hard())];
+        for (i, item) in class_like_members.iter().enumerate() {
+            members.push(item.format(f));
+
+            if i < (length - 1) {
+                members.push(Document::Line(Line::hard()));
+                // Add an empty line in the following cases:
+                // - The item is a method.
+                // - The next line is already empty.
+                if item.is_method() || f.is_next_line_empty(item.span()) {
+                    members.push(Document::Line(Line::hard()));
+                }
+            }
+        }
+
+        contents.push(Document::Indent(members));
+    }
+
+    if let Some(comments) = f.print_dangling_comments(left_brace.join(*right_brace), true) {
+        if length > 0 {
+            contents.push(Document::Line(Line::soft()));
+        }
+
+        contents.push(comments);
+    } else if length > 0 || !inline_empty {
+        contents.push(Document::Line(Line::hard()));
+    }
+
+    contents.push(Document::String("}"));
+    if let Some(comments) = f.print_trailing_comments(*right_brace) {
+        contents.push(comments);
+    }
+
+    Document::Group(Group::new(contents))
 }

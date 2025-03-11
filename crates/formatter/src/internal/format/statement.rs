@@ -99,10 +99,8 @@ fn format_statement_with_spacing<'a>(
     let (should_add_new_line, should_add_space) = should_add_new_line_or_space_after_stmt(f, stmts, i, stmt);
 
     statement_parts.push(stmt.format(f));
-
-    let is_last = if let Some(index) = last_non_noop_index { i == index } else { i == stmts.len() - 1 };
-
     if should_add_space {
+        let is_last = if let Some(index) = last_non_noop_index { i == index } else { i == stmts.len() - 1 };
         if !is_last {
             statement_parts.push(Document::space());
         }
@@ -147,10 +145,14 @@ fn should_add_new_line_or_space_after_stmt<'a>(
         },
         Statement::OpeningTag(_) => {
             if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset)) {
-                should_add_space = !f.has_newline(index, false);
+                if f.has_newline(index, false) {
+                    return (true, false);
+                }
             }
 
-            true
+            should_add_space = !f.has_comment(stmt.span(), CommentFlags::Trailing);
+
+            false
         }
         _ => {
             if f.has_newline(stmt.span().end_position().offset, false) {
