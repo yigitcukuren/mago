@@ -1035,12 +1035,7 @@ impl<'a> Format<'a> for LiteralStringPart {
 impl<'a> Format<'a> for BracedExpressionStringPart {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, BracedExpressionStringPart, {
-            Document::Group(Group::new(vec![
-                Document::String("{"),
-                self.expression.format(f),
-                Document::LineSuffixBoundary,
-                Document::String("}"),
-            ]))
+            Document::Group(Group::new(vec![Document::String("{"), self.expression.format(f), Document::String("}")]))
         })
     }
 }

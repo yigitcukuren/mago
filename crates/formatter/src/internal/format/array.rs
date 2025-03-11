@@ -134,12 +134,13 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
         return Document::Group(Group::new(parts));
     }
 
-    let must_break = f.settings.preserve_breaking_array_like
+    let must_break = (f.settings.preserve_breaking_array_like
         && misc::has_new_line_in_range(
             f.source_text,
             array_like.span().start.offset,
             array_like.elements()[0].span().start.offset,
-        );
+        ))
+        || has_floating_comments(f, &array_like);
 
     if !must_break {
         if let Some(element) = inline_single_element(f, &array_like) {
@@ -202,6 +203,25 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
     Document::Group(Group::new(parts).with_break(use_table_style || must_break))
 }
 
+#[inline]
+fn has_floating_comments<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> bool {
+    let has_comments = |prev: &ArrayElement, next: &ArrayElement| {
+        let start = prev.span().end;
+        let end = next.span().start;
+
+        f.has_inner_comment(Span::new(start, end))
+    };
+
+    for element in array_like.elements().windows(2) {
+        if has_comments(&element[0], &element[1]) {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[inline]
 fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> Option<Document<'a>> {
     if array_like.len() != 1 {
         return None;
@@ -238,6 +258,7 @@ fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<
     }
 }
 
+#[inline]
 fn format_row_with_alignment<'a>(
     f: &mut FormatterState<'a>,
     document: Document<'a>,
@@ -275,6 +296,7 @@ fn format_row_with_alignment<'a>(
     }
 }
 
+#[inline]
 fn extract_array_elements<'a>(contents: &[Document<'a>]) -> Option<(Document<'a>, Vec<Document<'a>>, Document<'a>)> {
     let mut opening_delimiter = None;
     let mut closing_delimiter = None;
