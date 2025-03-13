@@ -2,28 +2,28 @@
 name = "mago"
 version = "0.19.5"
 edition = "2024"
-authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
+authors = ["Saif Eddin Gmati <azjezz@carthage.software>"]
 license = "MIT OR Apache-2.0"
 description = "A comprehensive suite of PHP tooling inspired by Rust’s approach, providing parsing, linting, formatting, and more through a unified CLI and library interface."
-homepage = "https://github.com/carthage-software/mago"
+homepage = "https://mago.carthage.software"
 repository = "https://github.com/carthage-software/mago"
 rust-version = "1.85.0"
 
 [workspace]
 package.edition = "2024"
-package.authors = ["Saif Eddin Gmati <azjezz@protonmail.com>"]
+package.authors = ["Saif Eddin Gmati <azjezz@carthage.software>"]
 package.license = "MIT OR Apache-2.0"
 package.version = "0.19.5"
-package.homepage = "https://github.com/carthage-software/mago"
+package.homepage = "https://mago.carthage.software"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.85.0"
 members = ["crates/*"]
 
 [workspace.lints.clippy]
 large_enum_variant = { level = "allow" }
-print_stdout = { level = "forbid"}
-print_stderr = { level = "forbid"}
-dbg_macro = { level = "forbid"}
+print_stdout = { level = "forbid" }
+print_stderr = { level = "forbid" }
+dbg_macro = { level = "forbid" }
 
 [workspace.dependencies]
 mago-ast = { path = "crates/ast", version = "0.19.5" }
