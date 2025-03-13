@@ -7,6 +7,7 @@ use mago_linter::settings::Settings;
 use mago_php_version::PHPVersion;
 use mago_project::Project;
 use mago_project::module::Module;
+use mago_reporting::Level;
 use mago_source::Source;
 
 pub mod plugins;
@@ -31,7 +32,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
 
     let interner = ThreadedInterner::new();
 
-    let mut rule_settings = RuleSettings::enabled();
+    let mut rule_settings = RuleSettings::from_level(Some(Level::Error));
     for (option, value) in usage_example.options.iter() {
         rule_settings.options.insert(option.to_string(), value.clone());
     }
