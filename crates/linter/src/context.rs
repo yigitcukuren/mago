@@ -295,6 +295,8 @@ impl<'a> LintContext<'a> {
     #[inline]
     fn take_applicable_pragmas(&mut self, node: impl HasSpan, kind: PragmaKind) -> Vec<&'a Pragma<'a>> {
         let node_start_line = self.module.source.line_number(node.span().start.offset);
+        let node_end_line = self.module.source.line_number(node.span().end.offset);
+
         let mut applicable_pragmas = Vec::new();
         let mut remaining = Vec::with_capacity(self.pragmas.len());
 
@@ -307,7 +309,10 @@ impl<'a> LintContext<'a> {
             let applies = if pragma.own_line {
                 pragma.start_line < node_start_line
             } else {
-                pragma.start_line == node_start_line || pragma.end_line == node_start_line
+                pragma.start_line == node_start_line
+                    || pragma.end_line == node_start_line
+                    || pragma.start_line == node_end_line
+                    || pragma.end_line == node_end_line
             };
 
             if applies {
