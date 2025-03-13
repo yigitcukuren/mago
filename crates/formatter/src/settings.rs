@@ -1061,79 +1061,112 @@ pub struct FormatSettings {
     #[serde(default = "default_false")]
     pub space_within_match_parenthesis: bool,
 
-    /// Whether to an empty line after control structures (if, for, foreach, while, do, switch).
+    /// Whether to add an empty line after control structures (if, for, foreach, while, do, switch).
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_after_control_structure: bool,
 
-    /// Whether to an empty line after opening tag.
+    /// Whether to add an empty line after opening tag.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_opening_tag: bool,
 
-    /// Whether to an empty line after declare statement.
+    /// Whether to add an empty line after declare statement.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_declare: bool,
 
-    /// Whether to an empty line after namespace name.
+    /// Whether to add an empty line after namespace.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_namespace: bool,
 
-    /// Whether to an empty line after use statements.
+    /// Whether to add an empty line after use statements.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_use: bool,
 
-    /// Whether to an empty line after symbols (class, enum, interface, trait, function, const).
+    /// Whether to add an empty line after symbols (class, enum, interface, trait, function, const).
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_symbols: bool,
 
-    /// Whether to an empty line after class-like constant.
+    /// Whether to add an empty line after class-like constant.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_after_class_like_constant: bool,
 
-    /// Whether to an empty line after enum case.
+    /// Whether to add an empty line after enum case.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_after_enum_case: bool,
 
-    /// Whether to an empty line after trait use.
+    /// Whether to add an empty line after trait use.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_after_trait_use: bool,
 
-    /// Whether to an empty line after property.
+    /// Whether to add an empty line after property.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_after_property: bool,
 
-    /// Whether to an empty line after method.
+    /// Whether to add an empty line after method.
+    ///
+    /// Note: if an empty line already exists, it will be preserved regardless of this
+    /// settings value.
     ///
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_after_method: bool,
 
-    /// Whether to an empty line after property declarations.
+    /// Whether to add an empty line before return statements.
     ///
     /// Default: true
     #[serde(default = "default_false")]
     pub empty_line_before_return: bool,
 
-    /// Whether to an empty line before return statements.
+    /// Whether to add an empty line before return statements.
     ///
     /// Default: true
     #[serde(default = "default_true")]
