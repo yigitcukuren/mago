@@ -248,7 +248,7 @@ fn implement_magic_interfaces(
 
     'stringable_interface: {
         let to_string_method = interner.intern(TO_STRING_METHOD);
-        if !reflection.methods.appering_members.contains_key(&to_string_method) {
+        if !reflection.methods.members.contains_key(&to_string_method) {
             break 'stringable_interface;
         }
 
