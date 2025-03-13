@@ -470,6 +470,13 @@ mod internal {
                     }
                 }
 
+                if let Expression::Variable(Variable::Direct(variable)) = access.index.as_ref() {
+                    let name = context.interner.lookup(&variable.name);
+                    if !is_predefined_variable(name) {
+                        variables.push(VariableReference::Use(variable.name));
+                    }
+                }
+
                 scan_expression_for_assignment(&access.array, context, variables);
                 scan_expression_for_assignment(&access.index, context, variables);
             }

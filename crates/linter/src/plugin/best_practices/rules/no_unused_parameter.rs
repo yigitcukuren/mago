@@ -7,6 +7,7 @@ use mago_span::HasSpan;
 
 use crate::context::LintContext;
 use crate::definition::RuleDefinition;
+use crate::definition::RuleUsageExample;
 use crate::directive::LintDirective;
 use crate::plugin::best_practices::rules::utils::expression_potentially_contains_function_call;
 use crate::plugin::best_practices::rules::utils::get_foreign_variable_names;
@@ -21,10 +22,43 @@ pub struct NoUnusedParameterRule;
 
 impl Rule for NoUnusedParameterRule {
     fn get_definition(&self) -> RuleDefinition {
-        RuleDefinition::enabled("No Unused Parameter", Level::Note).with_description(indoc! {"
+        RuleDefinition::enabled("No Unused Parameter", Level::Note)
+            .with_description(indoc! {"
             Detects parameters that are declared but never used within a function, method, or closure.
             Unused parameters are a sign of dead code and can be safely removed to improve code clarity.
         "})
+            .with_example(RuleUsageExample::valid(
+                "Function with used parameters",
+                indoc! {r#"
+                <?php
+
+                declare(strict_types=1);
+
+                class Container {
+                    private array $data = [];
+
+                    public function set(string $key, string $value, ?string $default = null): void {
+                        $this->data[$key] = $value ?? $default;
+                    }
+                }
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "Function with unused parameter",
+                indoc! {r#"
+                <?php
+
+                declare(strict_types=1);
+
+                class Container {
+                    private array $data = [];
+
+                    public function set(string $key, string $value, ?string $default = null): void {
+                        $this->data[$key] = $value;
+                    }
+                }
+                "#},
+            ))
     }
 
     fn lint_node(&self, node: Node<'_>, context: &mut LintContext<'_>) -> LintDirective {
