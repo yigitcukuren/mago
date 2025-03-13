@@ -15,7 +15,7 @@ pub struct NoBooleanLiteralComparisonRule;
 
 impl Rule for NoBooleanLiteralComparisonRule {
     fn get_definition(&self) -> RuleDefinition {
-        RuleDefinition::enabled("No Boolean Literal Comparison", Level::Warning)
+        RuleDefinition::disabled("No Boolean Literal Comparison")
             .with_description(indoc! {"
                 Disallows comparisons where a boolean literal is used as an operand.
 
