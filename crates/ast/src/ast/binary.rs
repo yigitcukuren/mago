@@ -151,6 +151,11 @@ impl BinaryOperator {
         matches!(self, Self::Elvis(_))
     }
 
+    #[inline(always)]
+    pub const fn is_instanceof(&self) -> bool {
+        matches!(self, Self::Instanceof(_))
+    }
+
     #[inline]
     pub fn as_str<'a>(&self, interner: &'a ThreadedInterner) -> &'a str {
         match self {

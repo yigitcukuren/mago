@@ -28,6 +28,7 @@ use crate::internal::format::return_value::format_return_value;
 use crate::internal::format::string::print_string;
 use crate::internal::utils;
 use crate::internal::utils::could_expand_value;
+use crate::internal::utils::unwrap_parenthesized;
 use crate::settings::*;
 use crate::wrap;
 
@@ -916,6 +917,9 @@ impl<'a> Format<'a> for Conditional {
                     let conditional_id = f.next_id();
                     let then_id = f.next_id();
 
+                    let break_group = must_break
+                        && matches!(unwrap_parenthesized(self.condition.as_ref()), Expression::Binary(Binary { lhs, rhs, .. }) if lhs.is_binary() || rhs.is_binary());
+
                     Document::Group(
                         Group::new(vec![
                             self.condition.format(f),
@@ -946,6 +950,7 @@ impl<'a> Format<'a> for Conditional {
                                 self.r#else.format(f),
                             ]),
                         ])
+                        .with_break(break_group)
                         .with_id(conditional_id),
                     )
                 }
