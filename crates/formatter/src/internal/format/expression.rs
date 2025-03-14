@@ -1003,8 +1003,11 @@ impl<'a> Format<'a> for DocumentString {
                     StringPart::Literal(l) => {
                         let content = f.lookup(&l.value);
                         let mut part_contents = vec![];
-                        for line in FormatterState::split_lines(content) {
-                            let line = FormatterState::skip_leading_whitespace_up_to(line, indent);
+                        let own_line = f.has_newline(l.span.start.offset, true);
+                        for mut line in FormatterState::split_lines(content) {
+                            if own_line {
+                                line = FormatterState::skip_leading_whitespace_up_to(line, indent);
+                            }
 
                             part_contents.push(Document::String(line));
                         }

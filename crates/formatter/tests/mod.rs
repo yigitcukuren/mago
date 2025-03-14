@@ -133,6 +133,7 @@ test_case!(line_options);
 test_case!(line_options_flipped);
 test_case!(line_options_all_on);
 test_case!(line_options_all_off);
+test_case!(whitespace_in_heredoc);
 
 // GitHub issue test cases
 test_case!(issue_122);
