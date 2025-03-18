@@ -13,11 +13,10 @@ use crate::document::group::GroupIdentifier;
 use crate::internal::printer::command::Command;
 use crate::internal::printer::command::Indentation;
 use crate::internal::printer::command::Mode;
-use crate::internal::printer::utils::get_string_width;
+use crate::internal::utils::string_width;
 use crate::settings::FormatSettings;
 
 mod command;
-mod utils;
 
 #[derive(Debug)]
 pub struct Printer<'a> {
@@ -95,7 +94,7 @@ impl<'a> Printer<'a> {
 
     fn handle_str(&mut self, s: &str) {
         self.out.extend(s.as_bytes());
-        self.position += get_string_width(s);
+        self.position += string_width(s);
     }
 
     fn handle_array(&mut self, indentation: Indentation<'a>, mode: Mode, docs: Vec<Document<'a>>) {
@@ -416,7 +415,7 @@ impl<'a> Printer<'a> {
         while let Some((mode, doc)) = queue.pop_front() {
             match doc {
                 Document::String(string) => {
-                    remaining_width -= get_string_width(string) as isize;
+                    remaining_width -= string_width(string) as isize;
                 }
                 Document::IndentIfBreak(IndentIfBreak { contents, .. })
                 | Document::Indent(contents)

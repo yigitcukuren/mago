@@ -1,4 +1,5 @@
 use mago_ast::*;
+use unicode_width::UnicodeWidthStr;
 
 use crate::document::Align;
 use crate::document::Document;
@@ -168,5 +169,16 @@ pub fn could_expand_value(value: &Expression, arrow_chain_recursion: bool) -> bo
             arguments.arguments.len() > 2
         }
         _ => false,
+    }
+}
+
+#[inline]
+pub fn string_width(s: &str) -> usize {
+    if s.contains("الله") {
+        // The word "الله" is a special case, as it is usually rendered as a single glyph
+        // while being 4 characters wide. This is a hack to handle this case.
+        s.replace("الله", "_").width()
+    } else {
+        s.width()
     }
 }

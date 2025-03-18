@@ -12,6 +12,7 @@ use crate::internal::format::Format;
 use crate::internal::format::misc;
 use crate::internal::format::misc::is_string_word_type;
 use crate::internal::format::misc::should_hug_expression;
+use crate::internal::utils::string_width;
 
 #[allow(clippy::enum_variant_names)]
 pub enum ArrayLike<'a> {
@@ -489,11 +490,6 @@ fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) ->
         return false; // Too narrow to be a table
     }
 
-    // Check if row size is within reasonable bounds (3-10 columns)
-    if !(3..=12).contains(&row_size) {
-        return false;
-    }
-
     // At least 60% of the rows should have the same size
     (sizes.iter().filter(|size| **size == row_size).count() as f64) / (sizes.len() as f64) >= 0.6
 }
@@ -547,25 +543,56 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
 }
 
 fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) -> Option<usize> {
+    fn get_argument_width<'a>(f: &mut FormatterState<'a>, argument: &'a Argument) -> Option<usize> {
+        match argument {
+            Argument::Positional(arg) => match arg.ellipsis {
+                Some(_) => get_element_width(f, &arg.value).map(|width| width + 3),
+                None => get_element_width(f, &arg.value),
+            },
+            Argument::Named(arg) => get_element_width(f, &arg.value).map(|mut width| {
+                if arg.ellipsis.is_some() {
+                    width += 3;
+                }
+
+                width += 2;
+                width += f.interner.lookup(&arg.name.value).width();
+
+                width
+            }),
+        }
+    }
+
+    fn get_argument_list_width<'a>(f: &mut FormatterState<'a>, argument_list: &'a ArgumentList) -> Option<usize> {
+        let mut width = 2;
+        for (i, argument) in argument_list.arguments.iter().enumerate() {
+            if i > 0 {
+                width += 2;
+            }
+
+            width += get_argument_width(f, argument)?;
+        }
+
+        Some(width)
+    }
+
     Some(match element {
         Expression::Literal(literal) => match literal {
-            Literal::String(literal_string) => width(f.interner.lookup(&literal_string.value)),
+            Literal::String(literal_string) => string_width(f.interner.lookup(&literal_string.value)),
             Literal::Integer(literal_integer) => f.interner.lookup(&literal_integer.raw).width(),
             Literal::Float(literal_float) => f.interner.lookup(&literal_float.raw).width(),
             Literal::True(_) => 4,
             Literal::False(_) => 5,
             Literal::Null(_) => 4,
         },
-        Expression::MagicConstant(magic_constant) => width(f.interner.lookup(&magic_constant.value().value)),
+        Expression::MagicConstant(magic_constant) => string_width(f.interner.lookup(&magic_constant.value().value)),
         Expression::ConstantAccess(ConstantAccess { name: Identifier::Local(local) })
-        | Expression::Identifier(Identifier::Local(local)) => width(f.interner.lookup(&local.value)),
-        Expression::Variable(Variable::Direct(variable)) => width(f.interner.lookup(&variable.name)),
+        | Expression::Identifier(Identifier::Local(local)) => string_width(f.interner.lookup(&local.value)),
+        Expression::Variable(Variable::Direct(variable)) => string_width(f.interner.lookup(&variable.name)),
         Expression::Call(Call::Function(FunctionCall { function, argument_list })) => {
-            if !argument_list.arguments.is_empty() {
-                return None;
-            }
+            let function_width = get_element_width(f, function)?;
+            let args_width = get_argument_list_width(f, argument_list)?;
 
-            return get_element_width(f, function).map(|width| width + 2);
+            function_width + args_width
         }
         Expression::Call(Call::StaticMethod(StaticMethodCall {
             class,
@@ -573,18 +600,19 @@ fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) ->
             argument_list,
             ..
         })) => {
-            if !argument_list.arguments.is_empty() {
-                return None;
-            }
+            let class_width = get_element_width(f, class)?;
+            let method_width = string_width(f.interner.lookup(&method.value));
+            let args_width = get_argument_list_width(f, argument_list)?;
 
-            return get_element_width(f, class).map(|class| class + 2 + width(f.interner.lookup(&method.value)) + 2);
+            class_width + 2 + method_width + args_width
         }
         Expression::Access(Access::ClassConstant(ClassConstantAccess {
             class,
             constant: ClassLikeConstantSelector::Identifier(constant),
             ..
         })) => {
-            return get_element_width(f, class).map(|class| class + 2 + width(f.interner.lookup(&constant.value)) + 2);
+            return get_element_width(f, class)
+                .map(|class| class + 2 + string_width(f.interner.lookup(&constant.value)));
         }
         _ => {
             return None;
@@ -594,26 +622,15 @@ fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) ->
 
 fn get_document_width(doc: &Document<'_>) -> usize {
     match doc {
-        Document::String(s) => width(s),
+        Document::String(s) => string_width(s),
         Document::Array(docs) => docs.iter().map(get_document_width).sum(),
         Document::Group(group) => group.contents.iter().map(get_document_width).sum(),
         Document::Indent(docs) => docs.iter().map(get_document_width).sum(),
-        // For other document types, provide reasonable estimates
         Document::Line(_) => 1,
         Document::IfBreak(if_break) => {
             get_document_width(&if_break.break_contents).max(get_document_width(&if_break.flat_content))
         }
+        Document::IndentIfBreak(indent_if_break) => indent_if_break.contents.iter().map(get_document_width).sum(),
         _ => 0,
-    }
-}
-
-#[inline]
-fn width(s: &str) -> usize {
-    if s.contains("الله") {
-        // The word "الله" is a special case, as it is usually rendered as a single glyph
-        // while being 4 characters wide. This is a hack to handle this case.
-        s.replace("الله", "_").width()
-    } else {
-        s.width()
     }
 }

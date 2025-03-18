@@ -11,6 +11,7 @@ use crate::internal::format::Format;
 use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::format::misc;
 use crate::internal::parens::instantiation_needs_parens;
+use crate::internal::utils::string_width;
 use crate::internal::utils::unwrap_parenthesized;
 
 #[derive(Debug)]
@@ -137,7 +138,7 @@ impl MemberAccessChain<'_> {
 
                     match &self.base {
                         Expression::Variable(Variable::Direct(v)) => {
-                            if f.interner.lookup(&v.name).len() > 5 {
+                            if string_width(f.interner.lookup(&v.name)) > 5 {
                                 4
                             } else {
                                 5
@@ -268,36 +269,54 @@ impl MemberAccessChain<'_> {
 
     #[inline]
     fn find_fluent_access_chain_start(&self) -> Option<usize> {
-        let mut p_count = 0;
-        let mut pm_count = 0;
-        let mut last_was_p = false;
+        let mut property_access_count = 0;
+        let mut method_call_count = 0;
+        let mut last_was_property = false;
+        let mut patterns_found = 0;
         let mut pattern_start_index = None;
 
-        for (i, access) in self.accesses.iter().enumerate() {
-            match access {
-                MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => {
-                    p_count += 1;
-                    last_was_p = true;
-                }
-                MemberAccess::MethodCall(_) | MemberAccess::NullSafeMethodCall(_) => {
-                    if last_was_p {
-                        pm_count += 1;
-                        if pattern_start_index.is_none() {
-                            pattern_start_index = Some(i - 1);
-                        }
-                    } else {
-                        pm_count = 0;
-                    }
+        let mut accesses = self.accesses.iter().enumerate().peekable();
 
-                    last_was_p = false;
+        while let Some((i, access)) = accesses.next() {
+            if !matches!(access, MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_)) {
+                last_was_property = false;
+                method_call_count += 1;
+
+                continue;
+            }
+
+            last_was_property = true;
+            property_access_count += 1;
+
+            let mut following_method_call_count = 0;
+            loop {
+                let Some((_, next_access)) = accesses.peek() else {
+                    break;
+                };
+
+                match next_access {
+                    MemberAccess::MethodCall(_) | MemberAccess::NullSafeMethodCall(_) => {
+                        following_method_call_count += 1;
+                        last_was_property = false;
+
+                        accesses.next();
+                    }
+                    _ => {
+                        break;
+                    }
                 }
-                _ => {
-                    last_was_p = false;
+            }
+
+            if following_method_call_count > 0 && following_method_call_count <= 3 {
+                patterns_found += 1;
+                method_call_count += following_method_call_count;
+                if pattern_start_index.is_none() {
+                    pattern_start_index = Some(i);
                 }
             }
         }
 
-        if pm_count >= (p_count - pm_count) && pm_count > 0 && !last_was_p {
+        if patterns_found >= (property_access_count - method_call_count) && patterns_found > 0 && !last_was_property {
             return pattern_start_index;
         }
 
@@ -367,9 +386,12 @@ pub(super) fn print_member_access_chain<'a>(
     };
 
     let mut accesses_iter = member_access_chain.accesses.iter();
+    let fluent_access_chain_start = member_access_chain.find_fluent_access_chain_start();
+    let must_break = member_access_chain.must_break(f);
+    let group_id = f.next_id();
 
-    // Handle the first method call
-
+    let mut last_element_end = member_access_chain.base.span().end;
+    // Handle the first access
     if !f.settings.method_chain_breaking_style.is_next_line()
         || member_access_chain.is_first_link_static_method_call()
         || matches!(member_access_chain.base, Expression::Variable(Variable::Direct(variable)) if f.interner.lookup(&variable.name) == "$this")
@@ -384,10 +406,7 @@ pub(super) fn print_member_access_chain<'a>(
 
             let selector = first_chain_link.get_selector();
             parts.push(selector.format(f));
-            if let Some(comments) = f.print_trailing_comments(selector.span()) {
-                parts.push(comments);
-            }
-
+            last_element_end = selector.span().end;
             if let Some(argument_list) = first_chain_link.get_arguments_list() {
                 let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
                 if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
@@ -395,20 +414,21 @@ pub(super) fn print_member_access_chain<'a>(
                 }
 
                 parts.push(Document::Group(Group::new(formatted_argument_list)));
+                last_element_end = argument_list.span().end;
             }
         }
     }
 
-    let fluent_access_chain_start = member_access_chain.find_fluent_access_chain_start();
-    let mut last_was_property = false;
-    let must_break = member_access_chain.must_break(f);
-    let group_id = f.next_id();
-
     // Now handle the remaining method calls
     for (i, chain_link) in accesses_iter.enumerate() {
         let is_in_fluent_chain = fluent_access_chain_start.is_some_and(|start| i >= start);
+        let must_have_new_line = if !is_in_fluent_chain || chain_link.is_property_access() {
+            true
+        } else {
+            f.has_inner_comment(Span::new(last_element_end, chain_link.get_operator_span().start))
+        };
 
-        let mut contents = if !is_in_fluent_chain || !last_was_property {
+        let mut contents = if must_have_new_line {
             if must_break { vec![Document::Line(Line::hard())] } else { vec![Document::Line(Line::soft())] }
         } else {
             vec![] // No newline if in fluent chain and last was property
@@ -416,6 +436,7 @@ pub(super) fn print_member_access_chain<'a>(
 
         contents.push(format_access_operator(f, chain_link.get_operator_span(), chain_link.get_operator_as_str()));
         let selector = chain_link.get_selector();
+        last_element_end = selector.span().end;
         contents.push(selector.format(f));
         if let Some(argument_list) = chain_link.get_arguments_list() {
             let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
@@ -424,6 +445,7 @@ pub(super) fn print_member_access_chain<'a>(
             }
 
             contents.push(Document::Group(Group::new(formatted_argument_list)));
+            last_element_end = argument_list.span().end;
         }
 
         if must_break {
@@ -431,8 +453,6 @@ pub(super) fn print_member_access_chain<'a>(
         } else {
             parts.push(Document::IndentIfBreak(IndentIfBreak::new(contents).with_id(group_id)));
         }
-
-        last_was_property = chain_link.is_property_access();
     }
 
     if must_break && !matches!(f.parent_node(), Node::Binary(_)) {
@@ -467,7 +487,6 @@ fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
 
 pub(super) fn format_access_operator<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
     let leading = f.print_leading_comments(span);
-
     let doc = Document::String(operator);
     let doc = f.print_comments(leading, doc, None);
 

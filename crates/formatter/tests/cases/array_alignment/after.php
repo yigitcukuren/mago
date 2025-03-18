@@ -55,7 +55,7 @@ show_table([ // This is a comment
 // This table contains a very long string so it won't be formatted as a table
 show_table([ // This is a comment
     array(
-        'HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello',
+        'HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello',
         11212,
         112.1,
         true,
@@ -219,20 +219,20 @@ function _trailing_comments(): iterable
 }
 
 $arr = [
-    [Language::Thai,         render_thai(),       Alignment::left()],
-    [Language::Arabic,       render_arabic(),     Alignment::right()],
-    [Language::English,      render_english(),    Alignment::center()],
-    [Language::French,       render_french(),     Alignment::left()],
-    [Language::Spanish,      render_spanish(),    Alignment::right()],
-    [Language::Russian,      render_russian(),    Alignment::center()],
-    [Language::Japanese,     render_japanese(),   Alignment::left()],
-    [Language::Korean,       render_korean(),     Alignment::right()],
-    [Language::Vietnamese,   render_vietnamese(), Alignment::center()],
-    [Language::Chinese,      render_chinese(),    Alignment::left()],
-    [Language::German,       render_german(),     Alignment::right()],
-    [Language::Tunisian,     render_tunisian(),   Alignment::center()],
-    [Language::Italian,      render_italian(),    Alignment::left()],
-    [Language::Portuguese,   render_portuguese(), Alignment::right()],
+    [Language::Thai,       render_thai(),       Alignment::left()],
+    [Language::Arabic,     render_arabic(),     Alignment::right()],
+    [Language::English,    render_english(),    Alignment::center()],
+    [Language::French,     render_french(),     Alignment::left()],
+    [Language::Spanish,    render_spanish(),    Alignment::right()],
+    [Language::Russian,    render_russian(),    Alignment::center()],
+    [Language::Japanese,   render_japanese(),   Alignment::left()],
+    [Language::Korean,     render_korean(),     Alignment::right()],
+    [Language::Vietnamese, render_vietnamese(), Alignment::center()],
+    [Language::Chinese,    render_chinese(),    Alignment::left()],
+    [Language::German,     render_german(),     Alignment::right()],
+    [Language::Tunisian,   render_tunisian(),   Alignment::center()],
+    [Language::Italian,    render_italian(),    Alignment::left()],
+    [Language::Portuguese, render_portuguese(), Alignment::right()],
 ];
 
 $data = [
@@ -258,4 +258,30 @@ $data = [
     [HtmlValue::any()],
     ['1 - Change of Address', 'Issued',             '05/02/2021',                '$10.00'],
     [HtmlValue::any()],
+];
+
+$a = [
+    ['2017',   '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00'],
+    ['2016',   '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$101.00'],
+    ['Growth', '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '0%',    '-100%'],
+];
+
+$b = [
+    ['', 'Name',     'Description'],
+    ['', 'Name',     'Description'],
+    ['', 'The name', 'The description'],
+];
+
+$c = [
+    ['Policy Premium',    '$741.00'],
+    ['Policy Fee',        '$200.00'],
+    ['Inspection Fee',    '$150.00'],
+    ['Surplus Lines Tax', '$26.73'],
+    ['Stamping Fee',      '$1.60'],
+];
+
+$d = [
+    ['Unique ID', 'BindHQ ID',                  'State', 'Message', ''],
+    ['-',         HtmlValue::regexp('/^\d+$/'), 'Ready', '~',       'Message × ~ Close View full Message'],
+    ['-',         HtmlValue::regexp('/^\d+$/'), 'Ready', '~',       'Message × ~ Close View full Message'],
 ];

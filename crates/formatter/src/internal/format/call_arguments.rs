@@ -420,17 +420,9 @@ fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argume
         return false;
     }
 
-    match first_argument.value() {
-        Expression::Closure(c) if c.use_clause.is_none() => {}
-        Expression::Match(_) | Expression::Array(_) | Expression::LegacyArray(_) => {}
-        _ => return false,
-    };
-
-    match second_argument.value() {
-        Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => false,
-        Expression::Closure(_) | Expression::ArrowFunction(_) | Expression::Conditional(_) => false,
-        expression => is_hopefully_short_call_argument(expression) && !could_expand_value(expression, false),
-    }
+    could_expand_value(first_argument.value(), false)
+        && (is_hopefully_short_call_argument(second_argument.value())
+            && !could_expand_value(second_argument.value(), false))
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/52829385bcc4d785e58ae2602c0b098a643523c9/src/language-js/print/call-arguments.js#L234-L258>

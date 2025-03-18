@@ -52,7 +52,7 @@ show_table([ // This is a comment
 
 // This table contains a very long string so it won't be formatted as a table
 show_table([ // This is a comment
-    array('HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello', 11212, 112.1, true,  $bar,  PHP_VERSION),
+    array('HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello', 11212, 112.1, true,  $bar,  PHP_VERSION),
     array('World', 125.1, 12,    false, $quux, PHP_VERSION_ID),
     array('!!', 125.1, 123512, false, $bar, PHP_VERSION_ID),
 ]);
@@ -252,4 +252,30 @@ $data =   [
     [HtmlValue::any()],
     ['1 - Change of Address', 'Issued',             '05/02/2021', '$10.00'],
     [HtmlValue::any()],
+];
+
+$a = [
+    ['2017', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00'],
+    ['2016', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$0.00', '$101.00'],
+    ['Growth', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '0%', '-100%'],
+];
+
+$b = [
+    ['', 'Name', 'Description'],
+    ['', 'Name', 'Description'],
+    ['', 'The name', 'The description'],
+];
+
+$c = [
+    ['Policy Premium', '$741.00'],
+    ['Policy Fee', '$200.00'],
+    ['Inspection Fee', '$150.00'],
+    ['Surplus Lines Tax', '$26.73'],
+    ['Stamping Fee', '$1.60'],
+];
+
+$d = [
+    ['Unique ID', 'BindHQ ID', 'State', 'Message', ''],
+    ['-', HtmlValue::regexp('/^\d+$/'), 'Ready', '~', 'Message × ~ Close View full Message'],
+    ['-', HtmlValue::regexp('/^\d+$/'), 'Ready', '~', 'Message × ~ Close View full Message'],
 ];

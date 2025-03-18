@@ -11,6 +11,7 @@ use crate::internal::format::Format;
 use crate::internal::format::binaryish::should_inline_logical_or_coalesce_expression;
 use crate::internal::format::member_access::collect_member_access_chain;
 use crate::internal::format::misc::is_simple_expression;
+use crate::internal::utils::string_width;
 use crate::internal::utils::unwrap_parenthesized;
 
 /// Represents nodes in the Abstract Syntax Tree (AST) that involve assignment-like operations.
@@ -292,17 +293,15 @@ const MIN_OVERLAP_FOR_BREAK: usize = 3;
 
 #[inline]
 fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_node: &AssignmentLikeNode<'a>) -> bool {
-    let width = match assignment_like_node {
-        AssignmentLikeNode::ClassLikeConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
-        AssignmentLikeNode::ConstantItem(constant_item) => f.lookup(&constant_item.name.value).len(),
-        AssignmentLikeNode::EnumCaseBackedItem(enum_case_backed_item) => {
-            f.lookup(&enum_case_backed_item.name.value).len()
-        }
-        AssignmentLikeNode::PropertyConcreteItem(property_item) => f.lookup(&property_item.variable.name).len(),
+    let str = match assignment_like_node {
+        AssignmentLikeNode::ClassLikeConstantItem(constant_item) => f.lookup(&constant_item.name.value),
+        AssignmentLikeNode::ConstantItem(constant_item) => f.lookup(&constant_item.name.value),
+        AssignmentLikeNode::EnumCaseBackedItem(enum_case_backed_item) => f.lookup(&enum_case_backed_item.name.value),
+        AssignmentLikeNode::PropertyConcreteItem(property_item) => f.lookup(&property_item.variable.name),
         AssignmentLikeNode::KeyValueArrayElement(element) => match element.key.as_ref() {
-            Expression::Variable(Variable::Direct(variable)) => f.lookup(&variable.name).len(),
-            Expression::Identifier(Identifier::Local(local_identifier)) => f.lookup(&local_identifier.value).len(),
-            Expression::Literal(Literal::String(string_literal)) => f.lookup(&string_literal.value).len(),
+            Expression::Variable(Variable::Direct(variable)) => f.lookup(&variable.name),
+            Expression::Identifier(Identifier::Local(local_identifier)) => f.lookup(&local_identifier.value),
+            Expression::Literal(Literal::String(string_literal)) => f.lookup(&string_literal.value),
             _ => {
                 return false;
             }
@@ -317,7 +316,7 @@ fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_n
     // ↓↓↓↓↓↓↓↓↓ - overlap is long enough to break
     // $username =
     //     $reallyLongValue;
-    width < f.settings.tab_width + MIN_OVERLAP_FOR_BREAK
+    string_width(str) < f.settings.tab_width + MIN_OVERLAP_FOR_BREAK
 }
 
 #[inline]
@@ -506,12 +505,12 @@ fn is_lone_short_argument<'a>(f: &FormatterState<'a>, argument_value: &'a Expres
         Expression::Variable(Variable::Direct(direct_variable)) => {
             let name = f.lookup(&direct_variable.name);
 
-            name.len() <= threshold
+            string_width(name) <= threshold
         }
         Expression::Identifier(Identifier::Local(local_identifier)) => {
             let name = f.lookup(&local_identifier.value);
 
-            name.len() <= threshold
+            string_width(name) <= threshold
         }
         Expression::UnaryPrefix(unary) if !unary.operator.is_cast() => is_lone_short_argument(f, &unary.operand),
         _ => false,
