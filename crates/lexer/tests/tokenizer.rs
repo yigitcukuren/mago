@@ -20,6 +20,51 @@ fn test_shebang() -> Result<(), SyntaxError> {
 }
 
 #[test]
+fn test_base_integers() -> Result<(), SyntaxError> {
+    let code = b"<?php 0x 0o 0b 0X 0O 0B 0o9 0b2 0xg 0o2 0b1 0xF";
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Identifier,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+        TokenKind::Whitespace,
+        TokenKind::LiteralInteger,
+    ];
+
+    test_lexer(code, expected).map_err(|err| {
+        panic!("unexpected error: {}", err);
+    })
+}
+
+#[test]
 fn test_emoji_attribute() -> Result<(), SyntaxError> {
     let code = "<?php #️⃣[Foo] class Bar {}".as_bytes();
     let expected = vec![TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::HashComment];

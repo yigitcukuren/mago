@@ -525,7 +525,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     [start_of_number!(), ..] => 'number: {
                         let mut length = 1;
 
-                        let (base, kind): (u8, NumberKind) = match self.input.read(2) {
+                        let (base, kind): (u8, NumberKind) = match self.input.read(3) {
                             start_of_binary_number!() => {
                                 length += 1;
 

@@ -18,19 +18,19 @@ macro_rules! start_of_number {
 
 macro_rules! start_of_binary_number {
     () => {
-        [b'0', b'B' | b'b']
+        [b'0', b'B' | b'b', b'0' | b'1']
     };
 }
 
 macro_rules! start_of_octal_number {
     () => {
-        [b'0', b'O' | b'o']
+        [b'0', b'O' | b'o', b'0'..=b'7']
     };
 }
 
 macro_rules! start_of_hexadecimal_number {
     () => {
-        [b'0', b'X' | b'x']
+        [b'0', b'X' | b'x', b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F']
     };
 }
 
