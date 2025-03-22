@@ -6,6 +6,8 @@ use colored::Colorize;
 
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
+use mago_formatter::Formatter;
+use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
 use mago_linter::settings::RuleSettings;
@@ -164,6 +166,9 @@ pub struct LintCommand {
     #[arg(long, help = "Apply fixes marked as potentially unsafe, which may require manual review", requires = "fix")]
     pub potentially_unsafe: bool,
 
+    #[arg(long, help = "Format the fixed files after applying the changes.", requires = "fix", alias = "fmt")]
+    pub format: bool,
+
     /// Run the command without writing any changes to disk.
     #[arg(
         long,
@@ -183,8 +188,6 @@ pub struct LintCommand {
         conflicts_with = "explain",
         conflicts_with = "list_rules",
         conflicts_with = "fix",
-        conflicts_with = "unsafe",
-        conflicts_with = "potentially_unsafe",
     )]
     pub reporting_target: ReportingTarget,
 
@@ -198,8 +201,6 @@ pub struct LintCommand {
         conflicts_with = "explain",
         conflicts_with = "list_rules",
         conflicts_with = "fix",
-        conflicts_with = "unsafe",
-        conflicts_with = "potentially_unsafe",
     )]
     pub reporting_format: ReportingFormat,
 }
@@ -254,8 +255,15 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
     };
 
     if command.fix {
-        let (changed, skipped_unsafe, skipped_potentially_unsafe) =
-            fix_issues(&interner, &source_manager, issues, fix_classification, command.dry_run).await?;
+        let (changed, skipped_unsafe, skipped_potentially_unsafe) = fix_issues(
+            &interner,
+            &source_manager,
+            issues,
+            fix_classification,
+            if command.format { Some((configuration.php_version, configuration.format.settings)) } else { None },
+            command.dry_run,
+        )
+        .await?;
 
         if skipped_unsafe > 0 {
             tracing::warn!(
@@ -704,6 +712,7 @@ pub(super) async fn fix_issues(
     source_manager: &SourceManager,
     issues: IssueCollection,
     fix_classification: SafetyClassification,
+    format_settings: Option<(PHPVersion, FormatSettings)>,
     dry_run: bool,
 ) -> Result<(usize, usize, usize), Error> {
     let (plans, skipped_unsafe, skipped_potentially_unsafe) = filter_fix_plans(interner, issues, fix_classification);
@@ -720,13 +729,21 @@ pub(super) async fn fix_issues(
             async move {
                 let source = source_manager.load(&source)?;
                 let source_content = interner.lookup(&source.content);
-                let result = utils::apply_changes(
-                    &interner,
-                    &source_manager,
-                    &source,
-                    plan.execute(source_content).get_fixed(),
-                    dry_run,
-                );
+                let mut new_content = plan.execute(source_content).get_fixed();
+                if let Some((php_version, format_settings)) = format_settings {
+                    let formatter = Formatter::new(&interner, php_version, format_settings);
+
+                    new_content = match formatter.format_code(interner.lookup(&source.identifier.0), &new_content) {
+                        Ok(content) => content,
+                        Err(error) => {
+                            tracing::error!("Failed to format the fixed code: {}", error);
+
+                            new_content
+                        }
+                    };
+                }
+
+                let result = utils::apply_changes(&interner, &source_manager, &source, new_content, dry_run);
 
                 progress_bar.inc(1);
 

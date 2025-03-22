@@ -65,12 +65,9 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
 
     configuration.source.excludes.extend(std::mem::take(&mut configuration.format.excludes));
 
-    // Get formatting settings from the configuration.
-    let settings = configuration.format.settings;
-
     if command.stdin_input {
         let source = create_source_from_stdin(&interner)?;
-        let formatter = Formatter::new(&interner, configuration.php_version, settings);
+        let formatter = Formatter::new(&interner, configuration.php_version, configuration.format.settings);
 
         return Ok(match formatter.format_source(&source) {
             Ok(formatted) => {
@@ -94,7 +91,9 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
     };
 
     // Format all sources and get the count of changed files.
-    let changed = format_all(interner, source_manager, configuration.php_version, settings, command.dry_run).await?;
+    let changed =
+        format_all(interner, source_manager, configuration.php_version, configuration.format.settings, command.dry_run)
+            .await?;
 
     // Provide feedback and return appropriate exit code.
     if changed == 0 {
