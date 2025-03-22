@@ -123,7 +123,7 @@ pub(super) fn should_hug_expression<'a>(f: &FormatterState<'a>, expression: &'a 
     }
 }
 
-pub(super) fn is_simple_expression(node: &Expression) -> bool {
+pub fn is_simple_expression(node: &Expression) -> bool {
     if let Expression::Parenthesized(inner) = node {
         return is_simple_expression(&inner.expression);
     }

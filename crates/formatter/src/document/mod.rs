@@ -37,6 +37,8 @@ pub enum Document<'a> {
     Align(Align<'a>),
     /// Trim all newlines from the end of the document.
     Trim(Trim),
+    /// Do not perform any trimming before printing the next document.
+    DoNotTrim,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
@@ -326,6 +328,7 @@ impl fmt::Display for Document<'_> {
                 Trim::Whitespace => write!(f, "trim"),
                 Trim::Newlines => write!(f, "trimNewlines"),
             },
+            Document::DoNotTrim => write!(f, "doNotTrim"),
         }
     }
 }

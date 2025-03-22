@@ -19,6 +19,7 @@ macro_rules! test_case {
             let formatter = Formatter::new(&interner, $version, settings);
 
             let formatted_code = formatter.format_code("code.php", code.as_ref()).unwrap();
+
             pretty_assertions::assert_eq!(expected, formatted_code, "Formatted code does not match expected");
 
             let reformatted_code = formatter.format_code("formatted_code.php", &formatted_code).unwrap();
@@ -145,3 +146,4 @@ test_case!(issue_149);
 test_case!(issue_150);
 test_case!(issue_151);
 test_case!(issue_157);
+test_case!(issue_164);

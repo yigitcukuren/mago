@@ -1,5 +1,7 @@
-use mago_ast::*;
 use unicode_width::UnicodeWidthStr;
+
+use mago_ast::*;
+use mago_interner::ThreadedInterner;
 
 use crate::document::Align;
 use crate::document::Document;
@@ -127,7 +129,7 @@ pub fn will_break(document: &mut Document<'_>) -> bool {
         | Document::Align(Align { contents, .. }) => check_array(contents),
         Document::Fill(doc) => check_array(&mut doc.parts),
         Document::Line(doc) => doc.hard,
-        Document::String(_) | Document::LineSuffixBoundary | Document::Trim(_) => false,
+        Document::String(_) | Document::LineSuffixBoundary | Document::Trim(_) | Document::DoNotTrim => false,
     }
 }
 
@@ -141,18 +143,18 @@ pub fn replace_end_of_line(document: Document<'_>, replacement: Separator) -> Do
 }
 
 #[inline]
-pub fn could_expand_value(value: &Expression, arrow_chain_recursion: bool) -> bool {
+pub fn could_expand_value(interner: &ThreadedInterner, value: &Expression, arrow_chain_recursion: bool) -> bool {
     match value {
         Expression::Array(expr) => !expr.elements.is_empty(),
         Expression::LegacyArray(expr) => !expr.elements.is_empty(),
         Expression::List(expr) => !expr.elements.is_empty(),
         Expression::Closure(_) => true,
         Expression::Match(m) => !m.arms.is_empty(),
-        Expression::Binary(operation) => could_expand_value(&operation.lhs, arrow_chain_recursion),
+        Expression::Binary(operation) => could_expand_value(interner, &operation.lhs, arrow_chain_recursion),
         Expression::ArrowFunction(arrow_function) if !arrow_chain_recursion => match arrow_function.expression.as_ref()
         {
             Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => {
-                could_expand_value(&arrow_function.expression, true)
+                could_expand_value(interner, &arrow_function.expression, true)
             }
             Expression::Call(_) | Expression::Conditional(_) => true,
             _ => false,
@@ -168,12 +170,32 @@ pub fn could_expand_value(value: &Expression, arrow_chain_recursion: bool) -> bo
 
             arguments.arguments.len() > 2
         }
+        Expression::Literal(Literal::String(literal_string)) => {
+            let string = interner.lookup(&literal_string.value);
+
+            string.contains('\n') || string.contains('\r')
+        }
+        Expression::CompositeString(composite_string) => composite_string.parts().iter().any(|part| match part {
+            StringPart::Literal(literal_string) => {
+                let string = interner.lookup(&literal_string.value);
+
+                string.contains('\n') || string.contains('\r')
+            }
+            _ => false,
+        }),
         _ => false,
     }
 }
 
 #[inline]
 pub fn string_width(s: &str) -> usize {
+    let lines = s.lines();
+
+    lines.map(line_width).max().unwrap_or(0)
+}
+
+#[inline]
+fn line_width(s: &str) -> usize {
     if s.contains("الله") {
         // The word "الله" is a special case, as it is usually rendered as a single glyph
         // while being 4 characters wide. This is a hack to handle this case.

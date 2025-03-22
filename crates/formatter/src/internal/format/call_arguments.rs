@@ -420,9 +420,9 @@ fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argume
         return false;
     }
 
-    could_expand_value(first_argument.value(), false)
+    could_expand_value(f.interner, first_argument.value(), false)
         && (is_hopefully_short_call_argument(second_argument.value())
-            && !could_expand_value(second_argument.value(), false))
+            && !could_expand_value(f.interner, second_argument.value(), false))
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/52829385bcc4d785e58ae2602c0b098a643523c9/src/language-js/print/call-arguments.js#L234-L258>
@@ -444,7 +444,7 @@ fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argumen
         .map(|a| f.has_comment(a.span(), CommentFlags::Leading | CommentFlags::Trailing))
         .unwrap_or(false);
 
-    could_expand_value(last_argument_value, false)
+    could_expand_value(f.interner, last_argument_value, false)
         // If the last two arguments are of the same type,
         // disable last element expansion.
         && (penultimate_argument.is_none()

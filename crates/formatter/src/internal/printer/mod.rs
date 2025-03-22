@@ -27,6 +27,7 @@ pub struct Printer<'a> {
     line_suffix: Vec<Command<'a>>,
     group_mode_map: HashMap<GroupIdentifier, Mode>,
     new_line: &'static str,
+    can_trim: bool,
 }
 
 impl<'a> Printer<'a> {
@@ -44,6 +45,7 @@ impl<'a> Printer<'a> {
             line_suffix: vec![],
             group_mode_map: HashMap::default(),
             new_line: settings.end_of_line.as_str(),
+            can_trim: true,
         }
     }
 
@@ -80,6 +82,9 @@ impl<'a> Printer<'a> {
                 Document::Fill(fill) => self.handle_fill(indentation, mode, fill),
                 Document::BreakParent => { /* No op */ }
                 Document::Trim(trim) => self.handle_trim(trim),
+                Document::DoNotTrim => {
+                    self.can_trim = false;
+                }
             }
 
             if self.commands.is_empty() && !self.line_suffix.is_empty() {
@@ -103,6 +108,12 @@ impl<'a> Printer<'a> {
 
     #[inline]
     fn handle_trim(&mut self, trim: Trim) {
+        if !self.can_trim {
+            self.can_trim = true;
+
+            return;
+        }
+
         match trim {
             Trim::Whitespace => {
                 while let Some(&last) = self.out.last() {
@@ -469,6 +480,7 @@ impl<'a> Printer<'a> {
                 }
                 Document::BreakParent => {}
                 Document::Trim(_) => {}
+                Document::DoNotTrim => {}
             }
 
             if remaining_width < 0 {

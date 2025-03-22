@@ -912,7 +912,7 @@ impl<'a> Format<'a> for Conditional {
                         f.source_text,
                         then.span().end.offset,
                         self.r#else.span().start.offset,
-                    ) && could_expand_value(then, false);
+                    ) && could_expand_value(f.interner, then, false);
 
                     let conditional_id = f.next_id();
                     let then_id = f.next_id();
@@ -1014,7 +1014,7 @@ impl<'a> Format<'a> for DocumentString {
                                 line = FormatterState::skip_leading_whitespace_up_to(line, indent);
                             }
 
-                            part_contents.push(Document::String(line));
+                            part_contents.push(Document::Array(vec![Document::String(line), Document::DoNotTrim]));
                         }
 
                         part_contents = Document::join(part_contents, Separator::HardLine);
