@@ -69,20 +69,21 @@ impl<'a> Format<'a> for Program {
 
         f.leave_node();
 
+        parts.push(Document::Trim(Trim::Newlines));
+        parts.push(Document::Line(Line::hard()));
+
         if f.scripting_mode {
             if let Some(last_span) = self.trivia.last_span().or_else(|| self.statements.last_span()) {
                 let first_span = self.trivia.first_span().or_else(|| self.statements.first_span()).unwrap_or(last_span);
 
                 if let Some(comments) = f.print_dangling_comments(first_span.join(last_span), false) {
-                    parts.push(Document::Trim(Trim::Newlines));
                     parts.push(Document::Line(Line::hard()));
                     parts.push(comments);
+                    parts.push(Document::Trim(Trim::Newlines));
+                    parts.push(Document::Line(Line::hard()));
                 }
             }
         }
-
-        parts.push(Document::Trim(Trim::Newlines));
-        parts.push(Document::Line(Line::hard()));
 
         Document::Array(parts)
     }

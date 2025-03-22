@@ -1171,6 +1171,15 @@ pub struct FormatSettings {
     /// Default: true
     #[serde(default = "default_true")]
     pub empty_line_before_dangling_comments: bool,
+
+    /// Whether to use double slash comments instead of hash comments.
+    ///
+    /// When enabled: `// This is a comment`
+    /// When disabled: `# This is a comment`
+    ///
+    /// Default: true
+    #[serde(default = "default_true")]
+    pub double_slash_comments: bool,
 }
 
 impl Default for FormatSettings {
@@ -1288,6 +1297,7 @@ impl Default for FormatSettings {
             empty_line_after_method: true,
             empty_line_before_return: false,
             empty_line_before_dangling_comments: true,
+            double_slash_comments: true,
         }
     }
 }

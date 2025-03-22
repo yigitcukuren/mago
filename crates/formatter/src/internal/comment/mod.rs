@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 
 use mago_ast::Trivia;
+use mago_ast::TriviaKind;
 use mago_source::Source;
 
 pub mod format;
@@ -23,13 +24,14 @@ pub struct Comment {
     pub start: usize,
     pub end: usize,
     pub is_block: bool,
+    pub is_shell_comment: bool,
     pub is_single_line: bool,
     pub has_line_suffix: bool,
 }
 
 impl Comment {
-    pub fn new(start: usize, end: usize, is_block: bool, is_single_line: bool) -> Self {
-        Self { start, end, is_block, is_single_line, has_line_suffix: false }
+    pub fn new(start: usize, end: usize, is_block: bool, is_shell_comment: bool, is_single_line: bool) -> Self {
+        Self { start, end, is_block, is_shell_comment, is_single_line, has_line_suffix: false }
     }
 
     pub fn from_trivia(source: &Source, trivia: &Trivia) -> Self {
@@ -38,8 +40,9 @@ impl Comment {
         let is_block = trivia.kind.is_block_comment();
         let is_single_line =
             !is_block || (source.line_number(trivia.span.start.offset) == source.line_number(trivia.span.end.offset));
+        let is_shell_comment = matches!(trivia.kind, TriviaKind::HashComment);
 
-        Self::new(trivia.span.start.offset, trivia.span.end.offset, is_block, is_single_line)
+        Self::new(trivia.span.start.offset, trivia.span.end.offset, is_block, is_shell_comment, is_single_line)
     }
 
     pub fn with_line_suffix(mut self, yes: bool) -> Self {

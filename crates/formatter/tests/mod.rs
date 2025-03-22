@@ -135,6 +135,8 @@ test_case!(line_options_flipped);
 test_case!(line_options_all_on);
 test_case!(line_options_all_off);
 test_case!(whitespace_in_heredoc);
+test_case!(shell_style_comments);
+test_case!(double_slash_comments);
 
 // GitHub issue test cases
 test_case!(issue_122);

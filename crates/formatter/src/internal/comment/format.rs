@@ -297,9 +297,19 @@ impl<'a> FormatterState<'a> {
 
     #[must_use]
     fn print_comment(&self, comment: Comment) -> Document<'a> {
-        let content = &self.source_text[comment.start..comment.end];
+        let mut content = &self.source_text[comment.start..comment.end];
 
         if comment.is_inline_comment() {
+            if !comment.is_single_line {
+                return Document::String(content);
+            }
+
+            if self.settings.double_slash_comments && comment.is_shell_comment {
+                content = self.as_str(format!("// {}", content[1..].trim()));
+            } else if !self.settings.double_slash_comments && !comment.is_shell_comment {
+                content = self.as_str(format!("# {}", content[2..].trim()));
+            }
+
             return Document::String(content);
         }
 
