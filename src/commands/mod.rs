@@ -1,5 +1,3 @@
-#![expect(deprecated)]
-
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -12,7 +10,6 @@ use mago_php_version::PHPVersion;
 
 use crate::commands::ast::AstCommand;
 use crate::commands::find::FindCommand;
-use crate::commands::fix::FixCommand;
 use crate::commands::format::FormatCommand;
 use crate::commands::init::InitCommand;
 use crate::commands::lint::LintCommand;
@@ -21,7 +18,6 @@ use crate::error::Error;
 
 pub mod ast;
 pub mod find;
-pub mod fix;
 pub mod format;
 pub mod init;
 pub mod lint;
@@ -49,9 +45,6 @@ pub enum MagoCommand {
     /// Lint PHP code using Mago's linter.
     #[command(name = "lint")]
     Lint(LintCommand),
-    /// Automatically fix linting issues in PHP code (deprecated).
-    #[command(name = "fix")]
-    Fix(FixCommand),
     /// Format PHP code using Mago's formatter.
     #[command(name = "format")]
     Format(FormatCommand),

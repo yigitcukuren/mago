@@ -69,7 +69,6 @@ pub fn run() -> Result<ExitCode, Error> {
     match command {
         MagoCommand::Init(cmd) => runtime.block_on(commands::init::execute(cmd, configuration)),
         MagoCommand::Lint(cmd) => runtime.block_on(commands::lint::execute(cmd, configuration)),
-        MagoCommand::Fix(cmd) => runtime.block_on(commands::fix::execute(cmd, configuration)),
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
         MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd)),
         MagoCommand::Find(find) => runtime.block_on(commands::find::execute(find, configuration)),
