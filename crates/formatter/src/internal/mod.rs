@@ -21,16 +21,15 @@ pub mod parens;
 pub mod printer;
 pub mod utils;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ArgumentState {
     expand_first_argument: bool,
     expand_last_argument: bool,
 }
 
-impl ArgumentState {
-    pub fn new() -> Self {
-        Self { expand_first_argument: false, expand_last_argument: false }
-    }
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ParameterState {
+    force_break: bool,
 }
 
 #[derive(Debug)]
@@ -45,6 +44,7 @@ pub struct FormatterState<'a> {
     scripting_mode: bool,
     id_builder: GroupIdentifierBuilder,
     argument_state: ArgumentState,
+    parameter_state: ParameterState,
 }
 
 impl<'a> FormatterState<'a> {
@@ -64,7 +64,8 @@ impl<'a> FormatterState<'a> {
             comments: vec![].into_iter().peekable(),
             scripting_mode: false,
             id_builder: GroupIdentifierBuilder::new(),
-            argument_state: ArgumentState::new(),
+            argument_state: ArgumentState::default(),
+            parameter_state: ParameterState::default(),
         }
     }
 

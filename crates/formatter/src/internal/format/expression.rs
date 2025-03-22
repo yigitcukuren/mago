@@ -631,9 +631,12 @@ impl<'a> Format<'a> for Closure {
 impl<'a> Format<'a> for ArrowFunction {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, ArrowFunction, {
-            let attributes = print_attribute_list_sequence(f, &self.attribute_lists, true);
-
             let mut contents = vec![];
+            if let Some(attributes) = print_attribute_list_sequence(f, &self.attribute_lists) {
+                contents.push(attributes);
+                contents.push(Document::Line(Line::default()));
+            }
+
             if let Some(s) = &self.r#static {
                 contents.push(s.format(f));
                 contents.push(Document::space());
@@ -656,11 +659,7 @@ impl<'a> Format<'a> for ArrowFunction {
             contents.push(Document::String(" => "));
             contents.push(format_return_value(f, self.expression.as_ref()));
 
-            if let Some(attributes) = attributes {
-                Document::Group(Group::new(vec![attributes, Document::Group(Group::new(contents))]))
-            } else {
-                Document::Group(Group::new(contents))
-            }
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -1234,9 +1233,10 @@ impl<'a> Format<'a> for AnonymousClass {
         wrap!(f, self, AnonymousClass, {
             let initialization = {
                 let mut contents = vec![Document::BreakParent, self.new.format(f)];
-                if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attribute_lists, false) {
+                if let Some(attributes) = misc::print_attribute_list_sequence(f, &self.attribute_lists) {
                     contents.push(Document::Line(Line::default()));
                     contents.push(attributes);
+                    contents.push(Document::Line(Line::hard()));
                 } else {
                     contents.push(Document::space());
                 }

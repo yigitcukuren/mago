@@ -7,38 +7,6 @@ use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::misc;
 
-pub(super) fn should_hug_the_only_parameter<'a>(
-    f: &mut FormatterState<'a>,
-    parameter_list: &'a FunctionLikeParameterList,
-) -> bool {
-    if parameter_list.parameters.len() != 1 {
-        return false;
-    }
-
-    let Some(parameter) = parameter_list.parameters.first() else {
-        return false;
-    };
-
-    // Avoid hugging the parameter if it has a comment anywhere around it
-    if f.has_comment(parameter.span(), CommentFlags::all()) {
-        return false;
-    }
-
-    // Don't hug the parameter if it has an attribute, or if it has a
-    // property hook list.
-    //
-    // TODO: maybe hug the parameter if it has a single attribute and no hooks?
-    if !parameter.attribute_lists.is_empty() || parameter.hooks.is_some() {
-        return false;
-    }
-
-    if !parameter.modifiers.is_empty() && f.settings.break_promoted_properties_list {
-        return false;
-    }
-
-    true
-}
-
 pub(super) fn print_function_like_parameters<'a>(
     f: &mut FormatterState<'a>,
     parameter_list: &'a FunctionLikeParameterList,
@@ -66,8 +34,6 @@ pub(super) fn print_function_like_parameters<'a>(
         }
 
         if f.settings.preserve_breaking_parameter_list
-            && (parameter_list.parameters.len() > 1
-                || parameter_list.parameters.iter().any(|p| p.is_promoted_property()))
             && misc::has_new_line_in_range(
                 f.source_text,
                 parameter_list.left_parenthesis.start.offset,
@@ -79,6 +45,11 @@ pub(super) fn print_function_like_parameters<'a>(
 
         false
     };
+
+    let previous_break = f.parameter_state.force_break;
+    if should_break {
+        f.parameter_state.force_break = true;
+    }
 
     let should_hug_the_parameters = !should_break && should_hug_the_only_parameter(f, parameter_list);
 
@@ -137,9 +108,39 @@ pub(super) fn print_function_like_parameters<'a>(
 
     parts.push(Document::String(")"));
 
-    if f.argument_state.expand_first_argument {
-        Document::Array(parts)
-    } else {
-        Document::Group(Group::new(parts).with_break(should_break))
+    f.parameter_state.force_break = previous_break;
+
+    Document::Group(Group::new(parts).with_break(should_break))
+}
+
+fn should_hug_the_only_parameter<'a>(
+    f: &mut FormatterState<'a>,
+    parameter_list: &'a FunctionLikeParameterList,
+) -> bool {
+    if parameter_list.parameters.len() != 1 {
+        return false;
     }
+
+    let Some(parameter) = parameter_list.parameters.first() else {
+        return false;
+    };
+
+    // Avoid hugging the parameter if it has a comment anywhere around it
+    if f.has_comment(parameter.span(), CommentFlags::all()) {
+        return false;
+    }
+
+    // Don't hug the parameter if it has an attribute, or if it has a
+    // property hook list.
+    //
+    // TODO: maybe hug the parameter if it has a single attribute and no hooks?
+    if !parameter.attribute_lists.is_empty() || parameter.hooks.is_some() {
+        return false;
+    }
+
+    if !parameter.modifiers.is_empty() && f.settings.break_promoted_properties_list {
+        return false;
+    }
+
+    true
 }

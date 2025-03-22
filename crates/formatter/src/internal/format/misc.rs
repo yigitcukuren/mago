@@ -249,7 +249,6 @@ pub(super) fn print_modifiers<'a>(f: &mut FormatterState<'a>, modifiers: &'a Seq
 pub(super) fn print_attribute_list_sequence<'a>(
     f: &mut FormatterState<'a>,
     attribute_lists: &'a Sequence<AttributeList>,
-    can_inline: bool,
 ) -> Option<Document<'a>> {
     if attribute_lists.is_empty() {
         return None;
@@ -275,18 +274,17 @@ pub(super) fn print_attribute_list_sequence<'a>(
         has_new_line = has_new_line || f.is_next_line_empty(attribute_list.span());
     }
 
-    // if there is a single attribute list, we can inline it
-    if can_inline && !has_new_line && lists.len() == 1 && !has_potentially_long_attribute {
-        return Some(Document::Group(Group::new(vec![lists.remove(0), Document::Line(Line::default())])));
-    }
-
     let mut contents = vec![];
-    for attribute_list in lists {
+    let len = lists.len();
+    for (i, attribute_list) in lists.into_iter().enumerate() {
         contents.push(attribute_list);
-        contents.push(Document::Line(Line::hard()));
+
+        if i != len - 1 {
+            contents.push(Document::Line(Line::hard()));
+        }
     }
 
-    Some(Document::Group(Group::new(contents).with_break(true)))
+    Some(Document::Group(Group::new(contents)))
 }
 
 pub(super) fn print_clause<'a>(f: &mut FormatterState<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {
