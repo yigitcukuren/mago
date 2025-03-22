@@ -201,18 +201,13 @@ pub fn could_expand_value(
 
 #[inline]
 pub fn string_width(s: &str) -> usize {
-    let lines = s.lines();
+    let line = s.lines().last().unwrap_or("");
 
-    lines.map(line_width).max().unwrap_or(0)
-}
-
-#[inline]
-fn line_width(s: &str) -> usize {
-    if s.contains("الله") {
+    if line.contains("الله") {
         // The word "الله" is a special case, as it is usually rendered as a single glyph
         // while being 4 characters wide. This is a hack to handle this case.
-        s.replace("الله", "_").width()
+        line.replace("الله", "_").width()
     } else {
-        s.width()
+        line.width()
     }
 }

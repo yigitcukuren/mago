@@ -138,6 +138,9 @@ test_case!(whitespace_in_heredoc);
 test_case!(shell_style_comments);
 test_case!(double_slash_comments);
 
+// A special test case for regressions in the Psl codebase
+test_case!(psl_regressions);
+
 // GitHub issue test cases
 test_case!(issue_122);
 test_case!(issue_123);

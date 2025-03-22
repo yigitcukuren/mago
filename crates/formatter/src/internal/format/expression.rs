@@ -1014,7 +1014,12 @@ impl<'a> Format<'a> for DocumentString {
                                 line = FormatterState::skip_leading_whitespace_up_to(line, indent);
                             }
 
-                            part_contents.push(Document::Array(vec![Document::String(line), Document::DoNotTrim]));
+                            let mut line_content = vec![Document::String(line)];
+                            if !line.is_empty() {
+                                line_content.push(Document::DoNotTrim);
+                            }
+
+                            part_contents.push(Document::Array(line_content));
                         }
 
                         part_contents = Document::join(part_contents, Separator::HardLine);
