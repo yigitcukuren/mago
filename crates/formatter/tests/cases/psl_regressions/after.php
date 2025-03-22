@@ -16,14 +16,15 @@ final class TypedTest extends TestCase
     {
         /** @var MapInterface $actual */
         $actual = Json\typed(
-        '{
+            '{
             "name": "azjezz/psl",
             "type": "library",
             "description": "PHP Standard Library.",
             "keywords": ["php", "std", "stdlib", "utility", "psl"],
             "license": "MIT"
-        }', 
-        Type\map(Type\string(), Type\union(Type\string(), Type\vector(Type\string()))));
+        }',
+            Type\map(Type\string(), Type\union(Type\string(), Type\vector(Type\string()))),
+        );
     }
 
     public function testTypedThrowsWhenUnableToCoerce(): void
