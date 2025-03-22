@@ -106,8 +106,8 @@ pub(super) fn print_argument_list<'a>(
     // First, run all the decision functions with unformatted arguments
     let should_break_all = should_break_all_arguments(f, argument_list, for_attribute);
     let should_inline = should_inline_single_breaking_argument(f, argument_list);
-    let should_expand_first = should_expand_first_arg(f, argument_list);
-    let should_expand_last = should_expand_last_arg(f, argument_list);
+    let should_expand_first = should_expand_first_arg(f, argument_list, false);
+    let should_expand_last = should_expand_last_arg(f, argument_list, false);
     let is_single_late_breaking_argument = is_single_late_breaking_argument(f, argument_list);
 
     let arguments_count = argument_list.arguments.len();
@@ -405,7 +405,7 @@ fn should_inline_single_breaking_argument<'a>(f: &FormatterState<'a>, argument_l
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/3.3.3/src/language-js/print/call-arguments.js#L247-L272>
-fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
+pub fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList, nested_args: bool) -> bool {
     if argument_list.arguments.len() != 2 {
         return false;
     }
@@ -420,20 +420,19 @@ fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argume
         return false;
     }
 
-    could_expand_value(f.interner, first_argument.value(), false)
+    could_expand_value(f, first_argument.value(), false, nested_args)
         && (is_hopefully_short_call_argument(second_argument.value())
-            && !could_expand_value(f.interner, second_argument.value(), false))
+            && !could_expand_value(f, second_argument.value(), false, nested_args))
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/52829385bcc4d785e58ae2602c0b098a643523c9/src/language-js/print/call-arguments.js#L234-L258>
-fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
+pub fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList, nested_args: bool) -> bool {
     let Some(last_argument) = argument_list.arguments.last() else { return false };
     if f.has_comment(last_argument.span(), CommentFlags::Leading | CommentFlags::Trailing) {
         return false;
     }
 
     let last_argument_value = last_argument.value();
-
     let penultimate_argument = if argument_list.arguments.len() >= 2 {
         argument_list.arguments.get(argument_list.arguments.len() - 2)
     } else {
@@ -444,7 +443,7 @@ fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Argumen
         .map(|a| f.has_comment(a.span(), CommentFlags::Leading | CommentFlags::Trailing))
         .unwrap_or(false);
 
-    could_expand_value(f.interner, last_argument_value, false)
+    could_expand_value(f, last_argument_value, false, nested_args)
         // If the last two arguments are of the same type,
         // disable last element expansion.
         && (penultimate_argument.is_none()

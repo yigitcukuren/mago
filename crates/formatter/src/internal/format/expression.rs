@@ -912,7 +912,7 @@ impl<'a> Format<'a> for Conditional {
                         f.source_text,
                         then.span().end.offset,
                         self.r#else.span().start.offset,
-                    ) && could_expand_value(f.interner, then, false);
+                    ) && could_expand_value(f, then, false, false);
 
                     let conditional_id = f.next_id();
                     let then_id = f.next_id();

@@ -1,13 +1,15 @@
 use unicode_width::UnicodeWidthStr;
 
 use mago_ast::*;
-use mago_interner::ThreadedInterner;
 
 use crate::document::Align;
 use crate::document::Document;
 use crate::document::IndentIfBreak;
 use crate::document::Separator;
 use crate::internal::FormatterState;
+
+use super::format::call_arguments::should_expand_first_arg;
+use super::format::call_arguments::should_expand_last_arg;
 
 #[inline]
 pub const fn has_naked_left_side(expression: &Expression) -> bool {
@@ -143,18 +145,23 @@ pub fn replace_end_of_line(document: Document<'_>, replacement: Separator) -> Do
 }
 
 #[inline]
-pub fn could_expand_value(interner: &ThreadedInterner, value: &Expression, arrow_chain_recursion: bool) -> bool {
+pub fn could_expand_value(
+    f: &FormatterState<'_>,
+    value: &Expression,
+    arrow_chain_recursion: bool,
+    nested_args: bool,
+) -> bool {
     match value {
         Expression::Array(expr) => !expr.elements.is_empty(),
         Expression::LegacyArray(expr) => !expr.elements.is_empty(),
         Expression::List(expr) => !expr.elements.is_empty(),
         Expression::Closure(_) => true,
         Expression::Match(m) => !m.arms.is_empty(),
-        Expression::Binary(operation) => could_expand_value(interner, &operation.lhs, arrow_chain_recursion),
+        Expression::Binary(operation) => could_expand_value(f, &operation.lhs, arrow_chain_recursion, nested_args),
         Expression::ArrowFunction(arrow_function) if !arrow_chain_recursion => match arrow_function.expression.as_ref()
         {
             Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => {
-                could_expand_value(interner, &arrow_function.expression, true)
+                could_expand_value(f, &arrow_function.expression, true, nested_args)
             }
             Expression::Call(_) | Expression::Conditional(_) => true,
             _ => false,
@@ -171,18 +178,23 @@ pub fn could_expand_value(interner: &ThreadedInterner, value: &Expression, arrow
             arguments.arguments.len() > 2
         }
         Expression::Literal(Literal::String(literal_string)) => {
-            let string = interner.lookup(&literal_string.value);
+            let string = f.interner.lookup(&literal_string.value);
 
             string.contains('\n') || string.contains('\r')
         }
         Expression::CompositeString(composite_string) => composite_string.parts().iter().any(|part| match part {
             StringPart::Literal(literal_string) => {
-                let string = interner.lookup(&literal_string.value);
+                let string = f.interner.lookup(&literal_string.value);
 
                 string.contains('\n') || string.contains('\r')
             }
             _ => false,
         }),
+        Expression::Call(call) if !nested_args => {
+            let argument_list = call.get_argument_list();
+
+            should_expand_first_arg(f, argument_list, true) || should_expand_last_arg(f, argument_list, true)
+        }
         _ => false,
     }
 }
