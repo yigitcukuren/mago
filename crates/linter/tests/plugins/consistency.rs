@@ -4,6 +4,7 @@ use mago_linter::plugin::consistency::rules::lowercase_keyword::LowercaseKeyword
 use mago_linter::plugin::consistency::rules::no_function_aliases::NoFunctionAliasesRule;
 use mago_linter::plugin::consistency::rules::no_tag_pair_terminator::NoTagPairTerminatorRule;
 use mago_linter::plugin::consistency::rules::require_block_statement_body::RequireBlockStatementBodyRule;
+use mago_linter::plugin::consistency::rules::string_interpolation_braces::StringInterpolationBracesRule;
 
 use crate::rule_test;
 
@@ -13,3 +14,4 @@ rule_test!(test_lowercase_keyword, LowercaseKeywordRule);
 rule_test!(test_no_function_aliases, NoFunctionAliasesRule);
 rule_test!(test_no_tag_pair_terminator, NoTagPairTerminatorRule);
 rule_test!(test_require_block_statement_body, RequireBlockStatementBodyRule);
+rule_test!(test_string_interpolation_braces, StringInterpolationBracesRule);

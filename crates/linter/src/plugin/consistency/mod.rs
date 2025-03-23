@@ -5,6 +5,7 @@ use crate::plugin::consistency::rules::lowercase_keyword::LowercaseKeywordRule;
 use crate::plugin::consistency::rules::no_function_aliases::NoFunctionAliasesRule;
 use crate::plugin::consistency::rules::no_tag_pair_terminator::NoTagPairTerminatorRule;
 use crate::plugin::consistency::rules::require_block_statement_body::RequireBlockStatementBodyRule;
+use crate::plugin::consistency::rules::string_interpolation_braces::StringInterpolationBracesRule;
 
 use crate::plugin::Plugin;
 use crate::rule::Rule;
@@ -31,6 +32,7 @@ impl Plugin for ConsistencyPlugin {
             Box::new(NoFunctionAliasesRule),
             Box::new(NoTagPairTerminatorRule),
             Box::new(RequireBlockStatementBodyRule),
+            Box::new(StringInterpolationBracesRule),
         ]
     }
 }
