@@ -72,7 +72,7 @@ pub fn parse_expression_with_precedence(
         }
     }
 
-    if precedence < Precedence::Instanceof {
+    if precedence < Precedence::Instanceof && !stream.state.within_indirect_variable {
         if let Expression::Identifier(identifier) = left {
             left = Expression::ConstantAccess(ConstantAccess { name: identifier });
         }

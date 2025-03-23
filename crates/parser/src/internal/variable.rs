@@ -24,11 +24,15 @@ pub fn parse_direct_variable(stream: &mut TokenStream<'_, '_>) -> Result<DirectV
 }
 
 pub fn parse_indirect_variable(stream: &mut TokenStream<'_, '_>) -> Result<IndirectVariable, ParseError> {
-    Ok(IndirectVariable {
-        dollar_left_brace: utils::expect_span(stream, T!["${"])?,
-        expression: Box::new(expression::parse_expression(stream)?),
-        right_brace: utils::expect_span(stream, T!["}"])?,
-    })
+    let within_indirect_variable = stream.state.within_indirect_variable;
+
+    let dollar_left_brace = utils::expect_span(stream, T!["${"])?;
+    stream.state.within_indirect_variable = true;
+    let expression = expression::parse_expression(stream)?;
+    stream.state.within_indirect_variable = within_indirect_variable;
+    let right_brace = utils::expect_span(stream, T!["}"])?;
+
+    Ok(IndirectVariable { dollar_left_brace, expression: Box::new(expression), right_brace })
 }
 
 pub fn parse_nested_variable(stream: &mut TokenStream<'_, '_>) -> Result<NestedVariable, ParseError> {

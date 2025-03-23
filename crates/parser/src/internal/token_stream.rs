@@ -11,6 +11,11 @@ use mago_span::Position;
 use mago_token::Token;
 use mago_token::TokenKind;
 
+#[derive(Debug, Default)]
+pub struct State {
+    pub within_indirect_variable: bool,
+}
+
 #[derive(Debug)]
 pub struct TokenStream<'a, 'i> {
     interner: &'i ThreadedInterner,
@@ -18,13 +23,21 @@ pub struct TokenStream<'a, 'i> {
     buffer: VecDeque<Token>,
     trivia: Vec<Token>,
     position: Position,
+    pub(crate) state: State,
 }
 
 impl<'a, 'i> TokenStream<'a, 'i> {
     pub fn new(interner: &'i ThreadedInterner, lexer: Lexer<'a, 'i>) -> TokenStream<'a, 'i> {
         let position = lexer.get_position();
 
-        TokenStream { interner, lexer, buffer: VecDeque::new(), trivia: Vec::new(), position }
+        TokenStream {
+            interner,
+            lexer,
+            buffer: VecDeque::new(),
+            trivia: Vec::new(),
+            position,
+            state: Default::default(),
+        }
     }
 
     pub fn interner(&self) -> &'i ThreadedInterner {
