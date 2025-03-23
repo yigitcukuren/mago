@@ -5,7 +5,7 @@ $options = $this->multiple
     : [self::CANCEL, self::SEARCH_AGAIN, ...($this->search)($query)];
 
     $this->now = $now instanceof DateTimeInterface
-        ? DateTimeImmutable::createFromInterface($now)
+        ? DateTimeImmutable::from($now)
         : new DateTimeImmutable($now);
 
          function getControls(): array

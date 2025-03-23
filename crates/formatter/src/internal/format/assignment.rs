@@ -196,7 +196,7 @@ fn choose_layout<'a, 'b>(
 
     // wrapping class property-like with very short keys usually doesn't add much value
     let has_short_key = is_property_like_with_short_key(f, assignment_like_node);
-    if should_break_after_operator(f, rhs_expression, has_short_key, assignment_like_node) {
+    if should_break_after_operator(f, rhs_expression, has_short_key) {
         return Layout::BreakAfterOperator;
     }
 
@@ -324,10 +324,9 @@ fn should_break_after_operator<'a>(
     f: &FormatterState<'a>,
     rhs_expression: &'a Expression,
     has_short_key: bool,
-    assignment_like_node: &AssignmentLikeNode<'_>,
 ) -> bool {
     if let Expression::Parenthesized(parenthesized) = rhs_expression {
-        return should_break_after_operator(f, &parenthesized.expression, has_short_key, assignment_like_node);
+        return should_break_after_operator(f, &parenthesized.expression, has_short_key);
     }
 
     match rhs_expression {
@@ -354,15 +353,15 @@ fn should_break_after_operator<'a>(
         Expression::Conditional(conditional) => {
             let condition = unwrap_parenthesized(conditional.condition.as_ref());
 
-            if let AssignmentLikeNode::KeyValueArrayElement(_) = assignment_like_node {
-                if let Expression::Binary(Binary { lhs, rhs, .. }) = &condition {
-                    if !lhs.is_binary() || !rhs.is_binary() {
-                        return false;
-                    }
+            if let binary @ Expression::Binary(Binary { lhs, rhs, .. }) = condition {
+                if !lhs.is_binary() || !rhs.is_binary() {
+                    return false;
                 }
+
+                return !should_inline_logical_or_coalesce_expression(binary);
             }
 
-            return condition.is_binary() && !should_inline_logical_or_coalesce_expression(condition);
+            return false;
         }
         Expression::AnonymousClass(anonymous_class) => {
             if !anonymous_class.attribute_lists.is_empty() {
