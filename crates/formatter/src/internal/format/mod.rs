@@ -851,6 +851,7 @@ impl<'a> Format<'a> for Method {
                 attributes.push(Document::Line(Line::hard()));
             }
 
+            let leading_comments = f.print_leading_comments(self.modifiers.first_span().unwrap_or(self.function.span));
             let mut signature = print_modifiers(f, &self.modifiers);
             if !signature.is_empty() {
                 signature.push(Document::space());
@@ -878,40 +879,49 @@ impl<'a> Format<'a> for Method {
             let signature_id = f.next_id();
             let signature_document = Document::Group(Group::new(signature).with_id(signature_id));
 
-            let mut body = vec![];
-            if let MethodBody::Concrete(block) = &self.body {
-                let is_constructor = f.interner.lookup(&self.name.value).eq_ignore_ascii_case("__construct");
-
-                let inlined_braces = if is_constructor {
-                    f.settings.inline_empty_constructor_braces
-                } else {
-                    f.settings.inline_empty_method_braces
-                } && block_is_empty(f, &block.left_brace, &block.right_brace);
-
-                body.push(if inlined_braces {
-                    Document::space()
-                } else {
-                    match f.settings.method_brace_style {
-                        BraceStyle::SameLine => Document::space(),
-                        BraceStyle::NextLine => {
-                            if !has_parameters_or_inner_parameter_comments {
-                                Document::Line(Line::hard())
-                            } else {
-                                Document::IfBreak(
-                                    IfBreak::new(Document::space(), Document::Line(Line::hard())).with_id(signature_id),
-                                )
-                            }
-                        }
-                    }
-                });
-            }
-
-            body.push(self.body.format(f));
-
             Document::Group(Group::new(vec![
                 Document::Group(Group::new(attributes)),
+                leading_comments.unwrap_or_else(Document::empty),
                 signature_document,
-                Document::Group(Group::new(body)),
+                match &self.body {
+                    MethodBody::Abstract(_) => self.body.format(f),
+                    MethodBody::Concrete(block) => {
+                        let is_constructor = f.interner.lookup(&self.name.value).eq_ignore_ascii_case("__construct");
+
+                        let inlined_braces = if is_constructor {
+                            f.settings.inline_empty_constructor_braces
+                        } else {
+                            f.settings.inline_empty_method_braces
+                        } && block_is_empty(f, &block.left_brace, &block.right_brace);
+
+                        Document::Group(Group::new(vec![
+                            if inlined_braces {
+                                Document::space()
+                            } else {
+                                match f.settings.method_brace_style {
+                                    BraceStyle::SameLine => Document::space(),
+                                    BraceStyle::NextLine => {
+                                        if !has_parameters_or_inner_parameter_comments {
+                                            Document::Line(Line::hard())
+                                        } else {
+                                            Document::IfBreak(
+                                                IfBreak::new(
+                                                    Document::space(),
+                                                    Document::Array(vec![
+                                                        Document::Line(Line::hard()),
+                                                        Document::BreakParent,
+                                                    ]),
+                                                )
+                                                .with_id(signature_id),
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            self.body.format(f),
+                        ]))
+                    }
+                },
             ]))
         })
     }
@@ -1649,6 +1659,7 @@ impl<'a> Format<'a> for Function {
                 attributes.push(Document::Line(Line::hard()));
             }
 
+            let leading_comments = f.print_leading_comments(self.function.span);
             let mut signature = vec![];
             signature.push(self.function.format(f));
             signature.push(Document::space());
@@ -1677,6 +1688,7 @@ impl<'a> Format<'a> for Function {
 
             Document::Group(Group::new(vec![
                 Document::Group(Group::new(attributes)),
+                leading_comments.unwrap_or_else(Document::empty),
                 signature_document,
                 Document::Group(Group::new(vec![
                     if inlined_braces {

@@ -583,6 +583,9 @@ impl<'a> Format<'a> for Closure {
                 attributes.push(Document::BreakParent);
             }
 
+            let leading_comments =
+                f.print_leading_comments(self.r#static.as_ref().map(|c| c.span).unwrap_or_else(|| self.function.span));
+
             let mut signature = vec![];
             if let Some(s) = &self.r#static {
                 signature.push(s.format(f));
@@ -613,6 +616,7 @@ impl<'a> Format<'a> for Closure {
 
             Document::Group(Group::new(vec![
                 Document::Group(Group::new(attributes)),
+                leading_comments.unwrap_or_else(Document::empty),
                 signature_document,
                 Document::Group(Group::new(vec![
                     match f.settings.closure_brace_style {
