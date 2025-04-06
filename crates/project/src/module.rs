@@ -1,9 +1,10 @@
+use mago_names::resolver::NameResolver;
 use serde::Deserialize;
 use serde::Serialize;
 
 use mago_ast::Program;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_parser::error::ParseError;
 use mago_php_version::PHPVersion;
 use mago_reflection::CodebaseReflection;
@@ -20,7 +21,7 @@ use crate::internal;
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Module {
     pub source: Source,
-    pub names: Names,
+    pub names: ResolvedNames,
     pub parse_error: Option<ParseError>,
     pub reflection: Option<CodebaseReflection>,
     pub issues: IssueCollection,
@@ -100,7 +101,8 @@ impl Module {
         options: ModuleBuildOptions,
     ) -> (Self, Program) {
         let (program, parse_error) = mago_parser::parse_source(interner, &source);
-        let names = Names::resolve(interner, &program);
+        let resolver = NameResolver::new(interner);
+        let names = resolver.resolve(&program);
         let (reflection, issues) = internal::build(interner, version, &source, &program, &names, options);
         let module = Self { source, parse_error, names, reflection, issues };
 

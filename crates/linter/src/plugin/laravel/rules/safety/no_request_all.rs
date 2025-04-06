@@ -142,7 +142,7 @@ impl Rule for NoRequestAllRule {
 
                     fqcn.eq_ignore_ascii_case(REQUEST_FACADE)
                         || fqcn.eq_ignore_ascii_case(REQUEST_FQCN)
-                        || context.lookup(&identifier.value()).eq_ignore_ascii_case(REQUEST_CLASS)
+                        || context.lookup(identifier.value()).eq_ignore_ascii_case(REQUEST_CLASS)
                 }
                 _ => {
                     // we do not care about closure creation..

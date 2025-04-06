@@ -1,2 +1,2 @@
 pub(crate) mod context;
-pub(crate) mod resolver;
+pub(crate) mod walker;

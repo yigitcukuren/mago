@@ -23,6 +23,7 @@ pub struct Span {
 pub trait HasPosition {
     fn position(&self) -> Position;
 
+    #[inline]
     fn offset(&self) -> usize {
         self.position().offset
     }

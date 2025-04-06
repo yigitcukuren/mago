@@ -34,7 +34,7 @@ pub fn reflect_defined_constant(define: &FunctionCall, context: &mut Context<'_>
         return None;
     };
 
-    let function_name = context.interner.lookup(&identifier.value());
+    let function_name = context.interner.lookup(identifier.value());
     if function_name != "define" {
         return None;
     }

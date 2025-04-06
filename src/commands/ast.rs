@@ -1,13 +1,13 @@
 use std::process::ExitCode;
 
 use clap::Parser;
+use mago_names::resolver::NameResolver;
 use serde_json::json;
 use termtree::Tree;
 
 use mago_ast::Node;
 use mago_ast::node::NodeKind;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
 use mago_parser::parse_source;
 use mago_reporting::Issue;
 use mago_reporting::reporter::Reporter;
@@ -121,7 +121,8 @@ pub async fn execute(command: AstCommand) -> Result<ExitCode, Error> {
         println!("{tree}");
 
         if command.include_names {
-            let names = Names::resolve(&interner, &ast);
+            let resolver = NameResolver::new(&interner);
+            let names = resolver.resolve(&ast);
 
             for (position, (value, is_imported)) in names.all() {
                 let name = interner.lookup(value);

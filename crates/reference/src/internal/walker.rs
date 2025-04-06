@@ -16,11 +16,11 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
             UseItems::Sequence(use_item_sequence) => {
                 for item in &use_item_sequence.items.nodes {
                     let item_name_id = item.name.value();
-                    let item_name = context.interner.lookup(&item_name_id);
+                    let item_name = context.interner.lookup(item_name_id);
 
                     if context.query.matches(item_name) {
                         context.references.push(Reference {
-                            value: item_name_id,
+                            value: *item_name_id,
                             kind: ReferenceKind::Import,
                             span: item.name.span(),
                         });
@@ -30,11 +30,11 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
             UseItems::TypedSequence(typed_use_item_sequence) => {
                 for item in &typed_use_item_sequence.items.nodes {
                     let item_name_id = item.name.value();
-                    let item_name = context.interner.lookup(&item_name_id);
+                    let item_name = context.interner.lookup(item_name_id);
 
                     if context.query.matches(item_name) {
                         context.references.push(Reference {
-                            value: item_name_id,
+                            value: *item_name_id,
                             kind: ReferenceKind::Import,
                             span: item.name.span(),
                         });
@@ -43,11 +43,11 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
             }
             UseItems::TypedList(typed_use_item_list) => {
                 let prefix_id = typed_use_item_list.namespace.value();
-                let prefix = context.interner.lookup(&prefix_id);
+                let prefix = context.interner.lookup(prefix_id);
 
                 for item in &typed_use_item_list.items.nodes {
                     let item_name_id = item.name.value();
-                    let item_name = context.interner.lookup(&item_name_id);
+                    let item_name = context.interner.lookup(item_name_id);
                     let full_name = format!("{}\\{}", prefix, item_name);
 
                     if context.query.matches(&full_name) {
@@ -63,11 +63,11 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
             }
             UseItems::MixedList(mixed_use_item_list) => {
                 let prefix_id = mixed_use_item_list.namespace.value();
-                let prefix = context.interner.lookup(&prefix_id);
+                let prefix = context.interner.lookup(prefix_id);
 
                 for maybe_typed_item in &mixed_use_item_list.items.nodes {
                     let item_name_id = maybe_typed_item.item.name.value();
-                    let item_name = context.interner.lookup(&item_name_id);
+                    let item_name = context.interner.lookup(item_name_id);
                     let full_name = format!("{}\\{}", prefix, item_name);
 
                     if context.query.matches(&full_name) {

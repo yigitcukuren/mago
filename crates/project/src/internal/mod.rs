@@ -1,6 +1,6 @@
 use mago_ast::Program;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_php_version::PHPVersion;
 use mago_reflection::CodebaseReflection;
 use mago_reporting::IssueCollection;
@@ -28,7 +28,7 @@ pub fn build(
     version: PHPVersion,
     source: &Source,
     program: &Program,
-    names: &Names,
+    names: &ResolvedNames,
     options: ModuleBuildOptions,
 ) -> (Option<CodebaseReflection>, IssueCollection) {
     let mut context = Context::new(interner, &version, program, names, source);

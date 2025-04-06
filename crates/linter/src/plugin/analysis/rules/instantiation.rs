@@ -90,7 +90,7 @@ impl Rule for InstantiationRule {
         };
 
         let class_name_identifier = context.module.names.get(class_identifier);
-        let class_name = context.lookup(&class_identifier.value()).to_string();
+        let class_name = context.lookup(class_identifier.value()).to_string();
         let class_fqcn = context.lookup(class_name_identifier).to_string();
 
         let Some(reflection) = context.codebase.get_named_class_like(context.interner, class_name_identifier) else {

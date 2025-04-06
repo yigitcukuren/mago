@@ -3,7 +3,7 @@ use ahash::HashSet;
 use mago_ast::*;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_reflection::CodebaseReflection;
 use mago_reflection::identifier::ClassLikeName;
 use mago_reflection::identifier::FunctionLikeName;
@@ -35,7 +35,7 @@ use crate::internal::*;
 pub struct TypeResolver<'i, 'c> {
     interner: &'i ThreadedInterner,
     source: &'c Source,
-    names: &'c Names,
+    names: &'c ResolvedNames,
     codebase: Option<&'c CodebaseReflection>,
     constant_resolver: ConstantTypeResolver<'i, 'c>,
 }
@@ -44,7 +44,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
     pub fn new(
         interner: &'i ThreadedInterner,
         source: &'c Source,
-        names: &'c Names,
+        names: &'c ResolvedNames,
         codebase: Option<&'c CodebaseReflection>,
     ) -> Self {
         Self {
@@ -140,7 +140,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         if let Expression::Identifier(identifier) = function_call.function.as_ref() {
                             let (full_name, short_name) = resolve_name(self.interner, identifier.value());
 
-                            if let Some(function) = codebase.get_function(self.interner, &full_name) {
+                            if let Some(function) = codebase.get_function(self.interner, full_name) {
                                 return function.return_type_reflection.as_ref().map_or_else(
                                     || mixed_kind(false),
                                     |return_type| return_type.type_reflection.kind.clone(),
@@ -403,7 +403,7 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                         if let Expression::Identifier(name) = function_closure_creation.function.as_ref() {
                             let (full_name, short_name) = resolve_name(self.interner, name.value());
 
-                            if let Some(function) = codebase.get_function(self.interner, &full_name) {
+                            if let Some(function) = codebase.get_function(self.interner, full_name) {
                                 return TypeKind::from(function);
                             }
 
@@ -510,9 +510,9 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     return any_object_kind();
                 };
 
-                let (class_name, _) = resolve_name(self.interner, class_name.value());
+                let class_name = self.names.get(class_name);
 
-                TypeKind::Object(ObjectTypeKind::NamedObject { name: class_name, type_parameters: vec![] })
+                TypeKind::Object(ObjectTypeKind::NamedObject { name: *class_name, type_parameters: vec![] })
             }
             Expression::MagicConstant(magic_constant) => match &magic_constant {
                 MagicConstant::Line(local_identifier) => {

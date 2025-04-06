@@ -16,7 +16,7 @@ pub fn check_attribute_list(attribute_list: &AttributeList, context: &mut Contex
     }
 
     for attr in attribute_list.attributes.iter() {
-        let name = context.interner.lookup(&attr.name.value());
+        let name = context.interner.lookup(attr.name.value());
         if let Some(list) = &attr.arguments {
             for argument in list.arguments.iter() {
                 let (ellipsis, value) = match &argument {

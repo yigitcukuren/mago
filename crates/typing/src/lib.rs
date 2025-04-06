@@ -1,6 +1,6 @@
 use mago_ast::Expression;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_reflection::CodebaseReflection;
 use mago_reflection::r#type::TypeReflection;
 use mago_reflection::r#type::kind::TypeKind;
@@ -30,7 +30,7 @@ pub mod resolver;
 pub fn infere<'ast>(
     interner: &ThreadedInterner,
     source: &'ast Source,
-    names: &'ast Names,
+    names: &'ast ResolvedNames,
     expression: &'ast Expression,
 ) -> TypeReflection {
     let kind = infere_kind(interner, source, names, expression);
@@ -53,7 +53,7 @@ pub fn infere<'ast>(
 pub fn infere_kind<'ast>(
     interner: &ThreadedInterner,
     source: &'ast Source,
-    names: &'ast Names,
+    names: &'ast ResolvedNames,
     expression: &'ast Expression,
 ) -> TypeKind {
     let resolver = TypeResolver::new(interner, source, names, None);
@@ -79,7 +79,7 @@ pub fn infere_kind<'ast>(
 pub fn resolve_kind<'ast>(
     interner: &ThreadedInterner,
     source: &'ast Source,
-    names: &'ast Names,
+    names: &'ast ResolvedNames,
     codebase: &'ast CodebaseReflection,
     expression: &'ast Expression,
 ) -> TypeKind {

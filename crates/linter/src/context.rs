@@ -130,7 +130,7 @@ impl<'a> LintContext<'a> {
 
         // Retrieve the raw name identifier for the function.
         let name_id = identifier.value();
-        let name = self.lookup(&name_id);
+        let name = self.lookup(name_id);
 
         // Check if the name explicitly refers to the global namespace using a leading `\`.
         if let Some(stripped) = name.strip_prefix('\\') {
@@ -147,7 +147,7 @@ impl<'a> LintContext<'a> {
         }
 
         // If FQFN doesn't exist, check if the global function name exists.
-        if !name.contains('\\') && self.codebase.function_exists(self.interner, &name_id) {
+        if !name.contains('\\') && self.codebase.function_exists(self.interner, name_id) {
             // If global function name exists, return it.
             return name;
         }
@@ -188,7 +188,7 @@ impl<'a> LintContext<'a> {
 
         // Retrieve the raw name identifier for the constant.
         let name_id = identifier.value();
-        let name = self.lookup(&name_id);
+        let name = self.lookup(name_id);
 
         // Check if the name explicitly refers to the global namespace using a leading `\`.
         if let Some(stripped) = name.strip_prefix('\\') {
@@ -205,7 +205,7 @@ impl<'a> LintContext<'a> {
         }
 
         // If FQCN doesn't exist, check if the global constant name exists.
-        if !name.contains('\\') && self.codebase.constant_exists(self.interner, &name_id) {
+        if !name.contains('\\') && self.codebase.constant_exists(self.interner, name_id) {
             // If global constant name exists,
             return name;
         }

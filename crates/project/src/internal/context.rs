@@ -1,7 +1,7 @@
 use mago_ast::Program;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_php_version::PHPVersion;
 use mago_reporting::IssueCollection;
 use mago_source::Source;
@@ -14,7 +14,7 @@ pub struct Context<'a> {
     pub interner: &'a ThreadedInterner,
     pub version: &'a PHPVersion,
     pub program: &'a Program,
-    pub names: &'a Names,
+    pub names: &'a ResolvedNames,
     pub source: &'a Source,
     pub issues: IssueCollection,
     pub ancestors: Vec<Span>,
@@ -26,7 +26,7 @@ impl<'a> Context<'a> {
         interner: &'a ThreadedInterner,
         version: &'a PHPVersion,
         program: &'a Program,
-        names: &'a Names,
+        names: &'a ResolvedNames,
         source: &'a Source,
     ) -> Self {
         Self {

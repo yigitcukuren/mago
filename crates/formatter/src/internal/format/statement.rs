@@ -423,7 +423,7 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
             UseItems::TypedList(list) => {
                 if should_expand {
                     let mut new_namespace = current_namespace.clone();
-                    new_namespace.push(f.interner.lookup(&list.namespace.value()));
+                    new_namespace.push(f.interner.lookup(list.namespace.value()));
                     for item in list.items.iter() {
                         expand_single_item(
                             f,
@@ -447,7 +447,7 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
             UseItems::MixedList(list) => {
                 if should_expand {
                     let mut new_namespace = current_namespace.clone();
-                    new_namespace.push(f.interner.lookup(&list.namespace.value()));
+                    new_namespace.push(f.interner.lookup(list.namespace.value()));
                     for maybe_typed_item in list.items.iter() {
                         expand_single_item(
                             f,
@@ -479,7 +479,7 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
         expanded_items: &mut Vec<ExpandedUseItem<'a>>,
         original_node: &'a Use,
     ) {
-        let mut parts = f.interner.lookup(&item.name.value()).split("\\").collect::<Vec<_>>();
+        let mut parts = f.interner.lookup(item.name.value()).split("\\").collect::<Vec<_>>();
         // SAFETY: split always returns at least one element
         let name = unsafe { parts.pop().unwrap_unchecked() };
         current_namespace.extend(parts);
@@ -500,8 +500,8 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
 pub fn sort_use_items<'a>(f: &mut FormatterState<'a>, items: impl Iterator<Item = &'a UseItem>) -> Vec<&'a UseItem> {
     let mut items = items.collect::<Vec<_>>();
     items.sort_by(|a, b| {
-        let a_name = f.interner.lookup(&a.name.value());
-        let b_name = f.interner.lookup(&b.name.value());
+        let a_name = f.interner.lookup(a.name.value());
+        let b_name = f.interner.lookup(b.name.value());
 
         a_name.to_lowercase().cmp(&b_name.to_lowercase())
     });
@@ -541,8 +541,8 @@ pub fn sort_maybe_typed_use_items<'a>(
             return a_type_order.cmp(&b_type_order);
         }
 
-        let a_name = f.interner.lookup(&a.item.name.value());
-        let b_name = f.interner.lookup(&b.item.name.value());
+        let a_name = f.interner.lookup(a.item.name.value());
+        let b_name = f.interner.lookup(b.item.name.value());
 
         a_name.to_lowercase().cmp(&b_name.to_lowercase())
     });

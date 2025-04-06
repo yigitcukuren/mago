@@ -53,7 +53,7 @@ pub fn check_extends(
     }
 
     for extended_type in extends.types.iter() {
-        let extended_name = context.interner.lookup(&extended_type.value());
+        let extended_name = context.interner.lookup(extended_type.value());
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(extended_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED
@@ -115,7 +115,7 @@ pub fn check_implements(
     }
 
     for implemented_type in implements.types.iter() {
-        let implemented_name = context.interner.lookup(&implemented_type.value());
+        let implemented_name = context.interner.lookup(implemented_type.value());
 
         if RESERVED_KEYWORDS.iter().any(|keyword| keyword.eq_ignore_ascii_case(implemented_name))
             || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED

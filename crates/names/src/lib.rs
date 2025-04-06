@@ -9,23 +9,27 @@ use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_span::HasPosition;
 use mago_span::Position;
-use mago_walker::MutWalker;
 
-use crate::internal::context::NameContext;
-use crate::internal::resolver::NameResolver;
+use crate::resolver::NameResolver;
+
+pub mod kind;
+pub mod resolver;
+pub mod scope;
 
 mod internal;
 
-/// Represents a collection of resolved names in a program.
+/// Stores the results of a name resolution pass over a PHP program.
 ///
-/// This struct stores a mapping of positions (represented as byte offsets)
-/// to resolved names (represented as `StringIdentifier`s).
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Names {
+/// Maps source code positions (specifically, the starting byte offset of identifiers)
+/// to their resolved fully qualified name (`StringIdentifier`) and a flag indicating
+/// whether the resolution involved an explicit `use` alias or construct.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct ResolvedNames {
+    /// Internal map storing: position (byte offset) -> (Resolved Name ID, Was Imported Flag)
     names: HashMap<usize, (StringIdentifier, bool)>,
 }
 
-impl Names {
+impl ResolvedNames {
     /// Resolves names in the given program.
     ///
     /// This method traverses the AST of the program, resolves names using a `NameResolver` and `NameContext`,
@@ -39,83 +43,64 @@ impl Names {
     /// # Returns
     ///
     /// A `Names` instance containing the resolved names.
+    #[deprecated = "use `NameResolver` instead."]
     pub fn resolve(interner: &ThreadedInterner, program: &Program) -> Self {
-        let mut resolver: NameResolver = NameResolver::new();
-        let mut context: NameContext = NameContext::new(interner);
+        let resolver = NameResolver::new(interner);
 
-        resolver.walk_program(program, &mut context);
-
-        resolver.resolved_names
+        resolver.resolve(program)
     }
 
-    /// Returns the number of resolved names.
+    /// Returns the total number of resolved names stored.
     pub fn len(&self) -> usize {
         self.names.len()
     }
 
-    /// Returns `true` if there are no resolved names.
+    /// Returns `true` if no resolved names are stored.
     pub fn is_empty(&self) -> bool {
         self.names.is_empty()
     }
 
-    /// Checks if a name is resolved at the given position.
-    ///
-    /// # Arguments
-    ///
-    /// * `position` - A reference to the `Position` in the code.
-    ///
-    /// # Returns
-    ///
-    /// `true` if a name is resolved at the given position, `false` otherwise.
+    /// Checks if a resolved name exists for the given source `Position`.
     pub fn contains(&self, position: &Position) -> bool {
         self.names.contains_key(&position.offset)
     }
 
-    /// Gets the resolved name at the given position.
-    ///
-    /// # Arguments
-    ///
-    /// * `position` - A reference to a type that implements `HasPosition`.
-    ///
-    /// # Returns
-    ///
-    /// The `StringIdentifier` of the resolved name.
+    /// Gets the resolved name identifier for the given source position.
     ///
     /// # Panics
     ///
-    /// Panics if the name is not found at the given position.
-    pub fn get(&self, position: &impl HasPosition) -> &StringIdentifier {
-        self.names.get(&position.position().offset).map(|(name, _)| name).expect("name not found at position")
+    /// Panics if no resolved name is found at the specified `position`.
+    /// Use `contains` first if unsure.
+    pub fn get<T: HasPosition>(&self, position: &T) -> &StringIdentifier {
+        self.names
+            .get(&position.offset()) //
+            .map(|(name, _)| name)
+            .expect("resolved name not found at position")
     }
 
-    /// Returns whether the name at the given position was explicitly imported.
+    /// Checks if the name resolved at the given position originated from an explicit `use` alias or construct.
     ///
-    /// # Arguments
-    ///
-    /// * `position` - A reference to the `Position` in the code.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the name was imported, `false` otherwise.
-    pub fn is_imported(&self, position: &impl HasPosition) -> bool {
-        self.names.get(&position.position().offset).map(|(_, imported)| *imported).unwrap_or(false)
+    /// Returns `false` if the name was resolved relative to the namespace, is a definition,
+    /// or if no name is found at the position.
+    pub fn is_imported<T: HasPosition>(&self, position: &T) -> bool {
+        self.names
+            .get(&position.offset()) // Get Option<(StringIdentifier, bool)>
+            .map(|(_, imported)| *imported) // Extract the bool flag
+            .unwrap_or(false) // Default to false if position not found
     }
 
-    /// Inserts a resolved name at the given position.
+    /// Inserts a resolution result into the map (intended for internal use).
     ///
-    /// This method is intended for internal use within the crate.
-    ///
-    /// # Arguments
-    ///
-    /// * `position` - The position (as a byte offset) where the name is resolved.
-    /// * `name` - The `StringIdentifier` of the resolved name.
-    pub(crate) fn insert_at<P: Into<usize>>(&mut self, position: P, name: StringIdentifier, imported: bool) {
-        self.names.insert(position.into(), (name, imported));
+    /// Associates the resolved `name` identifier and its `imported` status with the
+    /// given `position` (byte offset).
+    pub(crate) fn insert_at<T: HasPosition>(&mut self, position: &T, name: StringIdentifier, imported: bool) {
+        self.names.insert(position.offset(), (name, imported));
     }
 
-    /// Returns a set of all resolved names.
+    /// Returns a `HashSet` containing references to all stored resolution results.
     ///
-    /// The set contains tuples of positions and resolved names.
+    /// Each element in the set is a reference to a tuple: `(&usize, &(StringIdentifier, bool))`,
+    /// representing `(&position, &(resolved_name_id, was_imported_flag))`.
     pub fn all(&self) -> HashSet<(&usize, &(StringIdentifier, bool))> {
         HashSet::from_iter(self.names.iter())
     }

@@ -9,11 +9,11 @@ use mago_reflection::r#type::kind::*;
 use sequence::TokenSeparatedSequence;
 
 #[inline]
-pub fn resolve_name<'i>(
+pub fn resolve_name<'i, 'p>(
     interner: &'i ThreadedInterner,
-    value_id: StringIdentifier,
-) -> (StringIdentifier, StringIdentifier) {
-    let value = interner.lookup(&value_id);
+    value_id: &'p StringIdentifier,
+) -> (&'p StringIdentifier, StringIdentifier) {
+    let value = interner.lookup(value_id);
 
     if value.contains('\\') {
         // take the last part of the path
@@ -21,7 +21,7 @@ pub fn resolve_name<'i>(
 
         (value_id, interner.intern(short_value))
     } else {
-        (value_id, value_id)
+        (value_id, *value_id)
     }
 }
 

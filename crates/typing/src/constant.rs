@@ -1,6 +1,6 @@
 use mago_ast::Identifier;
 use mago_interner::ThreadedInterner;
-use mago_names::Names;
+use mago_names::ResolvedNames;
 use mago_reflection::CodebaseReflection;
 use mago_reflection::r#type::kind::*;
 use mago_trinary::Trinary;
@@ -8,12 +8,16 @@ use ordered_float::OrderedFloat;
 
 pub struct ConstantTypeResolver<'i, 'c> {
     interner: &'i ThreadedInterner,
-    names: &'c Names,
+    names: &'c ResolvedNames,
     codebase: Option<&'c CodebaseReflection>,
 }
 
 impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
-    pub fn new(interner: &'i ThreadedInterner, names: &'c Names, codebase: Option<&'c CodebaseReflection>) -> Self {
+    pub fn new(
+        interner: &'i ThreadedInterner,
+        names: &'c ResolvedNames,
+        codebase: Option<&'c CodebaseReflection>,
+    ) -> Self {
         Self { interner, names, codebase }
     }
 
@@ -23,7 +27,7 @@ impl<'i, 'c> ConstantTypeResolver<'i, 'c> {
 
             (name, name)
         } else {
-            let short_name = self.interner.lookup(&constant.value());
+            let short_name = self.interner.lookup(constant.value());
             let imported_name = self.interner.lookup(self.names.get(constant));
 
             if let Some(stripped) = short_name.strip_prefix('\\') {
