@@ -21,6 +21,7 @@ pub mod stream;
 pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'input>, ParseError> {
     let next = stream.peek()?;
     let inner = match next.kind {
+        TypeTokenKind::Variable => Type::Variable(VariableType::from(stream.consume()?)),
         TypeTokenKind::Question => {
             Type::Nullable(NullableType { question_mark: stream.consume()?.span, inner: Box::new(parse_type(stream)?) })
         }
@@ -214,6 +215,16 @@ pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'
             left: Box::new(inner),
             ampersand: stream.consume()?.span,
             right: Box::new(parse_type(stream)?),
+        }),
+        Some(TypeTokenKind::Is) => Type::Conditional(ConditionalType {
+            subject: Box::new(inner),
+            is: Keyword::from(stream.consume()?),
+            not: if stream.is_at(TypeTokenKind::Not)? { Some(Keyword::from(stream.consume()?)) } else { None },
+            target: Box::new(parse_type(stream)?),
+            question_mark: stream.eat(TypeTokenKind::Question)?.span,
+            then: Box::new(parse_type(stream)?),
+            colon: stream.eat(TypeTokenKind::Colon)?.span,
+            otherwise: Box::new(parse_type(stream)?),
         }),
         _ => inner,
     })

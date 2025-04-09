@@ -546,4 +546,53 @@ mod tests {
             res => panic!("Expected Ok(Type::Callable), got {:?}", res),
         }
     }
+
+    #[test]
+    fn test_parse_conditional_type() {
+        match do_parse("int is not string ? array : int") {
+            Ok(Type::Conditional(c)) => {
+                assert!(matches!(*c.subject, Type::Int(_)));
+                assert!(c.not.is_some());
+                assert!(matches!(*c.target, Type::String(_)));
+                assert!(matches!(*c.then, Type::Array(_)));
+                assert!(matches!(*c.otherwise, Type::Int(_)));
+            }
+            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+        }
+
+        match do_parse("$input is string ? array : int") {
+            Ok(Type::Conditional(c)) => {
+                assert!(matches!(*c.subject, Type::Variable(_)));
+                assert!(c.not.is_none());
+                assert!(matches!(*c.target, Type::String(_)));
+                assert!(matches!(*c.then, Type::Array(_)));
+                assert!(matches!(*c.otherwise, Type::Int(_)));
+            }
+            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+        }
+
+        match do_parse("int is string ? array : (int is not $bar ? string : $baz)") {
+            Ok(Type::Conditional(c)) => {
+                assert!(matches!(*c.subject, Type::Int(_)));
+                assert!(c.not.is_none());
+                assert!(matches!(*c.target, Type::String(_)));
+                assert!(matches!(*c.then, Type::Array(_)));
+
+                let Type::Parenthesized(p) = *c.otherwise else {
+                    panic!("Expected Type::Parenthesized");
+                };
+
+                if let Type::Conditional(inner_conditional) = *p.inner {
+                    assert!(matches!(*inner_conditional.subject, Type::Int(_)));
+                    assert!(inner_conditional.not.is_some());
+                    assert!(matches!(*inner_conditional.target, Type::Variable(_)));
+                    assert!(matches!(*inner_conditional.then, Type::String(_)));
+                    assert!(matches!(*inner_conditional.otherwise, Type::Variable(_)));
+                } else {
+                    panic!("Expected Type::Conditional");
+                }
+            }
+            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+        }
+    }
 }

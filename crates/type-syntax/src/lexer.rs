@@ -181,6 +181,14 @@ impl<'input> TypeLexer<'input> {
             [quote @ b'\'' | quote @ b'"', ..] => self.read_literal_string(quote),
             [b'\\', start_of_identifier!(), ..] => self.read_fully_qualified_identifier(),
             [start_of_identifier!(), ..] => self.read_identifier(),
+            [b'$', start_of_identifier!(), ..] => {
+                let mut length = 2;
+                while let [part_of_identifier!(), ..] = self.input.peek(length, 1) {
+                    length += 1;
+                }
+
+                (TypeTokenKind::Variable, length)
+            }
             [b':', ..] => (TypeTokenKind::Colon, 1),
             [b'=', ..] => (TypeTokenKind::Equals, 1),
             [b'?', ..] => (TypeTokenKind::Question, 1),
@@ -371,7 +379,7 @@ impl<'input> TypeLexer<'input> {
     }
 
     fn read_identifier(&self) -> (TypeTokenKind, usize) {
-        const KEYWORD_TYPES: [(&[u8], TypeTokenKind); 21] = [
+        const KEYWORD_TYPES: [(&[u8], TypeTokenKind); 22] = [
             (b"list", TypeTokenKind::List),
             (b"int", TypeTokenKind::Int),
             (b"string", TypeTokenKind::String),
@@ -393,6 +401,7 @@ impl<'input> TypeLexer<'input> {
             (b"nothing", TypeTokenKind::Nothing),
             (b"as", TypeTokenKind::As),
             (b"is", TypeTokenKind::Is),
+            (b"not", TypeTokenKind::Not),
         ];
 
         let mut length = 1;

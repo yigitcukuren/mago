@@ -8,6 +8,7 @@ pub use crate::ast::array::*;
 pub use crate::ast::callable::*;
 pub use crate::ast::class_like_string::*;
 pub use crate::ast::composite::*;
+pub use crate::ast::conditional::*;
 pub use crate::ast::generics::*;
 pub use crate::ast::identifier::*;
 pub use crate::ast::iterable::*;
@@ -16,11 +17,13 @@ pub use crate::ast::literal::*;
 pub use crate::ast::reference::*;
 pub use crate::ast::shape::*;
 pub use crate::ast::unary::*;
+pub use crate::ast::variable::*;
 
 pub mod array;
 pub mod callable;
 pub mod class_like_string;
 pub mod composite;
+pub mod conditional;
 pub mod generics;
 pub mod identifier;
 pub mod iterable;
@@ -29,6 +32,7 @@ pub mod literal;
 pub mod reference;
 pub mod shape;
 pub mod unary;
+pub mod variable;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
@@ -77,6 +81,8 @@ pub enum Type<'input> {
     MemberReference(MemberReferenceType<'input>),
     Shape(ShapeType<'input>),
     Callable(CallableType<'input>),
+    Variable(VariableType<'input>),
+    Conditional(ConditionalType<'input>),
     Negated(NegatedType<'input>),
     Posited(PositedType<'input>),
 }
@@ -128,6 +134,8 @@ impl HasSpan for Type<'_> {
             Type::MemberReference(ty) => ty.span(),
             Type::Shape(ty) => ty.span(),
             Type::Callable(ty) => ty.span(),
+            Type::Conditional(ty) => ty.span(),
+            Type::Variable(ty) => ty.span(),
             Type::Negated(ty) => ty.span(),
             Type::Posited(ty) => ty.span(),
         }

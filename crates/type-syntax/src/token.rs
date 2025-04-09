@@ -48,6 +48,7 @@ pub enum TypeTokenKind {
     AssociativeArray,
     As,
     Is,
+    Not,
     Identifier,
     QualifiedIdentifier,
     FullyQualifiedIdentifier,
@@ -73,6 +74,7 @@ pub enum TypeTokenKind {
     LiteralString,
     LiteralInteger,
     LiteralFloat,
+    Variable,
     Whitespace,
     SingleLineComment,
 }
@@ -89,6 +91,16 @@ impl TypeTokenKind {
     #[inline(always)]
     pub const fn is_trivia(&self) -> bool {
         matches!(self, Self::SingleLineComment | Self::Whitespace)
+    }
+
+    #[inline(always)]
+    pub const fn is_simple_identifier(&self) -> bool {
+        matches!(self, Self::Identifier)
+    }
+
+    #[inline(always)]
+    pub const fn is_identifier(&self) -> bool {
+        matches!(self, Self::Identifier | Self::QualifiedIdentifier | Self::FullyQualifiedIdentifier)
     }
 
     #[inline(always)]
@@ -135,6 +147,9 @@ impl TypeTokenKind {
                 | Self::OpenResource
                 | Self::ClosedResource
                 | Self::AssociativeArray
+                | Self::Is
+                | Self::As
+                | Self::Not
         )
     }
 

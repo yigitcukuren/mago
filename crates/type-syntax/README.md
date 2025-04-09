@@ -44,7 +44,10 @@ This parser aims to cover a wide range of standard PHPDoc, PHPStan, and Psalm ty
   - `Closure(): void`
   - Supports optional (`=`) and variadic (`...`) markers in parameters.
 - **Special Types:** `self`, `static` (parsed as `Type::Reference`)
-- **Custom:** `+Type`, `-Type` (parsed as `Posited`, `Negated`)
+- **Custom:** `+Type`, `-Type` (parsed as `Type::Posited`, `Type::Negated`)
+- **Variables:** `$var` (Parsed as `Type::Variable`)
+- **Conditionals:** `$var is string ? int : array<int>` (Parsed as `Type::Conditional`)
+- **Negated Conditionals:** `$var is not string ? array<int> : int` (Parsed as `Type::Conditional`)
 
 ## Unsupported Syntax (Currently)
 
@@ -54,19 +57,19 @@ This parser focuses on the core syntax and does _not_ yet support some of the mo
 - `value-of<T>`
 - `int-mask<T>`, `int-mask-of<T>`
 - `properties-of<T>` (and variants)
-- Conditional types `(T is X ? Y : Z)`
 - Indexed access types `T[K]`
 
 ## Usage
 
 1.  **Add Dependencies:**
 
-    Add `mago_type_syntax` to your `Cargo.toml`. You will also likely need `mago_span` to create the necessary inputs.
+    Add `mago_type_syntax` to your `Cargo.toml`. You will also likely need `mago_span` and `mago_source` to create the necessary inputs.
 
     ```toml
     [dependencies]
     mago_type_syntax = "..."
     mago_span = "..."
+    mago_source = "..."
     ```
 
 2.  **Parse a Type String:**
@@ -74,7 +77,9 @@ This parser focuses on the core syntax and does _not_ yet support some of the mo
 
     ```rust
     use mago_type_syntax::{parse_str, ast::Type};
-    use mago_span::{Position, SourceIdentifier, Span};
+    use mago_span::{Position, Span};
+    use mago_span::HasSpan;
+    use mago_source::SourceIdentifier;
 
     fn main() {
         let type_string = "array<int, string>|null";
@@ -106,7 +111,7 @@ This parser focuses on the core syntax and does _not_ yet support some of the mo
                 }
             }
             Err(parse_error) => {
-                eprintln!("Failed to parse type string: {}", parse_error);
+                eprintln!("Failed to parse type string: {:?}", parse_error);
                 // Access span via parse_error.span() if needed from HasSpan trait
                 eprintln!("Error occurred at span: {:?}", parse_error.span());
             }
