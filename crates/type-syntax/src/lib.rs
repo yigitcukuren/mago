@@ -1,3 +1,5 @@
+#![doc = include_str!("./../README.md")]
+
 use mago_span::Span;
 use mago_syntax_core::input::Input;
 
