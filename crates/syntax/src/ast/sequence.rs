@@ -99,6 +99,11 @@ impl<T: HasSpan> Sequence<T> {
     pub fn as_slice(&self) -> &[T] {
         self.nodes.as_slice()
     }
+
+    #[inline]
+    pub fn to_vec(&self) -> Vec<&T> {
+        self.nodes.iter().collect()
+    }
 }
 
 impl<T: HasSpan> TokenSeparatedSequence<T> {
@@ -201,6 +206,11 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         self.nodes.as_slice()
+    }
+
+    #[inline]
+    pub fn to_vec(&self) -> Vec<&T> {
+        self.nodes.iter().collect()
     }
 }
 

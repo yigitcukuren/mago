@@ -7,6 +7,7 @@ use strum::Display;
 use mago_span::HasSpan;
 use mago_span::Span;
 
+use crate::ast::UnaryPrefixOperator;
 use crate::ast::ast::access::Access;
 use crate::ast::ast::access::ClassConstantAccess;
 use crate::ast::ast::access::ConstantAccess;
@@ -219,6 +220,15 @@ impl Expression {
             expression.expression.is_unary()
         } else {
             matches!(&self, Expression::UnaryPrefix(_) | Expression::UnaryPostfix(_))
+        }
+    }
+
+    #[inline]
+    pub const fn is_reference(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_reference()
+        } else {
+            matches!(&self, Expression::UnaryPrefix(UnaryPrefix { operator: UnaryPrefixOperator::Reference(_), .. }))
         }
     }
 

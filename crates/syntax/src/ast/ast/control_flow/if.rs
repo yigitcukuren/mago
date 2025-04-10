@@ -106,6 +106,37 @@ pub struct IfColonDelimitedBodyElseClause {
     pub statements: Sequence<Statement>,
 }
 
+impl IfBody {
+    pub fn statements(&self) -> Vec<&Statement> {
+        match &self {
+            IfBody::Statement(if_statement_body) => vec![if_statement_body.statement.as_ref()],
+            IfBody::ColonDelimited(if_colon_delimited_body) => if_colon_delimited_body.statements.to_vec(),
+        }
+    }
+
+    pub fn else_statements(&self) -> Option<Vec<&Statement>> {
+        match &self {
+            IfBody::Statement(if_statement_body) => {
+                if_statement_body.else_clause.as_ref().map(|e| vec![e.statement.as_ref()])
+            }
+            IfBody::ColonDelimited(if_colon_delimited_body) => {
+                if_colon_delimited_body.else_clause.as_ref().map(|e| e.statements.to_vec())
+            }
+        }
+    }
+
+    pub fn else_if_statements(&self) -> Vec<Vec<&Statement>> {
+        match &self {
+            IfBody::Statement(if_statement_body) => {
+                if_statement_body.else_if_clauses.iter().map(|e| vec![e.statement.as_ref()]).collect()
+            }
+            IfBody::ColonDelimited(if_colon_delimited_body) => {
+                if_colon_delimited_body.else_if_clauses.iter().map(|e| e.statements.to_vec()).collect()
+            }
+        }
+    }
+}
+
 impl HasSpan for If {
     fn span(&self) -> Span {
         Span::between(self.r#if.span(), self.body.span())
