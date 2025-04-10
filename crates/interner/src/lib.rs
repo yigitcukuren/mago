@@ -90,6 +90,10 @@ impl Interner {
     /// # Arguments
     ///
     /// * string - The interned string.
+    ///
+    /// # Returns
+    ///
+    /// The identifier for the interned string, or `None` if the string is not interned.
     #[inline]
     pub fn get(&self, string: impl AsRef<str>) -> Option<StringIdentifier> {
         let str = string.as_ref();
@@ -211,6 +215,24 @@ impl ThreadedInterner {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.rodeo.is_empty()
+    }
+
+    /// Returns the identifier for the specified interned string.
+    ///
+    /// # Arguments
+    ///
+    /// * `string` - The interned string.
+    ///
+    /// # Returns
+    ///
+    /// The identifier for the interned string, or `None` if the string is not interned.
+    pub fn get(&self, string: impl AsRef<str>) -> Option<StringIdentifier> {
+        let str = string.as_ref();
+        if str.is_empty() {
+            return Some(StringIdentifier::empty());
+        }
+
+        self.rodeo.get(str)
     }
 
     /// Interns a string and returns its identifier.
