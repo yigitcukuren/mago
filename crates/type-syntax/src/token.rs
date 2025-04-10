@@ -17,6 +17,7 @@ pub enum TypeTokenKind {
     Array,
     NonEmptyArray,
     NonEmptyString,
+    LowercaseString,
     TruthyString,
     Iterable,
     Null,
@@ -30,6 +31,7 @@ pub enum TypeTokenKind {
     PureCallable,
     PureClosure,
     UnspecifiedLiteralString,
+    UnspecifiedLiteralInt,
     NonEmptyUnspecifiedLiteralString,
     Resource,
     Void,
@@ -46,6 +48,16 @@ pub enum TypeTokenKind {
     OpenResource,
     ClosedResource,
     AssociativeArray,
+    KeyOf,
+    ValueOf,
+    Min,
+    Max,
+    PropertiesOf,
+    PublicPropertiesOf,
+    PrivatePropertiesOf,
+    ProtectedPropertiesOf,
+    PositiveInt,
+    NegativeInt,
     As,
     Is,
     Not,
@@ -118,6 +130,7 @@ impl TypeTokenKind {
                 | Self::Array
                 | Self::NonEmptyArray
                 | Self::NonEmptyString
+                | Self::LowercaseString
                 | Self::TruthyString
                 | Self::Iterable
                 | Self::Null
@@ -150,6 +163,17 @@ impl TypeTokenKind {
                 | Self::Is
                 | Self::As
                 | Self::Not
+                | Self::KeyOf
+                | Self::ValueOf
+                | Self::Min
+                | Self::Max
+                | Self::UnspecifiedLiteralInt
+                | Self::PropertiesOf
+                | Self::PublicPropertiesOf
+                | Self::PrivatePropertiesOf
+                | Self::ProtectedPropertiesOf
+                | Self::PositiveInt
+                | Self::NegativeInt
         )
     }
 

@@ -11,12 +11,17 @@ pub use crate::ast::composite::*;
 pub use crate::ast::conditional::*;
 pub use crate::ast::generics::*;
 pub use crate::ast::identifier::*;
+pub use crate::ast::index_access::*;
+pub use crate::ast::int_range::*;
 pub use crate::ast::iterable::*;
+pub use crate::ast::key_of::*;
 pub use crate::ast::keyword::*;
 pub use crate::ast::literal::*;
+pub use crate::ast::properties_of::*;
 pub use crate::ast::reference::*;
 pub use crate::ast::shape::*;
 pub use crate::ast::unary::*;
+pub use crate::ast::value_of::*;
 pub use crate::ast::variable::*;
 
 pub mod array;
@@ -26,12 +31,17 @@ pub mod composite;
 pub mod conditional;
 pub mod generics;
 pub mod identifier;
+pub mod index_access;
+pub mod int_range;
 pub mod iterable;
+pub mod key_of;
 pub mod keyword;
 pub mod literal;
+pub mod properties_of;
 pub mod reference;
 pub mod shape;
 pub mod unary;
+pub mod value_of;
 pub mod variable;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord, Display)]
@@ -64,6 +74,8 @@ pub enum Type<'input> {
     Bool(Keyword<'input>),
     Float(Keyword<'input>),
     Int(Keyword<'input>),
+    PositiveInt(Keyword<'input>),
+    NegativeInt(Keyword<'input>),
     String(Keyword<'input>),
     StringableObject(Keyword<'input>),
     ArrayKey(Keyword<'input>),
@@ -72,7 +84,9 @@ pub enum Type<'input> {
     Scalar(Keyword<'input>),
     NumericString(Keyword<'input>),
     NonEmptyString(Keyword<'input>),
+    LowercaseString(Keyword<'input>),
     TruthyString(Keyword<'input>),
+    UnspecifiedLiteralInt(Keyword<'input>),
     UnspecifiedLiteralString(Keyword<'input>),
     NonEmptyUnspecifiedLiteralString(Keyword<'input>),
     LiteralFloat(LiteralFloatType<'input>),
@@ -83,8 +97,13 @@ pub enum Type<'input> {
     Callable(CallableType<'input>),
     Variable(VariableType<'input>),
     Conditional(ConditionalType<'input>),
+    KeyOf(KeyOfType<'input>),
+    ValueOf(ValueOfType<'input>),
+    IndexAccess(IndexAccessType<'input>),
     Negated(NegatedType<'input>),
     Posited(PositedType<'input>),
+    IntRange(IntRangeType<'input>),
+    PropertiesOf(PropertiesOfType<'input>),
 }
 
 impl HasSpan for Type<'_> {
@@ -117,6 +136,8 @@ impl HasSpan for Type<'_> {
             Type::Bool(ty) => ty.span(),
             Type::Float(ty) => ty.span(),
             Type::Int(ty) => ty.span(),
+            Type::PositiveInt(ty) => ty.span(),
+            Type::NegativeInt(ty) => ty.span(),
             Type::String(ty) => ty.span(),
             Type::ArrayKey(ty) => ty.span(),
             Type::Scalar(ty) => ty.span(),
@@ -125,7 +146,9 @@ impl HasSpan for Type<'_> {
             Type::NumericString(ty) => ty.span(),
             Type::StringableObject(ty) => ty.span(),
             Type::NonEmptyString(ty) => ty.span(),
+            Type::LowercaseString(ty) => ty.span(),
             Type::TruthyString(ty) => ty.span(),
+            Type::UnspecifiedLiteralInt(ty) => ty.span(),
             Type::UnspecifiedLiteralString(ty) => ty.span(),
             Type::NonEmptyUnspecifiedLiteralString(ty) => ty.span(),
             Type::LiteralFloat(ty) => ty.span(),
@@ -136,8 +159,13 @@ impl HasSpan for Type<'_> {
             Type::Callable(ty) => ty.span(),
             Type::Conditional(ty) => ty.span(),
             Type::Variable(ty) => ty.span(),
+            Type::KeyOf(ty) => ty.span(),
+            Type::ValueOf(ty) => ty.span(),
+            Type::IndexAccess(ty) => ty.span(),
             Type::Negated(ty) => ty.span(),
             Type::Posited(ty) => ty.span(),
+            Type::IntRange(ty) => ty.span(),
+            Type::PropertiesOf(ty) => ty.span(),
         }
     }
 }

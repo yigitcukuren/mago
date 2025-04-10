@@ -5,6 +5,17 @@ use crate::parser::internal::stream::TypeTokenStream;
 use crate::token::TypeTokenKind;
 
 #[inline]
+pub fn parse_single_generic_parameter<'input>(
+    stream: &mut TypeTokenStream<'input>,
+) -> Result<SingleGenericParameter<'input>, ParseError> {
+    Ok(SingleGenericParameter {
+        less_than: stream.eat(TypeTokenKind::LessThan)?.span,
+        entry: Box::new(GenericParameterEntry { inner: parse_type(stream)?, comma: None }),
+        greater_than: stream.eat(TypeTokenKind::GreaterThan)?.span,
+    })
+}
+
+#[inline]
 pub fn parse_generic_parameters<'input>(
     stream: &mut TypeTokenStream<'input>,
 ) -> Result<GenericParameters<'input>, ParseError> {
@@ -34,7 +45,19 @@ pub fn parse_generic_parameters<'input>(
 }
 
 #[inline]
-pub fn parse_optional_generic_parameters<'input>(
+pub fn parse_single_generic_parameter_or_none<'input>(
+    stream: &mut TypeTokenStream<'input>,
+) -> Result<Option<SingleGenericParameter<'input>>, ParseError> {
+    if stream.is_at(TypeTokenKind::LessThan)? {
+        let single_generic_parameter = parse_single_generic_parameter(stream)?;
+        Ok(Some(single_generic_parameter))
+    } else {
+        Ok(None)
+    }
+}
+
+#[inline]
+pub fn parse_generic_parameters_or_none<'input>(
     stream: &mut TypeTokenStream<'input>,
 ) -> Result<Option<GenericParameters<'input>>, ParseError> {
     if stream.is_at(TypeTokenKind::LessThan)? {

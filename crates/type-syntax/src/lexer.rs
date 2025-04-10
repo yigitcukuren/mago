@@ -148,6 +148,15 @@ impl<'input> TypeLexer<'input> {
             [b'l' | b'L', b'i' | b'I', b't' | b'T'] => {
                 if self.input.is_at(b"literal-string", true) {
                     (TypeTokenKind::UnspecifiedLiteralString, 14)
+                } else if self.input.is_at(b"literal-int", true) {
+                    (TypeTokenKind::UnspecifiedLiteralInt, 11)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'l' | b'L', b'o' | b'O', b'w' | b'W'] => {
+                if self.input.is_at(b"lowercase-string", true) {
+                    (TypeTokenKind::LowercaseString, 15)
                 } else {
                     self.read_identifier()
                 }
@@ -169,6 +178,57 @@ impl<'input> TypeLexer<'input> {
             [b'n' | b'N', b'o' | b'O', b'-'] => {
                 if self.input.is_at(b"no-return", true) {
                     (TypeTokenKind::NoReturn, 9)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'v' | b'V', b'a' | b'A', b'l' | b'L'] => {
+                if self.input.is_at(b"value-of", true) {
+                    (TypeTokenKind::ValueOf, 8)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'k' | b'K', b'e' | b'E', b'y' | b'Y'] => {
+                if self.input.is_at(b"key-of", true) {
+                    (TypeTokenKind::KeyOf, 6)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'p' | b'P', b'r' | b'R', b'o' | b'O'] => {
+                if self.input.is_at(b"protected-properties-of", true) {
+                    (TypeTokenKind::ProtectedPropertiesOf, 23)
+                } else if self.input.is_at(b"properties-of", true) {
+                    (TypeTokenKind::PropertiesOf, 13)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'p' | b'P', b'u' | b'U', b'b' | b'B'] => {
+                if self.input.is_at(b"public-properties-of", true) {
+                    (TypeTokenKind::PublicPropertiesOf, 20)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'p' | b'P', b'r' | b'R', b'i' | b'I'] => {
+                if self.input.is_at(b"private-properties-of", true) {
+                    (TypeTokenKind::PrivatePropertiesOf, 21)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'p' | b'P', b'o' | b'O', b's' | b'S'] => {
+                if self.input.is_at(b"positive-int", true) {
+                    (TypeTokenKind::PositiveInt, 12)
+                } else {
+                    self.read_identifier()
+                }
+            }
+            [b'n' | b'N', b'e' | b'E', b'g' | b'G'] => {
+                if self.input.is_at(b"negative-int", true) {
+                    (TypeTokenKind::NegativeInt, 12)
                 } else {
                     self.read_identifier()
                 }
@@ -379,7 +439,7 @@ impl<'input> TypeLexer<'input> {
     }
 
     fn read_identifier(&self) -> (TypeTokenKind, usize) {
-        const KEYWORD_TYPES: [(&[u8], TypeTokenKind); 22] = [
+        const KEYWORD_TYPES: [(&[u8], TypeTokenKind); 24] = [
             (b"list", TypeTokenKind::List),
             (b"int", TypeTokenKind::Int),
             (b"string", TypeTokenKind::String),
@@ -402,6 +462,8 @@ impl<'input> TypeLexer<'input> {
             (b"as", TypeTokenKind::As),
             (b"is", TypeTokenKind::Is),
             (b"not", TypeTokenKind::Not),
+            (b"min", TypeTokenKind::Min),
+            (b"max", TypeTokenKind::Max),
         ];
 
         let mut length = 1;

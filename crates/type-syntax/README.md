@@ -6,32 +6,37 @@ Originally developed as part of the [Mago](https://mago.carthage.software) stati
 
 ## Features
 
-- **Dedicated Lexer & Parser:** Includes a performant lexer (`lexer::TypeLexer`) and recursive descent parser (`parser::construct`) specifically designed for type strings.
+- **Dedicated Lexer & Parser:** Includes a performant lexer (`lexer::TypeLexer`) and recursive descent parser (`parser::construct` internally, exposed via `parse_str`) specifically designed for type strings.
 - **Structured AST:** Produces a detailed Abstract Syntax Tree (`ast::Type`) representing the type's structure, moving beyond simple string manipulation.
 - **Accurate Spans:** Preserves accurate source location (`mago_span::Span`) information for all AST nodes, relative to the original source file (requires providing the correct initial `Span` when parsing).
 - **Performance:** Designed with performance and memory efficiency in mind.
 - **Error Reporting:** Provides structured error types (`error::ParseError`) with span information on failure.
-- **Core Utilities:** Relies on `mago_syntax_core` for shared low-level lexing infrastructure like the `Input` buffer.
+- **Core Utilities:** Relies on `mago_syntax_core` for shared low-level lexing infrastructure like the `Input` buffer and utility functions/macros.
 
 ## Supported Syntax (Examples)
 
-This parser aims to cover a wide range of standard PHPDoc, PHPStan, and Psalm type syntaxes:
+This parser covers a wide range of standard PHPDoc, PHPStan, and Psalm type syntaxes:
 
-- **Keywords:** `int`, `string`, `bool`, `float`, `mixed`, `null`, `void`, `never`, `object`, `resource`, `true`, `false`, `scalar`, `numeric`, `array-key`, `list`, `non-empty-list`, `non-empty-string`, `class-string`, `iterable`, `callable`, `pure-callable`, `pure-closure`, `stringable-object`, etc.
-- **Literals:** `'string-literal'`, `"another"`, `123`, `-45`, `0x1A`, `0o77`, `0b10`, `1.23`, `-0.5`, `.5`
+- **Keywords:** `int`, `string`, `bool`, `float`, `mixed`, `null`, `void`, `never`, `object`, `resource`, `true`, `false`, `scalar`, `numeric`, `array-key`, `list`, `non-empty-list`, `non-empty-string`, `class-string`, `iterable`, `callable`, `pure-callable`, `pure-closure`, `stringable-object`, `lowercase-string`, `positive-int`, `negative-int`, `resource`, `closed-resource`, `open-resource`, `numeric-string`, `truthy-string`, etc.
+- **Literals:**
+  - Strings: `'string-literal'`, `"another one"`
+  - Integers: `123`, `-45`, `0x1A`, `0o77`, `0b10`, `123_456`
+  - Floats: `1.23`, `-0.5`, `.5`, `1.2e3`, `7E-10`
+- **Unspecified Literals:** `literal-int`, `literal-string`, `non-empty-literal-string`
 - **Operators:** `|` (Union), `&` (Intersection), `?` (Nullable)
 - **Structure:**
   - Parentheses: `(int|string)`
   - Nullables: `?int`, `?array<string>`
-  - Unions: `int|string|null`
-  - Intersections: `Countable&Traversable`
-  - Member References: `MyClass::CONST`, `MyClass::class` (parsed as `MemberReference`)
+  * Unions: `int|string|null`
+  * Intersections: `Countable&Traversable`
+  * Member References: `MyClass::CONST`, `MyClass::class`
 - **Generics:**
   - `array<KeyType, ValueType>`, `array<ValueType>`
   - `list<ValueType>`, `non-empty-list<ValueType>`
   - `iterable<KeyType, ValueType>`, `iterable<ValueType>`
   - `class-string<ClassName>`, `interface-string<InterfaceName>`, etc.
   - User types: `My\Collection<ItemType>`
+  - `self`, `static`, `parent` (Parsed as `Type::Reference` which can have generics)
 - **Array Shapes:**
   - `array{key: Type, 'other-key': Type}`
   - `list{Type, Type}`
@@ -42,22 +47,23 @@ This parser aims to cover a wide range of standard PHPDoc, PHPStan, and Psalm ty
   - `callable`, `Closure`, `pure-callable`, `pure-Closure`
   - `callable(ParamType1, ParamType2): ReturnType`
   - `Closure(): void`
-  - Supports optional (`=`) and variadic (`...`) markers in parameters.
-- **Special Types:** `self`, `static` (parsed as `Type::Reference`)
-- **Custom:** `+Type`, `-Type` (parsed as `Type::Posited`, `Type::Negated`)
-- **Variables:** `$var` (Parsed as `Type::Variable`)
-- **Conditionals:** `$var is string ? int : array<int>` (Parsed as `Type::Conditional`)
-- **Negated Conditionals:** `$var is not string ? array<int> : int` (Parsed as `Type::Conditional`)
+  - Optional params: `callable(int=)`
+  - Variadic params: `callable(string...)`
+- **Variables:** `$var`
+- **Conditionals:**
+  - `$var is string ? int : bool`
+  - `T is not null ? T : mixed`
+- **KeyOf / ValueOf:** `key-of<T>`, `value-of<T>`
+- **Indexed Access:** `T[K]`
+- **Int Ranges:** `int<0, 100>`, `int<min, 0>`, `int<1, max>`
+- **Properties Of:** `properties-of<T>`, `public-properties-of<T>`, `protected-properties-of<T>`, `private-properties-of<T>`
+- **Unary `+`/`-` Types:** `+1`, `-2.0` (parsed as `Type::Posited`, `Type::Negated`)
 
 ## Unsupported Syntax (Currently)
 
-This parser focuses on the core syntax and does _not_ yet support some of the more advanced or complex Psalm/PHPStan features, including:
+This crate does not yet support parsing the following syntax:
 
-- `key-of<T>`
-- `value-of<T>`
 - `int-mask<T>`, `int-mask-of<T>`
-- `properties-of<T>` (and variants)
-- Indexed access types `T[K]`
 
 ## Usage
 

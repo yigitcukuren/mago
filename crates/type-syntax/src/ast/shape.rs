@@ -10,6 +10,7 @@ use crate::ast::keyword::Keyword;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
+#[repr(C)]
 pub enum ShapeTypeKind {
     Array,
     NonEmptyArray,

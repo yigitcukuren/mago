@@ -20,6 +20,14 @@ pub struct GenericParameters<'input> {
     pub greater_than: Span,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+#[repr(C)]
+pub struct SingleGenericParameter<'input> {
+    pub less_than: Span,
+    pub entry: Box<GenericParameterEntry<'input>>,
+    pub greater_than: Span,
+}
+
 impl HasSpan for GenericParameterEntry<'_> {
     fn span(&self) -> Span {
         match &self.comma {
@@ -30,6 +38,12 @@ impl HasSpan for GenericParameterEntry<'_> {
 }
 
 impl HasSpan for GenericParameters<'_> {
+    fn span(&self) -> Span {
+        self.less_than.join(self.greater_than)
+    }
+}
+
+impl HasSpan for SingleGenericParameter<'_> {
     fn span(&self) -> Span {
         self.less_than.join(self.greater_than)
     }

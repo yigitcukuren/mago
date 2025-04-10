@@ -595,4 +595,227 @@ mod tests {
             res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
         }
     }
+
+    #[test]
+    fn test_keyof() {
+        match do_parse("key-of<MyArray>") {
+            Ok(Type::KeyOf(k)) => {
+                assert_eq!(k.keyword.value, "key-of");
+                match &k.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "MyArray"),
+                    _ => panic!("Expected Type::Reference"),
+                }
+            }
+            res => panic!("Expected Ok(Type::KeyOf), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_valueof() {
+        match do_parse("value-of<MyArray>") {
+            Ok(Type::ValueOf(v)) => {
+                assert_eq!(v.keyword.value, "value-of");
+                match &v.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "MyArray"),
+                    _ => panic!("Expected Type::Reference"),
+                }
+            }
+            res => panic!("Expected Ok(Type::ValueOf), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_indexed_access() {
+        match do_parse("MyArray[MyKey]") {
+            Ok(Type::IndexAccess(i)) => {
+                match *i.target {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "MyArray"),
+                    _ => panic!("Expected Type::Reference"),
+                }
+                match *i.index {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "MyKey"),
+                    _ => panic!("Expected Type::Reference"),
+                }
+            }
+            res => panic!("Expected Ok(Type::IndexAccess), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_int_range() {
+        match do_parse("int<0, 100>") {
+            Ok(Type::IntRange(r)) => {
+                assert_eq!(r.keyword.value, "int");
+
+                match r.min {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        assert_eq!(literal_int_type.value, 0);
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        panic!("Expected min to be a LiteralIntType, got Keyword with value {}", keyword.value,)
+                    }
+                };
+
+                match r.max {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        assert_eq!(literal_int_type.value, 100);
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        panic!("Expected max to be a Keyword, got Keyword with value {}", keyword.value,)
+                    }
+                };
+            }
+            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+        }
+
+        match do_parse("int<min, 0>") {
+            Ok(Type::IntRange(r)) => {
+                match r.min {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        panic!("Expected min to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        assert_eq!(keyword.value, "min");
+                    }
+                };
+
+                match r.max {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        assert_eq!(literal_int_type.value, 0);
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        panic!("Expected max to be a LiteralIntType, got Keyword with value {}", keyword.value,)
+                    }
+                };
+            }
+            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+        }
+
+        match do_parse("int<min, max>") {
+            Ok(Type::IntRange(r)) => {
+                match r.min {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        panic!("Expected min to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        assert_eq!(keyword.value, "min");
+                    }
+                };
+
+                match r.max {
+                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                        panic!("Expected max to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
+                    }
+                    LiteralIntOrKeyword::Keyword(keyword) => {
+                        assert_eq!(keyword.value, "max");
+                    }
+                };
+            }
+            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_properties_of() {
+        match do_parse("properties-of<MyClass>") {
+            Ok(Type::PropertiesOf(p)) => {
+                assert_eq!(p.keyword.value, "properties-of");
+                assert_eq!(p.filter, PropertiesOfFilter::All);
+                match &p.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "MyClass"),
+                    _ => panic!(),
+                }
+            }
+            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+        }
+
+        match do_parse("protected-properties-of<T>") {
+            Ok(Type::PropertiesOf(p)) => {
+                assert_eq!(p.keyword.value, "protected-properties-of");
+                assert_eq!(p.filter, PropertiesOfFilter::Protected);
+                match &p.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "T"),
+                    _ => panic!(),
+                }
+            }
+            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+        }
+
+        match do_parse("private-properties-of<T>") {
+            Ok(Type::PropertiesOf(p)) => {
+                assert_eq!(p.keyword.value, "private-properties-of");
+                assert_eq!(p.filter, PropertiesOfFilter::Private);
+                match &p.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "T"),
+                    _ => panic!(),
+                }
+            }
+            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+        }
+
+        match do_parse("public-properties-of<T>") {
+            Ok(Type::PropertiesOf(p)) => {
+                assert_eq!(p.keyword.value, "public-properties-of");
+                assert_eq!(p.filter, PropertiesOfFilter::Public);
+                match &p.parameter.entry.inner {
+                    Type::Reference(r) => assert_eq!(r.identifier.value, "T"),
+                    _ => panic!(),
+                }
+            }
+            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_variable() {
+        match do_parse("$myVar") {
+            Ok(Type::Variable(v)) => {
+                assert_eq!(v.value, "$myVar");
+            }
+            res => panic!("Expected Ok(Type::Variable), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_nullable_intersection() {
+        // Nullable applies only to the rightmost element of an intersection before parens
+        match do_parse("Countable&?Traversable") {
+            Ok(Type::Intersection(i)) => {
+                assert!(matches!(*i.left, Type::Reference(r) if r.identifier.value == "Countable"));
+                assert!(matches!(*i.right, Type::Nullable(_)));
+                if let Type::Nullable(n) = *i.right {
+                    assert!(matches!(*n.inner, Type::Reference(r) if r.identifier.value == "Traversable"));
+                } else {
+                    panic!();
+                }
+            }
+            res => panic!("Expected Ok(Type::Intersection), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_parenthesized_nullable() {
+        match do_parse("?(Countable&Traversable)") {
+            Ok(Type::Nullable(n)) => {
+                assert!(matches!(*n.inner, Type::Parenthesized(_)));
+                if let Type::Parenthesized(p) = *n.inner {
+                    assert!(matches!(*p.inner, Type::Intersection(_)));
+                } else {
+                    panic!()
+                }
+            }
+            res => panic!("Expected Ok(Type::Nullable), got {:?}", res),
+        }
+    }
+
+    #[test]
+    fn test_positive_negative_int() {
+        match do_parse("positive-int|negative-int") {
+            Ok(Type::Union(u)) => {
+                assert!(matches!(*u.left, Type::PositiveInt(_)));
+                assert!(matches!(*u.right, Type::NegativeInt(_)));
+            }
+            res => panic!("Expected Ok(Type::Union), got {:?}", res),
+        }
+    }
 }

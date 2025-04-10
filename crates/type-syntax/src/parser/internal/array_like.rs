@@ -1,6 +1,6 @@
 use crate::ast::*;
 use crate::error::ParseError;
-use crate::parser::internal::generic::parse_optional_generic_parameters;
+use crate::parser::internal::generic::parse_generic_parameters_or_none;
 use crate::parser::internal::parse_type;
 use crate::parser::internal::stream::TypeTokenStream;
 use crate::token::TypeTokenKind;
@@ -12,7 +12,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
         TypeTokenKind::Array => {
             let keyword = Keyword::from(stream.consume()?);
             if !stream.is_at(TypeTokenKind::LeftBrace)? {
-                return Ok(Type::Array(ArrayType { keyword, parameters: parse_optional_generic_parameters(stream)? }));
+                return Ok(Type::Array(ArrayType { keyword, parameters: parse_generic_parameters_or_none(stream)? }));
             }
 
             (keyword, ShapeTypeKind::Array)
@@ -22,7 +22,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
             if !stream.is_at(TypeTokenKind::LeftBrace)? {
                 return Ok(Type::NonEmptyArray(NonEmptyArrayType {
                     keyword,
-                    parameters: parse_optional_generic_parameters(stream)?,
+                    parameters: parse_generic_parameters_or_none(stream)?,
                 }));
             }
 
@@ -33,7 +33,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
             if !stream.is_at(TypeTokenKind::LeftBrace)? {
                 return Ok(Type::AssociativeArray(AssociativeArrayType {
                     keyword,
-                    parameters: parse_optional_generic_parameters(stream)?,
+                    parameters: parse_generic_parameters_or_none(stream)?,
                 }));
             }
 
@@ -42,7 +42,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
         TypeTokenKind::List => {
             let keyword = Keyword::from(stream.consume()?);
             if !stream.is_at(TypeTokenKind::LeftBrace)? {
-                return Ok(Type::List(ListType { keyword, parameters: parse_optional_generic_parameters(stream)? }));
+                return Ok(Type::List(ListType { keyword, parameters: parse_generic_parameters_or_none(stream)? }));
             }
 
             (keyword, ShapeTypeKind::List)
@@ -52,7 +52,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
             if !stream.is_at(TypeTokenKind::LeftBrace)? {
                 return Ok(Type::NonEmptyList(NonEmptyListType {
                     keyword,
-                    parameters: parse_optional_generic_parameters(stream)?,
+                    parameters: parse_generic_parameters_or_none(stream)?,
                 }));
             }
 
@@ -108,7 +108,7 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
             } else {
                 Some(ShapeAdditionalFields {
                     ellipsis: stream.consume()?.span,
-                    parameters: parse_optional_generic_parameters(stream)?,
+                    parameters: parse_generic_parameters_or_none(stream)?,
                 })
             }
         },
