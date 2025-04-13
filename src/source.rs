@@ -184,11 +184,18 @@ fn create_excludes_set(excludes: &[String], root: &Path) -> HashSet<Exclusion> {
         .map(|exclude| {
             // if it contains a wildcard, treat it as a pattern
             if exclude.contains('*') {
-                Exclusion::Pattern(exclude.clone())
-            } else {
-                let path = Path::new(exclude);
+                let mut exclude = exclude.clone();
+                // if it starts with `./`, replace it with the root path
+                if exclude.starts_with("./") {
+                    exclude.replace_range(..1, root.to_string_lossy().trim_end_matches('/'));
+                }
 
-                if path.is_absolute() { Exclusion::Path(path.to_path_buf()) } else { Exclusion::Path(root.join(path)) }
+                Exclusion::Pattern(exclude)
+            } else {
+                let path = Path::new(&exclude);
+                let path_buf = if path.is_absolute() { path.to_path_buf() } else { root.join(path) };
+
+                Exclusion::Path(path_buf.canonicalize().unwrap_or(path_buf))
             }
         })
         .collect()
@@ -214,8 +221,39 @@ fn is_accepted_file(path: &Path, extensions: &HashSet<&str>) -> bool {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 enum Exclusion {
     Path(PathBuf),
     Pattern(String),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_excludes_set() {
+        let root = Path::new("/my-project/");
+        let excludes = vec![
+            String::from("./vendor/google/**/metadata/**/*.php"),
+            String::from("./vendor/azjezz/psl/src/prelude.php"),
+        ];
+
+        let excludes_set = create_excludes_set(&excludes, root);
+        let mut excludes_vec: Vec<_> = excludes_set.iter().collect();
+        excludes_vec.sort();
+
+        assert_eq!(excludes_vec.len(), 2);
+        assert_eq!(excludes_vec[0], &Exclusion::Path("/my-project/vendor/azjezz/psl/src/prelude.php".into()));
+        assert_eq!(excludes_vec[1], &Exclusion::Pattern("/my-project/vendor/google/**/metadata/**/*.php".to_string()));
+
+        let test_path = Path::new("/my-project/vendor/google/common-protos/metadata/Rpc/Context/AuditContext.php");
+        assert!(is_excluded(test_path, &excludes_set));
+
+        let test_path = Path::new("/my-project/vendor/azjezz/psl/src/prelude.php");
+        assert!(is_excluded(test_path, &excludes_set));
+
+        let test_path = Path::new("/my-project/vendor/azjezz/psl/src/other.php");
+        assert!(!is_excluded(test_path, &excludes_set));
+    }
 }
