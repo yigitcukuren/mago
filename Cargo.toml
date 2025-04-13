@@ -54,18 +54,18 @@ ahash = { version = "0.8.11" }
 getrandom = { version = "0.2", features = ["js"] }
 serde_json = { version = "1.0.138" }
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.39.3", features = ["rt", "time"] }
+tokio = { version = "1.44.2", features = ["rt", "time"] }
 strum = { version = "0.27", features = ["derive"] }
 ordered-float = { version = "5.0", default-features = false, features = ["serde"] }
 pretty_assertions = { version = "1.4.1" }
 either = { version = "1.13.0" }
-codespan-reporting = { version = "0.11.1", features = ["serde", "serialization"] }
+codespan-reporting = { version = "0.12.0", features = ["serde", "serialization"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 config = { version = "0.15.4", features = ["toml"] }
 toml = { version = "0.8.19" }
 num_cpus = "1.16.0"
 regex = "1.11.0"
-cruet = "0.14.0"
+cruet = "0.15.0"
 indicatif = { version = "0.17.11", features = ["tokio"] }
 glob-match = "0.2.1"
 paste = "1.0.15"
