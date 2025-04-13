@@ -319,27 +319,22 @@ impl SourceManager {
     /// Otherwise the file is read from disk, processed, and cached.
     #[inline(always)]
     pub fn load(&self, source_id: &SourceIdentifier) -> Result<Source, SourceError> {
-        // First, try to read without locking for update.
-        {
-            let inner = self.inner.read();
-            if let Some(entry) = inner.sources.get(source_id) {
-                if let Some((content, size, ref lines)) = entry.content {
-                    return Ok(Source {
-                        identifier: *source_id,
-                        path: entry.path.clone(),
-                        content,
-                        size,
-                        lines: lines.clone(),
-                    });
-                }
-            }
-        }
-
-        // Retrieve the file path (must exist if content is not loaded).
         let path = {
             let inner = self.inner.read();
             let entry = inner.sources.get(source_id).ok_or(SourceError::UnavailableSource(*source_id))?;
 
+            // First, try to read without locking for update.
+            if let Some((content, size, ref lines)) = entry.content {
+                return Ok(Source {
+                    identifier: *source_id,
+                    path: entry.path.clone(),
+                    content,
+                    size,
+                    lines: lines.clone(),
+                });
+            }
+
+            // Retrieve the file path (must exist if content is not loaded).
             entry.path.clone().ok_or(SourceError::UnavailableSource(*source_id))?
         };
 
@@ -350,7 +345,18 @@ impl SourceManager {
             Err(err) => {
                 let s = err.into_bytes();
                 let s = String::from_utf8_lossy(&s).into_owned();
-                tracing::warn!("Source '{}' contains invalid UTF-8 sequence; behavior is undefined.", path.display());
+                if source_id.category().is_user_defined() {
+                    tracing::debug!(
+                        "Source '{}' contains invalid UTF-8 sequence; behavior is undefined.",
+                        path.display()
+                    );
+                } else {
+                    tracing::info!(
+                        "Source '{}' contains invalid UTF-8 sequence; behavior is undefined.",
+                        path.display()
+                    );
+                }
+
                 s
             }
         };
