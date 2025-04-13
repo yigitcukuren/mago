@@ -113,10 +113,13 @@ impl Rule for RequireStrictBehavior {
             .and_then(|option| option.as_bool())
             .unwrap_or(ALLOW_LOOSE_BEHAVIOR_DEFAULT);
 
+        let mut found = false;
         let mut correct = false;
         for (position, argument) in func_call.argument_list.arguments.iter().enumerate() {
             match argument {
                 Argument::Positional(argument) if position == expected_position => {
+                    found = true;
+
                     if matches!(argument.value, Expression::Literal(Literal::True(_)))
                         || (allow_loose_behavior && matches!(argument.value, Expression::Literal(Literal::False(_))))
                     {
@@ -130,6 +133,7 @@ impl Rule for RequireStrictBehavior {
                         continue;
                     }
 
+                    found = true;
                     if matches!(argument.value, Expression::Literal(Literal::True(_)))
                         || (allow_loose_behavior && matches!(argument.value, Expression::Literal(Literal::False(_))))
                     {
@@ -143,7 +147,7 @@ impl Rule for RequireStrictBehavior {
             }
         }
 
-        if correct {
+        if found && (correct || allow_loose_behavior) {
             return LintDirective::default();
         }
 
