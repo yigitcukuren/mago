@@ -16,7 +16,7 @@ use crate::rule::Rule;
 #[derive(Clone, Debug)]
 pub struct RequireStrictBehavior;
 
-pub const ALLOW_LOOSE_BEHAVIOR: &str = "allow-loose-behavior";
+pub const ALLOW_LOOSE_BEHAVIOR: &str = "allow_loose_behavior";
 pub const ALLOW_LOOSE_BEHAVIOR_DEFAULT: bool = false;
 
 impl Rule for RequireStrictBehavior {
