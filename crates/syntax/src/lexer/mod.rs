@@ -100,7 +100,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
     /// use mago_interner::ThreadedInterner;
     /// use mago_syntax::lexer::Lexer;
     /// use mago_source::SourceIdentifier;
-    /// use mago_syntax::lexer::input::Input;
+    /// use mago_syntax_core::input::Input;
     ///
     /// let interner = ThreadedInterner::new();
     ///
