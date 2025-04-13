@@ -324,7 +324,7 @@ impl<'a> Input<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use mago_lexer::input::Input;
+    /// use mago_syntax_core::input::Input;
     /// use mago_source::SourceIdentifier;
     ///
     /// let source = SourceIdentifier::dummy();
