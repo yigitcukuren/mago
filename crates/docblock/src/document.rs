@@ -51,6 +51,7 @@ pub struct Tag {
     pub name: StringIdentifier,
     pub kind: TagKind,
     pub description: StringIdentifier,
+    pub description_span: Span,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]

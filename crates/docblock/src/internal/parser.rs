@@ -71,9 +71,20 @@ fn parse_tag(
         return Err(ParseError::ExpectedLine(tokens[i].span()));
     };
 
-    let mut parts = content[1..].splitn(2, char::is_whitespace); // Skip '@'
-    let tag_name_str = parts.next().unwrap_or("");
-    let description_part = parts.next().unwrap_or("").trim_start();
+    let next_whitespace = content[1..].find(char::is_whitespace);
+
+    let tag_name_str;
+    let description_part;
+    let description_start;
+    if let Some(position) = next_whitespace {
+        tag_name_str = &content[1..position + 1];
+        description_part = &content[position + 2..];
+        description_start = span.start.forward(2 + position); // 1 for '@' and 1 for whitespace
+    } else {
+        tag_name_str = &content[1..];
+        description_part = "";
+        description_start = span.start.forward(1 + tag_name_str.len());
+    }
 
     if tag_name_str.is_empty() || !tag_name_str.chars().all(|c| c.is_alphanumeric() || c == '-') {
         return Err(ParseError::InvalidTagName(span.subspan(0, tag_name_str.len() + 1)));
@@ -112,7 +123,13 @@ fn parse_tag(
 
     let tag_span = Span::new(span.start, end_span.end);
 
-    let tag = Tag { span: tag_span, name: tag_name, kind, description: description_id };
+    let tag = Tag {
+        span: tag_span,
+        name: tag_name,
+        kind,
+        description: description_id,
+        description_span: Span::new(description_start, end_span.end),
+    };
 
     Ok((tag, i))
 }
@@ -415,13 +432,19 @@ fn parse_text_segments(
 fn parse_inline_tag(tag_content: &str, span: Span, interner: &ThreadedInterner) -> Result<Tag, ParseError> {
     let mut parts = tag_content.trim().splitn(2, char::is_whitespace);
     let tag_name_str = parts.next().unwrap_or("");
-    let description_part = parts.next().unwrap_or("").trim_start();
+    let description_part = parts.next().unwrap_or("");
 
     let kind = tag_name_str.into();
     let name = interner.intern(tag_name_str);
     let description = interner.intern(description_part);
 
-    Ok(Tag { span, name, kind, description })
+    Ok(Tag {
+        span,
+        name,
+        kind,
+        description,
+        description_span: Span::new(span.start.forward(tag_name_str.len() + 1), span.end),
+    })
 }
 
 fn parse_annotation(
