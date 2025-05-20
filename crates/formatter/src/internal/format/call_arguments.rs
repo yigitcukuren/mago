@@ -401,7 +401,7 @@ fn should_inline_single_breaking_argument<'a>(f: &FormatterState<'a>, argument_l
 
     let argument = &arguments[0];
 
-    !argument_has_surrounding_comments(f, argument) && should_hug_expression(f, argument.value())
+    !argument_has_surrounding_comments(f, argument) && should_hug_expression(f, argument.value(), false)
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/3.3.3/src/language-js/print/call-arguments.js#L247-L272>

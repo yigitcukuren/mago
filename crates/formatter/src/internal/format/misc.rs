@@ -57,13 +57,17 @@ pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> boo
 /// # Performance
 ///
 /// O(1) for most checks, with potential O(n) recursion for nested expressions
-pub(super) fn should_hug_expression<'a>(f: &FormatterState<'a>, expression: &'a Expression) -> bool {
+pub(super) fn should_hug_expression<'a>(
+    f: &FormatterState<'a>,
+    expression: &'a Expression,
+    arrow_function_recursion: bool,
+) -> bool {
     if let Expression::Parenthesized(inner) = expression {
-        return should_hug_expression(f, &inner.expression);
+        return should_hug_expression(f, &inner.expression, arrow_function_recursion);
     }
 
     if let Expression::UnaryPrefix(operation) = expression {
-        return should_hug_expression(f, &operation.operand);
+        return should_hug_expression(f, &operation.operand, arrow_function_recursion);
     }
 
     // if the expression has leading or trailing comments, we can't hug it
@@ -74,6 +78,10 @@ pub(super) fn should_hug_expression<'a>(f: &FormatterState<'a>, expression: &'a 
     if let Expression::Call(_) | Expression::Access(_) = expression {
         // Don't hug calls/accesses if they are part of a member access chain
         return collect_member_access_chain(expression).is_none_or(|chain| !chain.is_eligible_for_chaining(f));
+    }
+
+    if let Expression::ArrowFunction(arrow_function) = expression {
+        return !arrow_function_recursion && should_hug_expression(f, &arrow_function.expression, true);
     }
 
     let Expression::Instantiation(instantiation) = expression else {
@@ -109,7 +117,7 @@ pub(super) fn should_hug_expression<'a>(f: &FormatterState<'a>, expression: &'a 
                     Argument::Named(_) => false,
                     Argument::Positional(positional) => {
                         matches!(positional.value, Expression::Instantiation(_))
-                            || should_hug_expression(f, &positional.value)
+                            || should_hug_expression(f, &positional.value, arrow_function_recursion)
                     }
                 }
             } else {

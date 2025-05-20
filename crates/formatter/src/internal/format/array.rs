@@ -261,7 +261,7 @@ fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<
     match first_element {
         ArrayElement::KeyValue(element) => {
             if (element.key.is_literal() || is_string_word_type(&element.key))
-                && should_hug_expression(f, &element.value)
+                && should_hug_expression(f, &element.value, false)
             {
                 Some(first_element.format(f))
             } else {
@@ -269,14 +269,14 @@ fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<
             }
         }
         ArrayElement::Value(element) => {
-            if should_hug_expression(f, &element.value) {
+            if should_hug_expression(f, &element.value, false) {
                 Some(first_element.format(f))
             } else {
                 None
             }
         }
         ArrayElement::Variadic(element) => {
-            if should_hug_expression(f, &element.value) {
+            if should_hug_expression(f, &element.value, false) {
                 Some(first_element.format(f))
             } else {
                 None
