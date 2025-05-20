@@ -181,12 +181,16 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
 
     #[inline]
     pub fn has_trailing_token(&self) -> bool {
-        self.tokens.last().is_some_and(|token| token.span.start >= self.last_span().unwrap().end)
+        self.tokens
+            .last()
+            .is_some_and(|token| token.span.start.offset >= self.nodes.last().map_or(0, |node| node.span().end.offset))
     }
 
     #[inline]
     pub fn get_trailing_token(&self) -> Option<&Token> {
-        self.tokens.last().filter(|token| token.span.start >= self.last_span().unwrap().end)
+        self.tokens
+            .last()
+            .filter(|token| token.span.start.offset >= self.nodes.last().map_or(0, |node| node.span().end.offset))
     }
 
     #[inline]
