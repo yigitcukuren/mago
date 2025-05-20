@@ -66,10 +66,6 @@ impl Rule for RedundantParenthesesRule {
                 }
             }
             Node::NamedArgument(named_argument) => {
-                if named_argument.ellipsis.is_some() {
-                    return LintDirective::default();
-                }
-
                 if let Expression::Parenthesized(value) = &named_argument.value {
                     value
                 } else {

@@ -116,7 +116,7 @@ fn matches_method(
     for (argument, (is_variadic, parameter)) in arguments.arguments.iter().zip(parameters.iter()) {
         let (variadic, value) = match &argument {
             Argument::Positional(arg) => (arg.ellipsis.is_some(), &arg.value),
-            Argument::Named(arg) => (arg.ellipsis.is_some(), &arg.value),
+            Argument::Named(arg) => (false, &arg.value),
         };
 
         if variadic.eq(is_variadic)
