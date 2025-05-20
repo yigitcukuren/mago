@@ -7,7 +7,7 @@ use crate::internal::context::Context;
 
 #[inline]
 pub fn check_constant(constant: &Constant, context: &mut Context<'_>) {
-    if !context.version.is_supported(Feature::ConstantAttribute) {
+    if !context.version.is_supported(Feature::ConstantAttributes) {
         for attribute_list in constant.attribute_lists.iter() {
             context.issues.push(
                 Issue::error("Constant attributes are only available in PHP 8.5 and above.")

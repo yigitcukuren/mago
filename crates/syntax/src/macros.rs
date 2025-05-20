@@ -411,6 +411,9 @@ macro_rules! T {
     ("(unset)") => {
         $crate::token::TokenKind::UnsetCast
     };
+    ("(void)") => {
+        $crate::token::TokenKind::VoidCast
+    };
     ("<?php") => {
         $crate::token::TokenKind::OpenTag
     };

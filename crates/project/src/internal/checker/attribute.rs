@@ -7,7 +7,7 @@ use crate::internal::context::Context;
 
 #[inline]
 pub fn check_attribute_list(attribute_list: &AttributeList, context: &mut Context<'_>) {
-    if !context.version.is_supported(Feature::Attribute) {
+    if !context.version.is_supported(Feature::Attributes) {
         context.issues.push(
             Issue::error("Attributes are only available in PHP 8.0 and above.")
                 .with_annotation(Annotation::primary(attribute_list.span()).with_message("Attribute list used here."))

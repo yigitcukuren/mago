@@ -96,26 +96,30 @@ pub fn check_property(
                 }
 
                 if let Some(last_visibility) = last_write_visibility {
-                    context.issues.push(
-                        Issue::error(format!(
-                            "static property `{}::{}` cannot have a write visibility modifier.",
-                            class_like_name, first_variable_name
-                        ))
-                        .with_annotation(
-                            Annotation::primary(modifier.span()).with_message("Duplicate visibility modifier."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(last_visibility).with_message("Previous visibility modifier."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(first_variable.span())
-                                .with_message(format!("Property `{}` declared here.", first_variable_name)),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
-                        ),
-                    );
+                    if !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties) {
+                        context.issues.push(
+                            Issue::error(format!(
+                                "Asymmetric visibility for static property `{}::{}` is not available in your current PHP version, this feature was introduced in PHP 8.5.",
+                                class_like_name,
+                                first_variable_name,
+                            ))
+                            .with_annotation(
+                                Annotation::primary(last_visibility).with_message("This write visibility modifier is used here"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(modifier.span()).with_message("On this static property"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(first_variable.span()).with_message(format!("Static property `{}`", first_variable_name)),
+                            )
+                            .with_note(
+                                "PHP 8.4 introduced asymmetric visibility for properties, and PHP 8.5 extended this support to static properties."
+                            )
+                            .with_help(
+                                "To use this feature, please configure your project for PHP 8.5+. Alternatively, remove the specific write visibility from this static property or make the property non-static."
+                            ),
+                        );
+                    }
                 }
 
                 last_static = Some(modifier.span());
@@ -228,6 +232,17 @@ pub fn check_property(
                 last_read_visibility = Some(modifier.span());
             }
             Modifier::PrivateSet(_) | Modifier::ProtectedSet(_) | Modifier::PublicSet(_) => {
+                if !context.version.is_supported(Feature::AsymmetricVisibility) {
+                    context.issues.push(
+                        Issue::error("Asymmetric visibility is only available in PHP 8.4 and above.").with_annotation(
+                            Annotation::primary(modifier.span())
+                                .with_message("Asymmetric visibility modifier used here."),
+                        ),
+                    );
+
+                    continue;
+                }
+
                 if let Some(last_visibility) = last_write_visibility {
                     context.issues.push(
                         Issue::error(format!(
@@ -252,26 +267,30 @@ pub fn check_property(
                 }
 
                 if let Some(last_static) = last_static {
-                    context.issues.push(
-                        Issue::error(format!(
-                            "Static property `{}::{}` cannot have a write visibility modifier.",
-                            class_like_name, first_variable_name
-                        ))
-                        .with_annotation(
-                            Annotation::primary(modifier.span()).with_message("Write visibility modifier."),
-                        )
-                        .with_annotation(
-                            Annotation::primary(last_static).with_message("Property is marked as static here."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(first_variable.span())
-                                .with_message(format!("Property `{}` declared here.", first_variable_name)),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
-                        ),
-                    );
+                    if !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties) {
+                        context.issues.push(
+                            Issue::error(format!(
+                                "Asymmetric visibility for static property `{}::{}` is not available in your current PHP version, this feature was introduced in PHP 8.5.",
+                                class_like_name,
+                                first_variable_name,
+                            ))
+                            .with_annotation(
+                                Annotation::primary(modifier.span()).with_message("This write visibility modifier is used here"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(last_static).with_message("On this static property"),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(first_variable.span()).with_message(format!("Static property `{}`", first_variable_name)),
+                            )
+                            .with_note(
+                                "PHP 8.4 introduced asymmetric visibility for properties, and PHP 8.5 extended this support to static properties."
+                            )
+                            .with_help(
+                                "To use this feature, please configure your project for PHP 8.5+. Alternatively, remove the specific write visibility from this static property or make the property non-static."
+                            ),
+                        );
+                    }
                 }
 
                 last_write_visibility = Some(modifier.span());

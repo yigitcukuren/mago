@@ -200,6 +200,25 @@ impl Expression {
             Self::Closure(closure) => {
                 closure.r#static.is_some() && version.is_supported(Feature::ClosureInConstantExpressions)
             }
+            Self::ClosureCreation(closure_creation) => {
+                if !version.is_supported(Feature::ClosureCreationInConstantExpressions) {
+                    return false;
+                }
+
+                match closure_creation {
+                    ClosureCreation::Function(function_closure_creation) => {
+                        function_closure_creation.function.is_constant(version, initilization)
+                    }
+                    ClosureCreation::Method(method_closure_creation) => {
+                        method_closure_creation.object.is_constant(version, initilization)
+                            && matches!(method_closure_creation.method, ClassLikeMemberSelector::Identifier(_))
+                    }
+                    ClosureCreation::StaticMethod(static_method_closure_creation) => {
+                        static_method_closure_creation.class.is_constant(version, initilization)
+                            && matches!(static_method_closure_creation.method, ClassLikeMemberSelector::Identifier(_))
+                    }
+                }
+            }
             _ => false,
         }
     }

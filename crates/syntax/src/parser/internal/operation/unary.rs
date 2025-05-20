@@ -23,6 +23,7 @@ pub fn parse_unary_prefix_operation(stream: &mut TokenStream<'_, '_>) -> Result<
         T!["(unset)"] => UnaryPrefixOperator::UnsetCast(token.span, token.value),
         T!["(binary)"] => UnaryPrefixOperator::BinaryCast(token.span, token.value),
         T!["(string)"] => UnaryPrefixOperator::StringCast(token.span, token.value),
+        T!["(void)"] => UnaryPrefixOperator::VoidCast(token.span, token.value),
         T!["@"] => UnaryPrefixOperator::ErrorControl(token.span),
         T!["!"] => {
             precedence = Precedence::Bang;

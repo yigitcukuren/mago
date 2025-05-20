@@ -36,4 +36,13 @@ pub fn check_unary_prefix_operator(unary_prefix_operator: &UnaryPrefixOperator, 
             );
         }
     }
+
+    if !context.version.is_supported(Feature::VoidCast) {
+        if let UnaryPrefixOperator::VoidCast(span, _) = unary_prefix_operator {
+            context.issues.push(
+                Issue::error("The `void` cast is only available in PHP 8.5 and later.")
+                    .with_annotation(Annotation::primary(*span).with_message("Void cast used here.")),
+            );
+        }
+    }
 }

@@ -135,7 +135,8 @@ impl<'a> Format<'a> for UnaryPrefixOperator {
                 | UnaryPrefixOperator::ObjectCast(_, _)
                 | UnaryPrefixOperator::UnsetCast(_, _)
                 | UnaryPrefixOperator::StringCast(_, _)
-                | UnaryPrefixOperator::BinaryCast(_, _) => f.settings.space_after_cast_unary_prefix_operators,
+                | UnaryPrefixOperator::BinaryCast(_, _)
+                | UnaryPrefixOperator::VoidCast(_, _) => f.settings.space_after_cast_unary_prefix_operators,
             };
 
             let value = self.as_str(f.interner);

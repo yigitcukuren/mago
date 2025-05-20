@@ -29,6 +29,7 @@ pub enum UnaryPrefixOperator {
     UnsetCast(Span, StringIdentifier),   // `(unset) $expr`
     StringCast(Span, StringIdentifier),  // `(string) $expr`
     BinaryCast(Span, StringIdentifier),  // `(binary) $expr`
+    VoidCast(Span, StringIdentifier),    // `(void) $expr`
     BitwiseNot(Span),                    // `~$expr`
     Not(Span),                           // `!$expr`
     PreIncrement(Span),                  // `++$expr`
@@ -94,6 +95,7 @@ impl UnaryPrefixOperator {
                 | Self::UnsetCast(_, _)
                 | Self::StringCast(_, _)
                 | Self::BinaryCast(_, _)
+                | Self::VoidCast(_, _)
         )
     }
 
@@ -128,7 +130,8 @@ impl UnaryPrefixOperator {
             | UnaryPrefixOperator::ObjectCast(_, value)
             | UnaryPrefixOperator::UnsetCast(_, value)
             | UnaryPrefixOperator::StringCast(_, value)
-            | UnaryPrefixOperator::BinaryCast(_, value) => interner.lookup(value),
+            | UnaryPrefixOperator::BinaryCast(_, value)
+            | UnaryPrefixOperator::VoidCast(_, value) => interner.lookup(value),
             UnaryPrefixOperator::BitwiseNot(_) => "~",
             UnaryPrefixOperator::Not(_) => "!",
             UnaryPrefixOperator::PreIncrement(_) => "++",
@@ -156,6 +159,7 @@ impl UnaryPrefixOperator {
                 | (Self::UnsetCast(_, _), Self::UnsetCast(_, _))
                 | (Self::StringCast(_, _), Self::StringCast(_, _))
                 | (Self::BinaryCast(_, _), Self::BinaryCast(_, _))
+                | (Self::VoidCast(_, _), Self::VoidCast(_, _))
                 | (Self::BitwiseNot(_), Self::BitwiseNot(_))
                 | (Self::Not(_), Self::Not(_))
                 | (Self::PreIncrement(_), Self::PreIncrement(_))
@@ -216,6 +220,7 @@ impl HasSpan for UnaryPrefixOperator {
             Self::UnsetCast(span, ..) => *span,
             Self::StringCast(span, ..) => *span,
             Self::BinaryCast(span, ..) => *span,
+            Self::VoidCast(span, ..) => *span,
             Self::BitwiseNot(span) => *span,
             Self::Not(span) => *span,
             Self::PreIncrement(span) => *span,

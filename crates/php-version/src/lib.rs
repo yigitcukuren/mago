@@ -64,10 +64,25 @@ impl PHPVersion {
     /// The PHP 8.5 version.
     pub const PHP85: PHPVersion = PHPVersion::new(8, 5, 0);
 
-    /// The Latest PHP version.
+    /// Represents the latest stable PHP version actively supported or targeted by this crate.
+    ///
+    /// **Warning:** The specific PHP version this constant points to (e.g., `PHPVersion::PHP84`)
+    /// is subject to change frequently, potentially even in **minor or patch releases**
+    /// of this crate, as new PHP versions are released and our support baseline updates.
+    ///
+    /// **Do NOT rely on this constant having a fixed value across different crate versions.**
+    /// It is intended for features that should target "the most current PHP we know of now."
     pub const LATEST: PHPVersion = PHPVersion::PHP84;
 
-    /// The next PHP version.
+    /// Represents an upcoming, future, or "next" PHP version that this crate is
+    /// anticipating or for which experimental support might be in development.
+    ///
+    /// **Warning:** The specific PHP version this constant points to (e.g., `PHPVersion::PHP85`)
+    /// is highly volatile and **WILL CHANGE frequently**, potentially even in **minor or patch
+    /// releases** of this crate, reflecting shifts in PHP's release cycle or our development focus.
+    ///
+    /// **Do NOT rely on this constant having a fixed value across different crate versions.**
+    /// Use with caution, primarily for internal or forward-looking features.
     pub const NEXT: PHPVersion = PHPVersion::PHP85;
 
     /// Creates a new `PHPVersion` from the provided `major`, `minor`, and `patch` values.
@@ -224,7 +239,7 @@ impl PHPVersion {
             | Feature::AbstractTraitMethods
             | Feature::StaticReturnTypeHint
             | Feature::AccessClassOnObject
-            | Feature::Attribute
+            | Feature::Attributes
             | Feature::MixedTypeHint
             | Feature::MatchExpression
             | Feature::NullSafeOperator
@@ -260,8 +275,14 @@ impl PHPVersion {
             | Feature::LazyObjects
             | Feature::HighlightStringDoesNotReturnFalse
             | Feature::PropertyHooks
-            | Feature::NewWithoutParentheses => self.0 >= 0x08_04_00,
-            Feature::ClosureInConstantExpressions | Feature::ConstantAttribute => self.0 >= 0x08_05_00,
+            | Feature::NewWithoutParentheses
+            | Feature::DeprecatedAttribute => self.0 >= 0x08_04_00,
+            Feature::ClosureInConstantExpressions
+            | Feature::ConstantAttributes
+            | Feature::NoDiscardAttribute
+            | Feature::VoidCast
+            | Feature::AsymmetricVisibilityForStaticProperties
+            | Feature::ClosureCreationInConstantExpressions => self.0 >= 0x08_05_00,
             Feature::CallableInstanceMethods
             | Feature::LegacyConstructor
             | Feature::UnsetCast

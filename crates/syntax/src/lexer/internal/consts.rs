@@ -1,6 +1,6 @@
 use crate::token::TokenKind;
 
-pub const CAST_TYPES: [(&[u8], TokenKind); 12] = [
+pub const CAST_TYPES: [(&[u8], TokenKind); 13] = [
     (b"(int)", TokenKind::IntCast),
     (b"(integer)", TokenKind::IntegerCast),
     (b"(double)", TokenKind::DoubleCast),
@@ -13,6 +13,7 @@ pub const CAST_TYPES: [(&[u8], TokenKind); 12] = [
     (b"(array)", TokenKind::ArrayCast),
     (b"(object)", TokenKind::ObjectCast),
     (b"(unset)", TokenKind::UnsetCast),
+    (b"(void)", TokenKind::VoidCast),
 ];
 
 pub const KEYWORD_TYPES: [(&[u8], TokenKind); 85] = [

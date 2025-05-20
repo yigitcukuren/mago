@@ -246,6 +246,7 @@ pub enum TokenKind {
     Static,                      // `static`
     StringCast,                  // `(string)`
     BinaryCast,                  // `(binary)`
+    VoidCast,                    // `(void)`
     StringPart,                  // `string` inside a double-quoted string, or a document string
     Switch,                      // `switch`
     Throw,                       // `throw`
@@ -666,7 +667,8 @@ impl TokenKind {
                 | "(boolean)"
                 | "(array)"
                 | "(object)"
-                | "(unset)"]
+                | "(unset)"
+                | "(void)"]
         )
     }
 
