@@ -67,20 +67,6 @@ pub fn check_argument_list(argument_list: &ArgumentList, context: &mut Context<'
                     );
                 }
 
-                if let Some(ellipsis) = named_argument.ellipsis {
-                    context.issues.push(
-                        Issue::error("Cannot use argument unpacking in named arguments.")
-                            .with_annotation(
-                                Annotation::primary(ellipsis.span()).with_message("Unpacking argument defined here."),
-                            )
-                            .with_annotation(
-                                Annotation::secondary(named_argument.span())
-                                    .with_message("Named argument defined here."),
-                            )
-                            .with_note("Unpacking arguments is not allowed in named arguments."),
-                    );
-                }
-
                 last_named_argument = Some(named_argument.span());
             }
         }

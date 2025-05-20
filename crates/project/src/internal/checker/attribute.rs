@@ -17,13 +17,13 @@ pub fn check_attribute_list(attribute_list: &AttributeList, context: &mut Contex
 
     for attr in attribute_list.attributes.iter() {
         let name = context.interner.lookup(attr.name.value());
-        if let Some(list) = &attr.arguments {
+        if let Some(list) = &attr.argument_list {
             for argument in list.arguments.iter() {
                 let (ellipsis, value) = match &argument {
                     Argument::Positional(positional_argument) => {
-                        (positional_argument.ellipsis, &positional_argument.value)
+                        (positional_argument.ellipsis.as_ref(), &positional_argument.value)
                     }
-                    Argument::Named(named_argument) => (named_argument.ellipsis, &named_argument.value),
+                    Argument::Named(named_argument) => (None, &named_argument.value),
                 };
 
                 if let Some(ellipsis) = ellipsis {

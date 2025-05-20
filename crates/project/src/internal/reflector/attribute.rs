@@ -18,7 +18,7 @@ pub fn reflect_attributes<'ast>(
         for attribute in attribute_list.attributes.iter() {
             let reflection = AttributeReflection {
                 name: Name::new(*context.names.get(&attribute.name), attribute.name.span()),
-                arguments: reflect_attribute_arguments(&attribute.arguments, context),
+                arguments: reflect_attribute_arguments(&attribute.argument_list, context),
                 span: attribute.span(),
             };
 

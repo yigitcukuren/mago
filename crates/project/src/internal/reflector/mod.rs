@@ -51,7 +51,7 @@ fn get_availability_range<'a>(
     let mut from = None;
     let mut to = None;
 
-    let Some(argument_list) = attribute.arguments.as_ref() else {
+    let Some(argument_list) = attribute.argument_list.as_ref() else {
         return (from, to);
     };
 
