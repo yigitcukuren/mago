@@ -61,6 +61,15 @@ impl PHPVersion {
     /// The PHP 8.4 version.
     pub const PHP84: PHPVersion = PHPVersion::new(8, 4, 0);
 
+    /// The PHP 8.5 version.
+    pub const PHP85: PHPVersion = PHPVersion::new(8, 5, 0);
+
+    /// The Latest PHP version.
+    pub const LATEST: PHPVersion = PHPVersion::PHP84;
+
+    /// The next PHP version.
+    pub const NEXT: PHPVersion = PHPVersion::PHP85;
+
     /// Creates a new `PHPVersion` from the provided `major`, `minor`, and `patch` values.
     ///
     /// The internal representation packs these three components into a single `u32`
