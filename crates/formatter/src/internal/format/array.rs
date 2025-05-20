@@ -550,10 +550,6 @@ fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) ->
                 None => get_element_width(f, &arg.value),
             },
             Argument::Named(arg) => get_element_width(f, &arg.value).map(|mut width| {
-                if arg.ellipsis.is_some() {
-                    width += 3;
-                }
-
                 width += 2;
                 width += f.interner.lookup(&arg.name.value).width();
 

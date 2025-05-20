@@ -487,10 +487,6 @@ impl<'a> Format<'a> for NamedArgument {
                 content.push(Document::space());
             }
 
-            if self.ellipsis.is_some() {
-                content.push(Document::String("..."));
-            }
-
             content.push(self.value.format(f));
 
             Document::Group(Group::new(content))

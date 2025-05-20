@@ -96,11 +96,17 @@ impl<'a> FormatterState<'a> {
             _ => return false,
         };
 
+        operator.is_low_precedence();
+
         let parent_operator = match self.nth_parent_kind(2) {
             Some(Node::VariadicArrayElement(_)) => {
                 return true;
             }
             Some(Node::Binary(e)) => {
+                if operator.is_low_precedence() {
+                    return true;
+                }
+
                 if let BinaryOperator::NullCoalesce(_) = e.operator {
                     // Add parentheses if parent is a coalesce operator,
                     //  unless the child is a coalesce operator as well.
@@ -130,7 +136,7 @@ impl<'a> FormatterState<'a> {
                 return true;
             }
             Some(Node::Conditional(_)) => {
-                if operator.is_logical() || operator.is_comparison() {
+                if (operator.is_logical() && !operator.is_low_precedence()) || operator.is_comparison() {
                     return false;
                 }
 
@@ -155,7 +161,13 @@ impl<'a> FormatterState<'a> {
                 // ```
                 return access.left_bracket.start.offset > node.span().start.offset;
             }
-            _ => {
+            parent => {
+                if let Some(Node::Assignment(_)) = parent {
+                    if operator.is_low_precedence() {
+                        return true;
+                    }
+                }
+
                 let grand_parent_node = self.nth_parent_kind(3);
 
                 if let Some(Node::Access(_)) = grand_parent_node {
@@ -166,7 +178,7 @@ impl<'a> FormatterState<'a> {
             }
         };
 
-        if operator.is_bit_shift() {
+        if operator.is_bit_shift() || operator.is_low_precedence() {
             return true;
         }
 

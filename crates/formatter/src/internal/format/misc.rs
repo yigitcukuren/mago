@@ -263,7 +263,7 @@ pub(super) fn print_attribute_list_sequence<'a>(
         if !has_potentially_long_attribute {
             for attribute in attribute_list.attributes.iter() {
                 has_potentially_long_attribute =
-                    !attribute.arguments.as_ref().is_none_or(|args| args.arguments.is_empty());
+                    !attribute.argument_list.as_ref().is_none_or(|args| args.arguments.is_empty());
 
                 if has_potentially_long_attribute {
                     break;
