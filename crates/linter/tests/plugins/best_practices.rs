@@ -1,6 +1,7 @@
 use mago_linter::plugin::best_practices::rules::combine_consecutive_issets::CombineConsecutiveIssetsRule;
 use mago_linter::plugin::best_practices::rules::disallowed_functions::DisallowedFunctionsRule;
 use mago_linter::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
+use mago_linter::plugin::best_practices::rules::literal_named_argument::LiteralNamedArgumentRule;
 use mago_linter::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
 use mago_linter::plugin::best_practices::rules::no_boolean_flag_parameter::NoBooleanFlagParameterRule;
 use mago_linter::plugin::best_practices::rules::no_boolean_literal_comparison::NoBooleanLiteralComparisonRule;
@@ -19,6 +20,7 @@ use crate::rule_test;
 rule_test!(test_combine_consecutive_issets, CombineConsecutiveIssetsRule);
 rule_test!(test_disallowed_functions, DisallowedFunctionsRule);
 rule_test!(test_excessive_nesting, ExcessiveNesting);
+rule_test!(test_literal_named_argument, LiteralNamedArgumentRule);
 rule_test!(test_loop_does_not_iterate, LoopDoesNotIterateRule);
 rule_test!(test_no_boolean_flag_parameter, NoBooleanFlagParameterRule);
 rule_test!(test_no_boolean_literal_comparison, NoBooleanLiteralComparisonRule);

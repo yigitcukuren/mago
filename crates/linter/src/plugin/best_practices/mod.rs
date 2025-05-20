@@ -3,6 +3,7 @@ use crate::plugin::best_practices::rules::combine_consecutive_issets::CombineCon
 use crate::plugin::best_practices::rules::disallowed_functions::DisallowedFunctionsRule;
 use crate::plugin::best_practices::rules::dont_catch_error::DontCatchErrorRule;
 use crate::plugin::best_practices::rules::excessive_nesting::ExcessiveNesting;
+use crate::plugin::best_practices::rules::literal_named_argument::LiteralNamedArgumentRule;
 use crate::plugin::best_practices::rules::loop_does_not_iterate::LoopDoesNotIterateRule;
 use crate::plugin::best_practices::rules::no_boolean_flag_parameter::NoBooleanFlagParameterRule;
 use crate::plugin::best_practices::rules::no_boolean_literal_comparison::NoBooleanLiteralComparisonRule;
@@ -40,6 +41,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(DontCatchErrorRule),
             Box::new(NoUnusedParameterRule),
             Box::new(ExcessiveNesting),
+            Box::new(LiteralNamedArgumentRule),
             Box::new(LoopDoesNotIterateRule),
             Box::new(NoBooleanFlagParameterRule),
             Box::new(NoBooleanLiteralComparisonRule),
