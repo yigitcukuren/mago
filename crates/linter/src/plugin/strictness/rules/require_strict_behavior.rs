@@ -1,5 +1,6 @@
 use indoc::indoc;
 
+use mago_fixer::SafetyClassification;
 use mago_php_version::PHPVersion;
 use mago_reporting::*;
 use mago_span::*;
@@ -164,7 +165,20 @@ impl Rule for RequireStrictBehavior {
             ));
         }
 
-        context.report(issue);
+        if !found {
+            let has_trailing_comma = func_call.argument_list.arguments.has_trailing_token();
+            let content = if has_trailing_comma { " strict: true" } else { ", strict: true" };
+
+            context.propose(issue, |plan| {
+                plan.insert(
+                    func_call.argument_list.right_parenthesis.start.offset,
+                    content,
+                    SafetyClassification::Unsafe,
+                );
+            });
+        } else {
+            context.report(issue);
+        }
 
         LintDirective::default()
     }
