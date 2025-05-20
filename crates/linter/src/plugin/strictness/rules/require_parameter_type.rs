@@ -207,13 +207,13 @@ fn check_function_like_parameter(function_like_parameter: &FunctionLikeParameter
     let parameter_name = context.lookup(&function_like_parameter.variable.name);
 
     context.report(
-        Issue::new(context.level(), format!("Parameter `{}` is missing a type hint.", parameter_name))
+        Issue::new(context.level(), format!("Parameter `{parameter_name}` is missing a type hint."))
             .with_annotation(
                 Annotation::primary(function_like_parameter.span())
-                    .with_message(format!("Parameter `{}` is declared here", parameter_name)),
+                    .with_message(format!("Parameter `{parameter_name}` is declared here")),
             )
             .with_note("Type hints improve code readability and help prevent type-related errors.")
-            .with_help(format!("Consider adding a type hint to parameter `{}`.", parameter_name)),
+            .with_help(format!("Consider adding a type hint to parameter `{parameter_name}`.")),
     );
 }
 

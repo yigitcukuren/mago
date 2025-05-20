@@ -52,7 +52,7 @@ pub fn github_format(
         // see: https://github.com/actions/toolkit/issues/193
         let message = long_message(issue).replace("\n", "%0A");
 
-        writeln!(writer, "::{} {}::{}", level, properties, message)?;
+        writeln!(writer, "::{level} {properties}::{message}")?;
     }
 
     Ok(highest_level)

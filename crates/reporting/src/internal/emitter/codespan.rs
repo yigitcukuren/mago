@@ -114,19 +114,19 @@ fn codespan_format_with_config(
         let total_issues = errors + warnings + notes + help;
         let mut message_notes = vec![];
         if errors > 0 {
-            message_notes.push(format!("{} error(s)", errors));
+            message_notes.push(format!("{errors} error(s)"));
         }
 
         if warnings > 0 {
-            message_notes.push(format!("{} warning(s)", warnings));
+            message_notes.push(format!("{warnings} warning(s)"));
         }
 
         if notes > 0 {
-            message_notes.push(format!("{} note(s)", notes));
+            message_notes.push(format!("{notes} note(s)"));
         }
 
         if help > 0 {
-            message_notes.push(format!("{} help message(s)", help));
+            message_notes.push(format!("{help} help message(s)"));
         }
 
         let mut diagnostic: Diagnostic<SourceIdentifier> = Diagnostic::new(highest_level.into()).with_message(format!(
@@ -249,11 +249,11 @@ impl From<Issue> for Diagnostic<SourceIdentifier> {
         }
 
         if let Some(help) = issue.help {
-            diagnostic.notes.push(format!("Help: {}", help));
+            diagnostic.notes.push(format!("Help: {help}"));
         }
 
         if let Some(link) = issue.link {
-            diagnostic.notes.push(format!("See: {}", link));
+            diagnostic.notes.push(format!("See: {link}"));
         }
 
         diagnostic

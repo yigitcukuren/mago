@@ -30,30 +30,30 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Source(error) => write!(f, "Failed to load source files: {}", error),
-            Self::Reporting(error) => write!(f, "Failed to report results: {}", error),
-            Self::Walking(error) => write!(f, "Failed to walk the source tree: {}", error),
-            Self::BuildingRuntime(error) => write!(f, "Failed to build the runtime: {}", error),
-            Self::BuildingConfiguration(error) => write!(f, "Failed to build the configuration: {}", error),
-            Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {}", error),
-            Self::SerializingToml(error) => write!(f, "Failed to serialize TOML: {}", error),
-            Self::CanonicalizingPath(path, error) => write!(f, "Failed to canonicalize path `{:?}`: {}", path, error),
-            Self::Join(error) => write!(f, "Failed to join tasks: {}", error),
-            Self::Json(error) => write!(f, "Failed to parse JSON: {}", error),
-            Self::SelfUpdate(error) => write!(f, "Failed to self update: {}", error),
+            Self::Source(error) => write!(f, "Failed to load source files: {error}"),
+            Self::Reporting(error) => write!(f, "Failed to report results: {error}"),
+            Self::Walking(error) => write!(f, "Failed to walk the source tree: {error}"),
+            Self::BuildingRuntime(error) => write!(f, "Failed to build the runtime: {error}"),
+            Self::BuildingConfiguration(error) => write!(f, "Failed to build the configuration: {error}"),
+            Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {error}"),
+            Self::SerializingToml(error) => write!(f, "Failed to serialize TOML: {error}"),
+            Self::CanonicalizingPath(path, error) => write!(f, "Failed to canonicalize path `{path:?}`: {error}"),
+            Self::Join(error) => write!(f, "Failed to join tasks: {error}"),
+            Self::Json(error) => write!(f, "Failed to parse JSON: {error}"),
+            Self::SelfUpdate(error) => write!(f, "Failed to self update: {error}"),
             Self::PHPVersionIsTooOld(minimum, actual) => {
-                write!(f, "PHP version {} is not supported, minimum supported version is {}", actual, minimum)
+                write!(f, "PHP version {actual} is not supported, minimum supported version is {minimum}")
             }
             Self::PHPVersionIsTooNew(maximum, actual) => {
-                write!(f, "PHP version {} is not supported, maximum supported version is {}", actual, maximum)
+                write!(f, "PHP version {actual} is not supported, maximum supported version is {maximum}")
             }
             Self::InvalidPHPVersion(version, error) => {
-                write!(f, "Invalid PHP version `{}`: {}", version, error)
+                write!(f, "Invalid PHP version `{version}`: {error}")
             }
-            Self::Dialoguer(error) => write!(f, "Failed to interact with the user: {}", error),
-            Self::WritingConfiguration(error) => write!(f, "Failed to write the configuration file: {}", error),
-            Self::ReadingComposerJson(error) => write!(f, "Failed to read the `composer.json` file: {}", error),
-            Self::ParsingComposerJson(error) => write!(f, "Failed to parse the `composer.json` file: {}", error),
+            Self::Dialoguer(error) => write!(f, "Failed to interact with the user: {error}"),
+            Self::WritingConfiguration(error) => write!(f, "Failed to write the configuration file: {error}"),
+            Self::ReadingComposerJson(error) => write!(f, "Failed to read the `composer.json` file: {error}"),
+            Self::ParsingComposerJson(error) => write!(f, "Failed to parse the `composer.json` file: {error}"),
         }
     }
 }

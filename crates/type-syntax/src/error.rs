@@ -57,13 +57,13 @@ impl std::fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SyntaxError::UnexpectedToken(token, position) => {
-                write!(f, "Unexpected token {} at {}", token, position)
+                write!(f, "Unexpected token {token} at {position}")
             }
             SyntaxError::UnrecognizedToken(token, position) => {
-                write!(f, "Unrecognized token {} at {}", token, position)
+                write!(f, "Unrecognized token {token} at {position}")
             }
             SyntaxError::UnexpectedEndOfFile(position) => {
-                write!(f, "Unexpected end of file at {}", position)
+                write!(f, "Unexpected end of file at {position}")
             }
         }
     }
@@ -78,15 +78,15 @@ impl std::error::Error for SyntaxError {
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseError::SyntaxError(err) => write!(f, "{}", err),
+            ParseError::SyntaxError(err) => write!(f, "{err}"),
             ParseError::UnexpectedEndOfFile(_, position) => {
-                write!(f, "Unexpected end of file at {}", position)
+                write!(f, "Unexpected end of file at {position}")
             }
             ParseError::UnexpectedToken(_, token, span) => {
-                write!(f, "Unexpected token {:?} at {}", token, span)
+                write!(f, "Unexpected token {token:?} at {span}")
             }
             ParseError::UnclosedLiteralString(span) => {
-                write!(f, "Unclosed literal string at {}", span)
+                write!(f, "Unclosed literal string at {span}")
             }
         }
     }

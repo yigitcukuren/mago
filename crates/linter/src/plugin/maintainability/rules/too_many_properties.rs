@@ -64,10 +64,9 @@ impl Rule for TooManyPropertiesRule {
 
         if properties > threshold {
             context.report(
-                Issue::new(context.level(), format!("{} has too many properties.", kind))
+                Issue::new(context.level(), format!("{kind} has too many properties."))
                     .with_annotation(Annotation::primary(node.span()).with_message(format!(
-                        "{} has {} properties, which exceeds the threshold of {}.",
-                        kind, properties, threshold
+                        "{kind} has {properties} properties, which exceeds the threshold of {threshold}."
                     )))
                     .with_note("Having a large number of properties can make classes harder to understand and maintain.")
                     .with_help(

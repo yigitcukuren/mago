@@ -23,7 +23,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
             parameters_seen.iter().find_map(|(n, s)| if parameter.variable.name.eq(n) { Some(s) } else { None })
         {
             context.issues.push(
-                Issue::error(format!("Parameter `{}` is already defined.", name))
+                Issue::error(format!("Parameter `{name}` is already defined."))
                     .with_annotation(
                         Annotation::primary(parameter.variable.span())
                             .with_message("This parameter is redefined here."),
@@ -55,7 +55,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
                         )))
                         .with_annotation(
                             Annotation::secondary(parameter.variable.span)
-                                .with_message(format!("Parameter `{}` defined here.", name)),
+                                .with_message(format!("Parameter `{name}` defined here.")),
                         )
                         .with_help("Remove the invalid modifier from the parameter."),
                     );
@@ -63,7 +63,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
                 Modifier::Readonly(_) => {
                     if let Some(s) = last_readonly {
                         context.issues.push(
-                            Issue::error(format!("Parameter `{}` cannot have multiple `readonly` modifiers.", name))
+                            Issue::error(format!("Parameter `{name}` cannot have multiple `readonly` modifiers."))
                                 .with_annotation(
                                     Annotation::primary(modifier.span())
                                         .with_message("Duplicate `readonly` modifier used here."),
@@ -80,7 +80,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
                 Modifier::Public(_) | Modifier::Protected(_) | Modifier::Private(_) => {
                     if let Some(s) = last_read_visibility {
                         context.issues.push(
-                            Issue::error(format!("Parameter `{}` cannot have multiple visibility modifiers.", name))
+                            Issue::error(format!("Parameter `{name}` cannot have multiple visibility modifiers."))
                                 .with_annotation(
                                     Annotation::primary(modifier.span())
                                         .with_message("Duplicate visibility modifier used here."),
@@ -98,8 +98,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
                     if let Some(s) = last_write_visibility {
                         context.issues.push(
                             Issue::error(format!(
-                                "Parameter `{}` cannot have multiple write visibility modifiers.",
-                                name
+                                "Parameter `{name}` cannot have multiple write visibility modifiers."
                             ))
                             .with_annotation(
                                 Annotation::primary(modifier.span())
@@ -126,7 +125,7 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
                 ))
                 .with_annotation(
                     Annotation::primary(parameter.variable.span())
-                        .with_message(format!("Parameter `{}` is defined here.", name)),
+                        .with_message(format!("Parameter `{name}` is defined here.")),
                 )
                 .with_annotation(
                     Annotation::secondary(s)
@@ -140,16 +139,15 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
             if let Some(default) = &parameter.default_value {
                 context.issues.push(
                     Issue::error(format!(
-                        "Invalid parameter definition: variadic parameter `{}` cannot have a default value.",
-                        name
+                        "Invalid parameter definition: variadic parameter `{name}` cannot have a default value."
                     ))
                     .with_annotation(
                         Annotation::primary(default.span())
-                            .with_message(format!("Default value is defined for variadic parameter `{}` here.", name)),
+                            .with_message(format!("Default value is defined for variadic parameter `{name}` here.")),
                     )
                     .with_annotation(
                         Annotation::secondary(ellipsis.join(parameter.variable.span))
-                            .with_message(format!("Parameter `{}` is variadic and marked with `...` here.", name)),
+                            .with_message(format!("Parameter `{name}` is variadic and marked with `...` here.")),
                     )
                     .with_help("Remove the default value from the variadic parameter."),
                 );
@@ -165,16 +163,15 @@ pub fn check_parameter_list(function_like_parameter_list: &FunctionLikeParameter
 
                 context.issues.push(
                     Issue::error(format!(
-                        "Invalid parameter type: bottom type `{}` cannot be used as a parameter type.",
-                        hint_name
+                        "Invalid parameter type: bottom type `{hint_name}` cannot be used as a parameter type."
                     ))
                     .with_annotation(
                         Annotation::primary(hint.span())
-                            .with_message(format!("Bottom type `{}` is not allowed here.", hint_name)),
+                            .with_message(format!("Bottom type `{hint_name}` is not allowed here.")),
                     )
                     .with_annotation(
                         Annotation::secondary(parameter.variable.span())
-                            .with_message(format!("This parameter `{}` is defined here.", name)),
+                            .with_message(format!("This parameter `{name}` is defined here.")),
                     )
                     .with_help("Use a valid parameter type to ensure compatibility with PHP's type system."),
                 );

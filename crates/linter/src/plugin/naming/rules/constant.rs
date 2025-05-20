@@ -57,22 +57,18 @@ impl Rule for ConstantRule {
                     let name = context.lookup(&item.name.value);
                     if !mago_casing::is_constant_case(name) {
                         context.report(
-                            Issue::new(
-                                context.level(),
-                                format!("Constant name `{}` should be in constant case.", name),
-                            )
-                            .with_annotation(
-                                Annotation::primary(item.name.span())
-                                    .with_message(format!("Constant item `{}` is declared here.", name)),
-                            )
-                            .with_note(format!(
-                                "The constant name `{}` does not follow constant naming convention.",
-                                name
-                            ))
-                            .with_help(format!(
-                                "Consider renaming it to `{}` to adhere to the naming convention.",
-                                mago_casing::to_constant_case(name)
-                            )),
+                            Issue::new(context.level(), format!("Constant name `{name}` should be in constant case."))
+                                .with_annotation(
+                                    Annotation::primary(item.name.span())
+                                        .with_message(format!("Constant item `{name}` is declared here.")),
+                                )
+                                .with_note(format!(
+                                    "The constant name `{name}` does not follow constant naming convention."
+                                ))
+                                .with_help(format!(
+                                    "Consider renaming it to `{}` to adhere to the naming convention.",
+                                    mago_casing::to_constant_case(name)
+                                )),
                         );
                     }
                 }
@@ -85,22 +81,18 @@ impl Rule for ConstantRule {
 
                     if !mago_casing::is_constant_case(name) {
                         context.report(
-                            Issue::new(
-                                context.level(),
-                                format!("Constant name `{}` should be in constant case.", name),
-                            )
-                            .with_annotation(
-                                Annotation::primary(item.name.span())
-                                    .with_message(format!("Constant item `{}` is declared here.", name)),
-                            )
-                            .with_note(format!(
-                                "The constant name `{}` does not follow constant naming convention.",
-                                name
-                            ))
-                            .with_help(format!(
-                                "Consider renaming it to `{}` to adhere to the naming convention.",
-                                mago_casing::to_constant_case(name)
-                            )),
+                            Issue::new(context.level(), format!("Constant name `{name}` should be in constant case."))
+                                .with_annotation(
+                                    Annotation::primary(item.name.span())
+                                        .with_message(format!("Constant item `{name}` is declared here.")),
+                                )
+                                .with_note(format!(
+                                    "The constant name `{name}` does not follow constant naming convention."
+                                ))
+                                .with_help(format!(
+                                    "Consider renaming it to `{}` to adhere to the naming convention.",
+                                    mago_casing::to_constant_case(name)
+                                )),
                         );
                     }
                 }

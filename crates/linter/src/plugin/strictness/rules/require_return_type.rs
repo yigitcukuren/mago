@@ -113,13 +113,13 @@ impl Rule for RequireReturnTypeRule {
                 let function_fqn = context.lookup_name(&function.name);
 
                 context.report(
-                    Issue::new(context.level(), format!("Function `{}` is missing a return type hint.", function_name))
+                    Issue::new(context.level(), format!("Function `{function_name}` is missing a return type hint."))
                         .with_annotation(
                             Annotation::primary(function.span())
-                                .with_message(format!("Function `{}` defined here.", function_fqn)),
+                                .with_message(format!("Function `{function_fqn}` defined here.")),
                         )
                         .with_note("Type hints improve code readability and help prevent type-related errors.")
-                        .with_help(format!("Consider adding a return type hint to function `{}`.", function_name)),
+                        .with_help(format!("Consider adding a return type hint to function `{function_name}`.")),
                 );
             }
             Node::Closure(closure) => {
@@ -178,13 +178,13 @@ impl Rule for RequireReturnTypeRule {
                 }
 
                 context.report(
-                    Issue::new(context.level(), format!("Method `{}` is missing a return type hint.", method_name))
+                    Issue::new(context.level(), format!("Method `{method_name}` is missing a return type hint."))
                         .with_annotation(
                             Annotation::primary(method.span())
-                                .with_message(format!("Method `{}` defined here", method_name)),
+                                .with_message(format!("Method `{method_name}` defined here")),
                         )
                         .with_note("Type hints improve code readability and help prevent type-related errors.")
-                        .with_help(format!("Consider adding a return type hint to method `{}`.", method_name)),
+                        .with_help(format!("Consider adding a return type hint to method `{method_name}`.")),
                 );
             }
             _ => (),

@@ -26,13 +26,13 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
         || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED.iter().any(|keyword| keyword.eq_ignore_ascii_case(class_name))
     {
         context.issues.push(
-            Issue::error(format!("Class `{}` name cannot be a reserved keyword.", class_name))
+            Issue::error(format!("Class `{class_name}` name cannot be a reserved keyword."))
                 .with_annotation(
                     Annotation::primary(class.name.span())
-                        .with_message(format!("Class name `{}` conflicts with a reserved keyword.", class_name)),
+                        .with_message(format!("Class name `{class_name}` conflicts with a reserved keyword.")),
                 )
                 .with_annotation(
-                    Annotation::secondary(class.span()).with_message(format!("Class `{}` declared here.", class_fqcn)),
+                    Annotation::secondary(class.span()).with_message(format!("Class `{class_fqcn}` declared here.")),
                 )
                 .with_help("Rename the class to avoid using reserved keywords."),
         );
@@ -46,13 +46,13 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
         match &modifier {
             Modifier::Static(_) => {
                 context.issues.push(
-                    Issue::error(format!("Class `{}` cannot have the `static` modifier.", class_name))
+                    Issue::error(format!("Class `{class_name}` cannot have the `static` modifier."))
                         .with_annotation(
                             Annotation::primary(modifier.span()).with_message("`static` modifier applied here."),
                         )
                         .with_annotation(
                             Annotation::secondary(class.span())
-                                .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                .with_message(format!("Class `{class_fqcn}` declared here.")),
                         )
                         .with_help("Remove the `static` modifier."),
                 );
@@ -67,31 +67,30 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
 
                 context.issues.push(
                     Issue::error(format!(
-                        "Class `{}` cannot have the `{}` visibility modifier.",
-                        class_name, visibility_name
+                        "Class `{class_name}` cannot have the `{visibility_name}` visibility modifier."
                     ))
                     .with_annotation(
                         Annotation::primary(keyword.span())
-                            .with_message(format!("`{}` modifier applied here.", visibility_name)),
+                            .with_message(format!("`{visibility_name}` modifier applied here.")),
                     )
                     .with_annotation(
                         Annotation::secondary(class.span())
-                            .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                            .with_message(format!("Class `{class_fqcn}` declared here.")),
                     )
-                    .with_help(format!("Remove the `{}` modifier.", visibility_name)),
+                    .with_help(format!("Remove the `{visibility_name}` modifier.")),
                 );
             }
             Modifier::Final(keyword) => {
                 if let Some(span) = last_abstract {
                     context.issues.push(
-                        Issue::error(format!("Abstract class `{}` cannot have the `final` modifier.", class_name))
+                        Issue::error(format!("Abstract class `{class_name}` cannot have the `final` modifier."))
                             .with_annotation(
                                 Annotation::primary(keyword.span()).with_message("`final` modifier applied here."),
                             )
                             .with_annotations([
                                 Annotation::secondary(span).with_message("Previous `abstract` modifier applied here."),
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                    .with_message(format!("Class `{class_fqcn}` declared here.")),
                             ])
                             .with_help("Remove the `final` modifier from the abstract class."),
                     );
@@ -99,7 +98,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
 
                 if let Some(span) = last_final {
                     context.issues.push(
-                        Issue::error(format!("Class `{}` cannot have multiple `final` modifiers.", class_name))
+                        Issue::error(format!("Class `{class_name}` cannot have multiple `final` modifiers."))
                             .with_annotation(
                                 Annotation::primary(keyword.span())
                                     .with_message("Duplicate `final` modifier applied here."),
@@ -107,7 +106,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
                             .with_annotations([
                                 Annotation::secondary(span).with_message("Previous `final` modifier applied here."),
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                    .with_message(format!("Class `{class_fqcn}` declared here.")),
                             ])
                             .with_help("Remove the duplicate `final` modifier."),
                     );
@@ -118,14 +117,14 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
             Modifier::Abstract(keyword) => {
                 if let Some(span) = last_final {
                     context.issues.push(
-                        Issue::error(format!("Final class `{}` cannot have the `abstract` modifier.", class_name))
+                        Issue::error(format!("Final class `{class_name}` cannot have the `abstract` modifier."))
                             .with_annotation(
                                 Annotation::primary(keyword.span()).with_message("`abstract` modifier applied here."),
                             )
                             .with_annotations([
                                 Annotation::secondary(span).with_message("Previous `final` modifier applied here."),
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                    .with_message(format!("Class `{class_fqcn}` declared here.")),
                             ])
                             .with_help("Remove the `abstract` modifier from the final class."),
                     );
@@ -133,7 +132,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
 
                 if let Some(span) = last_abstract {
                     context.issues.push(
-                        Issue::error(format!("Class `{}` cannot have multiple `abstract` modifiers.", class_name))
+                        Issue::error(format!("Class `{class_name}` cannot have multiple `abstract` modifiers."))
                             .with_annotation(
                                 Annotation::primary(keyword.span())
                                     .with_message("Duplicate `abstract` modifier applied here."),
@@ -141,7 +140,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
                             .with_annotations([
                                 Annotation::secondary(span).with_message("Previous `abstract` modifier applied here."),
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                    .with_message(format!("Class `{class_fqcn}` declared here.")),
                             ])
                             .with_help("Remove the duplicate `abstract` modifier."),
                     );
@@ -152,7 +151,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
             Modifier::Readonly(keyword) => {
                 if let Some(span) = last_readonly {
                     context.issues.push(
-                        Issue::error(format!("Class `{}` cannot have multiple `readonly` modifiers.", class_name))
+                        Issue::error(format!("Class `{class_name}` cannot have multiple `readonly` modifiers."))
                             .with_annotation(
                                 Annotation::primary(keyword.span())
                                     .with_message("Duplicate `readonly` modifier applied here."),
@@ -160,7 +159,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
                             .with_annotations([
                                 Annotation::secondary(span).with_message("Previous `readonly` modifier applied here."),
                                 Annotation::secondary(class.span())
-                                    .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                    .with_message(format!("Class `{class_fqcn}` declared here.")),
                             ])
                             .with_help("Remove the duplicate `readonly` modifier."),
                     );
@@ -194,11 +193,11 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
         match &memeber {
             ClassLikeMember::EnumCase(case) => {
                 context.issues.push(
-                    Issue::error(format!("Class `{}` cannot contain enum cases.", class_name))
+                    Issue::error(format!("Class `{class_name}` cannot contain enum cases."))
                         .with_annotation(Annotation::primary(case.span()).with_message("Enum case found in class."))
                         .with_annotation(
                             Annotation::secondary(class.span())
-                                .with_message(format!("Class `{}` declared here.", class_fqcn)),
+                                .with_message(format!("Class `{class_fqcn}` declared here.")),
                         )
                         .with_help("Remove the enum cases from the class definition."),
                 );
@@ -209,8 +208,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
                 if !class.modifiers.contains_abstract() && method.modifiers.contains_abstract() {
                     context.issues.push(
                         Issue::error(format!(
-                            "Class `{}` contains an abstract method `{}`, so the class must be declared abstract.",
-                            class_name, method_name
+                            "Class `{class_name}` contains an abstract method `{method_name}`, so the class must be declared abstract."
                         ))
                         .with_annotation(
                             Annotation::primary(class.name.span())
@@ -218,8 +216,7 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
                         )
                         .with_annotation(
                             Annotation::secondary(method.span()).with_message(format!(
-                                "Abstract method `{}::{}` declared here.",
-                                class_name, method_name
+                                "Abstract method `{class_name}::{method_name}` declared here."
                             )),
                         )
                         .with_help("Add the `abstract` modifier to the class."),
@@ -250,14 +247,14 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
             .any(|keyword| keyword.eq_ignore_ascii_case(interface_name))
     {
         context.issues.push(
-            Issue::error(format!("Interface `{}` name cannot be a reserved keyword.", interface_name))
+            Issue::error(format!("Interface `{interface_name}` name cannot be a reserved keyword."))
                 .with_annotation(
                     Annotation::primary(interface.name.span())
-                        .with_message(format!("Interface `{}` declared here.", interface_name)),
+                        .with_message(format!("Interface `{interface_name}` declared here.")),
                 )
                 .with_annotation(
                     Annotation::secondary(interface.span())
-                        .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                        .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                 )
                 .with_help("Rename the interface to avoid using a reserved keyword."),
         );
@@ -273,22 +270,22 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
         match &memeber {
             ClassLikeMember::TraitUse(trait_use) => {
                 context.issues.push(
-                    Issue::error(format!("Interface `{}` cannot use traits.", interface_name))
+                    Issue::error(format!("Interface `{interface_name}` cannot use traits."))
                         .with_annotation(Annotation::primary(trait_use.span()).with_message("Trait use statement."))
                         .with_annotation(
                             Annotation::secondary(interface.span())
-                                .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                .with_message(format!("Interface `{interface_fqcn}` declared here.")),
                         )
                         .with_help("Remove the trait use statement."),
                 );
             }
             ClassLikeMember::EnumCase(case) => {
                 context.issues.push(
-                    Issue::error(format!("Interface `{}` cannot contain enum cases.", interface_name))
+                    Issue::error(format!("Interface `{interface_name}` cannot contain enum cases."))
                         .with_annotation(Annotation::primary(case.span()).with_message("Enum case declared here."))
                         .with_annotation(
                             Annotation::secondary(interface.span())
-                                .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                .with_message(format!("Interface `{interface_fqcn}` declared here.")),
                         )
                         .with_note(
                             "Consider moving the enum case to an enum or class if it represents state or constants.",
@@ -311,20 +308,18 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
 
                     context.issues.push(
                         Issue::error(format!(
-                            "Interface method `{}::{}` cannot have `{}` modifier.",
-                            interface_name, method_name, visibility_name
+                            "Interface method `{interface_name}::{method_name}` cannot have `{visibility_name}` modifier."
                         ))
                         .with_annotation(
                             Annotation::primary(visibility.span())
-                                .with_message(format!("`{}` modifier applied here.", visibility_name)),
+                                .with_message(format!("`{visibility_name}` modifier applied here.")),
                         )
                         .with_annotation(
                             Annotation::secondary(interface.span())
-                                .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                .with_message(format!("Interface `{interface_fqcn}` declared here.")),
                         )
                         .with_help(format!(
-                            "Remove the `{}` modifier from the method definition as methods in interfaces must always be public.",
-                            visibility_name
+                            "Remove the `{visibility_name}` modifier from the method definition as methods in interfaces must always be public."
                         ))
                         .with_note("Interface methods are always public and cannot have non-public visibility modifiers."),
                     );
@@ -332,26 +327,22 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
 
                 if let MethodBody::Concrete(body) = &method.body {
                     context.issues.push(
-                        Issue::error(format!(
-                            "Interface method `{}::{}` cannot have a body.",
-                            interface_name, method_name
-                        ))
-                        .with_annotations([
-                            Annotation::primary(body.span()).with_message("Method body declared here."),
-                            Annotation::primary(method.name.span()).with_message("Method name defined here."),
-                            Annotation::secondary(interface.span())
-                                .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
-                        ])
-                        .with_help("Replace the method body with a `;` to indicate it is abstract.")
-                        .with_note("Methods in interfaces cannot have implementations and must be abstract."),
+                        Issue::error(format!("Interface method `{interface_name}::{method_name}` cannot have a body."))
+                            .with_annotations([
+                                Annotation::primary(body.span()).with_message("Method body declared here."),
+                                Annotation::primary(method.name.span()).with_message("Method name defined here."),
+                                Annotation::secondary(interface.span())
+                                    .with_message(format!("Interface `{interface_fqcn}` declared here.")),
+                            ])
+                            .with_help("Replace the method body with a `;` to indicate it is abstract.")
+                            .with_note("Methods in interfaces cannot have implementations and must be abstract."),
                     );
                 }
 
                 if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                     context.issues.push(
                         Issue::error(format!(
-                            "Interface method `{}::{}` must not be abstract.",
-                            interface_name, method_name
+                            "Interface method `{interface_name}::{method_name}` must not be abstract."
                         ))
                         .with_annotation(
                             Annotation::primary(abstract_modifier.span())
@@ -359,9 +350,9 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                         )
                         .with_annotations([
                             Annotation::secondary(interface.span())
-                                .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                .with_message(format!("Interface `{interface_fqcn}` declared here.")),
                             Annotation::secondary(method.span())
-                                .with_message(format!("Method `{}::{}` declared here.", interface_name, method_name)),
+                                .with_message(format!("Method `{interface_name}::{method_name}` declared here.")),
                         ])
                         .with_help("Remove the `abstract` modifier as all interface methods are implicitly abstract.")
                         .with_note(
@@ -386,8 +377,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                     Property::Plain(plain_property) => {
                         context.issues.push(
                                     Issue::error(format!(
-                                        "Interface `{}` cannot have non-hooked properties.",
-                                        interface_name
+                                        "Interface `{interface_name}` cannot have non-hooked properties."
                                     ))
                                     .with_annotation(
                                         Annotation::primary(plain_property.span())
@@ -395,7 +385,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                                     )
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("Interface `{}` declared here.", interface_fqcn)),
+                                            .with_message(format!("Interface `{interface_fqcn}` declared here.")),
                                     )
                                     .with_note("Interfaces are intended to define behavior and cannot include concrete property declarations.")
                                     .with_help("Remove the non-hooked property from the interface or convert it into a hooked property.")
@@ -427,20 +417,18 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
 
                             context.issues.push(
                                         Issue::error(format!(
-                                            "Interface virtual property `{}::{}` must not specify asymmetric visibility.",
-                                            interface_name, property_name,
+                                            "Interface virtual property `{interface_name}::{property_name}` must not specify asymmetric visibility.",
                                         ))
                                         .with_annotation(
                                             Annotation::primary(visibility.span())
-                                                .with_message(format!("Asymmetric visibility modifier `{}` applied here.", visibility_name)),
+                                                .with_message(format!("Asymmetric visibility modifier `{visibility_name}` applied here.")),
                                         )
                                         .with_annotation(
                                             Annotation::secondary(interface.span())
-                                                .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                                .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                         )
                                         .with_help(format!(
-                                            "Remove the `{}` modifier from the property to make it compatible with interface constraints.",
-                                            visibility_name
+                                            "Remove the `{visibility_name}` modifier from the property to make it compatible with interface constraints."
                                         )),
                                     );
                         }
@@ -450,22 +438,19 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
 
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Interface virtual property `{}::{}` cannot have `{}` modifier.",
-                                    interface_name, property_name, visibility_name,
+                                    "Interface virtual property `{interface_name}::{property_name}` cannot have `{visibility_name}` modifier.",
                                 ))
                                 .with_annotation(
                                     Annotation::primary(visibility.span()).with_message(format!(
-                                        "Visibility modifier `{}` applied here.",
-                                        visibility_name
+                                        "Visibility modifier `{visibility_name}` applied here."
                                     )),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(interface.span())
-                                        .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                        .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                 )
                                 .with_help(format!(
-                                    "Remove the `{}` modifier from the property to meet interface requirements.",
-                                    visibility_name
+                                    "Remove the `{visibility_name}` modifier from the property to meet interface requirements."
                                 )),
                             );
                         }
@@ -473,15 +458,14 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                         if !found_public {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Interface virtual property `{}::{}` must be declared public.",
-                                    interface_name, property_name
+                                    "Interface virtual property `{interface_name}::{property_name}` must be declared public."
                                 ))
                                 .with_annotation(
                                     Annotation::primary(hooked_property.span()).with_message("Property defined here."),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(interface.span())
-                                        .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                        .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                 )
                                 .with_help("Add the `public` visibility modifier to the property."),
                             );
@@ -490,8 +474,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                         if let Some(abstract_modifier) = hooked_property.modifiers.get_abstract() {
                             context.issues.push(
                                             Issue::error(format!(
-                                                "Interface virtual property `{}::{}` cannot be abstract.",
-                                                interface_name, property_name
+                                                "Interface virtual property `{interface_name}::{property_name}` cannot be abstract."
                                             ))
                                             .with_annotation(
                                                 Annotation::primary(abstract_modifier.span())
@@ -501,7 +484,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                                                 Annotation::secondary(hooked_property.span())
                                                     .with_message("Property defined here."),
                                                 Annotation::secondary(interface.span())
-                                                    .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                                    .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                             ])
                                             .with_note(
                                                 "All interface virtual properties are implicitly abstract and cannot be explicitly declared as abstract.",
@@ -512,8 +495,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                         if let PropertyItem::Concrete(item) = &hooked_property.item {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Interface virtual property `{}::{}` cannot have a default value.",
-                                    interface_name, property_name
+                                    "Interface virtual property `{interface_name}::{property_name}` cannot have a default value."
                                 ))
                                 .with_annotation(
                                     Annotation::primary(item.equals.join(item.value.span()))
@@ -525,7 +507,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                                 )
                                 .with_annotation(
                                     Annotation::secondary(interface.span())
-                                        .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                        .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                 )
                                 .with_note(
                                     "Interface properties are virtual properties and cannot contain a default value.",
@@ -537,8 +519,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                             if let PropertyHookBody::Concrete(property_hook_concrete_body) = &hook.body {
                                 context.issues.push(
                                     Issue::error(format!(
-                                        "Interface virtual property `{}::{}` must be abstract.",
-                                        interface_name, property_name
+                                        "Interface virtual property `{interface_name}::{property_name}` must be abstract."
                                     ))
                                     .with_annotation(
                                         Annotation::primary(property_hook_concrete_body.span())
@@ -550,7 +531,7 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
                                     )
                                     .with_annotation(
                                         Annotation::secondary(interface.span())
-                                            .with_message(format!("Interface `{}` defined here.", interface_fqcn)),
+                                            .with_message(format!("Interface `{interface_fqcn}` defined here.")),
                                     )
                                     .with_note("Abstract hooked properties must not contain a body."),
                                 );
@@ -574,16 +555,14 @@ pub fn check_interface(interface: &Interface, context: &mut Context<'_>) {
 
                     context.issues.push(
                         Issue::error(format!(
-                            "Interface constant cannot have `{}` visibility modifier.",
-                            visibility_name,
+                            "Interface constant cannot have `{visibility_name}` visibility modifier.",
                         ))
                         .with_annotation(
                             Annotation::primary(visibility.span())
-                                .with_message(format!("Visibility modifier `{}` applied here.", visibility_name)),
+                                .with_message(format!("Visibility modifier `{visibility_name}` applied here.")),
                         )
                         .with_help(format!(
-                            "Remove the `{}` modifier from the constant to comply with interface requirements.",
-                            visibility_name
+                            "Remove the `{visibility_name}` modifier from the constant to comply with interface requirements."
                         ))
                         .with_note(
                             "Interface constants are implicitly public and cannot have a non-public visibility modifier.",
@@ -615,14 +594,14 @@ pub fn check_trait(r#trait: &Trait, context: &mut Context<'_>) {
             .any(|keyword| keyword.eq_ignore_ascii_case(class_like_name))
     {
         context.issues.push(
-            Issue::error(format!("Trait `{}` name cannot be a reserved keyword.", class_like_name))
+            Issue::error(format!("Trait `{class_like_name}` name cannot be a reserved keyword."))
                 .with_annotation(
                     Annotation::primary(r#trait.name.span())
-                        .with_message(format!("Trait `{}` declared here.", class_like_name)),
+                        .with_message(format!("Trait `{class_like_name}` declared here.")),
                 )
                 .with_annotation(
                     Annotation::secondary(r#trait.span())
-                        .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                        .with_message(format!("Trait `{class_like_fqcn}` defined here.")),
                 )
                 .with_help("Rename the trait to a non-reserved keyword."),
         );
@@ -634,11 +613,11 @@ pub fn check_trait(r#trait: &Trait, context: &mut Context<'_>) {
         match &member {
             ClassLikeMember::EnumCase(case) => {
                 context.issues.push(
-                    Issue::error(format!("Trait `{}` cannot contain enum cases.", class_like_name))
+                    Issue::error(format!("Trait `{class_like_name}` cannot contain enum cases."))
                         .with_annotation(Annotation::primary(case.span()).with_message("Enum case defined here."))
                         .with_annotation(
                             Annotation::secondary(r#trait.span())
-                                .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                                .with_message(format!("Trait `{class_like_fqcn}` defined here.")),
                         )
                         .with_help("Remove the enum case from the trait."),
                 );
@@ -670,7 +649,7 @@ pub fn check_trait(r#trait: &Trait, context: &mut Context<'_>) {
                             )
                             .with_annotation(
                                 Annotation::secondary(r#trait.span())
-                                    .with_message(format!("Trait `{}` defined here.", class_like_fqcn)),
+                                    .with_message(format!("Trait `{class_like_fqcn}` defined here.")),
                             ),
                     );
                 }
@@ -708,15 +687,15 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
         || SOFT_RESERVED_KEYWORDS_MINUS_SYMBOL_ALLOWED.iter().any(|keyword| keyword.eq_ignore_ascii_case(enum_name))
     {
         context.issues.push(
-            Issue::error(format!("Enum `{}` name cannot be a reserved keyword.", enum_name))
+            Issue::error(format!("Enum `{enum_name}` name cannot be a reserved keyword."))
                 .with_annotation(
                     Annotation::primary(r#enum.name.span())
-                        .with_message(format!("Reserved keyword used as the enum name `{}`.", enum_name)),
+                        .with_message(format!("Reserved keyword used as the enum name `{enum_name}`.")),
                 )
                 .with_annotation(
-                    Annotation::secondary(r#enum.span()).with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                    Annotation::secondary(r#enum.span()).with_message(format!("Enum `{enum_fqcn}` defined here.")),
                 )
-                .with_help(format!("Rename the enum `{}` to a non-reserved keyword.", enum_name)),
+                .with_help(format!("Rename the enum `{enum_name}` to a non-reserved keyword.")),
         );
     }
 
@@ -726,16 +705,14 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
 
             context.issues.push(
                 Issue::error(format!(
-                    "Enum `{}` backing type must be either `string` or `int`, but found `{}`.",
-                    enum_name, key
+                    "Enum `{enum_name}` backing type must be either `string` or `int`, but found `{key}`."
                 ))
                 .with_annotation(
                     Annotation::primary(hint.span())
-                        .with_message(format!("Invalid backing type `{}` specified here.", key)),
+                        .with_message(format!("Invalid backing type `{key}` specified here.")),
                 )
                 .with_annotation(
-                    Annotation::secondary(r#enum.name.span())
-                        .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                    Annotation::secondary(r#enum.name.span()).with_message(format!("Enum `{enum_fqcn}` defined here.")),
                 )
                 .with_help("Change the backing type to either `string` or `int`."),
             );
@@ -759,20 +736,18 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
                         if enum_is_backed {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Case `{}` of backed enum `{}` must have a value.",
-                                    item_name, enum_name
+                                    "Case `{item_name}` of backed enum `{enum_name}` must have a value."
                                 ))
                                 .with_annotation(
                                     Annotation::primary(case.span())
-                                        .with_message(format!("Case `{}` defined here.", item_name)),
+                                        .with_message(format!("Case `{item_name}` defined here.")),
                                 )
                                 .with_annotation(
                                     Annotation::secondary(r#enum.span())
-                                        .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                        .with_message(format!("Enum `{enum_fqcn}` defined here.")),
                                 )
                                 .with_help(format!(
-                                    "Add a value to case `{}` or remove the backing from the enum `{}`.",
-                                    item_name, enum_name
+                                    "Add a value to case `{item_name}` or remove the backing from the enum `{enum_name}`."
                                 )),
                             );
                         }
@@ -781,8 +756,7 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
                         if !enum_is_backed {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Case `{}` of unbacked enum `{}` must not have a value.",
-                                    item_name, enum_name
+                                    "Case `{item_name}` of unbacked enum `{enum_name}` must not have a value."
                                 ))
                                 .with_annotation(
                                     Annotation::primary(item.equals.span().join(item.value.span()))
@@ -790,13 +764,12 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
                                 )
                                 .with_annotations([
                                     Annotation::secondary(item.name.span())
-                                        .with_message(format!("Case `{}::{}` declared here.", enum_name, item_name)),
+                                        .with_message(format!("Case `{enum_name}::{item_name}` declared here.")),
                                     Annotation::secondary(r#enum.span())
-                                        .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                        .with_message(format!("Enum `{enum_fqcn}` defined here.")),
                                 ])
                                 .with_help(format!(
-                                    "Remove the value from case `{}` or make the enum `{}` backed.",
-                                    item_name, enum_name
+                                    "Remove the value from case `{item_name}` or make the enum `{enum_name}` backed."
                                 )),
                             );
                         }
@@ -811,38 +784,34 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
                     MAGIC_METHODS.iter().find(|magic_method| magic_method.eq_ignore_ascii_case(method_name))
                 {
                     context.issues.push(
-                        Issue::error(format!("Enum `{}` cannot contain magic method `{}`.", enum_name, magic_method))
+                        Issue::error(format!("Enum `{enum_name}` cannot contain magic method `{magic_method}`."))
                             .with_annotation(
                                 Annotation::primary(method.name.span)
-                                    .with_message(format!("Magic method `{}` declared here.", method_name)),
+                                    .with_message(format!("Magic method `{method_name}` declared here.")),
                             )
                             .with_annotation(
                                 Annotation::secondary(r#enum.name.span())
-                                    .with_message(format!("Enum `{}` declared here.", enum_fqcn)),
+                                    .with_message(format!("Enum `{enum_fqcn}` declared here.")),
                             )
-                            .with_help(format!(
-                                "Remove the magic method `{}` from the enum `{}`.",
-                                method_name, enum_name
-                            )),
+                            .with_help(format!("Remove the magic method `{method_name}` from the enum `{enum_name}`.")),
                     );
                 }
 
                 if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                     context.issues.push(
-                        Issue::error(format!("Enum method `{}::{}` must not be abstract.", enum_name, method_name))
+                        Issue::error(format!("Enum method `{enum_name}::{method_name}` must not be abstract."))
                             .with_annotation(
                                 Annotation::primary(abstract_modifier.span())
                                     .with_message("Abstract modifier found here."),
                             )
                             .with_annotations([
                                 Annotation::secondary(r#enum.span())
-                                    .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                    .with_message(format!("Enum `{enum_fqcn}` defined here.")),
                                 Annotation::secondary(method.span())
-                                    .with_message(format!("Method `{}::{}` defined here.", enum_name, method_name)),
+                                    .with_message(format!("Method `{enum_name}::{method_name}` defined here.")),
                             ])
                             .with_help(format!(
-                                "Remove the abstract modifier from the method `{}` in enum `{}`.",
-                                method_name, enum_name
+                                "Remove the abstract modifier from the method `{method_name}` in enum `{enum_name}`."
                             )),
                     );
                 }
@@ -851,13 +820,13 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
             }
             ClassLikeMember::Property(property) => {
                 context.issues.push(
-                    Issue::error(format!("Enum `{}` cannot have properties.", enum_name))
+                    Issue::error(format!("Enum `{enum_name}` cannot have properties."))
                         .with_annotation(Annotation::primary(property.span()).with_message("Property defined here."))
                         .with_annotation(
                             Annotation::secondary(r#enum.span())
-                                .with_message(format!("Enum `{}` defined here.", enum_fqcn)),
+                                .with_message(format!("Enum `{enum_fqcn}` defined here.")),
                         )
-                        .with_help(format!("Remove the property from the enum `{}`.", enum_name)),
+                        .with_help(format!("Remove the property from the enum `{enum_name}`.")),
                 );
 
                 check_property(property, r#enum.span(), "enum", enum_name, enum_fqcn, false, context);
@@ -889,26 +858,24 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
 
                 context.issues.push(
                     Issue::error(format!(
-                        "Anonymous class `{}` cannot have the `{}` modifier.",
-                        ANONYMOUS_CLASS_NAME, modifier_name
+                        "Anonymous class `{ANONYMOUS_CLASS_NAME}` cannot have the `{modifier_name}` modifier."
                     ))
                     .with_annotation(
                         Annotation::primary(modifier.span())
-                            .with_message(format!("`{}` modifier applied here.", modifier_name)),
+                            .with_message(format!("`{modifier_name}` modifier applied here.")),
                     )
                     .with_annotation(
                         Annotation::secondary(anonymous_class.span())
-                            .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                            .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                     )
-                    .with_help(format!("Remove the `{}` modifier from the class definition.", modifier_name)),
+                    .with_help(format!("Remove the `{modifier_name}` modifier from the class definition.")),
                 );
             }
             Modifier::Final(keyword) => {
                 if let Some(span) = last_final {
                     context.issues.push(
                         Issue::error(format!(
-                            "Anonymous class `{}` cannot have multiple `final` modifiers.",
-                            ANONYMOUS_CLASS_NAME
+                            "Anonymous class `{ANONYMOUS_CLASS_NAME}` cannot have multiple `final` modifiers."
                         ))
                         .with_annotation(
                             Annotation::primary(keyword.span())
@@ -919,7 +886,7 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
                         )
                         .with_annotation(
                             Annotation::secondary(anonymous_class.span())
-                                .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                         )
                         .with_help("Remove the duplicate `final` modifier."),
                     );
@@ -931,15 +898,14 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
                 if let Some(span) = last_readonly {
                     context.issues.push(
                         Issue::error(format!(
-                            "Anonymous class `{}` cannot have multiple `readonly` modifiers.",
-                            ANONYMOUS_CLASS_NAME
+                            "Anonymous class `{ANONYMOUS_CLASS_NAME}` cannot have multiple `readonly` modifiers."
                         ))
                         .with_annotations([
                             Annotation::primary(keyword.span)
                                 .with_message("Duplicate `readonly` modifier applied here."),
                             Annotation::secondary(span).with_message("Previous `readonly` modifier applied here."),
                             Annotation::secondary(anonymous_class.span())
-                                .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                         ])
                         .with_help("Remove the duplicate `readonly` modifier."),
                     );
@@ -955,7 +921,7 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
                             )
                             .with_annotation(
                                 Annotation::secondary(anonymous_class.span())
-                                    .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                    .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                             ),
                     );
                 }
@@ -1000,11 +966,11 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
         match &member {
             ClassLikeMember::EnumCase(case) => {
                 context.issues.push(
-                    Issue::error(format!("Anonymous class `{}` cannot contain enum cases.", ANONYMOUS_CLASS_NAME))
+                    Issue::error(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` cannot contain enum cases."))
                         .with_annotations([
                             Annotation::primary(case.span()).with_message("Enum case defined here."),
                             Annotation::secondary(anonymous_class.span())
-                                .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                         ])
                         .with_help("Remove the enum case from the anonymous class definition."),
                 );
@@ -1015,16 +981,15 @@ pub fn check_anonymous_class(anonymous_class: &AnonymousClass, context: &mut Con
                 if let Some(abstract_modifier) = method.modifiers.get_abstract() {
                     context.issues.push(
                         Issue::error(format!(
-                            "Method `{}` in anonymous class `{}` must not be abstract.",
-                            method_name, ANONYMOUS_CLASS_NAME
+                            "Method `{method_name}` in anonymous class `{ANONYMOUS_CLASS_NAME}` must not be abstract."
                         ))
                         .with_annotations([
                             Annotation::primary(abstract_modifier.span())
                                 .with_message("Abstract modifier applied here."),
                             Annotation::secondary(anonymous_class.span())
-                                .with_message(format!("Anonymous class `{}` defined here.", ANONYMOUS_CLASS_NAME)),
+                                .with_message(format!("Anonymous class `{ANONYMOUS_CLASS_NAME}` defined here.")),
                             Annotation::secondary(method.span())
-                                .with_message(format!("Method `{}` defined here.", method_name)),
+                                .with_message(format!("Method `{method_name}` defined here.")),
                         ])
                         .with_help("Remove the `abstract` modifier from the method."),
                     );
@@ -1093,11 +1058,10 @@ pub fn check_members(
                         {
                             let message = if *is_promoted {
                                 format!(
-                                    "property `{}::{}` has already been defined as a promoted property",
-                                    class_like_name, item_name
+                                    "property `{class_like_name}::{item_name}` has already been defined as a promoted property"
                                 )
                             } else {
-                                format!("property `{}::{}` has already been defined", class_like_name, item_name)
+                                format!("property `{class_like_name}::{item_name}` has already been defined")
                             };
 
                             context.issues.push(
@@ -1105,12 +1069,10 @@ pub fn check_members(
                                     .with_annotation(Annotation::primary(item.variable().span()))
                                     .with_annotations([
                                         Annotation::secondary(*span).with_message(format!(
-                                            "property `{}::{}` previously defined here.",
-                                            class_like_name, item_name
+                                            "property `{class_like_name}::{item_name}` previously defined here."
                                         )),
                                         Annotation::secondary(class_like_span.span()).with_message(format!(
-                                            "{} `{}` defined here.",
-                                            class_like_kind, class_like_fqcn
+                                            "{class_like_kind} `{class_like_fqcn}` defined here."
                                         )),
                                     ])
                                     .with_help("remove the duplicate property"),
@@ -1130,11 +1092,10 @@ pub fn check_members(
                     {
                         let message = if *is_promoted {
                             format!(
-                                "property `{}::{}` has already been defined as a promoted property",
-                                class_like_name, item_name
+                                "property `{class_like_name}::{item_name}` has already been defined as a promoted property"
                             )
                         } else {
-                            format!("property `{}::{}` has already been defined", class_like_name, item_name)
+                            format!("property `{class_like_name}::{item_name}` has already been defined")
                         };
 
                         context.issues.push(
@@ -1142,13 +1103,10 @@ pub fn check_members(
                                 .with_annotation(Annotation::primary(item_variable.span()))
                                 .with_annotations([
                                     Annotation::secondary(*span).with_message(format!(
-                                        "property `{}::{}` previously defined here.",
-                                        class_like_name, item_name
+                                        "property `{class_like_name}::{item_name}` previously defined here."
                                     )),
-                                    Annotation::secondary(class_like_span.span()).with_message(format!(
-                                        "{} `{}` defined here.",
-                                        class_like_kind, class_like_fqcn
-                                    )),
+                                    Annotation::secondary(class_like_span.span())
+                                        .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
                                 ])
                                 .with_help("remove the duplicate property"),
                         );
@@ -1167,14 +1125,13 @@ pub fn check_members(
                 {
                     context.issues.push(
                         Issue::error(format!(
-                            "{} method `{}::{}` has already been defined",
-                            class_like_kind, class_like_name, method_name
+                            "{class_like_kind} method `{class_like_name}::{method_name}` has already been defined"
                         ))
                         .with_annotation(Annotation::primary(method.name.span()))
                         .with_annotations([
                             Annotation::secondary(*previous).with_message("previous definition"),
                             Annotation::secondary(class_like_span.span())
-                                .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
                         ]),
                     );
                 } else {
@@ -1192,13 +1149,11 @@ pub fn check_members(
                             {
                                 let message = if !*is_promoted {
                                     format!(
-                                        "promoted property `{}::{}` has already been defined as a property",
-                                        class_like_name, item_name
+                                        "promoted property `{class_like_name}::{item_name}` has already been defined as a property"
                                     )
                                 } else {
                                     format!(
-                                        "promoted property `{}::{}` has already been defined",
-                                        class_like_name, item_name
+                                        "promoted property `{class_like_name}::{item_name}` has already been defined"
                                     )
                                 };
 
@@ -1207,12 +1162,10 @@ pub fn check_members(
                                         .with_annotation(Annotation::primary(parameter.variable.span()))
                                         .with_annotations([
                                             Annotation::secondary(*span).with_message(format!(
-                                                "property `{}::{}` previously defined here.",
-                                                class_like_name, item_name
+                                                "property `{class_like_name}::{item_name}` previously defined here."
                                             )),
                                             Annotation::secondary(class_like_span.span()).with_message(format!(
-                                                "{} `{}` defined here.",
-                                                class_like_kind, class_like_fqcn
+                                                "{class_like_kind} `{class_like_fqcn}` defined here."
                                             )),
                                         ])
                                         .with_help("remove the duplicate property"),
@@ -1232,34 +1185,28 @@ pub fn check_members(
                         if *is_constant {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "{} constant `{}::{}` has already been defined",
-                                    class_like_kind, class_like_name, name,
+                                    "{class_like_kind} constant `{class_like_name}::{name}` has already been defined",
                                 ))
                                 .with_annotation(Annotation::primary(item.name.span()))
                                 .with_annotations([
                                     Annotation::secondary(*span).with_message(format!(
-                                        "Constant `{}::{}` previously defined here.",
-                                        class_like_name, name
+                                        "Constant `{class_like_name}::{name}` previously defined here."
                                     )),
-                                    Annotation::secondary(class_like_span.span()).with_message(format!(
-                                        "{} `{}` defined here.",
-                                        class_like_kind, class_like_fqcn
-                                    )),
+                                    Annotation::secondary(class_like_span.span())
+                                        .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
                                 ]),
                             );
                         } else {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "{} case `{}::{}` and constant `{}::{}` cannot have the same name",
-                                    class_like_kind, class_like_name, name, class_like_name, name
+                                    "{class_like_kind} case `{class_like_name}::{name}` and constant `{class_like_name}::{name}` cannot have the same name"
                                 ))
                                 .with_annotation(Annotation::primary(item.name.span()))
                                 .with_annotations([
                                     Annotation::secondary(*span)
-                                        .with_message(format!("case `{}::{}` defined here.", class_like_name, name)),
+                                        .with_message(format!("case `{class_like_name}::{name}` defined here.")),
                                     Annotation::secondary(class_like_span.span()).with_message(format!(
-                                        "{} `{}` defined here.",
-                                        class_like_kind, class_like_fqcn
+                                        "{class_like_kind} `{class_like_fqcn}` defined here."
                                     )),
                                 ]),
                             );
@@ -1276,31 +1223,27 @@ pub fn check_members(
                     if *is_constant {
                         context.issues.push(
                             Issue::error(format!(
-                                "{} case `{}::{}` and constant `{}::{}` cannot have the same name",
-                                class_like_kind, class_like_name, name, class_like_name, name
+                                "{class_like_kind} case `{class_like_name}::{name}` and constant `{class_like_name}::{name}` cannot have the same name"
                             ))
                             .with_annotation(Annotation::primary(enum_case.item.name().span()))
                             .with_annotations([
                                 Annotation::secondary(*span)
-                                    .with_message(format!("Constant `{}::{}` defined here.", class_like_name, name)),
+                                    .with_message(format!("Constant `{class_like_name}::{name}` defined here.")),
                                 Annotation::secondary(class_like_span.span())
-                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
                             ]),
                         );
                     } else {
                         context.issues.push(
                             Issue::error(format!(
-                                "{} case `{}::{}` has already been defined",
-                                class_like_kind, class_like_name, name,
+                                "{class_like_kind} case `{class_like_name}::{name}` has already been defined",
                             ))
                             .with_annotation(Annotation::primary(enum_case.item.name().span()))
                             .with_annotations([
-                                Annotation::secondary(*span).with_message(format!(
-                                    "case `{}::{}` previously defined here.",
-                                    class_like_name, name
-                                )),
+                                Annotation::secondary(*span)
+                                    .with_message(format!("case `{class_like_name}::{name}` previously defined here.")),
                                 Annotation::secondary(class_like_span.span())
-                                    .with_message(format!("{} `{}` defined here.", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
                             ]),
                         );
                     }

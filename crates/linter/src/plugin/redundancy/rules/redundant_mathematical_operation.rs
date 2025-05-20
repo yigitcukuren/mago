@@ -300,14 +300,14 @@ impl Rule for RedundantMathematicalOperationRule {
 
                 let mut issue = Issue::new(
                     context.level(),
-                    format!("Redundant bitwise {} with `0`: this operation does not alter the value.", operator_name),
+                    format!("Redundant bitwise {operator_name} with `0`: this operation does not alter the value."),
                 )
                 .with_annotation(
                     Annotation::primary(binary.operator.span())
-                        .with_message(format!("`$x {} 0` is equivalent to `$x`.", operator_name)),
+                        .with_message(format!("`$x {operator_name} 0` is equivalent to `$x`.")),
                 )
-                .with_note(format!("Bitwise {} with 0 leaves the value unchanged.", operator_name))
-                .with_help(format!("Remove the {}", help_msg));
+                .with_note(format!("Bitwise {operator_name} with 0 leaves the value unchanged."))
+                .with_help(format!("Remove the {help_msg}"));
 
                 if !binary.rhs.is_literal() {
                     issue = issue.with_annotation(
@@ -334,7 +334,7 @@ impl Rule for RedundantMathematicalOperationRule {
                 )
                 .with_annotation(
                     Annotation::primary(binary.operator.span())
-                        .with_message(format!("`$x {} 0` is equivalent to `$x`.", operator)),
+                        .with_message(format!("`$x {operator} 0` is equivalent to `$x`.")),
                 )
                 .with_note("Shifting by 0 bits does not change the value.")
                 .with_help("Remove the shift by `0` operation.".to_string());

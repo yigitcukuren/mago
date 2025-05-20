@@ -215,14 +215,14 @@ impl Rule for OverrideAttributeRule {
                     let classname = reflection.name.get_key(context.interner);
                     let issue = Issue::new(
                         context.level(),
-                        format!("Unnecessary `#[Override]` attribute on `{}::{}`.", classname, name),
+                        format!("Unnecessary `#[Override]` attribute on `{classname}::{name}`."),
                     )
                     .with_annotation(
                         Annotation::primary(attribute.span())
                             .with_message("This method doesn't override any parent method."),
                     )
                     .with_note("The attribute should only be used when explicitly overriding a parent method.")
-                    .with_help(format!("Remove the `#[Override]` attribute from `{}` or verify inheritance.", name));
+                    .with_help(format!("Remove the `#[Override]` attribute from `{name}` or verify inheritance."));
 
                     context.propose(issue, |plan| {
                         let attribute_list = &method.attribute_lists.as_slice()[attribute_list_index];
@@ -252,11 +252,11 @@ impl Rule for OverrideAttributeRule {
 
             let issue = Issue::new(
                 context.level(),
-                format!("Missing `#[Override]` attribute on overriding method `{}::{}`.", classname, name),
+                format!("Missing `#[Override]` attribute on overriding method `{classname}::{name}`."),
             )
             .with_annotation(
                 Annotation::primary(method.name.span)
-                    .with_message(format!("This method overrides `{}::{}`.", parent_class, name)),
+                    .with_message(format!("This method overrides `{parent_class}::{name}`.")),
             )
             .with_note("The `#[Override]` attribute clarifies intent and prevents accidental signature mismatches.")
             .with_help("Add `#[Override]` attribute to method declaration.");

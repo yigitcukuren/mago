@@ -144,21 +144,20 @@ impl Rule for ParameterNameRule {
 
                     let issue = Issue::new(
                         context.level(),
-                        format!("Parameter name mismatch in overridden method '{}'.", current_method),
+                        format!("Parameter name mismatch in overridden method '{current_method}'."),
                     )
                     .with_annotation(
                         Annotation::primary(parameter.span)
-                            .with_message(format!("Parameter #{} is named `{}` in `{}`", index, name, current_method)),
+                            .with_message(format!("Parameter #{index} is named `{name}` in `{current_method}`")),
                     )
                     .with_annotation(
                         Annotation::secondary(parent_parameter.span)
-                            .with_message(format!("But was named `{}` in parent `{}`", parent_name, parent_method)),
+                            .with_message(format!("But was named `{parent_name}` in parent `{parent_method}`")),
                     )
                     .with_note("Changing parameter names in overridden methods can break code using named arguments.")
                     .with_note("Callers referencing parameters by name will encounter runtime errors if names differ.")
                     .with_help(format!(
-                        "Rename parameter to `{}` to match the parent declaration in `{}`",
-                        parent_name, parent_method
+                        "Rename parameter to `{parent_name}` to match the parent declaration in `{parent_method}`"
                     ));
 
                     context.report(issue);

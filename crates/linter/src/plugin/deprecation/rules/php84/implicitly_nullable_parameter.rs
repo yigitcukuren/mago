@@ -70,23 +70,22 @@ impl Rule for ImplicitlyNullableParameterRule {
         let parameter_name = context.lookup(&function_like_parameter.variable.name);
         let current_hint = context.get_readable_hint(hint);
         let (prefix, resulting_hint) = match hint {
-            Hint::Union(_) => ("null|", format!("null|{}", current_hint)),
-            Hint::Intersection(_) => ("null|", format!("null|({})", current_hint)),
-            Hint::Parenthesized(_) => ("null|", format!("null|{}", current_hint)),
-            _ => ("null|", format!("?{}", current_hint)),
+            Hint::Union(_) => ("null|", format!("null|{current_hint}")),
+            Hint::Intersection(_) => ("null|", format!("null|({current_hint})")),
+            Hint::Parenthesized(_) => ("null|", format!("null|{current_hint}")),
+            _ => ("null|", format!("?{current_hint}")),
         };
 
         let issue = Issue::new(
             context.level(),
-            format!("Parameter `{}` is implicitly nullable and relies on a deprecated feature.", parameter_name),
+            format!("Parameter `{parameter_name}` is implicitly nullable and relies on a deprecated feature."),
         )
         .with_annotation(
             Annotation::primary(function_like_parameter.span())
-                .with_message(format!("Parameter `{}` is declared here.", parameter_name)),
+                .with_message(format!("Parameter `{parameter_name}` is declared here.")),
         )
         .with_help(format!(
-            "Consider using an explicit nullable type hint ( `{}` ) or replacing the default value.",
-            resulting_hint
+            "Consider using an explicit nullable type hint ( `{resulting_hint}` ) or replacing the default value."
         ))
         .with_note("Updating this will future-proof your code and align it with PHP 8.4 standards.");
 

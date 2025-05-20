@@ -147,7 +147,7 @@ impl NamespaceScope {
                     let alias = use_item.alias.as_ref().map(|alias_node| interner.lookup(&alias_node.identifier.value));
 
                     // Construct the full FQN by combining prefix and name part
-                    let fully_qualified_name = format!("{}\\{}", prefix, name_part);
+                    let fully_qualified_name = format!("{prefix}\\{name_part}");
 
                     // Add the alias for the fully constructed name
                     self.add(name_kind, fully_qualified_name, alias);
@@ -174,7 +174,7 @@ impl NamespaceScope {
                         .map(|alias_node| interner.lookup(&alias_node.identifier.value));
 
                     // Construct the full FQN: prefix\name_part
-                    let fully_qualified_name = format!("{}\\{}", prefix, name_part);
+                    let fully_qualified_name = format!("{prefix}\\{name_part}");
 
                     // Add the alias with its specific kind
                     self.add(name_kind, fully_qualified_name, alias);
@@ -235,7 +235,7 @@ impl NamespaceScope {
         match &self.namespace_name {
             // If we have a non-empty namespace, prepend it.
             Some(ns) if !ns.is_empty() => {
-                format!("{}\\{}", ns, name_ref)
+                format!("{ns}\\{name_ref}")
             }
             // Otherwise (no namespace, or empty namespace), return the name as is.
             _ => name_ref.to_owned(),

@@ -133,7 +133,7 @@ mod tests {
                 _ => panic!("Expected Type::Union"),
             },
             Err(err) => {
-                panic!("Failed to parse union type: {:?}", err);
+                panic!("Failed to parse union type: {err:?}");
             }
         }
     }
@@ -174,7 +174,7 @@ mod tests {
                 assert_eq!(params.entries.len(), 1);
                 assert!(matches!(params.entries[0].inner, Type::String(_)));
             }
-            res => panic!("Expected Ok(Type::Array), got {:?}", res),
+            res => panic!("Expected Ok(Type::Array), got {res:?}"),
         }
     }
 
@@ -186,7 +186,7 @@ mod tests {
                 assert_eq!(params.entries.len(), 1);
                 assert!(matches!(params.entries[0].inner, Type::String(_)));
             }
-            res => panic!("Expected Ok(Type::List), got {:?}", res),
+            res => panic!("Expected Ok(Type::List), got {res:?}"),
         }
     }
 
@@ -199,7 +199,7 @@ mod tests {
                 assert!(matches!(params.entries[0].inner, Type::Int(_)));
                 assert!(matches!(params.entries[1].inner, Type::Bool(_)));
             }
-            res => panic!("Expected Ok(Type::NonEmptyArray), got {:?}", res),
+            res => panic!("Expected Ok(Type::NonEmptyArray), got {res:?}"),
         }
     }
 
@@ -219,7 +219,7 @@ mod tests {
                     _ => panic!("Expected inner type to be Type::Array"),
                 }
             }
-            res => panic!("Expected Ok(Type::List), got {:?}", res),
+            res => panic!("Expected Ok(Type::List), got {res:?}"),
         }
     }
 
@@ -262,7 +262,7 @@ mod tests {
                 ));
                 assert!(matches!(second_field.value.as_ref(), Type::Bool(_)));
             }
-            res => panic!("Expected Ok(Type::Shape), got {:?}", res),
+            res => panic!("Expected Ok(Type::Shape), got {res:?}"),
         }
     }
 
@@ -275,7 +275,7 @@ mod tests {
                 assert!(shape.fields[1].is_optional());
                 assert!(!shape.fields[2].is_optional());
             }
-            res => panic!("Expected Ok(Type::Shape), got {:?}", res),
+            res => panic!("Expected Ok(Type::Shape), got {res:?}"),
         }
     }
 
@@ -287,7 +287,7 @@ mod tests {
                 assert!(shape.additional_fields.is_some());
                 assert!(shape.additional_fields.unwrap().parameters.is_none()); // No fallback specified
             }
-            res => panic!("Expected Ok(Type::Shape), got {:?}", res),
+            res => panic!("Expected Ok(Type::Shape), got {res:?}"),
         }
     }
 
@@ -307,7 +307,7 @@ mod tests {
                 assert!(matches!(params.entries[0].inner, Type::String(_)));
                 assert!(matches!(params.entries[1].inner, Type::String(_)));
             }
-            res => panic!("Expected Ok(Type::Shape), got {:?}", res),
+            res => panic!("Expected Ok(Type::Shape), got {res:?}"),
         }
     }
 
@@ -318,7 +318,7 @@ mod tests {
                 assert_eq!(shape.fields.len(), 0);
                 assert!(shape.additional_fields.is_none());
             }
-            res => panic!("Expected Ok(Type::Shape), got {:?}", res),
+            res => panic!("Expected Ok(Type::Shape), got {res:?}"),
         }
     }
 
@@ -362,7 +362,7 @@ mod tests {
                     panic!();
                 }
             }
-            res => panic!("Expected Ok(Type::Intersection), got {:?}", res),
+            res => panic!("Expected Ok(Type::Intersection), got {res:?}"),
         }
     }
 
@@ -373,7 +373,7 @@ mod tests {
                 assert_eq!(m.class.value, "MyClass");
                 assert_eq!(m.member.value, "MY_CONST");
             }
-            res => panic!("Expected Ok(Type::MemberReference), got {:?}", res),
+            res => panic!("Expected Ok(Type::MemberReference), got {res:?}"),
         }
 
         match do_parse("\\Fully\\Qualified::class") {
@@ -381,7 +381,7 @@ mod tests {
                 assert_eq!(m.class.value, "\\Fully\\Qualified"); // Check if lexer keeps leading \
                 assert_eq!(m.member.value, "class");
             }
-            res => panic!("Expected Ok(Type::MemberReference), got {:?}", res),
+            res => panic!("Expected Ok(Type::MemberReference), got {res:?}"),
         }
     }
 
@@ -394,7 +394,7 @@ mod tests {
                 assert!(matches!(params.entries[0].inner, Type::Int(_)));
                 assert!(matches!(params.entries[1].inner, Type::String(_)));
             }
-            res => panic!("Expected Ok(Type::Iterable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Iterable), got {res:?}"),
         }
 
         match do_parse("iterable<bool>") {
@@ -404,14 +404,14 @@ mod tests {
                 assert_eq!(params.entries.len(), 1);
                 assert!(matches!(params.entries[0].inner, Type::Bool(_)));
             }
-            res => panic!("Expected Ok(Type::Iterable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Iterable), got {res:?}"),
         }
 
         match do_parse("iterable") {
             Ok(Type::Iterable(i)) => {
                 assert!(i.parameters.is_none());
             }
-            res => panic!("Expected Ok(Type::Iterable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Iterable), got {res:?}"),
         }
     }
 
@@ -451,7 +451,7 @@ mod tests {
                 assert!(c.specification.is_none());
                 assert_eq!(c.kind, CallableTypeKind::Callable);
             }
-            res => panic!("Expected Ok(Type::Callable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable), got {res:?}"),
         }
     }
 
@@ -467,7 +467,7 @@ mod tests {
                 assert!(spec.parameters.entries[0].ellipsis.is_none());
                 assert!(spec.parameters.entries[0].equals.is_none());
             }
-            res => panic!("Expected Ok(Type::Callable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable), got {res:?}"),
         }
     }
 
@@ -480,7 +480,7 @@ mod tests {
                 assert!(spec.return_type.is_some());
                 assert!(matches!(*spec.return_type.unwrap().return_type, Type::Void(_)));
             }
-            res => panic!("Expected Ok(Type::Callable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable), got {res:?}"),
         }
     }
 
@@ -495,7 +495,7 @@ mod tests {
                 assert!(spec.return_type.is_some());
                 assert!(matches!(*spec.return_type.unwrap().return_type, Type::Int(_)));
             }
-            res => panic!("Expected Ok(Type::Callable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable), got {res:?}"),
         }
     }
 
@@ -511,7 +511,7 @@ mod tests {
                 assert!(spec.return_type.is_some());
                 assert!(matches!(*spec.return_type.unwrap().return_type, Type::Bool(_)));
             }
-            res => panic!("Expected Ok(Type::Callable) for Closure, got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable) for Closure, got {res:?}"),
         }
     }
 
@@ -549,7 +549,7 @@ mod tests {
                     panic!("Expected Type::CallableReturnType");
                 }
             }
-            res => panic!("Expected Ok(Type::Callable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Callable), got {res:?}"),
         }
     }
 
@@ -563,7 +563,7 @@ mod tests {
                 assert!(matches!(*c.then, Type::Array(_)));
                 assert!(matches!(*c.otherwise, Type::Int(_)));
             }
-            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+            res => panic!("Expected Ok(Type::Conditional), got {res:?}"),
         }
 
         match do_parse("$input is string ? array : int") {
@@ -574,7 +574,7 @@ mod tests {
                 assert!(matches!(*c.then, Type::Array(_)));
                 assert!(matches!(*c.otherwise, Type::Int(_)));
             }
-            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+            res => panic!("Expected Ok(Type::Conditional), got {res:?}"),
         }
 
         match do_parse("int is string ? array : (int is not $bar ? string : $baz)") {
@@ -598,7 +598,7 @@ mod tests {
                     panic!("Expected Type::Conditional");
                 }
             }
-            res => panic!("Expected Ok(Type::Conditional), got {:?}", res),
+            res => panic!("Expected Ok(Type::Conditional), got {res:?}"),
         }
     }
 
@@ -612,7 +612,7 @@ mod tests {
                     _ => panic!("Expected Type::Reference"),
                 }
             }
-            res => panic!("Expected Ok(Type::KeyOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::KeyOf), got {res:?}"),
         }
     }
 
@@ -626,7 +626,7 @@ mod tests {
                     _ => panic!("Expected Type::Reference"),
                 }
             }
-            res => panic!("Expected Ok(Type::ValueOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::ValueOf), got {res:?}"),
         }
     }
 
@@ -643,7 +643,7 @@ mod tests {
                     _ => panic!("Expected Type::Reference"),
                 }
             }
-            res => panic!("Expected Ok(Type::IndexAccess), got {:?}", res),
+            res => panic!("Expected Ok(Type::IndexAccess), got {res:?}"),
         }
     }
 
@@ -671,7 +671,7 @@ mod tests {
                     }
                 };
             }
-            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+            res => panic!("Expected Ok(Type::IntRange), got {res:?}"),
         }
 
         match do_parse("int<min, 0>") {
@@ -694,7 +694,7 @@ mod tests {
                     }
                 };
             }
-            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+            res => panic!("Expected Ok(Type::IntRange), got {res:?}"),
         }
 
         match do_parse("int<min, max>") {
@@ -717,7 +717,7 @@ mod tests {
                     }
                 };
             }
-            res => panic!("Expected Ok(Type::IntRange), got {:?}", res),
+            res => panic!("Expected Ok(Type::IntRange), got {res:?}"),
         }
     }
 
@@ -732,7 +732,7 @@ mod tests {
                     _ => panic!(),
                 }
             }
-            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::PropertiesOf), got {res:?}"),
         }
 
         match do_parse("protected-properties-of<T>") {
@@ -744,7 +744,7 @@ mod tests {
                     _ => panic!(),
                 }
             }
-            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::PropertiesOf), got {res:?}"),
         }
 
         match do_parse("private-properties-of<T>") {
@@ -756,7 +756,7 @@ mod tests {
                     _ => panic!(),
                 }
             }
-            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::PropertiesOf), got {res:?}"),
         }
 
         match do_parse("public-properties-of<T>") {
@@ -768,7 +768,7 @@ mod tests {
                     _ => panic!(),
                 }
             }
-            res => panic!("Expected Ok(Type::PropertiesOf), got {:?}", res),
+            res => panic!("Expected Ok(Type::PropertiesOf), got {res:?}"),
         }
     }
 
@@ -778,7 +778,7 @@ mod tests {
             Ok(Type::Variable(v)) => {
                 assert_eq!(v.value, "$myVar");
             }
-            res => panic!("Expected Ok(Type::Variable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Variable), got {res:?}"),
         }
     }
 
@@ -795,7 +795,7 @@ mod tests {
                     panic!();
                 }
             }
-            res => panic!("Expected Ok(Type::Intersection), got {:?}", res),
+            res => panic!("Expected Ok(Type::Intersection), got {res:?}"),
         }
     }
 
@@ -810,7 +810,7 @@ mod tests {
                     panic!()
                 }
             }
-            res => panic!("Expected Ok(Type::Nullable), got {:?}", res),
+            res => panic!("Expected Ok(Type::Nullable), got {res:?}"),
         }
     }
 
@@ -821,7 +821,7 @@ mod tests {
                 assert!(matches!(*u.left, Type::PositiveInt(_)));
                 assert!(matches!(*u.right, Type::NegativeInt(_)));
             }
-            res => panic!("Expected Ok(Type::Union), got {:?}", res),
+            res => panic!("Expected Ok(Type::Union), got {res:?}"),
         }
     }
 }

@@ -76,7 +76,7 @@ impl Rule for InterfaceShouldBeUsed {
             if fqcn == *implementation {
                 let issue = Issue::new(
                     context.level(),
-                    format!("Use the interface `{}` instead of the implementation `{}`", interface, implementation,),
+                    format!("Use the interface `{interface}` instead of the implementation `{implementation}`",),
                 )
                 .with_annotation(
                     Annotation::primary(identifier.span())
@@ -89,7 +89,7 @@ impl Rule for InterfaceShouldBeUsed {
                     // that are not part of the interface
                     plan.replace(
                         identifier.span().to_range(),
-                        format!("\\{}", interface),
+                        format!("\\{interface}"),
                         SafetyClassification::PotentiallyUnsafe,
                     )
                 });

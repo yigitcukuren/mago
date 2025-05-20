@@ -81,13 +81,13 @@ impl Rule for RequireConstantTypeRule {
         let constant_name = context.lookup(&item.name.value);
 
         context.report(
-            Issue::new(context.level(), format!("Class constant `{}` is missing a type hint.", constant_name))
+            Issue::new(context.level(), format!("Class constant `{constant_name}` is missing a type hint."))
                 .with_annotation(
                     Annotation::primary(class_like_constant.span())
-                        .with_message(format!("Class constant `{}` is defined here.", constant_name)),
+                        .with_message(format!("Class constant `{constant_name}` is defined here.")),
                 )
                 .with_note("Adding a type hint to constants improves code readability and helps prevent type errors.")
-                .with_help(format!("Consider specifying a type hint for `{}`.", constant_name)),
+                .with_help(format!("Consider specifying a type hint for `{constant_name}`.")),
         );
 
         LintDirective::Prune

@@ -91,10 +91,9 @@ impl Rule for TooManyMethodsRule {
         }
 
         if methods > threshold {
-            context.report(Issue::new(context.level(), format!("{} has too many methods.", kind))
+            context.report(Issue::new(context.level(), format!("{kind} has too many methods."))
                 .with_annotation(Annotation::primary(node.span()).with_message(format!(
-                    "{} has {} methods, which exceeds the threshold of {}.",
-                    kind, methods, threshold
+                    "{kind} has {methods} methods, which exceeds the threshold of {threshold}."
                 )))
                 .with_note("Having a large number of methods can make classes harder to understand and maintain.")
                 .with_help(

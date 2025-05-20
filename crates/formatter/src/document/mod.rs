@@ -245,7 +245,7 @@ impl<'a> Document<'a> {
 impl fmt::Display for Document<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Document::String(s) => write!(f, "{:?}", s),
+            Document::String(s) => write!(f, "{s:?}"),
             Document::Array(docs) => {
                 let mut printed: Vec<String> = docs.iter().map(|d| d.to_string()).collect();
 
@@ -261,7 +261,7 @@ impl fmt::Display for Document<'_> {
             Document::IndentIfBreak(IndentIfBreak { contents, group_id }) => {
                 let mut options = vec![];
                 if let Some(id) = group_id {
-                    options.push(format!("groupId: {}", id));
+                    options.push(format!("groupId: {id}"));
                 }
                 let options_str =
                     if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
@@ -273,7 +273,7 @@ impl fmt::Display for Document<'_> {
                     options.push("shouldBreak: true".to_string());
                 }
                 if let Some(id) = id {
-                    options.push(format!("id: {}", id));
+                    options.push(format!("id: {id}"));
                 }
                 let expanded_states_str = if let Some(states) = expanded_states {
                     format!(
@@ -310,12 +310,12 @@ impl fmt::Display for Document<'_> {
             Document::IfBreak(IfBreak { break_contents, flat_content, group_id }) => {
                 let mut options = vec![];
                 if let Some(id) = group_id {
-                    options.push(format!("groupId: {}", id));
+                    options.push(format!("groupId: {id}"));
                 }
                 let options_str =
                     if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
 
-                write!(f, "ifBreak({}, {}{})", break_contents, flat_content, options_str)
+                write!(f, "ifBreak({break_contents}, {flat_content}{options_str})")
             }
             Document::Fill(Fill { parts }) => {
                 write!(f, "fill([{}])", parts.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "))

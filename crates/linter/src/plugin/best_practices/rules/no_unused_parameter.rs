@@ -201,12 +201,12 @@ fn check_parameter(
         return;
     }
 
-    let issue = Issue::new(context.level(), format!("Parameter `{}` is never used.", parameter_name))
+    let issue = Issue::new(context.level(), format!("Parameter `{parameter_name}` is never used."))
         .with_annotations([
-            Annotation::primary(parameter.span()).with_message(format!("Parameter `{}` is declared here.", parameter_name)),
+            Annotation::primary(parameter.span()).with_message(format!("Parameter `{parameter_name}` is declared here.")),
             Annotation::secondary(function_like.span()),
         ])
-        .with_note(format!("This parameter is declared but not used within the {}.", kind))
+        .with_note(format!("This parameter is declared but not used within the {kind}."))
         .with_help("Consider prefixing the parameter with an underscore (`_`) to indicate that it is intentionally unused, or remove it if it is not needed.");
 
     context.propose(issue, |plan| {

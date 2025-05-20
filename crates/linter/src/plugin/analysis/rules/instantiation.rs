@@ -94,15 +94,12 @@ impl Rule for InstantiationRule {
         let class_fqcn = context.lookup(class_name_identifier).to_string();
 
         let Some(reflection) = context.codebase.get_named_class_like(context.interner, class_name_identifier) else {
-            let issue = Issue::new(context.level(), format!("Instantiated class `{}` does not exist.", class_name))
+            let issue = Issue::new(context.level(), format!("Instantiated class `{class_name}` does not exist."))
                 .with_annotation(
                     Annotation::primary(class_identifier.span())
-                        .with_message(format!("Class `{}` does not exist.", class_fqcn)),
+                        .with_message(format!("Class `{class_fqcn}` does not exist.")),
                 )
-                .with_help(format!(
-                    "Ensure the class `{}` is defined or imported before instantiating it.",
-                    class_fqcn
-                ));
+                .with_help(format!("Ensure the class `{class_fqcn}` is defined or imported before instantiating it."));
 
             context.report(issue);
 
@@ -110,10 +107,10 @@ impl Rule for InstantiationRule {
         };
 
         if reflection.is_interface() {
-            let issue = Issue::new(context.level(), format!("Cannot instantiate interface `{}`.", class_name))
+            let issue = Issue::new(context.level(), format!("Cannot instantiate interface `{class_name}`."))
                 .with_annotation(
                     Annotation::primary(class_identifier.span())
-                        .with_message(format!("Interface `{}` cannot be instantiated.", class_fqcn)),
+                        .with_message(format!("Interface `{class_fqcn}` cannot be instantiated.")),
                 )
                 .with_note("Interfaces are abstract types that cannot be instantiated directly.")
                 .with_note("Use a class that implements the interface instead.");
@@ -124,10 +121,10 @@ impl Rule for InstantiationRule {
         }
 
         if reflection.is_trait() {
-            let issue = Issue::new(context.level(), format!("Cannot instantiate trait `{}`.", class_name))
+            let issue = Issue::new(context.level(), format!("Cannot instantiate trait `{class_name}`."))
                 .with_annotation(
                     Annotation::primary(class_identifier.span())
-                        .with_message(format!("Trait `{}` cannot be instantiated.", class_fqcn)),
+                        .with_message(format!("Trait `{class_fqcn}` cannot be instantiated.")),
                 )
                 .with_note("Traits are abstract types that cannot be instantiated directly.")
                 .with_note("Use a class that implements the trait instead.");
@@ -138,10 +135,10 @@ impl Rule for InstantiationRule {
         }
 
         if reflection.is_enum() {
-            let issue = Issue::new(context.level(), format!("Cannot instantiate enum `{}`.", class_name))
+            let issue = Issue::new(context.level(), format!("Cannot instantiate enum `{class_name}`."))
                 .with_annotation(
                     Annotation::primary(class_identifier.span())
-                        .with_message(format!("Enum `{}` cannot be instantiated.", class_fqcn)),
+                        .with_message(format!("Enum `{class_fqcn}` cannot be instantiated.")),
                 )
                 .with_note("Enums are types that represent a fixed set of constants.")
                 .with_note("Use one of the enum cases instead.");
@@ -152,10 +149,10 @@ impl Rule for InstantiationRule {
         }
 
         if reflection.is_abstract {
-            let issue = Issue::new(context.level(), format!("Cannot instantiate abstract class `{}`.", class_name))
+            let issue = Issue::new(context.level(), format!("Cannot instantiate abstract class `{class_name}`."))
                 .with_annotation(
                     Annotation::primary(class_identifier.span())
-                        .with_message(format!("Abstract class `{}` cannot be instantiated.", class_fqcn)),
+                        .with_message(format!("Abstract class `{class_fqcn}` cannot be instantiated.")),
                 )
                 .with_note("Abstract classes are incomplete types that cannot be instantiated directly.")
                 .with_note("Use a concrete subclass instead.");

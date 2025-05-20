@@ -34,7 +34,7 @@ pub fn check_attribute_list(attribute_list: &AttributeList, context: &mut Contex
                             )
                             .with_annotation(
                                 Annotation::secondary(attr.name.span())
-                                    .with_message(format!("Attribute `{}` defined here.", name)),
+                                    .with_message(format!("Attribute `{name}` defined here.")),
                             )
                             .with_note("Unpacking arguments is not allowed in attribute arguments."),
                     );
@@ -42,11 +42,11 @@ pub fn check_attribute_list(attribute_list: &AttributeList, context: &mut Contex
 
                 if !value.is_constant(context.version, true) {
                     context.issues.push(
-                        Issue::error(format!("Attribute `{}` argument contains a non-constant expression.", name))
+                        Issue::error(format!("Attribute `{name}` argument contains a non-constant expression."))
                             .with_annotations([
                                 Annotation::primary(value.span()).with_message("Non-constant expression used here."),
                                 Annotation::secondary(attr.name.span())
-                                    .with_message(format!("Attribute `{}` defined here.", name)),
+                                    .with_message(format!("Attribute `{name}` defined here.")),
                             ])
                             .with_note("Attribute arguments must be constant expressions."),
                     );

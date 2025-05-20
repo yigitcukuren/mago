@@ -9,8 +9,8 @@ pub enum SourceError {
 impl std::fmt::Display for SourceError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UnavailableSource(source_identifier) => write!(f, "source is not available: {:?}", source_identifier),
-            Self::IOError(error) => write!(f, "error loading source: {}", error),
+            Self::UnavailableSource(source_identifier) => write!(f, "source is not available: {source_identifier:?}"),
+            Self::IOError(error) => write!(f, "error loading source: {error}"),
         }
     }
 }

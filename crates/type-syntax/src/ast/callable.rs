@@ -150,7 +150,7 @@ impl std::fmt::Display for CallableTypeParameters<'_> {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", entry)?;
+            write!(f, "{entry}")?;
         }
         write!(f, ")")?;
         Ok(())
@@ -161,7 +161,7 @@ impl std::fmt::Display for CallableTypeSpecification<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.parameters)?;
         if let Some(return_type) = &self.return_type {
-            write!(f, "{}", return_type)?;
+            write!(f, "{return_type}")?;
         }
         Ok(())
     }
@@ -171,7 +171,7 @@ impl std::fmt::Display for CallableType<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.keyword)?;
         if let Some(specification) = &self.specification {
-            write!(f, "{}", specification)?;
+            write!(f, "{specification}")?;
         }
         Ok(())
     }

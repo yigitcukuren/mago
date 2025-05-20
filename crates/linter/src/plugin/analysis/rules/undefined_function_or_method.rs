@@ -463,6 +463,6 @@ fn should_allow_abstract_call(class_like: &ClassLikeReflection, method_name: &st
     const UNIT_ENUM_METHODS: [&str; 1] = ["cases"];
 
     class_like.is_enum()
-        && (UNIT_ENUM_METHODS.iter().any(|&m| m == method_name)
-            || (class_like.backing_type.is_some() && BACKED_ENUM_METHODS.iter().any(|&m| m == method_name)))
+        && (UNIT_ENUM_METHODS.contains(&method_name)
+            || (class_like.backing_type.is_some() && BACKED_ENUM_METHODS.contains(&method_name)))
 }

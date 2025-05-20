@@ -13,7 +13,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&parenthesized_hint.hint);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be parenthesized.", val))
+                    Issue::error(format!("Type `{val}` cannot be parenthesized."))
                         .with_annotation(
                             Annotation::primary(parenthesized_hint.hint.span())
                                 .with_message("Invalid parenthesized type."),
@@ -42,7 +42,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&nullable_hint.hint);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be nullable.", val))
+                    Issue::error(format!("Type `{val}` cannot be nullable."))
                         .with_annotation(
                             Annotation::primary(nullable_hint.hint.span()).with_message("Invalid nullable type."),
                         )
@@ -58,7 +58,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&union_hint.left);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be part of a union.", val))
+                    Issue::error(format!("Type `{val}` cannot be part of a union."))
                         .with_annotation(
                             Annotation::primary(union_hint.left.span()).with_message("Invalid union type."),
                         )
@@ -74,7 +74,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&union_hint.right);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be part of a union.", val))
+                    Issue::error(format!("Type `{val}` cannot be part of a union."))
                         .with_annotation(
                             Annotation::primary(union_hint.right.span()).with_message("Invalid union type."),
                         )
@@ -104,7 +104,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&intersection_hint.left);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
+                    Issue::error(format!("Type `{val}` cannot be part of an intersection."))
                         .with_annotation(
                             Annotation::primary(intersection_hint.left.span())
                                 .with_message("Invalid intersection type."),
@@ -122,7 +122,7 @@ pub fn check_hint(hint: &Hint, context: &mut Context<'_>) {
                 let val = context.get_code_snippet(&intersection_hint.right);
 
                 context.issues.push(
-                    Issue::error(format!("Type `{}` cannot be part of an intersection.", val))
+                    Issue::error(format!("Type `{val}` cannot be part of an intersection."))
                         .with_annotation(
                             Annotation::primary(intersection_hint.right.span())
                                 .with_message("Invalid intersection type."),

@@ -15,7 +15,7 @@ fn test_shebang() -> Result<(), SyntaxError> {
     let expected = vec![TokenKind::InlineShebang, TokenKind::OpenTag];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -60,7 +60,7 @@ fn test_base_integers() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -70,7 +70,7 @@ fn test_emoji_attribute() -> Result<(), SyntaxError> {
     let expected = vec![TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::HashComment];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -108,7 +108,7 @@ fn test_casts() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -126,7 +126,7 @@ fn test_empty_multiline_comments() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -150,7 +150,7 @@ fn test_callable_token() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -207,7 +207,7 @@ fn test_assignment_operators() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -249,7 +249,7 @@ echo $a;
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -291,7 +291,7 @@ echo $a;
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -305,7 +305,7 @@ fn test_unterminated_multiple_comment() {
         Err(SyntaxError::UnexpectedEndOfFile(position)) => {
             assert_eq!(position.offset, 14);
         }
-        Err(err) => panic!("unexpected error: {}", err),
+        Err(err) => panic!("unexpected error: {err}"),
     }
 }
 
@@ -319,7 +319,7 @@ fn test_unterminated_docblock_comment() {
         Err(SyntaxError::UnexpectedEndOfFile(position)) => {
             assert_eq!(position.offset, 15);
         }
-        Err(err) => panic!("unexpected error: {}", err),
+        Err(err) => panic!("unexpected error: {err}"),
     }
 }
 
@@ -342,7 +342,7 @@ fn test_namespace() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -382,7 +382,7 @@ fn test_comments() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -406,7 +406,7 @@ fn test_single_line_comments() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -429,7 +429,7 @@ fn test_keywords() -> Result<(), SyntaxError> {
     expected.push(TokenKind::Semicolon);
 
     test_lexer(code.as_slice(), expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -455,7 +455,7 @@ fn test_halt() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -479,7 +479,7 @@ fn test_identifiers() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -499,7 +499,7 @@ fn test_nss() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -525,7 +525,7 @@ fn test_numbers() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -563,7 +563,7 @@ fn test_emojis() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -579,7 +579,7 @@ fn test_single_quote_literal_string() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -590,7 +590,7 @@ fn test_partial_single_quote_literal_string() -> Result<(), SyntaxError> {
         vec![TokenKind::InlineText, TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::PartialLiteralString];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -606,7 +606,7 @@ fn test_double_quote_literal_string() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -617,7 +617,7 @@ fn test_partial_double_quote_literal_string() -> Result<(), SyntaxError> {
         vec![TokenKind::InlineText, TokenKind::OpenTag, TokenKind::Whitespace, TokenKind::PartialLiteralString];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -650,7 +650,7 @@ fn test_variables() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -694,7 +694,7 @@ fn test_literal_nowdoc_heredoc() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -792,7 +792,7 @@ fn test_heredoc() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -889,7 +889,7 @@ fn test_double_quote_string() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code, expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -922,7 +922,7 @@ fn test_escape() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code.as_bytes(), expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -933,7 +933,7 @@ fn test_sep_literal_num() -> Result<(), SyntaxError> {
     let expected = vec![TokenKind::EchoTag, TokenKind::Whitespace, TokenKind::LiteralInteger, TokenKind::Semicolon];
 
     test_lexer(code.as_bytes(), expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 
@@ -955,7 +955,7 @@ fn test_escape_in_string() -> Result<(), SyntaxError> {
     ];
 
     test_lexer(code.as_bytes(), expected).map_err(|err| {
-        panic!("unexpected error: {}", err);
+        panic!("unexpected error: {err}");
     })
 }
 

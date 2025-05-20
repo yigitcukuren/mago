@@ -79,11 +79,11 @@ impl Rule for ClassRule {
         let mut issues = vec![];
         let name = context.lookup(&class.name.value);
         if !mago_casing::is_class_case(name) {
-            let issue = Issue::new(context.level(), format!("Class name `{}` should be in class case.", name))
+            let issue = Issue::new(context.level(), format!("Class name `{name}` should be in class case."))
                 .with_annotations([
-                    Annotation::primary(class.name.span()).with_message(format!("Class `{}` is declared here.", name))
+                    Annotation::primary(class.name.span()).with_message(format!("Class `{name}` is declared here."))
                 ])
-                .with_note(format!("The class name `{}` does not follow class naming convention.", name))
+                .with_note(format!("The class name `{name}` does not follow class naming convention."))
                 .with_help(format!(
                     "Consider renaming it to `{}` to adhere to the naming convention.",
                     mago_casing::to_class_case(name)
@@ -101,13 +101,13 @@ impl Rule for ClassRule {
             issues.push(
                 Issue::new(
                     context.level(),
-                    format!("Abstract class name `{}` should be prefixed with `Abstract`.", name),
+                    format!("Abstract class name `{name}` should be prefixed with `Abstract`."),
                 )
                 .with_annotations([
-                    Annotation::primary(class.name.span()).with_message(format!("Class `{}` is declared here.", name))
+                    Annotation::primary(class.name.span()).with_message(format!("Class `{name}` is declared here."))
                 ])
-                .with_note(format!("The abstract class name `{}` does not follow PSR naming convention.", name))
-                .with_help(format!("Consider renaming it to `{}` to adhere to the naming convention.", suggested_name)),
+                .with_note(format!("The abstract class name `{name}` does not follow PSR naming convention."))
+                .with_help(format!("Consider renaming it to `{suggested_name}` to adhere to the naming convention.")),
             );
         }
 

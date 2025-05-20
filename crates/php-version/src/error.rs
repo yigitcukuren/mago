@@ -11,7 +11,7 @@ impl std::fmt::Display for ParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::InvalidFormat => write!(f, "Invalid version format, expected 'major.minor.patch'."),
-            Self::ParseIntError(e) => write!(f, "Failed to parse integer component of version: {}.", e),
+            Self::ParseIntError(e) => write!(f, "Failed to parse integer component of version: {e}."),
         }
     }
 }

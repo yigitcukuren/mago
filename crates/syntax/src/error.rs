@@ -57,7 +57,7 @@ impl std::fmt::Display for SyntaxError {
             Self::UnexpectedEndOfFile(_) => "Unexpected end of file",
         };
 
-        write!(f, "{}", message)
+        write!(f, "{message}")
     }
 }
 
@@ -65,7 +65,7 @@ impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let message = match self {
             ParseError::SyntaxError(e) => {
-                return write!(f, "{}", e);
+                return write!(f, "{e}");
             }
             ParseError::UnexpectedEndOfFile(expected, _) => {
                 let expected = expected.iter().map(|kind| kind.to_string()).collect::<Vec<_>>().join("`, `");
@@ -73,9 +73,9 @@ impl std::fmt::Display for ParseError {
                 if expected.is_empty() {
                     "Unexpected end of file".to_string()
                 } else if expected.len() == 1 {
-                    format!("Expected `{}` before end of file", expected)
+                    format!("Expected `{expected}` before end of file")
                 } else {
-                    format!("Expected one of `{}` before end of file", expected)
+                    format!("Expected one of `{expected}` before end of file")
                 }
             }
             ParseError::UnexpectedToken(expected, found, _) => {
@@ -84,11 +84,11 @@ impl std::fmt::Display for ParseError {
                 let found = found.to_string();
 
                 if expected.is_empty() {
-                    format!("Unexpected token `{}`", found)
+                    format!("Unexpected token `{found}`")
                 } else if expected.len() == 1 {
-                    format!("Expected `{}`, found `{}`", expected, found)
+                    format!("Expected `{expected}`, found `{found}`")
                 } else {
-                    format!("Expected one of `{}`, found `{}`", expected, found)
+                    format!("Expected one of `{expected}`, found `{found}`")
                 }
             }
             ParseError::UnclosedLiteralString(kind, _) => match kind {
@@ -97,7 +97,7 @@ impl std::fmt::Display for ParseError {
             },
         };
 
-        write!(f, "{}", message)
+        write!(f, "{message}")
     }
 }
 

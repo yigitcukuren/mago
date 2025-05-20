@@ -31,8 +31,7 @@ pub fn check_method(
                 if let Some(last_static) = last_static {
                     context.issues.push(
                         Issue::error(format!(
-                            "duplicate `static` modifier on method `{}::{}`",
-                            class_like_name, method_name
+                            "duplicate `static` modifier on method `{class_like_name}::{method_name}`"
                         ))
                         .with_annotation(
                             Annotation::primary(modifier.span()).with_message("duplicate `static` modifier"),
@@ -40,11 +39,11 @@ pub fn check_method(
                         .with_annotation(Annotation::primary(last_static).with_message("previous `static` modifier"))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -55,18 +54,17 @@ pub fn check_method(
                 if let Some(abstract_modifier) = last_abstract {
                     context.issues.push(
                         Issue::error(format!(
-                            "method `{}::{}` cannot be both `final` and `abstract`",
-                            class_like_name, method_name
+                            "method `{class_like_name}::{method_name}` cannot be both `final` and `abstract`"
                         ))
                         .with_annotation(Annotation::primary(modifier.span()).with_message("`final` modifier"))
                         .with_annotation(Annotation::primary(abstract_modifier).with_message("`abstract` modifier"))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -74,8 +72,7 @@ pub fn check_method(
                 if let Some(last_final) = last_final {
                     context.issues.push(
                         Issue::error(format!(
-                            "duplicate `final` modifier on method `{}::{}`",
-                            class_like_name, method_name
+                            "duplicate `final` modifier on method `{class_like_name}::{method_name}`"
                         ))
                         .with_annotation(
                             Annotation::primary(modifier.span()).with_message("duplicate `final` modifier"),
@@ -83,11 +80,11 @@ pub fn check_method(
                         .with_annotation(Annotation::primary(last_final).with_message("previous `final` modifier"))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -98,18 +95,17 @@ pub fn check_method(
                 if let Some(final_modifier) = last_final {
                     context.issues.push(
                         Issue::error(format!(
-                            "method `{}::{}` cannot be both `final` and `abstract`",
-                            class_like_name, method_name
+                            "method `{class_like_name}::{method_name}` cannot be both `final` and `abstract`"
                         ))
                         .with_annotation(Annotation::primary(modifier.span()).with_message("`abstract` modifier"))
                         .with_annotation(Annotation::primary(final_modifier).with_message("`final` modifier"))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -117,8 +113,7 @@ pub fn check_method(
                 if let Some(last_abstract) = last_abstract {
                     context.issues.push(
                         Issue::error(format!(
-                            "duplicate `abstract` modifier on method `{}::{}`",
-                            class_like_name, method_name
+                            "duplicate `abstract` modifier on method `{class_like_name}::{method_name}`"
                         ))
                         .with_annotation(
                             Annotation::primary(modifier.span()).with_message("duplicate `abstract` modifier"),
@@ -128,11 +123,11 @@ pub fn check_method(
                         )
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -145,11 +140,11 @@ pub fn check_method(
                         .with_annotation(Annotation::primary(modifier.span()).with_message("`readonly` modifier"))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                 );
             }
@@ -157,8 +152,7 @@ pub fn check_method(
                 if let Some(last_visibility) = last_visibility {
                     context.issues.push(
                         Issue::error(format!(
-                            "duplicate visibility modifier on method `{}::{}`",
-                            class_like_name, method_name
+                            "duplicate visibility modifier on method `{class_like_name}::{method_name}`"
                         ))
                         .with_annotation(
                             Annotation::primary(modifier.span()).with_message("duplicate visibility modifier"),
@@ -168,11 +162,11 @@ pub fn check_method(
                         )
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 } else {
@@ -187,17 +181,17 @@ pub fn check_method(
                 let modifier_name = context.interner.lookup(&k.value);
 
                 context.issues.push(
-                    Issue::error(format!("`{}` modifier is not allowed on methods", modifier_name))
+                    Issue::error(format!("`{modifier_name}` modifier is not allowed on methods"))
                         .with_annotation(
-                            Annotation::primary(modifier.span()).with_message(format!("`{}` modifier", modifier_name)),
+                            Annotation::primary(modifier.span()).with_message(format!("`{modifier_name}` modifier")),
                         )
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                 );
             }
@@ -221,13 +215,11 @@ pub fn check_method(
                 if found_variadic || found_count.ne(count) {
                     let message = if found_variadic {
                         format!(
-                            "Magic method `{}::{}` must have exactly {} parameters, found more than {} due to variadic parameter.",
-                            class_like_name, method_name, count, found_count
+                            "Magic method `{class_like_name}::{method_name}` must have exactly {count} parameters, found more than {found_count} due to variadic parameter."
                         )
                     } else {
                         format!(
-                            "Magic method `{}::{}` must have exactly {} parameters, found {}.",
-                            class_like_name, method_name, count, found_count
+                            "Magic method `{class_like_name}::{method_name}` must have exactly {count} parameters, found {found_count}."
                         )
                     };
 
@@ -235,16 +227,12 @@ pub fn check_method(
                         Issue::error(message)
                             .with_annotation(Annotation::primary(method.parameter_list.span()))
                             .with_annotation(
-                                Annotation::secondary(method.span()).with_message(format!(
-                                    "Method `{}::{}` defined here.",
-                                    class_like_name, method_name,
-                                )),
+                                Annotation::secondary(method.span())
+                                    .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is defined here.",
-                                    class_like_kind, class_like_fqcn
-                                )),
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                             ),
                     );
                 }
@@ -252,18 +240,18 @@ pub fn check_method(
 
             if *must_be_public && !is_public {
                 context.issues.push(
-                    Issue::error(format!("Magic method `{}::{}` must be public.", class_like_name, method_name))
+                    Issue::error(format!("Magic method `{class_like_name}::{method_name}` must be public."))
                         .with_annotation(
                             Annotation::primary(last_visibility.unwrap())
                                 .with_message("Non-Public visibility modifier."),
                         )
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("Method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                 );
             }
@@ -271,35 +259,29 @@ pub fn check_method(
             match last_static.as_ref() {
                 Some(span) if !*must_be_static => {
                     context.issues.push(
-                        Issue::error(format!("Magic method `{}::{}` cannot be static.", class_like_name, method_name))
+                        Issue::error(format!("Magic method `{class_like_name}::{method_name}` cannot be static."))
                             .with_annotation(Annotation::primary(*span).with_message("`static` modifier"))
                             .with_annotation(
-                                Annotation::secondary(method.span()).with_message(format!(
-                                    "Method `{}::{}` defined here.",
-                                    class_like_name, method_name,
-                                )),
+                                Annotation::secondary(method.span())
+                                    .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
                             )
                             .with_annotation(
-                                Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is defined here.",
-                                    class_like_kind, class_like_fqcn
-                                )),
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                             ),
                     );
                 }
                 None if *must_be_static => {
                     context.issues.push(
-                        Issue::error(format!("Magic method `{}::{}` must be static.", class_like_name, method_name))
+                        Issue::error(format!("Magic method `{class_like_name}::{method_name}` must be static."))
                             .with_annotation(Annotation::primary(method.name.span()))
                             .with_annotation(
                                 Annotation::secondary(class_like_span)
-                                    .with_message(format!("{} `{}`", class_like_kind, class_like_fqcn)),
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}`")),
                             )
                             .with_annotation(
-                                Annotation::secondary(method.span()).with_message(format!(
-                                    "Method `{}::{}` defined here.",
-                                    class_like_name, method_name,
-                                )),
+                                Annotation::secondary(method.span())
+                                    .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
                             ),
                     );
                 }
@@ -310,17 +292,16 @@ pub fn check_method(
                 if let Some(hint) = &method.return_type_hint {
                     context.issues.push(
                         Issue::error(format!(
-                            "Magic method `{}::{}` cannot have a return type hint.",
-                            class_like_name, method_name
+                            "Magic method `{class_like_name}::{method_name}` cannot have a return type hint."
                         ))
                         .with_annotation(Annotation::primary(hint.span()))
                         .with_annotation(
                             Annotation::secondary(method.span())
-                                .with_message(format!("Method `{}::{}` defined here.", class_like_name, method_name,)),
+                                .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
                         )
                         .with_annotation(
                             Annotation::secondary(class_like_span)
-                                .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         ),
                     );
                 }
@@ -334,15 +315,14 @@ pub fn check_method(
             if !class_like_is_interface && last_abstract.is_none() {
                 context.issues.push(
                     Issue::error(format!(
-                        "Non-Abstract method `{}::{}` must have a concrete body.",
-                        class_like_name, method_name,
+                        "Non-Abstract method `{class_like_name}::{method_name}` must have a concrete body.",
                     ))
                     .with_annotation(Annotation::primary(method_abstract_body.span()))
                     .with_annotations([
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         Annotation::secondary(method.span())
-                            .with_message(format!("Method `{}::{}` defined here.", class_like_name, method_name)),
+                            .with_message(format!("Method `{class_like_name}::{method_name}` defined here.")),
                     ]),
                 );
             }
@@ -355,30 +335,28 @@ pub fn check_method(
 
                 context.issues.push(
                     Issue::error(format!(
-                        "Method `{}::{}` is abstract and cannot have a concrete body.",
-                        class_like_name, method_name,
+                        "Method `{class_like_name}::{method_name}` is abstract and cannot have a concrete body.",
                     ))
                     .with_annotation(Annotation::primary(body.span()))
                     .with_annotations([
                         Annotation::primary(abstract_modifier.span()),
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         Annotation::secondary(method.span())
-                            .with_message(format!("Method `{}::{}` defined here.", class_like_name, method_name)),
+                            .with_message(format!("Method `{class_like_name}::{method_name}` defined here.")),
                     ]),
                 );
             } else if class_like_is_interface {
                 context.issues.push(
                     Issue::error(format!(
-                        "Interface method `{}::{}` is implicitly abstract and cannot have a concrete body.",
-                        class_like_name, method_name,
+                        "Interface method `{class_like_name}::{method_name}` is implicitly abstract and cannot have a concrete body.",
                     ))
                     .with_annotation(Annotation::primary(body.span()))
                     .with_annotations([
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` is defined here.", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
                         Annotation::secondary(method.span())
-                            .with_message(format!("Method `{}::{}` defined here.", class_like_name, method_name)),
+                            .with_message(format!("Method `{class_like_name}::{method_name}` defined here.")),
                     ]),
                 );
             }
@@ -397,18 +375,15 @@ pub fn check_method(
                         if let Some(val) = &r#return.value {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Method `{}::{}` with return type of `void` must not return a value.",
-                                    class_like_name, method_name,
+                                    "Method `{class_like_name}::{method_name}` with return type of `void` must not return a value.",
                                 ))
                                 .with_annotation(Annotation::primary(val.span()))
                                 .with_annotations([
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` is defined here.",
-                                        class_like_kind, class_like_fqcn
+                                        "{class_like_kind} `{class_like_fqcn}` is defined here."
                                     )),
                                     Annotation::secondary(method.span()).with_message(format!(
-                                        "Method `{}::{}` defined here.",
-                                        class_like_name, method_name,
+                                        "Method `{class_like_name}::{method_name}` defined here.",
                                     )),
                                 ])
                                 .with_help("Remove the return type hint, or remove the return value."),
@@ -420,18 +395,15 @@ pub fn check_method(
                     for r#return in returns {
                         context.issues.push(
                             Issue::error(format!(
-                                "Function `{}::{}` with return type of `never` must not return.",
-                                class_like_name, method_name,
+                                "Function `{class_like_name}::{method_name}` with return type of `never` must not return.",
                             ))
                             .with_annotation(Annotation::primary(r#return.span()))
                             .with_annotations([
                                 Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is defined here.",
-                                    class_like_kind, class_like_fqcn
+                                    "{class_like_kind} `{class_like_fqcn}` is defined here."
                                 )),
                                 Annotation::secondary(method.span()).with_message(format!(
-                                    "Method `{}::{}` defined here.",
-                                    class_like_name, method_name,
+                                    "Method `{class_like_name}::{method_name}` defined here.",
                                 )),
                             ])
                             .with_help("Remove the return type hint, or remove the return statement."),
@@ -443,18 +415,15 @@ pub fn check_method(
                         if r#return.value.is_none() {
                             context.issues.push(
                                 Issue::error(format!(
-                                    "Method `{}::{}` with return type must return a value.",
-                                    class_like_name, method_name,
+                                    "Method `{class_like_name}::{method_name}` with return type must return a value.",
                                 ))
                                 .with_annotation(Annotation::primary(r#return.span()))
                                 .with_annotations([
                                     Annotation::secondary(class_like_span).with_message(format!(
-                                        "{} `{}` is defined here.",
-                                        class_like_kind, class_like_fqcn
+                                        "{class_like_kind} `{class_like_fqcn}` is defined here."
                                     )),
                                     Annotation::secondary(method.span()).with_message(format!(
-                                        "Method `{}::{}` defined here.",
-                                        class_like_name, method_name,
+                                        "Method `{class_like_name}::{method_name}` defined here.",
                                     )),
                                 ])
                                 .with_note("Did you mean `return null;` instead of `return;`?")

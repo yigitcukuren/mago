@@ -67,8 +67,7 @@ fn check_class_like(
     if class_like_cyclomatic_complexity > threshold as usize {
         let issue = Issue::new(context.level(), format!("{kind} has high complexity.")).with_annotation(
             Annotation::primary(class_like.span()).with_message(format!(
-                "{} has a cyclomatic complexity of {}, which exceeds the threshold of {}.",
-                kind, class_like_cyclomatic_complexity, threshold
+                "{kind} has a cyclomatic complexity of {class_like_cyclomatic_complexity}, which exceeds the threshold of {threshold}."
             )),
         );
 
@@ -84,8 +83,7 @@ fn check_function_like(kind: &'static str, function_like: impl HasSpan, body: &B
     if block_cyclomatic_complexity > threshold as usize {
         let issue = Issue::new(context.level(), format!("{kind} has high complexity.")).with_annotation(
             Annotation::primary(function_like.span()).with_message(format!(
-                "{} has a cyclomatic complexity of {}, which exceeds the threshold of {}.",
-                kind, block_cyclomatic_complexity, threshold
+                "{kind} has a cyclomatic complexity of {block_cyclomatic_complexity}, which exceeds the threshold of {threshold}."
             )),
         );
 

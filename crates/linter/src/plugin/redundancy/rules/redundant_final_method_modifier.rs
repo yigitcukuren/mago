@@ -80,13 +80,11 @@ impl Rule for RedundantFinalMethodModifierRule {
 
                 let message = if is_enum {
                     format!(
-                        "The `final` modifier on enum method `{}` is redundant as enums cannot be extended.",
-                        method_name,
+                        "The `final` modifier on enum method `{method_name}` is redundant as enums cannot be extended.",
                     )
                 } else {
                     format!(
-                        "The `final` modifier on method `{}` is redundant as the class is already final.",
-                        method_name,
+                        "The `final` modifier on method `{method_name}` is redundant as the class is already final.",
                     )
                 };
 

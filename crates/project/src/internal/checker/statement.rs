@@ -307,22 +307,21 @@ pub fn check_goto(goto: &Goto, context: &mut Context<'_>) {
         }
     }
 
-    let mut issue = Issue::error(format!("Undefined `goto` label `{}`.", going_to))
+    let mut issue = Issue::error(format!("Undefined `goto` label `{going_to}`."))
         .with_annotation(Annotation::primary(goto.label.span).with_message("This `goto` label is not defined."))
         .with_annotations(
             suggestions
                 .iter()
-                .map(|(name, span)| Annotation::secondary(*span).with_message(format!("Did you mean `{}`?", name))),
+                .map(|(name, span)| Annotation::secondary(*span).with_message(format!("Did you mean `{name}`?"))),
         );
 
     if suggestions.len() == 1 {
         issue = issue
             .with_note(format!("The `goto` label `{}` was not found. Did you mean `{}`?", going_to, suggestions[0].0));
     } else if !suggestions.is_empty() {
-        let names = suggestions.iter().map(|(name, _)| format!("`{}`", name)).collect::<Vec<_>>().join(", ");
+        let names = suggestions.iter().map(|(name, _)| format!("`{name}`")).collect::<Vec<_>>().join(", ");
         issue = issue.with_note(format!(
-            "The `goto` label `{}` was not found. Did you mean one of the following: {}?",
-            going_to, names
+            "The `goto` label `{going_to}` was not found. Did you mean one of the following: {names}?"
         ));
     }
 

@@ -126,7 +126,7 @@ impl ClassLikeMemberName {
         let class_name = self.class_like.get_key(interner);
         let member_name = interner.lookup(&self.member.value);
 
-        format!("{}::{}", class_name, member_name)
+        format!("{class_name}::{member_name}")
     }
 }
 

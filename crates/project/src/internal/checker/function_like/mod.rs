@@ -26,11 +26,11 @@ pub fn check_function(function: &Function, context: &mut Context<'_>) {
             for r#return in mago_syntax::utils::find_returns_in_block(&function.body) {
                 if let Some(val) = &r#return.value {
                     context.issues.push(
-                        Issue::error(format!("Function `{}` with return type `void` must not return a value.", name))
+                        Issue::error(format!("Function `{name}` with return type `void` must not return a value."))
                             .with_annotation(Annotation::primary(val.span()).with_message("Return value found here."))
                             .with_annotation(
                                 Annotation::secondary(function.span())
-                                    .with_message(format!("Function `{}` defined here.", fqfn)),
+                                    .with_message(format!("Function `{fqfn}` defined here.")),
                             )
                             .with_help("Remove the return type hint or the return value."),
                     );
@@ -40,13 +40,13 @@ pub fn check_function(function: &Function, context: &mut Context<'_>) {
         Hint::Never(_) => {
             for r#return in mago_syntax::utils::find_returns_in_block(&function.body) {
                 context.issues.push(
-                    Issue::error(format!("Function `{}` with return type `never` must not return.", name))
+                    Issue::error(format!("Function `{name}` with return type `never` must not return."))
                         .with_annotation(
                             Annotation::primary(r#return.span()).with_message("Return statement found here."),
                         )
                         .with_annotation(
                             Annotation::secondary(function.span())
-                                .with_message(format!("Function `{}` defined here.", fqfn)),
+                                .with_message(format!("Function `{fqfn}` defined here.")),
                         )
                         .with_help("Remove the return type hint or the return statement."),
                 );
@@ -56,13 +56,13 @@ pub fn check_function(function: &Function, context: &mut Context<'_>) {
             for r#return in mago_syntax::utils::find_returns_in_block(&function.body) {
                 if r#return.value.is_none() {
                     context.issues.push(
-                        Issue::error(format!("Function `{}` with a return type must return a value.", name))
+                        Issue::error(format!("Function `{name}` with a return type must return a value."))
                             .with_annotation(
                                 Annotation::primary(r#return.span()).with_message("Empty return statement found here."),
                             )
                             .with_annotation(
                                 Annotation::secondary(function.span())
-                                    .with_message(format!("Function `{}` defined here.", fqfn)),
+                                    .with_message(format!("Function `{fqfn}` defined here.")),
                             )
                             .with_note("Did you mean `return null;` instead of `return;`?")
                             .with_help("Add a return value to the statement."),

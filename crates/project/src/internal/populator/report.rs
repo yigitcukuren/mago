@@ -23,15 +23,13 @@ pub fn report_missing_parent_class(
     let class_name_value = interner.lookup(&class_name.value);
 
     reflection.issues.push(
-        Issue::error(format!(
-            "{} `{}` extends undefined class `{}`.",
-            class_like_kind, class_like_name, class_name_value
-        ))
-        .with_code(CODE)
-        .with_annotation(
-            Annotation::primary(class_name.span).with_message(format!("Class `{}` does not exist.", class_name_value)),
-        )
-        .with_help(format!("Ensure the class `{}` is defined or imported before extending it.", class_name_value)),
+        Issue::error(format!("{class_like_kind} `{class_like_name}` extends undefined class `{class_name_value}`."))
+            .with_code(CODE)
+            .with_annotation(
+                Annotation::primary(class_name.span)
+                    .with_message(format!("Class `{class_name_value}` does not exist.")),
+            )
+            .with_help(format!("Ensure the class `{class_name_value}` is defined or imported before extending it.")),
     );
 }
 
@@ -46,12 +44,12 @@ pub fn report_parent_not_class(interner: &ThreadedInterner, reflection: &mut Cla
     let class_name_value = interner.lookup(&class_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("{} `{}` extends non-class `{}`.", class_like_kind, class_like_name, class_name_value))
+        Issue::error(format!("{class_like_kind} `{class_like_name}` extends non-class `{class_name_value}`."))
             .with_code(CODE)
             .with_annotation(
-                Annotation::primary(class_name.span).with_message(format!("`{}` is not a class.", class_name_value)),
+                Annotation::primary(class_name.span).with_message(format!("`{class_name_value}` is not a class.")),
             )
-            .with_help(format!("Ensure the class `{}` is defined or imported before extending it.", class_name_value)),
+            .with_help(format!("Ensure the class `{class_name_value}` is defined or imported before extending it.")),
     );
 }
 
@@ -70,12 +68,12 @@ pub fn report_parent_class_is_final(
     let class_name_value = interner.lookup(&class_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("{} `{}` extends final class `{}`.", class_like_kind, class_like_name, class_name_value))
+        Issue::error(format!("{class_like_kind} `{class_like_name}` extends final class `{class_name_value}`."))
             .with_code(CODE)
             .with_annotation(
-                Annotation::primary(class_name.span).with_message(format!("Class `{}` is final.", class_name_value)),
+                Annotation::primary(class_name.span).with_message(format!("Class `{class_name_value}` is final.")),
             )
-            .with_help(format!("Ensure the class `{}` is not final or remove the `extends` clause.", class_name_value)),
+            .with_help(format!("Ensure the class `{class_name_value}` is not final or remove the `extends` clause.")),
     );
 }
 
@@ -94,18 +92,17 @@ pub fn report_parent_class_is_readonly(
 
     reflection.issues.push(
         Issue::error(format!(
-            "Extending readonly class `{}` from non-readonly class `{}`.",
-            parent_name_value, class_like_name
+            "Extending readonly class `{parent_name_value}` from non-readonly class `{class_like_name}`."
         ))
         .with_code(CODE)
         .with_annotation(
-            Annotation::primary(parent_name.span).with_message(format!("Class `{}` is readonly.", parent_name_value)),
+            Annotation::primary(parent_name.span).with_message(format!("Class `{parent_name_value}` is readonly.")),
         )
         .with_annotation(
             Annotation::secondary(reflection.name.span())
-                .with_message(format!("Class `{}` is not readonly.", class_like_name)),
+                .with_message(format!("Class `{class_like_name}` is not readonly.")),
         )
-        .with_help(format!("Mark the class `{}` as readonly or remove the `extends` clause.", class_like_name)),
+        .with_help(format!("Mark the class `{class_like_name}` as readonly or remove the `extends` clause.")),
     );
 }
 
@@ -124,19 +121,17 @@ pub fn report_parent_class_is_not_readonly(
 
     reflection.issues.push(
         Issue::error(format!(
-            "Cannot extend non-readonly class `{}` from readonly class `{}`.",
-            parent_name_value, class_like_name
+            "Cannot extend non-readonly class `{parent_name_value}` from readonly class `{class_like_name}`."
         ))
         .with_code(CODE)
         .with_annotation(
-            Annotation::primary(parent_name.span)
-                .with_message(format!("Class `{}` is not readonly.", parent_name_value)),
+            Annotation::primary(parent_name.span).with_message(format!("Class `{parent_name_value}` is not readonly.")),
         )
         .with_annotation(
             Annotation::secondary(reflection.name.span())
-                .with_message(format!("Class `{}` is readonly.", class_like_name)),
+                .with_message(format!("Class `{class_like_name}` is readonly.")),
         )
-        .with_help(format!("Ensure the class `{}` is readonly or remove the `extends` clause.", parent_name_value)),
+        .with_help(format!("Ensure the class `{parent_name_value}` is readonly or remove the `extends` clause.")),
     );
 }
 
@@ -153,15 +148,14 @@ pub fn report_parent_class_circular_reference(
     let parent_name_str = interner.lookup(&parent_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("Circular inheritance detected between `{}` and `{}`.", class_name_str, parent_name_str))
+        Issue::error(format!("Circular inheritance detected between `{class_name_str}` and `{parent_name_str}`."))
             .with_code(CODE)
             .with_annotation(
                 Annotation::primary(parent_name.span)
-                    .with_message(format!("Class `{}` already extends `{}`.", parent_name_str, class_name_str)),
+                    .with_message(format!("Class `{parent_name_str}` already extends `{class_name_str}`.")),
             )
             .with_help(format!(
-                "Ensure there is no circular inheritance between `{}` and `{}`.",
-                class_name_str, parent_name_str
+                "Ensure there is no circular inheritance between `{class_name_str}` and `{parent_name_str}`."
             )),
     );
 }
@@ -192,7 +186,7 @@ pub fn report_missing_parent_interface(
         .with_code(CODE)
         .with_annotation(
             Annotation::primary(interface_name.span)
-                .with_message(format!("Interface `{}` does not exist.", interface_name_value)),
+                .with_message(format!("Interface `{interface_name_value}` does not exist.")),
         )
         .with_help(format!(
             "Ensure the interface `{}` is defined or imported before {} it.",
@@ -228,7 +222,7 @@ pub fn report_parent_not_interface(
         .with_code(CODE)
         .with_annotation(
             Annotation::primary(interface_name.span)
-                .with_message(format!("`{}` is not an interface.", interface_name_value)),
+                .with_message(format!("`{interface_name_value}` is not an interface.")),
         )
         .with_help(format!(
             "Ensure the interface `{}` is defined or imported before {} it.",
@@ -253,21 +247,17 @@ pub fn report_parent_interface_circular_reference(
     let interface_name_str = interner.lookup(&interface_name.value);
 
     reflection.issues.push(
-        Issue::error(format!(
-            "Circular inheritance detected between `{}` and `{}`.",
-            class_name_str, interface_name_str
-        ))
-        .with_code(CODE)
-        .with_annotation(Annotation::primary(interface_name.span).with_message(format!(
-            "Interface `{}` already {} `{}`.",
-            interface_name_str,
-            if implemented { "implements" } else { "extends" },
-            class_name_str
-        )))
-        .with_help(format!(
-            "Ensure there is no circular inheritance between `{}` and `{}`.",
-            class_name_str, interface_name_str
-        )),
+        Issue::error(format!("Circular inheritance detected between `{class_name_str}` and `{interface_name_str}`."))
+            .with_code(CODE)
+            .with_annotation(Annotation::primary(interface_name.span).with_message(format!(
+                "Interface `{}` already {} `{}`.",
+                interface_name_str,
+                if implemented { "implements" } else { "extends" },
+                class_name_str
+            )))
+            .with_help(format!(
+                "Ensure there is no circular inheritance between `{class_name_str}` and `{interface_name_str}`."
+            )),
     );
 }
 
@@ -282,13 +272,13 @@ pub fn report_missing_trait(interner: &ThreadedInterner, reflection: &mut ClassL
     let trait_name_value = interner.lookup(&trait_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("{} `{}` uses undefined trait `{}`.", class_like_kind, class_like_name, trait_name_value))
+        Issue::error(format!("{class_like_kind} `{class_like_name}` uses undefined trait `{trait_name_value}`."))
             .with_code(CODE)
             .with_annotation(
                 Annotation::primary(trait_name.span)
-                    .with_message(format!("Trait `{}` does not exist.", trait_name_value)),
+                    .with_message(format!("Trait `{trait_name_value}` does not exist.")),
             )
-            .with_help(format!("Ensure the trait `{}` is defined or imported before using it.", trait_name_value)),
+            .with_help(format!("Ensure the trait `{trait_name_value}` is defined or imported before using it.")),
     );
 }
 
@@ -303,12 +293,12 @@ pub fn report_not_trait(interner: &ThreadedInterner, reflection: &mut ClassLikeR
     let trait_name_value = interner.lookup(&trait_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("{} `{}` uses non-trait `{}`.", class_like_kind, class_like_name, trait_name_value))
+        Issue::error(format!("{class_like_kind} `{class_like_name}` uses non-trait `{trait_name_value}`."))
             .with_code(CODE)
             .with_annotation(
-                Annotation::primary(trait_name.span).with_message(format!("`{}` is not a trait.", trait_name_value)),
+                Annotation::primary(trait_name.span).with_message(format!("`{trait_name_value}` is not a trait.")),
             )
-            .with_help(format!("Ensure the trait `{}` is defined or imported before using it.", trait_name_value)),
+            .with_help(format!("Ensure the trait `{trait_name_value}` is defined or imported before using it.")),
     );
 }
 
@@ -326,15 +316,14 @@ pub fn report_trait_circular_reference(
     let trait_name_str = inter.lookup(&trait_name.value);
 
     reflection.issues.push(
-        Issue::error(format!("Circular inheritance detected between `{}` and `{}`.", class_name_str, trait_name_str))
+        Issue::error(format!("Circular inheritance detected between `{class_name_str}` and `{trait_name_str}`."))
             .with_code(CODE)
             .with_annotation(
                 Annotation::primary(trait_name.span)
-                    .with_message(format!("Trait `{}` already uses `{}`.", trait_name_str, class_name_str)),
+                    .with_message(format!("Trait `{trait_name_str}` already uses `{class_name_str}`.")),
             )
             .with_help(format!(
-                "Ensure there is no circular inheritance between `{}` and `{}`.",
-                class_name_str, trait_name_str
+                "Ensure there is no circular inheritance between `{class_name_str}` and `{trait_name_str}`."
             )),
     );
 }

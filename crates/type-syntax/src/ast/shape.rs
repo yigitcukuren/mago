@@ -137,7 +137,7 @@ impl std::fmt::Display for ShapeAdditionalFields<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "...")?;
 
-        if let Some(generics) = &self.parameters { write!(f, "{}", generics) } else { Ok(()) }
+        if let Some(generics) = &self.parameters { write!(f, "{generics}") } else { Ok(()) }
     }
 }
 
@@ -150,7 +150,7 @@ impl std::fmt::Display for ShapeType<'_> {
                 write!(f, ", ")?;
             }
 
-            write!(f, "{}", field)?;
+            write!(f, "{field}")?;
         }
 
         if let Some(additional_fields) = &self.additional_fields {
@@ -158,7 +158,7 @@ impl std::fmt::Display for ShapeType<'_> {
                 write!(f, ", ")?;
             }
 
-            write!(f, "{}", additional_fields)?;
+            write!(f, "{additional_fields}")?;
         }
 
         write!(f, "}}")

@@ -85,11 +85,10 @@ impl Rule for StrictAssertionsRule {
                 let issue = Issue::new(context.level(), "Use strict assertions in PHPUnit tests.")
                     .with_annotation(
                         Annotation::primary(reference.span())
-                            .with_message(format!("Non-strict assertion `{}` is used here.", name)),
+                            .with_message(format!("Non-strict assertion `{name}` is used here.")),
                     )
                     .with_help(format!(
-                        "Replace `{}` with `{}` to enforce strict comparisons in your tests.",
-                        name, strict_name
+                        "Replace `{name}` with `{strict_name}` to enforce strict comparisons in your tests."
                     ));
 
                 context.propose(issue, |plan| {

@@ -69,7 +69,7 @@ impl std::fmt::Display for GenericParameters<'_> {
                 write!(f, ", ")?;
             }
 
-            write!(f, "{}", entry)?;
+            write!(f, "{entry}")?;
         }
         write!(f, ">")
     }

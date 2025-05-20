@@ -71,7 +71,7 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
 
         return Ok(match formatter.format_source(&source) {
             Ok(formatted) => {
-                print!("{}", formatted);
+                print!("{formatted}");
 
                 ExitCode::SUCCESS
             }

@@ -459,7 +459,7 @@ pub(super) fn explain_rule(
                     println!();
                     println!("{}", "```toml".dimmed());
                     println!("[[linter.rules]]");
-                    println!("name = \"{}\"", rule);
+                    println!("name = \"{rule}\"");
                     print!("{}", toml::to_string(&usage.options).map_err(Error::from)?.yellow());
                     println!("{}", "```".dimmed());
                 }
@@ -488,7 +488,7 @@ pub(super) fn explain_rule(
                     println!();
                     println!("{}", "```toml".dimmed());
                     println!("[[linter.rules]]");
-                    println!("name = \"{}\"", rule);
+                    println!("name = \"{rule}\"");
                     print!("{}", toml::to_string(&usage.options).map_err(Error::from)?.yellow());
                     println!("{}", "```".dimmed());
                 }
@@ -532,7 +532,7 @@ pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configurat
         println!("{}", title.bold().bright_purple());
         println!();
         println!("    - Level: {}", current_level.bold());
-        println!("    - {}", description);
+        println!("    - {description}");
         println!();
         println!("    {}", footer.bright_black());
     }

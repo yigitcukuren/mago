@@ -68,7 +68,7 @@ impl Rule for OptionalParameterBeforeRequiredRule {
                 )
                 .with_annotation(
                     Annotation::primary(parameter.variable.span())
-                        .with_message(format!("Required parameter `{}` defined here", name)),
+                        .with_message(format!("Required parameter `{name}` defined here")),
                 )
                 .with_annotations(optional_parameters.iter().map(|(opt_name, opt_span)| {
                     Annotation::secondary(*opt_span)

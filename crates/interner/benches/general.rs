@@ -19,7 +19,7 @@ fn bench_current_thread_intern(c: &mut Criterion) {
     for size in [100, 1_000, 10_000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+            let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
 
             b.iter(|| {
                 for s in &strings {
@@ -38,7 +38,7 @@ fn bench_current_thread_get(c: &mut Criterion) {
     let size = 10_000;
 
     // Pre-intern some strings
-    let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+    let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
     for s in &strings {
         interner.intern(s);
     }
@@ -51,7 +51,7 @@ fn bench_current_thread_get(c: &mut Criterion) {
             // Existing string
             black_box(interner.get(&strings[i % size]));
             // Non-existing string
-            black_box(interner.get(format!("nonexistent-{}", i)));
+            black_box(interner.get(format!("nonexistent-{i}")));
             i += 1;
         });
     });
@@ -65,7 +65,7 @@ fn bench_current_thread_lookup(c: &mut Criterion) {
     let size = 10_000;
 
     // Intern strings and collect their identifiers
-    let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+    let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
     let identifiers: Vec<_> = strings.iter().map(|s| interner.intern(s)).collect();
 
     // Test lookup method with valid and invalid identifiers
@@ -90,7 +90,7 @@ fn bench_threaded_interner_single_thread_intern(c: &mut Criterion) {
     for size in [100, 1_000, 10_000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
         group.bench_with_input(BenchmarkId::new("SingleThread", size), size, |b, &size| {
-            let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+            let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
 
             b.iter(|| {
                 for s in &strings {
@@ -111,10 +111,10 @@ fn bench_threaded_interner_multi_thread_intern(c: &mut Criterion) {
     for &(size, thread_count) in &[(1000, 4), (10000, 8), (100000, 16)] {
         group.throughput(Throughput::Elements((size * thread_count) as u64));
         group.bench_with_input(
-            BenchmarkId::new(format!("Threads: {}", thread_count), size),
+            BenchmarkId::new(format!("Threads: {thread_count}"), size),
             &(size, thread_count),
             |b, &(size, thread_count)| {
-                let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+                let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
 
                 b.iter(|| {
                     let mut handles = Vec::with_capacity(thread_count);
@@ -146,7 +146,7 @@ fn bench_threaded_interner_single_thread_lookup(c: &mut Criterion) {
     let size = 10_000;
 
     // Pre-intern strings
-    let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+    let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
     let identifiers: Vec<_> = strings.iter().map(|s| interner.intern(s)).collect();
 
     group.throughput(Throughput::Elements(size as u64));
@@ -168,11 +168,11 @@ fn bench_threaded_interner_multi_thread_lookup(c: &mut Criterion) {
     let thread_count = 8;
 
     // Pre-intern strings
-    let strings: Vec<String> = (0..size).map(|i| format!("string-{}", i)).collect();
+    let strings: Vec<String> = (0..size).map(|i| format!("string-{i}")).collect();
     let identifiers: Vec<_> = strings.iter().map(|s| interner.intern(s)).collect();
 
     group.throughput(Throughput::Elements((size * thread_count) as u64));
-    group.bench_function(format!("Threads: {}", thread_count), |b| {
+    group.bench_function(format!("Threads: {thread_count}"), |b| {
         b.iter(|| {
             let mut handles = Vec::with_capacity(thread_count);
             for thread_id in 0..thread_count {

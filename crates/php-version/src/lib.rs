@@ -449,19 +449,19 @@ mod tests {
     #[test]
     fn test_from_str_invalid() {
         let err = "7.4.0.1".parse::<PHPVersion>().unwrap_err();
-        assert_eq!(format!("{}", err), "Invalid version format, expected 'major.minor.patch'.");
+        assert_eq!(format!("{err}"), "Invalid version format, expected 'major.minor.patch'.");
 
         let err = "".parse::<PHPVersion>().unwrap_err();
-        assert_eq!(format!("{}", err), "Invalid version format, expected 'major.minor.patch'.");
+        assert_eq!(format!("{err}"), "Invalid version format, expected 'major.minor.patch'.");
 
         let err = "foo.4.0".parse::<PHPVersion>().unwrap_err();
-        assert_eq!(format!("{}", err), "Failed to parse integer component of version: invalid digit found in string.");
+        assert_eq!(format!("{err}"), "Failed to parse integer component of version: invalid digit found in string.");
 
         let err = "7.foo.0".parse::<PHPVersion>().unwrap_err();
-        assert_eq!(format!("{}", err), "Failed to parse integer component of version: invalid digit found in string.");
+        assert_eq!(format!("{err}"), "Failed to parse integer component of version: invalid digit found in string.");
 
         let err = "7.4.foo".parse::<PHPVersion>().unwrap_err();
-        assert_eq!(format!("{}", err), "Failed to parse integer component of version: invalid digit found in string.");
+        assert_eq!(format!("{err}"), "Failed to parse integer component of version: invalid digit found in string.");
     }
 
     #[test]

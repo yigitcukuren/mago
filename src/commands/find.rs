@@ -201,27 +201,26 @@ pub fn reference_to_issue(interner: &ThreadedInterner, reference: Reference) -> 
     let symbol_name = interner.lookup(&reference.value);
 
     match reference.kind {
-        ReferenceKind::Import => Issue::note(format!("Reference: imported symbol `{}`", symbol_name)).with_annotation(
-            Annotation::primary(reference.span).with_message(format!("This import references `{}`.", symbol_name)),
+        ReferenceKind::Import => Issue::note(format!("Reference: imported symbol `{symbol_name}`")).with_annotation(
+            Annotation::primary(reference.span).with_message(format!("This import references `{symbol_name}`.")),
         ),
 
-        ReferenceKind::Usage => Issue::note(format!("Reference: used symbol `{}`", symbol_name)).with_annotation(
-            Annotation::primary(reference.span).with_message(format!("Symbol `{}` is used here.", symbol_name)),
+        ReferenceKind::Usage => Issue::note(format!("Reference: used symbol `{symbol_name}`")).with_annotation(
+            Annotation::primary(reference.span).with_message(format!("Symbol `{symbol_name}` is used here.")),
         ),
 
-        ReferenceKind::Definition => Issue::note(format!("Reference: definition of `{}`", symbol_name))
-            .with_annotation(
-                Annotation::primary(reference.span).with_message(format!("Symbol `{}` is defined here.", symbol_name)),
-            ),
+        ReferenceKind::Definition => Issue::note(format!("Reference: definition of `{symbol_name}`")).with_annotation(
+            Annotation::primary(reference.span).with_message(format!("Symbol `{symbol_name}` is defined here.")),
+        ),
 
-        ReferenceKind::Implementation => Issue::note(format!("Reference: implementation of `{}`", symbol_name))
+        ReferenceKind::Implementation => Issue::note(format!("Reference: implementation of `{symbol_name}`"))
             .with_annotation(
                 Annotation::primary(reference.span)
-                    .with_message(format!("Symbol `{}` is implemented here.", symbol_name)),
+                    .with_message(format!("Symbol `{symbol_name}` is implemented here.")),
             ),
 
-        ReferenceKind::Extension => Issue::note(format!("Reference: extension of `{}`", symbol_name)).with_annotation(
-            Annotation::primary(reference.span).with_message(format!("Class `{}` is extended here.", symbol_name)),
+        ReferenceKind::Extension => Issue::note(format!("Reference: extension of `{symbol_name}`")).with_annotation(
+            Annotation::primary(reference.span).with_message(format!("Class `{symbol_name}` is extended here.")),
         ),
     }
 }

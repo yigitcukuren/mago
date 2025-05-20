@@ -332,7 +332,7 @@ impl<'a> FormatterState<'a> {
             } else if line.trim_start().starts_with('*') {
                 // Replace leading whitespace with a single space
                 let rest = line.trim_start();
-                Cow::Owned(format!(" {}", rest))
+                Cow::Owned(format!(" {rest}"))
             } else {
                 // Line does not have '*' after whitespaces, add it.
                 Cow::Owned(format!(" * {}", line.trim()))

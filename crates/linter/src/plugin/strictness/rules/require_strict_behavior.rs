@@ -152,20 +152,15 @@ impl Rule for RequireStrictBehavior {
         }
 
         let mut issue =
-            Issue::new(context.level(), format!("Call to `{}` must enforce strict comparison.", function_name))
+            Issue::new(context.level(), format!("Call to `{function_name}` must enforce strict comparison."))
                 .with_annotation(Annotation::primary(identifier.span()).with_message(format!(
-                    "Function `{}` relies on loose comparison which can lead to unexpected behavior.",
-                    function_name
+                    "Function `{function_name}` relies on loose comparison which can lead to unexpected behavior."
                 )))
-                .with_help(format!(
-                    "Call the function `{}` with the `$strict` parameter set to `true`.",
-                    function_name
-                ));
+                .with_help(format!("Call the function `{function_name}` with the `$strict` parameter set to `true`."));
 
         if allow_loose_behavior {
             issue = issue.with_note(format!(
-                "The `{}` option is enabled; you may set the `$strict` parameter to `false`.",
-                ALLOW_LOOSE_BEHAVIOR
+                "The `{ALLOW_LOOSE_BEHAVIOR}` option is enabled; you may set the `$strict` parameter to `false`."
             ));
         }
 

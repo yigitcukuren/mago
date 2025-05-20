@@ -291,9 +291,8 @@ pub(super) fn print_attribute_list_sequence<'a>(
 
 pub(super) fn print_clause<'a>(f: &mut FormatterState<'a>, node: &'a Statement, force_space: bool) -> Document<'a> {
     let clause = node.format(f);
-    let clause = adjust_clause(f, node, clause, force_space);
 
-    clause
+    adjust_clause(f, node, clause, force_space)
 }
 
 pub(super) fn adjust_clause<'a>(

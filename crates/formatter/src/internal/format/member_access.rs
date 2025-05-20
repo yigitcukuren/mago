@@ -499,7 +499,6 @@ fn base_needs_parerns(f: &FormatterState<'_>, base: &Expression) -> bool {
 pub(super) fn format_access_operator<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
     let leading = f.print_leading_comments(span);
     let doc = Document::String(operator);
-    let doc = f.print_comments(leading, doc, None);
 
-    doc
+    f.print_comments(leading, doc, None)
 }

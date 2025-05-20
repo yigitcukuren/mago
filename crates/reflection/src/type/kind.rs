@@ -707,14 +707,14 @@ impl TypeKind {
                 ScalarTypeKind::String => "string".to_string(),
                 ScalarTypeKind::Integer { min, max } => match (min, max) {
                     (None, None) => "int".to_string(),
-                    (Some(min), None) => format!("int<{}, max>", min),
-                    (None, Some(max)) => format!("int<min, {}>", max),
-                    (Some(min), Some(max)) => format!("int<{}, {}>", min, max),
+                    (Some(min), None) => format!("int<{min}, max>"),
+                    (None, Some(max)) => format!("int<min, {max}>"),
+                    (Some(min), Some(max)) => format!("int<{min}, {max}>"),
                 },
                 ScalarTypeKind::IntegerMask(vec) => {
                     let vec = vec.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
 
-                    format!("int-mask<{}>", vec)
+                    format!("int-mask<{vec}>")
                 }
                 ScalarTypeKind::IntegerMaskOf(string_identifier, string_identifier1) => {
                     format!(
@@ -750,16 +750,12 @@ impl TypeKind {
                             let name = interner.lookup(&property.name);
                             let kind = property.kind.get_key(interner);
 
-                            if property.optional {
-                                format!("{}?: {}", name, kind)
-                            } else {
-                                format!("{}: {}", name, kind)
-                            }
+                            if property.optional { format!("{name}?: {kind}") } else { format!("{name}: {kind}") }
                         })
                         .collect::<Vec<_>>()
                         .join(", ");
 
-                    format!("object{{{}}}", properties)
+                    format!("object{{{properties}}}")
                 }
                 ObjectTypeKind::NamedObject { name, type_parameters } => {
                     let name = interner.lookup(name);
@@ -773,7 +769,7 @@ impl TypeKind {
                             .collect::<Vec<_>>()
                             .join(", ");
 
-                        format!("{}<{}>", name, type_parameters)
+                        format!("{name}<{type_parameters}>")
                     }
                 }
                 ObjectTypeKind::AnonymousObject { span } => {
@@ -790,7 +786,7 @@ impl TypeKind {
                     let send = send.get_key(interner);
                     let r#return = r#return.get_key(interner);
 
-                    format!("Generator<{}, {}, {}, {}>", key, value, send, r#return)
+                    format!("Generator<{key}, {value}, {send}, {return}>")
                 }
                 ObjectTypeKind::Static { .. } => "static".to_string(),
                 ObjectTypeKind::Parent { .. } => "parent".to_string(),
@@ -799,7 +795,7 @@ impl TypeKind {
                     let name = interner.lookup(name);
                     let case = interner.lookup(case);
 
-                    format!("enum({}::{})", name, case)
+                    format!("enum({name}::{case})")
                 }
             },
             TypeKind::Array(array_type_kind) => match &array_type_kind {
@@ -808,15 +804,15 @@ impl TypeKind {
                     let value = value.get_key(interner);
 
                     if *non_empty {
-                        format!("non-empty-array<{}, {}>", key, value)
+                        format!("non-empty-array<{key}, {value}>")
                     } else {
-                        format!("array<{}, {}>", key, value)
+                        format!("array<{key}, {value}>")
                     }
                 }
                 ArrayTypeKind::List { non_empty, value, .. } => {
                     let value = value.get_key(interner);
 
-                    if *non_empty { format!("non-empty-list<{}>", value) } else { format!("list<{}>", value) }
+                    if *non_empty { format!("non-empty-list<{value}>") } else { format!("list<{value}>") }
                 }
                 ArrayTypeKind::CallableArray => "callable-array".to_string(),
                 ArrayTypeKind::Shape(array_shape) => {
@@ -829,11 +825,7 @@ impl TypeKind {
                             if let Some(key) = property.key.as_ref() {
                                 let key = key.get_key(interner);
 
-                                if property.optional {
-                                    format!("{}?: {}", key, kind)
-                                } else {
-                                    format!("{}: {}", key, kind)
-                                }
+                                if property.optional { format!("{key}?: {kind}") } else { format!("{key}: {kind}") }
                             } else {
                                 kind
                             }
@@ -851,11 +843,11 @@ impl TypeKind {
                             let key = key.get_key(interner);
                             let value = value.get_key(interner);
 
-                            properties.push_str(&format!(", ...array<{}: {}>", key, value));
+                            properties.push_str(&format!(", ...array<{key}: {value}>"));
                         }
                     }
 
-                    format!("array{{{}}}", properties)
+                    format!("array{{{properties}}}")
                 }
             },
             TypeKind::Callable(callable_type_kind) => match &callable_type_kind {
@@ -881,12 +873,12 @@ impl TypeKind {
 
                     let templates =
                         templates.iter().map(|template| template.get_key(interner)).collect::<Vec<_>>().join(", ");
-                    let templates = if !templates.is_empty() { format!("<{}>", templates) } else { "".to_string() };
+                    let templates = if !templates.is_empty() { format!("<{templates}>") } else { "".to_string() };
 
                     if *pure {
-                        format!("(pure-callable{}({}): {})", templates, parameters, return_kind)
+                        format!("(pure-callable{templates}({parameters}): {return_kind})")
                     } else {
-                        format!("(callable{}({}): {})", templates, parameters, return_kind)
+                        format!("(callable{templates}({parameters}): {return_kind})")
                     }
                 }
                 CallableTypeKind::Closure { pure, templates, parameters, return_kind } => {
@@ -911,18 +903,18 @@ impl TypeKind {
 
                     let templates =
                         templates.iter().map(|template| template.get_key(interner)).collect::<Vec<_>>().join(", ");
-                    let templates = if !templates.is_empty() { format!("<{}>", templates) } else { "".to_string() };
+                    let templates = if !templates.is_empty() { format!("<{templates}>") } else { "".to_string() };
 
                     if *pure {
-                        format!("(pure-Closure{}({}): {})", templates, parameters, return_kind)
+                        format!("(pure-Closure{templates}({parameters}): {return_kind})")
                     } else {
-                        format!("(Closure{}({}): {})", templates, parameters, return_kind)
+                        format!("(Closure{templates}({parameters}): {return_kind})")
                     }
                 }
             },
             TypeKind::Value(value_type_kind) => match &value_type_kind {
                 ValueTypeKind::String { value, .. } => {
-                    format!("\"{}\"", value)
+                    format!("\"{value}\"")
                 }
                 ValueTypeKind::Integer { value } => value.to_string(),
                 ValueTypeKind::Float { value } => value.to_string(),
@@ -939,22 +931,22 @@ impl TypeKind {
                 let then = then.get_key(interner);
                 let otherwise = otherwise.get_key(interner);
 
-                format!("{} is {} ? {} : {}", parameter, condition, then, otherwise)
+                format!("{parameter} is {condition} ? {then} : {otherwise}")
             }
             TypeKind::KeyOf { kind } => {
                 let kind = kind.get_key(interner);
 
-                format!("key-of<{}>", kind)
+                format!("key-of<{kind}>")
             }
             TypeKind::ValueOf { kind } => {
                 let kind = kind.get_key(interner);
 
-                format!("value-of<{}>", kind)
+                format!("value-of<{kind}>")
             }
             TypeKind::PropertiesOf { kind } => {
                 let kind = kind.get_key(interner);
 
-                format!("properties-of<{}>", kind)
+                format!("properties-of<{kind}>")
             }
             TypeKind::ClassStringMap { key, value_kind } => {
                 let mut template = interner.lookup(&key.name).to_owned();
@@ -964,20 +956,20 @@ impl TypeKind {
 
                 let value_kind = value_kind.get_key(interner);
 
-                format!("class-string-map<{}, {}>", template, value_kind)
+                format!("class-string-map<{template}, {value_kind}>")
             }
             TypeKind::Index { base_kind, index_kind } => {
                 let base_kind = base_kind.get_key(interner);
                 let index_kind = index_kind.get_key(interner);
 
-                format!("{}[{}]", base_kind, index_kind)
+                format!("{base_kind}[{index_kind}]")
             }
             TypeKind::Variable { name } => interner.lookup(name).to_owned(),
             TypeKind::Iterable { key, value } => {
                 let key = key.get_key(interner);
                 let value = value.get_key(interner);
 
-                format!("iterable<{}, {}>", key, value)
+                format!("iterable<{key}, {value}>")
             }
             TypeKind::Void => "void".to_string(),
             TypeKind::Resource => "resource".to_string(),

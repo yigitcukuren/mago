@@ -35,11 +35,10 @@ pub fn check_class_like_constant(
                     .with_annotation(Annotation::primary(modifier.span()))
                     .with_annotations([
                         Annotation::secondary(first_item.span()).with_message(format!(
-                            "{} constant `{}::{}` is declared here.",
-                            class_like_kind, class_like_name, first_item_name
+                            "{class_like_kind} constant `{class_like_name}::{first_item_name}` is declared here."
                         )),
                         Annotation::secondary(class_like_span)
-                            .with_message(format!("{} `{}` is declared here.", class_like_kind, class_like_fqcn)),
+                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` is declared here.")),
                     ]),
                 );
             }
@@ -59,12 +58,10 @@ pub fn check_class_like_constant(
                             .with_annotations([
                                 Annotation::secondary(last_final).with_message("previous `final` modifier"),
                                 Annotation::secondary(first_item.span()).with_message(format!(
-                                    "{} constant `{}::{}` is declared here.",
-                                    class_like_kind, class_like_name, first_item_name
+                                    "{class_like_kind} constant `{class_like_name}::{first_item_name}` is declared here."
                                 )),
                                 Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is declared here.",
-                                    class_like_kind, class_like_fqcn
+                                    "{class_like_kind} `{class_like_fqcn}` is declared here."
                                 )),
                             ]),
                     );
@@ -91,12 +88,10 @@ pub fn check_class_like_constant(
                             .with_annotations([
                                 Annotation::secondary(last_visibility).with_message("previous visibility modifier"),
                                 Annotation::secondary(first_item.span()).with_message(format!(
-                                    "{} constant `{}::{}` is declared here.",
-                                    class_like_kind, class_like_name, first_item_name
+                                    "{class_like_kind} constant `{class_like_name}::{first_item_name}` is declared here."
                                 )),
                                 Annotation::secondary(class_like_span).with_message(format!(
-                                    "{} `{}` is declared here.",
-                                    class_like_kind, class_like_fqcn
+                                    "{class_like_kind} `{class_like_fqcn}` is declared here."
                                 )),
                             ]),
                     );
@@ -122,17 +117,15 @@ pub fn check_class_like_constant(
         if !item.value.is_constant(context.version, false) {
             context.issues.push(
                 Issue::error(format!(
-                    "Constant `{}::{}` value contains a non-constant expression.",
-                    class_like_name, item_name
+                    "Constant `{class_like_name}::{item_name}` value contains a non-constant expression."
                 ))
                 .with_annotation(Annotation::primary(item.value.span()))
                 .with_annotations([
                     Annotation::secondary(item.name.span()).with_message(format!(
-                        "{} constant `{}::{}` is declared here.",
-                        class_like_kind, class_like_name, item_name
+                        "{class_like_kind} constant `{class_like_name}::{item_name}` is declared here."
                     )),
                     Annotation::secondary(class_like_span)
-                        .with_message(format!("{} `{}` is declared here.", class_like_kind, class_like_fqcn)),
+                        .with_message(format!("{class_like_kind} `{class_like_fqcn}` is declared here.")),
                 ]),
             );
         }

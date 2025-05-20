@@ -53,10 +53,10 @@ impl Rule for LowercaseKeywordRule {
         let name = context.lookup(&keyword.value);
         let lowered = name.to_ascii_lowercase();
         if !lowered.eq(&name) {
-            let issue = Issue::new(context.level(), format!("Keyword `{}` should be in lowercase.", name))
+            let issue = Issue::new(context.level(), format!("Keyword `{name}` should be in lowercase."))
                 .with_annotation(Annotation::primary(keyword.span()))
-                .with_note(format!("The keyword `{}` does not follow lowercase convention.", name))
-                .with_help(format!("Consider using `{}` instead of `{}`.", lowered, name));
+                .with_note(format!("The keyword `{name}` does not follow lowercase convention."))
+                .with_help(format!("Consider using `{lowered}` instead of `{name}`."));
 
             context.propose(issue, |p| p.replace(keyword.span.to_range(), lowered, SafetyClassification::Safe));
         }

@@ -48,7 +48,7 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
                 for item in &typed_use_item_list.items.nodes {
                     let item_name_id = item.name.value();
                     let item_name = context.interner.lookup(item_name_id);
-                    let full_name = format!("{}\\{}", prefix, item_name);
+                    let full_name = format!("{prefix}\\{item_name}");
 
                     if context.query.matches(&full_name) {
                         let full_name_id = context.interner.intern(&full_name);
@@ -68,7 +68,7 @@ impl<'a> Walker<Context<'a>> for ReferenceFindingWalker {
                 for maybe_typed_item in &mixed_use_item_list.items.nodes {
                     let item_name_id = maybe_typed_item.item.name.value();
                     let item_name = context.interner.lookup(item_name_id);
-                    let full_name = format!("{}\\{}", prefix, item_name);
+                    let full_name = format!("{prefix}\\{item_name}");
 
                     if context.query.matches(&full_name) {
                         let full_name_id = context.interner.intern(&full_name);

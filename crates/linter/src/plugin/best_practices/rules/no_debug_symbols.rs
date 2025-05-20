@@ -31,10 +31,10 @@ impl Rule for NoDebugSymbolsRule {
         let function_name = context.resolve_function_name(function_identifier);
 
         if DEBUG_FUNCTIONS.contains(&function_name) {
-            let issue = Issue::new(context.level(), format!("Usage of debug function `{}` detected.", function_name))
+            let issue = Issue::new(context.level(), format!("Usage of debug function `{function_name}` detected."))
                 .with_annotation(
                     Annotation::primary(function_call.span())
-                        .with_message(format!("Function `{}` is called here.", function_name)),
+                        .with_message(format!("Function `{function_name}` is called here.")),
                 )
                 .with_note("Avoid using debug functions like `var_dump`, `print_r`, etc. in production code.")
                 .with_help("Remove the debug function call.");

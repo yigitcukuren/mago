@@ -59,10 +59,10 @@ impl Rule for NoBooleanLiteralComparisonRule {
                     let literal = if value { "true" } else { "false" };
 
                     let issue =
-                        Issue::new(context.level(), format!("Avoid comparing the boolean literal `{}`.", literal))
+                        Issue::new(context.level(), format!("Avoid comparing the boolean literal `{literal}`."))
                             .with_annotation(
                                 Annotation::primary(binary.lhs.span())
-                                    .with_message(format!("Boolean literal `{}` is used here.", literal)),
+                                    .with_message(format!("Boolean literal `{literal}` is used here.")),
                             )
                             .with_annotation(
                                 Annotation::secondary(binary.span())
@@ -78,10 +78,10 @@ impl Rule for NoBooleanLiteralComparisonRule {
                     let literal = if value { "true" } else { "false" };
 
                     let issue =
-                        Issue::new(context.level(), format!("Avoid comparing the boolean literal `{}`.", literal))
+                        Issue::new(context.level(), format!("Avoid comparing the boolean literal `{literal}`."))
                             .with_annotation(
                                 Annotation::primary(binary.rhs.span())
-                                    .with_message(format!("Boolean literal `{}` is used here.", literal)),
+                                    .with_message(format!("Boolean literal `{literal}` is used here.")),
                             )
                             .with_annotation(
                                 Annotation::secondary(binary.span())

@@ -323,7 +323,7 @@ mod tests {
 
         match result {
             Ok(document) => {
-                panic!("Expected the parser to return an error, got {:#?}", document);
+                panic!("Expected the parser to return an error, got {document:#?}");
             }
             Err(ParseError::UnclosedCodeBlock(error_span)) => {
                 let code_block_start = phpdoc.find("```").unwrap();

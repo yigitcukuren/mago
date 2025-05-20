@@ -88,15 +88,15 @@ impl Rule for RequirePropertyTypeRule {
                 let name = context.lookup(&variable.name);
 
                 context.report(
-                    Issue::new(context.level(), format!("Property `{}` is missing a type hint.", name))
+                    Issue::new(context.level(), format!("Property `{name}` is missing a type hint."))
                         .with_annotation(
                             Annotation::primary(property.span())
-                                .with_message(format!("Property `{}` is declared here.", name)),
+                                .with_message(format!("Property `{name}` is declared here.")),
                         )
                         .with_note(
                             "Adding a type hint to properties improves code readability and helps prevent type errors.",
                         )
-                        .with_help(format!("Consider specifying a type hint for `{}`.", name)),
+                        .with_help(format!("Consider specifying a type hint for `{name}`.")),
                 );
             }
         }

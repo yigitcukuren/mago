@@ -143,7 +143,7 @@ mod tests {
                 assert_eq!(tokens.len(), 0);
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -158,7 +158,7 @@ mod tests {
                 assert_eq!(tokens.len(), 0);
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -180,7 +180,7 @@ mod tests {
                 assert!(comment[span.start.offset..span.end.offset].eq(*content));
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -198,7 +198,7 @@ mod tests {
                 // Expected
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -216,7 +216,7 @@ mod tests {
                 // Expected
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -248,7 +248,7 @@ mod tests {
                 }
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -301,7 +301,7 @@ mod tests {
                 }
             }
             Err(e) => {
-                panic!("Error parsing comment: {:?}", e);
+                panic!("Error parsing comment: {e:?}");
             }
         }
     }
@@ -324,7 +324,7 @@ mod tests {
                 // Correctly identified inconsistent indentation
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
     }
@@ -347,7 +347,7 @@ mod tests {
                 // Correctly identified missing asterisk
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
     }
@@ -370,7 +370,7 @@ mod tests {
                 // Correctly identified missing whitespace after asterisk
             }
             Err(e) => {
-                panic!("Unexpected error: {:?}", e);
+                panic!("Unexpected error: {e:?}");
             }
         }
     }

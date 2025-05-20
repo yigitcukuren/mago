@@ -55,7 +55,7 @@ fn test_interner_multithreaded() {
                     interner.intern("cherry"),
                     interner.intern("coconut"),
                     interner.intern("durian"),
-                    interner.intern(format!("hello-{}", i)),
+                    interner.intern(format!("hello-{i}")),
                 )
             }
         }));
@@ -70,7 +70,7 @@ fn test_interner_multithreaded() {
         assert_eq!(interner.lookup(&set.2), "cherry");
         assert_eq!(interner.lookup(&set.3), "coconut");
         assert_eq!(interner.lookup(&set.4), "durian");
-        assert_eq!(interner.lookup(&set.5), format!("hello-{}", index));
+        assert_eq!(interner.lookup(&set.5), format!("hello-{index}"));
 
         sets.push((set.0, set.1, set.2, set.3, set.4));
     }

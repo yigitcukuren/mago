@@ -48,15 +48,15 @@ impl Rule for EnumRule {
 
         if !mago_casing::is_class_case(name) {
             context.report(
-                Issue::new(context.level(), format!("Enum name `{}` should be in class case.", name))
+                Issue::new(context.level(), format!("Enum name `{name}` should be in class case."))
                     .with_annotation(
                         Annotation::primary(r#enum.name.span())
-                            .with_message(format!("Enum `{}` is declared here.", name)),
+                            .with_message(format!("Enum `{name}` is declared here.")),
                     )
                     .with_annotation(
-                        Annotation::secondary(r#enum.span()).with_message(format!("Enum `{}` is defined here.", fqcn)),
+                        Annotation::secondary(r#enum.span()).with_message(format!("Enum `{fqcn}` is defined here.")),
                     )
-                    .with_note(format!("The enum name `{}` does not follow class naming convention.", name))
+                    .with_note(format!("The enum name `{name}` does not follow class naming convention."))
                     .with_help(format!(
                         "Consider renaming it to `{}` to adhere to the naming convention.",
                         mago_casing::to_class_case(name)

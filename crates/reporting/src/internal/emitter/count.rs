@@ -40,7 +40,7 @@ pub fn count_format(
         writer.set_color(spec.set_fg(Some(color)).set_bold(true))?;
         write!(writer, "{level}: ")?;
         writer.set_color(spec.set_bold(false))?;
-        writeln!(writer, "{}", count)?;
+        writeln!(writer, "{count}")?;
         writer.reset()?;
     }
 

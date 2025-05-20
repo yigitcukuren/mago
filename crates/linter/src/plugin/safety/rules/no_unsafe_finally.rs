@@ -59,7 +59,7 @@ impl Rule for NoUnsafeFinallyRule {
             let issue = Issue::new(context.level(), "Unsafe control flow in finally block.")
                 .with_annotation(
                     Annotation::primary(control_flow.span())
-                        .with_message(format!("Control flow statement `{}` in `finally` block.", kind)),
+                        .with_message(format!("Control flow statement `{kind}` in `finally` block.")),
                 )
                 .with_annotation(
                     Annotation::secondary(r#try.span())

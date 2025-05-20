@@ -543,5 +543,5 @@ fn write_configuration_if_confirmed(
 ///
 /// A string of quoted, comma-separated values
 fn quote_format_strings(items: Vec<String>) -> String {
-    items.iter().filter(|p| !p.is_empty()).map(|p| format!("\"{}\"", p)).collect::<Vec<_>>().join(", ")
+    items.iter().filter(|p| !p.is_empty()).map(|p| format!("\"{p}\"")).collect::<Vec<_>>().join(", ")
 }

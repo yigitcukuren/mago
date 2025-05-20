@@ -153,11 +153,10 @@ impl Rule for AssertionsStyleRule {
             let issue = Issue::new(context.level(), "Inconsistent assertions style.")
                 .with_annotation(
                     Annotation::primary(reference.span())
-                        .with_message(format!("This assertion uses the `{}` style.", current_syntax)),
+                        .with_message(format!("This assertion uses the `{current_syntax}` style.")),
                 )
                 .with_help(format!(
-                    "Use `{}` instead of `{}` to conform to the `{}` style.",
-                    desired_syntax, current_syntax, desired_style,
+                    "Use `{desired_syntax}` instead of `{current_syntax}` to conform to the `{desired_style}` style.",
                 ));
 
             context.propose(issue, |plan| {

@@ -49,8 +49,8 @@ impl std::fmt::Display for IntRangeType<'_> {
 impl std::fmt::Display for LiteralIntOrKeyword<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LiteralIntOrKeyword::LiteralInt(literal) => write!(f, "{}", literal),
-            LiteralIntOrKeyword::Keyword(keyword) => write!(f, "{}", keyword),
+            LiteralIntOrKeyword::LiteralInt(literal) => write!(f, "{literal}"),
+            LiteralIntOrKeyword::Keyword(keyword) => write!(f, "{keyword}"),
         }
     }
 }

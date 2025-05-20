@@ -44,7 +44,7 @@ pub fn emacs_format(
 
         let issue_type = issue.code.as_deref().unwrap_or("other");
 
-        writeln!(writer, "{}:{}:{}:{} - {}: {}", file_path, line, column, severity, issue_type, message)?;
+        writeln!(writer, "{file_path}:{line}:{column}:{severity} - {issue_type}: {message}")?;
     }
 
     Ok(highest_level)

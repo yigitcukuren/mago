@@ -83,14 +83,14 @@ impl Rule for InterfaceRule {
 
         if !mago_casing::is_class_case(name) {
             issues.push(
-                Issue::new(context.level(), format!("Interface name `{}` should be in class case.", name))
+                Issue::new(context.level(), format!("Interface name `{name}` should be in class case."))
                     .with_annotations([
                         Annotation::primary(interface.name.span())
-                            .with_message(format!("Interface `{}` is declared here.", name)),
+                            .with_message(format!("Interface `{name}` is declared here.")),
                         Annotation::secondary(interface.span())
-                            .with_message(format!("Interface `{}` is defined here.", fqcn)),
+                            .with_message(format!("Interface `{fqcn}` is defined here.")),
                     ])
-                    .with_note(format!("The interface name `{}` does not follow class naming convention.", name))
+                    .with_note(format!("The interface name `{name}` does not follow class naming convention."))
                     .with_help(format!(
                         "Consider renaming it to `{}` to adhere to the naming convention.",
                         mago_casing::to_class_case(name)
@@ -100,17 +100,16 @@ impl Rule for InterfaceRule {
 
         if context.option(PSR).and_then(|o| o.as_bool()).unwrap_or(PSR_DEFAULT) && !name.ends_with("Interface") {
             issues.push(
-                Issue::new(context.level(), format!("interface name `{}` should be suffixed with `Interface`.", name))
+                Issue::new(context.level(), format!("interface name `{name}` should be suffixed with `Interface`."))
                     .with_annotations([
                         Annotation::primary(interface.name.span())
-                            .with_message(format!("Interface `{}` is declared here.", name)),
+                            .with_message(format!("Interface `{name}` is declared here.")),
                         Annotation::secondary(interface.span())
-                            .with_message(format!("Interface `{}` is defined here.", fqcn)),
+                            .with_message(format!("Interface `{fqcn}` is defined here.")),
                     ])
-                    .with_note(format!("The interface name `{}` does not follow PSR naming convention.", name))
+                    .with_note(format!("The interface name `{name}` does not follow PSR naming convention."))
                     .with_help(format!(
-                        "Consider renaming it to `{}Interface` to adhere to the naming convention.",
-                        name
+                        "Consider renaming it to `{name}Interface` to adhere to the naming convention."
                     )),
             );
         }

@@ -38,7 +38,7 @@ impl std::fmt::Display for ConditionalType<'_> {
             "{} {}{} {} ? {} : {}",
             self.subject,
             self.is,
-            self.not.as_ref().map(|k| format!(" {}", k)).unwrap_or_default(),
+            self.not.as_ref().map(|k| format!(" {k}")).unwrap_or_default(),
             self.target,
             self.then,
             self.otherwise

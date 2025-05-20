@@ -106,12 +106,12 @@ impl Rule for DisallowedFunctionsRule {
         // Check if the function is disallowed
         if let Some(disallowed_functions) = context.option(FUNCTIONS).and_then(|o| o.as_array()) {
             if disallowed_functions.iter().any(|f| f.as_str().is_some_and(|f| f.eq_ignore_ascii_case(function_name))) {
-                let issue = Issue::new(context.level(), format!("Function `{}` is disallowed.", function_name))
+                let issue = Issue::new(context.level(), format!("Function `{function_name}` is disallowed."))
                     .with_annotation(
                         Annotation::primary(function_call.span())
-                            .with_message(format!("Function `{}` is called here.`", function_name)),
+                            .with_message(format!("Function `{function_name}` is called here.`")),
                     )
-                    .with_note(format!("The function `{}` is disallowed by your project configuration.", function_name))
+                    .with_note(format!("The function `{function_name}` is disallowed by your project configuration."))
                     .with_help("Use an alternative function or modify the configuration to allow this function.");
 
                 context.report(issue);
@@ -136,15 +136,14 @@ impl Rule for DisallowedFunctionsRule {
             if disallowed_extensions.iter().any(|e| e.as_str().is_some_and(|e| e.eq(extension))) {
                 let issue = Issue::new(
                     context.level(),
-                    format!("Function `{}` from the `{}` extension is disallowed.", function_name, extension),
+                    format!("Function `{function_name}` from the `{extension}` extension is disallowed."),
                 )
                 .with_annotation(
                     Annotation::primary(function_call.span())
-                        .with_message(format!("Function `{}` is called here.", function_name)),
+                        .with_message(format!("Function `{function_name}` is called here.")),
                 )
                 .with_note(format!(
-                    "Functions from the `{}` extension are disallowed by your project configuration.",
-                    extension
+                    "Functions from the `{extension}` extension are disallowed by your project configuration."
                 ))
                 .with_help("Use an alternative function or modify the configuration to allow this extension.");
 

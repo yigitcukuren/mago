@@ -57,16 +57,16 @@ impl Rule for NoFunctionAliasesRule {
 
         if let Some(original_name) = original_name {
             // Build the diagnostic message
-            let issue = Issue::new(context.level(), format!("Function alias `{}` should not be used.", function_name))
+            let issue = Issue::new(context.level(), format!("Function alias `{function_name}` should not be used."))
                 .with_annotation(
                     Annotation::primary(identifier.span())
-                        .with_message(format!("This function is an alias of `{}`.", original_name)),
+                        .with_message(format!("This function is an alias of `{original_name}`.")),
                 )
-                .with_note(format!("The function `{}` is an alias of `{}`.", function_name, original_name))
-                .with_help(format!("Consider using the function `{}` instead.", original_name));
+                .with_note(format!("The function `{function_name}` is an alias of `{original_name}`."))
+                .with_help(format!("Consider using the function `{original_name}` instead."));
 
             context.propose(issue, |p| {
-                p.replace(identifier.span().into(), format!("\\{}", original_name), SafetyClassification::Safe)
+                p.replace(identifier.span().into(), format!("\\{original_name}"), SafetyClassification::Safe)
             });
         }
 

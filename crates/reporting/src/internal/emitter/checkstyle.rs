@@ -43,10 +43,8 @@ pub fn checkstyle_format(
         };
 
         let message = xml_encode(long_message(issue));
-        let error_tag = format!(
-            "    <error line=\"{}\" column=\"{}\" severity=\"{}\" message=\"{}\" />",
-            line, column, severity, message
-        );
+        let error_tag =
+            format!("    <error line=\"{line}\" column=\"{column}\" severity=\"{severity}\" message=\"{message}\" />");
 
         issues_by_file.entry(filename).or_default().push(error_tag);
     }
@@ -59,7 +57,7 @@ pub fn checkstyle_format(
     for (filename, errors) in issues_by_file {
         writeln!(writer, "  <file name=\"{}\">", xml_encode(&filename))?;
         for error in errors {
-            writeln!(writer, "{}", error)?;
+            writeln!(writer, "{error}")?;
         }
 
         writeln!(writer, "  </file>")?;

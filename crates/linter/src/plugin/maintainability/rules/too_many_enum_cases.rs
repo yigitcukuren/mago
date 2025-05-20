@@ -49,8 +49,7 @@ impl Rule for TooManyEnumCasesRule {
             let issue =
                 Issue::new(context.level(), "Enum has too many cases.")
                     .with_annotation(Annotation::primary(r#enum.span()).with_message(format!(
-                        "Enum has {} cases, which exceeds the threshold of {}.",
-                        cases, threshold
+                        "Enum has {cases} cases, which exceeds the threshold of {threshold}."
                     )))
                     .with_note("Large enums can be difficult to read, reason about, or maintain.")
                     .with_help(
