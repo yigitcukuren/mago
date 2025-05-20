@@ -155,12 +155,13 @@ pub fn could_expand_value(
         Expression::Array(expr) => !expr.elements.is_empty(),
         Expression::LegacyArray(expr) => !expr.elements.is_empty(),
         Expression::List(expr) => !expr.elements.is_empty(),
+        Expression::AnonymousClass(_) => true,
         Expression::Closure(_) => true,
         Expression::Match(m) => !m.arms.is_empty(),
         Expression::Binary(operation) => could_expand_value(f, &operation.lhs, arrow_chain_recursion, nested_args),
         Expression::ArrowFunction(arrow_function) if !arrow_chain_recursion => match arrow_function.expression.as_ref()
         {
-            Expression::Array(_) | Expression::List(_) | Expression::LegacyArray(_) => {
+            Expression::Array(_) | Expression::List(_) | Expression::AnonymousClass(_) | Expression::LegacyArray(_) => {
                 could_expand_value(f, &arrow_function.expression, true, nested_args)
             }
             Expression::Call(_) | Expression::Conditional(_) => true,
