@@ -173,7 +173,10 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
 
     #[inline]
     pub fn span(&self, from: Position) -> Span {
-        self.last_span().map_or(Span::new(from, from), |span| Span::new(from, span.end))
+        match (self.first_span(), self.last_span()) {
+            (Some(first), Some(last)) => Span::new(first.start, last.end),
+            _ => Span::new(from, from),
+        }
     }
 
     #[inline]

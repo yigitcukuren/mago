@@ -110,6 +110,31 @@ pub struct ForeachColonDelimitedBody {
     pub terminator: Terminator,
 }
 
+impl ForeachTarget {
+    pub fn key(&self) -> Option<&Expression> {
+        match self {
+            ForeachTarget::Value(_) => None,
+            ForeachTarget::KeyValue(key_value) => Some(&key_value.key),
+        }
+    }
+
+    pub fn value(&self) -> &Expression {
+        match self {
+            ForeachTarget::Value(value) => &value.value,
+            ForeachTarget::KeyValue(key_value) => &key_value.value,
+        }
+    }
+}
+
+impl ForeachBody {
+    pub fn statements(&self) -> &[Statement] {
+        match self {
+            ForeachBody::Statement(statement) => std::slice::from_ref(statement),
+            ForeachBody::ColonDelimited(body) => body.statements.as_slice(),
+        }
+    }
+}
+
 impl HasSpan for Foreach {
     fn span(&self) -> Span {
         self.foreach.span().join(self.body.span())

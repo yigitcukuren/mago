@@ -103,6 +103,11 @@ impl UnaryPrefixOperator {
     }
 
     #[inline]
+    pub const fn is_increment_or_decrement(&self) -> bool {
+        matches!(self, Self::PreIncrement(_) | Self::PreDecrement(_))
+    }
+
+    #[inline]
     pub const fn is_not(&self) -> bool {
         matches!(self, Self::Not(_))
     }

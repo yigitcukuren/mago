@@ -115,6 +115,11 @@ impl BinaryOperator {
     }
 
     #[inline(always)]
+    pub const fn is_identity(&self) -> bool {
+        matches!(self, Self::Identical(_) | Self::NotIdentical(_))
+    }
+
+    #[inline(always)]
     pub const fn is_comparison(&self) -> bool {
         matches!(
             self,
@@ -134,6 +139,11 @@ impl BinaryOperator {
     #[inline(always)]
     pub const fn is_logical(&self) -> bool {
         matches!(self, Self::And(_) | Self::Or(_) | Self::LowAnd(_) | Self::LowOr(_) | Self::LowXor(_))
+    }
+
+    #[inline(always)]
+    pub const fn is_low_precedence(&self) -> bool {
+        matches!(self, Self::LowAnd(_) | Self::LowOr(_) | Self::LowXor(_))
     }
 
     #[inline(always)]

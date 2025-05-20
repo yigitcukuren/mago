@@ -65,6 +65,16 @@ pub struct WhileColonDelimitedBody {
     pub terminator: Terminator,
 }
 
+impl WhileBody {
+    #[inline]
+    pub fn statements(&self) -> &[Statement] {
+        match self {
+            WhileBody::Statement(statement) => std::slice::from_ref(statement),
+            WhileBody::ColonDelimited(body) => body.statements.as_slice(),
+        }
+    }
+}
+
 impl HasSpan for While {
     fn span(&self) -> Span {
         self.r#while.span().join(self.body.span())

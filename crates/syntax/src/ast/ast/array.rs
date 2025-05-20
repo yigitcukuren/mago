@@ -161,6 +161,48 @@ pub struct MissingArrayElement {
     pub comma: Span,
 }
 
+impl ArrayElement {
+    #[inline]
+    pub const fn is_variadic(&self) -> bool {
+        matches!(self, ArrayElement::Variadic(_))
+    }
+
+    #[inline]
+    pub const fn is_missing(&self) -> bool {
+        matches!(self, ArrayElement::Missing(_))
+    }
+
+    #[inline]
+    pub const fn is_key_value(&self) -> bool {
+        matches!(self, ArrayElement::KeyValue(_))
+    }
+
+    #[inline]
+    pub const fn is_value(&self) -> bool {
+        matches!(self, ArrayElement::Value(_))
+    }
+
+    #[inline]
+    pub fn get_key(&self) -> Option<&Expression> {
+        match self {
+            ArrayElement::KeyValue(element) => Some(&element.key),
+            ArrayElement::Value(_) => None,
+            ArrayElement::Variadic(_) => None,
+            ArrayElement::Missing(_) => None,
+        }
+    }
+
+    #[inline]
+    pub fn get_value(&self) -> Option<&Expression> {
+        match self {
+            ArrayElement::KeyValue(element) => Some(&element.value),
+            ArrayElement::Value(element) => Some(&element.value),
+            ArrayElement::Variadic(element) => Some(&element.value),
+            ArrayElement::Missing(_) => None,
+        }
+    }
+}
+
 impl HasSpan for ArrayAccess {
     fn span(&self) -> Span {
         self.array.span().join(self.right_bracket)

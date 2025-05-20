@@ -8,8 +8,7 @@ use crate::parser::internal::token_stream::TokenStream;
 use crate::parser::internal::utils;
 
 pub fn parse_optional_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<Option<ArgumentList>, ParseError> {
-    let next = utils::peek(stream)?;
-    if next.kind == T!["("] { Ok(Some(parse_argument_list(stream)?)) } else { Ok(None) }
+    if utils::peek(stream)?.kind == T!["("] { Ok(Some(parse_argument_list(stream)?)) } else { Ok(None) }
 }
 
 pub fn parse_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<ArgumentList, ParseError> {
@@ -41,15 +40,12 @@ pub fn parse_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<ArgumentL
 }
 
 pub fn parse_argument(stream: &mut TokenStream<'_, '_>) -> Result<Argument, ParseError> {
-    let token = utils::peek(stream)?;
-
-    if token.kind.is_identifier_maybe_reserved()
+    if utils::peek(stream)?.kind.is_identifier_maybe_reserved()
         && matches!(utils::maybe_peek_nth(stream, 1)?.map(|token| token.kind), Some(T![":"]))
     {
         return Ok(Argument::Named(NamedArgument {
             name: identifier::parse_local_identifier(stream)?,
-            colon: utils::expect(stream, T![":"])?.span,
-            ellipsis: utils::maybe_expect(stream, T!["..."])?.map(|token| token.span),
+            colon: utils::expect_any(stream)?.span,
             value: expression::parse_expression(stream)?,
         }));
     }

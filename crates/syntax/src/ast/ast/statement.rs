@@ -138,6 +138,11 @@ impl Statement {
     pub const fn is_loop(&self) -> bool {
         matches!(self, Statement::For(_) | Statement::Foreach(_) | Statement::While(_) | Statement::DoWhile(_))
     }
+
+    #[inline]
+    pub const fn is_noop(&self) -> bool {
+        matches!(self, Statement::Noop(_))
+    }
 }
 
 impl HasSpan for ExpressionStatement {

@@ -66,6 +66,16 @@ pub struct ForColonDelimitedBody {
     pub terminator: Terminator,
 }
 
+impl ForBody {
+    #[inline]
+    pub fn statements(&self) -> &[Statement] {
+        match self {
+            ForBody::Statement(statement) => std::slice::from_ref(statement),
+            ForBody::ColonDelimited(body) => body.statements.as_slice(),
+        }
+    }
+}
+
 impl HasSpan for For {
     fn span(&self) -> Span {
         self.r#for.span().join(self.body.span())

@@ -319,7 +319,7 @@ generate_ast_walker! {
     Attribute as attribute => {
         walker.walk_identifier(&attribute.name, context);
 
-        if let Some(argument_list) = &attribute.arguments {
+        if let Some(argument_list) = &attribute.argument_list {
             walker.walk_argument_list(argument_list, context);
         }
     }

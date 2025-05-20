@@ -26,7 +26,7 @@ pub struct AttributeList {
 #[repr(C)]
 pub struct Attribute {
     pub name: Identifier,
-    pub arguments: Option<ArgumentList>,
+    pub argument_list: Option<ArgumentList>,
 }
 
 impl HasSpan for AttributeList {
@@ -37,7 +37,7 @@ impl HasSpan for AttributeList {
 
 impl HasSpan for Attribute {
     fn span(&self) -> Span {
-        if let Some(arguments) = &self.arguments {
+        if let Some(arguments) = &self.argument_list {
             Span::between(self.name.span(), arguments.span())
         } else {
             self.name.span()

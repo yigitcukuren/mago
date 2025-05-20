@@ -145,8 +145,7 @@ impl Expression {
                                         && positional_argument.value.is_constant(version, initilization)
                                 }
                                 Argument::Named(named_argument) => {
-                                    named_argument.ellipsis.is_none()
-                                        && named_argument.value.is_constant(version, initilization)
+                                    named_argument.value.is_constant(version, initilization)
                                 }
                             })
                         })
@@ -247,6 +246,17 @@ impl Expression {
             expression.expression.is_string_literal()
         } else {
             matches!(&self, Expression::Literal(Literal::String(_)))
+        }
+    }
+
+    #[inline]
+    pub fn get_array_like_elements(&self) -> Option<&[ArrayElement]> {
+        match self {
+            Expression::Parenthesized(expression) => expression.expression.get_array_like_elements(),
+            Expression::Array(array) => Some(array.elements.as_slice()),
+            Expression::LegacyArray(array) => Some(array.elements.as_slice()),
+            Expression::List(list) => Some(list.elements.as_slice()),
+            _ => None,
         }
     }
 

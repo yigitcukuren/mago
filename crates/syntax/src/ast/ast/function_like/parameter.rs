@@ -58,6 +58,16 @@ impl FunctionLikeParameter {
     pub fn is_promoted_property(&self) -> bool {
         !self.modifiers.is_empty() || self.hooks.is_some()
     }
+
+    #[inline]
+    pub const fn is_variadic(&self) -> bool {
+        self.ellipsis.is_some()
+    }
+
+    #[inline]
+    pub const fn is_reference(&self) -> bool {
+        self.ampersand.is_some()
+    }
 }
 
 impl HasSpan for FunctionLikeParameterList {

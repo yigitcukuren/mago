@@ -812,7 +812,7 @@ impl<'a> Node<'a> {
             Node::VariadicArrayElement(node) => vec![Node::Expression(&node.value)],
             Node::Attribute(node) => {
                 let mut children = vec![Node::Identifier(&node.name)];
-                if let Some(arguments) = &node.arguments {
+                if let Some(arguments) = &node.argument_list {
                     children.push(Node::ArgumentList(arguments));
                 }
 

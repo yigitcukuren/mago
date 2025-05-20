@@ -44,6 +44,11 @@ impl TriviaKind {
     }
 
     #[inline]
+    pub const fn is_docblock(&self) -> bool {
+        matches!(self, TriviaKind::DocBlockComment)
+    }
+
+    #[inline]
     pub const fn is_block_comment(&self) -> bool {
         matches!(self, TriviaKind::MultiLineComment | TriviaKind::DocBlockComment)
     }

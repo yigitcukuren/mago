@@ -53,6 +53,6 @@ pub fn parse_attribute_list(stream: &mut TokenStream<'_, '_>) -> Result<Attribut
 pub fn parse_attribute(stream: &mut TokenStream<'_, '_>) -> Result<Attribute, ParseError> {
     Ok(Attribute {
         name: identifier::parse_identifier(stream)?,
-        arguments: argument::parse_optional_argument_list(stream)?,
+        argument_list: argument::parse_optional_argument_list(stream)?,
     })
 }

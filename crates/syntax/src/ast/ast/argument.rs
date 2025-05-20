@@ -47,7 +47,6 @@ pub struct PositionalArgument {
 pub struct NamedArgument {
     pub name: LocalIdentifier,
     pub colon: Span,
-    pub ellipsis: Option<Span>,
     pub value: Expression,
 }
 
@@ -57,7 +56,16 @@ impl Argument {
         matches!(self, Argument::Positional(_))
     }
 
-    pub fn value(&self) -> &Expression {
+    #[inline]
+    pub const fn is_unpacked(&self) -> bool {
+        match self {
+            Argument::Positional(arg) => arg.ellipsis.is_some(),
+            Argument::Named(_) => false,
+        }
+    }
+
+    #[inline]
+    pub const fn value(&self) -> &Expression {
         match self {
             Argument::Positional(arg) => &arg.value,
             Argument::Named(arg) => &arg.value,
