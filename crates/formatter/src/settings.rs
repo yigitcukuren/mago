@@ -1298,11 +1298,11 @@ pub struct FormatSettings {
 
     /// Whether to add an empty line before return statements.
     ///
-    /// Default: true
+    /// Default: false
     #[serde(default = "default_false")]
     pub empty_line_before_return: bool,
 
-    /// Whether to add an empty line before return statements.
+    /// Whether to add an empty line before dangling comments.
     ///
     /// Default: true
     #[serde(default = "default_true")]
