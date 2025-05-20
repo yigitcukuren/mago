@@ -24,3 +24,9 @@ impl<'input> From<TypeToken<'input>> for Identifier<'input> {
         Identifier { span: token.span, value: token.value }
     }
 }
+
+impl std::fmt::Display for Identifier<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}

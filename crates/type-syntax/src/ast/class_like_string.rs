@@ -69,3 +69,43 @@ impl HasSpan for TraitStringType<'_> {
         }
     }
 }
+
+impl std::fmt::Display for ClassStringType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameter) = &self.parameter {
+            write!(f, "{}<{}>", self.keyword, parameter)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for InterfaceStringType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameter) = &self.parameter {
+            write!(f, "{}<{}>", self.keyword, parameter)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for EnumStringType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameter) = &self.parameter {
+            write!(f, "{}<{}>", self.keyword, parameter)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for TraitStringType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameter) = &self.parameter {
+            write!(f, "{}<{}>", self.keyword, parameter)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}

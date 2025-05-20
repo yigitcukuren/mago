@@ -27,3 +27,9 @@ impl<'input> From<TypeToken<'input>> for VariableType<'input> {
         VariableType { span: token.span, value: token.value }
     }
 }
+
+impl std::fmt::Display for VariableType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}

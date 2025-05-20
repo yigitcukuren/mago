@@ -238,8 +238,8 @@ mod tests {
 
         let field = &shape.fields[0];
         assert!(matches!(
-            field.key.as_ref(),
-            Type::LiteralString(LiteralStringType { raw: "'name'", value: "name", .. })
+            field.key.as_ref().map(|k| k.name.as_ref()),
+            Some(Type::LiteralString(LiteralStringType { raw: "'name'", value: "name", .. }))
         ));
         assert!(matches!(field.value.as_ref(), Type::String(_)));
     }
@@ -250,10 +250,16 @@ mod tests {
             Ok(Type::Shape(shape)) => {
                 assert_eq!(shape.fields.len(), 2);
                 let first_field = &shape.fields[0];
-                assert!(matches!(first_field.key.as_ref(), Type::LiteralInt(LiteralIntType { value: 0, .. })));
+                assert!(matches!(
+                    first_field.key.as_ref().map(|k| k.name.as_ref()),
+                    Some(Type::LiteralInt(LiteralIntType { value: 0, .. }))
+                ));
                 assert!(matches!(first_field.value.as_ref(), Type::String(_)));
                 let second_field = &shape.fields[1];
-                assert!(matches!(second_field.key.as_ref(), Type::LiteralInt(LiteralIntType { value: 1, .. })));
+                assert!(matches!(
+                    second_field.key.as_ref().map(|k| k.name.as_ref()),
+                    Some(Type::LiteralInt(LiteralIntType { value: 1, .. }))
+                ));
                 assert!(matches!(second_field.value.as_ref(), Type::Bool(_)));
             }
             res => panic!("Expected Ok(Type::Shape), got {:?}", res),
@@ -265,9 +271,9 @@ mod tests {
         match do_parse("array{name: string, age?: int, address: string}") {
             Ok(Type::Shape(shape)) => {
                 assert_eq!(shape.fields.len(), 3);
-                assert!(shape.fields[0].question_mark.is_none());
-                assert!(shape.fields[1].question_mark.is_some());
-                assert!(shape.fields[2].question_mark.is_none());
+                assert!(!shape.fields[0].is_optional());
+                assert!(shape.fields[1].is_optional());
+                assert!(!shape.fields[2].is_optional());
             }
             res => panic!("Expected Ok(Type::Shape), got {:?}", res),
         }

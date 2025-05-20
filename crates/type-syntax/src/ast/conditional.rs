@@ -30,3 +30,18 @@ impl HasSpan for ConditionalType<'_> {
         self.subject.span().join(self.otherwise.span())
     }
 }
+
+impl std::fmt::Display for ConditionalType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {}{} {} ? {} : {}",
+            self.subject,
+            self.is,
+            self.not.as_ref().map(|k| format!(" {}", k)).unwrap_or_default(),
+            self.target,
+            self.then,
+            self.otherwise
+        )
+    }
+}

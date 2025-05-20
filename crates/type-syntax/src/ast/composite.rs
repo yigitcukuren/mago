@@ -59,3 +59,27 @@ impl HasSpan for NullableType<'_> {
         self.question_mark.join(self.inner.span())
     }
 }
+
+impl std::fmt::Display for ParenthesizedType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({})", self.inner)
+    }
+}
+
+impl std::fmt::Display for UnionType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} | {}", self.left, self.right)
+    }
+}
+
+impl std::fmt::Display for IntersectionType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} & {}", self.left, self.right)
+    }
+}
+
+impl std::fmt::Display for NullableType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "?{}", self.inner)
+    }
+}

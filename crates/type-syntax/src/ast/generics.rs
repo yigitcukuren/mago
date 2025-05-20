@@ -48,3 +48,29 @@ impl HasSpan for SingleGenericParameter<'_> {
         self.less_than.join(self.greater_than)
     }
 }
+
+impl std::fmt::Display for GenericParameterEntry<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl std::fmt::Display for SingleGenericParameter<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<{}>", self.entry)
+    }
+}
+
+impl std::fmt::Display for GenericParameters<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<")?;
+        for (i, entry) in self.entries.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+
+            write!(f, "{}", entry)?;
+        }
+        write!(f, ">")
+    }
+}

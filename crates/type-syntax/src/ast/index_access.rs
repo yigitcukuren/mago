@@ -19,3 +19,9 @@ impl HasSpan for IndexAccessType<'_> {
         self.target.span().join(self.right_bracket)
     }
 }
+
+impl std::fmt::Display for IndexAccessType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}[{}]", self.target, self.index)
+    }
+}

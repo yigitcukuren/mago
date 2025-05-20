@@ -45,3 +45,21 @@ impl HasSpan for LiteralStringType<'_> {
         self.span
     }
 }
+
+impl std::fmt::Display for LiteralIntType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw)
+    }
+}
+
+impl std::fmt::Display for LiteralFloatType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw)
+    }
+}
+
+impl std::fmt::Display for LiteralStringType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw)
+    }
+}

@@ -18,3 +18,9 @@ impl HasSpan for ValueOfType<'_> {
         self.keyword.span().join(self.parameter.span())
     }
 }
+
+impl std::fmt::Display for ValueOfType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", self.keyword, self.parameter)
+    }
+}

@@ -32,10 +32,16 @@ pub struct ShapeType<'input> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
 #[repr(C)]
-pub struct ShapeField<'input> {
-    pub key: Box<Type<'input>>,
+pub struct ShapeFieldKey<'input> {
+    pub name: Box<Type<'input>>,
     pub question_mark: Option<Span>,
     pub colon: Span,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+#[repr(C)]
+pub struct ShapeField<'input> {
+    pub key: Option<ShapeFieldKey<'input>>,
     pub value: Box<Type<'input>>,
     pub comma: Option<Span>,
 }
@@ -47,17 +53,57 @@ pub struct ShapeAdditionalFields<'input> {
     pub parameters: Option<GenericParameters<'input>>,
 }
 
+impl ShapeTypeKind {
+    #[inline]
+    pub const fn is_array(&self) -> bool {
+        matches!(self, ShapeTypeKind::Array | ShapeTypeKind::NonEmptyArray | ShapeTypeKind::AssociativeArray)
+    }
+
+    #[inline]
+    pub const fn is_list(&self) -> bool {
+        matches!(self, ShapeTypeKind::List | ShapeTypeKind::NonEmptyList)
+    }
+
+    #[inline]
+    pub const fn is_non_empty(&self) -> bool {
+        matches!(self, ShapeTypeKind::NonEmptyArray | ShapeTypeKind::NonEmptyList)
+    }
+}
+
+impl ShapeField<'_> {
+    #[inline]
+    pub fn is_optional(&self) -> bool {
+        if let Some(key) = self.key.as_ref() { key.question_mark.is_some() } else { false }
+    }
+}
+
+impl ShapeType<'_> {
+    #[inline]
+    pub fn has_fields(&self) -> bool {
+        !self.fields.is_empty()
+    }
+}
+
 impl HasSpan for ShapeType<'_> {
     fn span(&self) -> Span {
         self.keyword.span().join(self.right_brace)
     }
 }
 
+impl HasSpan for ShapeFieldKey<'_> {
+    fn span(&self) -> Span {
+        self.name.span().join(self.colon)
+    }
+}
+
 impl HasSpan for ShapeField<'_> {
     fn span(&self) -> Span {
-        match &self.comma {
-            Some(comma) => self.key.span().join(*comma),
-            None => self.key.span(),
+        if let Some(key) = &self.key {
+            if let Some(comma) = self.comma { key.span().join(comma) } else { key.span().join(self.value.span()) }
+        } else if let Some(comma) = self.comma {
+            self.value.span().join(comma)
+        } else {
+            self.value.span()
         }
     }
 }
@@ -68,5 +114,53 @@ impl HasSpan for ShapeAdditionalFields<'_> {
             Some(generics) => self.ellipsis.join(generics.span()),
             None => self.ellipsis,
         }
+    }
+}
+
+impl std::fmt::Display for ShapeFieldKey<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}:", self.name, self.question_mark.as_ref().map_or("", |_| "?"))
+    }
+}
+
+impl std::fmt::Display for ShapeField<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(key) = self.key.as_ref() {
+            write!(f, "{} {}", key, self.value)
+        } else {
+            write!(f, "{}", self.value)
+        }
+    }
+}
+
+impl std::fmt::Display for ShapeAdditionalFields<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "...")?;
+
+        if let Some(generics) = &self.parameters { write!(f, "{}", generics) } else { Ok(()) }
+    }
+}
+
+impl std::fmt::Display for ShapeType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{{", self.keyword)?;
+
+        for (i, field) in self.fields.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+
+            write!(f, "{}", field)?;
+        }
+
+        if let Some(additional_fields) = &self.additional_fields {
+            if !self.fields.is_empty() {
+                write!(f, ", ")?;
+            }
+
+            write!(f, "{}", additional_fields)?;
+        }
+
+        write!(f, "}}")
     }
 }

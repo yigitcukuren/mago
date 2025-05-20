@@ -21,3 +21,13 @@ impl HasSpan for IterableType<'_> {
         }
     }
 }
+
+impl std::fmt::Display for IterableType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}<{}>", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}

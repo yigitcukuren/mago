@@ -55,6 +55,30 @@ pub struct CallableTypeReturnType<'input> {
     pub return_type: Box<Type<'input>>,
 }
 
+impl CallableTypeKind {
+    #[inline]
+    pub fn is_pure(&self) -> bool {
+        matches!(self, CallableTypeKind::PureCallable | CallableTypeKind::PureClosure)
+    }
+
+    #[inline]
+    pub fn is_closure(&self) -> bool {
+        matches!(self, CallableTypeKind::Closure | CallableTypeKind::PureClosure)
+    }
+}
+
+impl CallableTypeParameter<'_> {
+    #[inline]
+    pub const fn is_variadic(&self) -> bool {
+        self.ellipsis.is_some()
+    }
+
+    #[inline]
+    pub const fn is_optional(&self) -> bool {
+        self.equals.is_some()
+    }
+}
+
 impl HasSpan for CallableType<'_> {
     fn span(&self) -> Span {
         match &self.specification {
@@ -97,5 +121,58 @@ impl HasSpan for CallableTypeParameter<'_> {
 impl HasSpan for CallableTypeReturnType<'_> {
     fn span(&self) -> Span {
         self.colon.join(self.return_type.span())
+    }
+}
+
+impl std::fmt::Display for CallableTypeReturnType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, ": {}", self.return_type)
+    }
+}
+
+impl std::fmt::Display for CallableTypeParameter<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.parameter_type)?;
+        if self.equals.is_some() {
+            write!(f, "=")?;
+        } else if self.ellipsis.is_some() {
+            write!(f, "...")?;
+        }
+
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for CallableTypeParameters<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(")?;
+        for (i, entry) in self.entries.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", entry)?;
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for CallableTypeSpecification<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.parameters)?;
+        if let Some(return_type) = &self.return_type {
+            write!(f, "{}", return_type)?;
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for CallableType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.keyword)?;
+        if let Some(specification) = &self.specification {
+            write!(f, "{}", specification)?;
+        }
+        Ok(())
     }
 }

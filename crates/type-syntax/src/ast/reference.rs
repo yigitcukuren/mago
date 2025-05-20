@@ -35,3 +35,19 @@ impl HasSpan for MemberReferenceType<'_> {
         self.class.span.join(self.member.span)
     }
 }
+
+impl std::fmt::Display for ReferenceType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.identifier, parameters)
+        } else {
+            write!(f, "{}", self.identifier)
+        }
+    }
+}
+
+impl std::fmt::Display for MemberReferenceType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{}", self.class, self.member)
+    }
+}

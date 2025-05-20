@@ -80,14 +80,40 @@ pub fn parse_array_like_type<'input>(stream: &mut TypeTokenStream<'input>) -> Re
         fields: {
             let mut fields = Vec::new();
             while !stream.is_at(TypeTokenKind::RightBrace)? && !stream.is_at(TypeTokenKind::Ellipsis)? {
+                let mut has_key = false;
+                if stream.is_at(TypeTokenKind::LiteralString)?
+                    || stream.is_at(TypeTokenKind::LiteralInteger)?
+                    || stream.is_at(TypeTokenKind::LiteralFloat)?
+                    || stream.is_at(TypeTokenKind::Identifier)?
+                {
+                    has_key = matches!(
+                        stream.lookahead(1)?.map(|t| t.kind),
+                        Some(TypeTokenKind::Colon | TypeTokenKind::Question)
+                    );
+                } else if stream.is_at(TypeTokenKind::Minus)? || stream.is_at(TypeTokenKind::Plus)? {
+                    has_key = matches!(
+                        stream.lookahead(1)?.map(|t| t.kind),
+                        Some(TypeTokenKind::LiteralInteger | TypeTokenKind::LiteralFloat)
+                    ) && matches!(
+                        stream.lookahead(2)?.map(|t| t.kind),
+                        Some(TypeTokenKind::Colon | TypeTokenKind::Question)
+                    );
+                };
+
                 let field = ShapeField {
-                    key: Box::new(parse_type(stream)?),
-                    question_mark: if stream.is_at(TypeTokenKind::Question)? {
-                        Some(stream.consume()?.span)
+                    key: if has_key {
+                        Some(ShapeFieldKey {
+                            name: Box::new(parse_type(stream)?),
+                            question_mark: if stream.is_at(TypeTokenKind::Question)? {
+                                Some(stream.consume()?.span)
+                            } else {
+                                None
+                            },
+                            colon: stream.eat(TypeTokenKind::Colon)?.span,
+                        })
                     } else {
                         None
                     },
-                    colon: stream.eat(TypeTokenKind::Colon)?.span,
                     value: Box::new(parse_type(stream)?),
                     comma: if stream.is_at(TypeTokenKind::Comma)? { Some(stream.consume()?.span) } else { None },
                 };

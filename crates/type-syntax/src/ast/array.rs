@@ -85,3 +85,53 @@ impl HasSpan for NonEmptyListType<'_> {
         }
     }
 }
+
+impl std::fmt::Display for ArrayType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for NonEmptyArrayType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for AssociativeArrayType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for ListType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
+
+impl std::fmt::Display for NonEmptyListType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(parameters) = &self.parameters {
+            write!(f, "{}{}", self.keyword, parameters)
+        } else {
+            write!(f, "{}", self.keyword)
+        }
+    }
+}
