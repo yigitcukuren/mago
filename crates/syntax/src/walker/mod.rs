@@ -1331,6 +1331,7 @@ generate_ast_walker! {
             Expression::Self_(keyword) => walker.walk_self_keyword(keyword, context),
             Expression::Instantiation(instantiation) => walker.walk_instantiation(instantiation, context),
             Expression::MagicConstant(magic_constant) => walker.walk_magic_constant(magic_constant, context),
+            Expression::Pipe(pipe) => walker.walk_pipe(pipe, context),
         }
     }
 
@@ -1996,6 +1997,11 @@ generate_ast_walker! {
 
     MagicConstant as magic_constant => {
         walker.walk_local_identifier(magic_constant.value(), context);
+    }
+
+    Pipe as pipe => {
+        walker.walk_expression(&pipe.input, context);
+        walker.walk_expression(&pipe.callable, context);
     }
 
     Hint as hint => {

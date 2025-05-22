@@ -246,6 +246,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     [b'^', b'=', ..] => (TokenKind::CaretEqual, 2),
                     [b'*', b'*', ..] => (TokenKind::AsteriskAsterisk, 2),
                     [b'*', b'=', ..] => (TokenKind::AsteriskEqual, 2),
+                    [b'|', b'>', ..] => (TokenKind::PipeGreaterThan, 2),
                     [b'/', b'/', ..] => {
                         let mut length = 2;
                         loop {

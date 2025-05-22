@@ -45,6 +45,7 @@ pub struct FormatterState<'a> {
     id_builder: GroupIdentifierBuilder,
     argument_state: ArgumentState,
     parameter_state: ParameterState,
+    in_pipe_chain_arrow_segment: bool,
 }
 
 impl<'a> FormatterState<'a> {
@@ -66,6 +67,7 @@ impl<'a> FormatterState<'a> {
             id_builder: GroupIdentifierBuilder::new(),
             argument_state: ArgumentState::default(),
             parameter_state: ParameterState::default(),
+            in_pipe_chain_arrow_segment: false,
         }
     }
 

@@ -282,7 +282,8 @@ impl PHPVersion {
             | Feature::NoDiscardAttribute
             | Feature::VoidCast
             | Feature::AsymmetricVisibilityForStaticProperties
-            | Feature::ClosureCreationInConstantExpressions => self.0 >= 0x08_05_00,
+            | Feature::ClosureCreationInConstantExpressions
+            | Feature::PipeOperator => self.0 >= 0x08_05_00,
             Feature::CallableInstanceMethods
             | Feature::LegacyConstructor
             | Feature::UnsetCast

@@ -98,4 +98,5 @@ pub enum Feature {
     AsymmetricVisibilityForStaticProperties,
     ClosureCreationInConstantExpressions,
     DeprecatedAttribute,
+    PipeOperator,
 }

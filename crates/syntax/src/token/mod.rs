@@ -50,6 +50,13 @@ pub enum Precedence {
     Equality,
     Comparison,
     Concat,
+    // NOTE(azjezz): the RFC does not really specify the precedence of the `|>` operator
+    // clearly, the current precedence position handles the examples shown in the RFC,
+    // but will need to be verified with the actual implementation once its merged into php-src.
+    //
+    // RFC: https://wiki.php.net/rfc/pipe-operator-v3
+    // PR: https://github.com/php/php-src/pull/17118
+    Pipe,
     BitShift,
     AddSub,
     MulDivMod,
@@ -262,6 +269,7 @@ pub enum TokenKind {
     Tilde,                       // `~`
     PipePipe,                    // `||`
     Xor,                         // `xor`
+    PipeGreaterThan,             // `|>`
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -274,7 +282,7 @@ pub struct Token {
 
 impl Precedence {
     #[inline(always)]
-    pub fn infix(kind: &TokenKind) -> Precedence {
+    pub const fn infix(kind: &TokenKind) -> Precedence {
         match kind {
             T!["**"] => Precedence::Pow,
             T!["instanceof"] => Precedence::Instanceof,
@@ -310,12 +318,13 @@ impl Precedence {
             T!["and"] => Precedence::KeyAnd,
             T!["or"] => Precedence::KeyOr,
             T!["xor"] => Precedence::KeyXor,
+            T!["|>"] => Precedence::Pipe,
             _ => Precedence::Lowest,
         }
     }
 
     #[inline(always)]
-    pub fn postfix(kind: &TokenKind) -> Self {
+    pub const fn postfix(kind: &TokenKind) -> Self {
         match kind {
             T!["++" | "--"] => Self::Prefix,
             T!["("] => Self::CallDim,
@@ -326,7 +335,7 @@ impl Precedence {
     }
 
     #[inline(always)]
-    pub fn associativity(&self) -> Option<Associativity> {
+    pub const fn associativity(&self) -> Option<Associativity> {
         Some(match self {
             Self::Instanceof
             | Self::MulDivMod
@@ -340,7 +349,8 @@ impl Precedence {
             | Self::Or
             | Self::KeyAnd
             | Self::KeyOr
-            | Self::KeyXor => Associativity::Left,
+            | Self::KeyXor
+            | Self::Pipe => Associativity::Left,
             Self::Pow | Self::NullCoalesce | Self::Assignment => Associativity::Right,
             Self::ElvisOrConditional | Self::Equality | Self::Comparison => Associativity::NonAssociative,
             _ => return None,
@@ -489,7 +499,8 @@ impl TokenKind {
                 | "??="
                 | "/="
                 | "*="
-                | "??"]
+                | "??"
+                | "|>"]
         )
     }
 
@@ -711,7 +722,7 @@ impl TokenKind {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, value: StringIdentifier, span: Span) -> Self {
+    pub const fn new(kind: TokenKind, value: StringIdentifier, span: Span) -> Self {
         Self { kind, value, span }
     }
 }

@@ -16,7 +16,12 @@ use crate::internal::utils::has_naked_left_side;
 use crate::internal::utils::unwrap_parenthesized;
 
 pub fn format_return_value<'a>(f: &mut FormatterState<'a>, value: &'a Expression) -> Document<'a> {
-    let expression = unwrap_parenthesized(value);
+    let mut value = unwrap_parenthesized(value);
+    if f.in_pipe_chain_arrow_segment {
+        while let Expression::Pipe(pipe) = value {
+            value = unwrap_parenthesized(pipe.input.as_ref());
+        }
+    }
 
     if return_argument_has_leading_comment(f, value) {
         return Document::Array(vec![
@@ -27,7 +32,7 @@ pub fn format_return_value<'a>(f: &mut FormatterState<'a>, value: &'a Expression
         ]);
     }
 
-    match expression {
+    match value {
         Expression::Binary(binary)
             if (!is_simple_expression(&binary.lhs) && !is_simple_expression(&binary.rhs))
                 || (binary.lhs.is_binary() || binary.rhs.is_binary()) =>

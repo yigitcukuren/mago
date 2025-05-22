@@ -270,4 +270,8 @@ impl MutWalker<Context<'_>> for ModuleBuildingWalker {
 
         checker::constant::check_constant(constant, context);
     }
+
+    fn walk_in_pipe(&mut self, pipe: &Pipe, context: &mut Context<'_>) {
+        checker::pipe::check_pipe(pipe, context);
+    }
 }

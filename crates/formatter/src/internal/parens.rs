@@ -2,6 +2,7 @@ use mago_php_version::feature::Feature;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 use mago_syntax::token::GetPrecedence;
+use mago_syntax::token::Precedence;
 
 use crate::document::Document;
 use crate::document::Group;
@@ -62,6 +63,7 @@ impl<'a> FormatterState<'a> {
             || self.unary_prefix_node_needs_parens(node)
             || self.conditional_or_assignment_needs_parenthesis(node)
             || self.literal_needs_parens(node)
+            || self.pipe_node_needs_parens(node)
     }
 
     fn literal_needs_parens(&self, node: Node<'a>) -> bool {
@@ -87,7 +89,35 @@ impl<'a> FormatterState<'a> {
             return false;
         };
 
+        if let Node::ArrowFunction(_) = parent_node {
+            return matches!(self.nth_parent_kind(3), Some(Node::Pipe(_)));
+        }
+
         self.is_unary_or_binary_or_ternary(parent_node) || matches!(parent_node, Node::VariadicArrayElement(_))
+    }
+
+    fn pipe_node_needs_parens(&self, node: Node<'a>) -> bool {
+        let Node::Pipe(_) = node else {
+            return false;
+        };
+
+        match self.nth_parent_kind(2) {
+            Some(Node::Binary(e)) => {
+                let precedence = e.operator.precedence();
+
+                if precedence >= Precedence::Pipe {
+                    return true;
+                }
+
+                false
+            }
+            Some(Node::Assignment(_)) => false,
+            Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_)) => true,
+            Some(Node::VariadicArrayElement(_)) => true,
+            Some(Node::ArrayAppend(_)) => true,
+            Some(Node::Conditional(_)) => true,
+            _ => false,
+        }
     }
 
     fn binary_node_needs_parens(&self, node: Node<'a>) -> bool {
@@ -95,8 +125,6 @@ impl<'a> FormatterState<'a> {
             Node::Binary(e) => &e.operator,
             _ => return false,
         };
-
-        operator.is_low_precedence();
 
         let parent_operator = match self.nth_parent_kind(2) {
             Some(Node::VariadicArrayElement(_)) => {
@@ -130,6 +158,18 @@ impl<'a> FormatterState<'a> {
                 }
 
                 &e.operator
+            }
+            Some(Node::Pipe(_)) => {
+                let precedence = operator.precedence();
+                return precedence <= Precedence::Pipe;
+            }
+            Some(Node::ArrowFunction(_)) => {
+                let grand_parent_node = self.nth_parent_kind(3);
+                if let Some(Node::Pipe(_)) = grand_parent_node {
+                    return true;
+                }
+
+                return false;
             }
             Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_)) => {
                 // Add parentheses if parent is an unary operator.
@@ -354,6 +394,7 @@ impl<'a> FormatterState<'a> {
         match node {
             Node::Binary(_) => true,
             Node::Conditional(conditional) => conditional.then.is_none(),
+            Node::Pipe(_) => true,
             _ => false,
         }
     }

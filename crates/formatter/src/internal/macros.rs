@@ -6,7 +6,7 @@ macro_rules! wrap {
         let leading = $f.print_leading_comments(node.span());
         let doc = $block;
         let doc = $f.wrap_parens(doc, node);
-        let trailing = $f.print_trailing_comments(node.span());
+        let trailing = $f.print_trailing_comments_for_node(node);
         let doc = $f.print_comments(leading, doc, trailing);
         $f.leave_node();
         doc

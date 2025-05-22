@@ -157,6 +157,7 @@ pub enum NodeKind {
     Instantiation,
     Keyword,
     Literal,
+    Pipe,
     LiteralFloat,
     LiteralInteger,
     LiteralString,
@@ -454,6 +455,7 @@ pub enum Node<'a> {
     IndirectVariable(&'a IndirectVariable),
     NestedVariable(&'a NestedVariable),
     Variable(&'a Variable),
+    Pipe(&'a Pipe),
 }
 
 impl<'a> Node<'a> {
@@ -752,6 +754,7 @@ impl<'a> Node<'a> {
             Self::IndirectVariable(_) => NodeKind::IndirectVariable,
             Self::NestedVariable(_) => NodeKind::NestedVariable,
             Self::Variable(_) => NodeKind::Variable,
+            Self::Pipe(_) => NodeKind::Pipe,
         }
     }
 
@@ -1407,6 +1410,7 @@ impl<'a> Node<'a> {
                 Expression::Self_(node) => Node::Keyword(node),
                 Expression::Instantiation(node) => Node::Instantiation(node),
                 Expression::MagicConstant(node) => Node::MagicConstant(node),
+                Expression::Pipe(node) => Node::Pipe(node),
             }],
             Node::Binary(node) => {
                 vec![Node::Expression(&node.lhs), Node::BinaryOperator(&node.operator), Node::Expression(&node.rhs)]
@@ -1968,6 +1972,9 @@ impl<'a> Node<'a> {
                 Variable::Indirect(node) => vec![Node::IndirectVariable(node)],
                 Variable::Nested(node) => vec![Node::NestedVariable(node)],
             },
+            Node::Pipe(pipe) => {
+                vec![Node::Expression(&pipe.input), Node::Expression(&pipe.callable)]
+            }
         }
     }
 }
@@ -2192,6 +2199,7 @@ impl HasSpan for Node<'_> {
             Self::IndirectVariable(node) => node.span(),
             Self::NestedVariable(node) => node.span(),
             Self::Variable(node) => node.span(),
+            Self::Pipe(node) => node.span(),
         }
     }
 }

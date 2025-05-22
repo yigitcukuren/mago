@@ -18,6 +18,7 @@ pub mod expression;
 pub mod function_like;
 pub mod hint;
 pub mod literal;
+pub mod pipe;
 pub mod statement;
 pub mod r#try;
 

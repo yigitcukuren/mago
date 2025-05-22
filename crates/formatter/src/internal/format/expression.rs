@@ -1,9 +1,12 @@
+use std::collections::VecDeque;
+
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::document::Document;
 use crate::document::Line;
 use crate::internal::FormatterState;
+use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::Group;
 use crate::internal::format::IfBreak;
@@ -91,7 +94,8 @@ impl<'a> Format<'a> for Expression {
                 Expression::Self_(k) => k.format(f),
                 Expression::Instantiation(i) => i.format(f),
                 Expression::MagicConstant(c) => c.format(f),
-                _ => unreachable!(),
+                Expression::Pipe(p) => p.format(f),
+                Expression::Parenthesized(_) => unreachable!("Parenthesized expressions are handled separately"),
             }
         })
     }
@@ -100,6 +104,63 @@ impl<'a> Format<'a> for Expression {
 impl<'a> Format<'a> for Binary {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, Binary, { binaryish::print_binaryish_expression(f, &self.lhs, &self.operator, &self.rhs) })
+    }
+}
+
+impl<'a> Format<'a> for Pipe {
+    fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
+        wrap!(f, self, Pipe, {
+            let has_trailing_comments = f.has_comment(self.span(), CommentFlags::Trailing);
+            let mut should_break = has_trailing_comments;
+
+            let mut callables: Vec<&'a Expression> = Vec::new();
+            let mut input: &'a Expression = self.input.as_ref();
+
+            callables.push(self.callable.as_ref());
+            while let Expression::Pipe(inner_pipe) = unwrap_parenthesized(input) {
+                callables.push(inner_pipe.callable.as_ref());
+                input = inner_pipe.input.as_ref();
+            }
+
+            // Always break if we have more than 3 callables
+            should_break |= callables.len() > 3;
+
+            callables.reverse();
+            let formatted_input = input.format(f);
+            let mut contents = vec![];
+            let mut callable_queue: VecDeque<&'a Expression> = callables.into_iter().collect();
+            while let Some(callable) = callable_queue.pop_front() {
+                contents.push(Document::Line(Line::default()));
+                contents.push(Document::String("|> "));
+
+                if let Expression::ArrowFunction(arrow_fn) = callable {
+                    if let Expression::Pipe(inner_pipe) = unwrap_parenthesized(arrow_fn.expression.as_ref()) {
+                        should_break = true;
+
+                        let was_in_pipe_chain_arrow_segment = f.in_pipe_chain_arrow_segment;
+                        f.in_pipe_chain_arrow_segment = true;
+                        contents.push(arrow_fn.format(f));
+                        f.in_pipe_chain_arrow_segment = was_in_pipe_chain_arrow_segment;
+                        callable_queue.push_front(inner_pipe.callable.as_ref());
+                        let mut nested_input = inner_pipe.input.as_ref();
+                        while let Expression::Pipe(nested_pipe) = unwrap_parenthesized(nested_input) {
+                            callable_queue.push_front(nested_pipe.callable.as_ref());
+                            nested_input = nested_pipe.input.as_ref();
+                        }
+
+                        continue;
+                    }
+                }
+
+                let callable_has_trailing_comments = f.has_comment(callable.span(), CommentFlags::Trailing);
+                contents.push(callable.format(f));
+                if callable_has_trailing_comments {
+                    should_break = true;
+                }
+            }
+
+            Document::Group(Group::new(vec![formatted_input, Document::Indent(contents)]).with_break(should_break))
+        })
     }
 }
 

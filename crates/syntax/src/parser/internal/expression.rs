@@ -684,6 +684,12 @@ fn parse_infix_expression(stream: &mut TokenStream<'_, '_>, lhs: Expression) -> 
                 rhs: Box::new(rhs),
             })
         }
+        T!["|>"] => {
+            let operator = utils::expect_any(stream)?.span;
+            let callable = Box::new(parse_expression_with_precedence(stream, Precedence::Pipe)?);
+
+            Expression::Pipe(Pipe { input: Box::new(lhs), operator, callable })
+        }
         _ => unreachable!(),
     })
 }

@@ -1,6 +1,9 @@
 use std::borrow::Cow;
 
+use mago_span::HasSpan;
 use mago_span::Span;
+use mago_syntax::ast::Expression;
+use mago_syntax::ast::Node;
 
 use crate::document::Document;
 use crate::document::Group;
@@ -9,6 +12,7 @@ use crate::document::Separator;
 use crate::internal::FormatterState;
 use crate::internal::comment::Comment;
 use crate::internal::comment::CommentFlags;
+use crate::internal::utils::unwrap_parenthesized;
 
 impl<'a> FormatterState<'a> {
     #[must_use]
@@ -146,6 +150,23 @@ impl<'a> FormatterState<'a> {
             parts.push(Document::BreakParent);
             parts.push(Document::Line(Line::hard()));
         }
+    }
+
+    #[must_use]
+    pub(crate) fn print_trailing_comments_for_node(&mut self, node: Node<'_>) -> Option<Document<'a>> {
+        let range = match node {
+            Node::ArrowFunction(arrow_function) if self.in_pipe_chain_arrow_segment => {
+                let mut value = unwrap_parenthesized(&arrow_function.expression);
+                while let Expression::Pipe(pipe) = value {
+                    value = unwrap_parenthesized(pipe.input.as_ref());
+                }
+
+                value.span()
+            }
+            _ => node.span(),
+        };
+
+        self.print_trailing_comments(range)
     }
 
     #[must_use]

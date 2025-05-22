@@ -38,6 +38,7 @@ use crate::ast::ast::instantiation::Instantiation;
 use crate::ast::ast::keyword::Keyword;
 use crate::ast::ast::literal::Literal;
 use crate::ast::ast::magic_constant::MagicConstant;
+use crate::ast::ast::pipe::Pipe;
 use crate::ast::ast::string::CompositeString;
 use crate::ast::ast::string::StringPart;
 use crate::ast::ast::throw::Throw;
@@ -91,6 +92,7 @@ pub enum Expression {
     Self_(Keyword),
     Instantiation(Instantiation),
     MagicConstant(MagicConstant),
+    Pipe(Pipe),
 }
 
 impl Expression {
@@ -314,6 +316,7 @@ impl Expression {
             Expression::Parent(_) => NodeKind::Keyword,
             Expression::Static(_) => NodeKind::Keyword,
             Expression::Self_(_) => NodeKind::Keyword,
+            Expression::Pipe(_) => NodeKind::Pipe,
         }
     }
 }
@@ -359,6 +362,7 @@ impl HasSpan for Expression {
             Expression::Self_(expression) => expression.span(),
             Expression::Instantiation(expression) => expression.span(),
             Expression::MagicConstant(expression) => expression.span(),
+            Expression::Pipe(expression) => expression.span(),
         }
     }
 }

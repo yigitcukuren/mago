@@ -546,6 +546,9 @@ macro_rules! T {
     ("xor") => {
         $crate::token::TokenKind::Xor
     };
+    ("|>") => {
+        $crate::token::TokenKind::PipeGreaterThan
+    };
     ($name:ident) => {
         $crate::token::TokenKind::$name
     };

@@ -188,4 +188,8 @@ impl Walker<Context<'_>> for ModuleCheckingWalker {
     fn walk_in_constant(&self, constant: &Constant, context: &mut Context<'_>) {
         checker::constant::check_constant(constant, context);
     }
+
+    fn walk_in_pipe(&self, pipe: &Pipe, context: &mut Context<'_>) {
+        checker::pipe::check_pipe(pipe, context);
+    }
 }
