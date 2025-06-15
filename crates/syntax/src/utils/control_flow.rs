@@ -305,7 +305,7 @@ pub fn find_control_flows_in_expression(expression: &Expression) -> Vec<ControlF
             controls.extend(find_control_flows_in_expression(&array_append.array));
         }
         Expression::AnonymousClass(anonymous_class) => {
-            if let Some(arguments) = &anonymous_class.arguments {
+            if let Some(arguments) = &anonymous_class.argument_list {
                 for argument in arguments.arguments.iter() {
                     controls.extend(find_control_flows_in_expression(argument.value()));
                 }
@@ -533,8 +533,8 @@ pub fn find_control_flows_in_expression(expression: &Expression) -> Vec<ControlF
         },
         Expression::Instantiation(instantiation) => {
             controls.extend(find_control_flows_in_expression(&instantiation.class));
-            if let Some(arguments) = &instantiation.arguments {
-                for argument in arguments.arguments.iter() {
+            if let Some(argument_list) = &instantiation.argument_list {
+                for argument in argument_list.arguments.iter() {
                     controls.extend(find_control_flows_in_expression(argument.value()));
                 }
             }

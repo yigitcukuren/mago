@@ -11,6 +11,6 @@ pub fn parse_instantiation(stream: &mut TokenStream<'_, '_>) -> Result<Instantia
     Ok(Instantiation {
         new: utils::expect_keyword(stream, T!["new"])?,
         class: Box::new(parse_expression_with_precedence(stream, Precedence::New)?),
-        arguments: parse_optional_argument_list(stream)?,
+        argument_list: parse_optional_argument_list(stream)?,
     })
 }

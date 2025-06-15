@@ -352,7 +352,7 @@ pub fn expression_has_yield(expression: &Expression) -> bool {
         Expression::Instantiation(instantiation) => {
             expression_has_yield(&instantiation.class)
                 || instantiation
-                    .arguments
+                    .argument_list
                     .as_ref()
                     .map(|arguments| {
                         arguments.arguments.iter().any(|argument| match argument {

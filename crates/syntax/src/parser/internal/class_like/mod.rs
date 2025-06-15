@@ -91,7 +91,7 @@ pub fn parse_anonymous_class(stream: &mut TokenStream<'_, '_>) -> Result<Anonymo
         attribute_lists: parse_attribute_list_sequence(stream)?,
         modifiers: parse_modifier_sequence(stream)?,
         class: utils::expect_keyword(stream, T!["class"])?,
-        arguments: parse_optional_argument_list(stream)?,
+        argument_list: parse_optional_argument_list(stream)?,
         extends: parse_optional_extends(stream)?,
         implements: parse_optional_implements(stream)?,
         left_brace: utils::expect_span(stream, T!["{"])?,

@@ -13,13 +13,13 @@ use crate::ast::ast::keyword::Keyword;
 pub struct Instantiation {
     pub new: Keyword,
     pub class: Box<Expression>,
-    pub arguments: Option<ArgumentList>,
+    pub argument_list: Option<ArgumentList>,
 }
 
 impl HasSpan for Instantiation {
     fn span(&self) -> Span {
-        if let Some(arguments) = &self.arguments {
-            self.new.span().join(arguments.span())
+        if let Some(argument_list) = &self.argument_list {
+            self.new.span().join(argument_list.span())
         } else {
             self.new.span().join(self.class.span())
         }

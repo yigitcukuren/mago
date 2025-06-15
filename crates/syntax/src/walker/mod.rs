@@ -1548,8 +1548,8 @@ generate_ast_walker! {
 
         walker.walk_keyword(&anonymous_class.new, context);
         walker.walk_keyword(&anonymous_class.class, context);
-        if let Some(arguments) = &anonymous_class.arguments {
-            walker.walk_argument_list(arguments, context);
+        if let Some(argument_list) = &anonymous_class.argument_list {
+            walker.walk_argument_list(argument_list, context);
         }
 
         if let Some(extends) = &anonymous_class.extends {
@@ -1990,8 +1990,8 @@ generate_ast_walker! {
     Instantiation as instantiation => {
         walker.walk_keyword(&instantiation.new, context);
         walker.walk_expression(&instantiation.class, context);
-        if let Some(arguments) = &instantiation.arguments {
-            walker.walk_argument_list(arguments, context);
+        if let Some(argument_list) = &instantiation.argument_list {
+            walker.walk_argument_list(argument_list, context);
         }
     }
 

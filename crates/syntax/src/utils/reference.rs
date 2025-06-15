@@ -326,8 +326,8 @@ where
             find_method_references_in_expression(array_append.array.as_ref(), predicate)
         }
         Expression::AnonymousClass(anonymous_class) => {
-            if let Some(arguments) = &anonymous_class.arguments {
-                find_references_in_argument_list(arguments, predicate)
+            if let Some(argument_list) = &anonymous_class.argument_list {
+                find_references_in_argument_list(argument_list, predicate)
             } else {
                 vec![]
             }
@@ -422,8 +422,8 @@ where
             ClosureCreation::Function(_) => vec![],
         },
         Expression::Instantiation(instantiation) => {
-            if let Some(arguments) = &instantiation.arguments {
-                find_references_in_argument_list(arguments, predicate)
+            if let Some(argument_list) = &instantiation.argument_list {
+                find_references_in_argument_list(argument_list, predicate)
             } else {
                 vec![]
             }

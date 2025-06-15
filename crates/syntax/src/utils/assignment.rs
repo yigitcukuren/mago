@@ -224,7 +224,7 @@ pub fn get_assignment_from_expression(expression: &Expression) -> Option<&Assign
         },
         Expression::Instantiation(instantiation) => {
             get_assignment_from_expression(&instantiation.class).or_else(|| {
-                instantiation.arguments.as_ref().and_then(|arguments| {
+                instantiation.argument_list.as_ref().and_then(|arguments| {
                     arguments.arguments.iter().find_map(|argument| match &argument {
                         Argument::Positional(positional_argument) => {
                             get_assignment_from_expression(&positional_argument.value)

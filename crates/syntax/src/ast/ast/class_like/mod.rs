@@ -93,7 +93,7 @@ pub struct AnonymousClass {
     pub attribute_lists: Sequence<AttributeList>,
     pub modifiers: Sequence<Modifier>,
     pub class: Keyword,
-    pub arguments: Option<ArgumentList>,
+    pub argument_list: Option<ArgumentList>,
     pub extends: Option<Extends>,
     pub implements: Option<Implements>,
     pub left_brace: Span,
