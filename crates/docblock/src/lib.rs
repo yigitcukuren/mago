@@ -10,6 +10,7 @@ mod internal;
 
 pub mod document;
 pub mod error;
+pub mod tag;
 
 #[inline]
 pub fn parse_trivia(interner: &ThreadedInterner, trivia: &Trivia) -> Result<Document, ParseError> {
@@ -24,7 +25,7 @@ pub fn parse_trivia(interner: &ThreadedInterner, trivia: &Trivia) -> Result<Docu
 pub fn parse_phpdoc_with_span(interner: &ThreadedInterner, content: &str, span: Span) -> Result<Document, ParseError> {
     let tokens = internal::lexer::tokenize(content, span)?;
 
-    internal::parser::parse_document(tokens.as_slice(), interner)
+    internal::parser::parse_document(span, tokens.as_slice(), interner)
 }
 
 #[cfg(test)]

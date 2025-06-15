@@ -1565,6 +1565,7 @@ name = "mago-docblock"
 version = "0.24.1"
 dependencies = [
  "mago-interner",
+ "mago-source",
  "mago-span",
  "mago-syntax",
  "serde",

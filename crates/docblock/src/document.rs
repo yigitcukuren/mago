@@ -1,3 +1,4 @@
+use mago_span::HasSpan;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -6,6 +7,7 @@ use mago_span::Span;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct Document {
+    pub span: Span,
     pub elements: Vec<Element>,
 }
 
@@ -85,8 +87,6 @@ pub enum TagKind {
     NoSealMethods,
     ReadOnly,
     NoNamedArguments,
-    Template,
-    PsalmTemplate,
     Api,
     PsalmApi,
     PsalmInheritors,
@@ -105,8 +105,6 @@ pub enum TagKind {
     ParamLaterInvokedCallable,
     ParamImmediatelyInvokedCallable,
     ParamClosureThis,
-    TemplateCovariant,
-    TemplateContravariant,
     Extends,
     Implements,
     Use,
@@ -117,6 +115,10 @@ pub enum TagKind {
     Immutable,
     InheritDoc,
     ParamOut,
+    Assert,
+    AssertIfTrue,
+    AssertIfFalse,
+    ConsistentConstructor,
     PsalmConsistentConstructor,
     PsalmConsistentTemplates,
     PsalmParamOut,
@@ -144,6 +146,8 @@ pub enum TagKind {
     PsalmReadOnly,
     PsalmMutationFree,
     PsalmExternalMutationFree,
+    MutationFree,
+    ExternalMutationFree,
     PsalmImmutable,
     PsalmPure,
     PsalmAllowPrivateMutation,
@@ -171,14 +175,23 @@ pub enum TagKind {
     PhpstanThisOut,
     PhpstanRequireExtends,
     PhpstanRequireImplements,
-    PhpstanTemplate,
-    PhpstanTemplateCovariant,
-    PhpstanTemplateContravariant,
     PhpstanParam,
     PhpstanReturn,
     PhpstanVar,
     PhpstanReadOnly,
     PhpstanImmutable,
+    Template,
+    TemplateInvariant,
+    TemplateCovariant,
+    TemplateContravariant,
+    PsalmTemplate,
+    PsalmTemplateInvariant,
+    PsalmTemplateCovariant,
+    PsalmTemplateContravariant,
+    PhpstanTemplate,
+    PhpstanTemplateInvariant,
+    PhpstanTemplateCovariant,
+    PhpstanTemplateContravariant,
     Other,
 }
 
@@ -186,6 +199,22 @@ pub enum TagKind {
 pub enum TagVendor {
     Phpstan,
     Psalm,
+}
+
+impl Document {
+    pub fn get_tags(&self) -> impl Iterator<Item = &Tag> {
+        self.elements.iter().filter_map(|element| if let Element::Tag(tag) = element { Some(tag) } else { None })
+    }
+
+    pub fn get_tags_by_kind(&self, kind: TagKind) -> impl Iterator<Item = &Tag> {
+        self.get_tags().filter(move |tag| tag.kind == kind)
+    }
+}
+
+impl HasSpan for Document {
+    fn span(&self) -> Span {
+        self.span
+    }
 }
 
 impl TagKind {
@@ -240,7 +269,11 @@ impl TagKind {
             | Self::PsalmRequireImplements
             | Self::PsalmIgnoreVariableProperty
             | Self::PsalmIgnoreVariableMethod
-            | Self::PsalmYield => Some(TagVendor::Psalm),
+            | Self::PsalmYield
+            | Self::PsalmTemplate
+            | Self::PsalmTemplateInvariant
+            | Self::PsalmTemplateCovariant
+            | Self::PsalmTemplateContravariant => Some(TagVendor::Psalm),
             Self::PhpstanAssert
             | Self::PhpstanAssertIfTrue
             | Self::PhpstanAssertIfFalse
@@ -249,6 +282,7 @@ impl TagKind {
             | Self::PhpstanRequireExtends
             | Self::PhpstanRequireImplements
             | Self::PhpstanTemplate
+            | Self::PhpstanTemplateInvariant
             | Self::PhpstanTemplateCovariant
             | Self::PhpstanTemplateContravariant
             | Self::PhpstanParam
@@ -268,6 +302,7 @@ impl TagKind {
     ///  `None` is returned.
     pub fn get_non_vendored_variant(&self) -> Option<TagKind> {
         match self {
+            Self::PsalmConsistentConstructor => Some(Self::ConsistentConstructor),
             Self::PsalmParamOut => Some(Self::ParamOut),
             Self::PsalmVar => Some(Self::Var),
             Self::PsalmParam => Some(Self::Param),
@@ -284,14 +319,20 @@ impl TagKind {
             Self::PsalmReadOnly => Some(Self::ReadOnly),
             Self::PsalmImmutable => Some(Self::Immutable),
             Self::PsalmPure => Some(Self::Pure),
-            Self::PhpstanTemplate => Some(Self::Template),
-            Self::PhpstanTemplateCovariant => Some(Self::TemplateCovariant),
-            Self::PhpstanTemplateContravariant => Some(Self::TemplateContravariant),
             Self::PhpstanParam => Some(Self::Param),
             Self::PhpstanReturn => Some(Self::Return),
             Self::PhpstanVar => Some(Self::Var),
             Self::PhpstanReadOnly => Some(Self::ReadOnly),
             Self::PhpstanImmutable => Some(Self::Immutable),
+            Self::PhpstanAssert | Self::PsalmAssert => Some(Self::Assert),
+            Self::PhpstanAssertIfTrue | Self::PsalmAssertIfTrue => Some(Self::AssertIfTrue),
+            Self::PhpstanAssertIfFalse | Self::PsalmAssertIfFalse => Some(Self::AssertIfFalse),
+            Self::PhpstanTemplate | Self::PsalmTemplate => Some(Self::Template),
+            Self::PhpstanTemplateInvariant | Self::PsalmTemplateInvariant => Some(Self::TemplateInvariant),
+            Self::PhpstanTemplateCovariant | Self::PsalmTemplateCovariant => Some(Self::TemplateCovariant),
+            Self::PhpstanTemplateContravariant | Self::PsalmTemplateContravariant => Some(Self::TemplateContravariant),
+            Self::PsalmMutationFree => Some(Self::MutationFree),
+            Self::PsalmExternalMutationFree => Some(Self::ExternalMutationFree),
             _ => None,
         }
     }
@@ -362,8 +403,6 @@ where
             "readonly" => TagKind::ReadOnly,
             "nonamedarguments" => TagKind::NoNamedArguments,
             "no-named-arguments" => TagKind::NoNamedArguments,
-            "template" => TagKind::Template,
-            "psalm-template" => TagKind::PsalmTemplate,
             "api" => TagKind::Api,
             "psalm-api" => TagKind::PsalmApi,
             "psalm-inheritors" => TagKind::PsalmInheritors,
@@ -381,16 +420,15 @@ where
             "var" => TagKind::Var,
             "throws" => TagKind::Throws,
             "version" => TagKind::Version,
+            "assert" => TagKind::Assert,
+            "assert-if-true" | "assertiftrue" => TagKind::AssertIfTrue,
+            "assert-if-false" | "assertiffalse" => TagKind::AssertIfFalse,
             "param-later-invoked-callable" => TagKind::ParamLaterInvokedCallable,
             "paramlaterinvokedcallable" => TagKind::ParamLaterInvokedCallable,
             "param-immediately-invoked-callable" => TagKind::ParamImmediatelyInvokedCallable,
             "paramimmediatelyinvokedcallable" => TagKind::ParamImmediatelyInvokedCallable,
             "param-closure-this" => TagKind::ParamClosureThis,
             "paramclosurethis" => TagKind::ParamClosureThis,
-            "template-covariant" => TagKind::TemplateCovariant,
-            "templatecovariant" => TagKind::TemplateCovariant,
-            "template-contravariant" => TagKind::TemplateContravariant,
-            "templatecontravariant" => TagKind::TemplateContravariant,
             "extends" => TagKind::Extends,
             "implements" => TagKind::Implements,
             "use" => TagKind::Use,
@@ -404,10 +442,9 @@ where
             "inherit-doc" => TagKind::InheritDoc,
             "param-out" => TagKind::ParamOut,
             "psalm-param-out" => TagKind::PsalmParamOut,
-            "psalmconsistentconstructor" => TagKind::PsalmConsistentConstructor,
-            "psalm-consistent-constructor" => TagKind::PsalmConsistentConstructor,
-            "psalmconsistenttemplates" => TagKind::PsalmConsistentTemplates,
-            "psalm-consistent-templates" => TagKind::PsalmConsistentTemplates,
+            "consistentconstructor" | "consistent-constructor" => TagKind::ConsistentConstructor,
+            "psalmconsistentconstructor" | "psalm-consistent-constructor" => TagKind::PsalmConsistentConstructor,
+            "psalmconsistenttemplates" | "psalm-consistent-templates" => TagKind::PsalmConsistentTemplates,
             "psalm-var" => TagKind::PsalmVar,
             "psalm-param" => TagKind::PsalmParam,
             "psalm-return" => TagKind::PsalmReturn,
@@ -443,10 +480,10 @@ where
             "psalmnosealmethods" => TagKind::PsalmNoSealMethods,
             "psalm-internal" => TagKind::PsalmInternal,
             "psalm-readonly" => TagKind::PsalmReadOnly,
-            "psalm-mutation-free" => TagKind::PsalmMutationFree,
-            "psalmmutationfree" => TagKind::PsalmMutationFree,
-            "psalm-external-mutation-free" => TagKind::PsalmExternalMutationFree,
-            "psalmexternalmutationfree" => TagKind::PsalmExternalMutationFree,
+            "psalm-mutation-free" | "psalmmutationfree" => TagKind::PsalmMutationFree,
+            "psalm-external-mutation-free" | "psalmexternalmutationfree" => TagKind::PsalmExternalMutationFree,
+            "mutation-free" | "mutationfree" => TagKind::MutationFree,
+            "external-mutation-free" | "externalmutationfree" => TagKind::ExternalMutationFree,
             "psalm-immutable" => TagKind::PsalmImmutable,
             "psalm-pure" => TagKind::PsalmPure,
             "psalm-allow-private-mutation" => TagKind::PsalmAllowPrivateMutation,
@@ -488,9 +525,18 @@ where
             "phpstan-this-out" => TagKind::PhpstanThisOut,
             "phpstan-require-extends" => TagKind::PhpstanRequireExtends,
             "phpstan-require-implements" => TagKind::PhpstanRequireImplements,
-            "phpstan-template" => TagKind::PhpstanTemplate,
-            "phpstan-template-covariant" => TagKind::PhpstanTemplateCovariant,
-            "phpstan-template-contravariant" => TagKind::PhpstanTemplateContravariant,
+            "template" => TagKind::Template,
+            "template-invariant" | "templateinvariant" => TagKind::TemplateInvariant,
+            "template-covariant" | "templatecovariant" => TagKind::TemplateCovariant,
+            "template-contravariant" | "templatecontravariant" => TagKind::TemplateContravariant,
+            "psalm-template" | "psalmtemplate" => TagKind::PsalmTemplate,
+            "psalm-template-invariant" | "psalmtemplateinvariant" => TagKind::PsalmTemplateInvariant,
+            "psalm-template-covariant" | "psalmtemplatecovariant" => TagKind::PsalmTemplateCovariant,
+            "psalm-template-contravariant" | "psalmtemplatecontravariant" => TagKind::PsalmTemplateContravariant,
+            "phpstan-template" | "phpstantemplate" => TagKind::PhpstanTemplate,
+            "phpstan-template-invariant" | "phpstantemplateinvariant" => TagKind::PhpstanTemplateInvariant,
+            "phpstan-template-covariant" | "phpstantemplatecovariant" => TagKind::PhpstanTemplateCovariant,
+            "phpstan-template-contravariant" | "phpstantemplatecontravariant" => TagKind::PhpstanTemplateContravariant,
             "phpstan-param" => TagKind::PhpstanParam,
             "phpstan-return" => TagKind::PhpstanReturn,
             "phpstan-var" => TagKind::PhpstanVar,

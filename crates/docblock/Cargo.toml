@@ -17,3 +17,6 @@ mago-syntax = { workspace = true }
 mago-span = { workspace = true }
 mago-interner = { workspace = true }
 serde = { workspace = true }
+
+[dev-dependencies]
+mago-source = { workspace = true }

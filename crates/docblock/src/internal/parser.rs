@@ -6,7 +6,7 @@ use crate::error::ParseError;
 
 use super::token::Token;
 
-pub fn parse_document(tokens: &[Token<'_>], interner: &ThreadedInterner) -> Result<Document, ParseError> {
+pub fn parse_document(span: Span, tokens: &[Token<'_>], interner: &ThreadedInterner) -> Result<Document, ParseError> {
     let mut elements = Vec::new();
     let mut i = 0;
 
@@ -44,7 +44,7 @@ pub fn parse_document(tokens: &[Token<'_>], interner: &ThreadedInterner) -> Resu
         }
     }
 
-    Ok(Document { elements })
+    Ok(Document { elements, span })
 }
 
 fn is_indented_line(content: &str) -> bool {
