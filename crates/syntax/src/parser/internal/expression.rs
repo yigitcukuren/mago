@@ -40,6 +40,15 @@ pub fn parse_expression_with_precedence(
     let mut left = parse_lhs_expression(stream)?;
 
     while let Some(next) = utils::maybe_peek(stream)? {
+        if !stream.state.within_indirect_variable
+            && !matches!(precedence, Precedence::Instanceof | Precedence::New)
+            && !matches!(next.kind, T!["(" | "::"])
+        {
+            if let Expression::Identifier(identifier) = left {
+                left = Expression::ConstantAccess(ConstantAccess { name: identifier });
+            }
+        }
+
         // Stop parsing if the next token is a terminator.
         if matches!(next.kind, T![";" | "?>"]) {
             break;
@@ -71,16 +80,10 @@ pub fn parse_expression_with_precedence(
         }
     }
 
-    if precedence < Precedence::Instanceof && !stream.state.within_indirect_variable {
-        if let Expression::Identifier(identifier) = left {
-            left = Expression::ConstantAccess(ConstantAccess { name: identifier });
-        }
-    }
-
     Ok(left)
 }
 
-#[inline(always)]
+#[inline]
 fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>) -> Result<Expression, ParseError> {
     let token = utils::peek(stream)?;
     let next = utils::maybe_peek_nth(stream, 1)?.map(|t| t.kind);
