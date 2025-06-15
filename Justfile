@@ -57,12 +57,3 @@ publish:
 # Cleans all build artifacts from the workspace.
 clean:
     cargo clean --workspace
-
-# Regenerates PHPStorm stubs files from the JetBrains phpstorm-stubs repository.
-stubs:
-    git clone https://github.com/JetBrains/phpstorm-stubs {{template_dir}}
-    find {{template_dir}}/* -maxdepth 0 -type d -exec cp -r {} stubs \;
-    cp {{template_dir}}/LICENSE stubs/
-    rm -rf stubs/tests
-    find stubs -name ".phpstorm.meta.php" -delete
-    rm -rf {{template_dir}}
