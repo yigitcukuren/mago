@@ -19,7 +19,7 @@ class SplFileInfo implements Stringable
      * @param string $filename
      * @since 5.1.2
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $filename) {}
+    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $filename) {}
 
     /**
      * Gets the path without filename
@@ -28,7 +28,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getPath(): string {}
+    public function getPath(): string
+    {
+    }
 
     /**
      * Gets the filename
@@ -37,7 +39,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getFilename(): string {}
+    public function getFilename(): string
+    {
+    }
 
     /**
      * Gets the file extension
@@ -47,7 +51,9 @@ class SplFileInfo implements Stringable
      * @since 5.3.6
      */
     #[TentativeType]
-    public function getExtension(): string {}
+    public function getExtension(): string
+    {
+    }
 
     /**
      * Gets the base name of the file
@@ -59,7 +65,9 @@ class SplFileInfo implements Stringable
      * @since 5.2.2
      */
     #[TentativeType]
-    public function getBasename(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $suffix = ''): string {}
+    public function getBasename(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $suffix = ''): string
+    {
+    }
 
     /**
      * Gets the path to the file
@@ -68,7 +76,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getPathname(): string {}
+    public function getPathname(): string
+    {
+    }
 
     /**
      * Gets file permissions
@@ -77,7 +87,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getPerms(): int|false {}
+    public function getPerms(): int|false
+    {
+    }
 
     /**
      * Gets the inode for the file
@@ -87,7 +99,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getInode(): int|false {}
+    public function getInode(): int|false
+    {
+    }
 
     /**
      * Gets file size
@@ -97,7 +111,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getSize(): int|false {}
+    public function getSize(): int|false
+    {
+    }
 
     /**
      * Gets the owner of the file
@@ -107,7 +123,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getOwner(): int|false {}
+    public function getOwner(): int|false
+    {
+    }
 
     /**
      * Gets the file group
@@ -117,7 +135,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getGroup(): int|false {}
+    public function getGroup(): int|false
+    {
+    }
 
     /**
      * Gets last access time of the file
@@ -127,7 +147,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getATime(): int|false {}
+    public function getATime(): int|false
+    {
+    }
 
     /**
      * Gets the last modified time
@@ -136,7 +158,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getMTime(): int|false {}
+    public function getMTime(): int|false
+    {
+    }
 
     /**
      * Gets the inode change time
@@ -146,7 +170,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getCTime(): int|false {}
+    public function getCTime(): int|false
+    {
+    }
 
     /**
      * Gets file type
@@ -158,7 +184,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getType(): string|false {}
+    public function getType(): string|false
+    {
+    }
 
     /**
      * Tells if the entry is writable
@@ -167,7 +195,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isWritable(): bool {}
+    public function isWritable(): bool
+    {
+    }
 
     /**
      * Tells if file is readable
@@ -176,7 +206,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isReadable(): bool {}
+    public function isReadable(): bool
+    {
+    }
 
     /**
      * Tells if the file is executable
@@ -185,7 +217,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isExecutable(): bool {}
+    public function isExecutable(): bool
+    {
+    }
 
     /**
      * Tells if the object references a regular file
@@ -194,7 +228,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isFile(): bool {}
+    public function isFile(): bool
+    {
+    }
 
     /**
      * Tells if the file is a directory
@@ -203,7 +239,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isDir(): bool {}
+    public function isDir(): bool
+    {
+    }
 
     /**
      * Tells if the file is a link
@@ -212,7 +250,9 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function isLink(): bool {}
+    public function isLink(): bool
+    {
+    }
 
     /**
      * Gets the target of a link
@@ -222,7 +262,9 @@ class SplFileInfo implements Stringable
      * @throws \RuntimeException on error.
      */
     #[TentativeType]
-    public function getLinkTarget(): string|false {}
+    public function getLinkTarget(): string|false
+    {
+    }
 
     /**
      * Gets absolute path to file
@@ -231,7 +273,9 @@ class SplFileInfo implements Stringable
      * @since 5.2.2
      */
     #[TentativeType]
-    public function getRealPath(): string|false {}
+    public function getRealPath(): string|false
+    {
+    }
 
     /**
      * Gets an SplFileInfo object for the file
@@ -244,7 +288,10 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getFileInfo(#[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $class = null): SplFileInfo {}
+    public function getFileInfo(
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $class = null,
+    ): SplFileInfo {
+    }
 
     /**
      * Gets an SplFileInfo object for the path
@@ -257,7 +304,10 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getPathInfo(#[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $class = null): ?SplFileInfo {}
+    public function getPathInfo(
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $class = null,
+    ): null|SplFileInfo {
+    }
 
     /**
      * Gets an SplFileObject object for the file
@@ -277,10 +327,11 @@ class SplFileInfo implements Stringable
      */
     #[TentativeType]
     public function openFile(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $mode = 'r',
-        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $useIncludePath = false,
-        $context = null
-    ): SplFileObject {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $mode = 'r',
+        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $useIncludePath = false,
+        $context = null,
+    ): SplFileObject {
+    }
 
     /**
      * Sets the class name used with <b>SplFileInfo::openFile</b>
@@ -293,7 +344,10 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function setFileClass(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $class = SplFileObject::class): void {}
+    public function setFileClass(
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $class = SplFileObject::class,
+    ): void {
+    }
 
     /**
      * Sets the class used with getFileInfo and getPathInfo
@@ -306,7 +360,10 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[TentativeType]
-    public function setInfoClass(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $class = SplFileInfo::class): void {}
+    public function setInfoClass(
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $class = SplFileInfo::class,
+    ): void {
+    }
 
     /**
      * Returns the path to the file as a string
@@ -315,19 +372,27 @@ class SplFileInfo implements Stringable
      * @since 5.1.2
      */
     #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]
-    public function __toString() {}
+    public function __toString()
+    {
+    }
 
     #[TentativeType]
-    final public function _bad_state_ex(): void {}
+    final public function _bad_state_ex(): void
+    {
+    }
 
-    public function __wakeup() {}
+    public function __wakeup()
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 }
 
 /**
@@ -344,7 +409,7 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @throws UnexpectedValueException if the path cannot be opened.
      * @throws RuntimeException if the path is an empty string.
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $directory) {}
+    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $directory) {}
 
     /**
      * Determine if current DirectoryIterator item is '.' or '..'
@@ -353,7 +418,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * otherwise false
      */
     #[TentativeType]
-    public function isDot(): bool {}
+    public function isDot(): bool
+    {
+    }
 
     /**
      * Rewind the DirectoryIterator back to the start
@@ -361,7 +428,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Check whether current DirectoryIterator position is a valid file
@@ -369,7 +438,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return bool true if the position is valid, otherwise false
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Return the key for the current DirectoryIterator item
@@ -377,7 +448,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return string The key for the current <b>DirectoryIterator</b> item.
      */
     #[TentativeType]
-    public function key(): mixed {}
+    public function key(): mixed
+    {
+    }
 
     /**
      * Return the current DirectoryIterator item.
@@ -385,7 +458,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return DirectoryIterator The current <b>DirectoryIterator</b> item.
      */
     #[TentativeType]
-    public function current(): mixed {}
+    public function current(): mixed
+    {
+    }
 
     /**
      * Move forward to next DirectoryIterator item
@@ -393,7 +468,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Seek to a DirectoryIterator item
@@ -404,7 +481,9 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
      * @return void
      */
     #[TentativeType]
-    public function seek(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $offset): void {}
+    public function seek(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $offset): void
+    {
+    }
 }
 
 /**
@@ -434,8 +513,11 @@ class FilesystemIterator extends DirectoryIterator
      * @throws UnexpectedValueException if the path cannot be found.
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $directory,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags = FilesystemIterator::KEY_AS_PATHNAME|FilesystemIterator::CURRENT_AS_FILEINFO|FilesystemIterator::SKIP_DOTS
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $directory,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]
+         $flags = FilesystemIterator::KEY_AS_PATHNAME |
+            FilesystemIterator::CURRENT_AS_FILEINFO |
+            FilesystemIterator::SKIP_DOTS,
     ) {}
 
     /**
@@ -444,14 +526,18 @@ class FilesystemIterator extends DirectoryIterator
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Move to the next file
      * @link https://php.net/manual/en/filesystemiterator.next.php
      * @return void
      */
-    public function next() {}
+    public function next()
+    {
+    }
 
     /**
      * Retrieve the key for the current file
@@ -460,7 +546,9 @@ class FilesystemIterator extends DirectoryIterator
      * See the FilesystemIterator constants.
      */
     #[TentativeType]
-    public function key(): string {}
+    public function key(): string
+    {
+    }
 
     /**
      * The current file
@@ -469,7 +557,9 @@ class FilesystemIterator extends DirectoryIterator
      * See the FilesystemIterator constants.
      */
     #[TentativeType]
-    public function current(): SplFileInfo|FilesystemIterator|string {}
+    public function current(): SplFileInfo|FilesystemIterator|string
+    {
+    }
 
     /**
      * Get the handling flags
@@ -477,7 +567,9 @@ class FilesystemIterator extends DirectoryIterator
      * @return int The integer value of the set flags.
      */
     #[TentativeType]
-    public function getFlags(): int {}
+    public function getFlags(): int
+    {
+    }
 
     /**
      * Sets handling flags
@@ -490,9 +582,10 @@ class FilesystemIterator extends DirectoryIterator
      */
     #[TentativeType]
     public function setFlags(
-        #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] $flags = null,
-        #[PhpStormStubsElementAvailable(from: '8.0')] int $flags
-    ): void {}
+        #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')]  $flags = null,
+        #[PhpStormStubsElementAvailable(from: '8.0')] int $flags,
+    ): void {
+    }
 }
 
 /**
@@ -511,8 +604,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @since 5.1.2
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $directory,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags = FilesystemIterator::KEY_AS_PATHNAME|FilesystemIterator::CURRENT_AS_FILEINFO
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $directory,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]
+         $flags = FilesystemIterator::KEY_AS_PATHNAME | FilesystemIterator::CURRENT_AS_FILEINFO,
     ) {}
 
     /**
@@ -523,7 +617,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return bool whether the current entry is a directory, but not '.' or '..'
      */
     #[TentativeType]
-    public function hasChildren(#[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $allowLinks = false): bool {}
+    public function hasChildren(#[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $allowLinks = false): bool
+    {
+    }
 
     /**
      * Returns an iterator for the current entry if it is a directory
@@ -531,7 +627,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return RecursiveDirectoryIterator An iterator for the current entry, if it is a directory.
      */
     #[TentativeType]
-    public function getChildren(): RecursiveDirectoryIterator {}
+    public function getChildren(): RecursiveDirectoryIterator
+    {
+    }
 
     /**
      * Get sub path
@@ -539,7 +637,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return string The sub path (sub directory).
      */
     #[TentativeType]
-    public function getSubPath(): string {}
+    public function getSubPath(): string
+    {
+    }
 
     /**
      * Get sub path and name
@@ -547,21 +647,27 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return string The sub path (sub directory) and filename.
      */
     #[TentativeType]
-    public function getSubPathname(): string {}
+    public function getSubPathname(): string
+    {
+    }
 
     /**
      * Rewinds back to the beginning
      * @link https://php.net/manual/en/filesystemiterator.rewind.php
      * @return void
      */
-    public function rewind() {}
+    public function rewind()
+    {
+    }
 
     /**
      * Move to the next file
      * @link https://php.net/manual/en/filesystemiterator.next.php
      * @return void
      */
-    public function next() {}
+    public function next()
+    {
+    }
 
     /**
      * Retrieve the key for the current file
@@ -569,7 +675,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return string the pathname or filename depending on the set flags.
      * See the FilesystemIterator constants.
      */
-    public function key() {}
+    public function key()
+    {
+    }
 
     /**
      * The current file
@@ -577,7 +685,9 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
      * @return string|SplFileInfo|self The filename, file information, or $this depending on the set flags.
      * See the FilesystemIterator constants.
      */
-    public function current() {}
+    public function current()
+    {
+    }
 }
 
 /**
@@ -594,8 +704,9 @@ class GlobIterator extends FilesystemIterator implements Countable
      * @param int $flags [optional]
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $pattern,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags = FilesystemIterator::KEY_AS_PATHNAME|FilesystemIterator::CURRENT_AS_FILEINFO
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $pattern,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]
+         $flags = FilesystemIterator::KEY_AS_PATHNAME | FilesystemIterator::CURRENT_AS_FILEINFO,
     ) {}
 
     /**
@@ -605,7 +716,9 @@ class GlobIterator extends FilesystemIterator implements Countable
      * integer.
      */
     #[TentativeType]
-    public function count(): int {}
+    public function count(): int
+    {
+    }
 }
 
 /**
@@ -648,10 +761,10 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @throws LogicException When the filename is a directory
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $filename,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $mode = 'r',
-        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $useIncludePath = false,
-        $context = null
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $filename,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $mode = 'r',
+        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $useIncludePath = false,
+        $context = null,
     ) {}
 
     /**
@@ -662,7 +775,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @throws RuntimeException If cannot be rewound
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Reached end of file
@@ -670,7 +785,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return bool true if file is at EOF, false otherwise.
      */
     #[TentativeType]
-    public function eof(): bool {}
+    public function eof(): bool
+    {
+    }
 
     /**
      * Not at EOF
@@ -678,7 +795,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return bool true if not reached EOF, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Gets line from file
@@ -688,7 +807,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @throws RuntimeException If the file cannot be read
      */
     #[TentativeType]
-    public function fgets(): string {}
+    public function fgets(): string
+    {
+    }
 
     /**
      * Read from file
@@ -700,7 +821,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @since 5.5.11
      */
     #[TentativeType]
-    public function fread(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $length): string|false {}
+    public function fread(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $length): string|false
+    {
+    }
 
     /**
      * Gets line from file and parse as CSV fields
@@ -724,10 +847,11 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     #[TentativeType]
     #[LanguageLevelTypeAware(['8.1' => 'array|false'], default: 'array|false|null')]
     public function fgetcsv(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $separator = ",",
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $enclosure = "\"",
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $escape = "\\"
-    ) {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $separator = ',',
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $enclosure = "\"",
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $escape = "\\",
+    ) {
+    }
 
     /**
      * Write a field array as a CSV line
@@ -746,11 +870,12 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     #[TentativeType]
     public function fputcsv(
         array $fields,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $separator = ',',
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $enclosure = '"',
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $escape = "\\",
-        #[PhpStormStubsElementAvailable('8.1')] string $eol = PHP_EOL
-    ): int|false {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $separator = ',',
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $enclosure = '"',
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $escape = "\\",
+        #[PhpStormStubsElementAvailable('8.1')] string $eol = PHP_EOL,
+    ): int|false {
+    }
 
     /**
      * Set the delimiter and enclosure character for CSV
@@ -768,10 +893,11 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      */
     #[TentativeType]
     public function setCsvControl(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $separator = ",",
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $enclosure = "\"",
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $escape = "\\"
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $separator = ',',
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $enclosure = "\"",
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $escape = "\\",
+    ): void {
+    }
 
     /**
      * Get the delimiter and enclosure character for CSV
@@ -779,7 +905,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return array an indexed array containing the delimiter and enclosure character.
      */
     #[TentativeType]
-    public function getCsvControl(): array {}
+    public function getCsvControl(): array
+    {
+    }
 
     /**
      * Portable file locking
@@ -794,7 +922,11 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return bool true on success or false on failure.
      */
     #[TentativeType]
-    public function flock(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $operation, &$wouldBlock = null): bool {}
+    public function flock(
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $operation,
+        &$wouldBlock = null,
+    ): bool {
+    }
 
     /**
      * Flushes the output to the file
@@ -802,7 +934,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return bool true on success or false on failure.
      */
     #[TentativeType]
-    public function fflush(): bool {}
+    public function fflush(): bool
+    {
+    }
 
     /**
      * Return current file position
@@ -810,7 +944,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return int|false the position of the file pointer as an integer, or false on error.
      */
     #[TentativeType]
-    public function ftell(): int|false {}
+    public function ftell(): int|false
+    {
+    }
 
     /**
      * Seek to a position
@@ -833,9 +969,10 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      */
     #[TentativeType]
     public function fseek(
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $offset,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $whence = SEEK_SET
-    ): int {}
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $offset,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $whence = SEEK_SET,
+    ): int {
+    }
 
     /**
      * Gets character from file
@@ -843,7 +980,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return string|false a string containing a single character read from the file or false on EOF.
      */
     #[TentativeType]
-    public function fgetc(): string|false {}
+    public function fgetc(): string|false
+    {
+    }
 
     /**
      * Output all remaining data on a file pointer
@@ -852,21 +991,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * and passed through to the output.
      */
     #[TentativeType]
-    public function fpassthru(): int {}
-
-    /**
-     * Gets line from file and strip HTML tags
-     * @link https://php.net/manual/en/splfileobject.fgetss.php
-     * @param string $allowable_tags [optional] <p>
-     * You can use the optional third parameter to specify tags which should
-     * not be stripped.
-     * </p>
-     * @return string|false a string containing the next line of the file with HTML and PHP
-     * code stripped, or false on error.
-     * @removed 8.0
-     */
-    #[Deprecated(since: '7.3')]
-    public function fgetss($allowable_tags = null) {}
+    public function fpassthru(): int
+    {
+    }
 
     /**
      * Parses input from file according to a format
@@ -884,9 +1011,10 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      */
     #[TentativeType]
     public function fscanf(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $format,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] &...$vars
-    ): array|int|null {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $format,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  &...$vars,
+    ): array|int|null {
+    }
 
     /**
      * Write to file
@@ -905,9 +1033,10 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     #[LanguageLevelTypeAware(['7.4' => 'int|false'], default: 'int')]
     #[TentativeType]
     public function fwrite(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $data,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $length = 0
-    ): int|false {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $data,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $length = 0,
+    ): int|false {
+    }
 
     /**
      * Gets information about the file
@@ -916,7 +1045,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * is described in detail on the <b>stat</b> manual page.
      */
     #[TentativeType]
-    public function fstat(): array {}
+    public function fstat(): array
+    {
+    }
 
     /**
      * Truncates the file to a given length
@@ -933,7 +1064,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return bool true on success or false on failure.
      */
     #[TentativeType]
-    public function ftruncate(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $size): bool {}
+    public function ftruncate(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $size): bool
+    {
+    }
 
     /**
      * Retrieve current line of file
@@ -941,7 +1074,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return string|array|false Retrieves the current line of the file. If the <b>SplFileObject::READ_CSV</b> flag is set, this method returns an array containing the current line parsed as CSV data.
      */
     #[TentativeType]
-    public function current(): string|array|false {}
+    public function current(): string|array|false
+    {
+    }
 
     /**
      * Get line number
@@ -949,7 +1084,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return int the current line number.
      */
     #[TentativeType]
-    public function key(): int {}
+    public function key(): int
+    {
+    }
 
     /**
      * Read next line
@@ -957,7 +1094,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Sets flags for the SplFileObject
@@ -970,7 +1109,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return void
      */
     #[TentativeType]
-    public function setFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags): void {}
+    public function setFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $flags): void
+    {
+    }
 
     /**
      * Gets flags for the SplFileObject
@@ -978,7 +1119,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @return int an integer representing the flags.
      */
     #[TentativeType]
-    public function getFlags(): int {}
+    public function getFlags(): int
+    {
+    }
 
     /**
      * Set maximum line length
@@ -991,7 +1134,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @throws DomainException When <i>maxLength</i> is less than zero.
      */
     #[TentativeType]
-    public function setMaxLineLen(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $maxLength): void {}
+    public function setMaxLineLen(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $maxLength): void
+    {
+    }
 
     /**
      * Get maximum line length
@@ -1000,7 +1145,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * <b>SplFileObject::setMaxLineLen</b>, default is 0.
      */
     #[TentativeType]
-    public function getMaxLineLen(): int {}
+    public function getMaxLineLen(): int
+    {
+    }
 
     /**
      * SplFileObject does not have children
@@ -1010,7 +1157,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      */
     #[TentativeType]
     #[LanguageLevelTypeAware(['8.2' => 'false'], default: 'bool')]
-    public function hasChildren() {}
+    public function hasChildren()
+    {
+    }
 
     /**
      * No purpose
@@ -1019,7 +1168,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      */
     #[TentativeType]
     #[LanguageLevelTypeAware(['8.2' => 'null'], default: 'null|RecursiveIterator')]
-    public function getChildren() {}
+    public function getChildren()
+    {
+    }
 
     /**
      * Seek to specified line
@@ -1031,7 +1182,9 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @throws LogicException If the <i>line</i> is negative
      */
     #[TentativeType]
-    public function seek(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $line): void {}
+    public function seek(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $line): void
+    {
+    }
 
     /**
      * Alias of <b>SplFileObject::fgets</b>
@@ -1040,14 +1193,18 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
      * @since 5.1.2
      */
     #[TentativeType]
-    public function getCurrentLine(): string {}
+    public function getCurrentLine(): string
+    {
+    }
 
     /**
      * Alias of <b>SplFileObject::current</b>
      * @link https://php.net/manual/en/splfileobject.tostring.php
      */
     #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]
-    public function __toString() {}
+    public function __toString()
+    {
+    }
 }
 
 /**
@@ -1063,7 +1220,7 @@ class SplTempFileObject extends SplFileObject
      * @throws RuntimeException if an error occurs.
      * @since 5.1.2
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $maxMemory = 2097152) {}
+    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $maxMemory = 2097152) {}
 }
 
 /**
@@ -1090,9 +1247,10 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      */
     #[TentativeType]
     public function add(
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $index,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $index,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value,
+    ): void {
+    }
 
     /**
      * Pops a node from the end of the doubly linked list
@@ -1100,7 +1258,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the popped node.
      */
     #[TentativeType]
-    public function pop(): mixed {}
+    public function pop(): mixed
+    {
+    }
 
     /**
      * Shifts a node from the beginning of the doubly linked list
@@ -1108,7 +1268,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the shifted node.
      */
     #[TentativeType]
-    public function shift(): mixed {}
+    public function shift(): mixed
+    {
+    }
 
     /**
      * Pushes an element at the end of the doubly linked list
@@ -1119,7 +1281,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function push(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value): void {}
+    public function push(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value): void
+    {
+    }
 
     /**
      * Prepends the doubly linked list with an element
@@ -1130,7 +1294,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function unshift(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value): void {}
+    public function unshift(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value): void
+    {
+    }
 
     /**
      * Peeks at the node from the end of the doubly linked list
@@ -1138,7 +1304,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the last node.
      */
     #[TentativeType]
-    public function top(): mixed {}
+    public function top(): mixed
+    {
+    }
 
     /**
      * Peeks at the node from the beginning of the doubly linked list
@@ -1146,7 +1314,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the first node.
      */
     #[TentativeType]
-    public function bottom(): mixed {}
+    public function bottom(): mixed
+    {
+    }
 
     /**
      * Counts the number of elements in the doubly linked list.
@@ -1154,7 +1324,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return int the number of elements in the doubly linked list.
      */
     #[TentativeType]
-    public function count(): int {}
+    public function count(): int
+    {
+    }
 
     /**
      * Checks whether the doubly linked list is empty.
@@ -1162,7 +1334,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return bool whether the doubly linked list is empty.
      */
     #[TentativeType]
-    public function isEmpty(): bool {}
+    public function isEmpty(): bool
+    {
+    }
 
     /**
      * Sets the mode of iteration
@@ -1175,7 +1349,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return int
      */
     #[TentativeType]
-    public function setIteratorMode(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $mode): int {}
+    public function setIteratorMode(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $mode): int
+    {
+    }
 
     /**
      * Returns the mode of iteration
@@ -1183,7 +1359,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return int the different modes and flags that affect the iteration.
      */
     #[TentativeType]
-    public function getIteratorMode(): int {}
+    public function getIteratorMode(): int
+    {
+    }
 
     /**
      * Returns whether the requested $index exists
@@ -1194,7 +1372,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return bool true if the requested <i>index</i> exists, otherwise false
      */
     #[TentativeType]
-    public function offsetExists($index): bool {}
+    public function offsetExists($index): bool
+    {
+    }
 
     /**
      * Returns the value at the specified $index
@@ -1205,7 +1385,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value at the specified <i>index</i>.
      */
     #[TentativeType]
-    public function offsetGet($index): mixed {}
+    public function offsetGet($index): mixed
+    {
+    }
 
     /**
      * Sets the value at the specified $index to $newval
@@ -1219,7 +1401,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function offsetSet($index, #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value): void {}
+    public function offsetSet($index, #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value): void
+    {
+    }
 
     /**
      * Unsets the value at the specified $index
@@ -1230,7 +1414,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function offsetUnset($index): void {}
+    public function offsetUnset($index): void
+    {
+    }
 
     /**
      * Rewind iterator back to the start
@@ -1238,7 +1424,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Return current array entry
@@ -1246,7 +1434,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The current node value.
      */
     #[TentativeType]
-    public function current(): mixed {}
+    public function current(): mixed
+    {
+    }
 
     /**
      * Return current node index
@@ -1254,7 +1444,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return string|float|int|bool|null The current node index.
      */
     #[TentativeType]
-    public function key(): int {}
+    public function key(): int
+    {
+    }
 
     /**
      * Move to next entry
@@ -1262,7 +1454,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Move to previous entry
@@ -1270,7 +1464,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      */
     #[TentativeType]
-    public function prev(): void {}
+    public function prev(): void
+    {
+    }
 
     /**
      * Check whether the doubly linked list contains more nodes
@@ -1278,7 +1474,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return bool true if the doubly linked list contains any more nodes, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Unserializes the storage
@@ -1288,7 +1486,9 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @since 5.4
      */
     #[TentativeType]
-    public function unserialize(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $data): void {}
+    public function unserialize(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $data): void
+    {
+    }
 
     /**
      * Serializes the storage
@@ -1297,28 +1497,36 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @since 5.4
      */
     #[TentativeType]
-    public function serialize(): string {}
+    public function serialize(): string
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __serialize(): array {}
+    public function __serialize(): array
+    {
+    }
 
     /**
      * @param array $data
      * @since 7.4
      */
     #[TentativeType]
-    public function __unserialize(array $data): void {}
+    public function __unserialize(array $data): void
+    {
+    }
 }
 
 /**
@@ -1337,7 +1545,9 @@ class SplQueue extends SplDoublyLinkedList
      * @return void
      */
     #[TentativeType]
-    public function enqueue(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value): void {}
+    public function enqueue(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value): void
+    {
+    }
 
     /**
      * Dequeues a node from the queue
@@ -1345,7 +1555,9 @@ class SplQueue extends SplDoublyLinkedList
      * @return TValue The value of the dequeued node.
      */
     #[TentativeType]
-    public function dequeue(): mixed {}
+    public function dequeue(): mixed
+    {
+    }
 
     /**
      * Sets the mode of iteration
@@ -1357,7 +1569,9 @@ class SplQueue extends SplDoublyLinkedList
      * <b>SplDoublyLinkedList::IT_MODE_LIFO</b> (Stack style)
      * @return void
      */
-    public function setIteratorMode($mode) {}
+    public function setIteratorMode($mode)
+    {
+    }
 }
 
 /**
@@ -1378,7 +1592,9 @@ class SplStack extends SplDoublyLinkedList
      * <b>SplDoublyLinkedList::IT_MODE_LIFO</b> (Stack style)
      * @return void
      */
-    public function setIteratorMode($mode) {}
+    public function setIteratorMode($mode)
+    {
+    }
 }
 
 /**
@@ -1395,7 +1611,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return TValue The value of the extracted node.
      */
     #[TentativeType]
-    public function extract(): mixed {}
+    public function extract(): mixed
+    {
+    }
 
     /**
      * Inserts an element in the heap by sifting it up.
@@ -1407,7 +1625,9 @@ abstract class SplHeap implements Iterator, Countable
      */
     #[TentativeType]
     #[LanguageLevelTypeAware(['8.4' => 'true'], default: 'bool')]
-    public function insert(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value) {}
+    public function insert(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value)
+    {
+    }
 
     /**
      * Peeks at the node from the top of the heap
@@ -1415,7 +1635,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return TValue The value of the node on the top.
      */
     #[TentativeType]
-    public function top(): mixed {}
+    public function top(): mixed
+    {
+    }
 
     /**
      * Counts the number of elements in the heap.
@@ -1423,7 +1645,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return int the number of elements in the heap.
      */
     #[TentativeType]
-    public function count(): int {}
+    public function count(): int
+    {
+    }
 
     /**
      * Checks whether the heap is empty.
@@ -1431,7 +1655,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return bool whether the heap is empty.
      */
     #[TentativeType]
-    public function isEmpty(): bool {}
+    public function isEmpty(): bool
+    {
+    }
 
     /**
      * Rewind iterator back to the start (no-op)
@@ -1439,7 +1665,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Return current node pointed by the iterator
@@ -1447,7 +1675,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return TValue The current node value.
      */
     #[TentativeType]
-    public function current(): mixed {}
+    public function current(): mixed
+    {
+    }
 
     /**
      * Return current node index
@@ -1455,7 +1685,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return int The current node index.
      */
     #[TentativeType]
-    public function key(): int {}
+    public function key(): int
+    {
+    }
 
     /**
      * Move to the next node
@@ -1463,7 +1695,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Check whether the heap contains more nodes
@@ -1471,7 +1705,9 @@ abstract class SplHeap implements Iterator, Countable
      * @return bool true if the heap contains any more nodes, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Recover from the corrupted state and allow further actions on the heap.
@@ -1480,7 +1716,9 @@ abstract class SplHeap implements Iterator, Countable
      */
     #[TentativeType]
     #[LanguageLevelTypeAware(['8.4' => 'true'], default: 'bool')]
-    public function recoverFromCorruption() {}
+    public function recoverFromCorruption()
+    {
+    }
 
     /**
      * Compare elements in order to place them correctly in the heap while sifting up.
@@ -1502,14 +1740,18 @@ abstract class SplHeap implements Iterator, Countable
      * @return bool
      */
     #[TentativeType]
-    public function isCorrupted(): bool {}
+    public function isCorrupted(): bool
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 }
 
 /**
@@ -1536,16 +1778,19 @@ class SplMinHeap extends SplHeap
      */
     #[TentativeType]
     protected function compare(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value1,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value2
-    ): int {}
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value1,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value2,
+    ): int {
+    }
 
     /**
      * Extracts a node from top of the heap and sift up.
      * @link https://php.net/manual/en/splheap.extract.php
      * @return TValue The value of the extracted node.
      */
-    public function extract() {}
+    public function extract()
+    {
+    }
 
     /**
      * Inserts an element in the heap by sifting it up.
@@ -1555,70 +1800,90 @@ class SplMinHeap extends SplHeap
      * </p>
      * @return true
      */
-    public function insert($value) {}
+    public function insert($value)
+    {
+    }
 
     /**
      * Peeks at the node from the top of the heap
      * @link https://php.net/manual/en/splheap.top.php
      * @return TValue The value of the node on the top.
      */
-    public function top() {}
+    public function top()
+    {
+    }
 
     /**
      * Counts the number of elements in the heap.
      * @link https://php.net/manual/en/splheap.count.php
      * @return int the number of elements in the heap.
      */
-    public function count() {}
+    public function count()
+    {
+    }
 
     /**
      * Checks whether the heap is empty.
      * @link https://php.net/manual/en/splheap.isempty.php
      * @return bool whether the heap is empty.
      */
-    public function isEmpty() {}
+    public function isEmpty()
+    {
+    }
 
     /**
      * Rewind iterator back to the start (no-op)
      * @link https://php.net/manual/en/splheap.rewind.php
      * @return void
      */
-    public function rewind() {}
+    public function rewind()
+    {
+    }
 
     /**
      * Return current node pointed by the iterator
      * @link https://php.net/manual/en/splheap.current.php
      * @return TValue The current node value.
      */
-    public function current() {}
+    public function current()
+    {
+    }
 
     /**
      * Return current node index
      * @link https://php.net/manual/en/splheap.key.php
      * @return int The current node index.
      */
-    public function key() {}
+    public function key()
+    {
+    }
 
     /**
      * Move to the next node
      * @link https://php.net/manual/en/splheap.next.php
      * @return void
      */
-    public function next() {}
+    public function next()
+    {
+    }
 
     /**
      * Check whether the heap contains more nodes
      * @link https://php.net/manual/en/splheap.valid.php
      * @return bool true if the heap contains any more nodes, false otherwise.
      */
-    public function valid() {}
+    public function valid()
+    {
+    }
 
     /**
      * Recover from the corrupted state and allow further actions on the heap.
      * @link https://php.net/manual/en/splheap.recoverfromcorruption.php
      * @return void
      */
-    public function recoverFromCorruption() {}
+    public function recoverFromCorruption()
+    {
+    }
 }
 
 /**
@@ -1645,9 +1910,10 @@ class SplMaxHeap extends SplHeap
      */
     #[TentativeType]
     protected function compare(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value1,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value2
-    ): int {}
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value1,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value2,
+    ): int {
+    }
 }
 
 /**
@@ -1680,9 +1946,10 @@ class SplPriorityQueue implements Iterator, Countable
      */
     #[TentativeType]
     public function compare(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $priority1,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $priority2
-    ): int {}
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $priority1,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $priority2,
+    ): int {
+    }
 
     /**
      * Inserts an element in the queue by sifting it up.
@@ -1697,9 +1964,10 @@ class SplPriorityQueue implements Iterator, Countable
      */
     #[TentativeType]
     public function insert(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $priority
-    ): true {}
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $priority,
+    ): true {
+    }
 
     /**
      * Sets the mode of extraction
@@ -1713,7 +1981,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return int
      */
     #[TentativeType]
-    public function setExtractFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags): int {}
+    public function setExtractFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $flags): int
+    {
+    }
 
     /**
      * Peeks at the node from the top of the queue
@@ -1721,7 +1991,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return TValue The value or priority (or both) of the top node, depending on the extract flag.
      */
     #[TentativeType]
-    public function top(): mixed {}
+    public function top(): mixed
+    {
+    }
 
     /**
      * Extracts a node from top of the heap and sift up.
@@ -1729,7 +2001,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return TValue The value or priority (or both) of the extracted node, depending on the extract flag.
      */
     #[TentativeType]
-    public function extract(): mixed {}
+    public function extract(): mixed
+    {
+    }
 
     /**
      * Counts the number of elements in the queue.
@@ -1737,7 +2011,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return int the number of elements in the queue.
      */
     #[TentativeType]
-    public function count(): int {}
+    public function count(): int
+    {
+    }
 
     /**
      * Checks whether the queue is empty.
@@ -1745,7 +2021,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return bool whether the queue is empty.
      */
     #[TentativeType]
-    public function isEmpty(): bool {}
+    public function isEmpty(): bool
+    {
+    }
 
     /**
      * Rewind iterator back to the start (no-op)
@@ -1753,7 +2031,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Return current node pointed by the iterator
@@ -1761,7 +2041,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return TValue The value or priority (or both) of the current node, depending on the extract flag.
      */
     #[TentativeType]
-    public function current(): mixed {}
+    public function current(): mixed
+    {
+    }
 
     /**
      * Return current node index
@@ -1769,7 +2051,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return int The current node index.
      */
     #[TentativeType]
-    public function key(): int {}
+    public function key(): int
+    {
+    }
 
     /**
      * Move to the next node
@@ -1777,7 +2061,9 @@ class SplPriorityQueue implements Iterator, Countable
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Check whether the queue contains more nodes
@@ -1785,33 +2071,43 @@ class SplPriorityQueue implements Iterator, Countable
      * @return bool true if the queue contains any more nodes, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Recover from the corrupted state and allow further actions on the queue.
      * @link https://php.net/manual/en/splpriorityqueue.recoverfromcorruption.php
      */
     #[TentativeType]
-    public function recoverFromCorruption(): true {}
+    public function recoverFromCorruption(): true
+    {
+    }
 
     /**
      * @return bool
      */
     #[TentativeType]
-    public function isCorrupted(): bool {}
+    public function isCorrupted(): bool
+    {
+    }
 
     /**
      * @return int
      */
     #[TentativeType]
-    public function getExtractFlags(): int {}
+    public function getExtractFlags(): int
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 }
 
 /**
@@ -1833,7 +2129,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @link https://php.net/manual/en/splfixedarray.construct.php
      * @param int $size [optional]
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $size = 0) {}
+    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $size = 0) {}
 
     /**
      * Returns the size of the array
@@ -1841,7 +2137,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return int the size of the array.
      */
     #[TentativeType]
-    public function count(): int {}
+    public function count(): int
+    {
+    }
 
     /**
      * Returns a PHP array from the fixed array
@@ -1849,7 +2147,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return TValue[] a PHP array, similar to the fixed array.
      */
     #[TentativeType]
-    public function toArray(): array {}
+    public function toArray(): array
+    {
+    }
 
     /**
      * Import a PHP array in a <b>SplFixedArray</b> instance
@@ -1865,9 +2165,10 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      */
     #[TentativeType]
     public static function fromArray(
-        #[LanguageLevelTypeAware(['8.0' => 'array'], default: '')] $array,
-        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $preserveKeys = true
-    ): SplFixedArray {}
+        #[LanguageLevelTypeAware(['8.0' => 'array'], default: '')]  $array,
+        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $preserveKeys = true,
+    ): SplFixedArray {
+    }
 
     /**
      * Gets the size of the array
@@ -1875,7 +2176,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return int the size of the array, as an integer.
      */
     #[TentativeType]
-    public function getSize(): int {}
+    public function getSize(): int
+    {
+    }
 
     /**
      * Change the size of an array
@@ -1887,7 +2190,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      */
     #[LanguageLevelTypeAware(['8.4' => 'true'], default: 'bool')]
     #[TentativeType]
-    public function setSize(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $size) {}
+    public function setSize(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $size)
+    {
+    }
 
     /**
      * Returns whether the requested index exists
@@ -1898,7 +2203,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return bool true if the requested <i>index</i> exists, otherwise false
      */
     #[TentativeType]
-    public function offsetExists($index): bool {}
+    public function offsetExists($index): bool
+    {
+    }
 
     /**
      * Returns the value at the specified index
@@ -1909,7 +2216,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return TValue The value at the specified <i>index</i>.
      */
     #[TentativeType]
-    public function offsetGet($index): mixed {}
+    public function offsetGet($index): mixed
+    {
+    }
 
     /**
      * Sets a new value at a specified index
@@ -1923,7 +2232,9 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return void
      */
     #[TentativeType]
-    public function offsetSet($index, #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value): void {}
+    public function offsetSet($index, #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value): void
+    {
+    }
 
     /**
      * Unsets the value at the specified $index
@@ -1934,35 +2245,45 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return void
      */
     #[TentativeType]
-    public function offsetUnset($index): void {}
+    public function offsetUnset($index): void
+    {
+    }
 
     /**
      * Rewind iterator back to the start
      * @link https://php.net/manual/en/splfixedarray.rewind.php
      * @return void
      */
-    public function rewind() {}
+    public function rewind()
+    {
+    }
 
     /**
      * Return current array entry
      * @link https://php.net/manual/en/splfixedarray.current.php
      * @return TValue The current element value.
      */
-    public function current() {}
+    public function current()
+    {
+    }
 
     /**
      * Return current array index
      * @link https://php.net/manual/en/splfixedarray.key.php
      * @return int The current array index.
      */
-    public function key() {}
+    public function key()
+    {
+    }
 
     /**
      * Move to next entry
      * @link https://php.net/manual/en/splfixedarray.next.php
      * @return void
      */
-    public function next() {}
+    public function next()
+    {
+    }
 
     /**
      * Check whether the array contains more elements
@@ -1970,26 +2291,38 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable, IteratorAggrega
      * @return bool true if the array contains any more elements, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     #[TentativeType]
-    #[Deprecated("The function is deprecated", since: "8.4")]
-    public function __wakeup(): void {}
+    #[Deprecated('The function is deprecated', since: '8.4')]
+    public function __wakeup(): void
+    {
+    }
 
     #[PhpStormStubsElementAvailable(from: '8.2')]
-    public function __serialize(): array {}
+    public function __serialize(): array
+    {
+    }
 
     #[PhpStormStubsElementAvailable(from: '8.2')]
-    public function __unserialize(array $data): void {}
+    public function __unserialize(array $data): void
+    {
+    }
 
     /**
      * @since 8.0
      * @return Iterator<int, TValue>
      */
-    public function getIterator(): Iterator {}
+    public function getIterator(): Iterator
+    {
+    }
 
     #[PhpStormStubsElementAvailable(from: '8.1')]
-    public function jsonSerialize(): array {}
+    public function jsonSerialize(): array
+    {
+    }
 }
 
 /**
@@ -2074,9 +2407,10 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      */
     #[TentativeType]
     public function attach(
-        #[LanguageLevelTypeAware(['8.0' => 'object'], default: '')] $object,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $info = null
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'object'], default: '')]  $object,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $info = null,
+    ): void {
+    }
 
     /**
      * Removes an object from the storage
@@ -2087,7 +2421,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return void
      */
     #[TentativeType]
-    public function detach(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')] $object): void {}
+    public function detach(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')]  $object): void
+    {
+    }
 
     /**
      * Checks if the storage contains a specific object
@@ -2098,7 +2434,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return bool true if the object is in the storage, false otherwise.
      */
     #[TentativeType]
-    public function contains(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')] $object): bool {}
+    public function contains(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')]  $object): bool
+    {
+    }
 
     /**
      * Adds all objects from another storage
@@ -2109,7 +2447,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return int
      */
     #[TentativeType]
-    public function addAll(#[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')] $storage): int {}
+    public function addAll(#[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')]  $storage): int
+    {
+    }
 
     /**
      * Removes objects contained in another storage from the current storage
@@ -2120,7 +2460,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return int
      */
     #[TentativeType]
-    public function removeAll(#[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')] $storage): int {}
+    public function removeAll(#[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')]  $storage): int
+    {
+    }
 
     /**
      * Removes all objects except for those contained in another storage from the current storage
@@ -2132,7 +2474,10 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @since 5.3.6
      */
     #[TentativeType]
-    public function removeAllExcept(#[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')] $storage): int {}
+    public function removeAllExcept(
+        #[LanguageLevelTypeAware(['8.0' => 'SplObjectStorage'], default: '')]  $storage,
+    ): int {
+    }
 
     /**
      * Returns the data associated with the current iterator entry
@@ -2140,7 +2485,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return TValue The data associated with the current iterator position.
      */
     #[TentativeType]
-    public function getInfo(): mixed {}
+    public function getInfo(): mixed
+    {
+    }
 
     /**
      * Sets the data associated with the current iterator entry
@@ -2151,7 +2498,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return void
      */
     #[TentativeType]
-    public function setInfo(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $info): void {}
+    public function setInfo(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $info): void
+    {
+    }
 
     /**
      * Returns the number of objects in the storage
@@ -2160,7 +2509,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return int The number of objects in the storage.
      */
     #[TentativeType]
-    public function count(#[PhpStormStubsElementAvailable(from: '8.0')] int $mode = COUNT_NORMAL): int {}
+    public function count(#[PhpStormStubsElementAvailable(from: '8.0')] int $mode = COUNT_NORMAL): int
+    {
+    }
 
     /**
      * Rewind the iterator to the first storage element
@@ -2168,7 +2519,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Returns if the current iterator entry is valid
@@ -2176,7 +2529,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return bool true if the iterator entry is valid, false otherwise.
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Returns the index at which the iterator currently is
@@ -2184,7 +2539,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return int The index corresponding to the position of the iterator.
      */
     #[TentativeType]
-    public function key(): int {}
+    public function key(): int
+    {
+    }
 
     /**
      * Returns the current storage entry
@@ -2192,7 +2549,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return TObject The object at the current iterator position.
      */
     #[TentativeType]
-    public function current(): object {}
+    public function current(): object
+    {
+    }
 
     /**
      * Move to the next entry
@@ -2200,7 +2559,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * Unserializes a storage from its string representation
@@ -2212,7 +2573,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @since 5.2.2
      */
     #[TentativeType]
-    public function unserialize(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $data): void {}
+    public function unserialize(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $data): void
+    {
+    }
 
     /**
      * Serializes the storage
@@ -2221,7 +2584,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @since 5.2.2
      */
     #[TentativeType]
-    public function serialize(): string {}
+    public function serialize(): string
+    {
+    }
 
     /**
      * Checks whether an object exists in the storage
@@ -2233,7 +2598,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * and false otherwise.
      */
     #[TentativeType]
-    public function offsetExists($object): bool {}
+    public function offsetExists($object): bool
+    {
+    }
 
     /**
      * Associates data to an object in the storage
@@ -2248,9 +2615,10 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      */
     #[TentativeType]
     public function offsetSet(
-        #[LanguageLevelTypeAware(['8.1' => 'mixed'], default: '')] $object,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $info = null
-    ): void {}
+        #[LanguageLevelTypeAware(['8.1' => 'mixed'], default: '')]  $object,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $info = null,
+    ): void {
+    }
 
     /**
      * Removes an object from the storage
@@ -2261,7 +2629,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return void
      */
     #[TentativeType]
-    public function offsetUnset($object): void {}
+    public function offsetUnset($object): void
+    {
+    }
 
     /**
      * Returns the data associated with an <type>object</type>
@@ -2272,7 +2642,9 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @return TValue The data previously associated with the object in the storage.
      */
     #[TentativeType]
-    public function offsetGet($object): mixed {}
+    public function offsetGet($object): mixed
+    {
+    }
 
     /**
      * Calculate a unique identifier for the contained objects
@@ -2284,33 +2656,43 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @since 5.4
      */
     #[TentativeType]
-    public function getHash(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')] $object): string {}
+    public function getHash(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')]  $object): string
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __serialize(): array {}
+    public function __serialize(): array
+    {
+    }
 
     /**
      * @param array $data
      * @since 7.4
      */
     #[TentativeType]
-    public function __unserialize(array $data): void {}
+    public function __unserialize(array $data): void
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function seek(int $offset): void {}
+    public function seek(int $offset): void
+    {
+    }
 }
 
 /**
@@ -2330,8 +2712,9 @@ class MultipleIterator implements Iterator
      * @param int $flags Defaults to MultipleIterator::MIT_NEED_ALL | MultipleIterator::MIT_KEYS_NUMERIC
      */
     public function __construct(
-        #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] $flags,
-        #[PhpStormStubsElementAvailable(from: '8.0')] int $flags = MultipleIterator::MIT_NEED_ALL|MultipleIterator::MIT_KEYS_NUMERIC
+        #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')]  $flags,
+        #[PhpStormStubsElementAvailable(from: '8.0')]
+        int $flags = MultipleIterator::MIT_NEED_ALL | MultipleIterator::MIT_KEYS_NUMERIC,
     ) {}
 
     /**
@@ -2340,7 +2723,9 @@ class MultipleIterator implements Iterator
      * @return int Information about the flags, as an integer.
      */
     #[TentativeType]
-    public function getFlags(): int {}
+    public function getFlags(): int
+    {
+    }
 
     /**
      * Sets flags
@@ -2352,7 +2737,9 @@ class MultipleIterator implements Iterator
      * @return void
      */
     #[TentativeType]
-    public function setFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags): void {}
+    public function setFlags(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $flags): void
+    {
+    }
 
     /**
      * Attaches iterator information
@@ -2367,7 +2754,11 @@ class MultipleIterator implements Iterator
      * @return void Description...
      */
     #[TentativeType]
-    public function attachIterator(Iterator $iterator, #[LanguageLevelTypeAware(['8.0' => 'int|string|null'], default: '')] $info = null): void {}
+    public function attachIterator(
+        Iterator $iterator,
+        #[LanguageLevelTypeAware(['8.0' => 'int|string|null'], default: '')]  $info = null,
+    ): void {
+    }
 
     /**
      * Detaches an iterator
@@ -2378,7 +2769,9 @@ class MultipleIterator implements Iterator
      * @return void
      */
     #[TentativeType]
-    public function detachIterator(Iterator $iterator): void {}
+    public function detachIterator(Iterator $iterator): void
+    {
+    }
 
     /**
      * Checks if an iterator is attached
@@ -2389,7 +2782,9 @@ class MultipleIterator implements Iterator
      * @return bool true on success or false on failure.
      */
     #[TentativeType]
-    public function containsIterator(Iterator $iterator): bool {}
+    public function containsIterator(Iterator $iterator): bool
+    {
+    }
 
     /**
      * Gets the number of attached iterator instances
@@ -2397,7 +2792,9 @@ class MultipleIterator implements Iterator
      * @return int The number of attached iterator instances (as an integer).
      */
     #[TentativeType]
-    public function countIterators(): int {}
+    public function countIterators(): int
+    {
+    }
 
     /**
      * Rewinds all attached iterator instances
@@ -2405,7 +2802,9 @@ class MultipleIterator implements Iterator
      * @return void
      */
     #[TentativeType]
-    public function rewind(): void {}
+    public function rewind(): void
+    {
+    }
 
     /**
      * Checks the validity of sub iterators
@@ -2414,7 +2813,9 @@ class MultipleIterator implements Iterator
      * otherwise false
      */
     #[TentativeType]
-    public function valid(): bool {}
+    public function valid(): bool
+    {
+    }
 
     /**
      * Gets the registered iterator instances
@@ -2423,7 +2824,9 @@ class MultipleIterator implements Iterator
      * or false if no sub iterator is attached.
      */
     #[TentativeType]
-    public function key(): array {}
+    public function key(): array
+    {
+    }
 
     /**
      * Gets the registered iterator instances
@@ -2434,7 +2837,9 @@ class MultipleIterator implements Iterator
      * @throws InvalidArgumentException if a key is NULL and MIT_KEYS_ASSOC is set.
      */
     #[TentativeType]
-    public function current(): array {}
+    public function current(): array
+    {
+    }
 
     /**
      * Moves all attached iterator instances forward
@@ -2442,12 +2847,16 @@ class MultipleIterator implements Iterator
      * @return void
      */
     #[TentativeType]
-    public function next(): void {}
+    public function next(): void
+    {
+    }
 
     /**
      * @return array
      * @since 7.4
      */
     #[TentativeType]
-    public function __debugInfo(): array {}
+    public function __debugInfo(): array
+    {
+    }
 }

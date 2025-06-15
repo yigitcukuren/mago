@@ -96,24 +96,9 @@ class ReflectionProperty implements Reflector
      * @throws ReflectionException if the class or property does not exist.
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'object|string'], default: '')] $class,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $property
+        #[LanguageLevelTypeAware(['8.0' => 'object|string'], default: '')]  $class,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $property,
     ) {}
-
-    /**
-     * Export
-     *
-     * @link https://php.net/manual/en/reflectionproperty.export.php
-     * @param mixed $class The reflection to export.
-     * @param string $name The property name.
-     * @param bool $return Setting to {@see true} will return the export, as
-     * opposed to emitting it. Setting to {@see false} (the default) will do the
-     * opposite.
-     * @return string|null
-     * @removed 8.0
-     */
-    #[Deprecated(since: '7.4')]
-    public static function export($class, $name, $return = false) {}
 
     /**
      * To string
@@ -122,7 +107,9 @@ class ReflectionProperty implements Reflector
      * @return string
      */
     #[TentativeType]
-    public function __toString(): string {}
+    public function __toString(): string
+    {
+    }
 
     /**
      * Gets property name
@@ -132,7 +119,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getName(): string {}
+    public function getName(): string
+    {
+    }
 
     /**
      * Gets value
@@ -146,7 +135,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getValue(#[LanguageLevelTypeAware(['8.0' => 'object|null'], default: '')] $object = null): mixed {}
+    public function getValue(#[LanguageLevelTypeAware(['8.0' => 'object|null'], default: '')]  $object = null): mixed
+    {
+    }
 
     /**
      * Set property value
@@ -160,9 +151,10 @@ class ReflectionProperty implements Reflector
      */
     #[TentativeType]
     public function setValue(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $objectOrValue,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $value
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $objectOrValue,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $value,
+    ): void {
+    }
 
     /**
      * Checks if property is public
@@ -172,7 +164,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isPublic(): bool {}
+    public function isPublic(): bool
+    {
+    }
 
     /**
      * Checks if property is private
@@ -182,7 +176,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isPrivate(): bool {}
+    public function isPrivate(): bool
+    {
+    }
 
     /**
      * Checks if property is protected
@@ -192,7 +188,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isProtected(): bool {}
+    public function isProtected(): bool
+    {
+    }
 
     /**
      * Checks if property is static
@@ -202,7 +200,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isStatic(): bool {}
+    public function isStatic(): bool
+    {
+    }
 
     /**
      * Checks if default value
@@ -213,7 +213,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isDefault(): bool {}
+    public function isDefault(): bool
+    {
+    }
 
     /**
      * Gets modifiers
@@ -223,7 +225,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getModifiers(): int {}
+    public function getModifiers(): int
+    {
+    }
 
     /**
      * Gets declaring class
@@ -233,7 +237,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getDeclaringClass(): ReflectionClass {}
+    public function getDeclaringClass(): ReflectionClass
+    {
+    }
 
     /**
      * Gets doc comment
@@ -243,7 +249,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getDocComment(): string|false {}
+    public function getDocComment(): string|false
+    {
+    }
 
     /**
      * Set property accessibility
@@ -252,9 +260,11 @@ class ReflectionProperty implements Reflector
      * @param bool $accessible A boolean {@see true} to allow accessibility, or {@see false}
      * @return void No value is returned.
      */
-    #[PhpStormStubsElementAvailable(to: "8.0")]
+    #[PhpStormStubsElementAvailable(to: '8.0')]
     #[TentativeType]
-    public function setAccessible(#[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $accessible): void {}
+    public function setAccessible(#[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $accessible): void
+    {
+    }
 
     /**
      * Set property accessibility
@@ -265,9 +275,11 @@ class ReflectionProperty implements Reflector
      * @return void No value is returned.
      */
     #[Pure]
-    #[PhpStormStubsElementAvailable(from: "8.1")]
+    #[PhpStormStubsElementAvailable(from: '8.1')]
     #[TentativeType]
-    public function setAccessible(bool $accessible): void {}
+    public function setAccessible(bool $accessible): void
+    {
+    }
 
     /**
      * Gets property type
@@ -278,15 +290,14 @@ class ReflectionProperty implements Reflector
      * @since 7.4
      */
     #[Pure]
-    #[LanguageLevelTypeAware(
-        [
-            '8.0' => 'ReflectionNamedType|ReflectionUnionType|null',
-            '8.1' => 'ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null'
-        ],
-        default: 'ReflectionNamedType|null'
-    )]
+    #[LanguageLevelTypeAware([
+        '8.0' => 'ReflectionNamedType|ReflectionUnionType|null',
+        '8.1' => 'ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null',
+    ], default: 'ReflectionNamedType|null')]
     #[TentativeType]
-    public function getType(): ?ReflectionType {}
+    public function getType(): null|ReflectionType
+    {
+    }
 
     /**
      * Checks if property has type
@@ -296,7 +307,9 @@ class ReflectionProperty implements Reflector
      * @since 7.4
      */
     #[TentativeType]
-    public function hasType(): bool {}
+    public function hasType(): bool
+    {
+    }
 
     /**
      * Checks if property is initialized
@@ -309,7 +322,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isInitialized(?object $object = null): bool {}
+    public function isInitialized(null|object $object = null): bool
+    {
+    }
 
     /**
      * Returns information about whether the property was promoted.
@@ -318,7 +333,9 @@ class ReflectionProperty implements Reflector
      * @since 8.0
      */
     #[Pure]
-    public function isPromoted(): bool {}
+    public function isPromoted(): bool
+    {
+    }
 
     /**
      * Clone
@@ -326,8 +343,10 @@ class ReflectionProperty implements Reflector
      * @link https://php.net/manual/en/reflectionproperty.clone.php
      * @return void
      */
-    #[PhpStormStubsElementAvailable(from: "5.4", to: "8.0")]
-    final private function __clone(): void {}
+    #[PhpStormStubsElementAvailable(from: '5.4', to: '8.0')]
+    final private function __clone(): void
+    {
+    }
 
     /**
      * Clone
@@ -335,14 +354,18 @@ class ReflectionProperty implements Reflector
      * @link https://php.net/manual/en/reflectionproperty.clone.php
      * @return void
      */
-    #[PhpStormStubsElementAvailable(from: "8.1")]
-    private function __clone(): void {}
+    #[PhpStormStubsElementAvailable(from: '8.1')]
+    private function __clone(): void
+    {
+    }
 
     /**
      * @return bool
      * @since 8.0
      */
-    public function hasDefaultValue(): bool {}
+    public function hasDefaultValue(): bool
+    {
+    }
 
     /**
      * @return mixed
@@ -350,7 +373,9 @@ class ReflectionProperty implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getDefaultValue(): mixed {}
+    public function getDefaultValue(): mixed
+    {
+    }
 
     /**
      * @template T
@@ -363,91 +388,127 @@ class ReflectionProperty implements Reflector
      * @since 8.0
      */
     #[Pure]
-    public function getAttributes(?string $name = null, int $flags = 0): array {}
+    public function getAttributes(null|string $name = null, int $flags = 0): array
+    {
+    }
 
     /**
      * @return bool
      * @since 8.1
      */
-    public function isReadOnly(): bool {}
+    public function isReadOnly(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function getRawValue(object $object): mixed {}
+    public function getRawValue(object $object): mixed
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function setRawValue(object $object, mixed $value): void {}
+    public function setRawValue(object $object, mixed $value): void
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isAbstract(): bool {}
+    public function isAbstract(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isVirtual(): bool {}
+    public function isVirtual(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function getSettableType(): ?ReflectionType {}
+    public function getSettableType(): null|ReflectionType
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function hasHooks(): bool {}
+    public function hasHooks(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function getHooks(): array {}
+    public function getHooks(): array
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function hasHook(PropertyHookType $type): bool {}
+    public function hasHook(PropertyHookType $type): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function getHook(PropertyHookType $type): ?ReflectionMethod {}
+    public function getHook(PropertyHookType $type): null|ReflectionMethod
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isPrivateSet(): bool {}
+    public function isPrivateSet(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isProtectedSet(): bool {}
+    public function isProtectedSet(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function setRawValueWithoutLazyInitialization(object $object, mixed $value): void {}
+    public function setRawValueWithoutLazyInitialization(object $object, mixed $value): void
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function skipLazyInitialization(object $object): void {}
+    public function skipLazyInitialization(object $object): void
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isDynamic(): bool {}
+    public function isDynamic(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isFinal(): bool {}
+    public function isFinal(): bool
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isLazy(object $object): bool {}
+    public function isLazy(object $object): bool
+    {
+    }
 }

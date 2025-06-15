@@ -9,15 +9,6 @@
 interface Reflector extends Stringable
 {
     /**
-     * Exports a class.
-     *
-     * @link https://php.net/manual/en/reflector.export.php
-     * @return string|null
-     * @removed 7.4
-     */
-    public static function export();
-
-    /**
      * Returns the string representation of any Reflection object.
      *
      * Please note that since PHP 8.0 this method is absent in this interface

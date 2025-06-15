@@ -70,20 +70,10 @@ class ReflectionClassConstant implements Reflector
      * @since 7.1
      * @link https://php.net/manual/en/reflectionclassconstant.construct.php
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'string|object'], default: '')] $class, string $constant) {}
-
-    /**
-     * @link https://php.net/manual/en/reflectionclassconstant.export.php
-     * @param string|object $class The reflection to export.
-     * @param string $name The class constant name.
-     * @param bool $return Setting to {@see true} will return the export, as opposed to emitting it. Setting
-     * to {@see false} (the default) will do the opposite.
-     * @return string|null
-     * @since 7.1
-     * @removed 8.0
-     */
-    #[Deprecated(since: '7.4')]
-    public static function export($class, $name, $return = false) {}
+    public function __construct(
+        #[LanguageLevelTypeAware(['8.0' => 'string|object'], default: '')]  $class,
+        string $constant,
+    ) {}
 
     /**
      * Gets declaring class
@@ -94,7 +84,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getDeclaringClass(): ReflectionClass {}
+    public function getDeclaringClass(): ReflectionClass
+    {
+    }
 
     /**
      * Gets doc comments
@@ -105,7 +97,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getDocComment(): string|false {}
+    public function getDocComment(): string|false
+    {
+    }
 
     /**
      * Gets the class constant modifiers
@@ -117,7 +111,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getModifiers(): int {}
+    public function getModifiers(): int
+    {
+    }
 
     /**
      * Get name of the constant
@@ -128,7 +124,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getName(): string {}
+    public function getName(): string
+    {
+    }
 
     /**
      * Gets value
@@ -139,7 +137,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function getValue(): mixed {}
+    public function getValue(): mixed
+    {
+    }
 
     /**
      * Checks if class constant is private
@@ -150,7 +150,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isPrivate(): bool {}
+    public function isPrivate(): bool
+    {
+    }
 
     /**
      * Checks if class constant is protected
@@ -161,7 +163,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isProtected(): bool {}
+    public function isProtected(): bool
+    {
+    }
 
     /**
      * Checks if class constant is public
@@ -172,7 +176,9 @@ class ReflectionClassConstant implements Reflector
      */
     #[Pure]
     #[TentativeType]
-    public function isPublic(): bool {}
+    public function isPublic(): bool
+    {
+    }
 
     /**
      * Returns the string representation of the ReflectionClassConstant object.
@@ -181,7 +187,9 @@ class ReflectionClassConstant implements Reflector
      * @return string
      * @since 7.1
      */
-    public function __toString(): string {}
+    public function __toString(): string
+    {
+    }
 
     /**
      * @template T
@@ -194,45 +202,61 @@ class ReflectionClassConstant implements Reflector
      * @since 8.0
      */
     #[Pure]
-    public function getAttributes(?string $name = null, int $flags = 0): array {}
+    public function getAttributes(null|string $name = null, int $flags = 0): array
+    {
+    }
 
     /**
      * ReflectionClassConstant cannot be cloned
      *
      * @return void
      */
-    #[PhpStormStubsElementAvailable(from: "5.4", to: "8.0")]
-    final private function __clone(): void {}
+    #[PhpStormStubsElementAvailable(from: '5.4', to: '8.0')]
+    final private function __clone(): void
+    {
+    }
 
     /**
      * ReflectionClassConstant cannot be cloned
      *
      * @return void
      */
-    #[PhpStormStubsElementAvailable(from: "8.1")]
-    private function __clone(): void {}
+    #[PhpStormStubsElementAvailable(from: '8.1')]
+    private function __clone(): void
+    {
+    }
 
     #[PhpStormStubsElementAvailable('8.1')]
-    public function isEnumCase(): bool {}
+    public function isEnumCase(): bool
+    {
+    }
 
     /**
      * @return bool
      * @since 8.1
      */
-    public function isFinal(): bool {}
+    public function isFinal(): bool
+    {
+    }
 
     /**
      * @since 8.3
      */
-    public function hasType(): bool {}
+    public function hasType(): bool
+    {
+    }
 
     /**
      * @since 8.3
      */
-    public function getType(): ?ReflectionType {}
+    public function getType(): null|ReflectionType
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function isDeprecated(): bool {}
+    public function isDeprecated(): bool
+    {
+    }
 }

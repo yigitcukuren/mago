@@ -2,58 +2,48 @@
 
 namespace Decimal;
 
+use ArithmeticError;
+use BadMethodCallException;
+use DomainException;
+use Traversable;
+use TypeError;
+
 final class Decimal implements \JsonSerializable
 {
-    /**
-     * These constants are for auto-complete only.
-     */
-    public const ROUND_UP = 0; /* Round away from zero. */
-    public const ROUND_DOWN = 0; /* Round towards zero. */
-    public const ROUND_CEILING = 0; /* Round towards positive infinity */
-    public const ROUND_FLOOR = 0; /* Round towards negative infinity */
-    public const ROUND_HALF_UP = 0; /* Round to nearest, ties away from zero. */
-    public const ROUND_HALF_DOWN = 0; /* Round to nearest, ties towards zero. */
-    public const ROUND_HALF_EVEN = 0; /* Round to nearest, ties towards even. */
-    public const ROUND_HALF_ODD = 0; /* Round to nearest, ties towards odd. */
-    public const ROUND_TRUNCATE = 0; /* Truncate, keeping infinity. */
+    public const ROUND_UP = 0;
+    public const ROUND_DOWN = 0;
+    public const ROUND_CEILING = 0;
+    public const ROUND_FLOOR = 0;
+    public const ROUND_HALF_UP = 0;
+    public const ROUND_HALF_DOWN = 0;
+    public const ROUND_HALF_EVEN = 0;
+    public const ROUND_HALF_ODD = 0;
+    public const ROUND_TRUNCATE = 0;
     public const DEFAULT_ROUNDING = Decimal::ROUND_HALF_EVEN;
     public const DEFAULT_PRECISION = 28;
     public const MIN_PRECISION = 1;
-    public const MAX_PRECISION = 0; /* This value may change across platforms */
+    public const MAX_PRECISION = 0;
 
     /**
-     * Constructor
-     *
-     * Initializes a new instance using a given value and minimum precision.
-     *
      * @param Decimal|string|int $value
-     * @param int                $precision
      *
-     * @throws \BadMethodCallException if already constructed.
-     * @throws \TypeError if the value is not a decimal, string, or integer.
-     * @throws \DomainException is the type is supported but the value could not
-     *                          be converted to decimal.
+     * @throws BadMethodCallException
+     * @throws TypeError
+     * @throws DomainException
      */
     public function __construct($value, int $precision = Decimal::DEFAULT_PRECISION) {}
 
     /**
-     * Sum
-     *
-     * The precision of the result will be the max of all precisions that were
-     * encountered during the calculation. The given precision should therefore
-     * be considered the minimum precision of the result.
-     *
-     * This method is equivalent to adding each value individually.
-     *
-     * @param array|\Traversable $values
-     * @param int                $precision Minimum precision of the sum.
+     * @param array|Traversable $values
      *
      * @return Decimal the sum of all given values.
      *
-     * @throws \TypeError if an unsupported type is encountered.
-     * @throws \ArithmeticError if addition is undefined, eg. INF + -INF
+     * @throws TypeError
+     * @throws ArithmeticError
      */
-    public static function sum($values, int $precision = Decimal::DEFAULT_PRECISION): Decimal {}
+    public static function sum($values, int $precision = Decimal::DEFAULT_PRECISION): Decimal
+    {
+    }
 
     /**
      * Average
@@ -73,7 +63,9 @@ final class Decimal implements \JsonSerializable
      * @throws \TypeError if an unsupported type is encountered.
      * @throws \ArithmeticError if addition is undefined, eg. INF + -INF
      */
-    public static function avg($values, int $precision = Decimal::DEFAULT_PRECISION): Decimal {}
+    public static function avg($values, int $precision = Decimal::DEFAULT_PRECISION): Decimal
+    {
+    }
 
     /**
      * Copy
@@ -83,7 +75,9 @@ final class Decimal implements \JsonSerializable
      *
      * @return Decimal a copy of this decimal.
      */
-    public function copy(?int $precision = null): Decimal {}
+    public function copy(null|int $precision = null): Decimal
+    {
+    }
 
     /**
      * Add
@@ -99,7 +93,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \TypeError if the value is not a decimal, string or integer.
      */
-    public function add($value): Decimal {}
+    public function add($value): Decimal
+    {
+    }
 
     /**
      * Subtract
@@ -115,7 +111,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \TypeError if the value is not a decimal, string or integer.
      */
-    public function sub($value): Decimal {}
+    public function sub($value): Decimal
+    {
+    }
 
     /**
      * Multiply
@@ -131,7 +129,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \TypeError if the given value is not a decimal, string or integer.
      */
-    public function mul($value): Decimal {}
+    public function mul($value): Decimal
+    {
+    }
 
     /**
      * Divide
@@ -149,7 +149,9 @@ final class Decimal implements \JsonSerializable
      * @throws \DivisionByZeroError if dividing by zero.
      * @throws \ArithmeticError if division is undefined, eg. INF / -INF
      */
-    public function div($value): Decimal {}
+    public function div($value): Decimal
+    {
+    }
 
     /**
      * Modulo (integer)
@@ -170,7 +172,9 @@ final class Decimal implements \JsonSerializable
      * @throws \DivisionByZeroError if the integer value of $value is zero.
      * @throws \ArithmeticError if the operation is undefined, eg. INF % -INF
      */
-    public function mod($value): Decimal {}
+    public function mod($value): Decimal
+    {
+    }
 
     /**
      * Remainder
@@ -186,7 +190,9 @@ final class Decimal implements \JsonSerializable
      * @throws \DivisionByZeroError if the integer value of $value is zero.
      * @throws \ArithmeticError if the operation is undefined, eg. INF, -INF
      */
-    public function rem($value): Decimal {}
+    public function rem($value): Decimal
+    {
+    }
 
     /**
      * Power
@@ -202,7 +208,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \TypeError if the exponent is not a decimal, string or integer.
      */
-    public function pow($exponent): Decimal {}
+    public function pow($exponent): Decimal
+    {
+    }
 
     /**
      * Natural logarithm
@@ -212,7 +220,9 @@ final class Decimal implements \JsonSerializable
      * @return Decimal the natural logarithm of this decimal (log base e),
      *                 with the same precision as this decimal.
      */
-    public function ln(): Decimal {}
+    public function ln(): Decimal
+    {
+    }
 
     /**
      * Exponent
@@ -220,7 +230,9 @@ final class Decimal implements \JsonSerializable
      * @return Decimal the exponent of this decimal, ie. e to the power of this,
      *                 with the same precision as this decimal.
      */
-    public function exp(): Decimal {}
+    public function exp(): Decimal
+    {
+    }
 
     /**
      * Base-10 logarithm
@@ -228,7 +240,9 @@ final class Decimal implements \JsonSerializable
      * @return Decimal the base-10 logarithm of this decimal, with the same
      *                 precision as this decimal.
      */
-    public function log10(): Decimal {}
+    public function log10(): Decimal
+    {
+    }
 
     /**
      * Square root
@@ -236,28 +250,36 @@ final class Decimal implements \JsonSerializable
      * @return Decimal the square root of this decimal, with the same precision
      *                 as this decimal.
      */
-    public function sqrt(): Decimal {}
+    public function sqrt(): Decimal
+    {
+    }
 
     /**
      * Floor
      *
      * @return Decimal the closest integer towards negative infinity.
      */
-    public function floor(): Decimal {}
+    public function floor(): Decimal
+    {
+    }
 
     /**
      * Ceiling
      *
      * @return Decimal the closest integer towards positive infinity.
      */
-    public function ceil(): Decimal {}
+    public function ceil(): Decimal
+    {
+    }
 
     /**
      * Truncate
      *
      * @return Decimal the integer value of this decimal.
      */
-    public function truncate(): Decimal {}
+    public function truncate(): Decimal
+    {
+    }
 
     /**
      * Round
@@ -271,7 +293,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \InvalidArgumentException if the rounding mode is not supported.
      */
-    public function round(int $places = 0, int $mode = Decimal::DEFAULT_ROUNDING): Decimal {}
+    public function round(int $places = 0, int $mode = Decimal::DEFAULT_ROUNDING): Decimal
+    {
+    }
 
     /**
      * Decimal point shift.
@@ -282,28 +306,36 @@ final class Decimal implements \JsonSerializable
      *
      * @return Decimal A copy of this decimal with its decimal place shifted.
      */
-    public function shift(int $places): Decimal {}
+    public function shift(int $places): Decimal
+    {
+    }
 
     /**
      * Trims trailing zeroes.
      *
      * @return Decimal A copy of this decimal without trailing zeroes.
      */
-    public function trim(): Decimal {}
+    public function trim(): Decimal
+    {
+    }
 
     /**
      * Precision
      *
      * @return int the precision of this decimal.
      */
-    public function precision(): int {}
+    public function precision(): int
+    {
+    }
 
     /**
      * Signum
      *
      * @return int 0 if zero, -1 if negative, or 1 if positive.
      */
-    public function signum(): int {}
+    public function signum(): int
+    {
+    }
 
     /**
      * Parity (integer)
@@ -311,62 +343,84 @@ final class Decimal implements \JsonSerializable
      * @return int 0 if the integer value of this decimal is even, 1 if odd.
      *             Special numbers like NAN and INF will return 1.
      */
-    public function parity(): int {}
+    public function parity(): int
+    {
+    }
 
     /**
      * Absolute
      *
      * @return Decimal the absolute (positive) value of this decimal.
      */
-    public function abs(): Decimal {}
+    public function abs(): Decimal
+    {
+    }
 
     /**
      * Negate
      *
      * @return Decimal the same value as this decimal, but the sign inverted.
      */
-    public function negate(): Decimal {}
+    public function negate(): Decimal
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is an integer and even, FALSE otherwise.
      */
-    public function isEven(): bool {}
+    public function isEven(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is an integer and odd, FALSE otherwise.
      */
-    public function isOdd(): bool {}
+    public function isOdd(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is positive, FALSE otherwise.
      */
-    public function isPositive(): bool {}
+    public function isPositive(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is negative, FALSE otherwise.
      */
-    public function isNegative(): bool {}
+    public function isNegative(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is not a defined number.
      */
-    public function isNaN(): bool {}
+    public function isNaN(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal represents infinity, FALSE otherwise.
      */
-    public function isInf(): bool {}
+    public function isInf(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is an integer, ie. does not have
      *              significant figures behind the decimal point, otherwise FALSE.
      */
-    public function isInteger(): bool {}
+    public function isInteger(): bool
+    {
+    }
 
     /**
      * @return bool TRUE if this decimal is either positive or negative zero.
      */
-    public function isZero(): bool {}
+    public function isZero(): bool
+    {
+    }
 
     /**
      * @param int  $places   The number of places behind the decimal point.
@@ -377,7 +431,9 @@ final class Decimal implements \JsonSerializable
      *                decimal places, optionally with thousands comma-separated,
      *                using a given rounding mode.
      */
-    public function toFixed(int $places = 0, bool $commas = false, int $rounding = Decimal::DEFAULT_ROUNDING): string {}
+    public function toFixed(int $places = 0, bool $commas = false, int $rounding = Decimal::DEFAULT_ROUNDING): string
+    {
+    }
 
     /**
      * String representation.
@@ -392,7 +448,9 @@ final class Decimal implements \JsonSerializable
      * @return string the value of this decimal represented exactly, in either
      *                fixed or scientific form, depending on the value.
      */
-    public function toString(): string {}
+    public function toString(): string
+    {
+    }
 
     /**
      * Integer representation.
@@ -403,7 +461,9 @@ final class Decimal implements \JsonSerializable
      *
      * @throws \OverflowException if the value is greater than PHP_INT_MAX.
      */
-    public function toInt(): int {}
+    public function toInt(): int
+    {
+    }
 
     /**
      * Binary floating point representation.
@@ -416,7 +476,9 @@ final class Decimal implements \JsonSerializable
      * @throws \OverflowException  if the value is greater than PHP_FLOAT_MAX.
      * @throws \UnderflowException if the value is smaller than PHP_FLOAT_MIN.
      */
-    public function toFloat(): float {}
+    public function toFloat(): float
+    {
+    }
 
     /**
      * Equality
@@ -428,7 +490,9 @@ final class Decimal implements \JsonSerializable
      * @return bool TRUE if this decimal is considered equal to the given value.
      *              Equal decimal values tie-break on precision.
      */
-    public function equals($other): bool {}
+    public function equals($other): bool
+    {
+    }
 
     /**
      * Ordering
@@ -441,7 +505,9 @@ final class Decimal implements \JsonSerializable
      *             -1 if this decimal should be placed before $other,
      *              1 if this decimal should be placed after $other.
      */
-    public function compareTo($other): int {}
+    public function compareTo($other): int
+    {
+    }
 
     /**
      * String representation.
@@ -451,7 +517,9 @@ final class Decimal implements \JsonSerializable
      * @return string the value of this decimal represented exactly, in either
      *                fixed or scientific form, depending on the value.
      */
-    public function __toString(): string {}
+    public function __toString(): string
+    {
+    }
 
     /**
      * JSON
@@ -462,5 +530,7 @@ final class Decimal implements \JsonSerializable
      *
      * @return string
      */
-    public function jsonSerialize() {}
+    public function jsonSerialize()
+    {
+    }
 }

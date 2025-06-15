@@ -135,139 +135,12 @@ class SoapClient
      * <b>SOAP_SSL_METHOD_SSLv3</b> or
      * <b>SOAP_SSL_METHOD_SSLv23</b>.
      * </p>
-     * @since 5.0.1
-     *
-     * @removed 8.0
-     */
-    public function SoapClient($wsdl, array $options = null) {}
-
-    /**
-     * SoapClient constructor
-     * @link https://php.net/manual/en/soapclient.construct.php
-     * @param string|null $wsdl <p>
-     * URI of the WSDL file or <b>NULL</b> if working in
-     * non-WSDL mode.
-     * </p>
-     * <p>
-     * During development, WSDL caching may be disabled by the
-     * use of the soap.wsdl_cache_ttl <i>php.ini</i> setting
-     * otherwise changes made to the WSDL file will have no effect until
-     * soap.wsdl_cache_ttl is expired.
-     * </p>
-     * @param array $options [optional] <p>
-     * An array of options. If working in WSDL mode, this parameter is optional.
-     * If working in non-WSDL mode, the location and
-     * uri options must be set, where location
-     * is the URL of the SOAP server to send the request to, and uri
-     * is the target namespace of the SOAP service.
-     * </p>
-     * <p>
-     * The style and use options only work in
-     * non-WSDL mode. In WSDL mode, they come from the WSDL file.
-     * </p>
-     * <p>
-     * The soap_version option should be one of either
-     * <b>SOAP_1_1</b> or <b>SOAP_1_2</b> to
-     * select SOAP 1.1 or 1.2, respectively. If omitted, 1.1 is used.
-     * </p>
-     * <p>
-     * For HTTP authentication, the login and
-     * password options can be used to supply credentials.
-     * For making an HTTP connection through
-     * a proxy server, the options proxy_host,
-     * proxy_port, proxy_login
-     * and proxy_password are also available.
-     * For HTTPS client certificate authentication use
-     * local_cert and passphrase options. An
-     * authentication may be supplied in the authentication
-     * option. The authentication method may be either
-     * <b>SOAP_AUTHENTICATION_BASIC</b> (default) or
-     * <b>SOAP_AUTHENTICATION_DIGEST</b>.
-     * </p>
-     * <p>
-     * The compression option allows to use compression
-     * of HTTP SOAP requests and responses.
-     * </p>
-     * <p>
-     * The encoding option defines internal character
-     * encoding. This option does not change the encoding of SOAP requests (it is
-     * always utf-8), but converts strings into it.
-     * </p>
-     * <p>
-     * The trace option enables tracing of request so faults
-     * can be backtraced. This defaults to <b>FALSE</b>
-     * </p>
-     * <p>
-     * The classmap option can be used to map some WSDL
-     * types to PHP classes. This option must be an array with WSDL types
-     * as keys and names of PHP classes as values.
-     * </p>
-     * <p>
-     * Setting the boolean trace option enables use of the
-     * methods
-     * SoapClient->__getLastRequest,
-     * SoapClient->__getLastRequestHeaders,
-     * SoapClient->__getLastResponse and
-     * SoapClient->__getLastResponseHeaders.
-     * </p>
-     * <p>
-     * The exceptions option is a boolean value defining whether
-     * soap errors throw exceptions of type
-     * SoapFault.
-     * </p>
-     * <p>
-     * The connection_timeout option defines a timeout in seconds
-     * for the connection to the SOAP service. This option does not define a timeout
-     * for services with slow responses. To limit the time to wait for calls to finish the
-     * default_socket_timeout setting
-     * is available.
-     * </p>
-     * <p>
-     * The typemap option is an array of type mappings.
-     * Type mapping is an array with keys type_name,
-     * type_ns (namespace URI), from_xml
-     * (callback accepting one string parameter) and to_xml
-     * (callback accepting one object parameter).
-     * </p>
-     * <p>
-     * The cache_wsdl option is one of
-     * <b>WSDL_CACHE_NONE</b>,
-     * <b>WSDL_CACHE_DISK</b>,
-     * <b>WSDL_CACHE_MEMORY</b> or
-     * <b>WSDL_CACHE_BOTH</b>.
-     * </p>
-     * <p>
-     * The user_agent option specifies string to use in
-     * User-Agent header.
-     * </p>
-     * <p>
-     * The stream_context option is a resource
-     * for context.
-     * </p>
-     * <p>
-     * The features option is a bitmask of
-     * <b>SOAP_SINGLE_ELEMENT_ARRAYS</b>,
-     * <b>SOAP_USE_XSI_ARRAY_TYPE</b>,
-     * <b>SOAP_WAIT_ONE_WAY_CALLS</b>.
-     * </p>
-     * <p>
-     * The keep_alive option is a boolean value defining whether
-     * to send the Connection: Keep-Alive header or
-     * Connection: close.
-     * </p>
-     * <p>
-     * The ssl_method option is one of
-     * <b>SOAP_SSL_METHOD_TLS</b>,
-     * <b>SOAP_SSL_METHOD_SSLv2</b>,
-     * <b>SOAP_SSL_METHOD_SSLv3</b> or
-     * <b>SOAP_SSL_METHOD_SSLv23</b>.
-     * </p>
      * @throws SoapFault A SoapFault exception will be thrown if the wsdl URI cannot be loaded.
      * @since 5.0.1
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $wsdl,
-        array $options = []
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $wsdl,
+        array $options = [],
     ) {}
 
     /**
@@ -279,10 +152,9 @@ class SoapClient
      */
     #[Deprecated]
     #[TentativeType]
-    public function __call(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name,
-        array $args
-    ): mixed {}
+    public function __call(#[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name, array $args): mixed
+    {
+    }
 
     /**
      * Calls a SOAP function
@@ -332,12 +204,13 @@ class SoapClient
      */
     #[TentativeType]
     public function __soapCall(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name,
         array $args,
-        #[LanguageLevelTypeAware(['8.0' => 'array|null'], default: '')] $options = null,
+        #[LanguageLevelTypeAware(['8.0' => 'array|null'], default: '')]  $options = null,
         $inputHeaders = null,
-        &$outputHeaders = null
-    ): mixed {}
+        &$outputHeaders = null,
+    ): mixed {
+    }
 
     /**
      * Returns last SOAP request
@@ -346,7 +219,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getLastRequest(): ?string {}
+    public function __getLastRequest(): null|string
+    {
+    }
 
     /**
      * Returns last SOAP response
@@ -355,7 +230,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getLastResponse(): ?string {}
+    public function __getLastResponse(): null|string
+    {
+    }
 
     /**
      * Returns the SOAP headers from the last request
@@ -364,7 +241,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getLastRequestHeaders(): ?string {}
+    public function __getLastRequestHeaders(): null|string
+    {
+    }
 
     /**
      * Returns the SOAP headers from the last response
@@ -373,7 +252,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getLastResponseHeaders(): ?string {}
+    public function __getLastResponseHeaders(): null|string
+    {
+    }
 
     /**
      * Returns list of available SOAP functions
@@ -383,7 +264,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getFunctions(): ?array {}
+    public function __getFunctions(): null|array
+    {
+    }
 
     /**
      * Returns a list of SOAP types
@@ -392,7 +275,9 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __getTypes(): ?array {}
+    public function __getTypes(): null|array
+    {
+    }
 
     /**
      * Returns a list of all cookies
@@ -401,7 +286,9 @@ class SoapClient
      * @since 5.4.3
      */
     #[TentativeType]
-    public function __getCookies(): array {}
+    public function __getCookies(): array
+    {
+    }
 
     /**
      * Performs a SOAP request
@@ -427,12 +314,13 @@ class SoapClient
      */
     #[TentativeType]
     public function __doRequest(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $request,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $location,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $action,
-        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $version,
-        #[LanguageLevelTypeAware(["8.0" => 'bool'], default: 'int')] $oneWay = false
-    ): ?string {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $request,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $location,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $action,
+        #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $version,
+        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: 'int')]  $oneWay = false,
+    ): null|string {
+    }
 
     /**
      * The __setCookie purpose
@@ -448,9 +336,10 @@ class SoapClient
      */
     #[TentativeType]
     public function __setCookie(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name,
-        #[LanguageLevelTypeAware(["8.0" => "string|null"], default: "string")] $value
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: 'string')]  $value,
+    ): void {
+    }
 
     /**
      * Sets the location of the Web service to use
@@ -462,7 +351,10 @@ class SoapClient
      * @since 5.0.1
      */
     #[TentativeType]
-    public function __setLocation(#[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $location = null): ?string {}
+    public function __setLocation(
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $location = null,
+    ): null|string {
+    }
 
     /**
      * Sets SOAP headers for subsequent calls
@@ -477,9 +369,10 @@ class SoapClient
      */
     #[TentativeType]
     public function __setSoapHeaders(
-        #[PhpStormStubsElementAvailable(from: '5.3', to: '5.6')] $headers,
-        #[PhpStormStubsElementAvailable(from: '7.0')] $headers = null
-    ): bool {}
+        #[PhpStormStubsElementAvailable(from: '5.3', to: '5.6')]  $headers,
+        #[PhpStormStubsElementAvailable(from: '7.0')]  $headers = null,
+    ): bool {
+    }
 }
 
 /**
@@ -548,39 +441,13 @@ class SoapVar
      * @since 5.0.1
      */
     public function __construct(
-        #[LanguageLevelTypeAware(["8.0" => 'mixed'], default: '')] $data,
-        #[LanguageLevelTypeAware(["7.1" => "int|null"], default: "int")] $encoding,
-        #[LanguageLevelTypeAware(["8.0" => "string|null"], default: "string")] $typeName,
-        #[LanguageLevelTypeAware(["8.0" => 'string|null'], default: '')] $typeNamespace = null,
-        #[LanguageLevelTypeAware(["8.0" => 'string|null'], default: '')] $nodeName = null,
-        #[LanguageLevelTypeAware(["8.0" => 'string|null'], default: '')] $nodeNamespace = null
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $data,
+        #[LanguageLevelTypeAware(['7.1' => 'int|null'], default: 'int')]  $encoding,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: 'string')]  $typeName,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $typeNamespace = null,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $nodeName = null,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $nodeNamespace = null,
     ) {}
-
-    /**
-     * SoapVar constructor
-     * @link https://php.net/manual/en/soapvar.construct.php
-     * @param mixed $data <p>
-     * The data to pass or return.
-     * </p>
-     * @param int|null $encoding <p>
-     * The encoding ID, one of the XSD_... constants.
-     * </p>
-     * @param string $type_name [optional] <p>
-     * The type name.
-     * </p>
-     * @param string $type_namespace [optional] <p>
-     * The type namespace.
-     * </p>
-     * @param string $node_name [optional] <p>
-     * The XML node name.
-     * </p>
-     * @param string $node_namespace [optional] <p>
-     * The XML node namespace.
-     * </p>
-     * @since 5.0.1
-     * @removed 8.0
-     */
-    public function SoapVar($data, $encoding, $type_name = '', $type_namespace = '', $node_name = '', $node_namespace = '') {}
 }
 
 /**
@@ -630,52 +497,9 @@ class SoapServer
      * @since 5.0.1
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $wsdl,
-        array $options = []
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $wsdl,
+        array $options = [],
     ) {}
-
-    /**
-     * SoapServer constructor
-     * @link https://php.net/manual/en/soapserver.soapserver.php
-     * @param mixed $wsdl <p>
-     * To use the SoapServer in WSDL mode, pass the URI of a WSDL file.
-     * Otherwise, pass <b>NULL</b> and set the uri option to the
-     * target namespace for the server.
-     * </p>
-     * @param array $options [optional] <p>
-     * Allow setting a default SOAP version (soap_version),
-     * internal character encoding (encoding),
-     * and actor URI (actor).
-     * </p>
-     * <p>
-     * The classmap option can be used to map some WSDL
-     * types to PHP classes. This option must be an array with WSDL types
-     * as keys and names of PHP classes as values.
-     * </p>
-     * <p>
-     * The typemap option is an array of type mappings.
-     * Type mapping is an array with keys type_name,
-     * type_ns (namespace URI), from_xml
-     * (callback accepting one string parameter) and to_xml
-     * (callback accepting one object parameter).
-     * </p>
-     * <p>
-     * The cache_wsdl option is one of
-     * <b>WSDL_CACHE_NONE</b>,
-     * <b>WSDL_CACHE_DISK</b>,
-     * <b>WSDL_CACHE_MEMORY</b> or
-     * <b>WSDL_CACHE_BOTH</b>.
-     * </p>
-     * <p>
-     * There is also a features option which can be set to
-     * <b>SOAP_WAIT_ONE_WAY_CALLS</b>,
-     * <b>SOAP_SINGLE_ELEMENT_ARRAYS</b>,
-     * <b>SOAP_USE_XSI_ARRAY_TYPE</b>.
-     * </p>
-     * @since 5.0.1
-     * @removed 8.0
-     */
-    public function SoapServer($wsdl, array $options = null) {}
 
     /**
      * Sets SoapServer persistence mode
@@ -698,7 +522,9 @@ class SoapServer
      * @since 5.1.2
      */
     #[TentativeType]
-    public function setPersistence(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $mode): void {}
+    public function setPersistence(#[LanguageLevelTypeAware(['8.0' => 'int'], default: '')]  $mode): void
+    {
+    }
 
     /**
      * Sets the class which handles SOAP requests
@@ -712,9 +538,10 @@ class SoapServer
      */
     #[TentativeType]
     public function setClass(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $class,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] ...$args
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $class,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  ...$args,
+    ): void {
+    }
 
     /**
      * Sets the object which will be used to handle SOAP requests
@@ -725,7 +552,9 @@ class SoapServer
      * @return void No value is returned.
      */
     #[TentativeType]
-    public function setObject(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')] $object): void {}
+    public function setObject(#[LanguageLevelTypeAware(['8.0' => 'object'], default: '')]  $object): void
+    {
+    }
 
     /**
      * Adds one or more functions to handle SOAP requests
@@ -750,7 +579,9 @@ class SoapServer
      * @since 5.0.1
      */
     #[TentativeType]
-    public function addFunction($functions): void {}
+    public function addFunction($functions): void
+    {
+    }
 
     /**
      * Returns list of defined functions
@@ -759,7 +590,9 @@ class SoapServer
      * @since 5.0.1
      */
     #[TentativeType]
-    public function getFunctions(): array {}
+    public function getFunctions(): array
+    {
+    }
 
     /**
      * Handles a SOAP request
@@ -772,7 +605,9 @@ class SoapServer
      * @since 5.0.1
      */
     #[TentativeType]
-    public function handle(#[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $request = null): void {}
+    public function handle(#[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $request = null): void
+    {
+    }
 
     /**
      * Issue SoapServer fault indicating an error
@@ -797,12 +632,13 @@ class SoapServer
      */
     #[TentativeType]
     public function fault(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $code,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $string,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $actor = '',
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $details = null,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name = ''
-    ): void {}
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $code,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $string,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $actor = '',
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $details = null,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name = '',
+    ): void {
+    }
 
     /**
      * Add a SOAP header to the response
@@ -814,12 +650,16 @@ class SoapServer
      * @since 5.0.1
      */
     #[TentativeType]
-    public function addSoapHeader(SoapHeader $header): void {}
+    public function addSoapHeader(SoapHeader $header): void
+    {
+    }
 
     /**
      * @since 8.4
      */
-    public function __getLastResponse(): ?string {}
+    public function __getLastResponse(): null|string
+    {
+    }
 }
 
 /**
@@ -902,40 +742,13 @@ class SoapFault extends Exception
      */
     #[Pure]
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'array|string|null'], default: '')] $code,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $string,
-        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $actor = null,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $details = null,
-        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')] $name = null,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $headerFault = null
+        #[LanguageLevelTypeAware(['8.0' => 'array|string|null'], default: '')]  $code,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $string,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $actor = null,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $details = null,
+        #[LanguageLevelTypeAware(['8.0' => 'string|null'], default: '')]  $name = null,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $headerFault = null,
     ) {}
-
-    /**
-     * SoapFault constructor
-     * @link https://php.net/manual/en/soapfault.soapfault.php
-     * @param string $faultcode <p>
-     * The error code of the <b>SoapFault</b>.
-     * </p>
-     * @param string $faultstring <p>
-     * The error message of the <b>SoapFault</b>.
-     * </p>
-     * @param string $faultactor [optional] <p>
-     * A string identifying the actor that caused the error.
-     * </p>
-     * @param string $detail [optional] <p>
-     * More details about the cause of the error.
-     * </p>
-     * @param string $faultname [optional] <p>
-     * Can be used to select the proper fault encoding from WSDL.
-     * </p>
-     * @param mixed $headerfault [optional] <p>
-     * Can be used during SOAP header handling to report an error in the
-     * response header.
-     * </p>
-     * @since 5.0.1
-     * @removed 8.0
-     */
-    public function SoapFault($faultcode, $faultstring, $faultactor = null, $detail = null, $faultname = null, $headerfault = null) {}
 
     /**
      * Obtain a string representation of a SoapFault
@@ -944,7 +757,9 @@ class SoapFault extends Exception
      * @since 5.0.1
      */
     #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]
-    public function __toString() {}
+    public function __toString()
+    {
+    }
 }
 
 /**
@@ -979,25 +794,9 @@ class SoapParam
      * @since 5.0.1
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $data,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $data,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name,
     ) {}
-
-    /**
-     * SoapParam constructor
-     * @link https://php.net/manual/en/soapparam.soapparam.php
-     * @param mixed $data <p>
-     * The data to pass or return. This parameter can be passed directly as PHP
-     * value, but in this case it will be named as paramN and
-     * the SOAP service may not understand it.
-     * </p>
-     * @param string $name <p>
-     * The parameter name.
-     * </p>
-     * @since 5.0.1
-     * @removed 8.0
-     */
-    public function SoapParam($data, $name) {}
 }
 
 /**
@@ -1057,35 +856,12 @@ class SoapHeader
      * @since 5.0.1
      */
     public function __construct(
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $namespace,
-        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')] $name,
-        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] $data,
-        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')] $mustUnderstand = false,
-        #[LanguageLevelTypeAware(['8.0' => 'string|int|null'], default: '')] $actor = null
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $namespace,
+        #[LanguageLevelTypeAware(['8.0' => 'string'], default: '')]  $name,
+        #[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  $data,
+        #[LanguageLevelTypeAware(['8.0' => 'bool'], default: '')]  $mustUnderstand = false,
+        #[LanguageLevelTypeAware(['8.0' => 'string|int|null'], default: '')]  $actor = null,
     ) {}
-
-    /**
-     * SoapHeader constructor
-     * @link https://php.net/manual/en/soapheader.soapheader.php
-     * @param string $namespace <p>
-     * The namespace of the SOAP header element.
-     * </p>
-     * @param string $name <p>
-     * The name of the SoapHeader object.
-     * </p>
-     * @param mixed $data [optional] <p>
-     * A SOAP header's content. It can be a PHP value or a
-     * <b>SoapVar</b> object.
-     * </p>
-     * @param bool $mustunderstand [optional]
-     * @param string $actor [optional] <p>
-     * Value of the actor attribute of the SOAP header
-     * element.
-     * </p>
-     * @since 5.0.1
-     * @removed 8.0
-     */
-    public function SoapHeader($namespace, $name, $data = null, $mustunderstand = false, $actor = null) {}
 }
 
 /**
@@ -1096,7 +872,9 @@ class SoapHeader
  * </p>
  * @return bool the original value.
  */
-function use_soap_error_handler(bool $enable = true): bool {}
+function use_soap_error_handler(bool $enable = true): bool
+{
+}
 
 /**
  * Checks if a SOAP call has failed
@@ -1106,7 +884,9 @@ function use_soap_error_handler(bool $enable = true): bool {}
  * </p>
  * @return bool This will return <b>TRUE</b> on error, and <b>FALSE</b> otherwise.
  */
-function is_soap_fault(mixed $object): bool {}
+function is_soap_fault(mixed $object): bool
+{
+}
 
 define('SOAP_1_1', 1);
 define('SOAP_1_2', 2);
@@ -1177,8 +957,8 @@ define('APACHE_MAP', 200);
 define('SOAP_ENC_OBJECT', 301);
 define('SOAP_ENC_ARRAY', 300);
 define('XSD_1999_TIMEINSTANT', 401);
-define('XSD_NAMESPACE', "http://www.w3.org/2001/XMLSchema");
-define('XSD_1999_NAMESPACE', "http://www.w3.org/1999/XMLSchema");
+define('XSD_NAMESPACE', 'http://www.w3.org/2001/XMLSchema');
+define('XSD_1999_NAMESPACE', 'http://www.w3.org/1999/XMLSchema');
 define('SOAP_SINGLE_ELEMENT_ARRAYS', 1);
 define('SOAP_WAIT_ONE_WAY_CALLS', 2);
 define('SOAP_USE_XSI_ARRAY_TYPE', 4);

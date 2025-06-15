@@ -7,76 +7,41 @@ use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
 use JetBrains\PhpStorm\Pure;
 
 /**
- * Get the last occurred error
- * @link https://php.net/manual/en/function.error-get-last.php
- * @return array|null an associative array describing the last error with keys "type",
- * "message", "file" and "line". Returns null if there hasn't been an error
- * yet.
+ * @return array{type: int, message: string, file: string, line: int}|null
+ *
+ * @pure
  */
-#[ArrayShape(["type" => "int", "message" => "string", "file" => "string", "line" => "int"])]
-#[Pure(true)]
-function error_get_last(): ?array {}
+function error_get_last(): null|array
+{
+}
 
 /**
- * Call the callback given by the first parameter
- * @link https://php.net/manual/en/function.call-user-func.php
- * @param callable $callback <p>
- * The function to be called. Class methods may also be invoked
- * statically using this function by passing
- * array($classname, $methodname) to this parameter.
- * Additionally class methods of an object instance may be called by passing
- * array($objectinstance, $methodname) to this parameter.
- * </p>
- * @param mixed ...$args [optional] <p>
- * Zero or more parameters to be passed to the function.
- * </p>
- * <p>
- * Note that the parameters for call_user_func are
- * not passed by reference.
- * call_user_func example and references
- * </p>
- * @return mixed the function result, or false on error.
+ * @tempalte I
+ * @template R
+ *
+ * @template (callble(...I): R) $callback
+ *
+ * @param I ...$args
+ *
+ * @return R
  */
-function call_user_func(callable $callback, mixed ...$args): mixed {}
+function call_user_func(callable $callback, mixed ...$args): mixed
+{
+}
 
 /**
- * Call a callback with an array of parameters
- * @link https://php.net/manual/en/function.call-user-func-array.php
- * @param callable $callback <p>
- * The function to be called.
- * </p>
- * @param array $args <p>
- * The parameters to be passed to the function, as an indexed array.
- * </p>
- * @return mixed the function result, or false on error.
+ * @tempalte I
+ * @template R
+ *
+ * @template (callble(...I): R) $callback
+ *
+ * @param array<I> $args
+ *
+ * @return R
  */
-function call_user_func_array(callable $callback, array $args): mixed {}
-
-/**
- * Call a user method on an specific object
- * @link https://php.net/manual/en/function.call-user-method.php
- * @param string $method_name
- * @param object &$obj
- * @param mixed ...$parameter [optional]
- * @return mixed
- * @removed 7.0
- * @see call_user_func()
- */
-#[Deprecated(reason: "use call_user_func() instead", since: "5.3")]
-function call_user_method(string $method_name, object &$obj, ...$parameter): mixed {}
-
-/**
- * Call a user method given with an array of parameters
- * @link https://php.net/manual/en/function.call-user-method-array.php
- * @param string $method_name
- * @param object &$obj
- * @param array $params
- * @return mixed
- * @removed 7.0
- * @see call_user_func()
- */
-#[Deprecated(reason: "use call_user_func() instead", since: "5.3")]
-function call_user_method_array(string $method_name, object &$obj, array $params): mixed {}
+function call_user_func_array(callable $callback, array $args): mixed
+{
+}
 
 /**
  * Call a static method
@@ -91,7 +56,9 @@ function call_user_method_array(string $method_name, object &$obj, array $params
  * </p>
  * @return mixed the function result, or false on error.
  */
-function forward_static_call(callable $callback, mixed ...$args): mixed {}
+function forward_static_call(callable $callback, mixed ...$args): mixed
+{
+}
 
 /**
  * Call a static method and pass the arguments as array
@@ -104,7 +71,9 @@ function forward_static_call(callable $callback, mixed ...$args): mixed {}
  * @param array $args
  * @return mixed the function result, or false on error.
  */
-function forward_static_call_array(callable $callback, array $args): mixed {}
+function forward_static_call_array(callable $callback, array $args): mixed
+{
+}
 
 /**
  * Generates a storable representation of a value
@@ -132,7 +101,9 @@ function forward_static_call_array(callable $callback, array $args): mixed {}
  * @return string a string containing a byte-stream representation of
  * value that can be stored anywhere.
  */
-function serialize(mixed $value): string {}
+function serialize(mixed $value): string
+{
+}
 
 /**
  * Creates a PHP value from a stored representation
@@ -176,7 +147,9 @@ function serialize(mixed $value): string {}
  * In case the passed string is not unserializeable, false is returned and
  * E_NOTICE is issued.</p>
  */
-function unserialize(string $data, #[PhpStormStubsElementAvailable(from: '7.0')] array $options = []): mixed {}
+function unserialize(string $data, #[PhpStormStubsElementAvailable(from: '7.0')] array $options = []): mixed
+{
+}
 
 /**
  * Dumps information about a variable
@@ -188,7 +161,9 @@ function unserialize(string $data, #[PhpStormStubsElementAvailable(from: '7.0')]
  * @return void
  */
 #[PhpStormStubsElementAvailable(from: '8.0')]
-function var_dump(mixed $value, mixed ...$values): void {}
+function var_dump(mixed $value, mixed ...$values): void
+{
+}
 
 /**
  * Dumps information about a variable
@@ -199,7 +174,9 @@ function var_dump(mixed $value, mixed ...$values): void {}
  * @return void
  */
 #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')]
-function var_dump(...$vars): void {}
+function var_dump(...$vars): void
+{
+}
 
 /**
  * Outputs or returns a parsable string representation of a variable
@@ -215,7 +192,9 @@ function var_dump(...$vars): void {}
  * parameter is used and evaluates to true. Otherwise, this function will
  * return null.
  */
-function var_export(mixed $value, bool $return = false): ?string {}
+function var_export(mixed $value, bool $return = false): null|string
+{
+}
 
 /**
  * Dumps a string representation of an internal zend value to output
@@ -228,9 +207,10 @@ function var_export(mixed $value, bool $return = false): ?string {}
  */
 function debug_zval_dump(
     #[PhpStormStubsElementAvailable(from: '8.0')] mixed $value,
-    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] $values,
-    mixed ...$values
-): void {}
+    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')]  $values,
+    mixed ...$values,
+): void {
+}
 
 /**
  * Prints human-readable information about a variable
@@ -250,7 +230,9 @@ function debug_zval_dump(
  * notation is used for objects.
  */
 #[LanguageLevelTypeAware(['8.4' => 'string|true'], default: 'string|bool')]
-function print_r(mixed $value, bool $return = false) {}
+function print_r(mixed $value, bool $return = false)
+{
+}
 
 /**
  * Returns the amount of memory allocated to PHP
@@ -263,7 +245,9 @@ function print_r(mixed $value, bool $return = false) {}
  * @return int the memory amount in bytes.
  */
 #[Pure(true)]
-function memory_get_usage(bool $real_usage = false): int {}
+function memory_get_usage(bool $real_usage = false): int
+{
+}
 
 /**
  * Returns the peak of memory allocated by PHP
@@ -276,12 +260,16 @@ function memory_get_usage(bool $real_usage = false): int {}
  * @return int the memory peak in bytes.
  */
 #[Pure(true)]
-function memory_get_peak_usage(bool $real_usage = false): int {}
+function memory_get_peak_usage(bool $real_usage = false): int
+{
+}
 
 /**
  * @since 8.2
  */
-function memory_reset_peak_usage(): void {}
+function memory_reset_peak_usage(): void
+{
+}
 
 /**
  * Register a function for execution on shutdown
@@ -307,7 +295,9 @@ function memory_reset_peak_usage(): void {}
  * @return bool|null
  */
 #[LanguageLevelTypeAware(['8.2' => 'void'], default: 'null|bool')]
-function register_shutdown_function(callable $callback, mixed ...$args): ?bool {}
+function register_shutdown_function(callable $callback, mixed ...$args): null|bool
+{
+}
 
 /**
  * Register a function for execution on each tick
@@ -320,7 +310,9 @@ function register_shutdown_function(callable $callback, mixed ...$args): ?bool {
  * </p>
  * @return bool true on success or false on failure.
  */
-function register_tick_function(callable $callback, mixed ...$args): bool {}
+function register_tick_function(callable $callback, mixed ...$args): bool
+{
+}
 
 /**
  * De-register a function for execution on each tick
@@ -331,7 +323,9 @@ function register_tick_function(callable $callback, mixed ...$args): bool {}
  * </p>
  * @return void
  */
-function unregister_tick_function(callable $callback): void {}
+function unregister_tick_function(callable $callback): void
+{
+}
 
 /**
  * Syntax highlighting of a file
@@ -347,7 +341,9 @@ function unregister_tick_function(callable $callback): void {}
  * code as a string instead of printing it out. Otherwise, it will return
  * true on success, false on failure.
  */
-function highlight_file(string $filename, bool $return = false): string|bool {}
+function highlight_file(string $filename, bool $return = false): string|bool
+{
+}
 
 /**
  * Alias:
@@ -357,7 +353,9 @@ function highlight_file(string $filename, bool $return = false): string|bool {}
  * @param bool $return [optional]
  * @return string|bool
  */
-function show_source(string $filename, bool $return = false): string|bool {}
+function show_source(string $filename, bool $return = false): string|bool
+{
+}
 
 /**
  * Syntax highlighting of a string
@@ -374,7 +372,9 @@ function show_source(string $filename, bool $return = false): string|bool {}
  * true on success, false on failure.
  */
 #[LanguageLevelTypeAware(['8.4' => 'string|true'], default: 'string|bool')]
-function highlight_string(string $string, bool $return = false) {}
+function highlight_string(string $string, bool $return = false)
+{
+}
 
 /**
  * Get the system's high resolution time
@@ -385,7 +385,9 @@ function highlight_string(string $string, bool $return = false) {}
  * Otherwise the nanoseconds are returned as integer (64bit platforms) or float (32bit platforms).
  */
 #[Pure(true)]
-function hrtime(bool $as_number = false): array|int|float|false {}
+function hrtime(bool $as_number = false): array|int|float|false
+{
+}
 
 /**
  * Return source with stripped comments and whitespace
@@ -403,7 +405,9 @@ function hrtime(bool $as_number = false): array|int|float|false {}
  * #29606.
  */
 #[Pure(true)]
-function php_strip_whitespace(string $filename): string {}
+function php_strip_whitespace(string $filename): string
+{
+}
 
 /**
  * Gets the value of a configuration option
@@ -416,7 +420,9 @@ function php_strip_whitespace(string $filename): string {}
  * an empty string on failure or for null values.
  */
 #[Pure(true)]
-function ini_get(string $option): string|false {}
+function ini_get(string $option): string|false
+{
+}
 
 /**
  * Gets all configuration options
@@ -452,8 +458,12 @@ function ini_get(string $option): string|false {}
  * </p>
  */
 #[Pure(true)]
-#[ArrayShape(["global_value" => "string", "local_value" => "string", "access" => "int"])]
-function ini_get_all(?string $extension, #[PhpStormStubsElementAvailable(from: '7.0')] bool $details = true): array|false {}
+#[ArrayShape(['global_value' => 'string', 'local_value' => 'string', 'access' => 'int'])]
+function ini_get_all(
+    null|string $extension,
+    #[PhpStormStubsElementAvailable(from: '7.0')] bool $details = true,
+): array|false {
+}
 
 /**
  * Sets the value of a configuration option
@@ -471,7 +481,11 @@ function ini_get_all(?string $extension, #[PhpStormStubsElementAvailable(from: '
  * </p>
  * @return string|false the old value on success, false on failure.
  */
-function ini_set(string $option, #[LanguageLevelTypeAware(['8.1' => 'string|int|float|bool|null'], default: 'string')] $value): string|false {}
+function ini_set(
+    string $option,
+    #[LanguageLevelTypeAware(['8.1' => 'string|int|float|bool|null'], default: 'string')]  $value,
+): string|false {
+}
 
 /**
  * Alias:
@@ -482,7 +496,11 @@ function ini_set(string $option, #[LanguageLevelTypeAware(['8.1' => 'string|int|
  * @param string $value
  * @return string|false
  */
-function ini_alter(string $option, #[LanguageLevelTypeAware(['8.1' => 'string|int|float|bool|null'], default: 'string')] $value): string|false {}
+function ini_alter(
+    string $option,
+    #[LanguageLevelTypeAware(['8.1' => 'string|int|float|bool|null'], default: 'string')]  $value,
+): string|false {
+}
 
 /**
  * Restores the value of a configuration option
@@ -493,14 +511,18 @@ function ini_alter(string $option, #[LanguageLevelTypeAware(['8.1' => 'string|in
  * </p>
  * @return void
  */
-function ini_restore(string $option): void {}
+function ini_restore(string $option): void
+{
+}
 
 /**
  * @param string $shorthand
  * @return int
  * @since 8.2
  */
-function ini_parse_quantity(string $shorthand): int {}
+function ini_parse_quantity(string $shorthand): int
+{
+}
 
 /**
  * Gets the current include_path configuration option
@@ -508,7 +530,9 @@ function ini_parse_quantity(string $shorthand): int {}
  * @return string|false the path, as a string.
  */
 #[Pure(true)]
-function get_include_path(): string|false {}
+function get_include_path(): string|false
+{
+}
 
 /**
  * Sets the include_path configuration option
@@ -519,16 +543,9 @@ function get_include_path(): string|false {}
  * @return string|false the old include_path on
  * success or false on failure.
  */
-function set_include_path(string $include_path): string|false {}
-
-/**
- * Restores the value of the include_path configuration option
- * @link https://php.net/manual/en/function.restore-include-path.php
- * @return void
- * @removed 8.0
- */
-#[Deprecated(since: '7.4')]
-function restore_include_path() {}
+function set_include_path(string $include_path): string|false
+{
+}
 
 /**
  * Send a cookie
@@ -605,7 +622,16 @@ function restore_include_path() {}
  * setcookie successfully runs, it will return true.
  * This does not indicate whether the user accepted the cookie.
  */
-function setcookie(string $name, string $value = "", int $expires_or_options = 0, string $path = "", string $domain = "", bool $secure = false, bool $httponly = false): bool {}
+function setcookie(
+    string $name,
+    string $value = '',
+    int $expires_or_options = 0,
+    string $path = '',
+    string $domain = '',
+    bool $secure = false,
+    bool $httponly = false,
+): bool {
+}
 
 /**
  * Send a cookie
@@ -628,7 +654,9 @@ function setcookie(string $name, string $value = "", int $expires_or_options = 0
  *                        This does not indicate whether the user accepted the cookie.
  * @since 7.3
  */
-function setcookie(string $name, string $value = '', array $options = []): bool {}
+function setcookie(string $name, string $value = '', array $options = []): bool
+{
+}
 
 /**
  * Send a cookie without urlencoding the cookie value
@@ -642,7 +670,16 @@ function setcookie(string $name, string $value = '', array $options = []): bool 
  * @param bool $httponly [optional]
  * @return bool true on success or false on failure.
  */
-function setrawcookie(string $name, $value = '', $expires_or_options = 0, $path = "", $domain = "", $secure = false, $httponly = false): bool {}
+function setrawcookie(
+    string $name,
+    $value = '',
+    $expires_or_options = 0,
+    $path = '',
+    $domain = '',
+    $secure = false,
+    $httponly = false,
+): bool {
+}
 
 /**
  * Send a cookie without urlencoding the cookie value
@@ -665,7 +702,9 @@ function setrawcookie(string $name, $value = '', $expires_or_options = 0, $path 
  *                        This does not indicate whether the user accepted the cookie.
  * @since 7.3
  */
-function setrawcookie(string $name, $value = '', array $options = []): bool {}
+function setrawcookie(string $name, $value = '', array $options = []): bool
+{
+}
 
 /**
  * Send a raw HTTP header
@@ -701,7 +740,9 @@ function setrawcookie(string $name, $value = '', array $options = []): bool {}
  * </p>
  * @return void
  */
-function header(string $header, bool $replace = true, int $response_code = 0): void {}
+function header(string $header, bool $replace = true, int $response_code = 0): void
+{
+}
 
 /**
  * Remove previously set headers
@@ -712,7 +753,9 @@ function header(string $header, bool $replace = true, int $response_code = 0): v
  * This parameter is case-insensitive.
  * @return void
  */
-function header_remove(?string $name = null): void {}
+function header_remove(null|string $name = null): void
+{
+}
 
 /**
  * Checks if or where headers have been sent
@@ -730,7 +773,9 @@ function header_remove(?string $name = null): void {}
  * @return bool headers_sent will return false if no HTTP headers
  * have already been sent or true otherwise.
  */
-function headers_sent(&$filename = null, &$line = null): bool {}
+function headers_sent(&$filename = null, &$line = null): bool
+{
+}
 
 /**
  * Returns a list of response headers sent (or ready to send)
@@ -738,7 +783,9 @@ function headers_sent(&$filename = null, &$line = null): bool {}
  * @return array a numerically indexed array of headers.
  */
 #[Pure]
-function headers_list(): array {}
+function headers_list(): array
+{
+}
 
 /**
  * Fetches all HTTP request headers from the current request
@@ -746,7 +793,9 @@ function headers_list(): array {}
  * @return array|false An associative array of all the HTTP headers in the current request, or <b>FALSE</b> on failure.
  */
 #[Pure]
-function apache_request_headers(): false|array {}
+function apache_request_headers(): false|array
+{
+}
 
 /**
  * Fetches all HTTP headers from the current request.
@@ -755,7 +804,9 @@ function apache_request_headers(): false|array {}
  * @return array|false An associative array of all the HTTP headers in the current request, or <b>FALSE</b> on failure.
  */
 #[Pure]
-function getallheaders(): false|array {}
+function getallheaders(): false|array
+{
+}
 
 /**
  * Check whether client disconnected
@@ -763,7 +814,9 @@ function getallheaders(): false|array {}
  * @return int 1 if client disconnected, 0 otherwise.
  */
 #[Pure(true)]
-function connection_aborted(): int {}
+function connection_aborted(): int
+{
+}
 
 /**
  * Returns connection status bitfield
@@ -773,7 +826,9 @@ function connection_aborted(): int {}
  * status.
  */
 #[Pure(true)]
-function connection_status(): int {}
+function connection_status(): int
+{
+}
 
 /**
  * Set whether a client disconnect should abort script execution
@@ -785,7 +840,9 @@ function connection_status(): int {}
  * </p>
  * @return int the previous setting, as an integer.
  */
-function ignore_user_abort(?bool $enable): int {}
+function ignore_user_abort(null|bool $enable): int
+{
+}
 
 /**
  * Parse a configuration file
@@ -816,7 +873,12 @@ function ignore_user_abort(?bool $enable): int {}
  * and false on failure.
  */
 #[Pure(true)]
-function parse_ini_file(string $filename, bool $process_sections = false, int $scanner_mode = INI_SCANNER_NORMAL): array|false {}
+function parse_ini_file(
+    string $filename,
+    bool $process_sections = false,
+    int $scanner_mode = INI_SCANNER_NORMAL,
+): array|false {
+}
 
 /**
  * Parse a configuration string
@@ -839,7 +901,12 @@ function parse_ini_file(string $filename, bool $process_sections = false, int $s
  * and false on failure.
  */
 #[Pure]
-function parse_ini_string(string $ini_string, bool $process_sections = false, int $scanner_mode = INI_SCANNER_NORMAL): array|false {}
+function parse_ini_string(
+    string $ini_string,
+    bool $process_sections = false,
+    int $scanner_mode = INI_SCANNER_NORMAL,
+): array|false {
+}
 
 /**
  * Tells whether the file was uploaded via HTTP POST
@@ -850,7 +917,9 @@ function parse_ini_string(string $ini_string, bool $process_sections = false, in
  * @return bool true on success or false on failure.
  */
 #[Pure(true)]
-function is_uploaded_file(string $filename): bool {}
+function is_uploaded_file(string $filename): bool
+{
+}
 
 /**
  * Moves an uploaded file to a new location
@@ -872,15 +941,19 @@ function is_uploaded_file(string $filename): bool {}
  * move_uploaded_file will return
  * false. Additionally, a warning will be issued.
  */
-function move_uploaded_file(string $from, string $to): bool {}
+function move_uploaded_file(string $from, string $to): bool
+{
+}
 
 /**
  * @return array|false
  * @since 7.3
  */
 #[Pure]
-#[ArrayShape(["description" => "string", "mac" => "string", "mtu" => "int", "unicast" => "array", "up" => "bool"])]
-function net_get_interfaces(): array|false {}
+#[ArrayShape(['description' => 'string', 'mac' => 'string', 'mtu' => 'int', 'unicast' => 'array', 'up' => 'bool'])]
+function net_get_interfaces(): array|false
+{
+}
 
 /**
  * Get the Internet host name corresponding to a given IP address
@@ -892,7 +965,9 @@ function net_get_interfaces(): array|false {}
  * on failure.
  */
 #[Pure]
-function gethostbyaddr(string $ip): string|false {}
+function gethostbyaddr(string $ip): string|false
+{
+}
 
 /**
  * Get the IPv4 address corresponding to a given Internet host name
@@ -904,7 +979,9 @@ function gethostbyaddr(string $ip): string|false {}
  * hostname on failure.
  */
 #[Pure]
-function gethostbyname(string $hostname): string {}
+function gethostbyname(string $hostname): string
+{
+}
 
 /**
  * Get a list of IPv4 addresses corresponding to a given Internet host
@@ -917,7 +994,9 @@ function gethostbyname(string $hostname): string {}
  * hostname could not be resolved.
  */
 #[Pure]
-function gethostbynamel(string $hostname): array|false {}
+function gethostbynamel(string $hostname): array|false
+{
+}
 
 /**
  * Gets the host name
@@ -926,7 +1005,9 @@ function gethostbynamel(string $hostname): array|false {}
  * returned.
  */
 #[Pure]
-function gethostname(): string|false {}
+function gethostname(): string|false
+{
+}
 
 /**
  * Alias:
@@ -942,7 +1023,9 @@ function gethostname(): string|false {}
  * </p>
  * @return bool Returns <b>TRUE</b> if any records are found; returns <b>FALSE</b> if no records were found or if an error occurred.
  */
-function dns_check_record(string $hostname, string $type = 'MX'): bool {}
+function dns_check_record(string $hostname, string $type = 'MX'): bool
+{
+}
 
 /**
  * Check DNS records corresponding to a given Internet host name or IP address
@@ -959,7 +1042,9 @@ function dns_check_record(string $hostname, string $type = 'MX'): bool {}
  * were found or if an error occurred.
  */
 #[Pure]
-function checkdnsrr(string $hostname, string $type = 'MX'): bool {}
+function checkdnsrr(string $hostname, string $type = 'MX'): bool
+{
+}
 
 /**
  * Alias:
@@ -970,7 +1055,9 @@ function checkdnsrr(string $hostname, string $type = 'MX'): bool {}
  * @param array &$weights [optional]
  * @return bool
  */
-function dns_get_mx(string $hostname, &$hosts, &$weights): bool {}
+function dns_get_mx(string $hostname, &$hosts, &$weights): bool
+{
+}
 
 /**
  * Get MX records corresponding to a given Internet host name
@@ -989,7 +1076,9 @@ function dns_get_mx(string $hostname, &$hosts, &$weights): bool {}
  * @return bool true if any records are found; returns false if no records
  * were found or if an error occurred.
  */
-function getmxrr(string $hostname, &$hosts, &$weights): bool {}
+function getmxrr(string $hostname, &$hosts, &$weights): bool
+{
+}
 
 /**
  * Fetch DNS Resource Records associated with a hostname
@@ -1198,4 +1287,11 @@ function getmxrr(string $hostname, &$hosts, &$weights): bool {}
  * </tr>
  * </table>
  */
-function dns_get_record(string $hostname, int $type = DNS_ANY, &$authoritative_name_servers, &$additional_records, bool $raw = false): array|false {}
+function dns_get_record(
+    string $hostname,
+    int $type = DNS_ANY,
+    &$authoritative_name_servers,
+    &$additional_records,
+    bool $raw = false,
+): array|false {
+}

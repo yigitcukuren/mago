@@ -35,7 +35,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract
      * @param string|Closure $function The name of the function to reflect or a closure.
      * @throws ReflectionException if the function does not exist.
      */
-    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'Closure|string'], default: '')] $function) {}
+    public function __construct(#[LanguageLevelTypeAware(['8.0' => 'Closure|string'], default: '')]  $function) {}
 
     /**
      * Returns the string representation of the ReflectionFunction object.
@@ -43,22 +43,9 @@ class ReflectionFunction extends ReflectionFunctionAbstract
      * @link https://php.net/manual/en/reflectionfunction.tostring.php
      */
     #[TentativeType]
-    public function __toString(): string {}
-
-    /**
-     * Exports function
-     *
-     * @link https://php.net/manual/en/reflectionfunction.export.php
-     * @param string $name The reflection to export.
-     * @param bool $return Setting to {@see true} will return the
-     * export, as opposed to emitting it. Setting to {@see false} (the default)
-     * will do the opposite.
-     * @return string|null If the $return parameter is set to {@see true}, then
-     * the export is returned as a string, otherwise {@see null} is returned.
-     * @removed 8.0
-     */
-    #[Deprecated(since: '7.4')]
-    public static function export($name, $return = false) {}
+    public function __toString(): string
+    {
+    }
 
     /**
      * Checks if function is disabled
@@ -69,7 +56,9 @@ class ReflectionFunction extends ReflectionFunctionAbstract
     #[Deprecated(since: '8.0')]
     #[Pure]
     #[TentativeType]
-    public function isDisabled(): bool {}
+    public function isDisabled(): bool
+    {
+    }
 
     /**
      * Invokes function
@@ -81,7 +70,9 @@ class ReflectionFunction extends ReflectionFunctionAbstract
      * @return mixed Returns the result of the invoked function call.
      */
     #[TentativeType]
-    public function invoke(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')] ...$args): mixed {}
+    public function invoke(#[LanguageLevelTypeAware(['8.0' => 'mixed'], default: '')]  ...$args): mixed
+    {
+    }
 
     /**
      * Invokes function args
@@ -92,7 +83,9 @@ class ReflectionFunction extends ReflectionFunctionAbstract
      * @return mixed the result of the invoked function
      */
     #[TentativeType]
-    public function invokeArgs(array $args): mixed {}
+    public function invokeArgs(array $args): mixed
+    {
+    }
 
     /**
      * Returns a dynamically created closure for the function
@@ -102,8 +95,12 @@ class ReflectionFunction extends ReflectionFunctionAbstract
      */
     #[Pure]
     #[TentativeType]
-    public function getClosure(): Closure {}
+    public function getClosure(): Closure
+    {
+    }
 
     #[PhpStormStubsElementAvailable(from: '8.2')]
-    public function isAnonymous(): bool {}
+    public function isAnonymous(): bool
+    {
+    }
 }

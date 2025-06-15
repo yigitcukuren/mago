@@ -29,7 +29,9 @@ use JetBrains\PhpStorm\Pure;
  * content of the original token in element 1 and the line number in element 2.
  */
 #[Pure]
-function token_get_all(string $code, #[PhpStormStubsElementAvailable(from: '7.0')] int $flags = 0): array {}
+function token_get_all(string $code, #[PhpStormStubsElementAvailable(from: '7.0')] int $flags = 0): array
+{
+}
 
 /**
  * Get the symbolic name of a given PHP token
@@ -40,7 +42,9 @@ function token_get_all(string $code, #[PhpStormStubsElementAvailable(from: '7.0'
  * @return string The symbolic name of the given <i>token</i>.
  */
 #[Pure]
-function token_name(int $id): string {}
+function token_name(int $id): string
+{
+}
 
 define('TOKEN_PARSE', 1);
 define('T_REQUIRE_ONCE', 263);
@@ -231,11 +235,6 @@ define('T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG', 287);
  * @since 8.1
  */
 define('T_READONLY', 363);
-
-/**
- * @removed 7.0
- */
-define('T_CHARACTER', 315);
 
 /**
  * @since 8.4
