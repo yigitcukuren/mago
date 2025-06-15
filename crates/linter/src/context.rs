@@ -383,7 +383,7 @@ impl<'a> LintContext<'a> {
     /// # Parameters
     ///
     /// - `issue`: The issue to be reported.
-    #[inline(always)]
+    #[inline]
     pub fn force_report(&mut self, issue: Issue) {
         self.issues.push(issue.with_code(&self.rule.slug));
     }

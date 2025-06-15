@@ -315,33 +315,33 @@ mod internal {
             }
         }
 
-        #[inline(always)]
+        #[inline]
         fn walk_anonymous_class<'ast>(
             &self,
             anonymous_class: &'ast AnonymousClass,
             context: &mut (Vec<VariableReference>, &'a LintContext<'a>),
         ) {
-            if let Some(argument_list) = anonymous_class.arguments.as_ref() {
+            if let Some(argument_list) = anonymous_class.argument_list.as_ref() {
                 self.walk_argument_list(argument_list, context);
             }
         }
 
-        #[inline(always)]
+        #[inline]
         fn walk_namespace<'ast>(&self, _: &'ast Namespace, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_class<'ast>(&self, _: &'ast Class, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_interface<'ast>(&self, _: &'ast Interface, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_trait<'ast>(&self, _: &'ast Trait, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_enum<'ast>(&self, _: &'ast Enum, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_function<'ast>(&self, _: &'ast Function, _: &mut (Vec<VariableReference>, &'a LintContext<'a>)) {}
     }
 
@@ -366,31 +366,31 @@ mod internal {
             context.0 = self.0.eq(function_name);
         }
 
-        #[inline(always)]
+        #[inline]
         fn walk_closure<'ast>(&self, _: &'ast Closure, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_arrow_function<'ast>(&self, _: &'ast ArrowFunction, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_namespace<'ast>(&self, _: &'ast Namespace, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_class<'ast>(&self, _: &'ast Class, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_interface<'ast>(&self, _: &'ast Interface, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_trait<'ast>(&self, _: &'ast Trait, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_enum<'ast>(&self, _: &'ast Enum, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_function<'ast>(&self, _: &'ast Function, _: &mut (bool, &'a LintContext<'a>)) {}
 
-        #[inline(always)]
+        #[inline]
         fn walk_anonymous_class<'ast>(&self, _: &'ast AnonymousClass, _: &mut (bool, &'a LintContext<'a>)) {}
     }
 
