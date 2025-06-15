@@ -112,8 +112,20 @@ impl Span {
         self.start.offset..self.end.offset
     }
 
+    pub fn to_tuple(&self) -> (usize, usize) {
+        (self.start.offset, self.end.offset)
+    }
+
     pub fn length(&self) -> usize {
         self.end.offset - self.start.offset
+    }
+
+    pub fn with_start(&self, start: Position) -> Span {
+        Span::new(start, self.end)
+    }
+
+    pub fn with_end(&self, end: Position) -> Span {
+        Span::new(self.start, end)
     }
 
     pub fn subspan(&self, start: usize, end: usize) -> Span {
@@ -243,5 +255,33 @@ impl From<Span> for SourceIdentifier {
 impl From<&Span> for SourceIdentifier {
     fn from(span: &Span) -> SourceIdentifier {
         span.start.source
+    }
+}
+
+impl std::ops::Add<usize> for Position {
+    type Output = Position;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        self.forward(rhs)
+    }
+}
+
+impl std::ops::Sub<usize> for Position {
+    type Output = Position;
+
+    fn sub(self, rhs: usize) -> Self::Output {
+        self.backward(rhs)
+    }
+}
+
+impl std::ops::AddAssign<usize> for Position {
+    fn add_assign(&mut self, rhs: usize) {
+        self.offset += rhs;
+    }
+}
+
+impl std::ops::SubAssign<usize> for Position {
+    fn sub_assign(&mut self, rhs: usize) {
+        self.offset -= rhs;
     }
 }
