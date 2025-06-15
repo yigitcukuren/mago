@@ -23,30 +23,18 @@ pub enum ArrayLike<'a> {
 
 impl<'a> ArrayLike<'a> {
     #[inline]
-    fn len(&self) -> usize {
-        match self {
-            Self::Array(array) => array.elements.len(),
-            Self::List(list) => list.elements.len(),
-            Self::LegacyArray(array) => array.elements.len(),
-        }
-    }
+    fn elements(&self) -> Vec<&'a ArrayElement> {
+        let mut elements = match self {
+            Self::Array(array) => array.elements.to_vec(),
+            Self::LegacyArray(array) => array.elements.to_vec(),
+            Self::List(list) => list.elements.to_vec(),
+        };
 
-    #[inline]
-    fn is_empty(&self) -> bool {
-        match self {
-            Self::Array(array) => array.elements.is_empty(),
-            Self::List(list) => list.elements.is_empty(),
-            Self::LegacyArray(array) => array.elements.is_empty(),
+        while let Some(ArrayElement::Missing(_)) = elements.last() {
+            elements.pop();
         }
-    }
 
-    #[inline]
-    fn elements(&self) -> &'a [ArrayElement] {
-        match self {
-            Self::Array(array) => array.elements.as_slice(),
-            Self::LegacyArray(array) => array.elements.as_slice(),
-            Self::List(list) => list.elements.as_slice(),
-        }
+        elements
     }
 
     #[inline]
@@ -137,8 +125,9 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
     };
 
     let mut parts = vec![left_delimiter];
+    let elements = array_like.elements();
 
-    if array_like.is_empty() {
+    if elements.is_empty() {
         if let Some(dangling_comments) = f.print_dangling_comments(array_like.span(), true) {
             parts.push(dangling_comments);
         } else {
@@ -176,7 +165,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
     let column_widths = if use_table_style { calculate_column_widths(f, &array_like) } else { None };
 
     parts.push(Document::Indent({
-        let len = array_like.len();
+        let len = elements.len();
         let mut indent_parts = vec![];
         indent_parts.push(if array_like.has_space_within_delimiters(f) {
             Document::Line(Line::default())
@@ -185,7 +174,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
         });
 
         if let Some(widths) = column_widths {
-            for (i, element) in array_like.elements().iter().enumerate() {
+            for (i, element) in elements.into_iter().enumerate() {
                 let formatted_element = element.format(f);
                 if i == len - 1 {
                     indent_parts.push(format_row_with_alignment(f, formatted_element, &widths));
@@ -198,7 +187,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
             }
         } else {
             // Standard formatting without alignment
-            for (i, element) in array_like.elements().iter().enumerate() {
+            for (i, element) in elements.into_iter().enumerate() {
                 indent_parts.push(element.format(f));
                 if i == len - 1 {
                     break;
@@ -241,7 +230,7 @@ fn has_floating_comments<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<
     };
 
     for element in array_like.elements().windows(2) {
-        if has_comments(&element[0], &element[1]) {
+        if has_comments(element[0], element[1]) {
             return true;
         }
     }
@@ -251,33 +240,31 @@ fn has_floating_comments<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<
 
 #[inline]
 fn inline_single_element<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> Option<Document<'a>> {
-    if array_like.len() != 1 {
-        return None;
+    let elements = array_like.elements();
+    if elements.len() != 1 {
+        return None; // Only inline single-element arrays
     }
 
-    let elements = array_like.elements();
-    let first_element = elements.first()?;
-
-    match first_element {
+    match elements[0] {
         ArrayElement::KeyValue(element) => {
             if (element.key.is_literal() || is_string_word_type(&element.key))
                 && should_hug_expression(f, &element.value, false)
             {
-                Some(first_element.format(f))
+                Some(element.format(f))
             } else {
                 None
             }
         }
         ArrayElement::Value(element) => {
             if should_hug_expression(f, &element.value, false) {
-                Some(first_element.format(f))
+                Some(element.format(f))
             } else {
                 None
             }
         }
         ArrayElement::Variadic(element) => {
             if should_hug_expression(f, &element.value, false) {
-                Some(first_element.format(f))
+                Some(element.format(f))
             } else {
                 None
             }
@@ -495,11 +482,10 @@ fn is_table_style<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) ->
 }
 
 fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> Option<Vec<usize>> {
-    let elements = array_like.elements();
     let mut row_size = 0;
 
     // First pass: determine consistent row size and initialize column widths
-    for element in elements {
+    for element in array_like.elements() {
         match element {
             ArrayElement::Value(element) => {
                 if let Expression::Array(Array { elements, .. })
@@ -519,7 +505,7 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
     let mut column_maximum_widths = vec![0; row_size];
 
     // Second pass: calculate maximum width for each column
-    for element in elements {
+    for element in array_like.elements() {
         if let ArrayElement::Value(element) = element {
             if let Expression::Array(Array { elements, .. }) | Expression::LegacyArray(LegacyArray { elements, .. }) =
                 element.value.as_ref()
