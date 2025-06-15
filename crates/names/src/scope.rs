@@ -58,6 +58,7 @@ impl NamespaceScope {
     }
 
     /// Creates a new, empty scope representing the given namespace.
+    #[inline]
     pub fn for_namespace(namespace: impl Into<String>) -> Self {
         NamespaceScope {
             namespace_name: Some(namespace.into()),
@@ -193,11 +194,15 @@ impl NamespaceScope {
     ///   is derived from the last part of the `name` (e.g., "User" from "App\\Models\\User").
     ///
     /// The alias name (explicit or derived) is stored lowercase as the key.
+    #[inline]
     pub fn add(&mut self, kind: NameKind, name: impl AsRef<str>, alias: Option<impl AsRef<str>>) {
-        let name_ref = name.as_ref();
+        self.add_str(kind, name.as_ref(), alias.as_ref().map(|a| a.as_ref()))
+    }
 
+    /// non-generic version of `add` that takes a string slice.
+    fn add_str(&mut self, kind: NameKind, name_ref: &str, alias: Option<&str>) {
         let alias_key = match alias {
-            Some(alias) => alias.as_ref().to_ascii_lowercase(),
+            Some(alias) => alias.to_ascii_lowercase(),
             None => {
                 if let Some(last_backslash_pos) = name_ref.rfind('\\') {
                     name_ref[last_backslash_pos + 1..].to_ascii_lowercase()
@@ -229,9 +234,13 @@ impl NamespaceScope {
     ///
     /// The qualified name (e.g., "App\\Models\\User") or the original name if
     /// in the global scope, the namespace is empty, or the input name was not simple.
+    #[inline]
     pub fn qualify_name(&self, name: impl AsRef<str>) -> String {
-        let name_ref = name.as_ref();
+        self.qualify_name_str(name.as_ref())
+    }
 
+    /// non-generic version of `qualify_name` that takes a string slice.
+    fn qualify_name_str(&self, name_ref: &str) -> String {
         match &self.namespace_name {
             // If we have a non-empty namespace, prepend it.
             Some(ns) if !ns.is_empty() => {
@@ -253,9 +262,13 @@ impl NamespaceScope {
     /// A tuple `(String, bool)`:
     ///  - The resolved or qualified name.
     ///  - `true` if resolved via explicit alias/construct (step 1), `false` otherwise.
+    #[inline]
     pub fn resolve(&self, kind: NameKind, name: impl AsRef<str>) -> (String, bool) {
-        let name_ref = name.as_ref();
+        self.resolve_str(kind, name.as_ref())
+    }
 
+    /// non-generic version of `resolve` that takes a string slice.
+    fn resolve_str(&self, kind: NameKind, name_ref: &str) -> (String, bool) {
         // Try resolving using explicit aliases and constructs
         if let Some(resolved_name) = self.resolve_alias(kind, name_ref) {
             return (resolved_name, true); // Resolved via alias or explicit construct
@@ -278,8 +291,13 @@ impl NamespaceScope {
     ///
     /// * `Some(String)` containing the resolved FQN if an explicit rule applies.
     /// * `None` if no explicit rule resolves the name.
+    #[inline]
     pub fn resolve_alias(&self, kind: NameKind, name: impl AsRef<str>) -> Option<String> {
-        let name_ref = name.as_ref();
+        self.resolve_alias_str(kind, name.as_ref())
+    }
+
+    /// non-generic version of `resolve_alias` that takes a string slice.
+    fn resolve_alias_str(&self, kind: NameKind, name_ref: &str) -> Option<String> {
         if name_ref.is_empty() {
             return None;
         }
