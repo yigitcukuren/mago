@@ -82,6 +82,11 @@ impl ShapeType<'_> {
     pub fn has_fields(&self) -> bool {
         !self.fields.is_empty()
     }
+
+    #[inline]
+    pub fn has_non_optional_fields(&self) -> bool {
+        self.fields.iter().any(|field| !field.is_optional())
+    }
 }
 
 impl HasSpan for ShapeType<'_> {

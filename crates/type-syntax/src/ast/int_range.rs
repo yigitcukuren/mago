@@ -9,8 +9,9 @@ use crate::ast::literal::LiteralIntType;
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(tag = "type", content = "value")]
 #[repr(C)]
-pub enum LiteralIntOrKeyword<'input> {
-    LiteralInt(LiteralIntType<'input>),
+pub enum IntOrKeyword<'input> {
+    NegativeInt { minus: Span, int: LiteralIntType<'input> },
+    Int(LiteralIntType<'input>),
     Keyword(Keyword<'input>),
 }
 
@@ -19,17 +20,18 @@ pub enum LiteralIntOrKeyword<'input> {
 pub struct IntRangeType<'input> {
     pub keyword: Keyword<'input>,
     pub less_than: Span,
-    pub min: LiteralIntOrKeyword<'input>,
+    pub min: IntOrKeyword<'input>,
     pub comma: Span,
-    pub max: LiteralIntOrKeyword<'input>,
+    pub max: IntOrKeyword<'input>,
     pub greater_than: Span,
 }
 
-impl HasSpan for LiteralIntOrKeyword<'_> {
+impl HasSpan for IntOrKeyword<'_> {
     fn span(&self) -> Span {
         match self {
-            LiteralIntOrKeyword::LiteralInt(literal) => literal.span(),
-            LiteralIntOrKeyword::Keyword(keyword) => keyword.span(),
+            IntOrKeyword::NegativeInt { minus, int } => minus.join(int.span()),
+            IntOrKeyword::Int(literal) => literal.span(),
+            IntOrKeyword::Keyword(keyword) => keyword.span(),
         }
     }
 }
@@ -46,11 +48,12 @@ impl std::fmt::Display for IntRangeType<'_> {
     }
 }
 
-impl std::fmt::Display for LiteralIntOrKeyword<'_> {
+impl std::fmt::Display for IntOrKeyword<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LiteralIntOrKeyword::LiteralInt(literal) => write!(f, "{literal}"),
-            LiteralIntOrKeyword::Keyword(keyword) => write!(f, "{keyword}"),
+            IntOrKeyword::NegativeInt { int, .. } => write!(f, "-{int}"),
+            IntOrKeyword::Int(int) => write!(f, "{int}"),
+            IntOrKeyword::Keyword(keyword) => write!(f, "{keyword}"),
         }
     }
 }

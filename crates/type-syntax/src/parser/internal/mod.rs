@@ -50,26 +50,48 @@ pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'
                 Type::IntRange(IntRangeType {
                     keyword,
                     less_than: stream.consume()?.span,
-                    min: if stream.is_at(TypeTokenKind::LiteralInteger)? {
+                    min: if stream.is_at(TypeTokenKind::Minus)? {
+                        let minus = stream.consume()?.span;
+                        let token = stream.eat(TypeTokenKind::LiteralInteger)?;
+                        let value = parse_literal_integer(token.value).unwrap_or_else(|| {
+                            unreachable!("lexer generated invalid integer `{}`; this should never happen.", token.value)
+                        });
+
+                        IntOrKeyword::NegativeInt {
+                            minus,
+                            int: LiteralIntType { span: token.span, value, raw: token.value },
+                        }
+                    } else if stream.is_at(TypeTokenKind::LiteralInteger)? {
                         let token = stream.consume()?;
                         let value = parse_literal_integer(token.value).unwrap_or_else(|| {
                             unreachable!("lexer generated invalid integer `{}`; this should never happen.", token.value)
                         });
 
-                        LiteralIntOrKeyword::LiteralInt(LiteralIntType { span: token.span, value, raw: token.value })
+                        IntOrKeyword::Int(LiteralIntType { span: token.span, value, raw: token.value })
                     } else {
-                        LiteralIntOrKeyword::Keyword(Keyword::from(stream.eat(TypeTokenKind::Min)?))
+                        IntOrKeyword::Keyword(Keyword::from(stream.eat(TypeTokenKind::Min)?))
                     },
                     comma: stream.eat(TypeTokenKind::Comma)?.span,
-                    max: if stream.is_at(TypeTokenKind::LiteralInteger)? {
+                    max: if stream.is_at(TypeTokenKind::Minus)? {
+                        let minus = stream.consume()?.span;
+                        let token = stream.eat(TypeTokenKind::LiteralInteger)?;
+                        let value = parse_literal_integer(token.value).unwrap_or_else(|| {
+                            unreachable!("lexer generated invalid integer `{}`; this should never happen.", token.value)
+                        });
+
+                        IntOrKeyword::NegativeInt {
+                            minus,
+                            int: LiteralIntType { span: token.span, value, raw: token.value },
+                        }
+                    } else if stream.is_at(TypeTokenKind::LiteralInteger)? {
                         let token = stream.consume()?;
                         let value = parse_literal_integer(token.value).unwrap_or_else(|| {
                             unreachable!("lexer generated invalid integer `{}`; this should never happen.", token.value)
                         });
 
-                        LiteralIntOrKeyword::LiteralInt(LiteralIntType { span: token.span, value, raw: token.value })
+                        IntOrKeyword::Int(LiteralIntType { span: token.span, value, raw: token.value })
                     } else {
-                        LiteralIntOrKeyword::Keyword(Keyword::from(stream.eat(TypeTokenKind::Max)?))
+                        IntOrKeyword::Keyword(Keyword::from(stream.eat(TypeTokenKind::Max)?))
                     },
                     greater_than: stream.eat(TypeTokenKind::GreaterThan)?.span,
                 })
@@ -276,12 +298,20 @@ pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'
             ampersand: stream.consume()?.span,
             right: Box::new(parse_type(stream)?),
         }),
-        Some(TypeTokenKind::LeftBracket) => Type::IndexAccess(IndexAccessType {
-            target: Box::new(inner),
-            left_bracket: stream.consume()?.span,
-            index: Box::new(parse_type(stream)?),
-            right_bracket: stream.eat(TypeTokenKind::RightBracket)?.span,
-        }),
+        Some(TypeTokenKind::LeftBracket) => {
+            let left_bracket = stream.consume()?.span;
+
+            if stream.is_at(TypeTokenKind::RightBracket)? {
+                Type::Slice(SliceType { inner: Box::new(inner), left_bracket, right_bracket: stream.consume()?.span })
+            } else {
+                Type::IndexAccess(IndexAccessType {
+                    target: Box::new(inner),
+                    left_bracket,
+                    index: Box::new(parse_type(stream)?),
+                    right_bracket: stream.eat(TypeTokenKind::RightBracket)?.span,
+                })
+            }
+        }
         Some(TypeTokenKind::Is) => Type::Conditional(ConditionalType {
             subject: Box::new(inner),
             is: Keyword::from(stream.consume()?),

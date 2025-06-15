@@ -139,6 +139,22 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_variable_union() {
+        match do_parse("$a|$b") {
+            Ok(ty) => match ty {
+                Type::Union(u) => {
+                    assert!(matches!(*u.left, Type::Variable(_)));
+                    assert!(matches!(*u.right, Type::Variable(_)));
+                }
+                _ => panic!("Expected Type::Union"),
+            },
+            Err(err) => {
+                panic!("Failed to parse union type: {err:?}");
+            }
+        }
+    }
+
+    #[test]
     fn test_parse_nullable() {
         let result = do_parse("?string");
         assert!(result.is_ok());
@@ -648,26 +664,36 @@ mod tests {
     }
 
     #[test]
+    fn test_slice_type() {
+        match do_parse("string[]") {
+            Ok(Type::Slice(s)) => {
+                assert!(matches!(*s.inner, Type::String(_)));
+            }
+            res => panic!("Expected Ok(Type::Slice), got {res:?}"),
+        }
+    }
+
+    #[test]
     fn test_int_range() {
         match do_parse("int<0, 100>") {
             Ok(Type::IntRange(r)) => {
                 assert_eq!(r.keyword.value, "int");
 
                 match r.min {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                    IntOrKeyword::Int(literal_int_type) => {
                         assert_eq!(literal_int_type.value, 0);
                     }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
-                        panic!("Expected min to be a LiteralIntType, got Keyword with value {}", keyword.value,)
+                    _ => {
+                        panic!("Expected min to be a LiteralIntType, got `{}`", r.min)
                     }
                 };
 
                 match r.max {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                    IntOrKeyword::Int(literal_int_type) => {
                         assert_eq!(literal_int_type.value, 100);
                     }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
-                        panic!("Expected max to be a Keyword, got Keyword with value {}", keyword.value,)
+                    _ => {
+                        panic!("Expected max to be a LiteralIntType, got `{}`", r.max)
                     }
                 };
             }
@@ -677,20 +703,20 @@ mod tests {
         match do_parse("int<min, 0>") {
             Ok(Type::IntRange(r)) => {
                 match r.min {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
-                        panic!("Expected min to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
-                    }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
+                    IntOrKeyword::Keyword(keyword) => {
                         assert_eq!(keyword.value, "min");
+                    }
+                    _ => {
+                        panic!("Expected min to be a Keyword, got `{}`", r.min)
                     }
                 };
 
                 match r.max {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
+                    IntOrKeyword::Int(literal_int_type) => {
                         assert_eq!(literal_int_type.value, 0);
                     }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
-                        panic!("Expected max to be a LiteralIntType, got Keyword with value {}", keyword.value,)
+                    _ => {
+                        panic!("Expected max to be a LiteralIntType, got `{}`", r.max)
                     }
                 };
             }
@@ -700,20 +726,20 @@ mod tests {
         match do_parse("int<min, max>") {
             Ok(Type::IntRange(r)) => {
                 match r.min {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
-                        panic!("Expected min to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
-                    }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
+                    IntOrKeyword::Keyword(keyword) => {
                         assert_eq!(keyword.value, "min");
+                    }
+                    _ => {
+                        panic!("Expected min to be a Keyword, got `{}`", r.min)
                     }
                 };
 
                 match r.max {
-                    LiteralIntOrKeyword::LiteralInt(literal_int_type) => {
-                        panic!("Expected max to be a keyword, got LiteralIntType with value {}", literal_int_type.value,)
-                    }
-                    LiteralIntOrKeyword::Keyword(keyword) => {
+                    IntOrKeyword::Keyword(keyword) => {
                         assert_eq!(keyword.value, "max");
+                    }
+                    _ => {
+                        panic!("Expected max to be a Keyword, got `{}`", r.max)
                     }
                 };
             }

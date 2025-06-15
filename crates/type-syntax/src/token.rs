@@ -1,9 +1,10 @@
 use serde::Deserialize;
 use serde::Serialize;
+use strum::Display;
 
 use mago_span::Span;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[repr(C)]
 pub enum TypeTokenKind {
     Int,
@@ -100,22 +101,22 @@ pub struct TypeToken<'input> {
 }
 
 impl TypeTokenKind {
-    #[inline(always)]
+    #[inline]
     pub const fn is_trivia(&self) -> bool {
         matches!(self, Self::SingleLineComment | Self::Whitespace)
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_simple_identifier(&self) -> bool {
         matches!(self, Self::Identifier)
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_identifier(&self) -> bool {
         matches!(self, Self::Identifier | Self::QualifiedIdentifier | Self::FullyQualifiedIdentifier)
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_keyword(&self) -> bool {
         matches!(
             self,
@@ -177,7 +178,7 @@ impl TypeTokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_array_like(&self) -> bool {
         matches!(self, Self::Array | Self::NonEmptyArray | Self::AssociativeArray | Self::List | Self::NonEmptyList)
     }

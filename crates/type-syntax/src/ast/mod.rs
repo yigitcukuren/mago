@@ -19,6 +19,7 @@ pub use crate::ast::literal::*;
 pub use crate::ast::properties_of::*;
 pub use crate::ast::reference::*;
 pub use crate::ast::shape::*;
+pub use crate::ast::slice::*;
 pub use crate::ast::unary::*;
 pub use crate::ast::value_of::*;
 pub use crate::ast::variable::*;
@@ -39,6 +40,7 @@ pub mod literal;
 pub mod properties_of;
 pub mod reference;
 pub mod shape;
+pub mod slice;
 pub mod unary;
 pub mod value_of;
 pub mod variable;
@@ -104,6 +106,7 @@ pub enum Type<'input> {
     Posited(PositedType<'input>),
     IntRange(IntRangeType<'input>),
     PropertiesOf(PropertiesOfType<'input>),
+    Slice(SliceType<'input>),
 }
 
 impl HasSpan for Type<'_> {
@@ -166,6 +169,7 @@ impl HasSpan for Type<'_> {
             Type::Posited(ty) => ty.span(),
             Type::IntRange(ty) => ty.span(),
             Type::PropertiesOf(ty) => ty.span(),
+            Type::Slice(ty) => ty.span(),
         }
     }
 }
@@ -230,6 +234,7 @@ impl std::fmt::Display for Type<'_> {
             Type::Posited(ty) => write!(f, "{ty}"),
             Type::IntRange(ty) => write!(f, "{ty}"),
             Type::PropertiesOf(ty) => write!(f, "{ty}"),
+            Type::Slice(ty) => write!(f, "{ty}"),
         }
     }
 }
