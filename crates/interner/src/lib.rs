@@ -15,7 +15,7 @@ pub struct StringIdentifier(pub(crate) usize);
 
 impl StringIdentifier {
     /// Creates a new empty `StringIdentifier`.
-    #[inline(always)]
+    #[inline]
     pub const fn empty() -> Self {
         Self(0)
     }
@@ -25,37 +25,37 @@ impl StringIdentifier {
     /// # Arguments
     ///
     /// * `val` - The value of the string identifier.
-    #[inline(always)]
+    #[inline]
     pub const fn new(val: NonZeroUsize) -> Self {
         Self(val.get())
     }
 
     /// Returns `true` if the string is empty.
-    #[inline(always)]
+    #[inline]
     pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
 
     /// Returns the value of the string identifier.
-    #[inline(always)]
+    #[inline]
     pub const fn value(&self) -> usize {
         self.0
     }
 
     /// Returns `true` if the string identifier is the same as the other.
-    #[inline(always)]
+    #[inline]
     pub const fn is_same_as(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
 unsafe impl Key for StringIdentifier {
-    #[inline(always)]
+    #[inline]
     fn into_usize(self) -> usize {
         self.0 - 1
     }
 
-    #[inline(always)]
+    #[inline]
     fn try_from_usize(int: usize) -> Option<Self> {
         Some(Self::new(NonZeroUsize::new(int + 1)?))
     }
