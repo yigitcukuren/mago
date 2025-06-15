@@ -13,7 +13,7 @@ rust-version = "1.87.0"
 package.edition = "2024"
 package.authors = ["Saif Eddin Gmati <azjezz@carthage.software>"]
 package.license = "MIT OR Apache-2.0"
-package.version = "0.24.2"
+package.version = "0.24.3"
 package.homepage = "https://mago.carthage.software"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.87.0"
@@ -26,29 +26,29 @@ print_stderr = { level = "forbid" }
 dbg_macro = { level = "forbid" }
 
 [workspace.dependencies]
-mago-syntax-core = { path = "crates/syntax-core", version = "0.24.2" }
-mago-syntax = { path = "crates/syntax", version = "0.24.2" }
-mago-type-syntax = { path = "crates/type-syntax", version = "0.24.2" }
-mago-casing = { path = "crates/casing", version = "0.24.2" }
-mago-composer = { path = "crates/composer", version = "0.24.2" }
-mago-docblock = { path = "crates/docblock", version = "0.24.2" }
-mago-fixer = { path = "crates/fixer", version = "0.24.2" }
-mago-formatter = { path = "crates/formatter", version = "0.24.2" }
-mago-interner = { path = "crates/interner", version = "0.24.2" }
-mago-linter = { path = "crates/linter", version = "0.24.2" }
-mago-names = { path = "crates/names", version = "0.24.2" }
-mago-reflection = { path = "crates/reflection", version = "0.24.2" }
-mago-reporting = { path = "crates/reporting", version = "0.24.2" }
-mago-project = { path = "crates/project", version = "0.24.2" }
-mago-source = { path = "crates/source", version = "0.24.2" }
-mago-span = { path = "crates/span", version = "0.24.2" }
-mago-symbol-table = { path = "crates/symbol-table", version = "0.24.2" }
-mago-traverser = { path = "crates/traverser", version = "0.24.2" }
-mago-trinary = { path = "crates/trinary", version = "0.24.2" }
-mago-typing = { path = "crates/typing", version = "0.24.2" }
-mago-wasm = { path = "crates/wasm", version = "0.24.2" }
-mago-php-version = { path = "crates/php-version", version = "0.24.2" }
-mago-reference = { path = "crates/reference", version = "0.24.2" }
+mago-syntax-core = { path = "crates/syntax-core", version = "0.24.3" }
+mago-syntax = { path = "crates/syntax", version = "0.24.3" }
+mago-type-syntax = { path = "crates/type-syntax", version = "0.24.3" }
+mago-casing = { path = "crates/casing", version = "0.24.3" }
+mago-composer = { path = "crates/composer", version = "0.24.3" }
+mago-docblock = { path = "crates/docblock", version = "0.24.3" }
+mago-fixer = { path = "crates/fixer", version = "0.24.3" }
+mago-formatter = { path = "crates/formatter", version = "0.24.3" }
+mago-interner = { path = "crates/interner", version = "0.24.3" }
+mago-linter = { path = "crates/linter", version = "0.24.3" }
+mago-names = { path = "crates/names", version = "0.24.3" }
+mago-reflection = { path = "crates/reflection", version = "0.24.3" }
+mago-reporting = { path = "crates/reporting", version = "0.24.3" }
+mago-project = { path = "crates/project", version = "0.24.3" }
+mago-source = { path = "crates/source", version = "0.24.3" }
+mago-span = { path = "crates/span", version = "0.24.3" }
+mago-symbol-table = { path = "crates/symbol-table", version = "0.24.3" }
+mago-traverser = { path = "crates/traverser", version = "0.24.3" }
+mago-trinary = { path = "crates/trinary", version = "0.24.3" }
+mago-typing = { path = "crates/typing", version = "0.24.3" }
+mago-wasm = { path = "crates/wasm", version = "0.24.3" }
+mago-php-version = { path = "crates/php-version", version = "0.24.3" }
+mago-reference = { path = "crates/reference", version = "0.24.3" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8", default-features = false, features = ["compile-time-rng", "std"] }
 serde_json = { version = "1.0.138" }
