@@ -172,7 +172,7 @@ pub fn could_expand_value(
                 return false;
             };
 
-            let Some(arguments) = instantiation.arguments.as_ref() else {
+            let Some(arguments) = instantiation.argument_list.as_ref() else {
                 return false;
             };
 

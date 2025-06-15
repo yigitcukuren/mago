@@ -133,7 +133,7 @@ fn format_statement_with_spacing<'a>(
     statement_parts
 }
 
-#[inline(always)]
+#[inline]
 const fn should_add_empty_line_after<'a>(f: &FormatterState<'a>, stmt: &'a Statement) -> bool {
     match stmt {
         Statement::OpeningTag(_) => f.settings.empty_line_after_opening_tag,
@@ -157,7 +157,7 @@ const fn should_add_empty_line_after<'a>(f: &FormatterState<'a>, stmt: &'a State
     }
 }
 
-#[inline(always)]
+#[inline]
 fn should_add_empty_line_before<'a>(f: &FormatterState<'a>, stmt: &'a Statement) -> bool {
     match stmt {
         Statement::Return(_) => {

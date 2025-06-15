@@ -481,7 +481,7 @@ fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {
             argument_list.arguments.len() < 2
         }
         Expression::Instantiation(instantiation) => {
-            instantiation.arguments.as_ref().is_none_or(|argument_list| argument_list.arguments.len() < 2)
+            instantiation.argument_list.as_ref().is_none_or(|argument_list| argument_list.arguments.len() < 2)
         }
         Expression::Binary(operation) => {
             is_simple_call_argument(&operation.lhs, 1) && is_simple_call_argument(&operation.rhs, 1)
@@ -575,7 +575,7 @@ fn is_simple_call_argument<'a>(node: &'a Expression, depth: usize) -> bool {
         }
         Expression::Instantiation(instantiation) => {
             if is_simple_call_argument(&instantiation.class, depth) {
-                match &instantiation.arguments {
+                match &instantiation.argument_list {
                     Some(argument_list) => {
                         argument_list.arguments.len() <= depth
                             && argument_list.arguments.iter().map(|a| a.value()).all(is_child_simple)

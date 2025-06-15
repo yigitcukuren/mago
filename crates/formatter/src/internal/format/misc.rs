@@ -103,7 +103,7 @@ pub(super) fn should_hug_expression<'a>(
     };
 
     // And either:
-    match &instantiation.arguments {
+    match &instantiation.argument_list {
         // a. The instantiation is a simple class instantiation without arguments
         None => true,
         Some(argument_list) => {

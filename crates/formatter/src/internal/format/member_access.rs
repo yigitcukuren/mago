@@ -121,6 +121,7 @@ impl MemberAccessChain<'_> {
                 }
                 Expression::Variable(Variable::Direct(_))
                 | Expression::Identifier(_)
+                | Expression::ConstantAccess(_)
                 | Expression::Instantiation(_) => {
                     // Check if the last access is a method call with arguments
                     let Some(
@@ -144,7 +145,7 @@ impl MemberAccessChain<'_> {
                                 5
                             }
                         }
-                        Expression::Identifier(_) => 6,
+                        Expression::Identifier(_) | Expression::ConstantAccess(_) => 6,
                         Expression::Instantiation(_) => 6,
                         _ => unreachable!(), // We already matched these variants
                     }

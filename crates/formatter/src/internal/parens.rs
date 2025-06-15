@@ -359,6 +359,7 @@ impl<'a> FormatterState<'a> {
                 | Expression::ArrayAccess(_)
                 | Expression::Variable(_)
                 | Expression::Identifier(_)
+                | Expression::ConstantAccess(_)
                 | Expression::Call(_)
                 | Expression::Access(_)
                 | Expression::ClosureCreation(_)
@@ -410,7 +411,7 @@ impl<'a> FormatterState<'a> {
 
 pub(crate) fn instantiation_needs_parens(f: &FormatterState<'_>, i: &Instantiation) -> bool {
     if f.php_version.is_supported(Feature::NewWithoutParentheses) {
-        if i.arguments.as_ref().is_none_or(|list| list.arguments.is_empty()) {
+        if i.argument_list.as_ref().is_none_or(|list| list.arguments.is_empty()) {
             if f.settings.parentheses_in_new_expression {
                 f.settings.parentheses_around_new_in_member_access
             } else {

@@ -95,7 +95,7 @@ pub fn print_class_like_body<'a>(
     ]))
 }
 
-#[inline(always)]
+#[inline]
 const fn should_add_empty_line_after<'a>(f: &mut FormatterState<'a>, class_like_member: &'a ClassLikeMember) -> bool {
     match class_like_member {
         ClassLikeMember::TraitUse(_) => f.settings.empty_line_after_trait_use,

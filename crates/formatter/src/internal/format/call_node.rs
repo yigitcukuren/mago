@@ -43,7 +43,7 @@ impl<'a> CallLikeNode<'a> {
                 Call::NullSafeMethod(c) => &c.argument_list,
                 Call::StaticMethod(c) => &c.argument_list,
             }),
-            CallLikeNode::Instantiation(new) => new.arguments.as_ref(),
+            CallLikeNode::Instantiation(new) => new.argument_list.as_ref(),
             CallLikeNode::Attribute(attr) => attr.argument_list.as_ref(),
             CallLikeNode::DieConstruct(die) => die.arguments.as_ref(),
             CallLikeNode::ExitConstruct(exit) => exit.arguments.as_ref(),

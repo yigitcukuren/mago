@@ -27,13 +27,13 @@ impl Indentation<'_> {
     }
 
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub const fn is_root(&self) -> bool {
         matches!(self, Self::Root)
     }
 
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub fn get_value(&self, use_tabs: bool, tab_width: usize) -> String {
         match self {
             Indentation::Root => String::new(),
