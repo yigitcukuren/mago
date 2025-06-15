@@ -95,12 +95,12 @@ pub struct UseItemAlias {
 }
 
 impl UseType {
-    #[inline(always)]
+    #[inline]
     pub const fn is_function(&self) -> bool {
         matches!(self, UseType::Function(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_const(&self) -> bool {
         matches!(self, UseType::Const(_))
     }

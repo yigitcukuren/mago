@@ -60,22 +60,22 @@ pub struct Binary {
 }
 
 impl BinaryOperator {
-    #[inline(always)]
+    #[inline]
     pub const fn is_constant(&self) -> bool {
         !matches!(self, Self::Elvis(_) | Self::Instanceof(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_multiplicative(&self) -> bool {
         matches!(self, Self::Multiplication(_) | Self::Division(_) | Self::Modulo(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_additive(&self) -> bool {
         matches!(self, Self::Addition(_) | Self::Subtraction(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_arithmetic(&self) -> bool {
         matches!(
             self,
@@ -88,12 +88,12 @@ impl BinaryOperator {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_bit_shift(&self) -> bool {
         matches!(self, Self::LeftShift(_) | Self::RightShift(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_bitwise(&self) -> bool {
         matches!(
             self,
@@ -101,7 +101,7 @@ impl BinaryOperator {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_equality(&self) -> bool {
         matches!(
             self,
@@ -114,12 +114,12 @@ impl BinaryOperator {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_identity(&self) -> bool {
         matches!(self, Self::Identical(_) | Self::NotIdentical(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_comparison(&self) -> bool {
         matches!(
             self,
@@ -136,32 +136,32 @@ impl BinaryOperator {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_logical(&self) -> bool {
         matches!(self, Self::And(_) | Self::Or(_) | Self::LowAnd(_) | Self::LowOr(_) | Self::LowXor(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_low_precedence(&self) -> bool {
         matches!(self, Self::LowAnd(_) | Self::LowOr(_) | Self::LowXor(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_concatenation(&self) -> bool {
         matches!(self, Self::StringConcat(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_null_coalesce(&self) -> bool {
         matches!(self, Self::NullCoalesce(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_elvis(&self) -> bool {
         matches!(self, Self::Elvis(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_instanceof(&self) -> bool {
         matches!(self, Self::Instanceof(_))
     }

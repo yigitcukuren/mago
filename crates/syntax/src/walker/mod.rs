@@ -33,12 +33,12 @@ macro_rules! generate_ast_walker {
         {
             $(
                 paste::paste! {
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_in_ $var_name>](&mut self, $var_name: &$node_type, context: &mut C) {
                         // Do nothing by default
                     }
 
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_ $var_name>](&mut self, $var_name: &$node_type, $context: &mut C) {
                         let $walker = self;
 
@@ -47,7 +47,7 @@ macro_rules! generate_ast_walker {
                         $walker.[<walk_out_ $var_name>]($var_name, $context);
                     }
 
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_out_ $var_name>](&mut self, $var_name: &$node_type, context: &mut C) {
                         // Do nothing by default
                     }
@@ -62,12 +62,12 @@ macro_rules! generate_ast_walker {
         {
             $(
                 paste::paste! {
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_in_ $var_name>](&self, $var_name: &$node_type, context: &mut C) {
                         // Do nothing by default
                     }
 
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_ $var_name>](&self, $var_name: &$node_type, $context: &mut C) {
                         let $walker = self;
 
@@ -76,7 +76,7 @@ macro_rules! generate_ast_walker {
                         $walker.[<walk_out_ $var_name>]($var_name, $context);
                     }
 
-                    #[inline(always)]
+                    #[inline]
                     fn [<walk_out_ $var_name>](&self, $var_name: &$node_type, context: &mut C) {
                         // Do nothing by default
                     }
@@ -86,7 +86,7 @@ macro_rules! generate_ast_walker {
 
         $(
             paste::paste! {
-                #[inline(always)]
+                #[inline]
                 pub fn [<walk_ $var_name _mut>]<W, C>($walker: &mut W, $var_name: &$node_type, $context: &mut C)
                     where
                         W: MutWalker<C>
@@ -97,7 +97,7 @@ macro_rules! generate_ast_walker {
                 }
 
 
-                #[inline(always)]
+                #[inline]
                 pub fn [<walk_ $var_name>]<W, C>($walker: &W, $var_name: &$node_type, $context: &mut C)
                     where
                         W: Walker<C>

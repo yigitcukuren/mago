@@ -21,7 +21,6 @@ mago-source = { workspace = true }
 mago-php-version = { workspace = true }
 serde = { workspace = true }
 strum = { workspace = true }
-memchr = { workspace = true }
 either = { workspace = true }
 paste = { workspace = true }
 ordered-float = { workspace = true, features = ["serde", "rand"] }

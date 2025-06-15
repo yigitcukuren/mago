@@ -138,7 +138,7 @@ impl Expression {
             Self::Instantiation(instantiation) if initilization && version.is_supported(Feature::NewInInitializers) => {
                 instantiation.class.is_constant(version, initilization)
                     && instantiation
-                        .arguments
+                        .argument_list
                         .as_ref()
                         .map(|arguments| {
                             arguments.arguments.iter().all(|argument| match &argument {
@@ -222,6 +222,20 @@ impl Expression {
                 }
             }
             _ => false,
+        }
+    }
+
+    #[inline]
+    pub const fn unparenthesized(&self) -> &Expression {
+        if let Expression::Parenthesized(expression) = self { &expression.expression } else { self }
+    }
+
+    #[inline]
+    pub const fn is_variable(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_variable()
+        } else {
+            matches!(&self, Expression::Variable(_))
         }
     }
 

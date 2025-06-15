@@ -25,13 +25,13 @@ pub enum Terminator {
 
 impl Terminator {
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub const fn is_semicolon(&self) -> bool {
         matches!(self, Terminator::Semicolon(_))
     }
 
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub const fn is_closing_tag(&self) -> bool {
         matches!(self, Terminator::ClosingTag(_))
     }

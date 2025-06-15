@@ -52,27 +52,27 @@ pub struct ClassLikeMemberExpressionSelector {
 }
 
 impl ClassLikeMember {
-    #[inline(always)]
+    #[inline]
     pub const fn is_trait_use(&self) -> bool {
         matches!(self, ClassLikeMember::TraitUse(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_constant(&self) -> bool {
         matches!(self, ClassLikeMember::Constant(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_property(&self) -> bool {
         matches!(self, ClassLikeMember::Property(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_enum_case(&self) -> bool {
         matches!(self, ClassLikeMember::EnumCase(_))
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_method(&self) -> bool {
         matches!(self, ClassLikeMember::Method(_))
     }

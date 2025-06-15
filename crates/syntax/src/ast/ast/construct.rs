@@ -104,7 +104,7 @@ pub struct DieConstruct {
 
 impl Construct {
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub const fn is_import(&self) -> bool {
         matches!(
             self,
@@ -113,7 +113,7 @@ impl Construct {
     }
 
     #[must_use]
-    #[inline(always)]
+    #[inline]
     pub const fn has_bounds(&self) -> bool {
         !matches!(
             self,

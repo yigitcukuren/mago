@@ -71,6 +71,56 @@ impl Modifier {
         matches!(self, Modifier::PrivateSet(..) | Modifier::ProtectedSet(..) | Modifier::PublicSet(..))
     }
 
+    #[inline]
+    pub const fn is_static(&self) -> bool {
+        matches!(self, Modifier::Static(..))
+    }
+
+    #[inline]
+    pub const fn is_final(&self) -> bool {
+        matches!(self, Modifier::Final(..))
+    }
+
+    #[inline]
+    pub const fn is_abstract(&self) -> bool {
+        matches!(self, Modifier::Abstract(..))
+    }
+
+    #[inline]
+    pub const fn is_readonly(&self) -> bool {
+        matches!(self, Modifier::Readonly(..))
+    }
+
+    #[inline]
+    pub const fn is_public(&self) -> bool {
+        matches!(self, Modifier::Public(..))
+    }
+
+    #[inline]
+    pub const fn is_protected(&self) -> bool {
+        matches!(self, Modifier::Protected(..))
+    }
+
+    #[inline]
+    pub const fn is_private(&self) -> bool {
+        matches!(self, Modifier::Private(..))
+    }
+
+    #[inline]
+    pub const fn is_public_set(&self) -> bool {
+        matches!(self, Modifier::PublicSet(..))
+    }
+
+    #[inline]
+    pub const fn is_protected_set(&self) -> bool {
+        matches!(self, Modifier::ProtectedSet(..))
+    }
+
+    #[inline]
+    pub const fn is_private_set(&self) -> bool {
+        matches!(self, Modifier::PrivateSet(..))
+    }
+
     pub fn as_str<'a>(&self, interner: &'a ThreadedInterner) -> &'a str {
         match self {
             Modifier::Static(k) => interner.lookup(&k.value),

@@ -76,6 +76,12 @@ impl Method {
     pub const fn is_abstract(&self) -> bool {
         matches!(self.body, MethodBody::Abstract(_))
     }
+
+    /// Returns `true` if the method is static.
+    #[inline]
+    pub fn is_static(&self) -> bool {
+        self.modifiers.iter().any(|modifier| modifier.is_static())
+    }
 }
 
 impl HasSpan for Method {

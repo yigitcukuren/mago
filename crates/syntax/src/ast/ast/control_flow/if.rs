@@ -107,32 +107,68 @@ pub struct IfColonDelimitedBodyElseClause {
 }
 
 impl IfBody {
-    pub fn statements(&self) -> Vec<&Statement> {
+    pub const fn has_else_clause(&self) -> bool {
+        match &self {
+            IfBody::Statement(if_statement_body) => if_statement_body.else_clause.is_some(),
+            IfBody::ColonDelimited(if_colon_delimited_body) => if_colon_delimited_body.else_clause.is_some(),
+        }
+    }
+
+    pub fn has_else_if_clauses(&self) -> bool {
+        match &self {
+            IfBody::Statement(if_statement_body) => !if_statement_body.else_if_clauses.is_empty(),
+            IfBody::ColonDelimited(if_colon_delimited_body) => !if_colon_delimited_body.else_if_clauses.is_empty(),
+        }
+    }
+
+    pub fn statements(&self) -> &[Statement] {
+        match &self {
+            IfBody::Statement(if_statement_body) => std::slice::from_ref(if_statement_body.statement.as_ref()),
+            IfBody::ColonDelimited(if_colon_delimited_body) => if_colon_delimited_body.statements.as_slice(),
+        }
+    }
+
+    pub fn statements_vec(&self) -> Vec<&Statement> {
         match &self {
             IfBody::Statement(if_statement_body) => vec![if_statement_body.statement.as_ref()],
             IfBody::ColonDelimited(if_colon_delimited_body) => if_colon_delimited_body.statements.to_vec(),
         }
     }
 
-    pub fn else_statements(&self) -> Option<Vec<&Statement>> {
+    pub fn else_statements(&self) -> Option<&[Statement]> {
         match &self {
             IfBody::Statement(if_statement_body) => {
-                if_statement_body.else_clause.as_ref().map(|e| vec![e.statement.as_ref()])
+                if_statement_body.else_clause.as_ref().map(|e| std::slice::from_ref(e.statement.as_ref()))
             }
             IfBody::ColonDelimited(if_colon_delimited_body) => {
-                if_colon_delimited_body.else_clause.as_ref().map(|e| e.statements.to_vec())
+                if_colon_delimited_body.else_clause.as_ref().map(|e| e.statements.as_slice())
             }
         }
     }
 
-    pub fn else_if_statements(&self) -> Vec<Vec<&Statement>> {
+    pub fn else_if_statements(&self) -> Vec<&[Statement]> {
         match &self {
             IfBody::Statement(if_statement_body) => {
-                if_statement_body.else_if_clauses.iter().map(|e| vec![e.statement.as_ref()]).collect()
+                if_statement_body.else_if_clauses.iter().map(|e| std::slice::from_ref(e.statement.as_ref())).collect()
             }
             IfBody::ColonDelimited(if_colon_delimited_body) => {
-                if_colon_delimited_body.else_if_clauses.iter().map(|e| e.statements.to_vec()).collect()
+                if_colon_delimited_body.else_if_clauses.iter().map(|e| e.statements.as_slice()).collect()
             }
+        }
+    }
+
+    pub fn else_if_clauses(&self) -> Vec<(&Expression, &[Statement])> {
+        match &self {
+            IfBody::Statement(if_statement_body) => if_statement_body
+                .else_if_clauses
+                .iter()
+                .map(|e| (e.condition.as_ref(), std::slice::from_ref(e.statement.as_ref())))
+                .collect(),
+            IfBody::ColonDelimited(if_colon_delimited_body) => if_colon_delimited_body
+                .else_if_clauses
+                .iter()
+                .map(|e| (e.condition.as_ref(), e.statements.as_slice()))
+                .collect(),
         }
     }
 }

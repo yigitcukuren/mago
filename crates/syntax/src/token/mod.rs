@@ -281,7 +281,7 @@ pub struct Token {
 }
 
 impl Precedence {
-    #[inline(always)]
+    #[inline]
     pub const fn infix(kind: &TokenKind) -> Precedence {
         match kind {
             T!["**"] => Precedence::Pow,
@@ -323,7 +323,7 @@ impl Precedence {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn postfix(kind: &TokenKind) -> Self {
         match kind {
             T!["++" | "--"] => Self::Prefix,
@@ -334,7 +334,7 @@ impl Precedence {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn associativity(&self) -> Option<Associativity> {
         Some(match self {
             Self::Instanceof
@@ -359,7 +359,7 @@ impl Precedence {
 }
 
 impl TokenKind {
-    #[inline(always)]
+    #[inline]
     pub const fn is_keyword(&self) -> bool {
         matches!(
             self,
@@ -451,7 +451,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_infix(&self) -> bool {
         matches!(
             self,
@@ -504,17 +504,17 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_postfix(&self) -> bool {
         matches!(self, T!["++" | "--" | "(" | "[" | "->" | "?->" | "::"])
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_visibility_modifier(&self) -> bool {
         matches!(self, T!["public" | "protected" | "private" | "private(set)" | "protected(set)" | "public(set)"])
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_modifier(&self) -> bool {
         matches!(
             self,
@@ -531,17 +531,17 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_identifier_maybe_soft_reserved(&self) -> bool {
         if let TokenKind::Identifier = self { true } else { self.is_soft_reserved_identifier() }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_identifier_maybe_reserved(&self) -> bool {
         if let TokenKind::Identifier = self { true } else { self.is_reserved_identifier() }
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_soft_reserved_identifier(&self) -> bool {
         matches!(
             self,
@@ -549,7 +549,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_reserved_identifier(&self) -> bool {
         if self.is_soft_reserved_identifier() {
             return true;
@@ -640,7 +640,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_literal(&self) -> bool {
         matches!(
             self,
@@ -648,7 +648,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_magic_constant(&self) -> bool {
         matches!(
             self,
@@ -663,7 +663,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_cast(&self) -> bool {
         matches!(
             self,
@@ -683,7 +683,7 @@ impl TokenKind {
         )
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_unary_prefix(&self) -> bool {
         if self.is_cast() {
             return true;
@@ -692,17 +692,17 @@ impl TokenKind {
         matches!(self, T!["@" | "!" | "~" | "-" | "+" | "++" | "--" | "&"])
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_trivia(&self) -> bool {
         matches!(self, T![SingleLineComment | MultiLineComment | DocBlockComment | HashComment | Whitespace])
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_comment(&self) -> bool {
         matches!(self, T![SingleLineComment | MultiLineComment | DocBlockComment | HashComment])
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_construct(&self) -> bool {
         matches!(
             self,

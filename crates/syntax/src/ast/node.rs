@@ -1092,8 +1092,8 @@ impl<'a> Node<'a> {
                 children.extend(node.attribute_lists.iter().map(Node::AttributeList));
                 children.extend(node.modifiers.iter().map(Node::Modifier));
                 children.push(Node::Keyword(&node.class));
-                if let Some(arguments) = &node.arguments {
-                    children.push(Node::ArgumentList(arguments));
+                if let Some(argument_list) = &node.argument_list {
+                    children.push(Node::ArgumentList(argument_list));
                 }
                 children.extend(node.extends.iter().map(Node::Extends));
                 children.extend(node.implements.iter().map(Node::Implements));
@@ -1559,8 +1559,8 @@ impl<'a> Node<'a> {
             Node::Instantiation(node) => {
                 let mut children = vec![Node::Keyword(&node.new), Node::Expression(&node.class)];
 
-                if let Some(arguments) = &node.arguments {
-                    children.push(Node::ArgumentList(arguments));
+                if let Some(argument_list) = &node.argument_list {
+                    children.push(Node::ArgumentList(argument_list));
                 }
 
                 children
