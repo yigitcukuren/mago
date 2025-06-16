@@ -180,6 +180,7 @@ fn should_add_new_line_or_space_after_stmt<'a>(
     let mut should_add_space = false;
 
     let should_add_line = match stmt {
+        Statement::HaltCompiler(_) => false,
         Statement::ClosingTag(_) => false,
         Statement::Inline(_) => false,
         Statement::Expression(ExpressionStatement { terminator: Terminator::ClosingTag(_), .. }) => false,
@@ -187,7 +188,6 @@ fn should_add_new_line_or_space_after_stmt<'a>(
         Statement::Global(Global { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Static(Static { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Unset(Unset { terminator: Terminator::ClosingTag(_), .. }) => false,
-        Statement::HaltCompiler(HaltCompiler { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Goto(Goto { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Constant(Constant { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Declare(Declare { body, .. }) => match body {

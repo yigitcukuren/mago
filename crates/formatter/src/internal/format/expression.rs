@@ -1152,7 +1152,7 @@ impl<'a> Format<'a> for StringPart {
 impl<'a> Format<'a> for LiteralStringPart {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, LiteralStringPart, {
-            utils::replace_end_of_line(Document::String(f.interner.lookup(&self.value)), Separator::LiteralLine)
+            utils::replace_end_of_line(Document::String(f.interner.lookup(&self.value)), Separator::LiteralLine, false)
         })
     }
 }

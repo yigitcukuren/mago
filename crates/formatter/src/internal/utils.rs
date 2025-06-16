@@ -136,10 +136,15 @@ pub fn will_break(document: &mut Document<'_>) -> bool {
 }
 
 #[inline]
-pub fn replace_end_of_line(document: Document<'_>, replacement: Separator) -> Document<'_> {
+pub fn replace_end_of_line(document: Document<'_>, replacement: Separator, halted_compilation: bool) -> Document<'_> {
     let Document::String(text) = document else {
         return document;
     };
+
+    // Do not modify the content if the compilation was halted.
+    if halted_compilation {
+        return Document::String(text);
+    }
 
     Document::Array(Document::join(text.split("\n").map(Document::String).collect(), replacement))
 }
