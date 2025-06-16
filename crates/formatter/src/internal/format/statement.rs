@@ -40,7 +40,7 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
             }
         }
 
-        let mut formatted_statement = format_statement_with_spacing(f, i, stmt, stmts, last_non_noop_index);
+        let mut formatted_statement = format_statement_with_spacing(f, i, stmt, stmts, last_non_noop_index, i == 0);
 
         if let Statement::OpeningTag(tag) = stmt {
             let offset = tag.span().start.offset;
@@ -97,6 +97,7 @@ fn format_statement_with_spacing<'a>(
     stmt: &'a Statement,
     stmts: &[&'a Statement],
     last_non_noop_index: Option<usize>,
+    is_first_statement: bool,
 ) -> Vec<Document<'a>> {
     let mut statement_parts = vec![];
 
@@ -119,7 +120,7 @@ fn format_statement_with_spacing<'a>(
         }
     }
 
-    if should_add_empty_line_before(f, stmt) {
+    if !is_first_statement && should_add_empty_line_before(f, stmt) {
         statement_parts.insert(
             0,
             Document::Array(vec![
@@ -160,13 +161,7 @@ const fn should_add_empty_line_after<'a>(f: &FormatterState<'a>, stmt: &'a State
 #[inline]
 fn should_add_empty_line_before<'a>(f: &FormatterState<'a>, stmt: &'a Statement) -> bool {
     match stmt {
-        Statement::Return(_) => {
-            if !f.settings.empty_line_before_return {
-                return false;
-            }
-
-            f.has_newline(stmt.span().start.offset, /* backwards */ true)
-        }
+        Statement::Return(_) => f.settings.empty_line_before_return,
         _ => false,
     }
 }
