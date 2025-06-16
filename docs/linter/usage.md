@@ -32,10 +32,10 @@ This command scans your project, identifies issues, and reports them. By default
 To automatically fix issues identified during linting, run:
 
 ```bash
-mago fix
+mago lint --fix
 ```
 
-The `fix` command only applies safe fixes unless otherwise specified. Unsafe and potentially unsafe fixes require additional flags (explained below).
+The `--fix` flag only applies safe fixes unless otherwise specified. Unsafe and potentially unsafe fixes require additional flags (explained below).
 
 ## Advanced Usage
 
@@ -61,15 +61,15 @@ This skips plugin-based rule checks and focuses solely on code correctness.
 
 ### Previewing Fixes
 
-You can preview the changes that the `fix` command would make without applying them:
+You can preview the changes that the `--fix` flag would make without applying them:
 
 ```bash
-mago fix --dry-run
+mago lint --fix --dry-run
 ```
 
 This allows you to review planned fixes before making changes.
 
-> Note: The `fix` command will exit with a non-zero status if any changes are planned.
+> Note: The `--fix` flag will cause `lint` command to exit with a non-zero status if any changes are planned.
 
 ## Configuration
 
