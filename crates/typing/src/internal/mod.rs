@@ -782,7 +782,10 @@ where
 #[inline]
 pub fn get_literal_kind(interner: &ThreadedInterner, literal: &Literal) -> TypeKind {
     match &literal {
-        Literal::String(string) => get_literal_string_value_kind(interner, string.value, true),
+        Literal::String(string) => match &string.value {
+            Some(val) => get_literal_string_value_kind(interner, val),
+            None => string_kind(),
+        },
         Literal::Integer(integer) => {
             if integer.value > i64::MAX as u64 {
                 integer_kind()
@@ -798,21 +801,8 @@ pub fn get_literal_kind(interner: &ThreadedInterner, literal: &Literal) -> TypeK
     }
 }
 
-pub fn get_literal_string_value_kind(
-    interner: &ThreadedInterner,
-    string: StringIdentifier,
-    remove_quotes: bool,
-) -> TypeKind {
+pub fn get_literal_string_value_kind(interner: &ThreadedInterner, string: &str) -> TypeKind {
     if string.is_empty() {
-        return value_string_kind(string, 0, Trinary::False, Trinary::False, Trinary::False, Trinary::False);
-    }
-
-    let mut value = interner.lookup(&string);
-    if remove_quotes {
-        value = &value[1..value.len() - 1];
-    }
-
-    if value.is_empty() {
         return value_string_kind(
             StringIdentifier::empty(),
             0,
@@ -829,7 +819,7 @@ pub fn get_literal_string_value_kind(
     let mut is_ascii_uppercase = Trinary::Maybe;
     let mut is_ascii_lowercase = Trinary::Maybe;
 
-    for c in value.chars() {
+    for c in string.chars() {
         length += 1;
 
         is_uppercase &= c.is_uppercase();
@@ -839,7 +829,7 @@ pub fn get_literal_string_value_kind(
     }
 
     value_string_kind(
-        interner.intern(value),
+        interner.intern(string),
         length,
         is_uppercase,
         is_ascii_uppercase,

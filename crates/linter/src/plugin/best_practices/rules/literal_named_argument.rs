@@ -59,7 +59,7 @@ impl Rule for LiteralNamedArgumentRule {
         };
 
         let literal_value = match literal {
-            Literal::String(literal_string) => context.interner.lookup(&literal_string.value),
+            Literal::String(literal_string) => context.interner.lookup(&literal_string.raw),
             Literal::Integer(literal_integer) => context.interner.lookup(&literal_integer.raw),
             Literal::Float(literal_float) => context.interner.lookup(&literal_float.raw),
             Literal::True(_) => "true",

@@ -43,17 +43,17 @@ pub enum ClassLikeMemberVisibilityReflection {
 }
 
 impl ClassLikeMemberVisibilityReflection {
-    #[inline(always)]
+    #[inline]
     pub const fn is_public(&self) -> bool {
         matches!(self, ClassLikeMemberVisibilityReflection::Public { .. })
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_protected(&self) -> bool {
         matches!(self, ClassLikeMemberVisibilityReflection::Protected { .. })
     }
 
-    #[inline(always)]
+    #[inline]
     pub const fn is_private(&self) -> bool {
         matches!(self, ClassLikeMemberVisibilityReflection::Private { .. })
     }

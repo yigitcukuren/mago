@@ -77,7 +77,7 @@ pub trait Reflection: HasSpan + HasSource {
     ///
     /// - `true` if the entity's `SourceCategory` is `BuiltIn`.
     /// - `false` otherwise.
-    #[inline(always)]
+    #[inline]
     fn is_built_in(&self) -> bool {
         self.get_category().is_built_in()
     }
@@ -179,7 +179,7 @@ impl CodebaseReflection {
     ///
     /// - `true` if the codebase reflection is empty.
     /// - `false` otherwise.
-    #[inline(always)]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.constant_reflections.is_empty()
             && self.function_like_reflections.is_empty()

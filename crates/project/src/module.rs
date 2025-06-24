@@ -58,7 +58,7 @@ impl Module {
     ///
     /// A new `Module` instance containing the resolved names, any parse errors, optional reflection data,
     /// and a collection of issues.
-    #[inline(always)]
+    #[inline]
     pub fn build(
         interner: &ThreadedInterner,
         version: PHPVersion,
@@ -93,7 +93,7 @@ impl Module {
     ///
     /// This is useful when the AST is required immediately before moving the module
     /// to another context (e.g., across threads) so that the cost of re-parsing can be avoided.
-    #[inline(always)]
+    #[inline]
     pub fn build_with_ast(
         interner: &ThreadedInterner,
         version: PHPVersion,
@@ -137,19 +137,19 @@ impl Module {
 
 impl ModuleBuildOptions {
     /// Creates a new `ModuleBuildOptions` with the specified settings.
-    #[inline(always)]
+    #[inline]
     pub const fn new(reflect: bool, validate: bool) -> Self {
         Self { reflect, validate }
     }
 
     /// Returns build options configured for reflection only (without validation).
-    #[inline(always)]
+    #[inline]
     pub const fn reflection() -> Self {
         Self { reflect: true, validate: false }
     }
 
     /// Returns build options configured for validation only (without reflection).
-    #[inline(always)]
+    #[inline]
     pub const fn validation() -> Self {
         Self { reflect: false, validate: true }
     }

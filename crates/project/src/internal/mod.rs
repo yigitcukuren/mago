@@ -22,7 +22,7 @@ mod walker;
 
 pub mod populator;
 
-#[inline(always)]
+#[inline]
 pub fn build(
     interner: &ThreadedInterner,
     version: PHPVersion,

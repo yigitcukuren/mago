@@ -52,7 +52,7 @@ impl Rule for RedundantStringConcatRule {
                 return LintDirective::Prune;
             }
 
-            let dangerous = matches!(&context.interner.lookup(&right.value).as_bytes()[1..], [b'{', ..]);
+            let dangerous = right.value.as_deref().is_none_or(|s| matches!(&s.as_bytes(), [b'{', ..]));
             if dangerous {
                 // $a = "\u" . "{1F418}";
                 // $b = "\u{1F418}";

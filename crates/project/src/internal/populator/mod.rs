@@ -8,7 +8,7 @@ use mago_reflection::identifier::Name;
 
 mod report;
 
-#[inline(always)]
+#[inline]
 pub fn populate(interner: &ThreadedInterner, codebase: &mut CodebaseReflection, populate_non_user_defined: bool) {
     if codebase.populated {
         return;

@@ -2,6 +2,138 @@ use crate::input::Input;
 use crate::number_separator;
 
 #[inline]
+pub fn parse_literal_string(s: &str) -> Option<String> {
+    if s.is_empty() {
+        return Some(String::new());
+    }
+
+    let (quote_char, content) = if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+        ('"', &s[1..s.len() - 1])
+    } else if s.starts_with('\'') && s.ends_with('\'') && s.len() >= 2 {
+        ('\'', &s[1..s.len() - 1])
+    } else {
+        return None;
+    };
+
+    let mut result = String::new();
+    let mut chars = content.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            result.push(c);
+
+            continue;
+        }
+
+        let Some(&next_char) = chars.peek() else {
+            result.push(c);
+
+            continue;
+        };
+
+        match next_char {
+            '\\' => {
+                result.push('\\');
+                chars.next();
+            }
+            '\'' if quote_char == '\'' => {
+                result.push('\'');
+                chars.next();
+            }
+            '"' if quote_char == '"' => {
+                result.push('"');
+                chars.next();
+            }
+            'n' if quote_char == '"' => {
+                result.push('\n');
+                chars.next();
+            }
+            't' if quote_char == '"' => {
+                result.push('\t');
+                chars.next();
+            }
+            'r' if quote_char == '"' => {
+                result.push('\r');
+                chars.next();
+            }
+            'v' if quote_char == '"' => {
+                result.push('\x0B');
+                chars.next();
+            }
+            'e' if quote_char == '"' => {
+                result.push('\x1B');
+                chars.next();
+            }
+            'f' if quote_char == '"' => {
+                result.push('\x0C');
+                chars.next();
+            }
+            '0' if quote_char == '"' => {
+                result.push('\0');
+                chars.next();
+            }
+
+            'x' if quote_char == '"' => {
+                chars.next();
+
+                let mut hex_chars = String::new();
+                for _ in 0..2 {
+                    if let Some(&next) = chars.peek() {
+                        if next.is_ascii_hexdigit() {
+                            hex_chars.push(chars.next().unwrap());
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                if !hex_chars.is_empty() {
+                    match u8::from_str_radix(&hex_chars, 16) {
+                        Ok(byte_val) => result.push(byte_val as char),
+                        Err(_) => {
+                            return None;
+                        }
+                    }
+                } else {
+                    return None;
+                }
+            }
+            c if quote_char == '"' && c.is_ascii_digit() => {
+                let mut octal = String::new();
+                octal.push(chars.next().unwrap());
+
+                for _ in 0..2 {
+                    if let Some(&next) = chars.peek() {
+                        if next.is_ascii_digit() && next <= '7' {
+                            octal.push(chars.next().unwrap());
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                result.push(u8::from_str_radix(&octal, 8).ok()? as char);
+            }
+            '$' if quote_char == '"' => {
+                result.push('$');
+                chars.next();
+            }
+            _ => {
+                if quote_char == '\'' {
+                    result.push(c);
+                    result.push(next_char);
+                    chars.next();
+                } else {
+                    result.push(c);
+                }
+            }
+        }
+    }
+
+    Some(result)
+}
+
+#[inline]
 pub fn parse_literal_float(value: &str) -> Option<f64> {
     let source = value.replace("_", "");
 

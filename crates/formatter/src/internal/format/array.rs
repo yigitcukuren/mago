@@ -559,7 +559,7 @@ fn get_element_width<'a>(f: &mut FormatterState<'a>, element: &'a Expression) ->
 
     Some(match element {
         Expression::Literal(literal) => match literal {
-            Literal::String(literal_string) => string_width(f.interner.lookup(&literal_string.value)),
+            Literal::String(literal_string) => string_width(f.interner.lookup(&literal_string.raw)),
             Literal::Integer(literal_integer) => f.interner.lookup(&literal_integer.raw).width(),
             Literal::Float(literal_float) => f.interner.lookup(&literal_float.raw).width(),
             Literal::True(_) => 4,

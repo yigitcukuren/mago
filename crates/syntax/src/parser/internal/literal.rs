@@ -2,6 +2,7 @@ use ordered_float::OrderedFloat;
 
 use mago_syntax_core::utils::parse_literal_float;
 use mago_syntax_core::utils::parse_literal_integer;
+use mago_syntax_core::utils::parse_literal_string;
 
 use crate::T;
 use crate::ast::ast::*;
@@ -44,11 +45,15 @@ pub fn parse_literal(stream: &mut TokenStream<'_, '_>) -> Result<Literal, ParseE
             let kind =
                 if value.starts_with('"') { LiteralStringKind::DoubleQuoted } else { LiteralStringKind::SingleQuoted };
 
-            Literal::String(LiteralString { kind, span: token.span, value: token.value })
+            Literal::String(LiteralString {
+                kind,
+                span: token.span,
+                raw: token.value,
+                value: parse_literal_string(value),
+            })
         }
         T![PartialLiteralString] => {
             let value = stream.interner().lookup(&token.value);
-
             let kind =
                 if value.starts_with('"') { LiteralStringKind::DoubleQuoted } else { LiteralStringKind::SingleQuoted };
 

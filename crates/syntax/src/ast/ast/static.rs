@@ -48,6 +48,13 @@ impl StaticItem {
             StaticItem::Concrete(item) => &item.variable,
         }
     }
+
+    pub fn value(&self) -> Option<&Expression> {
+        match self {
+            StaticItem::Abstract(_) => None,
+            StaticItem::Concrete(item) => Some(&item.value),
+        }
+    }
 }
 
 impl HasSpan for Static {

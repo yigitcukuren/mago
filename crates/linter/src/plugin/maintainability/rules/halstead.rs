@@ -206,7 +206,7 @@ fn categorize_node(node: Node<'_>, operators: &mut Vec<Operator>, operands: &mut
             operands.push(Operand(variable.name));
         }
         Node::LiteralString(literal) => {
-            operands.push(Operand(literal.value));
+            operands.push(Operand(literal.raw));
         }
         Node::LiteralInteger(literal) => {
             operands.push(Operand(literal.raw));

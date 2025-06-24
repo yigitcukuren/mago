@@ -34,7 +34,8 @@ pub enum LiteralStringKind {
 pub struct LiteralString {
     pub kind: LiteralStringKind,
     pub span: Span,
-    pub value: StringIdentifier,
+    pub raw: StringIdentifier,
+    pub value: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
