@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use std::thread;
+use std::hint::black_box;
 
 use criterion::BenchmarkId;
 use criterion::Criterion;
 use criterion::Throughput;
-use criterion::black_box;
 use criterion::criterion_group;
 use criterion::criterion_main;
 
