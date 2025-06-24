@@ -188,9 +188,7 @@ pub fn could_expand_value(
         }
         Expression::CompositeString(composite_string) => composite_string.parts().iter().any(|part| match part {
             StringPart::Literal(literal_string) => {
-                let string = f.interner.lookup(&literal_string.value);
-
-                string.contains("\\n") || string.contains("\\r")
+                literal_string.value.as_deref().is_some_and(|s| s.contains('\n') || s.contains('\r'))
             }
             _ => false,
         }),

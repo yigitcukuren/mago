@@ -29,7 +29,6 @@ use crate::internal::format::misc::print_condition;
 use crate::internal::format::misc::print_modifiers;
 use crate::internal::format::return_value::format_return_value;
 use crate::internal::format::string::print_string;
-use crate::internal::utils;
 use crate::internal::utils::could_expand_value;
 use crate::internal::utils::unwrap_parenthesized;
 use crate::settings::*;
@@ -1067,7 +1066,7 @@ impl<'a> Format<'a> for DocumentString {
             for part in self.parts.iter() {
                 let formatted = match part {
                     StringPart::Literal(l) => {
-                        let content = f.lookup(&l.value);
+                        let content = f.lookup(&l.raw);
                         let mut part_contents = vec![];
                         let own_line = f.has_newline(l.span.start.offset, true);
                         for mut line in FormatterState::split_lines(content) {
@@ -1145,14 +1144,6 @@ impl<'a> Format<'a> for StringPart {
                 StringPart::Expression(s) => s.format(f),
                 StringPart::BracedExpression(s) => s.format(f),
             }
-        })
-    }
-}
-
-impl<'a> Format<'a> for LiteralStringPart {
-    fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
-        wrap!(f, self, LiteralStringPart, {
-            utils::replace_end_of_line(Document::String(f.interner.lookup(&self.value)), Separator::LiteralLine, false)
         })
     }
 }

@@ -178,7 +178,6 @@ pub use crate::ast::ast::string::DocumentIndentation;
 pub use crate::ast::ast::string::DocumentKind;
 pub use crate::ast::ast::string::DocumentString;
 pub use crate::ast::ast::string::InterpolatedString;
-pub use crate::ast::ast::string::LiteralStringPart;
 pub use crate::ast::ast::string::ShellExecuteString;
 pub use crate::ast::ast::string::StringPart;
 pub use crate::ast::ast::tag::ClosingTag;

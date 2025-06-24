@@ -57,6 +57,9 @@ fn make_string(raw_text: &str, enclosing_quote: char) -> String {
 
 pub(super) fn print_string<'a>(f: &FormatterState<'a>, kind: &LiteralStringKind, value: &StringIdentifier) -> &'a str {
     let text = f.lookup(value);
+    if text.len() < 2 {
+        return text;
+    }
 
     let quote = unsafe { text.chars().next().unwrap_unchecked() };
     let raw_text = &text[1..text.len() - 1];

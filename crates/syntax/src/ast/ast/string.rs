@@ -6,6 +6,7 @@ use mago_interner::StringIdentifier;
 use mago_span::HasSpan;
 use mago_span::Span;
 
+use crate::ast::LiteralString;
 use crate::ast::ast::expression::Expression;
 use crate::ast::sequence::Sequence;
 
@@ -67,16 +68,9 @@ pub struct DocumentString {
 #[serde(tag = "type", content = "value")]
 #[repr(C, u8)]
 pub enum StringPart {
-    Literal(LiteralStringPart),
+    Literal(LiteralString),
     Expression(Box<Expression>),
     BracedExpression(BracedExpressionStringPart),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
-pub struct LiteralStringPart {
-    pub span: Span,
-    pub value: StringIdentifier,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -132,12 +126,6 @@ impl HasSpan for StringPart {
             StringPart::Expression(e) => e.span(),
             StringPart::BracedExpression(b) => b.span(),
         }
-    }
-}
-
-impl HasSpan for LiteralStringPart {
-    fn span(&self) -> Span {
-        self.span
     }
 }
 

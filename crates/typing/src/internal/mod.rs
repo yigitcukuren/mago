@@ -68,8 +68,8 @@ where
     let mut contains_non_empty_part = false;
     for part in parts.iter() {
         match &part {
-            StringPart::Literal(literal_string_part) => {
-                if !literal_string_part.value.is_empty() {
+            StringPart::Literal(literal_string) => {
+                if literal_string.value.as_ref().is_some_and(|v| !v.is_empty()) {
                     contains_non_empty_part = true;
 
                     break;
