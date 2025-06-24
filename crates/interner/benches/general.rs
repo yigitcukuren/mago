@@ -1,6 +1,6 @@
+use std::hint::black_box;
 use std::sync::Arc;
 use std::thread;
-use std::hint::black_box;
 
 use criterion::BenchmarkId;
 use criterion::Criterion;
