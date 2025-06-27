@@ -522,14 +522,18 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                 }
                 MagicConstant::File(_) => {
                     if let Some(file) = &self.source.path {
-                        get_literal_string_value_kind(self.interner, file.to_string_lossy().as_ref())
+                        let file_id = self.interner.intern(file.to_string_lossy());
+
+                        get_literal_string_value_kind(self.interner, file_id, false)
                     } else {
                         non_empty_string_kind()
                     }
                 }
                 MagicConstant::Directory(_) => {
                     if let Some(directory) = self.source.path.as_ref().and_then(|p| p.parent()) {
-                        get_literal_string_value_kind(self.interner, directory.to_string_lossy().as_ref())
+                        let directory_id = self.interner.intern(directory.to_string_lossy());
+
+                        get_literal_string_value_kind(self.interner, directory_id, false)
                     } else {
                         non_empty_string_kind()
                     }

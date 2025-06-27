@@ -12,6 +12,7 @@ use crate::definition::RuleUsageExample;
 use crate::directive::LintDirective;
 use crate::plugin::security::rules::utils::get_password;
 use crate::plugin::security::rules::utils::is_password;
+use crate::plugin::security::rules::utils::is_password_literal;
 use crate::rule::Rule;
 
 #[derive(Clone, Debug)]
@@ -103,9 +104,7 @@ impl Rule for NoLiteralPasswordRule {
 
                 let is_key_a_password = matches!(
                     kv.key.as_ref(),
-                    Expression::Literal(Literal::String(literal_string)) if literal_string.value.as_deref().is_some_and(
-                        is_password,
-                    ),
+                    Expression::Literal(Literal::String(literal_string)) if is_password_literal(context, literal_string),
                 );
 
                 if !is_key_a_password {
@@ -168,7 +167,9 @@ impl Rule for NoLiteralPasswordRule {
 fn check(name: impl HasSpan, value: &Expression, context: &mut LintContext) -> LintDirective {
     let is_literal_password = match value {
         Expression::Literal(Literal::String(literal_string)) => {
-            literal_string.value.as_deref().is_none_or(|s| !s.is_empty())
+            let value = context.interner.lookup(&literal_string.raw);
+
+            value.len() > 2 // at least 2 characters for the quotes, skip empty strings
         }
         Expression::Literal(Literal::Integer(_)) => true,
         _ => false,

@@ -106,8 +106,8 @@ impl Rule for NoInsecureComparisonRule {
 
         // Skip the check if  one side is a password-like value and the other side
         //  is a simple literal (e.g. a number, a boolean, null)
-        if (is_lhs_like_password && is_simple_literal(&binary.rhs))
-            || (is_rhs_like_password && is_simple_literal(&binary.lhs))
+        if (is_lhs_like_password && is_simple_literal(context, &binary.rhs))
+            || (is_rhs_like_password && is_simple_literal(context, &binary.lhs))
         {
             return LintDirective::Prune;
         }
@@ -135,12 +135,14 @@ impl Rule for NoInsecureComparisonRule {
 
 #[inline]
 #[must_use]
-fn is_simple_literal(expr: &Expression) -> bool {
+fn is_simple_literal(context: &mut LintContext, expr: &Expression) -> bool {
     match expr {
-        Expression::Parenthesized(parenthesized) => is_simple_literal(&parenthesized.expression),
+        Expression::Parenthesized(parenthesized) => is_simple_literal(context, &parenthesized.expression),
         Expression::Literal(literal) => {
             if let Literal::String(literal_string) = literal {
-                literal_string.value.as_ref().is_some_and(|s| s.is_empty())
+                let value = context.interner.lookup(&literal_string.raw);
+
+                value.len() == 2 // empty string
             } else {
                 true
             }

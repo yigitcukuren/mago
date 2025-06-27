@@ -1438,12 +1438,16 @@ generate_ast_walker! {
 
     StringPart as string_part => {
         match string_part {
-            StringPart::Literal(literal) => walker.walk_literal_string(literal, context),
+            StringPart::Literal(literal) => walker.walk_literal_string_part(literal, context),
             StringPart::Expression(expression) => walker.walk_expression(expression, context),
             StringPart::BracedExpression(braced_expression_string_part) => {
                 walker.walk_braced_expression_string_part(braced_expression_string_part, context)
             }
         };
+    }
+
+    LiteralStringPart as literal_string_part => {
+        // Do nothing
     }
 
     BracedExpressionStringPart as braced_expression_string_part => {

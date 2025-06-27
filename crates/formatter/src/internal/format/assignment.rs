@@ -301,13 +301,7 @@ fn is_property_like_with_short_key<'a>(f: &FormatterState<'a>, assignment_like_n
         AssignmentLikeNode::KeyValueArrayElement(element) => match element.key.as_ref() {
             Expression::Variable(Variable::Direct(variable)) => f.lookup(&variable.name),
             Expression::Identifier(Identifier::Local(local_identifier)) => f.lookup(&local_identifier.value),
-            Expression::Literal(Literal::String(string_literal)) => {
-                if let Some(str) = string_literal.value.as_deref() {
-                    str
-                } else {
-                    return false;
-                }
-            }
+            Expression::Literal(Literal::String(string_literal)) => f.lookup(&string_literal.raw),
             _ => {
                 return false;
             }

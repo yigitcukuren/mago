@@ -1,5 +1,3 @@
-use mago_syntax_core::utils::parse_literal_string;
-
 use crate::T;
 use crate::ast::ast::DocumentKind as AstDocumentKind;
 use crate::ast::ast::*;
@@ -121,17 +119,7 @@ pub fn parse_optional_string_part(
         T![StringPart] => {
             let token = utils::expect_any(stream)?;
 
-            let value = stream.interner().lookup(&token.value);
-
-            let kind =
-                if value.starts_with('"') { LiteralStringKind::DoubleQuoted } else { LiteralStringKind::SingleQuoted };
-
-            Some(StringPart::Literal(LiteralString {
-                kind,
-                span: token.span,
-                raw: token.value,
-                value: parse_literal_string(value),
-            }))
+            Some(StringPart::Literal(LiteralStringPart { span: token.span, value: token.value }))
         }
         kind if kind == closing_kind => None,
         _ => Some(StringPart::Expression(Box::new(parse_string_part_expression(stream)?))),

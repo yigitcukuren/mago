@@ -58,9 +58,7 @@ pub fn is_variable_user_input(context: &LintContext, variable: &Variable) -> boo
 pub fn get_password(context: &LintContext, expr: &Expression) -> Option<Span> {
     match expr {
         Expression::Parenthesized(parenthesized) => get_password(context, &parenthesized.expression),
-        Expression::Literal(Literal::String(literal_string))
-            if literal_string.value.as_deref().is_none_or(is_password) =>
-        {
+        Expression::Literal(Literal::String(literal_string)) if is_password_literal(context, literal_string) => {
             Some(literal_string.span())
         }
         Expression::Assignment(assignment) => {
@@ -158,6 +156,14 @@ pub fn is_password_identifier(context: &LintContext, identifier: &Identifier) ->
     };
 
     is_password_string(context, &local_identifier.value)
+}
+
+#[inline]
+#[must_use]
+pub fn is_password_literal(context: &LintContext, literal: &LiteralString) -> bool {
+    let value = context.interner.lookup(&literal.raw);
+
+    is_password(&value[1..value.len() - 1])
 }
 
 #[inline]
