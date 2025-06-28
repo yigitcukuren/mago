@@ -1507,7 +1507,7 @@ checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
 name = "mago"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "async-walkdir",
@@ -1550,14 +1550,14 @@ dependencies = [
 
 [[package]]
 name = "mago-casing"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "cruet",
 ]
 
 [[package]]
 name = "mago-composer"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "serde",
@@ -1566,7 +1566,7 @@ dependencies = [
 
 [[package]]
 name = "mago-docblock"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-interner",
  "mago-source",
@@ -1577,7 +1577,7 @@ dependencies = [
 
 [[package]]
 name = "mago-fixer"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "pretty_assertions",
  "serde",
@@ -1587,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "mago-formatter"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "bitflags",
@@ -1604,7 +1604,7 @@ dependencies = [
 
 [[package]]
 name = "mago-interner"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "criterion",
  "lasso",
@@ -1613,7 +1613,7 @@ dependencies = [
 
 [[package]]
 name = "mago-linter"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "indoc",
@@ -1636,7 +1636,7 @@ dependencies = [
 
 [[package]]
 name = "mago-names"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1648,7 +1648,7 @@ dependencies = [
 
 [[package]]
 name = "mago-php-version"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1656,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "mago-project"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1673,7 +1673,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reference"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-interner",
  "mago-project",
@@ -1684,7 +1684,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reflection"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1698,7 +1698,7 @@ dependencies = [
 
 [[package]]
 name = "mago-reporting"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "blake3",
@@ -1715,7 +1715,7 @@ dependencies = [
 
 [[package]]
 name = "mago-source"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1727,7 +1727,7 @@ dependencies = [
 
 [[package]]
 name = "mago-span"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-source",
  "serde",
@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "mago-syntax"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "either",
  "mago-interner",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "mago-syntax-core"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-source",
  "mago-span",
@@ -1762,7 +1762,7 @@ dependencies = [
 
 [[package]]
 name = "mago-trinary"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "serde",
  "strum",
@@ -1770,7 +1770,7 @@ dependencies = [
 
 [[package]]
 name = "mago-type-syntax"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-source",
  "mago-span",
@@ -1782,7 +1782,7 @@ dependencies = [
 
 [[package]]
 name = "mago-typing"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "ahash",
  "mago-interner",
@@ -1797,7 +1797,7 @@ dependencies = [
 
 [[package]]
 name = "mago-wasm"
-version = "0.25.0"
+version = "0.26.0"
 dependencies = [
  "mago-formatter",
  "mago-interner",
