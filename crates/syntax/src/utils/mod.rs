@@ -99,10 +99,10 @@ pub fn statement_has_yield(statement: &Statement) -> bool {
                 }
             }
 
-            if let Some(finally) = &r#try.finally_clause {
-                if block_has_yield(&finally.block) {
-                    return true;
-                }
+            if let Some(finally) = &r#try.finally_clause
+                && block_has_yield(&finally.block)
+            {
+                return true;
             }
 
             false
@@ -165,10 +165,10 @@ pub fn statement_has_yield(statement: &Statement) -> bool {
                     }
                 }
 
-                if let Some(else_clause) = &if_statement_body.else_clause {
-                    if statement_has_yield(&else_clause.statement) {
-                        return true;
-                    }
+                if let Some(else_clause) = &if_statement_body.else_clause
+                    && statement_has_yield(&else_clause.statement)
+                {
+                    return true;
                 }
 
                 false
@@ -184,10 +184,10 @@ pub fn statement_has_yield(statement: &Statement) -> bool {
                     }
                 }
 
-                if let Some(else_clause) = &if_colon_delimited_body.else_clause {
-                    if else_clause.statements.iter().any(statement_has_yield) {
-                        return true;
-                    }
+                if let Some(else_clause) = &if_colon_delimited_body.else_clause
+                    && else_clause.statements.iter().any(statement_has_yield)
+                {
+                    return true;
                 }
 
                 false

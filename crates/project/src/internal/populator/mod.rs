@@ -449,12 +449,11 @@ fn inherit_properties_from_parent(reflection: &mut ClassLikeReflection, parent_r
             continue;
         }
 
-        if !parent_is_trait {
-            if let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name) {
-                if parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false) {
-                    continue;
-                }
-            }
+        if !parent_is_trait
+            && let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name)
+            && parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false)
+        {
+            continue;
         }
 
         reflection
@@ -472,12 +471,11 @@ fn inherit_properties_from_parent(reflection: &mut ClassLikeReflection, parent_r
             continue;
         }
 
-        if !parent_is_trait {
-            if let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name) {
-                if parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false) {
-                    continue;
-                }
-            }
+        if !parent_is_trait
+            && let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name)
+            && parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false)
+        {
+            continue;
         }
 
         reflection.properties.declaring_members.insert(*property_name, *declaring_classlike);
@@ -486,10 +484,10 @@ fn inherit_properties_from_parent(reflection: &mut ClassLikeReflection, parent_r
     // register inheritance
     for (property_name, inheritable_classlike) in &parent_reflection.properties.inheritable_members {
         if !parent_is_trait {
-            if let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name) {
-                if parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false) {
-                    continue;
-                }
+            if let Some(parent_property_storage) = parent_reflection.properties.members.get(property_name)
+                && parent_property_storage.write_visibility_reflection.map(|v| v.is_private()).unwrap_or(false)
+            {
+                continue;
             }
 
             reflection.properties.overriden_members.entry(*property_name).or_default().insert(*inheritable_classlike);

@@ -130,9 +130,10 @@ pub fn check_arrow_function(arrow_function: &ArrowFunction, context: &mut Contex
 pub fn check_closure(closure: &Closure, context: &mut Context<'_>) {
     check_for_promoted_properties_outside_constructor(&closure.parameter_list, context);
 
-    if !context.version.is_supported(Feature::TrailingCommaInClosureUseList) {
-        if let Some(trailing_comma) = &closure.use_clause.as_ref().and_then(|u| u.variables.get_trailing_token()) {
-            context.issues.push(
+    if !context.version.is_supported(Feature::TrailingCommaInClosureUseList)
+        && let Some(trailing_comma) = &closure.use_clause.as_ref().and_then(|u| u.variables.get_trailing_token())
+    {
+        context.issues.push(
                 Issue::error("Trailing comma in closure use list is only available in PHP 8.0 and later.")
                 .with_annotation(
                     Annotation::primary(trailing_comma.span).with_message("Trailing comma found here."),
@@ -141,7 +142,6 @@ pub fn check_closure(closure: &Closure, context: &mut Context<'_>) {
                     "Remove the trailing comma to make the code compatible with PHP 7.4 and earlier versions, or upgrade to PHP 8.0 or later.",
                 )
             );
-        }
     }
 
     let hint = if let Some(return_hint) = &closure.return_type_hint {

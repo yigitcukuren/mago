@@ -33,15 +33,15 @@ pub fn reflect_class<'ast>(class: &'ast Class, context: &'ast mut Context<'_>) -
     reflection.attribute_reflections = reflect_attributes(&class.attribute_lists, context);
     reflection.inheritance = {
         let mut inheritance_reflection = InheritanceReflection::default();
-        if let Some(extends) = &class.extends {
-            if let Some(first_parent) = extends.types.first() {
-                let parent = Name::new(*context.names.get(first_parent), first_parent.span());
-                let parent_lowered = context.interner.lowered(&parent.value);
+        if let Some(extends) = &class.extends
+            && let Some(first_parent) = extends.types.first()
+        {
+            let parent = Name::new(*context.names.get(first_parent), first_parent.span());
+            let parent_lowered = context.interner.lowered(&parent.value);
 
-                inheritance_reflection.direct_extended_class = Some(parent);
-                inheritance_reflection.all_extended_classes.insert(parent);
-                inheritance_reflection.names.insert(parent_lowered, parent);
-            }
+            inheritance_reflection.direct_extended_class = Some(parent);
+            inheritance_reflection.all_extended_classes.insert(parent);
+            inheritance_reflection.names.insert(parent_lowered, parent);
         }
 
         if let Some(impelemnts) = &class.implements {
@@ -80,15 +80,15 @@ pub fn reflect_anonymous_class<'ast>(
     reflection.attribute_reflections = reflect_attributes(&class.attribute_lists, context);
     reflection.inheritance = {
         let mut inheritance_reflection = InheritanceReflection::default();
-        if let Some(extends) = &class.extends {
-            if let Some(first_parent) = extends.types.first() {
-                let parent = Name::new(*context.names.get(first_parent), first_parent.span());
-                let parent_lowered = context.interner.lowered(&parent.value);
+        if let Some(extends) = &class.extends
+            && let Some(first_parent) = extends.types.first()
+        {
+            let parent = Name::new(*context.names.get(first_parent), first_parent.span());
+            let parent_lowered = context.interner.lowered(&parent.value);
 
-                inheritance_reflection.direct_extended_class = Some(parent);
-                inheritance_reflection.all_extended_classes.insert(parent);
-                inheritance_reflection.names.insert(parent_lowered, parent);
-            }
+            inheritance_reflection.direct_extended_class = Some(parent);
+            inheritance_reflection.all_extended_classes.insert(parent);
+            inheritance_reflection.names.insert(parent_lowered, parent);
         }
 
         if let Some(impelemnts) = &class.implements {

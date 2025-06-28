@@ -169,10 +169,10 @@ impl Rule for ReadonlyClassPromotionRule {
                     }
                     ClassLikeMember::Method(method) => {
                         for param in method.parameter_list.parameters.iter() {
-                            if param.is_promoted_property() {
-                                if let Some(readonly) = param.modifiers.get_readonly() {
-                                    plan.delete(readonly.span().to_range(), SafetyClassification::Safe);
-                                }
+                            if param.is_promoted_property()
+                                && let Some(readonly) = param.modifiers.get_readonly()
+                            {
+                                plan.delete(readonly.span().to_range(), SafetyClassification::Safe);
                             }
                         }
                     }

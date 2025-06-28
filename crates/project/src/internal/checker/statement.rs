@@ -163,17 +163,17 @@ pub fn check_top_level_statements(program: &Program, context: &mut Context<'_>) 
 
 #[inline]
 pub fn check_opening_tag(opening_tag: &OpeningTag, context: &mut Context<'_>) {
-    if let OpeningTag::Short(short_opening_tag) = opening_tag {
-        if !context.version.is_supported(Feature::ShortOpenTag) {
-            context.issues.push(
-                Issue::error("Short opening tag `<?` is no longer supported.")
-                    .with_annotation(
-                        Annotation::primary(short_opening_tag.span()).with_message("Short opening tag used here."),
-                    )
-                    .with_note("Short opening tags have been removed in modern PHP versions.")
-                    .with_help("Replace the short opening tag with the full opening tag `<?php`."),
-            );
-        }
+    if let OpeningTag::Short(short_opening_tag) = opening_tag
+        && !context.version.is_supported(Feature::ShortOpenTag)
+    {
+        context.issues.push(
+            Issue::error("Short opening tag `<?` is no longer supported.")
+                .with_annotation(
+                    Annotation::primary(short_opening_tag.span()).with_message("Short opening tag used here."),
+                )
+                .with_note("Short opening tags have been removed in modern PHP versions.")
+                .with_help("Replace the short opening tag with the full opening tag `<?php`."),
+        );
     }
 }
 

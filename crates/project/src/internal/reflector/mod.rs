@@ -25,16 +25,16 @@ fn should_reflect_element<'a>(context: &'a mut Context<'_>, attribute_lists: &'a
             if name == "JetBrains\\PhpStorm\\Internal\\PhpStormStubsElementAvailable" {
                 let (from, to) = get_availability_range(context, attribute);
 
-                if let Some(from) = from {
-                    if context.version < &from {
-                        return false;
-                    }
+                if let Some(from) = from
+                    && context.version < &from
+                {
+                    return false;
                 }
 
-                if let Some(to) = to {
-                    if context.version > &to {
-                        return false;
-                    }
+                if let Some(to) = to
+                    && context.version > &to
+                {
+                    return false;
                 }
             }
         }

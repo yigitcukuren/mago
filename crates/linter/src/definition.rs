@@ -280,16 +280,16 @@ impl RuleDefinition {
     ///
     /// `true` if the rule supports the given PHP version, `false` otherwise.
     pub fn supports_php_version(&self, version: PHPVersion) -> bool {
-        if let Some(min) = self.minimum_supported_php_version {
-            if version < min {
-                return false;
-            }
+        if let Some(min) = self.minimum_supported_php_version
+            && version < min
+        {
+            return false;
         }
 
-        if let Some(max) = self.maximum_supported_php_version {
-            if version >= max {
-                return false;
-            }
+        if let Some(max) = self.maximum_supported_php_version
+            && version >= max
+        {
+            return false;
         }
 
         true

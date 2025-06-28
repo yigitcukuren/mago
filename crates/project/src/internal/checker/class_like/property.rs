@@ -92,9 +92,10 @@ pub fn check_property(
                     );
                 }
 
-                if let Some(last_visibility) = last_write_visibility {
-                    if !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties) {
-                        context.issues.push(
+                if let Some(last_visibility) = last_write_visibility
+                    && !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties)
+                {
+                    context.issues.push(
                             Issue::error(format!(
                                 "Asymmetric visibility for static property `{class_like_name}::{first_variable_name}` is not available in your current PHP version, this feature was introduced in PHP 8.5.",
                             ))
@@ -114,7 +115,6 @@ pub fn check_property(
                                 "To use this feature, please configure your project for PHP 8.5+. Alternatively, remove the specific write visibility from this static property or make the property non-static."
                             ),
                         );
-                    }
                 }
 
                 last_static = Some(modifier.span());
@@ -257,9 +257,10 @@ pub fn check_property(
                     );
                 }
 
-                if let Some(last_static) = last_static {
-                    if !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties) {
-                        context.issues.push(
+                if let Some(last_static) = last_static
+                    && !context.version.is_supported(Feature::AsymmetricVisibilityForStaticProperties)
+                {
+                    context.issues.push(
                             Issue::error(format!(
                                 "Asymmetric visibility for static property `{class_like_name}::{first_variable_name}` is not available in your current PHP version, this feature was introduced in PHP 8.5.",
                             ))
@@ -279,7 +280,6 @@ pub fn check_property(
                                 "To use this feature, please configure your project for PHP 8.5+. Alternatively, remove the specific write visibility from this static property or make the property non-static."
                             ),
                         );
-                    }
                 }
 
                 last_write_visibility = Some(modifier.span());
@@ -287,28 +287,28 @@ pub fn check_property(
         }
     }
 
-    if let Some(var) = property.var() {
-        if !modifiers.is_empty() {
-            let first = modifiers.first().unwrap();
-            let last = modifiers.last().unwrap();
+    if let Some(var) = property.var()
+        && !modifiers.is_empty()
+    {
+        let first = modifiers.first().unwrap();
+        let last = modifiers.last().unwrap();
 
-            context.issues.push(
-                Issue::error(format!("Var property `{class_like_name}::{first_variable_name}` cannot have modifiers."))
-                    .with_annotation(
-                        Annotation::primary(first.span().join(last.span())).with_message("Modifiers used here."),
-                    )
-                    .with_annotation(Annotation::primary(var.span()).with_message("Property is marked as `var` here."))
-                    .with_annotation(
-                        Annotation::secondary(first_variable.span())
-                            .with_message(format!("Property `{first_variable_name}` declared here.")),
-                    )
-                    .with_annotation(
-                        Annotation::secondary(class_like_span)
-                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
-                    )
-                    .with_help("Remove either the `var` keyword, or the modifiers.".to_string()),
-            );
-        }
+        context.issues.push(
+            Issue::error(format!("Var property `{class_like_name}::{first_variable_name}` cannot have modifiers."))
+                .with_annotation(
+                    Annotation::primary(first.span().join(last.span())).with_message("Modifiers used here."),
+                )
+                .with_annotation(Annotation::primary(var.span()).with_message("Property is marked as `var` here."))
+                .with_annotation(
+                    Annotation::secondary(first_variable.span())
+                        .with_message(format!("Property `{first_variable_name}` declared here.")),
+                )
+                .with_annotation(
+                    Annotation::secondary(class_like_span)
+                        .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
+                )
+                .with_help("Remove either the `var` keyword, or the modifiers.".to_string()),
+        );
     }
 
     if let Some(hint) = property.hint() {
@@ -373,16 +373,15 @@ pub fn check_property(
 
     match &property {
         Property::Plain(plain_property) => {
-            if !context.version.is_supported(Feature::AsymmetricVisibility) {
-                if let Some(write_visibility) = plain_property.modifiers.get_first_write_visibility() {
-                    context.issues.push(
-                        Issue::error("Asymmetric visibility is only available in PHP 8.4 and above.").with_annotation(
-                            Annotation::primary(write_visibility.span())
-                                .with_message("Asymmetric visibility used here."),
-                        ),
-                    );
-                };
-            }
+            if !context.version.is_supported(Feature::AsymmetricVisibility)
+                && let Some(write_visibility) = plain_property.modifiers.get_first_write_visibility()
+            {
+                context.issues.push(
+                    Issue::error("Asymmetric visibility is only available in PHP 8.4 and above.").with_annotation(
+                        Annotation::primary(write_visibility.span()).with_message("Asymmetric visibility used here."),
+                    ),
+                );
+            };
 
             for item in plain_property.items.iter() {
                 if let PropertyItem::Concrete(property_concrete_item) = &item {
@@ -515,28 +514,27 @@ pub fn check_property(
                     );
                 }
 
-                if !class_like_is_interface {
-                    if let PropertyHookBody::Abstract(property_hook_abstract_body) = &hook.body {
-                        context.issues.push(
-                            Issue::error(format!("Non-abstract property hook `{name}` must have a body."))
-                                .with_annotation(
-                                    Annotation::primary(property_hook_abstract_body.span())
-                                        .with_message("Abstract hook body here."),
-                                )
-                                .with_annotation(
-                                    Annotation::secondary(hook.name.span())
-                                        .with_message(format!("Hook `{name}` is declared here.")),
-                                )
-                                .with_annotation(
-                                    Annotation::secondary(hooked_property.item.variable().span())
-                                        .with_message(format!("Property `{item_name}` is declared here.")),
-                                )
-                                .with_annotation(
-                                    Annotation::secondary(class_like_span)
-                                        .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
-                                ),
-                        );
-                    }
+                if !class_like_is_interface && let PropertyHookBody::Abstract(property_hook_abstract_body) = &hook.body
+                {
+                    context.issues.push(
+                        Issue::error(format!("Non-abstract property hook `{name}` must have a body."))
+                            .with_annotation(
+                                Annotation::primary(property_hook_abstract_body.span())
+                                    .with_message("Abstract hook body here."),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(hook.name.span())
+                                    .with_message(format!("Hook `{name}` is declared here.")),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(hooked_property.item.variable().span())
+                                    .with_message(format!("Property `{item_name}` is declared here.")),
+                            )
+                            .with_annotation(
+                                Annotation::secondary(class_like_span)
+                                    .with_message(format!("{class_like_kind} `{class_like_fqcn}` defined here.")),
+                            ),
+                    );
                 }
 
                 if let Some(parameter_list) = &hook.parameters {

@@ -390,10 +390,10 @@ impl SourceManager {
         let path_opt = {
             let mut inner = self.inner.write();
             let entry = inner.sources.get_mut(&source_id).ok_or(SourceError::UnavailableSource(source_id))?;
-            if let Some((old_content, _, _)) = entry.content {
-                if old_content == new_content_id {
-                    return Ok(());
-                }
+            if let Some((old_content, _, _)) = entry.content
+                && old_content == new_content_id
+            {
+                return Ok(());
             }
             entry.content = Some((new_content_id, new_size, new_lines));
             entry.path.clone()

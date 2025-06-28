@@ -43,10 +43,9 @@ pub fn parse_expression_with_precedence(
         if !stream.state.within_indirect_variable
             && !matches!(precedence, Precedence::Instanceof | Precedence::New)
             && !matches!(next.kind, T!["(" | "::"])
+            && let Expression::Identifier(identifier) = left
         {
-            if let Expression::Identifier(identifier) = left {
-                left = Expression::ConstantAccess(ConstantAccess { name: identifier });
-            }
+            left = Expression::ConstantAccess(ConstantAccess { name: identifier });
         }
 
         // Stop parsing if the next token is a terminator.
@@ -68,10 +67,10 @@ pub fn parse_expression_with_precedence(
                 break;
             }
 
-            if infix_precedence == precedence {
-                if let Some(Associativity::Left) = infix_precedence.associativity() {
-                    break;
-                }
+            if infix_precedence == precedence
+                && let Some(Associativity::Left) = infix_precedence.associativity()
+            {
+                break;
             }
 
             left = parse_infix_expression(stream, left)?;

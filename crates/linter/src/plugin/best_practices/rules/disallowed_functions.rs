@@ -104,20 +104,20 @@ impl Rule for DisallowedFunctionsRule {
         let function_name = context.resolve_function_name(identifier);
 
         // Check if the function is disallowed
-        if let Some(disallowed_functions) = context.option(FUNCTIONS).and_then(|o| o.as_array()) {
-            if disallowed_functions.iter().any(|f| f.as_str().is_some_and(|f| f.eq_ignore_ascii_case(function_name))) {
-                let issue = Issue::new(context.level(), format!("Function `{function_name}` is disallowed."))
-                    .with_annotation(
-                        Annotation::primary(function_call.span())
-                            .with_message(format!("Function `{function_name}` is called here.`")),
-                    )
-                    .with_note(format!("The function `{function_name}` is disallowed by your project configuration."))
-                    .with_help("Use an alternative function or modify the configuration to allow this function.");
+        if let Some(disallowed_functions) = context.option(FUNCTIONS).and_then(|o| o.as_array())
+            && disallowed_functions.iter().any(|f| f.as_str().is_some_and(|f| f.eq_ignore_ascii_case(function_name)))
+        {
+            let issue = Issue::new(context.level(), format!("Function `{function_name}` is disallowed."))
+                .with_annotation(
+                    Annotation::primary(function_call.span())
+                        .with_message(format!("Function `{function_name}` is called here.`")),
+                )
+                .with_note(format!("The function `{function_name}` is disallowed by your project configuration."))
+                .with_help("Use an alternative function or modify the configuration to allow this function.");
 
-                context.report(issue);
+            context.report(issue);
 
-                return LintDirective::default();
-            }
+            return LintDirective::default();
         }
 
         // Check if the function is part of a disallowed extension

@@ -116,10 +116,10 @@ pub fn will_break(document: &mut Document<'_>) -> bool {
             if group.should_break {
                 return true;
             }
-            if let Some(expanded_states) = &mut group.expanded_states {
-                if expanded_states.iter_mut().rev().any(will_break) {
-                    return true;
-                }
+            if let Some(expanded_states) = &mut group.expanded_states
+                && expanded_states.iter_mut().rev().any(will_break)
+            {
+                return true;
             }
             check_array(&mut group.contents)
         }

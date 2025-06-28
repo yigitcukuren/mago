@@ -109,14 +109,13 @@ fn format_statement_with_spacing<'a>(
         if !is_last {
             statement_parts.push(Document::space());
         }
-    } else if should_add_new_line {
-        if let Some(index) = last_non_noop_index {
-            if i != index {
-                statement_parts.push(Document::Line(Line::hard()));
-                if should_add_empty_line_after(f, stmt) || f.is_next_line_empty(stmt.span()) {
-                    statement_parts.push(Document::Line(Line::hard()));
-                }
-            }
+    } else if should_add_new_line
+        && let Some(index) = last_non_noop_index
+        && i != index
+    {
+        statement_parts.push(Document::Line(Line::hard()));
+        if should_add_empty_line_after(f, stmt) || f.is_next_line_empty(stmt.span()) {
+            statement_parts.push(Document::Line(Line::hard()));
         }
     }
 
@@ -192,10 +191,10 @@ fn should_add_new_line_or_space_after_stmt<'a>(
             DeclareBody::ColonDelimited(_) => true,
         },
         Statement::OpeningTag(_) => {
-            if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset)) {
-                if f.has_newline(index, false) {
-                    return (true, false);
-                }
+            if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset))
+                && f.has_newline(index, false)
+            {
+                return (true, false);
             }
 
             should_add_space = !f.has_comment(stmt.span(), CommentFlags::Trailing);

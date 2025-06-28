@@ -487,10 +487,10 @@ impl<'a> Printer<'a> {
                 return false;
             }
 
-            if queue.is_empty() {
-                if let Some(cmd) = cmds.next() {
-                    queue.push_back((cmd.mode, &cmd.document));
-                }
+            if queue.is_empty()
+                && let Some(cmd) = cmds.next()
+            {
+                queue.push_back((cmd.mode, &cmd.document));
             }
         }
 

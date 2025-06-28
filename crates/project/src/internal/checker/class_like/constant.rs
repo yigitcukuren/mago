@@ -102,14 +102,14 @@ pub fn check_class_like_constant(
         }
     }
 
-    if let Some(type_hint) = &class_like_constant.hint {
-        if !context.version.is_supported(Feature::TypedClassLikeConstants) {
-            context.issues.push(
-                Issue::error("Typed class constants are only available in PHP 8.3 and above.")
-                    .with_annotation(Annotation::primary(type_hint.span()).with_message("Type hint used here.")),
-            );
-        };
-    }
+    if let Some(type_hint) = &class_like_constant.hint
+        && !context.version.is_supported(Feature::TypedClassLikeConstants)
+    {
+        context.issues.push(
+            Issue::error("Typed class constants are only available in PHP 8.3 and above.")
+                .with_annotation(Annotation::primary(type_hint.span()).with_message("Type hint used here.")),
+        );
+    };
 
     for item in class_like_constant.items.iter() {
         let item_name = context.interner.lookup(&item.name.value);

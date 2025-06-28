@@ -74,17 +74,16 @@ impl<'a> Format<'a> for Program {
             parts.push(Document::Trim(Trim::Newlines));
             parts.push(Document::Line(Line::hard()));
 
-            if f.scripting_mode {
-                if let Some(last_span) = self.trivia.last_span().or_else(|| self.statements.last_span()) {
-                    let first_span =
-                        self.trivia.first_span().or_else(|| self.statements.first_span()).unwrap_or(last_span);
+            if f.scripting_mode
+                && let Some(last_span) = self.trivia.last_span().or_else(|| self.statements.last_span())
+            {
+                let first_span = self.trivia.first_span().or_else(|| self.statements.first_span()).unwrap_or(last_span);
 
-                    if let Some(comments) = f.print_dangling_comments(first_span.join(last_span), false) {
-                        parts.push(Document::Line(Line::hard()));
-                        parts.push(comments);
-                        parts.push(Document::Trim(Trim::Newlines));
-                        parts.push(Document::Line(Line::hard()));
-                    }
+                if let Some(comments) = f.print_dangling_comments(first_span.join(last_span), false) {
+                    parts.push(Document::Line(Line::hard()));
+                    parts.push(comments);
+                    parts.push(Document::Trim(Trim::Newlines));
+                    parts.push(Document::Line(Line::hard()));
                 }
             }
         }
@@ -1327,32 +1326,32 @@ impl<'a> Format<'a> for Hint {
                         );
 
                     if !force_long_syntax {
-                        if let Hint::Null(_) = union_hint.left.as_ref() {
-                            if f.settings.null_type_hint.is_question() {
-                                return Document::Group(Group::new(vec![
-                                    Document::String("?"),
-                                    if f.settings.space_after_nullable_type_question_mark {
-                                        Document::space()
-                                    } else {
-                                        Document::empty()
-                                    },
-                                    union_hint.right.format(f),
-                                ]));
-                            }
+                        if let Hint::Null(_) = union_hint.left.as_ref()
+                            && f.settings.null_type_hint.is_question()
+                        {
+                            return Document::Group(Group::new(vec![
+                                Document::String("?"),
+                                if f.settings.space_after_nullable_type_question_mark {
+                                    Document::space()
+                                } else {
+                                    Document::empty()
+                                },
+                                union_hint.right.format(f),
+                            ]));
                         }
 
-                        if let Hint::Null(_) = union_hint.right.as_ref() {
-                            if f.settings.null_type_hint.is_question() {
-                                return Document::Group(Group::new(vec![
-                                    Document::String("?"),
-                                    if f.settings.space_after_nullable_type_question_mark {
-                                        Document::space()
-                                    } else {
-                                        Document::empty()
-                                    },
-                                    union_hint.left.format(f),
-                                ]));
-                            }
+                        if let Hint::Null(_) = union_hint.right.as_ref()
+                            && f.settings.null_type_hint.is_question()
+                        {
+                            return Document::Group(Group::new(vec![
+                                Document::String("?"),
+                                if f.settings.space_after_nullable_type_question_mark {
+                                    Document::space()
+                                } else {
+                                    Document::empty()
+                                },
+                                union_hint.left.format(f),
+                            ]));
                         }
                     }
 

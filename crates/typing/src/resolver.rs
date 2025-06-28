@@ -75,23 +75,21 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
             Expression::ArrayAccess(array_access) => get_array_index_kind(self.resolve(&array_access.array)),
             Expression::AnonymousClass(anonymous_class) => anonymous_object_kind(anonymous_class.span()),
             Expression::Closure(closure) => {
-                if let Some(codebase) = self.codebase {
-                    if let Some(function) = codebase.get_function_like(FunctionLikeName::ArrowFunction(closure.span()))
-                    {
-                        return TypeKind::from(function);
-                    }
+                if let Some(codebase) = self.codebase
+                    && let Some(function) = codebase.get_function_like(FunctionLikeName::ArrowFunction(closure.span()))
+                {
+                    return TypeKind::from(function);
                 }
 
                 // could be better..
                 any_closure_kind()
             }
             Expression::ArrowFunction(arrow_function) => {
-                if let Some(codebase) = self.codebase {
-                    if let Some(function) =
+                if let Some(codebase) = self.codebase
+                    && let Some(function) =
                         codebase.get_function_like(FunctionLikeName::ArrowFunction(arrow_function.span()))
-                    {
-                        return TypeKind::from(function);
-                    }
+                {
+                    return TypeKind::from(function);
                 }
 
                 // could be better..
@@ -136,23 +134,23 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
             }
             Expression::Call(call) => match call {
                 Call::Function(function_call) => {
-                    if let Some(codebase) = self.codebase {
-                        if let Expression::Identifier(identifier) = function_call.function.as_ref() {
-                            let (full_name, short_name) = resolve_name(self.interner, identifier.value());
+                    if let Some(codebase) = self.codebase
+                        && let Expression::Identifier(identifier) = function_call.function.as_ref()
+                    {
+                        let (full_name, short_name) = resolve_name(self.interner, identifier.value());
 
-                            if let Some(function) = codebase.get_function(self.interner, full_name) {
-                                return function.return_type_reflection.as_ref().map_or_else(
-                                    || mixed_kind(false),
-                                    |return_type| return_type.type_reflection.kind.clone(),
-                                );
-                            }
+                        if let Some(function) = codebase.get_function(self.interner, full_name) {
+                            return function.return_type_reflection.as_ref().map_or_else(
+                                || mixed_kind(false),
+                                |return_type| return_type.type_reflection.kind.clone(),
+                            );
+                        }
 
-                            if let Some(function) = codebase.get_function(self.interner, &short_name) {
-                                return function.return_type_reflection.as_ref().map_or_else(
-                                    || mixed_kind(false),
-                                    |return_type| return_type.type_reflection.kind.clone(),
-                                );
-                            }
+                        if let Some(function) = codebase.get_function(self.interner, &short_name) {
+                            return function.return_type_reflection.as_ref().map_or_else(
+                                || mixed_kind(false),
+                                |return_type| return_type.type_reflection.kind.clone(),
+                            );
                         }
                     }
 
@@ -182,13 +180,13 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                 }
                             };
 
-                            if let Some(class_reflection) = class_like_reflection {
-                                if let Some(method) = class_reflection.methods.members.get(&method.value) {
-                                    return method.return_type_reflection.as_ref().map_or_else(
-                                        || mixed_kind(false),
-                                        |return_type| return_type.type_reflection.kind.clone(),
-                                    );
-                                }
+                            if let Some(class_reflection) = class_like_reflection
+                                && let Some(method) = class_reflection.methods.members.get(&method.value)
+                            {
+                                return method.return_type_reflection.as_ref().map_or_else(
+                                    || mixed_kind(false),
+                                    |return_type| return_type.type_reflection.kind.clone(),
+                                );
                             }
                         }
                     }
@@ -219,13 +217,13 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                                 }
                             };
 
-                            if let Some(class_reflection) = class_like_reflection {
-                                if let Some(method) = class_reflection.methods.members.get(&method.value) {
-                                    return method.return_type_reflection.as_ref().map_or_else(
-                                        || mixed_kind(false),
-                                        |return_type| return_type.type_reflection.kind.clone(),
-                                    );
-                                }
+                            if let Some(class_reflection) = class_like_reflection
+                                && let Some(method) = class_reflection.methods.members.get(&method.value)
+                            {
+                                return method.return_type_reflection.as_ref().map_or_else(
+                                    || mixed_kind(false),
+                                    |return_type| return_type.type_reflection.kind.clone(),
+                                );
                             }
                         }
                     }
@@ -233,20 +231,19 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     mixed_kind(false)
                 }
                 Call::StaticMethod(static_method_call) => {
-                    if let Some(codebase) = self.codebase {
-                        if let (Expression::Identifier(name), ClassLikeMemberSelector::Identifier(method)) =
+                    if let Some(codebase) = self.codebase
+                        && let (Expression::Identifier(name), ClassLikeMemberSelector::Identifier(method)) =
                             (static_method_call.class.as_ref(), &static_method_call.method)
-                        {
-                            let class_name = self.names.get(name);
+                    {
+                        let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
-                                if let Some(method) = class_reflection.methods.members.get(&method.value) {
-                                    return method.return_type_reflection.as_ref().map_or_else(
-                                        || mixed_kind(false),
-                                        |return_type| return_type.type_reflection.kind.clone(),
-                                    );
-                                }
-                            }
+                        if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name)
+                            && let Some(method) = class_reflection.methods.members.get(&method.value)
+                        {
+                            return method.return_type_reflection.as_ref().map_or_else(
+                                || mixed_kind(false),
+                                |return_type| return_type.type_reflection.kind.clone(),
+                            );
                         }
                     }
 
@@ -279,20 +276,20 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                             };
 
                             let property = self.interner.intern(format!("${}", self.interner.lookup(&property.value)));
-                            if let Some(class_reflection) = class_like_reflection {
-                                if let Some(property) = class_reflection.properties.members.get(&property) {
-                                    return property
-                                        .type_reflection
-                                        .as_ref()
-                                        .map(|t| t.kind.clone())
-                                        .or_else(|| {
-                                            property
-                                                .default_value_reflection
-                                                .as_ref()
-                                                .map(|v| v.inferred_type_reflection.kind.clone())
-                                        })
-                                        .unwrap_or_else(|| mixed_kind(false));
-                                }
+                            if let Some(class_reflection) = class_like_reflection
+                                && let Some(property) = class_reflection.properties.members.get(&property)
+                            {
+                                return property
+                                    .type_reflection
+                                    .as_ref()
+                                    .map(|t| t.kind.clone())
+                                    .or_else(|| {
+                                        property
+                                            .default_value_reflection
+                                            .as_ref()
+                                            .map(|v| v.inferred_type_reflection.kind.clone())
+                                    })
+                                    .unwrap_or_else(|| mixed_kind(false));
                             }
                         }
                     }
@@ -324,20 +321,20 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                             };
 
                             let property = self.interner.intern(format!("${}", self.interner.lookup(&property.value)));
-                            if let Some(class_reflection) = class_like_reflection {
-                                if let Some(property) = class_reflection.properties.members.get(&property) {
-                                    return property
-                                        .type_reflection
-                                        .as_ref()
-                                        .map(|t| t.kind.clone())
-                                        .or_else(|| {
-                                            property
-                                                .default_value_reflection
-                                                .as_ref()
-                                                .map(|v| v.inferred_type_reflection.kind.clone())
-                                        })
-                                        .unwrap_or_else(|| mixed_kind(false));
-                                }
+                            if let Some(class_reflection) = class_like_reflection
+                                && let Some(property) = class_reflection.properties.members.get(&property)
+                            {
+                                return property
+                                    .type_reflection
+                                    .as_ref()
+                                    .map(|t| t.kind.clone())
+                                    .or_else(|| {
+                                        property
+                                            .default_value_reflection
+                                            .as_ref()
+                                            .map(|v| v.inferred_type_reflection.kind.clone())
+                                    })
+                                    .unwrap_or_else(|| mixed_kind(false));
                             }
                         }
                     }
@@ -345,51 +342,49 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
                     mixed_kind(false)
                 }
                 Access::StaticProperty(static_property_access) => {
-                    if let Some(codebase) = self.codebase {
-                        if let (Expression::Identifier(name), Variable::Direct(variable)) =
+                    if let Some(codebase) = self.codebase
+                        && let (Expression::Identifier(name), Variable::Direct(variable)) =
                             (static_property_access.class.as_ref(), &static_property_access.property)
-                        {
-                            let class_name = self.names.get(name);
+                    {
+                        let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
-                                if let Some(property) = class_reflection.properties.members.get(&variable.name) {
-                                    return property
-                                        .type_reflection
+                        if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name)
+                            && let Some(property) = class_reflection.properties.members.get(&variable.name)
+                        {
+                            return property
+                                .type_reflection
+                                .as_ref()
+                                .map(|t| t.kind.clone())
+                                .or_else(|| {
+                                    property
+                                        .default_value_reflection
                                         .as_ref()
-                                        .map(|t| t.kind.clone())
-                                        .or_else(|| {
-                                            property
-                                                .default_value_reflection
-                                                .as_ref()
-                                                .map(|v| v.inferred_type_reflection.kind.clone())
-                                        })
-                                        .unwrap_or_else(|| mixed_kind(false));
-                                }
-                            }
+                                        .map(|v| v.inferred_type_reflection.kind.clone())
+                                })
+                                .unwrap_or_else(|| mixed_kind(false));
                         }
                     }
 
                     mixed_kind(false)
                 }
                 Access::ClassConstant(class_constant_access) => {
-                    if let Some(codebase) = self.codebase {
-                        if let (Expression::Identifier(name), ClassLikeConstantSelector::Identifier(constant)) =
+                    if let Some(codebase) = self.codebase
+                        && let (Expression::Identifier(name), ClassLikeConstantSelector::Identifier(constant)) =
                             (class_constant_access.class.as_ref(), &class_constant_access.constant)
-                        {
-                            let class_name = self.names.get(name);
+                    {
+                        let class_name = self.names.get(name);
 
-                            if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
-                                if let Some(constant) = class_reflection.constants.get(&constant.value) {
-                                    return constant
-                                        .type_reflection
-                                        .as_ref()
-                                        .map(|t| t.kind.clone())
-                                        .unwrap_or_else(|| constant.inferred_type_reflection.kind.clone());
-                                }
+                        if let Some(class_reflection) = codebase.get_named_class_like(self.interner, class_name) {
+                            if let Some(constant) = class_reflection.constants.get(&constant.value) {
+                                return constant
+                                    .type_reflection
+                                    .as_ref()
+                                    .map(|t| t.kind.clone())
+                                    .unwrap_or_else(|| constant.inferred_type_reflection.kind.clone());
+                            }
 
-                                if class_reflection.is_enum() && class_reflection.cases.contains_key(&constant.value) {
-                                    return enum_case_kind(*class_name, constant.value);
-                                }
+                            if class_reflection.is_enum() && class_reflection.cases.contains_key(&constant.value) {
+                                return enum_case_kind(*class_name, constant.value);
                             }
                         }
                     }
@@ -399,18 +394,18 @@ impl<'i, 'c> TypeResolver<'i, 'c> {
             },
             Expression::ClosureCreation(closure_creation) => match closure_creation {
                 ClosureCreation::Function(function_closure_creation) => {
-                    if let Some(codebase) = &self.codebase {
-                        if let Expression::Identifier(name) = function_closure_creation.function.as_ref() {
-                            let (full_name, short_name) = resolve_name(self.interner, name.value());
+                    if let Some(codebase) = &self.codebase
+                        && let Expression::Identifier(name) = function_closure_creation.function.as_ref()
+                    {
+                        let (full_name, short_name) = resolve_name(self.interner, name.value());
 
-                            if let Some(function) = codebase.get_function(self.interner, full_name) {
-                                return TypeKind::from(function);
-                            }
+                        if let Some(function) = codebase.get_function(self.interner, full_name) {
+                            return TypeKind::from(function);
+                        }
 
-                            // fallback to short name, welcome to PHP.
-                            if let Some(function) = codebase.get_function(self.interner, &short_name) {
-                                return TypeKind::from(function);
-                            }
+                        // fallback to short name, welcome to PHP.
+                        if let Some(function) = codebase.get_function(self.interner, &short_name) {
+                            return TypeKind::from(function);
                         }
                     }
 

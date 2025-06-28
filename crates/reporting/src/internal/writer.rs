@@ -43,7 +43,7 @@ impl ReportWriter {
     /// # Panics
     ///
     /// Panics if the internal `Mutex` is poisoned.
-    pub fn lock(&self) -> Gaurd {
+    pub fn lock(&self) -> Gaurd<'_> {
         Gaurd(self.inner.lock().expect("writer lock poisoned, this should never happen"))
     }
 }

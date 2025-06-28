@@ -133,23 +133,23 @@ impl<'a> Format<'a> for Pipe {
                 contents.push(Document::Line(Line::default()));
                 contents.push(Document::String("|> "));
 
-                if let Expression::ArrowFunction(arrow_fn) = callable {
-                    if let Expression::Pipe(inner_pipe) = unwrap_parenthesized(arrow_fn.expression.as_ref()) {
-                        should_break = true;
+                if let Expression::ArrowFunction(arrow_fn) = callable
+                    && let Expression::Pipe(inner_pipe) = unwrap_parenthesized(arrow_fn.expression.as_ref())
+                {
+                    should_break = true;
 
-                        let was_in_pipe_chain_arrow_segment = f.in_pipe_chain_arrow_segment;
-                        f.in_pipe_chain_arrow_segment = true;
-                        contents.push(arrow_fn.format(f));
-                        f.in_pipe_chain_arrow_segment = was_in_pipe_chain_arrow_segment;
-                        callable_queue.push_front(inner_pipe.callable.as_ref());
-                        let mut nested_input = inner_pipe.input.as_ref();
-                        while let Expression::Pipe(nested_pipe) = unwrap_parenthesized(nested_input) {
-                            callable_queue.push_front(nested_pipe.callable.as_ref());
-                            nested_input = nested_pipe.input.as_ref();
-                        }
-
-                        continue;
+                    let was_in_pipe_chain_arrow_segment = f.in_pipe_chain_arrow_segment;
+                    f.in_pipe_chain_arrow_segment = true;
+                    contents.push(arrow_fn.format(f));
+                    f.in_pipe_chain_arrow_segment = was_in_pipe_chain_arrow_segment;
+                    callable_queue.push_front(inner_pipe.callable.as_ref());
+                    let mut nested_input = inner_pipe.input.as_ref();
+                    while let Expression::Pipe(nested_pipe) = unwrap_parenthesized(nested_input) {
+                        callable_queue.push_front(nested_pipe.callable.as_ref());
+                        nested_input = nested_pipe.input.as_ref();
                     }
+
+                    continue;
                 }
 
                 let callable_has_trailing_comments = f.has_comment(callable.span(), CommentFlags::Trailing);

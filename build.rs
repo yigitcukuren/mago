@@ -53,25 +53,25 @@ fn collect_files(root: &Path, dir: &Path, stubs_map: &mut Vec<(String, String)>)
         if path.is_dir() {
             // Recursively collect files from subdirectories
             collect_files(root, &path, stubs_map)?;
-        } else if let Some(ext) = path.extension() {
-            if ext == "php" {
-                // Simplify the path
-                let relative_path = path.strip_prefix(root).unwrap();
-                let simplified_path = relative_path
-                    .components()
-                    .map(|component| {
-                        let part = component.as_os_str().to_string_lossy().to_lowercase();
-                        part.replace(" ", "-")
-                    })
-                    .collect::<Vec<_>>()
-                    .join(file_separator);
+        } else if let Some(ext) = path.extension()
+            && ext == "php"
+        {
+            // Simplify the path
+            let relative_path = path.strip_prefix(root).unwrap();
+            let simplified_path = relative_path
+                .components()
+                .map(|component| {
+                    let part = component.as_os_str().to_string_lossy().to_lowercase();
+                    part.replace(" ", "-")
+                })
+                .collect::<Vec<_>>()
+                .join(file_separator);
 
-                // Prepare absolute path for include_str
-                let include_path = fs::canonicalize(&path)?.to_string_lossy().replace("\\", "/");
+            // Prepare absolute path for include_str
+            let include_path = fs::canonicalize(&path)?.to_string_lossy().replace("\\", "/");
 
-                // Add to the map
-                stubs_map.push((format!("stubs{file_separator}{simplified_path}"), include_path));
-            }
+            // Add to the map
+            stubs_map.push((format!("stubs{file_separator}{simplified_path}"), include_path));
         }
     }
     Ok(())

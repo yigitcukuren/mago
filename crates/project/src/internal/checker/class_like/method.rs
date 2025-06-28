@@ -288,23 +288,21 @@ pub fn check_method(
                 _ => {}
             }
 
-            if !*can_have_return_type {
-                if let Some(hint) = &method.return_type_hint {
-                    context.issues.push(
-                        Issue::error(format!(
-                            "Magic method `{class_like_name}::{method_name}` cannot have a return type hint."
-                        ))
-                        .with_annotation(Annotation::primary(hint.span()))
-                        .with_annotation(
-                            Annotation::secondary(method.span())
-                                .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(class_like_span)
-                                .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
-                        ),
-                    );
-                }
+            if !*can_have_return_type && let Some(hint) = &method.return_type_hint {
+                context.issues.push(
+                    Issue::error(format!(
+                        "Magic method `{class_like_name}::{method_name}` cannot have a return type hint."
+                    ))
+                    .with_annotation(Annotation::primary(hint.span()))
+                    .with_annotation(
+                        Annotation::secondary(method.span())
+                            .with_message(format!("Method `{class_like_name}::{method_name}` defined here.",)),
+                    )
+                    .with_annotation(
+                        Annotation::secondary(class_like_span)
+                            .with_message(format!("{class_like_kind} `{class_like_fqcn}` is defined here.")),
+                    ),
+                );
             }
         }
     }

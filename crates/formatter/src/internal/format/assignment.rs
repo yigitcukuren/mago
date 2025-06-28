@@ -158,10 +158,10 @@ fn choose_layout<'a, 'b>(
     if should_use_chain_formatting {
         if !is_tail {
             return Layout::Chain;
-        } else if let Expression::ArrowFunction(arrow_function) = rhs_expression {
-            if let Expression::ArrowFunction(_) = arrow_function.expression.as_ref() {
-                return Layout::ChainTailArrowChain;
-            }
+        } else if let Expression::ArrowFunction(arrow_function) = rhs_expression
+            && let Expression::ArrowFunction(_) = arrow_function.expression.as_ref()
+        {
+            return Layout::ChainTailArrowChain;
         }
 
         return Layout::ChainTail;
@@ -171,20 +171,21 @@ fn choose_layout<'a, 'b>(
         return Layout::BreakAfterOperator;
     }
 
-    if let Expression::Construct(construct) = rhs_expression {
-        if matches!(
+    if let Expression::Construct(construct) = rhs_expression
+        && matches!(
             construct,
             Construct::Require(_) | Construct::RequireOnce(_) | Construct::Include(_) | Construct::IncludeOnce(_)
-        ) {
-            // special case for require/include constructs.
-            return Layout::NeverBreakAfterOperator;
-        }
+        )
+    {
+        // special case for require/include constructs.
+        return Layout::NeverBreakAfterOperator;
     }
 
-    if let Expression::Binary(Binary { lhs, rhs, .. }) = rhs_expression {
-        if is_member_chain_or_single_arg_call(f, lhs.as_ref()) && is_simple_expression(rhs.as_ref()) {
-            return Layout::NeverBreakAfterOperator;
-        }
+    if let Expression::Binary(Binary { lhs, rhs, .. }) = rhs_expression
+        && is_member_chain_or_single_arg_call(f, lhs.as_ref())
+        && is_simple_expression(rhs.as_ref())
+    {
+        return Layout::NeverBreakAfterOperator;
     }
 
     let can_break_left_doc = lhs.can_break();
@@ -225,23 +226,19 @@ fn is_member_chain_or_single_arg_call<'a>(f: &FormatterState<'a>, expr: &'a Expr
     }
 
     if let Expression::Call(call) = expr {
-        if let Call::Function(function_call) = call {
-            if function_call.argument_list.arguments.len() == 1 {
-                if let Some(arg) = function_call.argument_list.arguments.first() {
-                    if is_chain(arg.value()) {
-                        return true;
-                    }
-                }
-            }
+        if let Call::Function(function_call) = call
+            && function_call.argument_list.arguments.len() == 1
+            && let Some(arg) = function_call.argument_list.arguments.first()
+            && is_chain(arg.value())
+        {
+            return true;
         }
-        if let Call::Method(method_call) = call {
-            if method_call.argument_list.arguments.len() == 1 {
-                if let Some(arg) = method_call.argument_list.arguments.first() {
-                    if is_chain(arg.value()) {
-                        return true;
-                    }
-                }
-            }
+        if let Call::Method(method_call) = call
+            && method_call.argument_list.arguments.len() == 1
+            && let Some(arg) = method_call.argument_list.arguments.first()
+            && is_chain(arg.value())
+        {
+            return true;
         }
     }
 

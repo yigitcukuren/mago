@@ -170,13 +170,13 @@ pub fn check_class(class: &Class, context: &mut Context<'_>) {
         }
     }
 
-    if !context.version.is_supported(Feature::ReadonlyClasses) {
-        if let Some(modifier) = last_readonly {
-            let issue = Issue::error("Readonly classes are only available in PHP 8.2 and above.")
-                .with_annotation(Annotation::primary(modifier.span()).with_message("Readonly modifier used here."));
+    if !context.version.is_supported(Feature::ReadonlyClasses)
+        && let Some(modifier) = last_readonly
+    {
+        let issue = Issue::error("Readonly classes are only available in PHP 8.2 and above.")
+            .with_annotation(Annotation::primary(modifier.span()).with_message("Readonly modifier used here."));
 
-            context.issues.push(issue);
-        }
+        context.issues.push(issue);
     }
 
     if let Some(extends) = &class.extends {
@@ -699,24 +699,23 @@ pub fn check_enum(r#enum: &Enum, context: &mut Context<'_>) {
         );
     }
 
-    if let Some(EnumBackingTypeHint { hint, .. }) = &r#enum.backing_type_hint {
-        if !matches!(hint, Hint::String(_) | Hint::Integer(_)) {
-            let key = context.get_code_snippet(hint);
+    if let Some(EnumBackingTypeHint { hint, .. }) = &r#enum.backing_type_hint
+        && !matches!(hint, Hint::String(_) | Hint::Integer(_))
+    {
+        let key = context.get_code_snippet(hint);
 
-            context.issues.push(
-                Issue::error(format!(
-                    "Enum `{enum_name}` backing type must be either `string` or `int`, but found `{key}`."
-                ))
-                .with_annotation(
-                    Annotation::primary(hint.span())
-                        .with_message(format!("Invalid backing type `{key}` specified here.")),
-                )
-                .with_annotation(
-                    Annotation::secondary(r#enum.name.span()).with_message(format!("Enum `{enum_fqcn}` defined here.")),
-                )
-                .with_help("Change the backing type to either `string` or `int`."),
-            );
-        }
+        context.issues.push(
+            Issue::error(format!(
+                "Enum `{enum_name}` backing type must be either `string` or `int`, but found `{key}`."
+            ))
+            .with_annotation(
+                Annotation::primary(hint.span()).with_message(format!("Invalid backing type `{key}` specified here.")),
+            )
+            .with_annotation(
+                Annotation::secondary(r#enum.name.span()).with_message(format!("Enum `{enum_fqcn}` defined here.")),
+            )
+            .with_help("Change the backing type to either `string` or `int`."),
+        );
     }
 
     if let Some(implements) = &r#enum.implements {

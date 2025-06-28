@@ -71,10 +71,10 @@ impl<'a> FormatterState<'a> {
             return false;
         };
 
-        if let Some(Node::Binary(binary)) = self.nth_parent_kind(2) {
-            if let BinaryOperator::StringConcat(_) = binary.operator {
-                return true;
-            }
+        if let Some(Node::Binary(binary)) = self.nth_parent_kind(2)
+            && let BinaryOperator::StringConcat(_) = binary.operator
+        {
+            return true;
         }
 
         false
@@ -202,10 +202,10 @@ impl<'a> FormatterState<'a> {
                 return access.left_bracket.start.offset > node.span().start.offset;
             }
             parent => {
-                if let Some(Node::Assignment(_)) = parent {
-                    if operator.is_low_precedence() {
-                        return true;
-                    }
+                if let Some(Node::Assignment(_)) = parent
+                    && operator.is_low_precedence()
+                {
+                    return true;
                 }
 
                 let grand_parent_node = self.nth_parent_kind(3);

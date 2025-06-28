@@ -72,9 +72,10 @@ pub fn check_argument_list(argument_list: &ArgumentList, context: &mut Context<'
         }
     }
 
-    if !context.version.is_supported(Feature::TrailingCommaInFunctionCalls) {
-        if let Some(last_comma) = argument_list.arguments.get_trailing_token() {
-            context.issues.push(
+    if !context.version.is_supported(Feature::TrailingCommaInFunctionCalls)
+        && let Some(last_comma) = argument_list.arguments.get_trailing_token()
+    {
+        context.issues.push(
                 Issue::error("Trailing comma in function calls is only available in PHP 7.3 and later.")
                     .with_annotation(
                         Annotation::primary(last_comma.span).with_message("Trailing comma found here."),
@@ -83,6 +84,5 @@ pub fn check_argument_list(argument_list: &ArgumentList, context: &mut Context<'
                         "Remove the trailing comma to make the code compatible with PHP 7.2 and earlier versions, or upgrade to PHP 7.3 or later.",
                     )
             );
-        }
     }
 }

@@ -634,12 +634,13 @@ fn fix_overlapping_operations(operations: &mut Vec<FixOperation>) {
             FixOperation::Replace { range, .. } => {
                 let mut should_add = true;
                 for existing_op in &filtered_operations {
-                    if let FixOperation::Delete { range: delete_range, .. } = existing_op {
-                        if delete_range.start <= range.start && delete_range.end >= range.end {
-                            // `Replace` falls within a `Delete`, so ignore `Replace`
-                            should_add = false;
-                            break;
-                        }
+                    if let FixOperation::Delete { range: delete_range, .. } = existing_op
+                        && delete_range.start <= range.start
+                        && delete_range.end >= range.end
+                    {
+                        // `Replace` falls within a `Delete`, so ignore `Replace`
+                        should_add = false;
+                        break;
                     }
                 }
                 if should_add {

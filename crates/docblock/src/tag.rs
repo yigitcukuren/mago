@@ -175,13 +175,13 @@ pub fn parse_template_tag(
                 let type_start_offset_rel = current_offset_rel + whitespace_len2;
                 let type_part_str = remaining_after_modifier.split_whitespace().next();
 
-                if let Some(ts) = type_part_str {
-                    if !ts.is_empty() {
-                        let type_len = ts.len();
-                        let type_start_pos = span.start.forward(type_start_offset_rel);
-                        let type_span = Span::new(type_start_pos, type_start_pos.forward(type_len));
-                        type_string_opt = Some(TypeString { value: ts.to_string(), span: type_span });
-                    }
+                if let Some(ts) = type_part_str
+                    && !ts.is_empty()
+                {
+                    let type_len = ts.len();
+                    let type_start_pos = span.start.forward(type_start_offset_rel);
+                    let type_span = Span::new(type_start_pos, type_start_pos.forward(type_len));
+                    type_string_opt = Some(TypeString { value: ts.to_string(), span: type_span });
                 }
             }
         }

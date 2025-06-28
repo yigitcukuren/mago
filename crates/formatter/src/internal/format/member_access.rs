@@ -399,27 +399,26 @@ pub(super) fn print_member_access_chain<'a>(
         || member_access_chain.is_first_link_static_method_call()
         || matches!(member_access_chain.base, Expression::Variable(Variable::Direct(variable)) if f.interner.lookup(&variable.name) == "$this"))
         && fluent_access_chain_start.is_none_or(|start| start != 0)
+        && let Some((_, first_chain_link)) = accesses_iter.next()
     {
-        if let Some((_, first_chain_link)) = accesses_iter.next() {
-            // Format the base object and first method call together
-            parts.push(format_access_operator(
-                f,
-                first_chain_link.get_operator_span(),
-                first_chain_link.get_operator_as_str(),
-            ));
+        // Format the base object and first method call together
+        parts.push(format_access_operator(
+            f,
+            first_chain_link.get_operator_span(),
+            first_chain_link.get_operator_as_str(),
+        ));
 
-            let selector = first_chain_link.get_selector();
-            parts.push(selector.format(f));
-            last_element_end = selector.span().end;
-            if let Some(argument_list) = first_chain_link.get_arguments_list() {
-                let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
-                if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
-                    formatted_argument_list.push(comments);
-                }
-
-                parts.push(Document::Group(Group::new(formatted_argument_list)));
-                last_element_end = argument_list.span().end;
+        let selector = first_chain_link.get_selector();
+        parts.push(selector.format(f));
+        last_element_end = selector.span().end;
+        if let Some(argument_list) = first_chain_link.get_arguments_list() {
+            let mut formatted_argument_list = vec![print_argument_list(f, argument_list, false)];
+            if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
+                formatted_argument_list.push(comments);
             }
+
+            parts.push(Document::Group(Group::new(formatted_argument_list)));
+            last_element_end = argument_list.span().end;
         }
     }
 

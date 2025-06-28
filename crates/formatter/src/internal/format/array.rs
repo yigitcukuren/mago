@@ -151,13 +151,11 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
         ))
         || has_floating_comments(f, &array_like);
 
-    if !must_break {
-        if let Some(element) = inline_single_element(f, &array_like) {
-            parts.push(element);
-            parts.push(get_right_delimiter(f, &array_like));
+    if !must_break && let Some(element) = inline_single_element(f, &array_like) {
+        parts.push(element);
+        parts.push(get_right_delimiter(f, &array_like));
 
-            return Document::Group(Group::new(parts));
-        }
+        return Document::Group(Group::new(parts));
     }
 
     // Check if we should use table-style formatting
@@ -506,20 +504,18 @@ fn calculate_column_widths<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLik
 
     // Second pass: calculate maximum width for each column
     for element in array_like.elements() {
-        if let ArrayElement::Value(element) = element {
-            if let Expression::Array(Array { elements, .. }) | Expression::LegacyArray(LegacyArray { elements, .. }) =
+        if let ArrayElement::Value(element) = element
+            && let Expression::Array(Array { elements, .. }) | Expression::LegacyArray(LegacyArray { elements, .. }) =
                 element.value.as_ref()
-            {
-                for (col_idx, col_element) in elements.iter().enumerate() {
-                    if let ArrayElement::Value(value_element) = col_element {
-                        if let Some(width) = get_element_width(f, &value_element.value) {
-                            column_maximum_widths[col_idx] = column_maximum_widths[col_idx].max(width);
-                        } else {
-                            return None; // Cannot determine element width
-                        }
-                    } else {
-                        return None; // Only support Value elements in inner arrays
-                    }
+        {
+            for (col_idx, col_element) in elements.iter().enumerate() {
+                if let ArrayElement::Value(value_element) = col_element
+                    && let Some(width) = get_element_width(f, &value_element.value)
+                {
+                    column_maximum_widths[col_idx] = column_maximum_widths[col_idx].max(width);
+                } else {
+                    // Either the element is not a value element, or we cannot determine element width
+                    return None;
                 }
             }
         }
