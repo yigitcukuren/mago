@@ -83,11 +83,32 @@ impl MemberAccessChain<'_> {
         let score = self
             .accesses
             .iter()
-            .map(|access| match access {
-                MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => 1,
-                MemberAccess::MethodCall(_)
-                | MemberAccess::NullSafeMethodCall(_)
-                | MemberAccess::StaticMethodCall(_) => 2,
+            .map(|access| {
+                let arguments_list = match access {
+                    MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => return 1,
+                    MemberAccess::MethodCall(MethodCall { argument_list, .. })
+                    | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. })
+                    | MemberAccess::StaticMethodCall(StaticMethodCall { argument_list, .. }) => argument_list,
+                };
+
+                if arguments_list.arguments.len() == 1
+                    && arguments_list.arguments.first().map(|argument| argument.value()).is_some_and(|argument_value| {
+                        matches!(
+                            argument_value,
+                            Expression::Array(_)
+                                | Expression::LegacyArray(_)
+                                | Expression::List(_)
+                                | Expression::Closure(_)
+                                | Expression::ClosureCreation(_)
+                                | Expression::AnonymousClass(_)
+                                | Expression::Match(_)
+                        )
+                    })
+                {
+                    1
+                } else {
+                    2
+                }
             })
             .sum();
 

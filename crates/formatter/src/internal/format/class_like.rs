@@ -9,9 +9,8 @@ use crate::document::Line;
 use crate::document::group::GroupIdentifier;
 use crate::internal::FormatterState;
 use crate::internal::format::Format;
+use crate::internal::format::block::block_is_empty;
 use crate::settings::BraceStyle;
-
-use super::block::block_is_empty;
 
 pub fn print_class_like_body<'a>(
     f: &mut FormatterState<'a>,
