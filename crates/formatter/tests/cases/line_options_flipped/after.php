@@ -37,6 +37,7 @@ class MyClass
         return 1;
         // This is a dangling comment
     }
+
     public int $mySecondProperty;
 
     const MY_SECOND_CONST = 2;

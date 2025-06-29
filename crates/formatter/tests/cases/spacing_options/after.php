@@ -66,6 +66,7 @@ class MyClass
 class Foo
 {
     public static $bar;
+
     public function baz()
     {
         return 'baz';

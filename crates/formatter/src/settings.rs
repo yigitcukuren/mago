@@ -1316,6 +1316,12 @@ pub struct FormatSettings {
     /// Default: true
     #[serde(default = "default_true")]
     pub double_slash_comments: bool,
+
+    /// Whether to separate class-like members of different kinds with a blank line.
+    ///
+    /// Default: true
+    #[serde(default = "default_true")]
+    pub separate_class_like_members: bool,
 }
 
 impl Default for FormatSettings {
@@ -1441,6 +1447,7 @@ impl Default for FormatSettings {
             empty_line_before_return: false,
             empty_line_before_dangling_comments: true,
             double_slash_comments: true,
+            separate_class_like_members: true,
         }
     }
 }

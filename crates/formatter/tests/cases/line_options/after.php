@@ -10,7 +10,9 @@ use My\ClassB;
 class MyClass
 {
     const MY_CONST = 1;
+
     public int $myProperty;
+
     public function myMethod()
     {
         if (true) {
@@ -33,7 +35,9 @@ class MyClass
     }
 
     public int $mySecondProperty;
+
     const MY_SECOND_CONST = 2;
+
     use MyTrait;
 }
 

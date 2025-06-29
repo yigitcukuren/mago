@@ -12,6 +12,16 @@ use crate::internal::format::Format;
 use crate::internal::format::block::block_is_empty;
 use crate::settings::BraceStyle;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+enum ClassLikeMemberKind {
+    TraitUse,
+    Constant,
+    Property,
+    EnumCase,
+    Method,
+}
+
 pub fn print_class_like_body<'a>(
     f: &mut FormatterState<'a>,
     left_brace: &'a Span,
@@ -36,16 +46,38 @@ pub fn print_class_like_body<'a>(
         }
 
         if length != 0 {
+            let mut last_member_kind = None;
+            let mut last_has_line_after = false;
             let mut members = vec![Document::Line(Line::hard())];
             for (i, item) in class_like_members.iter().enumerate() {
+                let member_kind = match item {
+                    ClassLikeMember::TraitUse(_) => ClassLikeMemberKind::TraitUse,
+                    ClassLikeMember::Constant(_) => ClassLikeMemberKind::Constant,
+                    ClassLikeMember::Property(_) => ClassLikeMemberKind::Property,
+                    ClassLikeMember::EnumCase(_) => ClassLikeMemberKind::EnumCase,
+                    ClassLikeMember::Method(_) => ClassLikeMemberKind::Method,
+                };
+
+                if i != 0 && !last_has_line_after && should_add_empty_line_before(f, member_kind, last_member_kind) {
+                    members.push(Document::Line(Line::hard()));
+                }
+
                 members.push(item.format(f));
 
                 if i < (length - 1) {
                     members.push(Document::Line(Line::hard()));
-                    if should_add_empty_line_after(f, item) || f.is_next_line_empty(item.span()) {
+
+                    if should_add_empty_line_after(f, member_kind) || f.is_next_line_empty(item.span()) {
                         members.push(Document::Line(Line::hard()));
+                        last_has_line_after = true;
+                    } else {
+                        last_has_line_after = false;
                     }
+                } else {
+                    last_has_line_after = false;
                 }
+
+                last_member_kind = Some(member_kind);
             }
 
             contents.push(Document::Indent(members));
@@ -95,12 +127,28 @@ pub fn print_class_like_body<'a>(
 }
 
 #[inline]
-const fn should_add_empty_line_after<'a>(f: &mut FormatterState<'a>, class_like_member: &'a ClassLikeMember) -> bool {
-    match class_like_member {
-        ClassLikeMember::TraitUse(_) => f.settings.empty_line_after_trait_use,
-        ClassLikeMember::Constant(_) => f.settings.empty_line_after_class_like_constant,
-        ClassLikeMember::Property(_) => f.settings.empty_line_after_property,
-        ClassLikeMember::EnumCase(_) => f.settings.empty_line_after_enum_case,
-        ClassLikeMember::Method(_) => f.settings.empty_line_after_method,
+fn should_add_empty_line_before(
+    f: &mut FormatterState<'_>,
+    class_like_member_kind: ClassLikeMemberKind,
+    last_class_like_member_kind: Option<ClassLikeMemberKind>,
+) -> bool {
+    if let Some(last_member_kind) = last_class_like_member_kind
+        && last_member_kind != class_like_member_kind
+        && f.settings.separate_class_like_members
+    {
+        true
+    } else {
+        false
+    }
+}
+
+#[inline]
+const fn should_add_empty_line_after(f: &mut FormatterState<'_>, class_like_member_kind: ClassLikeMemberKind) -> bool {
+    match class_like_member_kind {
+        ClassLikeMemberKind::TraitUse => f.settings.empty_line_after_trait_use,
+        ClassLikeMemberKind::Constant => f.settings.empty_line_after_class_like_constant,
+        ClassLikeMemberKind::Property => f.settings.empty_line_after_property,
+        ClassLikeMemberKind::EnumCase => f.settings.empty_line_after_enum_case,
+        ClassLikeMemberKind::Method => f.settings.empty_line_after_method,
     }
 }
