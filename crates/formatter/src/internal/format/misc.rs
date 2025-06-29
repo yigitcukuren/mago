@@ -375,7 +375,10 @@ pub(super) fn print_condition<'a>(
     space_before: bool,
     space_within: bool,
 ) -> Document<'a> {
-    Document::Group(Group::new(vec![
+    let was_in_condition = f.in_condition;
+    f.in_condition = true;
+
+    let condition = Document::Group(Group::new(vec![
         if space_before { Document::space() } else { Document::empty() },
         Document::String("("),
         Document::IndentIfBreak(IndentIfBreak::new(vec![
@@ -384,5 +387,9 @@ pub(super) fn print_condition<'a>(
         ])),
         Document::Line(if space_within { Line::default() } else { Line::soft() }),
         Document::String(")"),
-    ]))
+    ]));
+
+    f.in_condition = was_in_condition;
+
+    condition
 }

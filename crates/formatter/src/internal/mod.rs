@@ -46,6 +46,7 @@ pub struct FormatterState<'a> {
     argument_state: ArgumentState,
     parameter_state: ParameterState,
     in_pipe_chain_arrow_segment: bool,
+    in_condition: bool,
     halted_compilation: bool,
 }
 
@@ -69,6 +70,7 @@ impl<'a> FormatterState<'a> {
             argument_state: ArgumentState::default(),
             parameter_state: ParameterState::default(),
             in_pipe_chain_arrow_segment: false,
+            in_condition: false,
             halted_compilation: false,
         }
     }

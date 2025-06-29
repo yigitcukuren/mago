@@ -79,8 +79,8 @@ impl<'a> MemberAccess<'a> {
 
 impl MemberAccessChain<'_> {
     #[inline]
-    fn get_eligibility_score(&self) -> usize {
-        let score = self
+    fn get_eligibility_score(&self, f: &FormatterState) -> usize {
+        let mut score: usize = self
             .accesses
             .iter()
             .map(|access| {
@@ -112,10 +112,16 @@ impl MemberAccessChain<'_> {
             })
             .sum();
 
-        match self.base {
-            Expression::Instantiation(_) => score + 2,
-            _ => score,
+        if let Expression::Instantiation(_) = self.base {
+            score += 2; // Instantiation adds extra score
         }
+
+        if f.in_condition {
+            // In conditions, we lower the score to avoid breaking chains too eagerly
+            score = score.saturating_sub(3);
+        }
+
+        score
     }
 
     #[inline]
@@ -128,7 +134,7 @@ impl MemberAccessChain<'_> {
             return true;
         }
 
-        let score = self.get_eligibility_score();
+        let score = self.get_eligibility_score(f);
         let threshold = 'threshold: {
             match self.base {
                 Expression::Call(Call::Function(function_call)) => {
