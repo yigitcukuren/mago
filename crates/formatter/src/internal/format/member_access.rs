@@ -80,37 +80,41 @@ impl<'a> MemberAccess<'a> {
 impl MemberAccessChain<'_> {
     #[inline]
     fn get_eligibility_score(&self, f: &FormatterState) -> usize {
-        let mut score: usize = self
-            .accesses
-            .iter()
-            .map(|access| {
-                let arguments_list = match access {
-                    MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => return 1,
-                    MemberAccess::MethodCall(MethodCall { argument_list, .. })
-                    | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. })
-                    | MemberAccess::StaticMethodCall(StaticMethodCall { argument_list, .. }) => argument_list,
-                };
+        let mut score: usize = 0;
+        let mut account_for_simple_calls = true;
+        for member_access in &self.accesses {
+            let arguments_list = match member_access {
+                MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => {
+                    score += 1;
 
-                if arguments_list.arguments.len() == 1
-                    && arguments_list.arguments.first().map(|argument| argument.value()).is_some_and(|argument_value| {
-                        matches!(
-                            argument_value,
-                            Expression::Array(_)
-                                | Expression::LegacyArray(_)
-                                | Expression::List(_)
-                                | Expression::Closure(_)
-                                | Expression::ClosureCreation(_)
-                                | Expression::AnonymousClass(_)
-                                | Expression::Match(_)
-                        )
-                    })
-                {
-                    1
-                } else {
-                    2
+                    continue;
                 }
-            })
-            .sum();
+                MemberAccess::MethodCall(MethodCall { argument_list, .. })
+                | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. })
+                | MemberAccess::StaticMethodCall(StaticMethodCall { argument_list, .. }) => argument_list,
+            };
+
+            if account_for_simple_calls
+                && arguments_list.arguments.len() == 1
+                && arguments_list.arguments.first().map(|argument| argument.value()).is_some_and(|argument_value| {
+                    matches!(
+                        argument_value,
+                        Expression::Array(_)
+                            | Expression::LegacyArray(_)
+                            | Expression::List(_)
+                            | Expression::Closure(_)
+                            | Expression::ClosureCreation(_)
+                            | Expression::AnonymousClass(_)
+                            | Expression::Match(_)
+                    )
+                })
+            {
+                score += 1;
+            } else {
+                score += 2;
+                account_for_simple_calls = false;
+            }
+        }
 
         if let Expression::Instantiation(_) = self.base {
             score += 2; // Instantiation adds extra score

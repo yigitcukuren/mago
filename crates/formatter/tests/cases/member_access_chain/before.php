@@ -78,3 +78,22 @@ class Example {
 
 return new CreateTableStatement('permissions')
     ->primary()    ->varchar('name');
+
+$promise = $downloader
+    ->addCopy($download['url'], $downloaded_file)
+    ->then(static function (Response $response) use (
+        $filesystem,
+        $release_dir,
+        $downloaded_file,
+        $executable_platform_file,
+        $executable_platform_content,
+    ): Response {
+        $phar = new \PharData($downloaded_file);
+        $phar->extractTo($release_dir);
+
+        $filesystem->remove($downloaded_file);
+
+        file_put_contents($executable_platform_file, $executable_platform_content);
+
+        return $response;
+    });
