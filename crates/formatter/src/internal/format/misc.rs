@@ -84,6 +84,23 @@ pub(super) fn should_hug_expression<'a>(
         return !arrow_function_recursion && should_hug_expression(f, &arrow_function.expression, true);
     }
 
+    if let Expression::Binary(binary) = expression {
+        let is_left_hand_side_simple = is_simple_expression(&binary.lhs);
+        let is_right_hand_side_simple = is_simple_expression(&binary.rhs);
+
+        // Hug binary expressions if they are simple and not too complex
+        if is_left_hand_side_simple && is_right_hand_side_simple {
+            return true;
+        }
+
+        if binary.operator.is_concatenation() {
+            return (is_left_hand_side_simple && should_hug_expression(f, &binary.rhs, arrow_function_recursion))
+                || (is_right_hand_side_simple && should_hug_expression(f, &binary.lhs, arrow_function_recursion));
+        }
+
+        return false;
+    }
+
     let Expression::Instantiation(instantiation) = expression else {
         return matches!(
             expression,

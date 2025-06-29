@@ -8,7 +8,7 @@ use crate::document::Line;
 use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
-use crate::internal::format::binaryish::should_inline_logical_or_coalesce_expression;
+use crate::internal::format::binaryish::should_inline_binary_expression;
 use crate::internal::format::member_access::collect_member_access_chain;
 use crate::internal::format::misc::is_simple_expression;
 use crate::internal::utils::string_width;
@@ -328,12 +328,11 @@ fn should_break_after_operator<'a>(
 
     match rhs_expression {
         Expression::Binary(Binary { lhs, operator: BinaryOperator::Elvis(_), .. }) => {
-            return !should_inline_logical_or_coalesce_expression(rhs_expression)
-                || (lhs.is_binary()
-                    && !should_inline_logical_or_coalesce_expression(unwrap_parenthesized(lhs.as_ref())));
+            return !should_inline_binary_expression(rhs_expression)
+                || (lhs.is_binary() && !should_inline_binary_expression(unwrap_parenthesized(lhs.as_ref())));
         }
         Expression::Binary(Binary { lhs, operator: BinaryOperator::NullCoalesce(_), rhs }) => {
-            if should_inline_logical_or_coalesce_expression(rhs_expression) {
+            if should_inline_binary_expression(rhs_expression) {
                 return false;
             }
 
@@ -344,7 +343,7 @@ fn should_break_after_operator<'a>(
             return !collect_member_access_chain(rhs).is_some_and(|c| c.is_eligible_for_chaining(f))
                 && !matches!(unwrap_parenthesized(rhs.as_ref()), Expression::Instantiation(_));
         }
-        Expression::Binary(_) if !should_inline_logical_or_coalesce_expression(rhs_expression) => {
+        Expression::Binary(_) if !should_inline_binary_expression(rhs_expression) => {
             return true;
         }
         Expression::Conditional(conditional) => {
@@ -355,7 +354,7 @@ fn should_break_after_operator<'a>(
                     return false;
                 }
 
-                return !should_inline_logical_or_coalesce_expression(binary);
+                return !should_inline_binary_expression(binary);
             }
 
             return false;

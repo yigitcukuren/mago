@@ -88,7 +88,7 @@ pub(super) fn print_binaryish_expression<'a>(
     let same_precedence_sub_expression =
         matches!(left, Expression::Binary(binary) if should_flatten(operator, &binary.operator));
 
-    let should_inline_logical_or_coalesce_rhs = should_inline_logical_or_coalesce_rhs(right, operator);
+    let should_inline_logical_or_coalesce_rhs = should_inline_binary_rhs_expression(right, operator);
     if should_not_indent
         || (should_inline_logical_or_coalesce_rhs && !same_precedence_sub_expression)
         || (!should_inline_logical_or_coalesce_rhs && should_indent_if_inlining)
@@ -135,7 +135,7 @@ pub(super) fn print_binaryish_expressions<'a>(
         parts.push(left.format(f));
     }
 
-    let should_inline = should_inline_logical_or_coalesce_rhs(right, operator);
+    let should_inline = should_inline_binary_rhs_expression(right, operator);
 
     let has_space_around = match operator {
         BinaryOperator::And(_)
@@ -207,30 +207,31 @@ pub(super) fn print_binaryish_expressions<'a>(
     parts
 }
 
-pub(super) fn should_inline_logical_or_coalesce_expression(expression: &Expression) -> bool {
+pub(super) fn should_inline_binary_expression(expression: &Expression) -> bool {
     match unwrap_parenthesized(expression) {
         Expression::Binary(operation) => {
-            if should_inline_logical_or_coalesce_rhs(&operation.rhs, &operation.operator) {
+            if should_inline_binary_rhs_expression(&operation.rhs, &operation.operator) {
                 return true;
             }
 
             match operation.lhs.as_ref() {
-                Expression::Binary(_) => should_inline_logical_or_coalesce_expression(&operation.lhs),
-                left => should_inline_logical_or_coalesce_rhs(left, &operation.operator),
+                Expression::Binary(_) => should_inline_binary_expression(&operation.lhs),
+                left => should_inline_binary_rhs_expression(left, &operation.operator),
             }
         }
         _ => false,
     }
 }
 
-pub(super) fn should_inline_logical_or_coalesce_rhs(rhs: &Expression, operator: &BinaryOperator) -> bool {
+pub(super) fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperator) -> bool {
     match unwrap_parenthesized(rhs) {
         Expression::Array(Array { elements, .. })
         | Expression::List(List { elements, .. })
         | Expression::LegacyArray(LegacyArray { elements, .. }) => {
             !elements.is_empty() && (operator.is_logical() || operator.is_null_coalesce())
         }
-        Expression::Instantiation(_) | Expression::Closure(_) | Expression::Match(_) | Expression::Call(_) => {
+        Expression::Match(_) => operator.is_elvis() || operator.is_null_coalesce() || operator.is_concatenation(),
+        Expression::Instantiation(_) | Expression::Closure(_) | Expression::Call(_) => {
             operator.is_elvis() || operator.is_null_coalesce()
         }
         _ => false,
