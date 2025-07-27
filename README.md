@@ -1,66 +1,118 @@
-# Mago: The Oxidized PHP Toolchain
+<p align="center">
+    <img src="assets/banner.svg" alt="Mago Banner" width="600" />
+</p>
 
-**Mago** is a comprehensive toolchain for PHP that helps developers write better code. Inspired by the Rust ecosystem, Mago brings convenience, reliability, and an exceptional developer experience to PHP projects of all sizes.
+<p align="center">
+    <strong>An extremely fast PHP linter, formatter, and static analyzer, written in Rust.</strong>
+</p>
+
+<p align="center">
+    <a href="https://github.com/carthage-software/mago/actions/workflows/cd.yml"><img src="https://github.com/carthage-software/mago/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+    <a href="https://github.com/carthage-software/mago/actions/workflows/cd.yml"><img src="https://github.com/carthage-software/mago/actions/workflows/cd.yml/badge.svg" alt="CD Status"></a>
+    <a href="https://crates.io/crates/mago"><img src="https://img.shields.io/crates/v/mago.svg" alt="Crates.io"></a>
+    <a href="https://packagist.org/packages/carthage-software/mago"><img src="https://poser.pugx.org/carthage-software/mago/v" alt="Latest Stable Version for PHP"></a>
+    <a href="https://github.com/carthage-software/mago/blob/main/LICENSE-MIT"><img src="https://img.shields.io/crates/l/mago.svg" alt="License"></a>
+</p>
+
+**Mago** is a comprehensive toolchain for PHP that helps developers write better code. Inspired by the Rust ecosystem, Mago brings speed, reliability, and an exceptional developer experience to PHP projects of all sizes.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Features](#features)
+- [Contributing](#contributing)
+- [Inspiration & Acknowledgements](#inspiration--acknowledgements)
+- [License](#license)
+
+## How to Install
+
+### Shell (Linux, macOS)
+
+```sh
+# with curl
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
+
+# with wget
+wget -qO- https://carthage.software/mago.sh | bash
+```
+
+### Package Managers
+
+#### Homebrew (macOS)
+
+```sh
+brew install mago
+```
+
+#### Composer (PHP Project)
+
+```sh
+composer require --dev carthage-software/mago
+```
+
+#### Cargo (Rust Toolchain)
+
+```sh
+cargo install mago
+```
+
+### Manual Download
+
+You can download pre-compiled binaries for your system from the [GitHub Releases](https://github.com/carthage-software/mago/releases) page.
+
+## Getting Started
+
+Once installed, you can start using Mago immediately.
+
+1. Lint your project:
+
+```sh
+mago lint src/
+```
+
+2. Format your code:
+
+```sh
+mago format src/
+```
+
+For detailed usage, configuration options, and available rules, please visit the [Mago Documentation](https://mago.carthage.software/).
 
 ## Features
 
-- Analyze and Lint: Identify issues in your codebase with customizable rules and plugins.
-- Automated Fixes: Apply fixes for lint issues to maintain a clean codebase.
-- Consistent Formatting: Standardize your code style with powerful formatting tools.
-- Semantic Checks: Ensure code correctness with robust semantic analysis.
-- AST Visualization: Explore your code’s structure with abstract syntax tree (AST) parsing.
-
-## Get Started
-
-Ready to dive in? Visit the [Mago Documentation](https://mago.carthage.software/) for everything you need to know, including:
-
-- [Getting Started](https://mago.carthage.software/#/getting-started/)
-- [Installation Guide](https://mago.carthage.software/#/getting-started/installation)
-- [Configuration Guide](https://mago.carthage.software/#/getting-started/configuration)
-- [CLI Commands](https://mago.carthage.software/#/getting-started/cli)
+- ⚡️ Extremely Fast: Built in Rust for maximum performance.
+- 🔍 Lint: Identify issues in your codebase with customizable rules.
+- 🔬 Static Analysis: Perform deep analysis of your codebase to catch potential type errors and bugs.
+- 🛠️ Automated Fixes: Apply fixes for many lint issues automatically.
+- 📜 Formatting: Automatically format your code to adhere to best practices and style guides.
+- 🧠 Semantic Checks: Ensure code correctness with robust semantic analysis.
+- 🌳 AST Visualization: Explore your code’s structure with Abstract Syntax Tree (AST) parsing.
 
 ## Contributing
 
-Mago is a community-driven project, and we’d love for you to get involved! Whether you're reporting bugs,
-suggesting features, writing documentation, or submitting code, every contribution makes a difference.
+Mago is a community-driven project, and we welcome contributions! Whether you're reporting bugs, suggesting features, writing documentation, or submitting code, your help is valued.
 
-To learn more, see our [CONTRIBUTING.md](./CONTRIBUTING.md).
+- See our [Contributing Guide](./CONTRIBUTING.md) to get started.
+- Join the discussion on [Discord](https://discord.gg/mwyyjr27eu).
 
-Join the discussion, ask questions, and connect with the Mago community on [Discord](https://discord.gg/mwyyjr27eu).
+## Inspiration & Acknowledgements
 
-## Inspiration
+Mago stands on the shoulders of giants. Our design and functionality are heavily inspired by pioneering tools in both the Rust and PHP ecosystems.
 
-Mago is inspired by several tools and projects that have significantly contributed to the development community:
+### Inspirations:
 
-- [Clippy](https://github.com/rust-lang/rust-clippy): A collection of lints to catch common mistakes and improve your Rust code.
-- [OXC](https://github.com/oxc-project/oxc/): A JavaScript toolchain written in Rust.
-- [php-rust-tools/parser](https://github.com/php-rust-tools/parser/): A PHP parser written in Rust, which influenced our parsing approach.
-- [slackhq/hakana](https://github.com/slackhq/hakana/): A static analysis tool for HackLang written in Rust, by the creator of [Psalm](https://github.com/vimeo/psalm).
+- [Clippy](https://github.com/rust-lang/rust-clippy): For its comprehensive linting approach.
+- [OXC](https://github.com/oxc-project/oxc/): A major inspiration for building a high-performancetoolchain in Rust.
+- [Hakana](https://github.com/slackhq/hakana/): For its deep static analysis capabilities.
 
-These tools have inspired us and helped shape Mago's design and functionality.
+### Acknowledgements:
 
-## Acknowledgements
-
-We would like to acknowledge the following PHP tools that have greatly helped hundreds of thousands of PHP developers in their journey,
-ourselves included:
-
-- [PHP CS Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer): A tool to automatically fix PHP Coding Standards issues.
-- [Psalm](https://github.com/vimeo/psalm): A static analysis tool for finding errors in PHP applications.
-- [PHPStan](https://github.com/phpstan/phpstan): PHP Static Analysis Tool.
-- [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer): Detects violations of a defined set of coding standards.
-
-While Mago is intended to be a comprehensive toolchain that may eventually replace some of these tools,
-we deeply appreciate their contributions and the foundation they have built for the PHP community.
+We deeply respect the foundational work of tools like [PHP-CS-Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer), [Psalm](https://github.com/vimeo/psalm), [PHPStan](https://github.com/phpstan/phpstan), and [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer). While Mago aims to offer a unified and faster alternative, these tools paved the way for modern PHP development.
 
 ## License
 
-Mago is licensed under either of
+Mago is dual-licensed under your choice of the following:
 
-- MIT License (MIT) - see [LICENSE-MIT](./LICENSE-MIT) file for details
-- Apache License, Version 2.0 (Apache-2.0) - see [LICENSE-APACHE](./LICENSE-APACHE) file for details
-
-at your option.
-
----
-
-Thank you for your interest in Mago. We look forward to sharing our progress and collaborating with the community as the project evolves.
+- MIT License ([LICENSE-MIT](./LICENSE-MIT))
+- Apache License, Version 2.0 ([LICENSE-APACHE](./LICENSE-APACHE))
