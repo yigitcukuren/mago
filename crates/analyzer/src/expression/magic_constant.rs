@@ -63,12 +63,12 @@ impl Analyzable for MagicConstant {
                     potentially_undefined = true;
                 }
 
-                TScalar::String(TString::general_with_props(false, true, true))
+                TScalar::String(TString::general_with_props(false, true, true, false))
             }
             MagicConstant::Property(_) => {
                 potentially_undefined = true;
 
-                TScalar::String(TString::general_with_props(false, true, true))
+                TScalar::String(TString::general_with_props(false, true, true, false))
             }
         };
 

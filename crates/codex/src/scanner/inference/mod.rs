@@ -45,6 +45,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                                 str_is_numeric(value),
                                 true, // truthy
                                 true, // not empty
+                                value.chars().all(|c| c.is_lowercase()),
                             ))))
                         }
                     }
@@ -129,11 +130,12 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             let is_non_empty = lhs_string.is_non_empty() || rhs_string.is_non_empty();
             let is_truthy = lhs_string.is_truthy() || rhs_string.is_truthy();
             let is_literal_origin = lhs_string.is_literal_origin() && rhs_string.is_literal_origin();
+            let is_lowercase = lhs_string.is_lowercase() && rhs_string.is_lowercase();
 
             let final_string_type = if is_literal_origin {
-                TString::unspecified_literal_with_props(false, is_truthy, is_non_empty)
+                TString::unspecified_literal_with_props(false, is_truthy, is_non_empty, is_lowercase)
             } else {
-                TString::general_with_props(false, is_truthy, is_non_empty)
+                TString::general_with_props(false, is_truthy, is_non_empty, is_lowercase)
             };
 
             Some(wrap_atomic(TAtomic::Scalar(TScalar::String(final_string_type))))

@@ -71,6 +71,10 @@ pub fn is_contained_by(
                 return false;
             }
 
+            if c.is_lowercase() && !i.is_lowercase() {
+                return false;
+            }
+
             if c.is_unspecified_literal() && !i.is_literal_origin() {
                 return false;
             } else if let Some(v) = c.get_known_literal_value() {

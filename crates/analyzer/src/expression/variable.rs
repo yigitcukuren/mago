@@ -275,7 +275,7 @@ fn get_global_variable_type(variable_name: &str) -> Option<TUnion> {
         "$http_response_header" => {
             let mut http_response_header =
                 TUnion::new(vec![TAtomic::Array(TArray::List(TList::new_non_empty(Box::new(TUnion::new(vec![
-                    TAtomic::Scalar(TScalar::String(TString::general_with_props(false, true, true))),
+                    TAtomic::Scalar(TScalar::String(TString::general_with_props(false, true, true, false))),
                 ])))))]);
 
             http_response_header.possibly_undefined = true; // undefined in cli

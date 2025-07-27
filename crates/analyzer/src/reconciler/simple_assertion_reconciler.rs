@@ -245,6 +245,7 @@ pub(crate) fn reconcile(
                     str.is_non_empty,
                     str.is_truthy,
                     str.is_numeric,
+                    str.is_lowercase,
                 ));
             }
             TAtomic::Scalar(TScalar::Integer(i)) if !i.is_literal() => {
@@ -1037,6 +1038,7 @@ fn intersect_string(
     is_non_empty: bool,
     is_truthy: bool,
     is_numeric: bool,
+    is_lowercase: bool,
 ) -> TUnion {
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
@@ -1049,6 +1051,7 @@ fn intersect_string(
                         is_numeric || existing_string.is_numeric,
                         is_truthy || existing_string.is_truthy,
                         is_non_empty || existing_string.is_non_empty,
+                        is_lowercase || existing_string.is_lowercase,
                     )
                     .get_single_owned(),
                 );
@@ -1057,7 +1060,7 @@ fn intersect_string(
                 acceptable_types.push(atomic.clone());
             }
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
-                return get_string_with_props(is_numeric, is_truthy, is_non_empty);
+                return get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase);
             }
             TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
                 if constraint.is_mixed() {
@@ -1065,6 +1068,7 @@ fn intersect_string(
                         is_numeric,
                         is_truthy,
                         is_non_empty,
+                        is_lowercase,
                     )));
                 } else {
                     let atomic = atomic.replace_template_constraint(intersect_string(
@@ -1078,6 +1082,7 @@ fn intersect_string(
                         is_non_empty,
                         is_truthy,
                         is_numeric,
+                        is_lowercase,
                     ));
 
                     acceptable_types.push(atomic);
@@ -1090,7 +1095,7 @@ fn intersect_string(
                     let name_str = context.interner.lookup(name);
                     if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
                         let mut bound = TemplateBound::new(
-                            get_string_with_props(is_numeric, is_truthy, is_non_empty),
+                            get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase),
                             0,
                             None,
                             None,
@@ -1111,7 +1116,7 @@ fn intersect_string(
                     context.codebase,
                     context.interner,
                     atomic,
-                    get_string_with_props(is_numeric, is_truthy, is_non_empty).get_single(),
+                    get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase).get_single(),
                     false,
                     &mut ComparisonResult::new(),
                 ) {

@@ -5,6 +5,7 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::invocation::Invocation;
 use crate::invocation::special_function_like_handler::core::closure::GetCurrentClosureMethodHandler;
+use crate::invocation::special_function_like_handler::psl::str_component::StrComponentFunctionsHandler;
 use crate::invocation::special_function_like_handler::psl::type_component::TypeComponentFunctionsHandler;
 use crate::invocation::special_function_like_handler::random::RandomFunctionsHandler;
 use crate::invocation::special_function_like_handler::standard::error::ErrorFunctionsHandler;
@@ -42,6 +43,7 @@ pub fn handle_special_functions<'a>(
         // Random extension function handlers
         &RandomFunctionsHandler,
         // PSL specific function handlers
+        &StrComponentFunctionsHandler,
         &TypeComponentFunctionsHandler,
     ];
 

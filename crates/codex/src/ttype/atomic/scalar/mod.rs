@@ -118,7 +118,7 @@ impl TScalar {
     /// Creates the `numeric-string` type.
     #[inline]
     pub const fn numeric_string() -> Self {
-        TScalar::String(TString::general_with_props(true, false, false))
+        TScalar::String(TString::general_with_props(true, false, false, true))
     }
 
     /// Creates the general `string` type.

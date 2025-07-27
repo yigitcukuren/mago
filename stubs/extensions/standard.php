@@ -1344,6 +1344,8 @@ function strtoupper(string $string): string
 }
 
 /**
+ * @return lowercase-string
+ *
  * @pure
  */
 function strtolower(string $string): string

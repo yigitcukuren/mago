@@ -74,6 +74,20 @@ impl TUnion {
         }
     }
 
+    pub fn from_single(type_: TAtomic) -> TUnion {
+        TUnion {
+            types: vec![type_],
+            had_template: false,
+            reference_free: false,
+            possibly_undefined_from_try: false,
+            possibly_undefined: false,
+            ignore_falsable_issues: false,
+            ignore_nullable_issues: false,
+            from_template_default: false,
+            populated: false,
+        }
+    }
+
     pub fn set_possibly_undefined(&mut self, possibly_undefined: bool, from_try: Option<bool>) {
         let from_try = from_try.unwrap_or(self.possibly_undefined_from_try);
 
@@ -739,6 +753,17 @@ impl TUnion {
     #[inline]
     pub fn is_single(&self) -> bool {
         self.types.len() == 1
+    }
+
+    #[inline]
+    pub fn get_single_string(&self) -> Option<&TString> {
+        if self.is_single()
+            && let TAtomic::Scalar(TScalar::String(string)) = &self.types[0]
+        {
+            Some(string)
+        } else {
+            None
+        }
     }
 
     #[inline]

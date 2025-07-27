@@ -192,8 +192,13 @@ pub fn get_string() -> TUnion {
     wrap_atomic(TAtomic::Scalar(TScalar::string()))
 }
 
-pub fn get_string_with_props(is_numeric: bool, is_truthy: bool, is_non_empty: bool) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(is_numeric, is_truthy, is_non_empty))))
+pub fn get_string_with_props(is_numeric: bool, is_truthy: bool, is_non_empty: bool, is_lowercase: bool) -> TUnion {
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+        is_numeric,
+        is_truthy,
+        is_non_empty,
+        is_lowercase,
+    ))))
 }
 
 #[inline]
@@ -337,17 +342,27 @@ pub fn get_numeric() -> TUnion {
 
 #[inline]
 pub fn get_numeric_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false))))
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false, true))))
+}
+
+#[inline]
+pub fn get_lowercase_string() -> TUnion {
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, false, true))))
+}
+
+#[inline]
+pub fn get_non_empty_lowercase_string() -> TUnion {
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, true))))
 }
 
 #[inline]
 pub fn get_non_empty_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true))))
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, false))))
 }
 
 #[inline]
 pub fn get_truthy_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, true, false))))
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, true, false, false))))
 }
 
 #[inline]
@@ -357,7 +372,7 @@ pub fn get_unspecified_literal_string() -> TUnion {
 
 #[inline]
 pub fn get_non_empty_unspecified_literal_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(false, false, true))))
+    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(false, false, true, false))))
 }
 
 #[inline]

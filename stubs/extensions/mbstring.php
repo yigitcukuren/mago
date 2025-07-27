@@ -33,6 +33,8 @@ function mb_strtoupper(string $string, null|string $encoding = null): string
 }
 
 /**
+ * @return lowercase-string
+ *
  * @pure
  */
 function mb_strtolower(string $string, null|string $encoding = null): string

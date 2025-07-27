@@ -84,6 +84,8 @@ impl<'input> TypeLexer<'input> {
                     (TypeTokenKind::NonEmptyList, 14)
                 } else if self.input.is_at(b"non-falsy-string", true) {
                     (TypeTokenKind::NonFalsyString, 16)
+                } else if self.input.is_at(b"non-empty-lowercase-string", true) {
+                    (TypeTokenKind::NonEmptyLowercaseString, 26)
                 } else {
                     self.read_identifier()
                 }

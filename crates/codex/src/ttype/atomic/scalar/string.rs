@@ -27,6 +27,8 @@ pub struct TString {
     pub is_truthy: bool,
     /// Is this string *guaranteed* (by analysis or literal value) to be non-empty?
     pub is_non_empty: bool,
+    /// Is this string guaranteed to be lowercase (e.g., from a literal like "hello")?
+    pub is_lowercase: bool,
 }
 
 impl TStringLiteral {
@@ -74,34 +76,50 @@ impl TString {
     /// Creates an instance representing the general `string` type (not known literal, no guaranteed props).
     #[inline]
     pub const fn general() -> Self {
-        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: false }
+        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: false, is_lowercase: false }
     }
 
     /// Creates a non-empty string instance with no additional properties.
     #[inline]
     pub const fn non_empty() -> Self {
-        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: true }
+        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: true, is_lowercase: false }
     }
 
     /// Creates a general string instance with explicitly set guaranteed properties (from analysis).
     #[inline]
-    pub const fn general_with_props(is_numeric: bool, is_truthy: bool, mut is_non_empty: bool) -> Self {
+    pub const fn general_with_props(
+        is_numeric: bool,
+        is_truthy: bool,
+        mut is_non_empty: bool,
+        is_lowercase: bool,
+    ) -> Self {
         is_non_empty |= is_numeric || is_truthy;
 
-        Self { literal: None, is_numeric, is_truthy, is_non_empty }
+        Self { literal: None, is_numeric, is_truthy, is_non_empty, is_lowercase }
     }
 
     /// Creates an instance representing an unspecified literal string (origin known, value unknown).
     /// Assumes no guaranteed properties unless specified otherwise via `_with_props`.
     #[inline]
     pub const fn unspecified_literal() -> Self {
-        Self { literal: Some(TStringLiteral::Unspecified), is_numeric: false, is_truthy: false, is_non_empty: false }
+        Self {
+            literal: Some(TStringLiteral::Unspecified),
+            is_numeric: false,
+            is_truthy: false,
+            is_non_empty: false,
+            is_lowercase: false,
+        }
     }
 
     /// Creates an unspecified literal string instance with explicitly set guaranteed properties (from analysis).
     #[inline]
-    pub const fn unspecified_literal_with_props(is_numeric: bool, is_truthy: bool, is_non_empty: bool) -> Self {
-        Self { literal: Some(TStringLiteral::Unspecified), is_numeric, is_truthy, is_non_empty }
+    pub const fn unspecified_literal_with_props(
+        is_numeric: bool,
+        is_truthy: bool,
+        is_non_empty: bool,
+        is_lowercase: bool,
+    ) -> Self {
+        Self { literal: Some(TStringLiteral::Unspecified), is_numeric, is_truthy, is_non_empty, is_lowercase }
     }
 
     /// Creates an instance representing a known literal string type (e.g., `"hello"`).
@@ -111,8 +129,9 @@ impl TString {
         let is_numeric = str_is_numeric(&value);
         let is_non_empty = is_numeric || !value.is_empty();
         let is_truthy = is_non_empty && value != "0";
+        let is_lowercase = value.chars().all(|c| c.is_lowercase());
 
-        Self { literal: Some(TStringLiteral::Value(value)), is_numeric, is_truthy, is_non_empty }
+        Self { literal: Some(TStringLiteral::Value(value)), is_numeric, is_truthy, is_non_empty, is_lowercase }
     }
 
     /// Creates an instance representing a known literal string type from a string slice.
@@ -183,12 +202,18 @@ impl TString {
         self.is_non_empty
     }
 
+    /// Checks if the string is guaranteed to be lowercase (e.g., from a literal like "hello").
+    #[inline]
+    pub const fn is_lowercase(&self) -> bool {
+        self.is_lowercase
+    }
+
     /// Checks if the string is guaranteed to be boring (no interesting properties).
     #[inline]
     pub const fn is_boring(&self) -> bool {
         match &self.literal {
             Some(_) => false,
-            _ => !self.is_numeric && !self.is_truthy && !self.is_non_empty,
+            _ => !self.is_numeric && !self.is_truthy && !self.is_non_empty && !self.is_lowercase,
         }
     }
 
@@ -201,18 +226,13 @@ impl TString {
     // Returns a new instance with the same properties but without the literal value.
     #[inline]
     pub fn without_literal(&self) -> Self {
-        Self { literal: None, is_numeric: self.is_numeric, is_truthy: self.is_truthy, is_non_empty: self.is_non_empty }
+        Self { literal: None, ..*self }
     }
 
     /// Returns a new instance with the same properties but with the literal value set to `Unspecified`.
     #[inline]
     pub fn with_unspecified_literal(&self) -> Self {
-        Self {
-            literal: Some(TStringLiteral::Unspecified),
-            is_numeric: self.is_numeric,
-            is_truthy: self.is_truthy,
-            is_non_empty: self.is_non_empty,
-        }
+        Self { literal: Some(TStringLiteral::Unspecified), ..*self }
     }
 
     pub fn as_numeric(&self, retain_literal: bool) -> Self {
@@ -221,6 +241,7 @@ impl TString {
             is_numeric: true,
             is_truthy: self.is_truthy,
             is_non_empty: true,
+            is_lowercase: true, // Numeric strings are considered lowercase
         }
     }
 }
@@ -231,22 +252,38 @@ impl TType for TString {
             Some(TStringLiteral::Value(s)) => return format!("string('{}')", s.replace('\'', "\\'")),
             Some(_) => {
                 if self.is_truthy {
-                    if self.is_numeric { "truthy-numeric-literal-string" } else { "truthy-literal-string" }
+                    if self.is_numeric {
+                        "truthy-numeric-literal-string"
+                    } else if self.is_lowercase {
+                        "truthy-lowercase-literal-string"
+                    } else {
+                        "truthy-literal-string"
+                    }
                 } else if self.is_numeric {
                     "numeric-literal-string"
                 } else if self.is_non_empty {
-                    "non-empty-literal-string"
+                    if self.is_lowercase { "lowercase-non-empty-literal-string" } else { "non-empty-literal-string" }
+                } else if self.is_lowercase {
+                    "lowercase-literal-string"
                 } else {
                     "literal-string"
                 }
             }
             None => {
                 if self.is_truthy {
-                    if self.is_numeric { "truthy-numeric-string" } else { "truthy-string" }
+                    if self.is_numeric {
+                        "truthy-numeric-string"
+                    } else if self.is_lowercase {
+                        "truthy-lowercase-string"
+                    } else {
+                        "truthy-string"
+                    }
                 } else if self.is_numeric {
                     "numeric-string"
                 } else if self.is_non_empty {
-                    "non-empty-string"
+                    if self.is_lowercase { "lowercase-non-empty-string" } else { "non-empty-string" }
+                } else if self.is_lowercase {
+                    "lowercase-string"
                 } else {
                     "string"
                 }

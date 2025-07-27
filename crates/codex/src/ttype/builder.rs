@@ -37,8 +37,10 @@ use crate::ttype::get_int;
 use crate::ttype::get_literal_float;
 use crate::ttype::get_literal_int;
 use crate::ttype::get_literal_string;
+use crate::ttype::get_lowercase_string;
 use crate::ttype::get_mixed;
 use crate::ttype::get_never;
+use crate::ttype::get_non_empty_lowercase_string;
 use crate::ttype::get_non_empty_string;
 use crate::ttype::get_non_empty_unspecified_literal_string;
 use crate::ttype::get_null;
@@ -328,7 +330,8 @@ pub fn get_union_from_type_ast<'i>(
         Type::TruthyString(_) | Type::NonFalsyString(_) => get_truthy_string(),
         Type::UnspecifiedLiteralString(_) => get_unspecified_literal_string(),
         Type::NonEmptyUnspecifiedLiteralString(_) => get_non_empty_unspecified_literal_string(),
-        Type::LowercaseString(_) => get_string(), // TODO(azjezz): add `lowercase-string` type
+        Type::NonEmptyLowercaseString(_) => get_non_empty_lowercase_string(),
+        Type::LowercaseString(_) => get_lowercase_string(),
         Type::LiteralFloat(lit) => get_literal_float(*lit.value),
         Type::LiteralInt(lit) => get_literal_int(lit.value as i64),
         Type::LiteralString(lit) => get_literal_string(lit.value.to_owned()),

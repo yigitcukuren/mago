@@ -175,10 +175,10 @@ fn scrape_special_function_call_assertions(
     let function_assertion = match function_name {
         "is_countable" => Assertion::Countable,
         "ctype_digit" => {
-            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false))))
+            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false, false))))
         }
         "ctype_lower" => {
-            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true))))
+            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, true))))
         }
         _ => return Vec::new(),
     };

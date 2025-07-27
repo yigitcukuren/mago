@@ -521,12 +521,14 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
     let mut all_unspecified_literal = true;
     let mut non_empty = false;
     let mut truthy = true;
+    let mut lowercase = true;
 
     for operand_atomic_type in &operand_type.types {
         match operand_atomic_type {
             TAtomic::Array(_) => {
                 non_empty = true;
                 truthy = true;
+                lowercase = false;
                 literals.push("Array".to_owned());
 
                 continue;
@@ -539,6 +541,7 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
                 truthy = true;
                 all_literals = false;
                 all_unspecified_literal = false;
+                lowercase = false;
 
                 continue;
             }
@@ -597,6 +600,7 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
                 all_unspecified_literal = all_unspecified_literal && operand_string.is_unspecified_literal();
                 non_empty = non_empty || operand_string.is_non_empty();
                 truthy &= operand_string.is_truthy();
+                lowercase &= operand_string.is_lowercase();
             }
             TScalar::ClassLikeString(tclass_like_string) => {
                 if let Some(id) = tclass_like_string.literal_value() {
@@ -607,10 +611,12 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
 
                 non_empty = true;
                 truthy &= true;
+                lowercase = false;
             }
             _ => {
                 all_literals = false;
                 all_unspecified_literal = false;
+                lowercase = false;
             }
         }
     }
@@ -626,6 +632,7 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
         is_numeric: false,
         is_truthy: non_empty && truthy,
         is_non_empty: non_empty,
+        is_lowercase: lowercase,
     }
 }
 

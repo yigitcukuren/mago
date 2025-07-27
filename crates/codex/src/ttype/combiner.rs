@@ -1035,6 +1035,7 @@ fn combine_string_scalars(s1: &TString, s2: TString) -> TString {
         is_numeric: s1.is_numeric && s2.is_numeric,
         is_truthy: s1.is_truthy && s2.is_truthy,
         is_non_empty: s1.is_non_empty && s2.is_non_empty,
+        is_lowercase: s1.is_lowercase && s2.is_lowercase,
     }
 }
 
