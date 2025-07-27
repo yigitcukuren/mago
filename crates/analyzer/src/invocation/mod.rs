@@ -425,16 +425,6 @@ impl<'a> InvocationTargetParameter<'a> {
         }
     }
 
-    /// Gets the span of the parameter's name, if available
-    /// (primarily for `FunctionLike` parameters).
-    #[inline]
-    pub fn get_name_span(&self) -> Option<Span> {
-        match self {
-            InvocationTargetParameter::FunctionLike(metadata) => Some(metadata.get_name_span()),
-            InvocationTargetParameter::Callable(_) => None,
-        }
-    }
-
     /// Checks if the parameter is passed by reference (`&`).
     #[inline]
     #[allow(dead_code)]

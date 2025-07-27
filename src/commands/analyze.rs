@@ -64,11 +64,6 @@ pub struct AnalyzeCommand {
     #[arg(long, help = "Find unused definitions (functions, classes, constants, etc.)")]
     pub find_unused_definitions: Option<bool>,
 
-    /// Enable or disable finding unused variables.
-    /// Overrides the corresponding setting in `mago.toml` if provided.
-    #[arg(long, help = "Find unused variables (e.g., variables that are declared but never used)")]
-    pub find_unused_variables: Option<bool>,
-
     /// Enable or disable analysis of code known to be unreachable (dead code).
     /// Overrides the corresponding setting in `mago.toml` if provided.
     #[arg(long, help = "Analyze dead code for errors (code known to be unreachable)")]
@@ -142,7 +137,6 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
         find_unused_expressions: command
             .find_unused_expressions
             .unwrap_or(configuration.analyze.find_unused_expressions),
-        find_unused_variables: command.find_unused_variables.unwrap_or(configuration.analyze.find_unused_variables),
         analyze_effects: command.analyze_effects.unwrap_or(configuration.analyze.analyze_effects),
         memoize_properties: command.memoize_properties.unwrap_or(configuration.analyze.memoize_properties),
         allow_include: command.allow_include.unwrap_or(configuration.analyze.allow_include),
@@ -183,7 +177,7 @@ async fn analyze_user_sources(
 ) -> Result<AnalysisResult, Error> {
     let codebase = Arc::new(codebase.clone());
 
-    let mut aggregated_analysis_result = AnalysisResult::new(settings.graph_kind, symbol_references);
+    let mut aggregated_analysis_result = AnalysisResult::new(symbol_references);
     let source_ids = manager.source_ids_for_category(SourceCategory::UserDefined);
 
     if source_ids.is_empty() {
@@ -263,7 +257,7 @@ fn perform_single_source_analysis(
     let (program, parsing_error) = parse_source(interner, &source);
     let semantics_checker = SemanticsChecker::new(&settings.version, interner);
 
-    let mut analysis_result = AnalysisResult::new(settings.graph_kind, SymbolReferences::new());
+    let mut analysis_result = AnalysisResult::new(SymbolReferences::new());
     if let Some(parsing_error) = parsing_error {
         analysis_result.emitted_issues.entry(source.identifier).or_default().push(Issue::from(&parsing_error));
     }

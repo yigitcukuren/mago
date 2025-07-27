@@ -3,20 +3,11 @@ use std::rc::Rc;
 use ahash::HashMap;
 
 use mago_codex::context::ScopeContext;
-use mago_codex::data_flow::graph::DataFlowGraph;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::node::VariableSourceKind;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_class_like;
 use mago_codex::get_interface;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
-use mago_codex::identifier::method::MethodIdentifier;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::metadata::function_like::FunctionLikeMetadata;
-use mago_codex::metadata::parameter::FunctionLikeParameterMetadata;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::TypeRef;
 use mago_codex::ttype::atomic::TAtomic;
@@ -35,18 +26,15 @@ use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
-use mago_codex::visibility::Visibility;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
-use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
-use crate::dataflow::unused_variables::check_variables_used;
 use crate::error::AnalysisError;
 use crate::issue::TypingIssueKind;
 use crate::resolver::property::localize_property_type;
@@ -80,7 +68,7 @@ pub fn analyze_function_like<'a, 'ast>(
     );
 
     let mut block_context = BlockContext::new(scope);
-    let mut artifacts = AnalysisArtifacts::new(DataFlowGraph::new(context.settings.graph_kind));
+    let mut artifacts = AnalysisArtifacts::new();
     artifacts.type_variable_bounds = parent_artifacts.type_variable_bounds.clone();
 
     add_parameter_types_to_context(
@@ -99,23 +87,10 @@ pub fn analyze_function_like<'a, 'ast>(
     if !scope.is_static()
         && let Some(class_like_metadata) = scope.get_class_like()
     {
-        let mut this_type = wrap_atomic(TAtomic::Object(get_this_type(context, class_like_metadata)));
-
-        if function_like_metadata.kind.is_method()
-            && let Some(method_name) = &function_like_metadata.name
-            && let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind
-            && class_like_metadata.specialized_instance
-        {
-            let new_call_node = DataFlowNode::get_for_this_before_method(
-                MethodIdentifier::new(class_like_metadata.original_name, *method_name),
-                function_like_metadata.return_type_metadata.as_ref().map(|type_metadata| type_metadata.span),
-                None,
-            );
-
-            this_type.parent_nodes = vec![new_call_node];
-        }
-
-        block_context.locals.insert("$this".to_string(), Rc::new(this_type));
+        block_context.locals.insert(
+            "$this".to_string(),
+            Rc::new(wrap_atomic(TAtomic::Object(get_this_type(context, class_like_metadata)))),
+        );
     }
 
     if let FunctionLikeBody::Statements(statements) = body {
@@ -164,40 +139,6 @@ pub fn analyze_function_like<'a, 'ast>(
                     value.span(),
                 )?;
             }
-        }
-
-        if !block_context.has_returned {
-            handle_reference_at_return(context, &mut block_context, &mut artifacts, function_like_metadata);
-        }
-
-        if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind
-            && let Some(method_metadata) = &function_like_metadata.method_metadata
-            && !method_metadata.is_static
-            && let Some(this_type) = block_context.locals.get("$this")
-        {
-            let calling_class = block_context
-                .scope
-                .get_class_like_name()
-                .expect("Expected the calling class to be present in the context");
-
-            let method_name =
-                function_like_metadata.name.expect("Expected the function like metadata to contain a method name");
-
-            let new_call_node = DataFlowNode::get_for_this_after_method(
-                MethodIdentifier::new(*calling_class, method_name),
-                function_like_metadata.name_span,
-                None,
-            );
-
-            for parent_node in &this_type.parent_nodes {
-                artifacts.data_flow_graph.add_path(parent_node, &new_call_node, PathKind::Default);
-            }
-
-            artifacts.data_flow_graph.add_node(new_call_node);
-        }
-
-        if context.settings.find_unused_expressions {
-            report_unused_variables(context, &block_context, &mut artifacts, function_like_metadata);
         }
     }
 
@@ -305,53 +246,6 @@ fn add_parameter_types_to_context<'a>(
         if parameter_metadata.is_variadic() {
             parameter_type = wrap_atomic(TAtomic::Array(TArray::List(TList::new(Box::new(parameter_type)))));
         }
-
-        let new_parent_node = if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-            DataFlowNode::get_for_lvar(*parameter_metadata.get_name(), parameter_metadata.get_name_span())
-        } else {
-            DataFlowNode {
-                id: DataFlowNodeId::Parameter(*parameter_metadata.get_name(), parameter_metadata.get_span()),
-                kind: DataFlowNodeKind::VariableUseSource {
-                    span: parameter_metadata.get_name_span(),
-                    kind: if parameter_metadata.is_by_reference() {
-                        VariableSourceKind::RefParameter
-                    } else if block_context.calling_closure_id.is_some() {
-                        VariableSourceKind::ClosureParameter
-                    } else if let Some(method_metadata) = &function_like_metadata.method_metadata {
-                        match method_metadata.visibility {
-                            Visibility::Public | Visibility::Protected => VariableSourceKind::NonPrivateParameter,
-                            Visibility::Private => VariableSourceKind::PrivateParameter,
-                        }
-                    } else {
-                        VariableSourceKind::PrivateParameter
-                    },
-                    pure: false,
-                    has_parent_nodes: true,
-                    from_loop_init: false,
-                },
-            }
-        };
-
-        artifacts.data_flow_graph.add_node(new_parent_node.clone());
-
-        if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-            let calling_id = if let Some(calling_closure_id) = block_context.calling_closure_id {
-                FunctionLikeIdentifier::Closure(calling_closure_id)
-            } else {
-                block_context
-                    .scope
-                    .get_function_like_identifier()
-                    .expect("Expected the calling function id to be present")
-            };
-
-            let argument_node =
-                DataFlowNode::get_for_method_argument(calling_id, i, Some(parameter_metadata.get_name_span()), None);
-
-            artifacts.data_flow_graph.add_path(&argument_node, &new_parent_node, PathKind::Default);
-            artifacts.data_flow_graph.add_node(argument_node);
-        }
-
-        parameter_type.parent_nodes.push(new_parent_node);
 
         block_context
             .locals
@@ -504,40 +398,6 @@ fn get_this_type(context: &Context<'_>, class_like_metadata: &ClassLikeMetadata)
     })
 }
 
-fn handle_reference_at_return<'a>(
-    context: &Context<'a>,
-    block_context: &mut BlockContext<'a>,
-    artifacts: &mut AnalysisArtifacts,
-    function_like_metadata: &FunctionLikeMetadata,
-) {
-    for (i, parameter) in function_like_metadata.parameters.iter().enumerate() {
-        if !parameter.is_by_reference() {
-            continue;
-        }
-
-        let Some(context_type) = block_context.locals.get(context.interner.lookup(&parameter.get_name().0)) else {
-            continue;
-        };
-
-        let new_parent_node = if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-            DataFlowNode::get_for_method_argument_reference(
-                block_context.scope.get_function_like_identifier().unwrap(),
-                i,
-                Some(parameter.get_name_span()),
-                None,
-            )
-        } else {
-            DataFlowNode::get_for_unlabelled_sink(parameter.get_name_span())
-        };
-
-        artifacts.data_flow_graph.add_node(new_parent_node.clone());
-
-        for parent_node in &context_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(parent_node, &new_parent_node, PathKind::Default);
-        }
-    }
-}
-
 fn add_symbol_references(
     parameter_type: &TUnion,
     calling_function_like_id: Option<&FunctionLikeIdentifier>,
@@ -584,217 +444,6 @@ fn add_symbol_references(
                 _ => {}
             }
         }
-    }
-}
-
-fn report_unused_variables<'a>(
-    context: &mut Context<'a>,
-    block_context: &BlockContext<'a>,
-    artifacts: &mut AnalysisArtifacts,
-    function_like_metadata: &FunctionLikeMetadata,
-) {
-    if !context.settings.find_unused_variables {
-        return;
-    }
-
-    let unused_source_nodes = check_variables_used(&artifacts.data_flow_graph);
-
-    for node in &unused_source_nodes.0 {
-        match &node.kind {
-            DataFlowNodeKind::VariableUseSource { kind, span, pure, .. } => {
-                if let VariableSourceKind::Default = &kind {
-                    handle_unused_assignment(context, block_context, span, node, artifacts, pure);
-                }
-            }
-            _ => {
-                // This should not happen, but if it does, we can skip it.
-                continue;
-            }
-        };
-    }
-
-    for node in &unused_source_nodes.1 {
-        match &node.kind {
-            DataFlowNodeKind::VariableUseSource { kind, span, .. } => {
-                if let DataFlowNodeId::Var(var_id, ..) | DataFlowNodeId::Parameter(var_id, ..) = &node.id
-                    && context.interner.lookup(&var_id.0).starts_with("$_")
-                {
-                    continue;
-                }
-
-                match &kind {
-                    VariableSourceKind::PrivateParameter => {
-                        let Some(parameter) = get_parameter_from_node(function_like_metadata, &node.id) else {
-                            continue;
-                        };
-
-                        if parameter.is_promoted_property {
-                            // Do not report unused parameters that are promoted properties.
-                            continue;
-                        }
-
-                        let label = node.id.to_label(context.interner);
-
-                        context.buffer.report(
-                            TypingIssueKind::UnusedParameter,
-                            Issue::help(format!("Parameter `{label}` is never used."))
-                                .with_annotation(
-                                    Annotation::primary(parameter.span).with_message("Parameter declared here is never used."),
-                                )
-                                .with_note(
-                                    "Unused parameters can indicate dead code or an opportunity for refactoring.",
-                                )
-                                .with_help(format!(
-                                    "Remove the parameter `{label}`, use it within the function, or prefix it with `$_` if it is intentionally unused."
-                                )),
-                        );
-                    }
-                    VariableSourceKind::ClosureParameter => {
-                        let Some(span) = get_parameter_span(function_like_metadata, &node.id) else {
-                            continue;
-                        };
-
-                        let label = node.id.to_label(context.interner);
-
-                        context.buffer.report(
-                            TypingIssueKind::UnusedClosureParameter,
-                            Issue::help(format!(
-                                "Variable `{label}` is never used in this closure."
-                            ))
-                            .with_annotation(
-                                Annotation::primary(span)
-                                    .with_message("This variable is imported into the closure but never used.")
-                            )
-                            .with_note(
-                                "Unused closure used variables can indicate dead code or a potential logic error within the closure."
-                            )
-                            .with_help(
-                                format!("Remove the closure variable `{label}`, or use it within the closure.")
-                            ),
-                        );
-                    }
-                    VariableSourceKind::ClosureUse => {
-                        let label = node.id.to_label(context.interner);
-                        context.buffer.report(
-                            TypingIssueKind::UnusedClosureUse,
-                            Issue::help(format!("Closure variable `{label}` is never used."))
-                                .with_annotation(
-                                    Annotation::primary(*span).with_message("This closure variable is never used."),
-                                )
-                                .with_note(
-                                    "Unused closure variables can indicate dead code or a potential logic error within the closure.",
-                                )
-                                .with_help(format!(
-                                    "Remove the closure variable `{label}`, or use it within the closure."
-                                )),
-                        );
-                    }
-                    VariableSourceKind::NonPrivateParameter => {
-                        // todo register public/private param
-                    }
-                    VariableSourceKind::Default => {
-                        handle_unused_assignment(context, block_context, span, node, artifacts, &false);
-                    }
-                    VariableSourceKind::RefParameter => {
-                        // do nothing
-                    }
-                }
-            }
-            _ => {
-                panic!()
-            }
-        };
-    }
-}
-
-fn handle_unused_assignment(
-    context: &mut Context<'_>,
-    block_context: &BlockContext<'_>,
-    span: &Span,
-    node: &DataFlowNode,
-    artifacts: &AnalysisArtifacts,
-    pure: &bool,
-) {
-    if let DataFlowNodeId::Var(var_id, ..) | DataFlowNodeId::Parameter(var_id, ..) = &node.id {
-        let var_str = context.interner.lookup(&var_id.0);
-        if var_str.starts_with("$_") {
-            // Skip unused variables that are prefixed with $_
-            return;
-        }
-
-        if block_context.static_locals.contains(var_str) {
-            // Skip static locals
-            return;
-        }
-    }
-
-    let unused_closure_variable = artifacts
-        .closure_spans
-        .iter()
-        .any(|closure_span| span.start.offset > closure_span.0 && span.start.offset < closure_span.1);
-
-    let label = node.id.to_label(context.interner);
-
-    if unused_closure_variable {
-        context.buffer.report(
-            TypingIssueKind::UnusedAssignmentInClosure,
-            Issue::help(format!("Assignment to `{label}` is unused within this closure."))
-                .with_code(TypingIssueKind::UnusedAssignmentInClosure)
-                .with_annotation(
-                    Annotation::primary(*span)
-                        .with_message("This assignment is never used locally.")
-                )
-                .with_note(
-                    "Variables assigned inside a closure but not used locally might indicate dead code or a potential logic error."
-                )
-                .with_help(
-                    format!("Remove the assignment to `{label}`, or use it within the closure.")
-                ),
-        );
-    } else if *pure {
-        context.buffer.report(
-            TypingIssueKind::UnusedAssignmentStatement,
-            Issue::help(format!(
-                "Assignment to `{label}` is unused and the expression has no side effects."
-            ))
-            .with_code(TypingIssueKind::UnusedAssignmentStatement)
-            .with_annotation(Annotation::primary(*span).with_message("Unused assignment with no side effects."))
-            .with_note(
-                "The value assigned is never read, and the assignment operation itself is pure (has no other effects).",
-            )
-            .with_help("Remove this entire assignment statement as it has no effect."),
-        );
-    } else {
-        context.buffer.report(
-            TypingIssueKind::UnusedAssignment,
-            Issue::help(format!("Assignment to `{label}` is unused."))
-                .with_code(TypingIssueKind::UnusedAssignment)
-                .with_annotation(
-                    Annotation::primary(*span)
-                        .with_message("The value assigned here is never used.")
-                )
-                .with_note(
-                    "Although the assigned value is never read, the assignment expression itself might have side effects."
-                )
-                .with_help(
-                    format!("Consider removing the assignment part (`{label} = `) if only the side effects of the right-hand side are needed, or remove the entire statement if neither the value nor the side effects are required.")
-                ),
-        );
-    }
-}
-
-fn get_parameter_span(metadata: &FunctionLikeMetadata, id: &DataFlowNodeId) -> Option<Span> {
-    get_parameter_from_node(metadata, id).map(|parameter| parameter.get_span())
-}
-
-fn get_parameter_from_node<'a>(
-    metadata: &'a FunctionLikeMetadata,
-    id: &DataFlowNodeId,
-) -> Option<&'a FunctionLikeParameterMetadata> {
-    if let DataFlowNodeId::Parameter(variable_id, ..) = id {
-        metadata.parameters.iter().find(|p| p.get_name().0 == variable_id.0)
-    } else {
-        None
     }
 }
 

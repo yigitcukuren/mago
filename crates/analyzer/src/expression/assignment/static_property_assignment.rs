@@ -16,7 +16,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::expression::assignment::property_assignment::add_unspecialized_property_assignment_dataflow;
 use crate::issue::TypingIssueKind;
 use crate::resolver::static_property::resolve_static_properties;
 
@@ -43,15 +42,6 @@ pub(crate) fn analyze<'a>(
             &block_context.scope,
             (resolved_property.declaring_class_id, resolved_property.property_name),
             false,
-        );
-
-        add_unspecialized_property_assignment_dataflow(
-            context,
-            artifacts,
-            property_access.property.span(),
-            &resolved_property.declaring_class_id,
-            &resolved_property.property_name,
-            assigned_value_type,
         );
 
         let mut union_comparison_result = ComparisonResult::new();

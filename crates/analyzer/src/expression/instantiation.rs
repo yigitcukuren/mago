@@ -2,16 +2,12 @@ use ahash::HashMap;
 use ahash::RandomState;
 use indexmap::IndexMap;
 
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
 use mago_codex::get_all_descendants;
 use mago_codex::get_class_like;
 use mago_codex::get_declaring_method_id;
 use mago_codex::get_method_by_id;
 use mago_codex::get_method_id;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
-use mago_codex::identifier::method::MethodIdentifier;
-use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::atomic::TAtomic;
@@ -465,75 +461,7 @@ fn analyze_class_instantiation<'a>(
         remapped_parameters: false,
     })));
 
-    Ok(add_dataflow(
-        context,
-        artifacts,
-        result_type,
-        &constructor_id,
-        get_method_by_id(context.codebase, context.interner, &constructor_declraing_id),
-        classname,
-        instantiation_span,
-    ))
-}
-
-fn add_dataflow<'a>(
-    context: &mut Context<'a>,
-    artifacts: &mut AnalysisArtifacts,
-    mut return_type_candidate: TUnion,
-    method_id: &MethodIdentifier,
-    method_metadata: Option<&'a FunctionLikeMetadata>,
-    instantiated_type: ResolvedClassname,
-    instantiation_span: Span,
-) -> TUnion {
-    let data_flow_graph = &mut artifacts.data_flow_graph;
-
-    if let GraphKind::WholeProgram = &data_flow_graph.kind {
-        let new_call_node = DataFlowNode::get_for_this_after_method(
-            *method_id,
-            if let Some(method_metadata) = method_metadata {
-                method_metadata.return_type_metadata.as_ref().map(|signature| signature.span)
-            } else {
-                None
-            },
-            None,
-        );
-
-        data_flow_graph.add_node(new_call_node.clone());
-
-        return_type_candidate.parent_nodes = vec![new_call_node.clone()];
-
-        if instantiated_type.is_from_class_string() || instantiated_type.is_from_generic_object() {
-            let descendants = get_all_descendants(context.codebase, context.interner, method_id.get_class_name());
-
-            for descendant_class in descendants {
-                let new_call_node = DataFlowNode::get_for_this_after_method(
-                    MethodIdentifier::new(descendant_class, *method_id.get_method_name()),
-                    if let Some(method_metadata) = method_metadata {
-                        method_metadata.return_type_metadata.as_ref().map(|signature| signature.span)
-                    } else {
-                        None
-                    },
-                    None,
-                );
-
-                data_flow_graph.add_node(new_call_node.clone());
-
-                return_type_candidate.parent_nodes.push(new_call_node);
-            }
-        }
-    } else {
-        let new_call_node = DataFlowNode::get_for_method_return(
-            FunctionLikeIdentifier::Method(*method_id.get_class_name(), *method_id.get_method_name()),
-            Some(instantiation_span),
-            Some(instantiation_span),
-        );
-
-        data_flow_graph.add_node(new_call_node.clone());
-
-        return_type_candidate.parent_nodes = vec![new_call_node.clone()];
-    }
-
-    return_type_candidate
+    Ok(result_type)
 }
 
 #[cfg(test)]

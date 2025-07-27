@@ -29,7 +29,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::expression::add_decision_dataflow;
 use crate::expression::assignment::assign_to_expression;
 use crate::expression::call::method_call::analyze_implicit_method_call;
 use crate::issue::TypingIssueKind;
@@ -107,7 +106,7 @@ impl Analyzable for UnaryPrefix {
                     _ => get_bool(),
                 };
 
-                add_decision_dataflow(artifacts, &self.operand, None, self.span(), resulting_type);
+                artifacts.set_expression_type(self, resulting_type);
             }
             UnaryPrefixOperator::Negation(_) => {
                 let mut resulting_types = vec![];
@@ -236,7 +235,7 @@ impl Analyzable for UnaryPrefix {
                     None => get_bool(),
                 };
 
-                add_decision_dataflow(artifacts, &self.operand, None, self.span(), resulting_type);
+                artifacts.set_expression_type(self, resulting_type);
             }
             UnaryPrefixOperator::DoubleCast(_, _)
             | UnaryPrefixOperator::RealCast(_, _)

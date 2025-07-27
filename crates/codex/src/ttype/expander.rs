@@ -27,7 +27,6 @@ use crate::ttype::atomic::reference::TReferenceMemberSelector;
 use crate::ttype::atomic::scalar::TScalar;
 use crate::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use crate::ttype::combiner;
-use crate::ttype::extend_dataflow_uniquely;
 use crate::ttype::get_mixed;
 use crate::ttype::union::TUnion;
 
@@ -110,8 +109,6 @@ pub fn expand_union(
             return_type.types = new_return_type_parts;
         }
     }
-
-    extend_dataflow_uniquely(&mut return_type.parent_nodes, vec![]);
 }
 
 fn expand_atomic(

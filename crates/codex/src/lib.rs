@@ -22,7 +22,6 @@ use crate::ttype::union::TUnion;
 pub mod assertion;
 pub mod consts;
 pub mod context;
-pub mod data_flow;
 pub mod diff;
 pub mod flags;
 pub mod identifier;

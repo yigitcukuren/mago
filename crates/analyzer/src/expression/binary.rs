@@ -7,8 +7,6 @@ use ahash::HashSet;
 
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_method_by_id;
 use mago_codex::get_method_id;
 use mago_codex::metadata::CodebaseMetadata;
@@ -46,7 +44,6 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
-use crate::expression::add_decision_dataflow;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
 use crate::issue::TypingIssueKind;
@@ -98,7 +95,7 @@ impl Analyzable for Binary {
             BinaryOperator::Instanceof(_) => {
                 self.lhs.analyze(context, block_context, artifacts)?;
 
-                add_decision_dataflow(artifacts, &self.lhs, None, self.span(), get_bool());
+                artifacts.expression_types.insert(get_expression_range(self), Rc::new(get_bool()));
 
                 Ok(())
             }
@@ -345,7 +342,7 @@ fn analyze_comparison_operation<'a>(
         get_bool()
     };
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -512,7 +509,7 @@ fn analyze_string_concat_operation<'a>(
 
     let result_type = TUnion::new(vec![TAtomic::Scalar(TScalar::String(result_string))]);
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -989,7 +986,7 @@ fn analyze_logical_xor_operation<'a>(
         get_bool()
     };
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -1192,7 +1189,7 @@ fn analyze_spaceship_operation<'a>(
         ])
     };
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -1295,7 +1292,6 @@ fn analyze_null_coalesce_operation<'a>(
     };
 
     let result_type: TUnion;
-    let mut decision_node_parents = Vec::new();
 
     if lhs_type.is_null() {
         context.buffer.report(
@@ -1312,10 +1308,6 @@ fn analyze_null_coalesce_operation<'a>(
 
         binary.rhs.analyze(context, block_context, artifacts)?;
         result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any); // Fallback if RHS analysis fails
-
-        if let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes) {
-            decision_node_parents.extend(rhs_parents.iter().cloned());
-        }
     } else if !lhs_type.has_nullish() && !lhs_type.possibly_undefined && !lhs_type.possibly_undefined_from_try {
         context.buffer.report(
             TypingIssueKind::RedundantNullCoalesce,
@@ -1337,12 +1329,8 @@ fn analyze_null_coalesce_operation<'a>(
 
         result_type = (**lhs_type).clone();
         binary.rhs.analyze(context, block_context, artifacts)?;
-
-        decision_node_parents.extend(result_type.parent_nodes.iter().cloned());
     } else {
         let non_null_lhs_type = lhs_type.to_non_nullable();
-        decision_node_parents.extend(lhs_type.parent_nodes.iter().cloned());
-
         binary.rhs.analyze(context, block_context, artifacts)?;
         let rhs_type = artifacts
             .get_expression_type(&binary.rhs)
@@ -1350,13 +1338,9 @@ fn analyze_null_coalesce_operation<'a>(
             .unwrap_or_else(|| Cow::Owned(get_mixed_any()));
 
         result_type = combine_union_types(&non_null_lhs_type, &rhs_type, context.codebase, context.interner, false);
-
-        if let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes) {
-            decision_node_parents.extend(rhs_parents.iter().cloned());
-        }
     }
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -1390,7 +1374,6 @@ fn analyze_elvis_operation<'a>(
     };
 
     let result_type: TUnion;
-    let mut decision_node_parents = Vec::new();
 
     if lhs_type.is_always_falsy() {
         context.buffer.report(
@@ -1407,10 +1390,6 @@ fn analyze_elvis_operation<'a>(
 
         binary.rhs.analyze(context, block_context, artifacts)?;
         result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any);
-
-        if let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes) {
-            decision_node_parents.extend(rhs_parents.iter().cloned());
-        }
     } else if lhs_type.is_always_truthy() {
         context.buffer.report(
             TypingIssueKind::RedundantElvis,
@@ -1429,8 +1408,6 @@ fn analyze_elvis_operation<'a>(
 
         result_type = (*lhs_type).clone();
         binary.rhs.analyze(context, block_context, artifacts)?;
-
-        decision_node_parents.extend(lhs_type.parent_nodes.iter().cloned());
     } else {
         binary.rhs.analyze(context, block_context, artifacts)?;
         let rhs_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any);
@@ -1438,14 +1415,9 @@ fn analyze_elvis_operation<'a>(
         let truthy_lhs_type = lhs_type.to_truthy();
 
         result_type = combine_union_types(&truthy_lhs_type, &rhs_type, context.codebase, context.interner, false);
-
-        decision_node_parents.extend(lhs_type.parent_nodes.iter().cloned());
-        if let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes) {
-            decision_node_parents.extend(rhs_parents.iter().cloned());
-        }
     }
 
-    add_decision_dataflow(artifacts, &binary.lhs, Some(&binary.rhs), binary.span(), result_type);
+    artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));
 
     Ok(())
 }
@@ -1887,10 +1859,7 @@ fn analyze_arithmetic_operation<'a>(
     }
 
     let final_type = if !result_atomic_types.is_empty() {
-        let mut combined =
-            TUnion::new(combiner::combine(result_atomic_types, context.codebase, context.interner, false));
-        combined.parent_nodes = Vec::new();
-        combined
+        TUnion::new(combiner::combine(result_atomic_types, context.codebase, context.interner, false))
     } else {
         // No valid pairs found, and potentially errors issued.
         // Psalm often defaults to mixed here if operands were invalid.
@@ -2085,28 +2054,7 @@ fn analyze_logical_and_operation<'a>(
         }
     }
 
-    let mut final_type_with_flow = result_type;
-    let mut decision_node_parents = Vec::new();
-    decision_node_parents.extend(lhs_type.parent_nodes.iter().cloned());
-    if !lhs_type.is_always_falsy()
-        && let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes)
-    {
-        decision_node_parents.extend(rhs_parents.iter().cloned());
-    }
-
-    if !decision_node_parents.is_empty() {
-        let decision_node = DataFlowNode::get_for_composition(binary.span());
-        artifacts.data_flow_graph.add_node(decision_node.clone());
-        for parent_node in decision_node_parents {
-            if artifacts.data_flow_graph.get_node(&parent_node.id).is_some() {
-                artifacts.data_flow_graph.add_path(&parent_node, &decision_node, PathKind::Default);
-            }
-        }
-
-        final_type_with_flow.parent_nodes = vec![decision_node];
-    }
-
-    artifacts.set_expression_type(binary, final_type_with_flow);
+    artifacts.set_expression_type(binary, result_type);
 
     block_context.conditionally_referenced_variable_ids = left_block_context.conditionally_referenced_variable_ids;
     block_context
@@ -2436,55 +2384,13 @@ fn analyze_logical_or_operation<'a>(
         if_body_context_inner.assigned_variable_ids.extend(block_context.assigned_variable_ids.clone());
     }
 
-    let mut final_type_with_flow = result_type;
-    let mut decision_node_parents = Vec::new();
-    decision_node_parents.extend(lhs_type.parent_nodes.iter().cloned());
-    if !lhs_type.is_always_truthy()
-        && let Some(rhs_parents) = artifacts.get_expression_type(&binary.rhs).map(|t| &t.parent_nodes)
-    {
-        decision_node_parents.extend(rhs_parents.iter().cloned());
-    }
-
-    if !decision_node_parents.is_empty() {
-        let decision_node = DataFlowNode::get_for_composition(binary.span());
-        artifacts.data_flow_graph.add_node(decision_node.clone());
-        for parent_node in decision_node_parents {
-            if artifacts.data_flow_graph.get_node(&parent_node.id).is_some() {
-                artifacts.data_flow_graph.add_path(&parent_node, &decision_node, PathKind::Default);
-            }
-        }
-
-        final_type_with_flow.parent_nodes = vec![decision_node];
-    }
-
-    artifacts.set_expression_type(binary, final_type_with_flow);
+    artifacts.set_expression_type(binary, result_type);
 
     Ok(())
 }
 
 #[inline]
 pub fn assign_arithmetic_type(artifacts: &mut AnalysisArtifacts, cond_type: TUnion, binary: &Binary) {
-    let mut cond_type = cond_type;
-    let decision_node = DataFlowNode::get_for_composition(binary.span());
-
-    artifacts.data_flow_graph.add_node(decision_node.clone());
-
-    if let Some(lhs_type) = artifacts.expression_types.get(&get_expression_range(&binary.lhs)) {
-        cond_type.parent_nodes.push(decision_node.clone());
-
-        for old_parent_node in &lhs_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(old_parent_node, &decision_node, PathKind::Default);
-        }
-    }
-
-    if let Some(rhs_type) = artifacts.expression_types.get(&get_expression_range(&binary.rhs)) {
-        cond_type.parent_nodes.push(decision_node.clone());
-
-        for old_parent_node in &rhs_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(old_parent_node, &decision_node, PathKind::Default);
-        }
-    }
-
     artifacts.set_expression_type(binary, cond_type);
 }
 

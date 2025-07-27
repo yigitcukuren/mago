@@ -1,7 +1,5 @@
 use std::borrow::Cow;
 
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_class_like;
 use mago_codex::is_instance_of;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
@@ -35,8 +33,6 @@ use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
 
-use crate::artifacts::AnalysisArtifacts;
-use crate::artifacts::get_expression_range;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::issue::TypingIssueKind;
@@ -90,7 +86,6 @@ impl<'a> From<&'a ArrayAppend> for ArrayTarget<'a> {
 pub(crate) fn get_array_target_type_given_index<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
-    artifacts: &mut AnalysisArtifacts,
     access_span: Span,
     access_array_span: Span,
     access_index_span: Option<Span>,
@@ -220,15 +215,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
                 }
             }
             TAtomic::Mixed(mixed) if mixed.could_be_truthy_or_non_null() => {
-                let new_type = handle_array_access_on_mixed(
-                    context,
-                    block_context,
-                    artifacts,
-                    access_span,
-                    atomic_var_type,
-                    array_like_type,
-                    value_type.clone(),
-                );
+                let new_type = handle_array_access_on_mixed(context, block_context, access_span, atomic_var_type);
 
                 if let Some(existing_type) = value_type {
                     value_type =
@@ -240,15 +227,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
                 has_valid_expected_index = true;
             }
             TAtomic::Never => {
-                let new_type = handle_array_access_on_mixed(
-                    context,
-                    block_context,
-                    artifacts,
-                    access_span,
-                    atomic_var_type,
-                    array_like_type,
-                    value_type.clone(),
-                );
+                let new_type = handle_array_access_on_mixed(context, block_context, access_span, atomic_var_type);
 
                 if let Some(existing_type) = value_type {
                     value_type =
@@ -325,10 +304,6 @@ pub(crate) fn get_array_target_type_given_index<'a>(
 
         let mut mixed_with_any = false;
         if index_type.is_mixed_with_any(&mut mixed_with_any) {
-            for origin in &index_type.parent_nodes {
-                artifacts.data_flow_graph.add_mixed_data(origin, access_span);
-            }
-
             let note_text = if expected_index_types_str.len() == 1 {
                 format!("The index for this type must be `{expected_types_list}`.")
             } else {
@@ -977,17 +952,10 @@ pub(crate) fn handle_array_access_on_string(
 pub(crate) fn handle_array_access_on_mixed(
     context: &mut Context<'_>,
     block_context: &mut BlockContext,
-    artifacts: &mut AnalysisArtifacts,
     span: Span,
     mixed: &TAtomic,
-    mixed_union: &TUnion,
-    stmt_type: Option<TUnion>,
 ) -> TUnion {
     if !block_context.inside_isset {
-        for origin in &mixed_union.parent_nodes {
-            artifacts.data_flow_graph.add_mixed_data(origin, span);
-        }
-
         if block_context.inside_assignment {
             if mixed.is_any() {
                 context.buffer.report(
@@ -1069,21 +1037,6 @@ pub(crate) fn handle_array_access_on_mixed(
                 .with_note("The variable being accessed might not be an array at runtime.")
                 .with_help("Ensure the variable holds an array before accessing an index, potentially using type checks or assertions."),
             );
-        }
-    }
-
-    if let Some(stmt_var_type) = artifacts.expression_types.get(&get_expression_range(&span))
-        && !stmt_var_type.parent_nodes.is_empty()
-    {
-        let new_parent_node = DataFlowNode::get_for_local_string("mixed-var-array-access".to_string(), span);
-        artifacts.data_flow_graph.add_node(new_parent_node.clone());
-
-        for parent_node in stmt_var_type.parent_nodes.iter() {
-            artifacts.data_flow_graph.add_path(parent_node, &new_parent_node, PathKind::Default);
-        }
-        if let Some(stmt_type) = stmt_type {
-            let mut stmt_type_new = stmt_type.clone();
-            stmt_type_new.parent_nodes = vec![new_parent_node.clone()];
         }
     }
 

@@ -6,11 +6,6 @@ use indexmap::IndexMap;
 use mago_algebra::clause::Clause;
 use mago_algebra::disjoin_clauses;
 use mago_codex::assertion::Assertion;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::get_literal_int;
 use mago_codex::ttype::get_mixed_any;
@@ -164,25 +159,15 @@ pub fn analyze_assignment<'a>(
         get_mixed_any()
     };
 
-    if let (Some(target_variable_id), Some(existing_target_type), None) =
-        (&target_variable_id, &existing_target_type, assignment_operator)
+    if let (Some(target_variable_id), None) = (&target_variable_id, assignment_operator)
+        && block_context.inside_loop
+        && !block_context.inside_assignment_operation
+        && let Some(Expression::Clone(clone_expression)) = source_expression
+        && let Expression::Variable(Variable::Direct(cloned_var)) = clone_expression.object.as_ref()
+        && context.interner.lookup(&cloned_var.name) == target_variable_id
+        && let Some(assignment_span) = assignment_span
     {
-        if block_context.inside_loop
-            && !block_context.inside_assignment_operation
-            && let Some(Expression::Clone(clone_expression)) = source_expression
-            && let Expression::Variable(Variable::Direct(cloned_var)) = clone_expression.object.as_ref()
-            && context.interner.lookup(&cloned_var.name) == target_variable_id
-        {
-            let mut origin_node_ids = vec![];
-
-            for parent_node in &existing_target_type.parent_nodes {
-                origin_node_ids.extend(artifacts.data_flow_graph.get_origin_node_ids(&parent_node.id, &[], false));
-            }
-
-            if origin_node_ids.len() > 1
-                && let Some(assignment_span) = assignment_span
-            {
-                context.buffer.report(
+        context.buffer.report(
                     TypingIssueKind::CloneInsideLoop,
                     Issue::warning(format!(
                         "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
@@ -202,68 +187,6 @@ pub fn analyze_assignment<'a>(
                         )
                     ),
                 );
-            }
-        }
-
-        if block_context.inside_loop
-            && !block_context.inside_assignment_operation
-            && block_context.for_loop_init_bounds.0 > 0
-            && target_variable_id != "$_"
-        {
-            let mut origin_node_ids = vec![];
-
-            for parent_node in &existing_target_type.parent_nodes {
-                origin_node_ids.extend(artifacts.data_flow_graph.get_origin_node_ids(&parent_node.id, &[], false));
-            }
-
-            if let Some(Expression::Clone(clone_expression)) = source_expression
-                && let Expression::Variable(Variable::Direct(cloned_variable)) = clone_expression.object.as_ref()
-                && context.interner.lookup(&cloned_variable.name) == target_variable_id
-            {
-                // TODO(azjezz): check psalm for this...
-            }
-
-            if let Some(assignment_span) = assignment_span {
-                origin_node_ids.retain(|id| {
-                    if let Some(node) = artifacts.data_flow_graph.get_node(id) {
-                        match (&id, &node.kind) {
-                            (
-                                DataFlowNodeId::ForInit(start_offset, end_offset),
-                                DataFlowNodeKind::ForLoopInit { variable: for_loop_var_id, .. },
-                            ) => {
-                                for_loop_var_id.0 == context.interner.intern(target_variable_id)
-                                    && assignment_span.start.offset > *start_offset
-                                    && assignment_span.end.offset < *end_offset
-                            }
-                            _ => false,
-                        }
-                    } else {
-                        false
-                    }
-                });
-
-                if !origin_node_ids.is_empty() {
-                    context.buffer.report(
-                    TypingIssueKind::ForLoopInvalidation,
-                    Issue::warning(format!(
-                        "Assignment to `{target_variable_id}` within the loop body modifies the variable originally initialized in the `for` loop header."
-                    ))
-                    .with_annotation(
-                        Annotation::primary(assignment_span)
-                            .with_message("Variable assigned here was initialized in the loop header")
-                    )
-                    .with_note(
-                        "Modifying the loop initialization variable inside the loop can lead to unexpected behavior or infinite loops."
-                    )
-                    .with_help(
-                        format!(
-                            "Use a different variable name inside the loop if you don't intend to alter the loop's iteration variable (`{target_variable_id}`)."
-                        )
-                    ),
-                );
-                }
-            }
-        }
     }
 
     if let (Some(target_variable_id), Some(existing_target_type)) = (&target_variable_id, &existing_target_type) {
@@ -361,7 +284,6 @@ pub(crate) fn assign_to_expression<'a>(
             context,
             block_context,
             artifacts,
-            matches!(target_variable, Variable::Direct(_)),
             target_variable.span(),
             source_expression,
             source_type,
@@ -425,7 +347,6 @@ pub fn analyze_assignment_to_variable<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
     artifacts: &mut AnalysisArtifacts,
-    is_direct_variable: bool,
     variable_span: Span,
     source_expression: Option<&Expression>,
     mut assigned_type: TUnion,
@@ -506,43 +427,6 @@ pub fn analyze_assignment_to_variable<'a>(
                 .with_note("Using `mixed` can lead to runtime errors if the variable is used in a way that assumes a specific type.")
                 .with_help("Consider using a more specific type to avoid potential issues."),
         );
-    }
-
-    let has_parent_nodes = !assigned_type.parent_nodes.is_empty();
-
-    let variable_identifier = VariableIdentifier(context.interner.intern(variable_id));
-    let assignment_node = if artifacts.data_flow_graph.kind == GraphKind::FunctionBody && is_direct_variable {
-        DataFlowNode::get_for_variable_source(
-            variable_identifier,
-            variable_span,
-            false,
-            has_parent_nodes,
-            block_context.inside_loop
-                && !block_context.inside_assignment_operation
-                && block_context.for_loop_init_bounds.0 > 0,
-        )
-    } else {
-        DataFlowNode::get_for_lvar(variable_identifier, variable_span)
-    };
-
-    artifacts.data_flow_graph.add_node(assignment_node.clone());
-    assigned_type.parent_nodes = vec![assignment_node];
-
-    if artifacts.data_flow_graph.kind == GraphKind::FunctionBody
-        && !has_parent_nodes
-        && !block_context.inside_assignment_operation
-        && !variable_id.starts_with("$_")
-    {
-        let (start_offset, end_offset) = block_context.for_loop_init_bounds;
-        if start_offset != 0 {
-            let for_node = DataFlowNode {
-                id: DataFlowNodeId::ForInit(start_offset, end_offset),
-                kind: DataFlowNodeKind::ForLoopInit { variable: variable_identifier },
-            };
-
-            artifacts.data_flow_graph.add_node(for_node.clone());
-            assigned_type.parent_nodes.push(for_node);
-        }
     }
 
     if !from_docblock
@@ -708,7 +592,6 @@ fn analyze_destructuring<'a>(
                     get_array_target_type_given_index(
                         context,
                         block_context,
-                        artifacts,
                         key_value_element.key.span(),
                         if let Some(source_expression) = source_expression {
                             source_expression.span()
@@ -743,7 +626,6 @@ fn analyze_destructuring<'a>(
                     get_array_target_type_given_index(
                         context,
                         block_context,
-                        artifacts,
                         target_span,
                         if let Some(source_expression) = source_expression {
                             source_expression.span()

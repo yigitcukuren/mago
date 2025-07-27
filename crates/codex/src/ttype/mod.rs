@@ -1,7 +1,6 @@
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 
-use crate::data_flow::node::DataFlowNode;
 use crate::get_class_like;
 use crate::is_instance_of;
 use crate::metadata::CodebaseMetadata;
@@ -464,13 +463,6 @@ pub fn combine_optional_union_types(
 }
 
 #[inline]
-pub fn extend_dataflow_uniquely(type_1_nodes: &mut Vec<DataFlowNode>, type_2_nodes: Vec<DataFlowNode>) {
-    type_1_nodes.extend(type_2_nodes);
-    type_1_nodes.sort_by(|a, b| a.id.cmp(&b.id));
-    type_1_nodes.dedup_by(|a, b| a.id.eq(&b.id));
-}
-
-#[inline]
 pub fn combine_union_types(
     type_1: &TUnion,
     type_2: &TUnion,
@@ -511,20 +503,6 @@ pub fn combine_union_types(
 
     if type_1.ignore_falsable_issues || type_2.ignore_falsable_issues {
         combined_type.ignore_falsable_issues = true;
-    }
-
-    let type_1_parent_nodes_empty = type_1.parent_nodes.is_empty();
-    let type_2_parent_nodes_empty = type_2.parent_nodes.is_empty();
-
-    if !type_1_parent_nodes_empty || !type_2_parent_nodes_empty {
-        if type_1_parent_nodes_empty {
-            combined_type.parent_nodes.clone_from(&type_2.parent_nodes);
-        } else if type_2_parent_nodes_empty {
-            combined_type.parent_nodes.clone_from(&type_1.parent_nodes);
-        } else {
-            combined_type.parent_nodes.clone_from(&type_1.parent_nodes);
-            extend_dataflow_uniquely(&mut combined_type.parent_nodes, type_2.parent_nodes.clone());
-        }
     }
 
     combined_type
@@ -568,10 +546,6 @@ pub fn add_union_type(
     base_type.possibly_undefined_from_try |= other_type.possibly_undefined_from_try;
     base_type.ignore_falsable_issues |= other_type.ignore_falsable_issues;
     base_type.ignore_nullable_issues |= other_type.ignore_nullable_issues;
-
-    if !other_type.parent_nodes.is_empty() {
-        extend_dataflow_uniquely(&mut base_type.parent_nodes, other_type.parent_nodes.clone());
-    }
 
     base_type
 }

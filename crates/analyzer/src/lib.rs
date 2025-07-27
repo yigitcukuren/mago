@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
 use mago_codex::context::ScopeContext;
-use mago_codex::data_flow::graph::DataFlowGraph;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
@@ -25,7 +24,6 @@ mod analyzable;
 mod artifacts;
 mod assertion;
 mod context;
-mod dataflow;
 mod expression;
 mod formula;
 mod invocation;
@@ -79,11 +77,11 @@ impl<'a> Analyzer<'a> {
         };
 
         let mut block_context = BlockContext::new(ScopeContext::new());
-        let mut artifacts = AnalysisArtifacts::new(DataFlowGraph::new(self.settings.graph_kind));
+        let mut artifacts = AnalysisArtifacts::new();
 
         analyze_statements(statements, &mut context, &mut block_context, &mut artifacts)?;
 
-        context.finish(artifacts, analysis_result, false);
+        context.finish(artifacts, analysis_result);
 
         analysis_result.time_in_analysis = start_time.elapsed();
 
@@ -125,7 +123,7 @@ mod tests {
             Self {
                 name,
                 content,
-                settings: Settings { find_unused_variables: true, find_unused_expressions: true, ..Default::default() },
+                settings: Settings { find_unused_expressions: true, ..Default::default() },
                 expected_issues: vec![],
             }
         }
@@ -166,7 +164,7 @@ mod tests {
 
         populate_codebase(&mut codebase, &interner, &mut symbol_references, HashSet::default(), HashSet::default());
 
-        let mut analysis_result = AnalysisResult::new(config.settings.graph_kind, symbol_references);
+        let mut analysis_result = AnalysisResult::new(symbol_references);
         let analyzer = Analyzer::new(source, &resolved_names, &codebase, &interner, config.settings);
 
         let analysis_run_result = analyzer.analyze(&program, &mut analysis_result);

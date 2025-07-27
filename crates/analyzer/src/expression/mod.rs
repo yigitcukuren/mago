@@ -5,24 +5,18 @@ use ahash::HashSet;
 
 use mago_algebra::clause::Clause;
 use mago_algebra::find_satisfying_assignments;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_anonymous_class;
 use mago_codex::ttype::get_literal_string;
 use mago_codex::ttype::get_named_object;
 use mago_codex::ttype::get_never;
-use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasPosition;
 use mago_span::HasSpan;
-use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::artifacts::get_expression_range;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
@@ -325,41 +319,6 @@ pub fn find_expression_logic_issues<'a>(
         true,
         false,
     );
-}
-
-pub(crate) fn add_decision_dataflow(
-    artifacts: &mut AnalysisArtifacts,
-    left_expression: &Expression,
-    right_expression: Option<&Expression>,
-    expression_span: Span,
-    mut expression_type: TUnion,
-) {
-    if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-        return;
-    }
-
-    let decision_node = DataFlowNode::get_for_unlabelled_sink(expression_span);
-
-    if let Some(lhs_type) = artifacts.expression_types.get(&get_expression_range(left_expression)) {
-        expression_type.parent_nodes.push(decision_node.clone());
-
-        for old_parent_node in &lhs_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(old_parent_node, &decision_node, PathKind::Default);
-        }
-    }
-
-    if let Some(rhs_expr) = right_expression
-        && let Some(rhs_type) = artifacts.expression_types.get(&get_expression_range(rhs_expr))
-    {
-        expression_type.parent_nodes.push(decision_node.clone());
-
-        for old_parent_node in &rhs_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(old_parent_node, &decision_node, PathKind::Default);
-        }
-    }
-
-    artifacts.set_expression_type(&expression_span, expression_type);
-    artifacts.data_flow_graph.add_node(decision_node);
 }
 
 #[cfg(test)]

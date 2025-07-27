@@ -30,7 +30,6 @@ use crate::expression::binary::is_always_identical_to;
 use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::negated_assertion_reconciler;
-use crate::utils::conditional::add_branch_dataflow;
 
 impl Analyzable for Match {
     fn analyze<'a>(
@@ -43,8 +42,6 @@ impl Analyzable for Match {
         block_context.inside_conditional = true;
         self.expression.analyze(context, block_context, artifacts)?;
         block_context.inside_conditional = was_inside_conditional;
-
-        add_branch_dataflow(self.expression.as_ref(), artifacts);
 
         let mut match_arms = Vec::new();
         let mut default_arm: Option<&MatchDefaultArm> = None;

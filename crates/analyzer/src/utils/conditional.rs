@@ -4,9 +4,6 @@ use std::rc::Rc;
 
 use ahash::HashMap;
 use ahash::HashSet;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -16,7 +13,6 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::artifacts::get_expression_range;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
@@ -112,7 +108,6 @@ pub(crate) fn analyze<'a>(
         let was_inside_conditional = if_conditional_context.inside_conditional;
         if_conditional_context.inside_conditional = true;
         condition.analyze(context, &mut if_conditional_context, artifacts)?;
-        add_branch_dataflow(condition, artifacts);
         if_conditional_context.inside_conditional = was_inside_conditional;
 
         if_conditional_context.conditionally_referenced_variable_ids.extend(first_cond_referenced_var_ids);
@@ -211,26 +206,6 @@ fn get_definitely_evaluated_expression_inside_if(condition: &Expression) -> &Exp
     }
 
     condition
-}
-
-pub fn add_branch_dataflow(condition: &Expression, artifacts: &mut AnalysisArtifacts) {
-    if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-        return;
-    }
-
-    let conditional_type = artifacts.expression_types.get(&get_expression_range(condition));
-
-    if let Some(conditional_type) = conditional_type
-        && !conditional_type.parent_nodes.is_empty()
-    {
-        let branch_node = DataFlowNode::get_for_unlabelled_sink(condition.span());
-
-        for parent_node in &conditional_type.parent_nodes {
-            artifacts.data_flow_graph.add_path(parent_node, &branch_node, PathKind::Default);
-        }
-
-        artifacts.data_flow_graph.add_node(branch_node);
-    }
 }
 
 pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expression: &T, expression_type: &TUnion) {

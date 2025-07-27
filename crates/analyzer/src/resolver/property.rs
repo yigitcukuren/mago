@@ -2,13 +2,10 @@ use ahash::HashMap;
 use ahash::RandomState;
 use indexmap::IndexMap;
 
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_class_like;
 use mago_codex::get_declaring_class_for_property;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::misc::GenericParent;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::generic::TGenericParameter;
@@ -38,7 +35,6 @@ use crate::error::AnalysisError;
 use crate::issue::TypingIssueKind;
 use crate::resolver::class_name::report_non_existent_class_like;
 use crate::resolver::selector::resolve_member_selector;
-use crate::utils::expression::get_expression_id;
 use crate::utils::template::get_template_types_for_class_member;
 use crate::visibility::check_property_read_visibility;
 use crate::visibility::check_property_write_visibility;
@@ -83,14 +79,6 @@ pub fn resolve_instance_properties<'a>(
     block_context.inside_general_use = was_inside_general_use;
 
     let selectors = resolve_member_selector(context, block_context, artifacts, property_selector)?;
-
-    let object_variable_id = get_expression_id(
-        object_expression,
-        block_context.scope.get_class_like_name(),
-        context.resolved_names,
-        context.interner,
-        Some(context.codebase),
-    );
 
     let Some(object_type) = artifacts.get_rc_expression_type(object_expression).cloned() else {
         return Ok(result);
@@ -166,7 +154,7 @@ pub fn resolve_instance_properties<'a>(
         };
 
         for prop_name in &property_names {
-            if let Some(mut resolved_property) = find_property_in_class(
+            if let Some(resolved_property) = find_property_in_class(
                 context,
                 block_context,
                 classname,
@@ -178,17 +166,11 @@ pub fn resolve_instance_properties<'a>(
                 for_assignment,
                 &mut result,
             )? {
-                if !for_assignment {
-                    resolved_property.property_type = add_property_dataflow(
-                        context,
-                        artifacts,
-                        object_expression,
-                        property_selector,
-                        &resolved_property,
-                        &object_variable_id,
-                        block_context,
-                    );
-                }
+                artifacts.symbol_references.add_reference_for_property_access(
+                    &block_context.scope,
+                    resolved_property.declaring_class_id,
+                    resolved_property.property_name,
+                );
 
                 result.properties.push(resolved_property);
             } else {
@@ -304,81 +286,6 @@ fn find_property_in_class<'a>(
         declaring_class_id,
         property_type,
     }))
-}
-
-fn add_property_dataflow(
-    context: &Context<'_>,
-    artifacts: &mut AnalysisArtifacts,
-    object_expression: &Expression,
-    property_selector: &ClassLikeMemberSelector,
-    resolved_prop: &ResolvedProperty,
-    object_variable_id: &Option<String>,
-    block_context: &BlockContext,
-) -> TUnion {
-    let mut property_type = resolved_prop.property_type.clone();
-    let property_id = (resolved_prop.declaring_class_id, resolved_prop.property_name);
-
-    artifacts.symbol_references.add_reference_for_property_access(
-        &block_context.scope,
-        resolved_prop.declaring_class_id,
-        resolved_prop.property_name,
-    );
-
-    if let Some(object_variable_id) = object_variable_id {
-        let (var_node, property_node) = get_nodes_for_property_access(
-            context,
-            object_variable_id,
-            object_expression.span(),
-            resolved_prop.property_name,
-            property_selector.span(),
-        );
-
-        artifacts.data_flow_graph.add_node(var_node.clone());
-        artifacts.data_flow_graph.add_node(property_node.clone());
-        artifacts.data_flow_graph.add_path(
-            &var_node,
-            &property_node,
-            PathKind::PropertyAccess(property_id.0, property_id.1),
-        );
-
-        if let Some(object_type) = artifacts.get_rc_expression_type(object_expression).cloned() {
-            for parent_node in &object_type.parent_nodes {
-                artifacts.data_flow_graph.add_path(parent_node, &var_node, PathKind::Default);
-            }
-        }
-
-        property_type.parent_nodes.push(property_node);
-    }
-    property_type
-}
-
-pub fn get_nodes_for_property_access(
-    context: &Context<'_>,
-    object_variable_id: &str,
-    object_span: Span,
-    property_name: StringIdentifier,
-    property_span: Span,
-) -> (DataFlowNode, DataFlowNode) {
-    let (object_variable_node, property_node) = if let Some(object_var_id) = context.interner.get(object_variable_id) {
-        (
-            DataFlowNode::get_for_lvar(VariableIdentifier(object_var_id), object_span),
-            DataFlowNode::get_for_local_property_access(
-                VariableIdentifier(object_var_id),
-                property_name,
-                property_span,
-            ),
-        )
-    } else {
-        (
-            DataFlowNode::get_for_local_string(object_variable_id.to_string(), object_span),
-            DataFlowNode::get_for_local_string(
-                format!("{}->{}", object_variable_id, context.interner.lookup(&property_name)),
-                property_span,
-            ),
-        )
-    };
-
-    (object_variable_node, property_node)
 }
 
 pub fn localize_property_type(

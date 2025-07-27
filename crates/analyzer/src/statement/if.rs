@@ -295,12 +295,11 @@ impl Analyzable for If {
         }
 
         for (variable_id, variable_type) in if_scope.possibly_redefined_variables {
-            let Some(mut existing_type) = block_context.locals.remove(&variable_id).map(Rc::unwrap_or_clone) else {
+            let Some(existing_type) = block_context.locals.remove(&variable_id).map(Rc::unwrap_or_clone) else {
                 continue;
             };
 
             if if_scope.updated_variables.contains(&variable_id) {
-                existing_type.parent_nodes.extend(variable_type.parent_nodes);
                 block_context.locals.insert(variable_id, Rc::new(existing_type));
 
                 continue;

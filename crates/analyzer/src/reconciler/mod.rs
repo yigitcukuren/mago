@@ -8,14 +8,10 @@ use regex::Regex;
 
 use mago_codex::assertion::Assertion;
 use mago_codex::class_or_interface_exists;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_class_constant_type;
 use mago_codex::get_declaring_class_for_property;
 use mago_codex::get_property;
 use mago_codex::metadata::CodebaseMetadata;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -184,7 +180,7 @@ pub fn reconcile_keyed_types(
             result_type = orred_type;
         }
 
-        let mut result_type = result_type.unwrap_or_else(get_never);
+        let result_type = result_type.unwrap_or_else(get_never);
 
         if !did_type_exist && result_type.is_never() {
             continue;
@@ -192,76 +188,6 @@ pub fn reconcile_keyed_types(
 
         let type_changed =
             if let Some(before_adjustment) = &before_adjustment { &result_type != before_adjustment } else { true };
-
-        if let Some(before_adjustment) = &before_adjustment {
-            if let GraphKind::WholeProgram = &context.artifacts.data_flow_graph.kind {
-                let mut has_scalar_restriction = false;
-
-                for new_type_part_parts in new_type_parts {
-                    if new_type_part_parts.len() == 1 {
-                        let assertion = &new_type_part_parts[0];
-
-                        if let Assertion::IsType(t) | Assertion::IsIdentical(t) = assertion
-                            && t.is_some_scalar()
-                        {
-                            has_scalar_restriction = true;
-                        }
-                    }
-                }
-
-                if has_scalar_restriction {
-                    let scalar_check_node = if let Some(var_id) = context.interner.get(key) {
-                        DataFlowNode::get_for_lvar(VariableIdentifier(var_id), *span)
-                    } else {
-                        DataFlowNode::get_for_local_string(key.clone(), *span)
-                    };
-
-                    for parent_node in &before_adjustment.parent_nodes {
-                        context.artifacts.data_flow_graph.add_path(
-                            parent_node,
-                            &scalar_check_node,
-                            PathKind::ScalarTypeGuard,
-                        );
-                    }
-
-                    result_type.parent_nodes = vec![scalar_check_node.clone()];
-
-                    context.artifacts.data_flow_graph.add_node(scalar_check_node);
-                } else {
-                    let narrowed_symbol = if type_changed {
-                        if result_type.is_single() {
-                            if let TAtomic::Object(TObject::Named(named_object)) = result_type.get_single() {
-                                Some(named_object.get_name())
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    };
-                    if let Some(narrowed_symbol) = narrowed_symbol {
-                        let narrowing_node = DataFlowNode::get_for_narrowing(key.clone(), narrowed_symbol, *span);
-
-                        for parent_node in &before_adjustment.parent_nodes {
-                            context.artifacts.data_flow_graph.add_path(
-                                parent_node,
-                                &narrowing_node,
-                                PathKind::RefineSymbol(narrowed_symbol),
-                            );
-                        }
-
-                        result_type.parent_nodes = vec![narrowing_node.clone()];
-                        context.artifacts.data_flow_graph.add_node(narrowing_node);
-                    } else {
-                        result_type.parent_nodes.clone_from(&before_adjustment.parent_nodes);
-                    }
-                }
-            } else {
-                result_type.parent_nodes.clone_from(&before_adjustment.parent_nodes);
-            }
-        }
 
         let key_parts = break_up_path_into_parts(key);
         if type_changed {

@@ -4,14 +4,8 @@ use ahash::HashMap;
 use ahash::HashSet;
 
 use mago_codex::context::ScopeContext;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::node::VariableSourceKind;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_closure;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::callable::TCallable;
@@ -142,29 +136,10 @@ impl Analyzable for Closure {
 
                 variable_spans.insert(variable, variable_span);
 
-                let mut variable_type = match block_context.locals.remove(variable_str) {
+                let rc_type = Rc::new(match block_context.locals.remove(variable_str) {
                     Some(existing_type) => existing_type.as_ref().to_owned(),
                     None => get_mixed_any(),
-                };
-
-                for parent_node in variable_type.parent_nodes.iter_mut() {
-                    artifacts.data_flow_graph.add_path(
-                        parent_node,
-                        &DataFlowNode {
-                            id: DataFlowNodeId::Var(VariableIdentifier(variable), variable_span),
-                            kind: DataFlowNodeKind::VariableUseSource {
-                                span: variable_span,
-                                kind: VariableSourceKind::ClosureUse,
-                                pure: false,
-                                has_parent_nodes: true,
-                                from_loop_init: false,
-                            },
-                        },
-                        PathKind::Default,
-                    );
-                }
-
-                let rc_type = Rc::new(variable_type);
+                });
 
                 block_context.locals.insert(variable_str.to_string(), rc_type.clone());
                 imported_variables.insert(variable_str.to_string(), rc_type);
@@ -395,7 +370,6 @@ mod tests {
             TypingIssueKind::InvalidStaticMethodCall,
             TypingIssueKind::ImpossibleAssignment,
             TypingIssueKind::UnevaluatedCode,
-            TypingIssueKind::UnusedAssignment,
         ]
     }
 
@@ -432,7 +406,6 @@ mod tests {
             TypingIssueKind::InvalidStaticMethodCall,
             TypingIssueKind::ImpossibleAssignment,
             TypingIssueKind::UnevaluatedCode,
-            TypingIssueKind::UnusedAssignment,
         ]
     }
 

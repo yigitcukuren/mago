@@ -1,9 +1,5 @@
 use std::rc::Rc;
 
-use mago_codex::data_flow::graph::DataFlowGraph;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_union_types;
@@ -243,8 +239,6 @@ pub fn handle_return_value<'a>(
     }
 
     if let Some(return_value) = return_value {
-        handle_dataflow(return_value, &inferred_return_type, &mut artifacts.data_flow_graph);
-
         if !expected_return_type.is_mixed() {
             if expected_return_type.is_void() {
                 context.buffer.report(
@@ -273,10 +267,6 @@ pub fn handle_return_value<'a>(
             let mut mixed_with_any = false;
 
             if inferred_return_type.is_mixed_with_any(&mut mixed_with_any) {
-                for origin in &inferred_return_type.parent_nodes {
-                    artifacts.data_flow_graph.add_mixed_data(origin, return_span);
-                }
-
                 context.buffer.report(
                     if mixed_with_any {
                         TypingIssueKind::MixedAnyReturnStatement
@@ -539,22 +529,6 @@ pub fn handle_return_value<'a>(
     }
 
     Ok(())
-}
-
-fn handle_dataflow(return_expr: &Expression, inferred_type: &TUnion, data_flow_graph: &mut DataFlowGraph) {
-    let return_node = if data_flow_graph.kind == GraphKind::FunctionBody {
-        let return_node = DataFlowNode::get_for_unlabelled_sink(return_expr.span());
-
-        for parent_node in &inferred_type.parent_nodes {
-            data_flow_graph.add_path(parent_node, &return_node, PathKind::Default);
-        }
-
-        return_node
-    } else {
-        return;
-    };
-
-    data_flow_graph.add_node(return_node);
 }
 
 fn get_generator_return_type(context: &Context, return_type: &TUnion) -> Option<(TUnion, bool)> {

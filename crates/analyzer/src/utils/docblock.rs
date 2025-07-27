@@ -185,16 +185,16 @@ pub fn insert_variabel_from_docblock<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
     variable_name: String,
-    mut variable_type: TUnion,
+    variable_type: TUnion,
     variable_type_span: Span,
 ) {
-    if let Some(previous_type) = block_context.locals.remove(&variable_name) {
-        if !can_expression_types_be_identical(context.codebase, context.interner, &previous_type, &variable_type, false)
-        {
-            let variable_type_str = variable_type.get_id(Some(context.interner));
-            let previous_type_str = previous_type.get_id(Some(context.interner));
+    if let Some(previous_type) = block_context.locals.remove(&variable_name)
+        && !can_expression_types_be_identical(context.codebase, context.interner, &previous_type, &variable_type, false)
+    {
+        let variable_type_str = variable_type.get_id(Some(context.interner));
+        let previous_type_str = previous_type.get_id(Some(context.interner));
 
-            context.buffer.report(
+        context.buffer.report(
                 TypingIssueKind::DocblockTypeMismatch,
                 Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
                     .with_annotation(
@@ -206,10 +206,6 @@ pub fn insert_variabel_from_docblock<'a>(
                         "Change the docblock type to match `{previous_type_str}`, or update the variable definition to a compatible type `{variable_type_str}`."
                     )),
             );
-        }
-
-        // If the variable already exists, we need to maintain its parent nodes.
-        variable_type.parent_nodes = previous_type.parent_nodes.clone();
     }
 
     block_context.locals.insert(variable_name, Rc::new(variable_type));

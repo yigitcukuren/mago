@@ -38,7 +38,6 @@ use crate::reconciler::ReconcilationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::r#loop::assignment_map_visitor::get_assignment_map;
 use crate::statement::r#loop::cleaner::clean_nodes;
-use crate::utils::conditional::add_branch_dataflow;
 
 mod assignment_map_visitor;
 mod cleaner;
@@ -629,11 +628,7 @@ fn analyze<'a, 'b>(
             } else if let Some(loop_parent_context_type) = loop_parent_context.locals.get_mut(variable_id)
                 && loop_parent_context_type != loop_context_type
             {
-                *loop_parent_context_type = Rc::new({
-                    let mut first = (**loop_context_type).clone();
-                    extend_dataflow_uniquely(&mut first.parent_nodes, loop_parent_context_type.parent_nodes.clone());
-                    first
-                });
+                *loop_parent_context_type = Rc::new((**loop_context_type).clone());
             }
         }
     }
@@ -642,12 +637,7 @@ fn analyze<'a, 'b>(
         for (variable_id, variable_type) in loop_parent_context.locals.clone() {
             if let Some(continue_context_type) = continue_context.locals.get_mut(&variable_id) {
                 if continue_context_type.is_mixed() {
-                    *continue_context_type = Rc::new({
-                        let second: &TUnion = &variable_type;
-                        let mut first = (**continue_context_type).clone();
-                        extend_dataflow_uniquely(&mut first.parent_nodes, second.parent_nodes.clone());
-                        first
-                    });
+                    *continue_context_type = Rc::new((**continue_context_type).clone());
 
                     loop_parent_context.locals.insert(variable_id.clone(), continue_context_type.clone());
                     loop_parent_context.remove_variable_from_conflicting_clauses(
@@ -678,14 +668,7 @@ fn analyze<'a, 'b>(
                         None,
                     );
                 } else if let Some(loop_parent_context_type) = loop_parent_context.locals.get_mut(&variable_id) {
-                    *loop_parent_context_type = Rc::new({
-                        let mut first = (**continue_context_type).clone();
-                        extend_dataflow_uniquely(
-                            &mut first.parent_nodes,
-                            loop_parent_context_type.parent_nodes.clone(),
-                        );
-                        first
-                    });
+                    *loop_parent_context_type = Rc::new((**continue_context_type).clone());
                 }
             } else {
                 loop_parent_context.locals.remove(&variable_id);
@@ -813,8 +796,6 @@ fn apply_pre_condition_to_loop_context<'a>(
     loop_context.inside_loop_expressions = true;
 
     pre_condition.analyze(context, loop_context, artifacts)?;
-
-    add_branch_dataflow(pre_condition, artifacts);
 
     loop_context.inside_loop_expressions = false;
     loop_context.inside_conditional = false;

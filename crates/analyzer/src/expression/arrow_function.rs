@@ -3,13 +3,8 @@ use std::rc::Rc;
 use ahash::HashMap;
 use ahash::HashSet;
 use mago_codex::context::ScopeContext;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_closure;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::callable::TCallable;
@@ -58,7 +53,7 @@ impl Analyzable for ArrowFunction {
         let parameter_names =
             self.parameter_list.parameters.iter().map(|param| param.variable.name).collect::<HashSet<_>>();
 
-        for (variable, variable_span) in variables {
+        for (variable, _) in variables {
             if parameter_names.contains(&variable) {
                 continue;
             }
@@ -76,25 +71,7 @@ impl Analyzable for ArrowFunction {
                 continue;
             };
 
-            let mut variable_type = existing_type.as_ref().to_owned();
-
-            let assignment_node = DataFlowNode {
-                id: DataFlowNodeId::Var(VariableIdentifier(variable), variable_span),
-                kind: DataFlowNodeKind::VariableUseSink { span: variable_span },
-            };
-
-            artifacts.data_flow_graph.add_node(assignment_node.clone());
-            let mut parent_nodes = variable_type.parent_nodes.clone();
-
-            if parent_nodes.is_empty() {
-                parent_nodes.push(assignment_node);
-            } else {
-                for parent_node in &parent_nodes {
-                    artifacts.data_flow_graph.add_path(parent_node, &assignment_node, PathKind::Default);
-                }
-            }
-
-            variable_type.parent_nodes = parent_nodes;
+            let variable_type = existing_type.as_ref().to_owned();
 
             let local_type = Rc::new(variable_type);
 

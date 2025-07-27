@@ -4,9 +4,6 @@ use std::time::Duration;
 use ahash::HashMap;
 use ahash::HashSet;
 
-use mago_codex::data_flow::graph::DataFlowGraph;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNodeId;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::reference::SymbolReferences;
 use mago_interner::ThreadedInterner;
@@ -17,8 +14,6 @@ use mago_source::SourceIdentifier;
 pub struct AnalysisResult {
     pub emitted_issues: HashMap<SourceIdentifier, Vec<Issue>>,
     pub emitted_definition_issues: HashMap<SourceIdentifier, Vec<Issue>>,
-    pub mixed_source_counts: HashMap<DataFlowNodeId, HashSet<String>>,
-    pub program_dataflow_graph: DataFlowGraph,
     pub symbol_references: SymbolReferences,
     pub issue_counts: HashMap<String, usize>,
     pub time_in_analysis: Duration,
@@ -28,12 +23,10 @@ pub struct AnalysisResult {
 }
 
 impl AnalysisResult {
-    pub fn new(graph_kind: GraphKind, symbol_references: SymbolReferences) -> Self {
+    pub fn new(symbol_references: SymbolReferences) -> Self {
         Self {
             emitted_issues: HashMap::default(),
             emitted_definition_issues: HashMap::default(),
-            mixed_source_counts: HashMap::default(),
-            program_dataflow_graph: DataFlowGraph::new(graph_kind),
             issue_counts: HashMap::default(),
             symbol_references,
             time_in_analysis: Duration::default(),
@@ -48,11 +41,6 @@ impl AnalysisResult {
             self.emitted_issues.entry(file_path).or_default().extend(issues);
         }
 
-        for (id, c) in other.mixed_source_counts {
-            self.mixed_source_counts.entry(id).or_default().extend(c);
-        }
-
-        self.program_dataflow_graph.add_graph(other.program_dataflow_graph);
         self.symbol_references.extend(other.symbol_references);
 
         for (kind, count) in other.issue_counts {

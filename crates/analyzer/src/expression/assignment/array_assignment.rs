@@ -1,12 +1,6 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::path::ArrayDataKind;
-use mago_codex::data_flow::path::PathKind;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -23,7 +17,6 @@ use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_span::HasSpan;
-use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -98,20 +91,6 @@ pub(crate) fn analyze<'a>(
         &mut root_array_type,
         &mut current_type,
     )?;
-
-    if artifacts.data_flow_graph.kind == GraphKind::FunctionBody
-        && let Some(root_var_id) = &root_var_id
-        && let Expression::Variable(_) = &root_array_expression
-    {
-        let interner = context.interner;
-        artifacts.data_flow_graph.add_node(DataFlowNode::get_for_variable_source(
-            VariableIdentifier(interner.intern(root_var_id)),
-            root_array_expression.span(),
-            false,
-            false,
-            false,
-        ));
-    }
 
     let root_is_string = root_array_type.has_string();
 
@@ -309,76 +288,6 @@ fn update_atomic_given_key(
     atomic_type
 }
 
-fn add_array_assignment_dataflow(
-    context: &mut Context<'_>,
-    artifacts: &mut AnalysisArtifacts,
-    expr_var_pos: &Span,
-    mut parent_expr_type: TUnion,
-    child_expr_type: &TUnion,
-    var_var_id: Option<String>,
-    key_values: &Vec<TAtomic>,
-    inside_general_use: bool,
-) -> TUnion {
-    let parent_node = if let Some(var_var_id) = var_var_id {
-        if let Some(var_id) = context.interner.get(&var_var_id) {
-            DataFlowNode::get_for_lvar(VariableIdentifier(var_id), *expr_var_pos)
-        } else {
-            DataFlowNode::get_for_array_assignment(*expr_var_pos)
-        }
-    } else {
-        DataFlowNode::get_for_array_assignment(*expr_var_pos)
-    };
-
-    if inside_general_use && artifacts.data_flow_graph.kind == GraphKind::FunctionBody {
-        let assignment_node = DataFlowNode {
-            id: parent_node.id.clone(),
-            kind: DataFlowNodeKind::VariableUseSink { span: *expr_var_pos },
-        };
-
-        artifacts.data_flow_graph.add_path(&parent_node, &assignment_node, PathKind::Default);
-
-        artifacts.data_flow_graph.add_node(assignment_node);
-    }
-
-    artifacts.data_flow_graph.add_node(parent_node.clone());
-
-    let old_parent_nodes = parent_expr_type.parent_nodes.clone();
-
-    parent_expr_type.parent_nodes = vec![parent_node.clone()];
-
-    for old_parent_node in old_parent_nodes {
-        artifacts.data_flow_graph.add_path(&old_parent_node, &parent_node, PathKind::Default);
-    }
-
-    for child_parent_node in &child_expr_type.parent_nodes {
-        if !key_values.is_empty() {
-            for key_value in key_values {
-                let key_value = if let Some(str) = key_value.get_literal_string_value() {
-                    str.to_owned()
-                } else if let Some(int) = key_value.get_literal_int_value() {
-                    int.to_string()
-                } else {
-                    continue;
-                };
-
-                artifacts.data_flow_graph.add_path(
-                    child_parent_node,
-                    &parent_node,
-                    PathKind::ArrayAssignment(ArrayDataKind::ArrayValue, key_value),
-                );
-            }
-        } else {
-            artifacts.data_flow_graph.add_path(
-                child_parent_node,
-                &parent_node,
-                PathKind::UnknownArrayAssignment(ArrayDataKind::ArrayValue),
-            );
-        }
-    }
-
-    parent_expr_type
-}
-
 fn update_array_assignment_child_type(
     context: &mut Context<'_>,
     block_context: &mut BlockContext,
@@ -513,7 +422,6 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
     array_target_expressions.reverse();
     for (i, array_target) in array_target_expressions.iter().copied().enumerate() {
         let mut array_target_index_type = None;
-        let mut array_target_index_atomic_types = vec![];
 
         if let Some(index) = array_target.get_index() {
             let was_inside_general_use = block_context.inside_general_use;
@@ -522,13 +430,8 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
             block_context.inside_general_use = was_inside_general_use;
             let index_type = artifacts.get_rc_expression_type(&index).cloned();
 
-            array_target_index_type = if let Some(index_type) = index_type {
-                array_target_index_atomic_types = get_index_literal_types(&index_type);
-
-                Some(index_type)
-            } else {
-                Some(Rc::new(get_arraykey()))
-            };
+            array_target_index_type =
+                if let Some(index_type) = index_type { Some(index_type) } else { Some(Rc::new(get_arraykey())) };
 
             var_id_additions.push(
                 if let Some(index_expression_id) = get_index_id(
@@ -581,7 +484,6 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
         let mut array_expr_type = get_array_target_type_given_index(
             context,
             block_context,
-            artifacts,
             array_target.span(),
             array_target.get_array().span(),
             array_target.get_index().map(|index| index.span()),
@@ -594,29 +496,11 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
         block_context.inside_assignment = false;
 
         let is_last = i == array_target_expressions.len() - 1;
-        let mut array_expression_type_inner = (*array_expression_type).clone();
+        let array_expression_type_inner = (*array_expression_type).clone();
 
         if is_last {
             array_expr_type = assign_value_type.clone();
             artifacts.set_expression_type(&array_target, assign_value_type.clone());
-
-            array_expression_type_inner = add_array_assignment_dataflow(
-                context,
-                artifacts,
-                &array_target.get_array().span(),
-                array_expression_type_inner,
-                &assign_value_type,
-                get_expression_id(
-                    array_target.get_array(),
-                    block_context.scope.get_class_like_name(),
-                    context.resolved_names,
-                    context.interner,
-                    Some(context.codebase),
-                ),
-                &array_target_index_atomic_types,
-                block_context.inside_general_use
-                    || if let Some(root_var_id) = &root_var_id { root_var_id.starts_with("$_") } else { false },
-            );
         } else {
             artifacts.set_expression_type(&array_target, array_expr_type.clone());
         }
@@ -674,20 +558,14 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
         let key_values =
             if let Some(index_type) = index_type.as_ref() { get_index_literal_types(index_type) } else { vec![] };
 
-        let mut parent_array_var_id = None;
-
-        let array_expr_id = if let Some(var_var_id) = get_expression_id(
+        let array_expr_id = get_expression_id(
             array_target.get_array(),
             block_context.scope.get_class_like_name(),
             context.resolved_names,
             context.interner,
             Some(context.codebase),
-        ) {
-            parent_array_var_id = Some(var_var_id.clone());
-            Some(format!("{}{}", var_var_id, var_id_additions.last().unwrap()))
-        } else {
-            None
-        };
+        )
+        .map(|var_var_id| format!("{}{}", var_var_id, var_id_additions.last().unwrap()));
 
         array_expr_type = update_type_with_key_values(
             context,
@@ -708,21 +586,6 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
         }
 
         let array_type = artifacts.get_expression_type(array_target.get_array()).cloned().unwrap_or(get_mixed_any());
-
-        let index_type = array_target.get_index().and_then(|index| artifacts.get_rc_expression_type(index));
-
-        let key_values = if let Some(index_type) = index_type { get_index_literal_types(index_type) } else { vec![] };
-
-        let array_type = add_array_assignment_dataflow(
-            context,
-            artifacts,
-            &array_target.get_array().span(),
-            array_type,
-            &array_expr_type,
-            parent_array_var_id,
-            &key_values,
-            block_context.inside_general_use,
-        );
 
         let is_first = i == array_target_expressions.len() - 1;
 

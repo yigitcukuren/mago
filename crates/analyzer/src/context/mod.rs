@@ -2,7 +2,6 @@
 
 use itertools::Itertools;
 
-use mago_codex::data_flow::graph::GraphKind;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::reference::ReferenceSource;
 use mago_codex::ttype::resolution::TypeResolutionContext;
@@ -92,10 +91,6 @@ impl<'a> Context<'a> {
         Some(loop_scope)
     }
 
-    pub fn get_loop_scope(&self) -> Option<&LoopScope> {
-        self.loop_scope.as_ref()
-    }
-
     pub fn get_loop_scope_mut(&mut self) -> Option<&mut LoopScope> {
         self.loop_scope.as_mut()
     }
@@ -181,31 +176,17 @@ impl<'a> Context<'a> {
         (result, issues)
     }
 
-    pub fn finish(self, artifacts: AnalysisArtifacts, analysis_result: &mut AnalysisResult, ignore_taint_path: bool) {
+    pub fn finish(self, artifacts: AnalysisArtifacts, analysis_result: &mut AnalysisResult) {
         analysis_result
             .emitted_issues
             .entry(self.source.identifier)
             .or_default()
             .extend(self.buffer.issues.into_iter().unique().collect::<Vec<_>>());
 
-        if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind {
-            if !ignore_taint_path {
-                analysis_result.program_dataflow_graph.add_graph(artifacts.data_flow_graph);
-            }
-        } else {
-            analysis_result.symbol_references.extend(artifacts.symbol_references);
+        analysis_result.symbol_references.extend(artifacts.symbol_references);
 
-            for (source_id, c) in artifacts.data_flow_graph.mixed_source_counts {
-                if let Some(existing_count) = analysis_result.mixed_source_counts.get_mut(&source_id) {
-                    existing_count.extend(c);
-                } else {
-                    analysis_result.mixed_source_counts.insert(source_id, c);
-                }
-            }
-
-            for (kind, count) in self.buffer.issue_counts {
-                *analysis_result.issue_counts.entry(kind.to_string()).or_insert(0) += count;
-            }
+        for (kind, count) in self.buffer.issue_counts {
+            *analysis_result.issue_counts.entry(kind.to_string()).or_insert(0) += count;
         }
     }
 }

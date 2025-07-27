@@ -1,6 +1,5 @@
 use mago_interner::StringIdentifier;
 
-use crate::data_flow::node::DataFlowNode;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::template::TemplateBound;
 use crate::ttype::union::TUnion;
@@ -30,7 +29,6 @@ pub struct ComparisonResult {
     pub replacement_atomic_type: Option<TAtomic>,
     pub type_variable_lower_bounds: Vec<(StringIdentifier, TemplateBound)>,
     pub type_variable_upper_bounds: Vec<(StringIdentifier, TemplateBound)>,
-    pub type_mismatch_parents: Option<(Vec<DataFlowNode>, TUnion)>,
 }
 
 impl Default for ComparisonResult {
@@ -51,7 +49,6 @@ impl ComparisonResult {
             replacement_atomic_type: None,
             type_variable_lower_bounds: vec![],
             type_variable_upper_bounds: vec![],
-            type_mismatch_parents: None,
         }
     }
 }

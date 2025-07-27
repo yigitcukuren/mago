@@ -1,13 +1,6 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use mago_codex::data_flow::graph::DataFlowGraph;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::path::PathKind;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
 use mago_codex::ttype::atomic::array::key::ArrayKey;
@@ -25,7 +18,6 @@ use mago_codex::ttype::get_non_empty_string;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_string;
 use mago_codex::ttype::union::TUnion;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -64,7 +56,7 @@ impl Analyzable for DirectVariable {
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let name = context.interner.lookup(&self.name);
-        let resulting_type = read_variable(context, block_context, artifacts, true, name, self.span());
+        let resulting_type = read_variable(context, block_context, artifacts, name, self.span());
 
         artifacts.set_expression_type(self, resulting_type);
 
@@ -87,7 +79,7 @@ impl Analyzable for IndirectVariable {
                     Some(value) => {
                         let variable_name = format!("${value}");
 
-                        read_variable(context, block_context, artifacts, false, &variable_name, self.span())
+                        read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
                     _ => get_mixed_any(),
                 }
@@ -116,7 +108,7 @@ impl Analyzable for NestedVariable {
                     Some(value) => {
                         let variable_name = format!("${value}");
 
-                        read_variable(context, block_context, artifacts, false, &variable_name, self.span())
+                        read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
                     _ => get_mixed_any(),
                 }
@@ -134,7 +126,6 @@ fn read_variable<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
     artifacts: &mut AnalysisArtifacts,
-    is_direct_variable: bool,
     variable_name: &str,
     variable_span: Span,
 ) -> TUnion {
@@ -148,30 +139,19 @@ fn read_variable<'a>(
 
                 global_variable_type
             } else if block_context.variables_possibly_in_scope.contains(variable_name) {
-                let mut issue =  Issue::warning(format!(
-                    "Variable `{variable_name}` might not have been defined on all execution paths leading to this point.",
-                ))
-                .with_annotation(
-                    Annotation::primary(variable_span)
-                        .with_message(format!("`{variable_name}` might be undefined here")),
-                )
-                .with_note("This can happen if the variable is assigned within a conditional block and there's an execution path to this usage where that block is skipped.")
-                .with_note("Accessing an undefined variable will result in an `E_WARNING` (PHP 8+) or `E_NOTICE` (PHP 7) and it will be treated as `null`.")
-                .with_help(format!("Initialize `{variable_name}` before conditional paths, or use `isset()` to check its existence."));
-
-                if let Some(most_recent_assignment_span) =
-                    artifacts.data_flow_graph.get_variable_most_recent_assignment_span(VariableIdentifier(
-                        context.interner.intern(variable_name),
+                context.buffer.report(
+                    TypingIssueKind::PossiblyUndefinedVariable,
+                    Issue::warning(format!(
+                        "Variable `{variable_name}` might not have been defined on all execution paths leading to this point.",
                     ))
-                {
-                    issue =
-                        issue
-                            .with_annotation(Annotation::secondary(most_recent_assignment_span).with_message(format!(
-                            "`{variable_name}` assigned here, but this path might not always execute before its use."
-                        )));
-                }
-
-                context.buffer.report(TypingIssueKind::PossiblyUndefinedVariable, issue);
+                    .with_annotation(
+                        Annotation::primary(variable_span)
+                            .with_message(format!("`{variable_name}` might be undefined here")),
+                    )
+                    .with_note("This can happen if the variable is assigned within a conditional block and there's an execution path to this usage where that block is skipped.")
+                    .with_note("Accessing an undefined variable will result in an `E_WARNING` (PHP 8+) or `E_NOTICE` (PHP 7) and it will be treated as `null`.")
+                    .with_help(format!("Initialize `{variable_name}` before conditional paths, or use `isset()` to check its existence."))
+                );
 
                 get_mixed()
             } else if block_context.inside_variable_reference {
@@ -199,7 +179,6 @@ fn read_variable<'a>(
                     context,
                     block_context,
                     artifacts,
-                    is_direct_variable,
                     variable_span,
                     None,
                     get_null(),
@@ -271,133 +250,7 @@ fn read_variable<'a>(
         );
     }
 
-    check_for_shadowed_loop_variable(variable_name, &variable_type, context, block_context, artifacts);
-
-    add_dataflow_to_variable(
-        (context.interner.intern(variable_name), variable_span),
-        variable_type,
-        block_context,
-        artifacts,
-    )
-}
-
-fn check_for_shadowed_loop_variable(
-    name: &str,
-    variable_type: &TUnion,
-    context: &mut Context<'_>,
-    block_context: &BlockContext,
-    artifacts: &AnalysisArtifacts,
-) {
-    if variable_type.parent_nodes.len() <= 1
-        || block_context.inside_loop_expressions
-        || block_context.for_loop_init_bounds.0 != 0
-        || block_context.inside_assignment_operation
-        || artifacts.data_flow_graph.kind != GraphKind::FunctionBody
-    {
-        return;
-    }
-
-    let mut loop_init_span: Option<Span> = None;
-
-    for parent_node in &variable_type.parent_nodes {
-        if let DataFlowNodeKind::VariableUseSource { span: for_loop_init_pos, from_loop_init: true, .. } =
-            parent_node.kind
-        {
-            if let Some(loop_init_span_inner) = loop_init_span {
-                if for_loop_init_pos.start.offset < loop_init_span_inner.start.offset {
-                    loop_init_span = Some(for_loop_init_pos);
-                }
-            } else {
-                loop_init_span = Some(for_loop_init_pos);
-            }
-        }
-    }
-
-    if let Some(loop_init_pos) = loop_init_span {
-        for parent_node in &variable_type.parent_nodes {
-            if let DataFlowNodeKind::VariableUseSource {
-                has_parent_nodes: true,
-                from_loop_init: false,
-                span: parent_node_pos,
-                ..
-            } = parent_node.kind
-                && parent_node_pos.start.offset < loop_init_pos.start.offset
-            {
-                context.buffer.report(
-                        TypingIssueKind::ShadowedLoopVar,
-                        Issue::error(format!(
-                            "Assignment to `{name}` within this loop construct shadows an outer variable used after the loop."
-                        ))
-                        .with_annotation(
-                            Annotation::primary(loop_init_pos)
-                                .with_message(format!("`{name}` assigned here shadows the outer variable."))
-                        )
-                        .with_note(
-                            "The original value of the variable defined before the loop will be overwritten before it is used later."
-                        )
-                        .with_help(
-                            format!(
-                                "Rename the loop variable or the outer variable `{name}` to avoid this shadowing."
-                            )
-                        ),
-                    );
-
-                break;
-            }
-        }
-    }
-}
-
-fn add_dataflow_to_variable(
-    variable: (StringIdentifier, Span),
-    mut variable_type: TUnion,
-    block_context: &mut BlockContext,
-    artifacts: &mut AnalysisArtifacts,
-) -> TUnion {
-    let data_flow_graph = &mut artifacts.data_flow_graph;
-    let GraphKind::FunctionBody = data_flow_graph.kind else {
-        return variable_type;
-    };
-
-    if !block_context.inside_general_use
-        && !block_context.inside_call
-        && !block_context.inside_throw
-        && !block_context.inside_isset
-        && !block_context.inside_conditional
-        && !block_context.inside_return
-        && !block_context.inside_loop_expressions
-    {
-        return variable_type;
-    }
-
-    add_dataflow_to_used_variable(variable, data_flow_graph, &mut variable_type);
-
     variable_type
-}
-
-fn add_dataflow_to_used_variable(
-    variable: (StringIdentifier, Span),
-    data_flow_graph: &mut DataFlowGraph,
-    variable_type: &mut TUnion,
-) {
-    let sink_node = DataFlowNode {
-        id: DataFlowNodeId::Var(VariableIdentifier(variable.0), variable.1),
-        kind: DataFlowNodeKind::VariableUseSink { span: variable.1 },
-    };
-
-    data_flow_graph.add_node(sink_node.clone());
-
-    let mut parent_nodes = variable_type.parent_nodes.clone();
-
-    if parent_nodes.is_empty() {
-        parent_nodes.push(sink_node);
-    } else {
-        for parent_node in &parent_nodes {
-            data_flow_graph.add_path(parent_node, &sink_node, PathKind::Default);
-        }
-    }
-
-    variable_type.parent_nodes = parent_nodes;
 }
 
 fn get_global_variable_type(variable_name: &str) -> Option<TUnion> {

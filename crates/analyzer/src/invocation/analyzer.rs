@@ -1,19 +1,11 @@
 use std::borrow::Cow;
-use std::rc::Rc;
 
 use ahash::HashMap;
 use ahash::RandomState;
 use indexmap::IndexMap;
 use itertools::Itertools;
 
-use mago_codex::data_flow::graph::DataFlowGraph;
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::node::DataFlowNodeId;
-use mago_codex::data_flow::node::DataFlowNodeKind;
-use mago_codex::data_flow::path::PathKind;
 use mago_codex::get_class_like;
-use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::is_instance_of;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::metadata::function_like::FunctionLikeMetadata;
@@ -55,7 +47,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::expression::array_access::add_array_access_dataflow;
 use crate::invocation::Invocation;
 use crate::invocation::InvocationArgument;
 use crate::invocation::InvocationArgumentsSource;
@@ -352,14 +343,11 @@ pub fn analyze_invocation<'a>(
 
             verify_argument_type(
                 context,
-                block_context,
-                &mut artifacts.data_flow_graph,
                 &mut artifacts.type_variable_bounds,
                 &argument_value_type,
                 &final_parameter_type,
                 *argument_offset,
                 argument_expression,
-                &parameter_ref,
                 &invocation.target,
             );
         } else if let Some(named_argument) = argument.get_named_argument() {
@@ -484,24 +472,16 @@ pub fn analyze_invocation<'a>(
 
                     number_of_provided_parameters += sizes.into_iter().min().unwrap_or(0);
 
-                    let unpacked_element_type = get_unpacked_argument_type(
-                        context,
-                        &artifacts.expression_types,
-                        &mut artifacts.data_flow_graph,
-                        &argument_value_type,
-                        argument_expression.span(),
-                    );
+                    let unpacked_element_type =
+                        get_unpacked_argument_type(context, &argument_value_type, argument_expression.span());
 
                     verify_argument_type(
                         context,
-                        block_context,
-                        &mut artifacts.data_flow_graph,
                         &mut artifacts.type_variable_bounds,
                         &unpacked_element_type,
                         &final_variadic_parameter_type,
                         parameter_refs.len() - 1,
                         argument_expression,
-                        &last_parameter_ref,
                         &invocation.target,
                     );
                 }
@@ -1387,14 +1367,11 @@ fn get_class_template_parameters_from_result(
 /// sources to the parameter representation in the data flow graph.
 fn verify_argument_type(
     context: &mut Context<'_>,
-    block_context: &mut BlockContext,
-    data_flow_graph: &mut DataFlowGraph,
     type_variable_bounds: &mut HashMap<String, (Vec<TemplateBound>, Vec<TemplateBound>)>,
     input_type: &TUnion,
     parameter_type: &TUnion,
     argument_offset: usize,
     input_expression: &Expression,
-    invocation_target_parameter: &InvocationTargetParameter<'_>,
     invocation_target: &InvocationTarget<'_>,
 ) {
     let target_kind_str = invocation_target.guess_kind();
@@ -1439,18 +1416,6 @@ fn verify_argument_type(
         &mut union_comparison_result,
     );
 
-    add_argument_dataflow(
-        context,
-        block_context,
-        data_flow_graph,
-        argument_offset,
-        input_expression,
-        input_type,
-        invocation_target_parameter,
-        invocation_target.get_function_like_identifier(),
-        invocation_target.get_method_context(),
-    );
-
     if !type_match_found {
         let call_site = Annotation::secondary(invocation_target.span())
             .with_message(format!("Arguments to this {} are incorrect", invocation_target.guess_kind(),));
@@ -1461,10 +1426,6 @@ fn verify_argument_type(
         if !parameter_type.is_mixed() {
             let mut mixed_from_any = false;
             if input_type.is_mixed_with_any(&mut mixed_from_any) {
-                for origin in &input_type.parent_nodes {
-                    data_flow_graph.add_mixed_data(origin, input_expression.span());
-                }
-
                 context.buffer.report(
                     if mixed_from_any { TypingIssueKind::MixedAnyArgument } else { TypingIssueKind::MixedArgument },
                     Issue::error(format!(
@@ -1746,22 +1707,13 @@ fn refine_template_result_for_function_like(
 /// # Arguments
 ///
 /// * `context` - Analysis context, used for reporting issues and accessing codebase/interner.
-/// * `block_context` - Context for the current code block (currently unused but kept for signature consistency).
-/// * `expression_types` - Map of expression ranges to their inferred types (currently unused).
-/// * `data_flow_graph` - The data flow graph, used for adding taint/mixed sources.
 /// * `argument_value_type` - The inferred type union of the expression being unpacked.
 /// * `span` - The span of the unpacked argument expression (`...$arg`) for error reporting.
 ///
 /// # Returns
 ///
 /// A `TUnion` representing the combined type of the elements within the unpacked iterable.
-fn get_unpacked_argument_type(
-    context: &mut Context<'_>,
-    expression_types: &HashMap<(usize, usize), Rc<TUnion>>,
-    data_flow_graph: &mut DataFlowGraph,
-    argument_value_type: &TUnion,
-    span: Span,
-) -> TUnion {
+fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &TUnion, span: Span) -> TUnion {
     let mut potential_element_types = Vec::new();
     let mut reported_an_error = false;
 
@@ -1793,10 +1745,6 @@ fn get_unpacked_argument_type(
                     reported_an_error = true;
                 }
 
-                for origin in &argument_value_type.parent_nodes {
-                    data_flow_graph.add_mixed_data(origin, span);
-                }
-
                 potential_element_types.push(get_mixed_any());
             }
             TAtomic::Mixed(_) => {
@@ -1813,10 +1761,6 @@ fn get_unpacked_argument_type(
                         .with_help("Ensure the value is an `iterable` using type hints, checks, or assertions."),
                     );
                     reported_an_error = true;
-                }
-
-                for origin in &argument_value_type.parent_nodes {
-                    data_flow_graph.add_mixed_data(origin, span);
                 }
 
                 potential_element_types.push(get_mixed());
@@ -1844,7 +1788,7 @@ fn get_unpacked_argument_type(
         }
     }
 
-    let mut result_type = if let Some(mut combined_type) = potential_element_types.pop() {
+    if let Some(mut combined_type) = potential_element_types.pop() {
         for element_type in potential_element_types {
             combined_type = add_union_type(combined_type, &element_type, context.codebase, context.interner, false);
         }
@@ -1852,11 +1796,7 @@ fn get_unpacked_argument_type(
         combined_type
     } else {
         get_never()
-    };
-
-    add_array_access_dataflow(expression_types, data_flow_graph, span, None, &mut result_type, &mut get_arraykey());
-
-    result_type
+    }
 }
 
 /// Checks the consistency of inferred template parameter bounds.
@@ -2016,102 +1956,4 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
             }
         }
     }
-}
-
-/// Adds data flow edges connecting the sources of an argument's value (`input_type`)
-/// to the node representing the corresponding function/method parameter (`param_node`).
-///
-/// This function models the flow of data from the argument expression into the parameter.
-/// In `WholeProgram` analysis mode, it also adds edges to account for potential method
-/// overrides in descendant classes and the actual declaring method, which is crucial for
-/// features like taint tracking across the entire application.
-///
-/// # Arguments
-///
-/// * `context` - Analysis context, providing access to codebase and interner.
-/// * `block_context` - Context for the current code block (used to determine node kind in `FunctionBody` mode).
-/// * `data_flow_graph` - The data flow graph to be modified.
-/// * `argument_offset` - The zero-based index of the argument.
-/// * `input_expression` - The AST node for the argument expression (used for span info in some cases).
-/// * `input_type` - The inferred type (`TUnion`) of the argument value, containing its source nodes (`parent_nodes`).
-/// * `parameter_ref` - A reference (`CallParameterRef`) to the parameter's definition, used to get its span.
-/// * `function_like_identifier` - Optional identifier of the function/method being called. If None, data flow cannot be added.
-/// * `method_context` - Optional context specific to method calls, containing info about the declaring method and class hierarchy.
-fn add_argument_dataflow(
-    context: &mut Context<'_>,
-    block_context: &mut BlockContext,
-    data_flow_graph: &mut DataFlowGraph,
-    argument_offset: usize,
-    input_expression: &Expression,
-    input_type: &TUnion,
-    invocation_target_parameter: &InvocationTargetParameter<'_>,
-    function_like_identifier: Option<&FunctionLikeIdentifier>,
-    method_target_context: Option<&MethodTargetContext<'_>>,
-) {
-    let Some(function_like_id) = function_like_identifier else {
-        return;
-    };
-
-    let param_node = {
-        let Some(parameter_span) = invocation_target_parameter.get_name_span() else {
-            return;
-        };
-
-        DataFlowNode {
-            id: DataFlowNodeId::FunctionLikeArg(*function_like_id, argument_offset as u8),
-            kind: if data_flow_graph.kind == GraphKind::FunctionBody && block_context.inside_general_use {
-                DataFlowNodeKind::VariableUseSink { span: parameter_span }
-            } else {
-                DataFlowNodeKind::Vertex { span: Some(parameter_span), is_specialized: false }
-            },
-        }
-    };
-
-    if let GraphKind::WholeProgram = data_flow_graph.kind
-        && let FunctionLikeIdentifier::Method(_, method_name) = function_like_id
-        && let Some(method_info) = method_target_context
-    {
-        if let Some(dependent_class_likes) =
-            context.codebase.all_class_like_descendants.get(&method_info.class_like_metadata.name)
-            && !context.interner.lookup(method_name).eq_ignore_ascii_case("__construct")
-        {
-            for dependent_class_like_id in dependent_class_likes {
-                if context.codebase.declaring_method_exists(dependent_class_like_id, method_name) {
-                    let descendant_method_id = FunctionLikeIdentifier::Method(*dependent_class_like_id, *method_name);
-                    let descendant_param_node = DataFlowNode::get_for_method_argument(
-                        descendant_method_id,
-                        argument_offset,
-                        invocation_target_parameter.get_name_span(),
-                        None,
-                    );
-                    data_flow_graph.add_node(descendant_param_node.clone());
-                    data_flow_graph.add_path(&param_node, &descendant_param_node, PathKind::Default);
-                }
-            }
-        }
-
-        if let Some(declaring_id) = method_info.declaring_method_id {
-            let declaring_function_id =
-                FunctionLikeIdentifier::Method(*declaring_id.get_class_name(), *declaring_id.get_method_name());
-            if &declaring_function_id != function_like_id {
-                let declaring_method_param_node = DataFlowNode::get_for_method_argument(
-                    declaring_function_id,
-                    argument_offset,
-                    invocation_target_parameter.get_name_span(),
-                    Some(input_expression.span()),
-                );
-
-                data_flow_graph.add_node(declaring_method_param_node.clone());
-                data_flow_graph.add_path(&param_node, &declaring_method_param_node, PathKind::Default);
-            }
-        }
-    }
-
-    for parent_node in &input_type.parent_nodes {
-        if data_flow_graph.get_node(&parent_node.id).is_some() {
-            data_flow_graph.add_path(parent_node, &param_node, PathKind::Default);
-        }
-    }
-
-    data_flow_graph.add_node(param_node);
 }

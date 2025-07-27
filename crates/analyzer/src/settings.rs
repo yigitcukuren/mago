@@ -1,10 +1,8 @@
-use mago_codex::data_flow::graph::GraphKind;
 use mago_php_version::PHPVersion;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
     pub version: PHPVersion,
-    pub find_unused_variables: bool,
     pub find_unused_expressions: bool,
     pub find_unused_definitions: bool,
     pub analyze_dead_code: bool,
@@ -13,7 +11,6 @@ pub struct Settings {
     pub memoize_properties: bool,
     pub trigger_error_exists: bool,
     pub allow_possibly_undefined_array_keys: bool,
-    pub graph_kind: GraphKind,
     pub diff: bool,
 }
 
@@ -29,14 +26,12 @@ impl Settings {
             version,
             find_unused_expressions: false,
             find_unused_definitions: false,
-            find_unused_variables: false,
             analyze_dead_code: false,
             allow_include: true,
             memoize_properties: true,
             trigger_error_exists: false,
             allow_possibly_undefined_array_keys: true,
             analyze_effects: true,
-            graph_kind: GraphKind::FunctionBody,
             diff: false,
         }
     }

@@ -7,10 +7,8 @@ use ahash::HashMap;
 use ahash::HashSet;
 use ahash::HashSetExt;
 
-use mago_codex::data_flow::node::DataFlowNode;
 use mago_codex::get_class_like;
 use mago_codex::is_instance_of;
-use mago_codex::misc::VariableIdentifier;
 use mago_codex::ttype;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::object::TObject;
@@ -198,16 +196,12 @@ impl Analyzable for Try {
 
             catch_block_context.clauses = vec![];
             if let Some(catch_variable) = catch_clause.variable.as_ref() {
-                let mut exception_type = TUnion::new(
+                let exception_type = TUnion::new(
                     caught_classes
                         .iter()
                         .map(|caught_class| TAtomic::Object(TObject::Named(TNamedObject::new(*caught_class))))
                         .collect(),
                 );
-
-                exception_type
-                    .parent_nodes
-                    .push(DataFlowNode::get_for_lvar(VariableIdentifier(catch_variable.name), catch_variable.span));
 
                 let catch_variable_id = context.interner.lookup(&catch_variable.name);
                 catch_block_context.locals.insert(catch_variable_id.to_owned(), Rc::new(exception_type));

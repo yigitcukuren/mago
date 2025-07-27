@@ -1,9 +1,5 @@
 use std::rc::Rc;
 
-use mago_codex::data_flow::graph::GraphKind;
-use mago_codex::data_flow::node::DataFlowNode;
-use mago_codex::data_flow::path::PathKind;
-use mago_codex::get_class_like;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::comparator::ComparisonResult;
@@ -11,7 +7,6 @@ use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -23,9 +18,7 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::issue::TypingIssueKind;
-use crate::resolver::property::get_nodes_for_property_access;
 use crate::resolver::property::resolve_instance_properties;
-use crate::utils::expression::get_expression_id;
 use crate::utils::expression::get_property_access_expression_id;
 
 #[inline]
@@ -42,14 +35,6 @@ pub fn analyze<'a>(
         &property_access.property,
         false,
         block_context.scope.get_class_like_name(),
-        context.resolved_names,
-        context.interner,
-        Some(context.codebase),
-    );
-
-    let object_expression_id = get_expression_id(
-        &property_access.object,
-        None,
         context.resolved_names,
         context.interner,
         Some(context.codebase),
@@ -72,20 +57,6 @@ pub fn analyze<'a>(
     let mut resolved_property_type = None;
     let mut matched_all_properties = true;
     for resolved_property in resolution_result.properties {
-        if let GraphKind::WholeProgram = artifacts.data_flow_graph.kind {
-            add_instance_property_dataflow(
-                context,
-                block_context,
-                artifacts,
-                &object_expression_id,
-                property_access.object.span(),
-                property_access.property.span(),
-                &resolved_property.declaring_class_id,
-                &resolved_property.property_name,
-                assigned_value_type,
-            );
-        }
-
         let mut union_comparison_result = ComparisonResult::new();
 
         let type_match_found = union_comparator::is_contained_by(
@@ -240,125 +211,6 @@ pub fn analyze<'a>(
     artifacts.set_rc_expression_type(property_access, resulting_type);
 
     Ok(())
-}
-
-fn add_instance_property_dataflow(
-    context: &Context<'_>,
-    block_context: &mut BlockContext,
-    artifacts: &mut AnalysisArtifacts,
-    object_variable_id: &Option<String>,
-    object_span: Span,
-    property_span: Span,
-    class_name: &StringIdentifier,
-    property_name: &StringIdentifier,
-    assigned_value_type: &TUnion,
-) {
-    if let Some(class_like_metadata) = get_class_like(context.codebase, context.interner, class_name) {
-        if class_like_metadata.specialized_instance {
-            if let Some(object_variable_id) = object_variable_id.to_owned() {
-                add_instance_property_assignment_dataflow(
-                    context,
-                    block_context,
-                    artifacts,
-                    object_variable_id,
-                    object_span,
-                    property_span,
-                    class_name,
-                    property_name,
-                    assigned_value_type,
-                );
-            }
-        } else {
-            add_unspecialized_property_assignment_dataflow(
-                context,
-                artifacts,
-                property_span,
-                class_name,
-                property_name,
-                assigned_value_type,
-            );
-        }
-    }
-}
-
-fn add_instance_property_assignment_dataflow(
-    context: &Context<'_>,
-    block_context: &mut BlockContext,
-    artifacts: &mut AnalysisArtifacts,
-    object_variable_id: String,
-    object_span: Span,
-    property_span: Span,
-    class_name: &StringIdentifier,
-    property_name: &StringIdentifier,
-    assigned_value_type: &TUnion,
-) {
-    let (object_variable_node, property_node) =
-        get_nodes_for_property_access(context, &object_variable_id, object_span, *property_name, property_span);
-
-    artifacts.data_flow_graph.add_node(object_variable_node.clone());
-    artifacts.data_flow_graph.add_node(property_node.clone());
-    artifacts.data_flow_graph.add_path(
-        &property_node,
-        &object_variable_node,
-        PathKind::PropertyAssignment(*class_name, *property_name),
-    );
-
-    for parent_node in assigned_value_type.parent_nodes.iter() {
-        artifacts.data_flow_graph.add_path(parent_node, &property_node, PathKind::Default);
-    }
-
-    let object_type = block_context.locals.get_mut(&object_variable_id);
-    if let Some(object_type) = object_type {
-        let mut object_type_inner = (**object_type).clone();
-
-        if !object_type_inner.parent_nodes.iter().any(|n| n.id == object_variable_node.id) {
-            object_type_inner.parent_nodes.push(object_variable_node.clone());
-        }
-
-        *object_type = Rc::new(object_type_inner);
-    }
-}
-
-pub(crate) fn add_unspecialized_property_assignment_dataflow(
-    context: &Context<'_>,
-    artifacts: &mut AnalysisArtifacts,
-    property_span: Span,
-    class_name: &StringIdentifier,
-    property_name: &StringIdentifier,
-    assigned_value_type: &TUnion,
-) {
-    let localized_property_node =
-        DataFlowNode::get_for_localized_property((*class_name, *property_name), property_span);
-
-    artifacts.data_flow_graph.add_node(localized_property_node.clone());
-
-    let property_node = DataFlowNode::get_for_property((*class_name, *property_name));
-
-    artifacts.data_flow_graph.add_node(property_node.clone());
-    artifacts.data_flow_graph.add_path(
-        &localized_property_node,
-        &property_node,
-        PathKind::PropertyAssignment(*class_name, *property_name),
-    );
-
-    for parent_node in assigned_value_type.parent_nodes.iter() {
-        artifacts.data_flow_graph.add_path(parent_node, &localized_property_node, PathKind::Default);
-    }
-
-    let declaring_property_class = context.codebase.get_declaring_class_for_property(class_name, property_name);
-    if let Some(declaring_property_class) = declaring_property_class
-        && declaring_property_class != class_name
-    {
-        let declaring_property_node = DataFlowNode::get_for_property((*class_name, *property_name));
-
-        artifacts.data_flow_graph.add_path(
-            &property_node,
-            &declaring_property_node,
-            PathKind::PropertyAssignment(*class_name, *property_name),
-        );
-
-        artifacts.data_flow_graph.add_node(declaring_property_node);
-    }
 }
 
 #[cfg(test)]

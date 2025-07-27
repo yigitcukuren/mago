@@ -242,7 +242,6 @@ mod tests {
             needs_int("hello");
         "#},
         issues = [
-            TypingIssueKind::UnusedParameter,
             TypingIssueKind::InvalidArgument,
         ]
     }
@@ -257,8 +256,6 @@ mod tests {
             requires_two(1);
         "#},
         issues = [
-            TypingIssueKind::UnusedParameter,
-            TypingIssueKind::UnusedParameter,
             TypingIssueKind::TooFewArguments,
         ]
     }
@@ -273,7 +270,6 @@ mod tests {
             accepts_one(1, 2);
         "#},
         issues = [
-            TypingIssueKind::UnusedParameter,
             TypingIssueKind::TooManyArguments,
         ]
     }
@@ -288,7 +284,6 @@ mod tests {
             needs_string_not_null(null);
         "#},
         issues = [
-            TypingIssueKind::UnusedParameter,
             TypingIssueKind::InvalidArgument,
         ]
     }
@@ -304,8 +299,6 @@ mod tests {
             known_params(a: 1, c: "test");
         "#},
         issues = [
-            TypingIssueKind::UnusedParameter,
-            TypingIssueKind::UnusedParameter,
             TypingIssueKind::InvalidNamedArgument,
         ]
     }

@@ -10,7 +10,6 @@ use serde::Serialize;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 
-use crate::data_flow::node::DataFlowNode;
 use crate::metadata::CodebaseMetadata;
 use crate::reference::ReferenceSource;
 use crate::reference::SymbolReferences;
@@ -38,7 +37,6 @@ use crate::ttype::get_mixed;
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Derivative, PartialOrd, Ord)]
 pub struct TUnion {
     pub types: Vec<TAtomic>,
-    pub parent_nodes: Vec<DataFlowNode>,
     pub had_template: bool,
     pub reference_free: bool,
     pub possibly_undefined_from_try: bool,
@@ -65,7 +63,6 @@ impl TUnion {
 
         TUnion {
             types,
-            parent_nodes: vec![],
             had_template: false,
             reference_free: false,
             possibly_undefined_from_try: false,
@@ -88,7 +85,6 @@ impl TUnion {
     pub fn clone_with_types(&self, types: Vec<TAtomic>) -> TUnion {
         TUnion {
             types,
-            parent_nodes: self.parent_nodes.clone(),
             had_template: self.had_template,
             reference_free: self.reference_free,
             possibly_undefined_from_try: self.possibly_undefined_from_try,
@@ -103,7 +99,6 @@ impl TUnion {
     pub fn to_non_nullable(&self) -> TUnion {
         TUnion {
             types: self.get_non_nullable_types(),
-            parent_nodes: self.parent_nodes.clone(),
             had_template: self.had_template,
             reference_free: self.reference_free,
             possibly_undefined_from_try: self.possibly_undefined_from_try,
@@ -118,7 +113,6 @@ impl TUnion {
     pub fn to_truthy(&self) -> TUnion {
         TUnion {
             types: self.get_truthy_types(),
-            parent_nodes: self.parent_nodes.clone(),
             had_template: self.had_template,
             reference_free: self.reference_free,
             possibly_undefined_from_try: self.possibly_undefined_from_try,
@@ -179,7 +173,6 @@ impl TUnion {
 
                 types
             },
-            parent_nodes: self.parent_nodes,
             had_template: self.had_template,
             reference_free: self.reference_free,
             possibly_undefined_from_try: self.possibly_undefined_from_try,
@@ -986,7 +979,7 @@ impl PartialEq for TUnion {
             }
         }
 
-        self.parent_nodes == other.parent_nodes
+        true
     }
 }
 
