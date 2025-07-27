@@ -168,58 +168,10 @@ impl ClassLikeMetadata {
         }
     }
 
-    /// Returns the source code location (span) covering the entire definition.
-    #[inline]
-    pub fn get_span(&self) -> Span {
-        self.span
-    }
-
     /// Checks if this class-like is user-defined.
     #[inline]
     pub fn is_user_defined(&self) -> bool {
         self.span.start.source.category().is_user_defined()
-    }
-
-    /// Returns the specific source code location (span) of the class-like name identifier.
-    #[inline]
-    pub fn get_name_span(&self) -> Option<Span> {
-        self.name_span
-    }
-
-    /// Checks if this class-like is a backed enum.
-    #[inline]
-    pub const fn is_backed_enum(&self) -> bool {
-        self.kind.is_enum() && self.enum_type.is_some()
-    }
-
-    /// Returns a reference to the list of all parent interfaces.
-    #[inline]
-    pub fn get_all_parent_interfaces(&self) -> &[StringIdentifier] {
-        &self.all_parent_interfaces
-    }
-
-    /// Returns a reference to the list of all parent classes.
-    #[inline]
-    pub fn get_all_parent_classes(&self) -> &[StringIdentifier] {
-        &self.all_parent_classes
-    }
-
-    /// Returns a slice of direct parent interfaces.
-    #[inline]
-    pub fn get_direct_parent_interfaces(&self) -> Vec<StringIdentifier> {
-        self.direct_parent_interfaces.to_vec()
-    }
-
-    /// Returns the direct parent class, if one exists.
-    #[inline]
-    pub fn get_direct_parent_class(&self) -> Option<StringIdentifier> {
-        self.direct_parent_class
-    }
-
-    /// Returns a reference to the set of used traits.
-    #[inline]
-    pub fn get_used_traits(&self) -> Vec<StringIdentifier> {
-        self.used_traits.iter().copied().collect()
     }
 
     /// Returns a reference to the map of trait method aliases.
@@ -327,28 +279,10 @@ impl ClassLikeMetadata {
         self.overridden_method_ids.get_mut(method)
     }
 
-    /// Returns a reference to the map of method name to the FQCN it's inherited from.
-    #[inline]
-    pub fn get_inheritable_method_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.inheritable_method_ids
-    }
-
     /// Returns a reference to a specific method's potential declaring classes/traits.
     #[inline]
     pub fn get_potential_declaring_method_id(&self, method: &StringIdentifier) -> Option<&HashSet<StringIdentifier>> {
         self.potential_declaring_method_ids.get(method)
-    }
-
-    /// Returns a reference to the map of property name to its metadata.
-    #[inline]
-    pub fn get_properties(&self) -> &HashMap<StringIdentifier, PropertyMetadata> {
-        &self.properties
-    }
-
-    /// Returns a mutable reference to the map of property name to its metadata.
-    #[inline]
-    pub fn get_properties_mut(&mut self) -> &mut HashMap<StringIdentifier, PropertyMetadata> {
-        &mut self.properties
     }
 
     /// Returns a vector of property names.
@@ -357,52 +291,16 @@ impl ClassLikeMetadata {
         self.properties.keys().copied().collect()
     }
 
-    /// Returns a reference to a specific property by its name.
-    #[inline]
-    pub fn get_property(&self, name: &StringIdentifier) -> Option<&PropertyMetadata> {
-        self.properties.get(name)
-    }
-
-    /// Returns a reference to the map of property name to its appearing class/trait FQCN.
-    #[inline]
-    pub fn get_appearing_property_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.appearing_property_ids
-    }
-
     /// Checks if a specific property appears in this class-like.
     #[inline]
     pub fn has_appearing_property(&self, name: &StringIdentifier) -> bool {
         self.appearing_property_ids.contains_key(name)
     }
 
-    /// Returns a reference to the map of property name to its declaring class/trait FQCN.
-    #[inline]
-    pub fn get_declaring_property_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.declaring_property_ids
-    }
-
     /// Checks if a specific property is declared in this class-like.
     #[inline]
     pub fn has_declaring_property(&self, name: &StringIdentifier) -> bool {
         self.declaring_property_ids.contains_key(name)
-    }
-
-    /// Returns a reference to the map of property name to the FQCN it's inherited from.
-    #[inline]
-    pub fn get_inheritable_property_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.inheritable_property_ids
-    }
-
-    /// Returns a slice of invalid dependencies (unresolved parent classes/interfaces).
-    #[inline]
-    pub fn get_invalid_dependencies(&self) -> &[StringIdentifier] {
-        &self.invalid_dependencies
-    }
-
-    /// Returns a slice of attributes attached to the class-like definition.
-    #[inline]
-    pub fn get_attributes(&self) -> &[AttributeMetadata] {
-        &self.attributes
     }
 
     /// Takes ownership of the issues found for this class-like structure.
@@ -430,33 +328,17 @@ impl ClassLikeMetadata {
         self.all_parent_interfaces.extend(interfaces);
     }
 
-    /// Sets the direct parent class.
-    #[inline]
-    pub fn set_direct_parent_class(&mut self, parent: Option<StringIdentifier>) {
-        self.direct_parent_class = parent;
-        if let Some(parent) = &self.direct_parent_class {
-            self.all_parent_classes.push(*parent);
-        }
-    }
-
-    /// Returns a new instance with the direct parent class set.
-    #[inline]
-    pub fn with_direct_parent_class(mut self, parent: Option<StringIdentifier>) -> Self {
-        self.set_direct_parent_class(parent);
-        self
-    }
-
     /// Adds a single required extend entry.
     #[inline]
     pub fn add_require_extend(&mut self, require: StringIdentifier) {
-        self.set_direct_parent_class(Some(require));
+        self.all_parent_classes.push(require);
         self.require_extends.push(require);
     }
 
     /// Adds a single required implement entry.
     #[inline]
     pub fn add_require_implement(&mut self, require: StringIdentifier) {
-        self.add_all_parent_interface(require);
+        self.all_parent_interfaces.push(require);
         self.require_implements.push(require);
     }
 
@@ -572,26 +454,6 @@ impl ClassLikeMetadata {
         self.overridden_method_ids.entry(method).or_default().insert(parent_fqcn)
     }
 
-    /// Adds or updates the inheriting source FQCN for a method name.
-    #[inline]
-    pub fn add_inheritable_method_id(
-        &mut self,
-        method: StringIdentifier,
-        source_fqcn: StringIdentifier,
-    ) -> Option<StringIdentifier> {
-        self.inheritable_method_ids.insert(method, source_fqcn)
-    }
-
-    /// Sets the potential declaring method class names map, replacing the existing one.
-    #[inline]
-    pub fn set_potential_declaring_method_class_names(
-        &mut self,
-        method: StringIdentifier,
-        potentially_declaring_fqcns: HashSet<StringIdentifier>,
-    ) {
-        self.potential_declaring_method_ids.insert(method, potentially_declaring_fqcns);
-    }
-
     /// Adds a potential declaring FQCN to the set for a method. Initializes set if needed. Returns `true` if added.
     #[inline]
     pub fn add_potential_declaring_method(
@@ -631,16 +493,6 @@ impl ClassLikeMetadata {
         self.add_property(name, property_metadata)
     }
 
-    /// Adds or updates the appearing class FQCN for a property name.
-    #[inline]
-    pub fn add_appearing_property_id(
-        &mut self,
-        prop: StringIdentifier,
-        appearing_fqcn: StringIdentifier,
-    ) -> Option<StringIdentifier> {
-        self.appearing_property_ids.insert(prop, appearing_fqcn)
-    }
-
     /// Adds or updates the declaring class FQCN for a property name.
     #[inline]
     pub fn add_declaring_property_id(
@@ -648,7 +500,8 @@ impl ClassLikeMetadata {
         prop: StringIdentifier,
         declaring_fqcn: StringIdentifier,
     ) -> Option<StringIdentifier> {
-        self.add_appearing_property_id(prop, declaring_fqcn);
+        self.appearing_property_ids.insert(prop, declaring_fqcn);
+
         self.declaring_property_ids.insert(prop, declaring_fqcn)
     }
 

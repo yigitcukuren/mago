@@ -521,7 +521,7 @@ pub fn get_signature_of_function_like_metadata(
     options: &TypeExpansionOptions,
 ) -> TCallableSignature {
     let parameters: Vec<_> = function_like_metadata
-        .get_parameters()
+        .parameters
         .iter()
         .map(|parameter_metadata| {
             let type_signature = if let Some(t) = parameter_metadata.get_type_metadata() {

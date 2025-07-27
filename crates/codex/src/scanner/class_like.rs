@@ -272,7 +272,8 @@ fn scan_class_like(
                 let parent_name = context.resolved_names.get(extended_class);
                 let parent_name = context.interner.lowered(parent_name);
 
-                class_like_metadata = class_like_metadata.with_direct_parent_class(Some(parent_name));
+                class_like_metadata.direct_parent_class = Some(parent_name);
+                class_like_metadata.all_parent_classes.push(parent_name);
             }
         }
         SymbolKind::Enum => {
@@ -283,16 +284,21 @@ fn scan_class_like(
                 let from_method = context.interner.intern("from");
                 let try_from_method = context.interner.intern("tryfrom");
 
-                class_like_metadata.add_direct_parent_interface(backed_enum_interface);
-                class_like_metadata.add_declaring_method_id(from_method, backed_enum_interface);
-                class_like_metadata.add_declaring_method_id(try_from_method, backed_enum_interface);
+                class_like_metadata.all_parent_interfaces.push(backed_enum_interface);
+                class_like_metadata.direct_parent_interfaces.push(backed_enum_interface);
+                class_like_metadata.appearing_method_ids.insert(from_method, backed_enum_interface);
+                class_like_metadata.declaring_method_ids.insert(from_method, backed_enum_interface);
+                class_like_metadata.appearing_method_ids.insert(try_from_method, backed_enum_interface);
+                class_like_metadata.declaring_method_ids.insert(try_from_method, backed_enum_interface);
             }
 
             let unit_enum_interface = context.interner.intern("unitenum");
             let cases_method = context.interner.intern("cases");
 
-            class_like_metadata.add_direct_parent_interface(unit_enum_interface);
-            class_like_metadata.add_declaring_method_id(cases_method, unit_enum_interface);
+            class_like_metadata.all_parent_interfaces.push(unit_enum_interface);
+            class_like_metadata.direct_parent_interfaces.push(unit_enum_interface);
+            class_like_metadata.appearing_method_ids.insert(cases_method, unit_enum_interface);
+            class_like_metadata.declaring_method_ids.insert(cases_method, unit_enum_interface);
 
             codebase.symbols.add_enum_name(name);
         }
@@ -825,7 +831,7 @@ fn scan_class_like(
     }
 
     if class_like_metadata.kind.is_enum() {
-        let enum_name_span = class_like_metadata.get_name_span().expect("Enum name span should be present");
+        let enum_name_span = class_like_metadata.name_span.expect("Enum name span should be present");
         let mut name_types = vec![];
         let mut value_types = vec![];
         let backing_type = class_like_metadata.enum_type.as_ref().cloned();

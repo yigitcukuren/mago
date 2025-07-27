@@ -37,18 +37,17 @@ pub fn scan_method(
 ) -> FunctionLikeMetadata {
     let span = method.span();
 
-    let mut metadata = FunctionLikeMetadata::new(FunctionLikeKind::Method, span)
-        .with_name(Some(method.name.value), Some(method.name.span))
-        .with_parameters(
-            method
-                .parameter_list
-                .parameters
-                .iter()
-                .map(|p| scan_function_like_parameter(p, Some(&class_like_metadata.name), context)),
-        );
-
+    let mut metadata = FunctionLikeMetadata::new(FunctionLikeKind::Method, span);
     metadata.attributes = scan_attribute_lists(&method.attribute_lists, context);
     metadata.type_resolution_context = type_resolution_context.filter(|c| !c.is_empty());
+    metadata.name = Some(method.name.value);
+    metadata.name_span = Some(method.name.span);
+    metadata.parameters = method
+        .parameter_list
+        .parameters
+        .iter()
+        .map(|p| scan_function_like_parameter(p, Some(&class_like_metadata.name), context))
+        .collect();
 
     if let Some(return_hint) = method.return_type_hint.as_ref() {
         metadata.set_return_type_declaration_metadata(Some(get_type_metadata_from_hint(
@@ -58,21 +57,25 @@ pub fn scan_method(
         )));
     }
 
-    let mut method_metadata = MethodMetadata::new(if let Some(v) = method.modifiers.get_first_visibility() {
-        Visibility::try_from(v).unwrap_or(Visibility::Public)
-    } else {
-        Visibility::Public
-    })
-    .with_final(method.modifiers.contains_final())
-    .with_abstract(method.modifiers.contains_abstract())
-    .with_static(method.modifiers.contains_static())
-    .as_constructor(context.interner.lookup(&method.name.value).eq_ignore_ascii_case("__construct"));
+    let method_name_str = context.interner.lookup(&method.name.value);
+
+    let mut method_metadata = MethodMetadata {
+        is_final: method.modifiers.contains_final(),
+        is_abstract: method.modifiers.contains_abstract(),
+        is_static: method.modifiers.contains_static(),
+        is_constructor: method_name_str.eq_ignore_ascii_case("__construct"),
+        visibility: if let Some(v) = method.modifiers.get_first_visibility() {
+            Visibility::try_from(v).unwrap_or(Visibility::Public)
+        } else {
+            Visibility::Public
+        },
+    };
 
     if let MethodBody::Concrete(block) = &method.body {
         metadata.has_yield = utils::block_has_yield(block);
         metadata.has_throw = utils::block_has_throws(block);
     } else {
-        method_metadata = method_metadata.with_abstract(true);
+        method_metadata.is_abstract = true;
     }
 
     metadata.method_metadata = Some(method_metadata);
@@ -218,7 +221,7 @@ fn scan_function_like_docblock(
     metadata.inherits_docs |= docblock.inherits_docs;
     metadata.allows_named_arguments |= docblock.allows_named_arguments;
 
-    let mut type_context = metadata.get_type_resolution_context().cloned().unwrap_or_default();
+    let mut type_context = metadata.type_resolution_context.clone().unwrap_or_default();
     for template in docblock.templates.iter() {
         let template_name = context.interner.intern(&template.name);
         let template_as_type = if let Some(type_string) = &template.type_string {
@@ -410,7 +413,7 @@ fn scan_function_like_docblock(
             break 'this_out;
         };
 
-        if method_metadata.is_static() {
+        if method_metadata.is_static {
             metadata.issues.push(
                 Issue::error("`@this-out` tag used in a static method.")
                     .with_code(ScanningIssueKind::InvalidThisOutTag)
@@ -481,7 +484,7 @@ fn scan_function_like_docblock(
             break 'if_this_is;
         };
 
-        if method_metadata.is_static() {
+        if method_metadata.is_static {
             metadata.issues.push(
                 Issue::error("`@if-this-is` tag used in a static method.")
                     .with_code(ScanningIssueKind::InvalidIfThisIsTag)
@@ -568,9 +571,16 @@ fn scan_function_like_docblock(
 
     metadata.type_resolution_context = Some(type_context);
 
-    if let Some(return_type) = metadata.get_return_type_metadata_mut() {
-        return_type.type_union.ignore_nullable_issues = docblock.ignore_nullable_return;
-        return_type.type_union.ignore_falsable_issues = docblock.ignore_falsable_return;
+    if docblock.ignore_nullable_return || docblock.ignore_falsable_return {
+        if let Some(return_type) = &mut metadata.return_type_metadata {
+            return_type.type_union.ignore_nullable_issues = docblock.ignore_nullable_return;
+            return_type.type_union.ignore_falsable_issues = docblock.ignore_falsable_return;
+        }
+
+        if let Some(return_type) = &mut metadata.return_type_declaration_metadata {
+            return_type.type_union.ignore_nullable_issues = docblock.ignore_nullable_return;
+            return_type.type_union.ignore_falsable_issues = docblock.ignore_falsable_return;
+        }
     }
 }
 

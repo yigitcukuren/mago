@@ -64,7 +64,7 @@ fn analyze_invocation_targets<'a>(
     let mut resulting_type = None;
     for target in invocation_targets {
         if let InvocationTarget::FunctionLike { metadata, .. } = &target
-            && let Some(name) = metadata.get_name()
+            && let Some(name) = metadata.name
         {
             let name_str = context.interner.lookup(&name);
             match name_str.to_lowercase().as_str() {

@@ -372,7 +372,7 @@ fn get_current_generator_parameters<'a>(
         return None;
     };
 
-    let Some(return_type_metadata) = function.get_return_type_metadata() else {
+    let Some(return_type_metadata) = &function.return_type_metadata else {
         return Some((get_mixed(), get_mixed(), get_mixed(), get_mixed()));
     };
 
@@ -402,7 +402,7 @@ fn get_current_generator_parameters<'a>(
                         Issue::error(format!(
                             "Declared return type `{}` for generator function `{}` is not a valid Generator or iterable type.",
                             iterable_type.get_id(Some(context.interner)),
-                            function.get_name().map_or_else(|| "current".to_string(), |id| context.interner.lookup(&id).to_string())
+                            function.name.map_or_else(|| "current".to_string(), |id| context.interner.lookup(&id).to_string())
                         ))
                         .with_annotation(
                             Annotation::primary(return_type_metadata.span)

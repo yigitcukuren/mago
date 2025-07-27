@@ -664,7 +664,7 @@ pub fn populate_template_result_from_invocation(
         return;
     };
 
-    if method_metadata.is_static() {
+    if method_metadata.is_static {
         return;
     }
 
@@ -1719,7 +1719,7 @@ fn refine_template_result_for_function_like(
         base_class_metadata,
         method_target_context.as_ref().map(|mci| &mci.class_like_metadata.name),
         calling_class_like_metadata,
-        function_like_metadata.get_template_types(),
+        &function_like_metadata.template_types,
         class_template_parameters,
     );
 

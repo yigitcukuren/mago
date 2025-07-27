@@ -24,7 +24,6 @@ use crate::symbol::Symbols;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::union::TUnion;
 
-pub mod argument;
 pub mod attribute;
 pub mod class_like;
 pub mod class_like_constant;
@@ -92,8 +91,6 @@ impl CodebaseMetadata {
         }
     }
 
-    /// Checks if `child_class` uses `parent_trait`, either directly or via inheritance/interface implementation.
-    /// Relies on `ClassLikeMetadata::has_used_trait`.
     #[inline]
     pub fn class_or_trait_can_use_trait(
         &self,
@@ -101,27 +98,11 @@ impl CodebaseMetadata {
         parent_trait: &StringIdentifier,
     ) -> bool {
         if let Some(metadata) = self.class_likes.get(child_class) {
-            if metadata.get_used_traits().contains(parent_trait) {
+            if metadata.used_traits.contains(parent_trait) {
                 return true;
             }
 
-            // Check if any inherited traits require interfaces implemented by child_class?
-            // This logic might need refinement based on actual trait requirement checking.
-            // The original implementation seemed to check if the child implements interfaces defined by the trait,
-            // which might not be the standard check for "can use". Let's simplify to checking direct/indirect use.
-            // For a more accurate check, one might need to resolve the full trait hierarchy.
-            // Keeping the check simple based on direct `used_traits` for now.
-            return metadata.get_used_traits().contains(parent_trait);
-
-            /*
-            if let Some(trait_metadata) = self.class_likes.get(parent_trait) {
-                for trait_parent_interface in trait_metadata.get_direct_parent_interfaces() {
-                    if self.interface_extends(child_class, trait_parent_interface) {
-                        return true;
-                    }
-                }
-            }
-            */
+            return metadata.used_traits.contains(parent_trait);
         }
         false
     }
@@ -146,7 +127,7 @@ impl CodebaseMetadata {
     pub fn property_exists(&self, classlike_name: &StringIdentifier, property_name: &StringIdentifier) -> bool {
         self.class_likes
             .get(classlike_name)
-            .is_some_and(|metadata| metadata.get_appearing_property_ids().contains_key(property_name))
+            .is_some_and(|metadata| metadata.appearing_property_ids.contains_key(property_name))
     }
 
     /// Checks if a method with the given name exists within the class-like structure.
@@ -178,9 +159,7 @@ impl CodebaseMetadata {
         fq_class_name: &StringIdentifier,
         property_name: &StringIdentifier,
     ) -> Option<&StringIdentifier> {
-        self.class_likes
-            .get(fq_class_name)
-            .and_then(|metadata| metadata.get_declaring_property_ids().get(property_name))
+        self.class_likes.get(fq_class_name).and_then(|metadata| metadata.declaring_property_ids.get(property_name))
     }
 
     /// Retrieves the full metadata for a property as it appears in the context of a specific class.
@@ -194,12 +173,12 @@ impl CodebaseMetadata {
     ) -> Option<&PropertyMetadata> {
         // Find where the property appears (could be inherited)
         let appearing_class_fqcn =
-            self.class_likes.get(fq_class_name).and_then(|meta| meta.get_appearing_property_ids().get(property_name)); // Assumes get_appearing_property_ids
+            self.class_likes.get(fq_class_name).and_then(|meta| meta.appearing_property_ids.get(property_name)); // Assumes get_appearing_property_ids
 
         // Get the metadata from the class where it appears
         appearing_class_fqcn
             .and_then(|fqcn| self.class_likes.get(fqcn))
-            .and_then(|meta| meta.get_properties().get(property_name))
+            .and_then(|meta| meta.properties.get(property_name))
     }
 
     /// Retrieves the type union for a property within the context of a specific class.
@@ -214,7 +193,7 @@ impl CodebaseMetadata {
         // Find the class where the property was originally declared
         let declaring_class_fqcn = self.get_declaring_class_for_property(fq_class_name, property_name)?;
         // Get the metadata for that property from its declaring class
-        let property_metadata = self.class_likes.get(declaring_class_fqcn)?.get_properties().get(property_name)?;
+        let property_metadata = self.class_likes.get(declaring_class_fqcn)?.properties.get(property_name)?;
 
         // Return the type metadata's union from that metadata
         property_metadata.type_metadata.as_ref().map(|tm| &tm.type_union)
@@ -354,7 +333,7 @@ impl CodebaseMetadata {
         }
 
         for metadata in self.function_likes.values_mut() {
-            if user_defined && !metadata.is_user_defined() {
+            if user_defined && !metadata.user_defined {
                 continue;
             }
 

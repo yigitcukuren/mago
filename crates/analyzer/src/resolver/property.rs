@@ -299,7 +299,7 @@ fn find_property_in_class<'a>(
     }
 
     Ok(Some(ResolvedProperty {
-        property_span: property_metadata.get_name_span(),
+        property_span: property_metadata.name_span.or(property_metadata.span),
         property_name: *prop_name,
         declaring_class_id,
         property_type,

@@ -315,7 +315,7 @@ fn detect_unused_statement_expressions(
                 return;
             };
 
-            if function.is_pure && function.get_thrown_types().is_empty() && !function.has_throw {
+            if function.is_pure && function.thrown_types.is_empty() && !function.has_throw {
                 "Calling a pure function without using its result has no effect (consider using the result or removing the call)."
             } else {
                 return;

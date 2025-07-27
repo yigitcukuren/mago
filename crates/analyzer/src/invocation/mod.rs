@@ -333,7 +333,7 @@ impl<'a> InvocationTarget<'a> {
     #[inline]
     pub fn get_template_types(&self) -> Option<&'a [TemplateTuple]> {
         match self {
-            InvocationTarget::FunctionLike { metadata, .. } => Some(metadata.get_template_types()),
+            InvocationTarget::FunctionLike { metadata, .. } => Some(&metadata.template_types),
             _ => None,
         }
     }
@@ -367,10 +367,10 @@ impl<'a> InvocationTarget<'a> {
     {
         match self {
             InvocationTarget::Callable { signature, .. } => {
-                signature.get_parameters().iter().map(InvocationTargetParameter::Callable).collect()
+                signature.parameters.iter().map(InvocationTargetParameter::Callable).collect()
             }
             InvocationTarget::FunctionLike { metadata, .. } => {
-                metadata.get_parameters().iter().map(InvocationTargetParameter::FunctionLike).collect()
+                metadata.parameters.iter().map(InvocationTargetParameter::FunctionLike).collect()
             }
             InvocationTarget::LanguageConstruct { parameter, .. } => {
                 vec![InvocationTargetParameter::Callable(parameter)]
@@ -384,7 +384,7 @@ impl<'a> InvocationTarget<'a> {
         match self {
             InvocationTarget::Callable { signature, .. } => signature.get_return_type(),
             InvocationTarget::FunctionLike { metadata, .. } => {
-                metadata.get_return_type_metadata().map(|type_metadata| &type_metadata.type_union)
+                metadata.return_type_metadata.as_ref().map(|type_metadata| &type_metadata.type_union)
             }
             InvocationTarget::LanguageConstruct { return_type, .. } => Some(return_type),
         }
@@ -397,7 +397,7 @@ impl<'a> InvocationTargetParameter<'a> {
     pub fn get_out_type(&self) -> Option<&'a TUnion> {
         match self {
             InvocationTargetParameter::FunctionLike(metadata) => {
-                metadata.get_out_type().map(|type_metadata| &type_metadata.type_union)
+                metadata.out_type.as_ref().map(|type_metadata| &type_metadata.type_union)
             }
             _ => None,
         }

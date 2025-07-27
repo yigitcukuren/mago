@@ -60,7 +60,7 @@ pub fn populate_codebase(
     }
 
     for (name, function_like_metadata) in codebase.function_likes.iter_mut() {
-        let force_repopulation = function_like_metadata.is_user_defined() && !safe_symbols.contains(&name.0);
+        let force_repopulation = function_like_metadata.user_defined && !safe_symbols.contains(&name.0);
 
         let reference_source = if name.1.is_empty() || function_like_metadata.get_kind().is_closure() {
             // Top-level function or closure
@@ -84,7 +84,7 @@ pub fn populate_codebase(
         let userland_force_repopulation = metadata.is_user_defined() && !safe_symbols.contains(name);
         let class_like_reference_source = ReferenceSource::Symbol(true, *name);
 
-        for (property_name, property_metadata) in metadata.get_properties_mut() {
+        for (property_name, property_metadata) in &mut metadata.properties {
             let property_reference_source = ReferenceSource::ClassLikeMember(true, *name, *property_name);
 
             if let Some(signature) = property_metadata.type_declaration_metadata.as_mut() {
@@ -157,7 +157,7 @@ pub fn populate_codebase(
             for attribute_metadata in &constant.attributes {
                 symbol_references.add_class_member_reference_to_symbol(
                     (*name, *constant_name),
-                    attribute_metadata.get_name(),
+                    attribute_metadata.name,
                     true,
                 );
             }
@@ -191,7 +191,7 @@ pub fn populate_codebase(
             for attribute_metadata in &enum_case.attributes {
                 symbol_references.add_class_member_reference_to_symbol(
                     (*name, *enum_case_name),
-                    attribute_metadata.get_name(),
+                    attribute_metadata.name,
                     true,
                 );
             }
@@ -222,7 +222,7 @@ pub fn populate_codebase(
 
     for (name, constant) in &mut codebase.constants {
         for attribute_metadata in &constant.attributes {
-            symbol_references.add_symbol_reference_to_symbol(*name, attribute_metadata.get_name(), true);
+            symbol_references.add_symbol_reference_to_symbol(*name, attribute_metadata.name, true);
         }
 
         if let Some(inferred_type) = &mut constant.inferred_type {
@@ -241,30 +241,30 @@ pub fn populate_codebase(
     let mut all_classlike_descendants = HashMap::default();
 
     for (class_like_name, class_like_metadata) in &codebase.class_likes {
-        for parent_interface in class_like_metadata.get_all_parent_interfaces() {
+        for parent_interface in &class_like_metadata.all_parent_interfaces {
             all_classlike_descendants
                 .entry(*parent_interface)
                 .or_insert_with(HashSet::default)
                 .insert(*class_like_name);
         }
 
-        for parent_interface in class_like_metadata.get_direct_parent_interfaces() {
+        for parent_interface in &class_like_metadata.direct_parent_interfaces {
             direct_classlike_descendants
-                .entry(parent_interface)
+                .entry(*parent_interface)
                 .or_insert_with(HashSet::default)
                 .insert(*class_like_name);
         }
 
-        for parent_class in class_like_metadata.get_all_parent_classes() {
+        for parent_class in &class_like_metadata.all_parent_classes {
             all_classlike_descendants.entry(*parent_class).or_insert_with(HashSet::default).insert(*class_like_name);
         }
 
-        for used_trait in class_like_metadata.get_used_traits() {
-            all_classlike_descendants.entry(used_trait).or_default().insert(*class_like_name);
+        for used_trait in &class_like_metadata.used_traits {
+            all_classlike_descendants.entry(*used_trait).or_default().insert(*class_like_name);
         }
 
-        if let Some(parent_class) = class_like_metadata.get_direct_parent_class() {
-            direct_classlike_descendants.entry(parent_class).or_insert_with(HashSet::default).insert(*class_like_name);
+        if let Some(parent_class) = &class_like_metadata.direct_parent_class {
+            direct_classlike_descendants.entry(*parent_class).or_insert_with(HashSet::default).insert(*class_like_name);
         }
     }
 
@@ -294,10 +294,10 @@ fn populate_function_like_metadata(
     for attribute_metadata in metadata.get_attributes() {
         match reference_source {
             ReferenceSource::Symbol(_, a) => {
-                symbol_references.add_symbol_reference_to_symbol(*a, attribute_metadata.get_name(), true)
+                symbol_references.add_symbol_reference_to_symbol(*a, attribute_metadata.name, true)
             }
             ReferenceSource::ClassLikeMember(_, a, b) => {
-                symbol_references.add_class_member_reference_to_symbol((*a, *b), attribute_metadata.get_name(), true)
+                symbol_references.add_class_member_reference_to_symbol((*a, *b), attribute_metadata.name, true)
             }
         }
     }
@@ -361,10 +361,10 @@ fn populate_function_like_metadata(
         for attribute_metadata in &parameter_metadata.attributes {
             match reference_source {
                 ReferenceSource::Symbol(in_signature, a) => {
-                    symbol_references.add_symbol_reference_to_symbol(*a, attribute_metadata.get_name(), *in_signature)
+                    symbol_references.add_symbol_reference_to_symbol(*a, attribute_metadata.name, *in_signature)
                 }
                 ReferenceSource::ClassLikeMember(in_signature, a, b) => symbol_references
-                    .add_class_member_reference_to_symbol((*a, *b), attribute_metadata.get_name(), *in_signature),
+                    .add_class_member_reference_to_symbol((*a, *b), attribute_metadata.name, *in_signature),
             }
         }
     }
@@ -506,8 +506,8 @@ fn populate_class_like_metadata(
         return;
     };
 
-    for attribute_metadata in metadata.get_attributes() {
-        symbol_references.add_symbol_reference_to_symbol(metadata.name, attribute_metadata.get_name(), true);
+    for attribute_metadata in &metadata.attributes {
+        symbol_references.add_symbol_reference_to_symbol(metadata.name, attribute_metadata.name, true);
     }
 
     for property_name in metadata.get_property_names() {
@@ -532,11 +532,11 @@ fn populate_class_like_metadata(
         }
     }
 
-    for trait_name in metadata.get_used_traits() {
+    for trait_name in metadata.used_traits.iter().copied().collect::<Vec<_>>() {
         populate_metadata_from_trait(&mut metadata, codebase, interner, trait_name, symbol_references, safe_symbols);
     }
 
-    if let Some(parent_classname) = metadata.get_direct_parent_class() {
+    if let Some(parent_classname) = metadata.direct_parent_class {
         populate_metadata_from_parent_class_like(
             &mut metadata,
             codebase,
@@ -547,7 +547,8 @@ fn populate_class_like_metadata(
         );
     }
 
-    for direct_parent_interface in metadata.get_direct_parent_interfaces() {
+    let direct_parent_interfaces = metadata.direct_parent_interfaces.to_vec();
+    for direct_parent_interface in direct_parent_interfaces {
         populate_interface_metadata_from_parent_interface(
             &mut metadata,
             codebase,
@@ -560,7 +561,7 @@ fn populate_class_like_metadata(
 
     // Apply immutability to properties if the class is immutable
     if metadata.is_immutable {
-        for property_metadata in metadata.get_properties_mut().values_mut() {
+        for property_metadata in metadata.properties.values_mut() {
             if !property_metadata.is_static() {
                 property_metadata.set_is_readonly(true);
             }
@@ -597,8 +598,8 @@ fn populate_interface_metadata_from_parent_interface(
         }
     }
 
-    metadata.add_all_parent_interfaces(parent_interface_metadata.get_all_parent_interfaces().iter().copied());
-    metadata.invalid_dependencies.extend(parent_interface_metadata.get_invalid_dependencies().iter().copied());
+    metadata.all_parent_interfaces.extend(parent_interface_metadata.all_parent_interfaces.iter().copied());
+    metadata.invalid_dependencies.extend(parent_interface_metadata.invalid_dependencies.iter().copied());
 
     if let Some(inheritors) = &parent_interface_metadata.permitted_inheritors {
         metadata.permitted_inheritors.get_or_insert_default().extend(inheritors.iter().copied());
@@ -632,10 +633,10 @@ fn populate_metadata_from_parent_class_like(
         return;
     };
 
-    metadata.add_all_parent_classes(parent_metadata.get_all_parent_classes().iter().copied());
-    metadata.add_all_parent_interfaces(parent_metadata.get_all_parent_interfaces().iter().copied());
-    metadata.add_used_traits(parent_metadata.get_used_traits().iter().copied());
-    metadata.invalid_dependencies.extend(parent_metadata.get_invalid_dependencies().iter().copied());
+    metadata.all_parent_classes.extend(parent_metadata.all_parent_classes.iter().copied());
+    metadata.all_parent_interfaces.extend(parent_metadata.all_parent_interfaces.iter().copied());
+    metadata.used_traits.extend(parent_metadata.used_traits.iter().copied());
+    metadata.invalid_dependencies.extend(parent_metadata.invalid_dependencies.iter().copied());
 
     if let Some(inheritors) = &parent_metadata.permitted_inheritors {
         metadata.permitted_inheritors.get_or_insert_default().extend(inheritors.iter().copied());
@@ -683,9 +684,10 @@ fn populate_metadata_from_trait(
     }
 
     // Inherit the trait's parent interfaces (direct parents of the trait become parents of the user)
-    metadata.add_all_parent_interfaces(trait_metadata.get_direct_parent_interfaces().iter().copied());
+    metadata.all_parent_interfaces.extend(trait_metadata.direct_parent_interfaces.iter().copied());
+
     // Also inherit invalid dependencies from the trait
-    metadata.invalid_dependencies.extend(trait_metadata.get_invalid_dependencies().iter().copied());
+    metadata.invalid_dependencies.extend(trait_metadata.invalid_dependencies.iter().copied());
 
     // Extend template parameters based on the trait's templates
     extend_template_parameters(metadata, trait_metadata);
@@ -716,10 +718,10 @@ fn inherit_methods_from_parent(
             .insert(*method_name, if is_trait { class_like_name } else { *appearing_class_like });
 
         if codebase.function_likes.contains_key(&(class_like_name, *method_name)) {
-            metadata.set_potential_declaring_method_class_names(*method_name, HashSet::from_iter([class_like_name]));
+            metadata.potential_declaring_method_ids.insert(*method_name, HashSet::from_iter([class_like_name]));
         } else {
             if let Some(parent_potential_method_ids) = parent_metadata.get_potential_declaring_method_id(method_name) {
-                metadata.set_potential_declaring_method_class_names(*method_name, parent_potential_method_ids.clone());
+                metadata.potential_declaring_method_ids.insert(*method_name, parent_potential_method_ids.clone());
             }
 
             metadata.add_potential_declaring_method(*method_name, class_like_name);
@@ -728,7 +730,7 @@ fn inherit_methods_from_parent(
     }
 
     let constructor_id = interner.intern("__construct");
-    for (method_name, declaring_class) in parent_metadata.get_inheritable_method_ids() {
+    for (method_name, declaring_class) in &parent_metadata.inheritable_method_ids {
         if !method_name.eq(&constructor_id) || parent_metadata.has_consistent_constructor {
             if !parent_metadata.kind.is_trait() || is_method_abstract(codebase, interner, declaring_class, method_name)
             {
@@ -769,29 +771,30 @@ fn inherit_properties_from_parent(metadata: &mut ClassLikeMetadata, parent_metad
     let is_trait = metadata.kind.is_trait();
     let parent_is_trait = parent_metadata.kind.is_trait();
 
-    for (property_name, appearing_classlike) in parent_metadata.get_appearing_property_ids() {
+    for (property_name, appearing_classlike) in &parent_metadata.appearing_property_ids {
         if metadata.has_appearing_property(property_name) {
             continue;
         }
 
         if !parent_is_trait
-            && let Some(parent_property_metadata) = parent_metadata.get_property(property_name)
+            && let Some(parent_property_metadata) = parent_metadata.properties.get(property_name)
             && parent_property_metadata.is_final()
         {
             continue;
         }
 
         metadata
-            .add_appearing_property_id(*property_name, if is_trait { classlike_name } else { *appearing_classlike });
+            .appearing_property_ids
+            .insert(*property_name, if is_trait { classlike_name } else { *appearing_classlike });
     }
 
-    for (property_name, declaring_classlike) in parent_metadata.get_declaring_property_ids() {
-        if metadata.has_declaring_property(property_name) {
+    for (property_name, declaring_classlike) in &parent_metadata.declaring_property_ids {
+        if metadata.declaring_property_ids.contains_key(property_name) {
             continue;
         }
 
         if !parent_is_trait
-            && let Some(parent_property_metadata) = parent_metadata.get_property(property_name)
+            && let Some(parent_property_metadata) = parent_metadata.properties.get(property_name)
             && parent_property_metadata.is_final()
         {
             continue;
@@ -800,10 +803,10 @@ fn inherit_properties_from_parent(metadata: &mut ClassLikeMetadata, parent_metad
         metadata.declaring_property_ids.insert(*property_name, *declaring_classlike);
     }
 
-    for (property_name, inheritable_classlike) in parent_metadata.get_inheritable_property_ids() {
+    for (property_name, inheritable_classlike) in &parent_metadata.inheritable_property_ids {
         let mut is_overridable = true;
         if !parent_is_trait {
-            if let Some(parent_property_metadata) = parent_metadata.get_property(property_name)
+            if let Some(parent_property_metadata) = parent_metadata.properties.get(property_name)
                 && parent_property_metadata.is_final()
             {
                 is_overridable = false;

@@ -173,7 +173,7 @@ pub fn post_invocation_process<'a>(
         artifacts,
         invoication,
         &this_variable,
-        metadata.get_if_true_assertions(),
+        &metadata.if_true_assertions,
         template_result,
         parameters,
     );
@@ -194,7 +194,7 @@ pub fn post_invocation_process<'a>(
         artifacts,
         invoication,
         &this_variable,
-        metadata.get_if_false_assertions(),
+        &metadata.if_false_assertions,
         template_result,
         parameters,
     );
@@ -215,7 +215,7 @@ pub fn post_invocation_process<'a>(
         artifacts,
         invoication,
         &this_variable,
-        metadata.get_assertions(),
+        &metadata.assertions,
         template_result,
         parameters,
     );

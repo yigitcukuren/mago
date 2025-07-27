@@ -166,8 +166,8 @@ pub fn is_method_abstract(
     codebase
         .function_likes
         .get(&(lowered_fqc_id, lowered_method_id))
-        .and_then(|meta| meta.get_method_metadata())
-        .is_some_and(|method| method.is_abstract())
+        .and_then(|meta| meta.method_metadata.as_ref())
+        .is_some_and(|method| method.is_abstract)
 }
 
 pub fn is_method_static(
@@ -182,8 +182,8 @@ pub fn is_method_static(
     codebase
         .function_likes
         .get(&(lowered_fqc_id, lowered_method_id))
-        .and_then(|meta| meta.get_method_metadata())
-        .is_some_and(|method| method.is_static())
+        .and_then(|meta| meta.method_metadata.as_ref())
+        .is_some_and(|method| method.is_static)
 }
 
 pub fn is_method_final(
@@ -198,8 +198,8 @@ pub fn is_method_final(
     codebase
         .function_likes
         .get(&(lowered_fqc_id, lowered_method_id))
-        .and_then(|meta| meta.get_method_metadata())
-        .is_some_and(|method| method.is_final())
+        .and_then(|meta| meta.method_metadata.as_ref())
+        .is_some_and(|method| method.is_final)
 }
 
 /// Checks if a property exists on a given class-like (including inherited properties).

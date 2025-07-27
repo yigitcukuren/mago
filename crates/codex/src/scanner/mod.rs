@@ -16,7 +16,6 @@ use mago_syntax::walker::walk_trait_mut;
 use crate::metadata::CodebaseMetadata;
 use crate::metadata::function_like::FunctionLikeKind;
 use crate::metadata::function_like::FunctionLikeMetadata;
-use crate::metadata::function_like::MethodMetadata;
 use crate::misc::GenericParent;
 use crate::scanner::class_like::*;
 use crate::scanner::constant::*;
@@ -24,9 +23,7 @@ use crate::scanner::function_like::*;
 use crate::scanner::property::scan_promoted_property;
 use crate::ttype::resolution::TypeResolutionContext;
 use crate::ttype::union::TUnion;
-use crate::visibility::Visibility;
 
-mod argument;
 mod attribute;
 mod class_like;
 mod class_like_constant;
@@ -136,7 +133,7 @@ impl MutWalker<Context<'_>> for Scanner {
 
         self.template_constraints.push({
             let mut constraints: TemplateConstraintList = vec![];
-            for (template_name, template_constraints) in metadata.get_template_types() {
+            for (template_name, template_constraints) in &metadata.template_types {
                 constraints.push((context.interner.lookup(template_name).to_string(), template_constraints.to_vec()));
             }
 
@@ -164,7 +161,7 @@ impl MutWalker<Context<'_>> for Scanner {
 
         self.template_constraints.push({
             let mut constraints: TemplateConstraintList = vec![];
-            for (template_name, template_constraints) in metadata.get_template_types() {
+            for (template_name, template_constraints) in &metadata.template_types {
                 constraints.push((context.interner.lookup(template_name).to_string(), template_constraints.to_vec()));
             }
 
@@ -198,7 +195,7 @@ impl MutWalker<Context<'_>> for Scanner {
 
         self.template_constraints.push({
             let mut constraints: TemplateConstraintList = vec![];
-            for (template_name, template_constraints) in metadata.get_template_types() {
+            for (template_name, template_constraints) in &metadata.template_types {
                 constraints.push((context.interner.lookup(template_name).to_string(), template_constraints.to_vec()));
             }
 
@@ -305,13 +302,13 @@ impl MutWalker<Context<'_>> for Scanner {
 
         let function_like_metadata =
             scan_method(method_id, method, &class_like_metadata, context, &mut self.scope, type_resolution);
-        let Some(method_metadata) = &function_like_metadata.get_method_metadata() else {
+        let Some(method_metadata) = &function_like_metadata.method_metadata else {
             unreachable!("Method info should be present for method.",);
         };
 
         let mut is_constructor = false;
         let mut is_clone = false;
-        if method_metadata.is_constructor() {
+        if method_metadata.is_constructor {
             is_constructor = true;
             self.has_constructor = true;
 
@@ -320,7 +317,7 @@ impl MutWalker<Context<'_>> for Scanner {
                     continue;
                 }
 
-                let Some(parameter_info) = function_like_metadata.get_parameters().get(index) else {
+                let Some(parameter_info) = function_like_metadata.parameters.get(index) else {
                     continue;
                 };
 
@@ -334,21 +331,18 @@ impl MutWalker<Context<'_>> for Scanner {
 
         class_like_metadata.add_method(name);
         class_like_metadata.add_declaring_method_id(name, class_like_metadata.name);
-        if !method_metadata.get_visibility().is_private()
-            || is_constructor
-            || is_clone
-            || class_like_metadata.kind.is_trait()
+        if !method_metadata.visibility.is_private() || is_constructor || is_clone || class_like_metadata.kind.is_trait()
         {
-            class_like_metadata.add_inheritable_method_id(name, class_like_metadata.name);
+            class_like_metadata.inheritable_method_ids.insert(name, class_like_metadata.name);
         }
 
-        if method_metadata.is_final() && is_constructor {
+        if method_metadata.is_final && is_constructor {
             class_like_metadata.has_consistent_constructor = true;
         }
 
         self.template_constraints.push({
             let mut constraints: TemplateConstraintList = vec![];
-            for (template_name, template_constraints) in function_like_metadata.get_template_types() {
+            for (template_name, template_constraints) in &function_like_metadata.template_types {
                 constraints.push((context.interner.lookup(template_name).to_string(), template_constraints.to_vec()));
             }
 
@@ -409,16 +403,14 @@ fn finalize_class_like(scanner: &mut Scanner, context: &mut Context<'_>) {
     if class_like_metadata.has_consistent_constructor {
         let constructor_name = context.interner.intern("__construct");
 
-        let mut function_like_metadata =
-            FunctionLikeMetadata::new(FunctionLikeKind::Method, class_like_metadata.get_span());
+        let mut function_like_metadata = FunctionLikeMetadata::new(FunctionLikeKind::Method, class_like_metadata.span);
 
-        function_like_metadata.method_metadata = Some(MethodMetadata::new(Visibility::Public));
         function_like_metadata.is_mutation_free = true;
         function_like_metadata.is_external_mutation_free = true;
 
         class_like_metadata.add_method(constructor_name);
         class_like_metadata.add_declaring_method_id(constructor_name, class_like_metadata.name);
-        class_like_metadata.add_inheritable_method_id(constructor_name, class_like_metadata.name);
+        class_like_metadata.inheritable_method_ids.insert(constructor_name, class_like_metadata.name);
 
         scanner.codebase.function_likes.insert((class_like_metadata.name, constructor_name), function_like_metadata);
     }

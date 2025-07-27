@@ -9,9 +9,8 @@ use mago_interner::StringIdentifier;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::array::key::ArrayKey;
 use crate::ttype::atomic::derived::TDerived;
+use crate::ttype::atomic::scalar::int::TInteger;
 use crate::ttype::union::TUnion;
-
-use super::atomic::scalar::int::TInteger;
 
 #[derive(Debug)]
 pub struct TypeCombination {

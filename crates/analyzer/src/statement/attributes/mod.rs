@@ -50,10 +50,10 @@ pub fn analyze_attributes(
     attribute_lists: &[AttributeList],
     target: AttributeTarget,
 ) -> Result<(), AnalysisError> {
-    let attributes_names = attribute_lists.iter().flat_map(|list| list.attributes.iter()).collect::<Vec<_>>();
+    let attributes = attribute_lists.iter().flat_map(|list| list.attributes.iter()).collect::<Vec<_>>();
 
     let mut used_attributes = HashMap::default();
-    for attribute in attributes_names {
+    for attribute in attributes {
         let attribute_name = context.resolved_names.get(&attribute.name);
         let attribute_name_str = context.interner.lookup(attribute_name);
 
@@ -62,7 +62,7 @@ pub fn analyze_attributes(
                 TypingIssueKind::NonExistentAttributeClass,
                 Issue::error(format!("Attribute class `{attribute_name_str}` not found or could not be autoloaded."))
                 .with_annotation(
-                    Annotation::primary(attribute.span()).with_message(format!("Unknown attribute class `{attribute_name_str}`")),
+                    Annotation::primary(attribute.name.span()).with_message(format!("Unknown attribute class `{attribute_name_str}`")),
                 )
                 .with_note("Attributes must be classes that are defined, correctly namespaced, and autoloadable. Ensure the class exists and is accessible.")
                 .with_help("Verify the attribute class name, its namespace, and your autoloader configuration. Make sure the class is defined."),
@@ -80,7 +80,7 @@ pub fn analyze_attributes(
                     "The {class_like_kind_str} `{attribute_name_str}` cannot be used as an attribute.",
                 ))
                 .with_annotation(
-                    Annotation::primary(attribute.span())
+                    Annotation::primary(attribute.name.span())
                         .with_message(format!(
                             "`{attribute_name_str}` is a{} {class_like_kind_str} and not a class",
                             if metadata.kind.is_interface() || metadata.kind.is_enum() { "n" } else { "" }
@@ -105,7 +105,7 @@ pub fn analyze_attributes(
             context.buffer.report(
                 TypingIssueKind::AbstractClassUsedAsAttribute,
                 Issue::error(format!("The abstract class `{attribute_name_str}` cannot be used as an attribute.",))
-                    .with_annotation(Annotation::primary(attribute.span()).with_message(format!(
+                    .with_annotation(Annotation::primary(attribute.name.span()).with_message(format!(
                         "`{attribute_name_str}` is an abstract class and cannot be instantiated as an attribute"
                     )))
                     .with_annotation(
@@ -126,7 +126,7 @@ pub fn analyze_attributes(
                     "Class `{attribute_name_str}` is used as an attribute but is not declared with `#[Attribute]`.",
                 ))
                 .with_annotation(
-                    Annotation::primary(attribute.span()).with_message(format!("`{attribute_name_str}` used as an attribute here")),
+                    Annotation::primary(attribute.name.span()).with_message(format!("`{attribute_name_str}` used as an attribute here")),
                 )
                 .with_annotation(
                     Annotation::secondary(metadata.name_span.unwrap_or(metadata.span))
@@ -146,7 +146,7 @@ pub fn analyze_attributes(
                 TypingIssueKind::AttributeNotRepeatable,
                 Issue::error(format!("Attribute `{attribute_name_str}` is not declared as repeatable and has already been used."))
                 .with_annotation(
-                    Annotation::primary(attribute.span())
+                    Annotation::primary(attribute.name.span())
                         .with_message(format!("Duplicate use of non-repeatable attribute `{attribute_name_str}`")),
                 )
                 .with_annotation(
@@ -164,7 +164,7 @@ pub fn analyze_attributes(
             continue;
         }
 
-        used_attributes.insert(attribute_name, attribute.span());
+        used_attributes.insert(attribute_name, attribute.name.span());
 
         if let Some(flags) = metadata.attribute_flags {
             let is_valid_target = match target {
@@ -201,7 +201,7 @@ fn report_invalid_target(
     context.buffer.report(
         TypingIssueKind::InvalidAttributeTarget,
         Issue::error(format!("Attribute `{attribute_name_str}` cannot be used on {}.", target.as_str()))
-            .with_annotation(Annotation::primary(attribute.span()).with_message("This attribute is not allowed here"))
+            .with_annotation(Annotation::primary(attribute.name.span()).with_message("This attribute is not allowed here"))
             .with_annotation(
                 Annotation::secondary(metadata.name_span.unwrap_or(metadata.span))
                     .with_message(format!("`{attribute_name_str}` defined here")),

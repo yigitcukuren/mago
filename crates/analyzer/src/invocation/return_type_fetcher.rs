@@ -54,10 +54,10 @@ fn add_dataflow(
         *identifier,
         if data_flow_graph.kind == GraphKind::FunctionBody {
             Some(call_span)
-        } else if let Some(return_signature) = metadata.get_return_type_metadata() {
-            Some(return_signature.span)
+        } else if let Some(return_type_metadata) = &metadata.return_type_metadata {
+            Some(return_type_metadata.span)
         } else {
-            metadata.get_name_span()
+            metadata.name_span
         },
         if metadata.specialize_call { Some(call_span) } else { None },
     );

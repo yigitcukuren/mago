@@ -247,7 +247,7 @@ fn resolve_method_from_metadata<'a>(
         classname: defining_class_metadata.name,
         method_identifier: declaring_method_id,
         static_class_type,
-        is_static: function_like.get_method_metadata().is_some_and(|m| m.is_static()),
+        is_static: function_like.method_metadata.is_some_and(|m| m.is_static),
     })
 }
 

@@ -76,7 +76,7 @@ pub fn analyze_function_like<'a, 'ast>(
 ) -> Result<(BlockContext<'a>, AnalysisArtifacts), AnalysisError> {
     let mut previous_type_resolution_context = std::mem::replace(
         &mut context.type_resolution_context,
-        function_like_metadata.get_type_resolution_context().cloned().unwrap_or_default(),
+        function_like_metadata.type_resolution_context.clone().unwrap_or_default(),
     );
 
     let mut block_context = BlockContext::new(scope);
@@ -171,8 +171,8 @@ pub fn analyze_function_like<'a, 'ast>(
         }
 
         if let GraphKind::WholeProgram = &artifacts.data_flow_graph.kind
-            && let Some(method_metadata) = function_like_metadata.get_method_metadata()
-            && !method_metadata.is_static()
+            && let Some(method_metadata) = &function_like_metadata.method_metadata
+            && !method_metadata.is_static
             && let Some(this_type) = block_context.locals.get("$this")
         {
             let calling_class = block_context
@@ -180,13 +180,12 @@ pub fn analyze_function_like<'a, 'ast>(
                 .get_class_like_name()
                 .expect("Expected the calling class to be present in the context");
 
-            let method_name = function_like_metadata
-                .get_name()
-                .expect("Expected the function like metadata to contain a method name");
+            let method_name =
+                function_like_metadata.name.expect("Expected the function like metadata to contain a method name");
 
             let new_call_node = DataFlowNode::get_for_this_after_method(
                 MethodIdentifier::new(*calling_class, method_name),
-                function_like_metadata.get_name_span(),
+                function_like_metadata.name_span,
                 None,
             );
 
@@ -217,7 +216,7 @@ fn add_parameter_types_to_context<'a>(
     function_like_metadata: &FunctionLikeMetadata,
     parameter_list: &FunctionLikeParameterList,
 ) -> Result<(), AnalysisError> {
-    for (i, parameter_metadata) in function_like_metadata.get_parameters().iter().enumerate() {
+    for (i, parameter_metadata) in function_like_metadata.parameters.iter().enumerate() {
         let mut parameter_type = if let Some(type_signature) = parameter_metadata.get_type_metadata() {
             add_symbol_references(
                 &type_signature.type_union,
@@ -244,8 +243,8 @@ fn add_parameter_types_to_context<'a>(
                         },
                         evaluate_class_constants: true,
                         evaluate_conditional_types: true,
-                        function_is_final: if let Some(method_metadata) = function_like_metadata.get_method_metadata() {
-                            method_metadata.is_final()
+                        function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
+                            method_metadata.is_final
                         } else {
                             false
                         },
@@ -318,8 +317,8 @@ fn add_parameter_types_to_context<'a>(
                         VariableSourceKind::RefParameter
                     } else if block_context.calling_closure_id.is_some() {
                         VariableSourceKind::ClosureParameter
-                    } else if let Some(method_metadata) = function_like_metadata.get_method_metadata() {
-                        match method_metadata.get_visibility() {
+                    } else if let Some(method_metadata) = &function_like_metadata.method_metadata {
+                        match method_metadata.visibility {
                             Visibility::Public | Visibility::Protected => VariableSourceKind::NonPrivateParameter,
                             Visibility::Private => VariableSourceKind::PrivateParameter,
                         }
@@ -418,8 +417,8 @@ fn add_properties_to_context<'a>(
             &TypeExpansionOptions {
                 self_class: calling_class,
                 static_class_type: StaticClassType::Name(*calling_class.unwrap()),
-                function_is_final: if let Some(method_metadata) = function_like_metadata.get_method_metadata() {
-                    method_metadata.is_final()
+                function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
+                    method_metadata.is_final
                 } else {
                     false
                 },
@@ -511,7 +510,7 @@ fn handle_reference_at_return<'a>(
     artifacts: &mut AnalysisArtifacts,
     function_like_metadata: &FunctionLikeMetadata,
 ) {
-    for (i, parameter) in function_like_metadata.get_parameters().iter().enumerate() {
+    for (i, parameter) in function_like_metadata.parameters.iter().enumerate() {
         if !parameter.is_by_reference() {
             continue;
         }
@@ -793,7 +792,7 @@ fn get_parameter_from_node<'a>(
     id: &DataFlowNodeId,
 ) -> Option<&'a FunctionLikeParameterMetadata> {
     if let DataFlowNodeId::Parameter(variable_id, ..) = id {
-        metadata.get_parameters().iter().find(|p| p.get_name().0 == variable_id.0)
+        metadata.parameters.iter().find(|p| p.get_name().0 == variable_id.0)
     } else {
         None
     }

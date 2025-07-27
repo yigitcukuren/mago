@@ -256,7 +256,7 @@ pub(crate) fn analyze_class_like<'a>(
                 continue;
             };
 
-            if method_metadata.is_abstract() {
+            if method_metadata.is_abstract {
                 let method_name_str = context.interner.lookup(method_name);
                 let fqcn_str = context.interner.lookup(&declaring_class_like_metadata.original_name);
                 let method_span = function_like.name_span.unwrap_or(function_like.span);

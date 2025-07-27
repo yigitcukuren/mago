@@ -5,7 +5,6 @@ use mago_syntax::ast::*;
 use crate::flags::attribute::AttributeFlags;
 use crate::metadata::attribute::AttributeMetadata;
 use crate::scanner::Context;
-use crate::scanner::argument::scan_argument_list;
 use crate::scanner::inference::infer;
 
 #[inline]
@@ -17,16 +16,8 @@ pub fn scan_attribute_lists<'ast>(
 
     for attribute_list in attribute_lists.iter() {
         for attribute in attribute_list.attributes.iter() {
-            let name = *context.resolved_names.get(&attribute.name);
-            let name_span = attribute.name.span();
-            let span = attribute.span();
-
-            metadata.push(AttributeMetadata::new(name, name_span, span).with_arguments(
-                match &attribute.argument_list {
-                    Some(argument_list) => scan_argument_list(argument_list, context),
-                    None => vec![],
-                },
-            ));
+            metadata
+                .push(AttributeMetadata { name: *context.resolved_names.get(&attribute.name), span: attribute.span() });
         }
     }
 

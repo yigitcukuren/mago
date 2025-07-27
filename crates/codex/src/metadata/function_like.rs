@@ -21,18 +21,13 @@ pub type TemplateTuple = (StringIdentifier, Vec<(GenericParent, TUnion)>);
 /// Contains metadata specific to methods defined within classes, interfaces, enums, or traits.
 ///
 /// This complements the more general `FunctionLikeMetadata`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct MethodMetadata {
-    /// `true` if the method is declared with the `final` modifier (cannot be overridden).
-    is_final: bool,
-    /// `true` if the method is declared `abstract` (must be implemented by concrete subclasses).
-    is_abstract: bool,
-    /// `true` if the method is declared `static`.
-    is_static: bool,
-    /// `true` if this method is the constructor (`__construct`).
-    is_constructor: bool,
-    /// The visibility (`public`, `protected`, `private`) of the method.
-    visibility: Visibility,
+    pub is_final: bool,
+    pub is_abstract: bool,
+    pub is_static: bool,
+    pub is_constructor: bool,
+    pub visibility: Visibility,
 }
 
 /// Distinguishes between different kinds of callable constructs in PHP.
@@ -168,7 +163,7 @@ pub struct FunctionLikeMetadata {
     pub allows_named_arguments: bool,
 
     /// List of issues specifically related to parsing or interpreting this function's docblock.
-    pub(crate) issues: Vec<Issue>,
+    pub issues: Vec<Issue>,
 
     /// Assertions about parameter types or variable types that are guaranteed to be true
     /// *after* this function/method returns normally. From `@psalm-assert`, `@phpstan-assert`, etc.
@@ -185,87 +180,6 @@ pub struct FunctionLikeMetadata {
 
     /// A flag indicating if this function-like should be treated as unchecked.
     pub unchecked: bool,
-}
-
-impl MethodMetadata {
-    /// Creates new metadata for a method with default modifiers.
-    ///
-    /// # Arguments
-    ///
-    /// * `visibility`: The visibility of the method.
-    pub fn new(visibility: Visibility) -> Self {
-        Self { is_final: false, is_abstract: false, is_static: false, is_constructor: false, visibility }
-    }
-
-    /// Sets whether the method is final.
-    #[inline]
-    pub fn with_final(mut self, is_final: bool) -> Self {
-        self.is_final = is_final;
-        self
-    }
-
-    /// Sets whether the method is abstract.
-    #[inline]
-    pub fn with_abstract(mut self, is_abstract: bool) -> Self {
-        self.is_abstract = is_abstract;
-        // Abstract methods cannot be final.
-        if is_abstract {
-            self.is_final = false;
-        }
-
-        self
-    }
-
-    /// Sets whether the method is static.
-    #[inline]
-    pub fn with_static(mut self, is_static: bool) -> Self {
-        self.is_static = is_static;
-        self
-    }
-
-    /// Sets whether this method is the constructor (`__construct`).
-    #[inline]
-    pub fn as_constructor(mut self, is_constructor: bool) -> Self {
-        self.is_constructor = is_constructor;
-        self
-    }
-
-    /// Sets the visibility of the method.
-    #[inline]
-    pub fn with_visibility(mut self, visibility: Visibility) -> Self {
-        self.visibility = visibility;
-        self
-    }
-
-    /// Checks if the method is declared `final`.
-    #[inline]
-    pub fn is_final(&self) -> bool {
-        self.is_final
-    }
-
-    /// Checks if the method is declared `abstract`.
-    #[inline]
-    pub fn is_abstract(&self) -> bool {
-        self.is_abstract
-    }
-
-    /// Checks if the method is declared `static`.
-    #[inline]
-    pub fn is_static(&self) -> bool {
-        self.is_static
-    }
-
-    /// Checks if this method is the constructor (`__construct`).
-    #[inline]
-    pub fn is_constructor(&self) -> bool {
-        self.is_constructor
-    }
-
-    /// Returns the visibility (`public`, `protected`, `private`) of the method.
-    #[inline]
-    pub fn get_visibility(&self) -> Visibility {
-        self.visibility
-    }
 }
 
 impl FunctionLikeKind {
@@ -303,7 +217,7 @@ impl FunctionLikeMetadata {
     /// Creates new `FunctionLikeMetadata` with basic information and default flags.
     pub fn new(kind: FunctionLikeKind, span: Span) -> Self {
         let user_defined = span.start.source.1.is_user_defined();
-        let method_info = if kind.is_method() { Some(MethodMetadata::new(Visibility::Public)) } else { None };
+        let method_metadata = if kind.is_method() { Some(MethodMetadata::default()) } else { None };
 
         Self {
             kind,
@@ -311,15 +225,15 @@ impl FunctionLikeMetadata {
             user_defined,
             name: None,
             name_span: None,
-            parameters: Vec::new(),
+            parameters: vec![],
             return_type_declaration_metadata: None,
             return_type_metadata: None,
             template_types: vec![],
-            attributes: Vec::new(),
-            method_metadata: method_info,
+            attributes: vec![],
+            method_metadata,
             type_resolution_context: None,
             has_throw: false,
-            thrown_types: Vec::new(),
+            thrown_types: vec![],
             is_pure: false,
             must_use: false,
             is_deprecated: false,
@@ -335,7 +249,7 @@ impl FunctionLikeMetadata {
             allows_named_arguments: true,
             this_out_type: None,
             if_this_is_type: None,
-            issues: Vec::new(),
+            issues: vec![],
             assertions: BTreeMap::new(),
             if_true_assertions: BTreeMap::new(),
             if_false_assertions: BTreeMap::new(),
@@ -347,30 +261,6 @@ impl FunctionLikeMetadata {
     #[inline]
     pub fn get_kind(&self) -> FunctionLikeKind {
         self.kind
-    }
-
-    /// Returns the span covering the entire definition.
-    #[inline]
-    pub fn get_span(&self) -> Span {
-        self.span
-    }
-
-    /// Returns the name of the function/method, if applicable.
-    #[inline]
-    pub fn get_name(&self) -> Option<StringIdentifier> {
-        self.name
-    }
-
-    /// Returns the span of the function/method name, if applicable.
-    #[inline]
-    pub fn get_name_span(&self) -> Option<Span> {
-        self.name_span
-    }
-
-    /// Returns a slice of the parameter metadata.
-    #[inline]
-    pub fn get_parameters(&self) -> &[FunctionLikeParameterMetadata] {
-        &self.parameters
     }
 
     /// Returns a mutable slice of the parameter metadata.
@@ -391,24 +281,6 @@ impl FunctionLikeMetadata {
         self.parameters.iter_mut().find(|parameter| parameter.get_name().0 == name)
     }
 
-    /// Returns a reference to the return type signature, if declared.
-    #[inline]
-    pub fn get_return_type_metadata(&self) -> Option<&TypeMetadata> {
-        self.return_type_metadata.as_ref()
-    }
-
-    /// Returns a mutable reference to the return type signature, if declared.
-    #[inline]
-    pub fn get_return_type_metadata_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.return_type_metadata.as_mut()
-    }
-
-    /// Returns a slice of the template type parameters.
-    #[inline]
-    pub fn get_template_types(&self) -> &[TemplateTuple] {
-        &self.template_types
-    }
-
     /// Returns a mutable slice of the template type parameters.
     #[inline]
     pub fn get_template_types_mut(&mut self) -> &mut [TemplateTuple] {
@@ -421,106 +293,16 @@ impl FunctionLikeMetadata {
         &self.attributes
     }
 
-    /// Returns a reference to the method-specific info, if this is a method.
-    #[inline]
-    pub fn get_method_metadata(&self) -> Option<&MethodMetadata> {
-        self.method_metadata.as_ref()
-    }
-
     /// Returns a mutable reference to the method-specific info, if this is a method.
     #[inline]
     pub fn get_method_metadata_mut(&mut self) -> Option<&mut MethodMetadata> {
         self.method_metadata.as_mut()
     }
 
-    /// Returns a reference to the type resolution context, if available.
-    #[inline]
-    pub fn get_type_resolution_context(&self) -> Option<&TypeResolutionContext> {
-        self.type_resolution_context.as_ref()
-    }
-
-    /// Returns a mutable reference to the type resolution context, if available.
-    #[inline]
-    pub fn get_type_resolution_context_mut(&mut self) -> Option<&mut TypeResolutionContext> {
-        self.type_resolution_context.as_mut()
-    }
-
-    /// Returns a reference to the `@self-out` type, if specified.
-    #[inline]
-    pub fn get_this_out_type(&self) -> Option<&TypeMetadata> {
-        self.this_out_type.as_ref()
-    }
-
-    /// Returns a mutable reference to the `@self-out` type, if specified.
-    #[inline]
-    pub fn get_this_out_type_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.this_out_type.as_mut()
-    }
-
-    /// Returns a reference to the `@if-this-is` type constraint, if specified.
-    #[inline]
-    pub fn get_if_this_is_type(&self) -> Option<&TypeMetadata> {
-        self.if_this_is_type.as_ref()
-    }
-
-    /// Returns a mutable reference to the `@if-this-is` type constraint, if specified.
-    #[inline]
-    pub fn get_if_this_is_type_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.if_this_is_type.as_mut()
-    }
-
-    /// Returns a slice of the known thrown types.
-    #[inline]
-    pub fn get_thrown_types(&self) -> &[TypeMetadata] {
-        &self.thrown_types
-    }
-
-    /// Returns a mutable slice of the known thrown types.
-    #[inline]
-    pub fn get_thrown_types_mut(&mut self) -> &mut [TypeMetadata] {
-        &mut self.thrown_types
-    }
-
-    /// Returns a slice of docblock issues.
-    #[inline]
-    pub fn get_issues(&self) -> &[Issue] {
-        &self.issues
-    }
-
     /// Returns a mutable slice of docblock issues.
     #[inline]
     pub fn take_issues(&mut self) -> Vec<Issue> {
         std::mem::take(&mut self.issues)
-    }
-
-    /// Returns a reference to the `@assert` assertions map.
-    #[inline]
-    pub fn get_assertions(&self) -> &BTreeMap<StringIdentifier, Vec<Assertion>> {
-        &self.assertions
-    }
-
-    /// Returns a reference to the `@assert-if-true` assertions map.
-    #[inline]
-    pub fn get_if_true_assertions(&self) -> &BTreeMap<StringIdentifier, Vec<Assertion>> {
-        &self.if_true_assertions
-    }
-
-    /// Returns a reference to the `@assert-if-false` assertions map.
-    #[inline]
-    pub fn get_if_false_assertions(&self) -> &BTreeMap<StringIdentifier, Vec<Assertion>> {
-        &self.if_false_assertions
-    }
-
-    /// Returns the visibility of the method, if this is a method.
-    #[inline]
-    pub fn get_visibility(&self) -> Option<Visibility> {
-        self.method_metadata.map(|info| info.visibility)
-    }
-
-    /// Checks if this function/method is defined in user code.
-    #[inline]
-    pub const fn is_user_defined(&self) -> bool {
-        self.user_defined
     }
 
     /// Checks if the function contains `yield`.
@@ -557,39 +339,6 @@ impl FunctionLikeMetadata {
         }
     }
 
-    /// Returns a new instance with the name and name span set to `None`. Updates constructor status.
-    #[inline]
-    pub fn without_name(mut self) -> Self {
-        self.unset_name();
-        self
-    }
-
-    /// Sets the name span directly. Clears if name is `None`. Use with caution.
-    #[inline]
-    pub fn set_name_span(&mut self, name_span: Option<Span>) {
-        self.name_span = if self.name.is_some() { name_span } else { None };
-    }
-
-    /// Returns a new instance with the name span set directly. Use with caution.
-    #[inline]
-    pub fn with_name_span(mut self, name_span: Option<Span>) -> Self {
-        self.set_name_span(name_span);
-        self
-    }
-
-    /// Sets the name span to `None`. Use with caution.
-    #[inline]
-    pub fn unset_name_span(&mut self) {
-        self.name_span = None;
-    }
-
-    /// Returns a new instance with the name span set to `None`. Use with caution.
-    #[inline]
-    pub fn without_name_span(mut self) -> Self {
-        self.unset_name_span();
-        self
-    }
-
     /// Sets the parameters, replacing existing ones.
     #[inline]
     pub fn set_parameters(&mut self, parameters: impl IntoIterator<Item = FunctionLikeParameterMetadata>) {
@@ -600,35 +349,6 @@ impl FunctionLikeMetadata {
     #[inline]
     pub fn with_parameters(mut self, parameters: impl IntoIterator<Item = FunctionLikeParameterMetadata>) -> Self {
         self.set_parameters(parameters);
-        self
-    }
-
-    /// Adds a single parameter.
-    #[inline]
-    pub fn add_parameter(&mut self, parameter: FunctionLikeParameterMetadata) {
-        self.parameters.push(parameter);
-    }
-
-    /// Returns a new instance with the parameter added.
-    #[inline]
-    pub fn with_added_parameter(mut self, parameter: FunctionLikeParameterMetadata) -> Self {
-        self.add_parameter(parameter);
-        self
-    }
-
-    /// Adds multiple parameters.
-    #[inline]
-    pub fn add_parameters(&mut self, parameters: impl IntoIterator<Item = FunctionLikeParameterMetadata>) {
-        self.parameters.extend(parameters);
-    }
-
-    /// Returns a new instance with the parameters added.
-    #[inline]
-    pub fn with_added_parameters(
-        mut self,
-        parameters: impl IntoIterator<Item = FunctionLikeParameterMetadata>,
-    ) -> Self {
-        self.add_parameters(parameters);
         self
     }
 
@@ -644,19 +364,6 @@ impl FunctionLikeMetadata {
         }
 
         self.return_type_declaration_metadata = return_type;
-    }
-
-    /// Sets the template types, replacing existing ones.
-    #[inline]
-    pub fn set_template_types(&mut self, templates: impl IntoIterator<Item = TemplateTuple>) {
-        self.template_types = templates.into_iter().collect();
-    }
-
-    /// Returns a new instance with the template types replaced.
-    #[inline]
-    pub fn with_template_types(mut self, templates: impl IntoIterator<Item = TemplateTuple>) -> Self {
-        self.set_template_types(templates);
-        self
     }
 
     /// Adds a single template type definition.

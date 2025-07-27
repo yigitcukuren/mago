@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
@@ -45,5 +46,11 @@ impl ClassLikeConstantMetadata {
         }
 
         self.type_declaration = Some(type_declaration);
+    }
+}
+
+impl HasSpan for ClassLikeConstantMetadata {
+    fn span(&self) -> Span {
+        self.span
     }
 }

@@ -116,8 +116,8 @@ fn resolve_union(
         function_is_final = invocation
             .target
             .get_function_like_metadata()
-            .and_then(|metadata| metadata.get_method_metadata())
-            .is_some_and(|metadata| metadata.is_final());
+            .and_then(|metadata| metadata.method_metadata.as_ref())
+            .is_some_and(|metadata| metadata.is_final);
     } else {
         static_class_type = Default::default();
         parent_class = None;

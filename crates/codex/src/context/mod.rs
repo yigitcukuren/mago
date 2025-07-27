@@ -91,8 +91,8 @@ impl<'a> ScopeContext<'a> {
     pub fn get_function_like_identifier(&self) -> Option<FunctionLikeIdentifier> {
         let function_like = self.function_like?;
 
-        let Some(function_name) = function_like.get_name() else {
-            return Some(FunctionLikeIdentifier::Closure(function_like.get_span().start));
+        let Some(function_name) = function_like.name else {
+            return Some(FunctionLikeIdentifier::Closure(function_like.span.start));
         };
 
         Some(if function_like.get_kind().is_method() {

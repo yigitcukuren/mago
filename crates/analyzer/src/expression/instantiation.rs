@@ -280,8 +280,8 @@ fn analyze_class_instantiation<'a>(
     let is_spl_object_storage = class_name_str.eq_ignore_ascii_case("splobjectstorage");
     if let Some(constructor) = get_method_by_id(context.codebase, context.interner, &constructor_declraing_id) {
         has_inconsistent_constructor =
-            has_inconsistent_constructor && !constructor.get_method_metadata().is_some_and(|meta| meta.is_final());
-        constructor_span = Some(constructor.get_name_span().unwrap_or_else(|| constructor.get_span()));
+            has_inconsistent_constructor && !constructor.method_metadata.is_some_and(|meta| meta.is_final);
+        constructor_span = Some(constructor.name_span.unwrap_or(constructor.span));
 
         artifacts.symbol_references.add_reference_for_method_call(&block_context.scope, &constructor_declraing_id);
 
@@ -491,7 +491,7 @@ fn add_dataflow<'a>(
         let new_call_node = DataFlowNode::get_for_this_after_method(
             *method_id,
             if let Some(method_metadata) = method_metadata {
-                method_metadata.get_return_type_metadata().map(|signature| signature.span)
+                method_metadata.return_type_metadata.as_ref().map(|signature| signature.span)
             } else {
                 None
             },
@@ -509,7 +509,7 @@ fn add_dataflow<'a>(
                 let new_call_node = DataFlowNode::get_for_this_after_method(
                     MethodIdentifier::new(descendant_class, *method_id.get_method_name()),
                     if let Some(method_metadata) = method_metadata {
-                        method_metadata.get_return_type_metadata().map(|signature| signature.span)
+                        method_metadata.return_type_metadata.as_ref().map(|signature| signature.span)
                     } else {
                         None
                     },

@@ -142,8 +142,8 @@ pub fn handle_return_value<'a>(
             } else {
                 StaticClassType::None
             },
-            function_is_final: if let Some(method_metadata) = &function_like_metadata.get_method_metadata() {
-                method_metadata.is_final()
+            function_is_final: if let Some(method_metadata) = &&function_like_metadata.method_metadata {
+                method_metadata.is_final
             } else {
                 false
             },
@@ -171,8 +171,8 @@ pub fn handle_return_value<'a>(
                     } else {
                         StaticClassType::None
                     },
-                    function_is_final: if let Some(method_metadata) = function_like_metadata.get_method_metadata() {
-                        method_metadata.is_final()
+                    function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
+                        method_metadata.is_final
                     } else {
                         false
                     },
@@ -205,9 +205,10 @@ pub fn handle_return_value<'a>(
                     let expected_return_type_str = expected_return_type.get_id(Some(context.interner));
 
                     let type_declaration_span = function_like_metadata
-                        .get_return_type_metadata()
+                        .return_type_metadata
+                        .as_ref()
                         .map(|signature| signature.span)
-                        .unwrap_or_else(|| function_like_metadata.get_span());
+                        .unwrap_or_else(|| function_like_metadata.span);
 
                     if let Some(return_value) = return_value {
                         context.buffer.report(
@@ -456,7 +457,7 @@ pub fn handle_return_value<'a>(
                         Annotation::primary(return_value.span()).with_message("Nullable value returned here.")
                     )
                     .with_annotation(
-                        Annotation::secondary(function_like_metadata.get_span())
+                        Annotation::secondary(function_like_metadata.span)
                             .with_message(format!("Return type declared as non-nullable `{expected_type_str}` here."))
                     )
                     .with_note(
@@ -491,7 +492,7 @@ pub fn handle_return_value<'a>(
                             .with_message("Potentially 'false' returned here.")
                     )
                     .with_annotation(
-                        Annotation::secondary(function_like_metadata.get_span())
+                        Annotation::secondary(function_like_metadata.span)
                             .with_message(format!("Return type declared as non-falsable `{expected_type_str}` here")))
                     .with_note(
                         "The declared return type does not permit 'false', but the analysis indicates that 'false' or a falsable type could be returned from this path."
@@ -523,7 +524,7 @@ pub fn handle_return_value<'a>(
             ))
             .with_annotation(Annotation::primary(return_span).with_message("No return value specified here."))
             .with_annotation(
-                Annotation::secondary(function_like_metadata.get_span())
+                Annotation::secondary(function_like_metadata.span)
                     .with_message(format!("Return type declared as `{expected_type_str}` here."))
             )
             .with_note(

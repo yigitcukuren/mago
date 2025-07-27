@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
@@ -105,46 +106,16 @@ impl FunctionLikeParameterMetadata {
         self.name_span
     }
 
-    /// Returns a slice containing the attributes attached to the parameter.
-    #[inline]
-    pub fn get_attributes(&self) -> &[AttributeMetadata] {
-        &self.attributes
-    }
-
     /// Returns a reference to the explicit type signature, if available.
     #[inline]
     pub fn get_type_metadata(&self) -> Option<&TypeMetadata> {
         self.type_metadata.as_ref()
     }
 
-    /// Returns a mutable reference to the explicit type signature, if available.
-    #[inline]
-    pub fn get_type_signature_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.type_metadata.as_mut()
-    }
-
-    /// Returns a reference to the `@param-out` type, if specified and relevant.
-    #[inline]
-    pub fn get_out_type(&self) -> Option<&TypeMetadata> {
-        self.out_type.as_ref()
-    }
-
-    /// Returns a mutable reference to the `@param-out` type, if specified and relevant.
-    #[inline]
-    pub fn get_out_type_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.out_type.as_mut()
-    }
-
     /// Returns a reference to the inferred type of the default value, if known.
     #[inline]
     pub fn get_default_type(&self) -> Option<&TypeMetadata> {
         self.default_type.as_ref()
-    }
-
-    /// Returns a mutable reference to the inferred type of the default value, if known.
-    #[inline]
-    pub fn get_default_type_mut(&mut self) -> Option<&mut TypeMetadata> {
-        self.default_type.as_mut()
     }
 
     /// Checks if the parameter is passed by reference (`&`).
@@ -163,18 +134,6 @@ impl FunctionLikeParameterMetadata {
     #[inline]
     pub const fn is_variadic(&self) -> bool {
         self.is_variadic
-    }
-
-    /// Checks if the parameter is a promoted property (constructor property promotion).
-    #[inline]
-    pub fn is_promoted_property(&self) -> bool {
-        self.is_promoted_property
-    }
-
-    /// Checks if the parameter is marked as deprecated.
-    #[inline]
-    pub fn is_deprecated(&self) -> bool {
-        self.is_deprecated
     }
 
     /// Sets the attributes, replacing any existing ones.
@@ -210,17 +169,6 @@ impl FunctionLikeParameterMetadata {
     /// Returns a new instance with the explicit type signature set.
     pub fn with_type_signature(mut self, type_signature: Option<TypeMetadata>) -> Self {
         self.set_type_signature(type_signature);
-        self
-    }
-
-    /// Sets the type signature to `None`.
-    pub fn unset_type_signature(&mut self) {
-        self.type_metadata = None;
-    }
-
-    /// Returns a new instance with the type signature set to `None`.
-    pub fn without_type_signature(mut self) -> Self {
-        self.unset_type_signature();
         self
     }
 
@@ -289,15 +237,10 @@ impl FunctionLikeParameterMetadata {
         self.set_is_promoted_property(is_promoted);
         self
     }
+}
 
-    /// Sets whether the parameter is marked as deprecated.
-    pub fn set_is_deprecated(&mut self, is_deprecated: bool) {
-        self.is_deprecated = is_deprecated;
-    }
-
-    /// Returns a new instance with the `is_deprecated` flag set.
-    pub fn with_is_deprecated(mut self, is_deprecated: bool) -> Self {
-        self.set_is_deprecated(is_deprecated);
-        self
+impl HasSpan for FunctionLikeParameterMetadata {
+    fn span(&self) -> Span {
+        self.span
     }
 }

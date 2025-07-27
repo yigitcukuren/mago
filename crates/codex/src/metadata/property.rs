@@ -152,88 +152,16 @@ impl PropertyMetadata {
         &self.name
     }
 
-    /// Returns the span for the property name identifier, if known.
-    #[inline]
-    pub fn get_name_span(&self) -> Option<Span> {
-        self.name_span
-    }
-
-    /// Returns the overall span for the property declaration, if known.
-    #[inline]
-    pub fn get_span(&self) -> Option<Span> {
-        self.span
-    }
-
-    /// Returns the read visibility level of the property.
-    #[inline]
-    pub fn get_read_visibility(&self) -> Visibility {
-        self.read_visibility
-    }
-
-    /// Returns the write visibility level of the property.
-    #[inline]
-    pub fn get_write_visibility(&self) -> Visibility {
-        self.write_visibility
-    }
-
-    /// Checks if the property is declared `readonly`.
-    #[inline]
-    pub fn is_readonly(&self) -> bool {
-        self.is_readonly
-    }
-
-    /// Checks if the property allows private mutation.
-    #[inline]
-    pub fn allow_private_mutation(&self) -> bool {
-        self.allow_private_mutation
-    }
-
     /// Checks if the property is declared with a default value.
     #[inline]
     pub fn has_default(&self) -> bool {
         self.has_default
     }
 
-    /// Checks if the property originates from constructor promotion.
-    #[inline]
-    pub fn is_promoted(&self) -> bool {
-        self.is_promoted
-    }
-
-    /// Checks if the property is marked `@internal`.
-    #[inline]
-    pub fn is_internal(&self) -> bool {
-        self.is_internal
-    }
-
     /// Checks if the property is declared `static`.
     #[inline]
     pub fn is_static(&self) -> bool {
         self.is_static
-    }
-
-    /// Checks if the property represents an abstract requirement.
-    #[inline]
-    pub fn is_abstract(&self) -> bool {
-        self.is_abstract
-    }
-
-    /// Checks if the property is marked `@deprecated`.
-    #[inline]
-    pub fn is_deprecated(&self) -> bool {
-        self.is_deprecated
-    }
-
-    /// Checks if the property uses property hooks (is 'virtual').
-    #[inline]
-    pub fn is_virtual(&self) -> bool {
-        self.is_virtual
-    }
-
-    /// Checks if read and write visibility differ (asymmetric).
-    #[inline]
-    pub fn is_asymmetric(&self) -> bool {
-        self.is_asymmetric
     }
 
     /// Checks if the property is effectively final (private read or write access).
@@ -248,78 +176,10 @@ impl PropertyMetadata {
         self.name_span = name_span;
     }
 
-    /// Returns a new instance with the name span set.
-    #[inline]
-    pub fn with_name_span(mut self, name_span: Option<Span>) -> Self {
-        self.set_name_span(name_span);
-        self
-    }
-
-    /// Sets the name span to `None`.
-    #[inline]
-    pub fn unset_name_span(&mut self) {
-        self.name_span = None;
-    }
-
-    /// Returns a new instance with the name span set to `None`.
-    #[inline]
-    pub fn without_name_span(mut self) -> Self {
-        self.unset_name_span();
-        self
-    }
-
     /// Sets the overall span for the property declaration.
     #[inline]
     pub fn set_span(&mut self, span: Option<Span>) {
         self.span = span;
-    }
-
-    /// Returns a new instance with the overall span set.
-    #[inline]
-    pub fn with_span(mut self, span: Option<Span>) -> Self {
-        self.set_span(span);
-        self
-    }
-
-    /// Sets the overall span to `None`.
-    #[inline]
-    pub fn unset_span(&mut self) {
-        self.span = None;
-    }
-
-    /// Returns a new instance with the overall span set to `None`.
-    #[inline]
-    pub fn without_span(mut self) -> Self {
-        self.unset_span();
-        self
-    }
-
-    /// Sets the read visibility level. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
-    #[inline]
-    pub fn set_read_visibility(&mut self, visibility: Visibility) {
-        self.read_visibility = visibility;
-        self.update_asymmetric();
-    }
-
-    /// Returns a new instance with the read visibility set. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
-    #[inline]
-    pub fn with_read_visibility(mut self, visibility: Visibility) -> Self {
-        self.set_read_visibility(visibility);
-        self
-    }
-
-    /// Sets the write visibility level. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
-    #[inline]
-    pub fn set_write_visibility(&mut self, visibility: Visibility) {
-        self.write_visibility = visibility;
-        self.update_asymmetric();
-    }
-
-    /// Returns a new instance with the write visibility set. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
-    #[inline]
-    pub fn with_write_visibility(mut self, visibility: Visibility) -> Self {
-        self.set_write_visibility(visibility);
-        self
     }
 
     /// Sets both read and write visibility levels. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
@@ -330,24 +190,10 @@ impl PropertyMetadata {
         self.update_asymmetric();
     }
 
-    /// Returns a new instance with both read and write visibility levels set. Updates `is_asymmetric`. Ensures virtual properties remain symmetric.
-    #[inline]
-    pub fn with_visibility(mut self, read: Visibility, write: Visibility) -> Self {
-        self.set_visibility(read, write);
-        self
-    }
-
     /// Sets whether the property is `readonly`.
     #[inline]
     pub fn set_is_readonly(&mut self, is_readonly: bool) {
         self.is_readonly = is_readonly;
-    }
-
-    /// Returns a new instance with the `readonly` flag set.
-    #[inline]
-    pub fn with_is_readonly(mut self, is_readonly: bool) -> Self {
-        self.set_is_readonly(is_readonly);
-        self
     }
 
     /// Sets whether the property allows private mutation.
@@ -356,24 +202,10 @@ impl PropertyMetadata {
         self.allow_private_mutation = allow_private_mutation;
     }
 
-    /// Returns a new instance with the `allow_private_mutation` flag set.
-    #[inline]
-    pub fn with_allow_private_mutation(mut self, allow_private_mutation: bool) -> Self {
-        self.set_allow_private_mutation(allow_private_mutation);
-        self
-    }
-
     /// Sets whether the property has a default value.
     #[inline]
     pub fn set_has_default(&mut self, has_default: bool) {
         self.has_default = has_default;
-    }
-
-    /// Returns a new instance with the `has_default` flag set.
-    #[inline]
-    pub fn with_has_default(mut self, has_default: bool) -> Self {
-        self.set_has_default(has_default);
-        self
     }
 
     /// Sets whether the property originates from constructor promotion.
@@ -382,24 +214,10 @@ impl PropertyMetadata {
         self.is_promoted = is_promoted;
     }
 
-    /// Returns a new instance with the `promoted` flag set.
-    #[inline]
-    pub fn with_is_promoted(mut self, is_promoted: bool) -> Self {
-        self.set_is_promoted(is_promoted);
-        self
-    }
-
     /// Sets whether the property is marked `@internal`.
     #[inline]
     pub fn set_is_internal(&mut self, is_internal: bool) {
         self.is_internal = is_internal;
-    }
-
-    /// Returns a new instance with the `internal` flag set.
-    #[inline]
-    pub fn with_is_internal(mut self, is_internal: bool) -> Self {
-        self.set_is_internal(is_internal);
-        self
     }
 
     /// Sets whether the property is `static`.
@@ -408,24 +226,10 @@ impl PropertyMetadata {
         self.is_static = is_static;
     }
 
-    /// Returns a new instance with the `static` flag set.
-    #[inline]
-    pub fn with_is_static(mut self, is_static: bool) -> Self {
-        self.set_is_static(is_static);
-        self
-    }
-
     /// Sets whether the property represents an abstract requirement.
     #[inline]
     pub fn set_is_abstract(&mut self, is_abstract: bool) {
         self.is_abstract = is_abstract;
-    }
-
-    /// Returns a new instance with the `abstract` flag set.
-    #[inline]
-    pub fn with_is_abstract(mut self, is_abstract: bool) -> Self {
-        self.set_is_abstract(is_abstract);
-        self
     }
 
     /// Sets whether the property is marked `@deprecated`.
@@ -434,25 +238,11 @@ impl PropertyMetadata {
         self.is_deprecated = is_deprecated;
     }
 
-    /// Returns a new instance with the `deprecated` flag set.
-    #[inline]
-    pub fn with_is_deprecated(mut self, is_deprecated: bool) -> Self {
-        self.set_is_deprecated(is_deprecated);
-        self
-    }
-
     /// Sets whether the property uses property hooks. Updates `is_asymmetric`.
     #[inline]
     pub fn set_is_virtual(&mut self, is_virtual: bool) {
         self.is_virtual = is_virtual;
         self.update_asymmetric();
-    }
-
-    /// Returns a new instance with the `virtual` flag set. Updates `is_asymmetric`.
-    #[inline]
-    pub fn with_is_virtual(mut self, is_virtual: bool) -> Self {
-        self.set_is_virtual(is_virtual);
-        self
     }
 
     /// Also ensures virtual properties are not asymmetric.

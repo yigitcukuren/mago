@@ -52,7 +52,7 @@ pub fn check_method_visibility<'a>(
         return true;
     };
 
-    let Some(visibility) = method_metadata.get_visibility() else {
+    let Some(visibility) = method_metadata.method_metadata.as_ref().map(|m| m.visibility) else {
         return true;
     };
 
@@ -86,7 +86,7 @@ pub fn check_method_visibility<'a>(
             visibility,
             access_span,
             member_span,
-            method_metadata.get_span(),
+            method_metadata.span,
             help_text,
         );
     }

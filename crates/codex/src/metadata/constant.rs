@@ -1,8 +1,9 @@
-use mago_reporting::Issue;
 use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_reporting::Issue;
+use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
@@ -49,5 +50,11 @@ impl ConstantMetadata {
     #[inline]
     pub fn take_issues(&mut self) -> Vec<Issue> {
         std::mem::take(&mut self.issues)
+    }
+}
+
+impl HasSpan for ConstantMetadata {
+    fn span(&self) -> Span {
+        self.span
     }
 }

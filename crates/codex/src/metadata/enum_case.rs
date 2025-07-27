@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
@@ -14,37 +15,12 @@ use crate::ttype::atomic::TAtomic;
 /// including associated attributes, values, and source locations.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct EnumCaseMetadata {
-    /// Attributes attached to the enum case declaration (e.g., `#[Internal] case Draft;`).
     pub attributes: Vec<AttributeMetadata>,
-
-    /// The identifier (name) of the enum case (e.g., `Ok`, `Pending`, `Admin`).
     pub name: StringIdentifier,
-
-    /// The specific source code location (span) of the case name identifier itself.
     pub name_span: Span,
-
-    /// The source code location (span) covering the entire case declaration statement.
     pub span: Span,
-
-    /// If `is_backed` is true, this *may* hold the inferred atomic type of the specific
-    /// scalar value assigned to this case (e.g., `int(200)` for `case Ok = 200;`).
-    ///
-    /// It can be `None` even for backed cases if the value's type could not be inferred
-    /// during the initial scan (e.g., if the value is a constant defined elsewhere:
-    /// `case Default = Config::DEFAULT_TIMEOUT;`). The overall backing type defined on the enum
-    /// (`: int`, `: string`) provides the fundamental type information in such scenarios.
-    ///
-    /// If `is_backed` is false (a pure enum case like `case Pending;`), this must be `None`.
     pub value_type: Option<TAtomic>,
-
-    /// `true` if this case belongs to a "backed" enum declaration (one defined with `: int` or `: string`,
-    /// like `enum HttpStatus: int`).
-    ///
-    /// `false` if it belongs to a "pure" enum declaration (like `enum Status`).
-    /// This is determined by the enum declaration itself.
     pub is_backed: bool,
-
-    /// `true` if the enum case is marked as deprecated, typically via `@deprecated` docblock tag.
     pub is_deprecated: bool,
 }
 
@@ -69,5 +45,11 @@ impl EnumCaseMetadata {
             is_backed: false, // Assume pure initially
             is_deprecated: false,
         }
+    }
+}
+
+impl HasSpan for EnumCaseMetadata {
+    fn span(&self) -> Span {
+        self.span
     }
 }
