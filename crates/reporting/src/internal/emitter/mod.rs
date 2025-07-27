@@ -10,6 +10,7 @@ use crate::reporter::ReportingFormat;
 
 mod utils;
 
+pub mod ariadne;
 pub mod checkstyle;
 pub mod codespan;
 pub mod count;
@@ -60,6 +61,7 @@ impl Emitter for ReportingFormat {
             ReportingFormat::Rich => codespan::rich_format.emit(writer, sources, interner, issues),
             ReportingFormat::Medium => codespan::medium_format.emit(writer, sources, interner, issues),
             ReportingFormat::Short => codespan::short_format.emit(writer, sources, interner, issues),
+            ReportingFormat::Ariadne => ariadne::ariadne_format.emit(writer, sources, interner, issues),
             ReportingFormat::Github => github::github_format.emit(writer, sources, interner, issues),
             ReportingFormat::Gitlab => gitlab::gitlab_format.emit(writer, sources, interner, issues),
             ReportingFormat::Json => json::json_format.emit(writer, sources, interner, issues),
