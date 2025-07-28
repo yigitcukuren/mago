@@ -53,7 +53,7 @@ impl Analyzable for DoWhile {
             artifacts,
         )
         .unwrap_or_else(|| {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::ConditionIsTooComplex,
                 Issue::warning("Loop condition is too complex for precise type analysis.")
                     .with_annotation(
@@ -123,7 +123,7 @@ impl Analyzable for DoWhile {
 
         if !negated_while_types.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,

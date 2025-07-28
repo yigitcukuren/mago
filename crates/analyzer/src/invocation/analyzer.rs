@@ -271,7 +271,7 @@ pub fn analyze_invocation<'a>(
 
             if let Some(named_argument) = argument.get_named_argument() {
                 if let Some(previous_span) = assigned_parameters_by_name.get(&named_argument.name.value) {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::DuplicateNamedArgument,
                         Issue::error(format!(
                             "Duplicate named argument `${}` in call to {} `{}`.",
@@ -291,7 +291,7 @@ pub fn analyze_invocation<'a>(
                 } else {
                     if let Some(previous_span) = assigned_parameters_by_position.get(&parameter_offset) {
                         if !parameter_ref.is_variadic() {
-                            context.buffer.report(
+                            context.collector.report_with_code(
                                 TypingIssueKind::NamedArgumentOverridesPositional,
                                 Issue::error(format!(
                                     "Named argument `${}` for {} `{}` targets a parameter already provided positionally.",
@@ -302,7 +302,7 @@ pub fn analyze_invocation<'a>(
                                 .with_help("Provide the argument either positionally or by name, but not both."),
                             );
                         } else {
-                            context.buffer.report(
+                            context.collector.report_with_code(
                                 TypingIssueKind::NamedArgumentForVariadicAfterPositional,
                                  Issue::warning(format!(
                                     "Named argument `${}` for {} `{}` targets a variadic parameter that has already captured positional arguments.",
@@ -353,7 +353,7 @@ pub fn analyze_invocation<'a>(
         } else if let Some(named_argument) = argument.get_named_argument() {
             let argument_name = context.interner.lookup(&named_argument.name.value);
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidNamedArgument,
                 Issue::error(format!(
                     "Unknown named argument `${argument_name}` in call to {target_kind_str} `{target_name_str}`.",
@@ -486,7 +486,7 @@ pub fn analyze_invocation<'a>(
                     );
                 }
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::TooManyArguments,
                     Issue::error(format!(
                         "Cannot unpack arguments into non-variadic {} `{}`.",
@@ -502,7 +502,7 @@ pub fn analyze_invocation<'a>(
                 );
             }
         } else if !unpacked_arguments.is_empty() {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::TooManyArguments,
                 Issue::error(format!(
                     "Cannot unpack arguments into {} `{}` which expects no arguments.",
@@ -555,7 +555,7 @@ pub fn analyze_invocation<'a>(
         };
 
         issue = issue.with_help("Provide all required arguments.");
-        context.buffer.report(TypingIssueKind::TooFewArguments, issue);
+        context.collector.report_with_code(TypingIssueKind::TooFewArguments, issue);
     } else if has_too_many_arguments
         || (!parameter_refs.last().is_some_and(|p| p.is_variadic())
             && number_of_provided_parameters > max_params
@@ -604,7 +604,7 @@ pub fn analyze_invocation<'a>(
             .with_note(format!("Expected {max_params} argument(s), but received {number_of_provided_parameters}."))
             .with_help("Remove the extra argument(s).");
 
-        context.buffer.report(TypingIssueKind::TooManyArguments, issue);
+        context.collector.report_with_code(TypingIssueKind::TooManyArguments, issue);
     }
 
     check_template_result(context, template_result, invocation.span);
@@ -1154,7 +1154,7 @@ fn infer_templates_from_argument_and_parameter_types(
                                     false,
                                     &mut ComparisonResult::default(),
                                 ) {
-                                    context.buffer.report(
+                                    context.collector.report_with_code(
                                         TypingIssueKind::TemplateConstraintViolation,
                                         Issue::error(format!(
                                             "Inferred type for template `{}` does not satisfy its constraint.",
@@ -1232,7 +1232,7 @@ fn infer_templates_from_argument_and_parameter_types(
                             ) {
                                 lower_bound_type = template_type.clone();
 
-                                context.buffer.report(
+                                context.collector.report_with_code(
                                     TypingIssueKind::TemplateConstraintViolation,
                                     Issue::error(format!(
                                         "Argument type mismatch for class string of `{}`.",
@@ -1280,7 +1280,7 @@ fn infer_templates_from_argument_and_parameter_types(
             .is_none_or(|bounds| bounds.is_empty());
 
         if is_unresolved {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::TemplateConstraintViolation,
                 Issue::error(format!(
                     "Argument type mismatch for template `{}`.",
@@ -1378,7 +1378,7 @@ fn verify_argument_type(
     let target_name_str = invocation_target.guess_name(context.interner);
 
     if input_type.is_never() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::NoValue,
             Issue::error(format!(
                 "Argument #{} passed to {} `{}` has type `never`, meaning it cannot produce a value.",
@@ -1426,7 +1426,7 @@ fn verify_argument_type(
         if !parameter_type.is_mixed() {
             let mut mixed_from_any = false;
             if input_type.is_mixed_with_any(&mut mixed_from_any) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     if mixed_from_any { TypingIssueKind::MixedAnyArgument } else { TypingIssueKind::MixedArgument },
                     Issue::error(format!(
                         "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
@@ -1473,7 +1473,7 @@ fn verify_argument_type(
                 .to_string();
             }
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 issue_kind,
                 Issue::error(format!(
                     "Argument type mismatch for argument #{} of `{}`: expected `{}`, but provided type `{}` is less specific.",
@@ -1494,7 +1494,7 @@ fn verify_argument_type(
             );
 
             if types_can_be_identical {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::PossiblyInvalidArgument,
                     Issue::error(format!(
                         "Possible argument type mismatch for argument #{} of `{}`: expected `{}`, but possibly received `{}`.",
@@ -1506,7 +1506,7 @@ fn verify_argument_type(
                     .with_help("Ensure the argument always has the expected type using checks or assertions."),
                 );
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidArgument,
                     Issue::error(format!(
                         "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
@@ -1730,7 +1730,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
             }
             TAtomic::Mixed(mixed) if mixed.is_any() => {
                 if !reported_an_error {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::MixedAnyArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
@@ -1749,7 +1749,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
             }
             TAtomic::Mixed(_) => {
                 if !reported_an_error {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::MixedArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
@@ -1768,7 +1768,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
             _ => {
                 if !reported_an_error {
                     let type_str = atomic_type.get_id(Some(context.interner));
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{type_str}` because it is not an iterable type."
@@ -1864,7 +1864,7 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
                     TypingIssueKind::InvalidArgument
                 };
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     issue_kind,
                     Issue::error(format!("Incompatible template bounds for `{}`.", interner.lookup(template_name)))
                         .with_annotation(Annotation::primary(span).with_message(format!(
@@ -1898,7 +1898,7 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
                     unique_vec(bounds_with_equality.iter().map(|bound| bound.bound_type.get_id(Some(interner))));
 
                 if equality_types.len() > 1 {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::ConflictingTemplateEqualityBounds,
                         Issue::error(format!(
                             "Conflicting equality requirements found for template `{}`.",
@@ -1936,7 +1936,7 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
                     );
 
                     if !is_contained {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::IncompatibleTemplateLowerBound,
                             Issue::error(format!(
                                 "Incompatible bounds found for template `{}`.",

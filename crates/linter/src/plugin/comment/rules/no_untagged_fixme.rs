@@ -5,13 +5,13 @@ use regex::Regex;
 
 use mago_reporting::*;
 use mago_syntax::ast::*;
+use mago_syntax::comments::comment_lines;
 
 use crate::context::LintContext;
 use crate::definition::RuleDefinition;
 use crate::definition::RuleUsageExample;
 use crate::directive::LintDirective;
 use crate::rule::Rule;
-use crate::utils::comment_lines;
 
 static TAGGED_FIXME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"fixme\((#|@)?\S+\)").unwrap());
 
@@ -54,7 +54,7 @@ impl Rule for NoUntaggedFixmeRule {
                 continue;
             }
 
-            for line in comment_lines(trivia, context.interner) {
+            for (_, line) in comment_lines(trivia, context.interner) {
                 let trimmied = line.trim_start().to_lowercase();
                 if !trimmied.starts_with("fixme") {
                     continue;

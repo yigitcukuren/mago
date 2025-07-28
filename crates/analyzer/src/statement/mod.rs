@@ -167,7 +167,7 @@ impl Analyzable for Statement {
             Statement::Static(r#static) => r#static.analyze(context, block_context, artifacts),
             Statement::Unset(unset) => unset.analyze(context, block_context, artifacts),
             Statement::Switch(r#switch) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnsupportedFeature,
                     Issue::warning("Analysis for `switch` statements is not yet implemented.")
                         .with_annotation(
@@ -222,7 +222,7 @@ pub fn analyze_statements<'a>(
                 };
 
                 if is_harmless {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UselessControlFlow,
                         Issue::help("This control flow is unnecessary")
                             .with_annotation(
@@ -232,7 +232,7 @@ pub fn analyze_statements<'a>(
                             .with_help("Consider removing this statement as it does not do anything in this context."),
                     );
                 } else {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UnevaluatedCode,
                         Issue::help("Unreachable code detected.")
                             .with_annotation(Annotation::primary(statement.span()).with_message("This code will never be executed."))
@@ -263,7 +263,7 @@ fn detect_unused_statement_expressions(
     if let Some((issue_kind, name_id)) = has_unused_must_use(expression, context, artifacts) {
         let name_str = context.interner.lookup(&name_id);
 
-        context.buffer.report(
+        context.collector.report_with_code(
             issue_kind,
             Issue::error(format!("The return value of '{name_str}' must be used."))
                 .with_annotation(Annotation::primary(statement.span()).with_message("The result of this call is ignored"))
@@ -324,7 +324,7 @@ fn detect_unused_statement_expressions(
         _ => return,
     };
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::UnusedStatement,
         Issue::note("Statement has no effect.")
             .with_annotation(Annotation::primary(expression.span()).with_message(useless_expression_message))

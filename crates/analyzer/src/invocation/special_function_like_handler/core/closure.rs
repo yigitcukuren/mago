@@ -33,7 +33,7 @@ impl SpecialFunctionLikeHandlerTrait for GetCurrentClosureMethodHandler {
         let (Some(closure), Some(closure_identifier)) =
             (block_context.scope.get_function_like(), block_context.scope.get_function_like_identifier())
         else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidStaticMethodCall,
                 Issue::error("`Closure::getCurrent()` must be called from within a closure.")
                     .with_annotation(Annotation::primary(invocation.span).with_message("This call is in the global scope"))
@@ -47,7 +47,7 @@ impl SpecialFunctionLikeHandlerTrait for GetCurrentClosureMethodHandler {
         if !closure_identifier.is_closure() {
             let kind = closure_identifier.kind_str();
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidStaticMethodCall,
                 Issue::error(format!(
                     "`Closure::getCurrent()` must be called from within a closure, but it is currently inside a {kind}."

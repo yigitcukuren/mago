@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 
 use ahash::HashSet;
+use mago_collector::Collector;
 use regex::Regex;
 
 use mago_codex::assertion::Assertion;
@@ -41,7 +42,6 @@ use mago_span::Span;
 use crate::artifacts::AnalysisArtifacts;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
-use crate::issue::TypingIssueBuffer;
 use crate::issue::TypingIssueKind;
 
 pub mod assertion_reconciler;
@@ -52,26 +52,26 @@ pub mod simple_negated_assertion_reconciler;
 mod macros;
 
 #[derive(Debug)]
-pub struct ReconcilationContext<'a> {
+pub struct ReconcilationContext<'a, 's> {
     pub interner: &'a ThreadedInterner,
     pub codebase: &'a CodebaseMetadata,
     pub artifacts: &'a mut AnalysisArtifacts,
-    pub buffer: &'a mut TypingIssueBuffer,
+    pub collector: &'a mut Collector<'s>,
 }
 
-impl<'a> ReconcilationContext<'a> {
+impl<'a, 's> ReconcilationContext<'a, 's> {
     pub fn new(
         interner: &'a ThreadedInterner,
         codebase: &'a CodebaseMetadata,
-        buffer: &'a mut TypingIssueBuffer,
         artifacts: &'a mut AnalysisArtifacts,
+        collector: &'a mut Collector<'s>,
     ) -> Self {
-        Self { interner, codebase, artifacts, buffer }
+        Self { interner, codebase, artifacts, collector }
     }
 }
 
 pub fn reconcile_keyed_types(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     new_types: &BTreeMap<String, Vec<Vec<Assertion>>>,
     mut active_new_types: BTreeMap<String, HashSet<usize>>,
     block_context: &mut BlockContext<'_>,
@@ -516,7 +516,7 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
 }
 
 fn get_value_for_key(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     key: String,
     block_context: &mut BlockContext<'_>,
     new_assertions: &BTreeMap<String, Vec<Vec<Assertion>>>,
@@ -815,7 +815,7 @@ fn get_value_for_key(
 }
 
 fn get_property_type(
-    context: &ReconcilationContext<'_>,
+    context: &ReconcilationContext<'_, '_>,
     classlike_name: &StringIdentifier,
     property_name_str: &str,
 ) -> Option<TUnion> {
@@ -849,7 +849,7 @@ fn get_property_type(
 }
 
 pub(crate) fn trigger_issue_for_impossible(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     old_var_type_string: &String,
     key: &String,
     assertion: &Assertion,
@@ -894,7 +894,7 @@ pub(crate) fn trigger_issue_for_impossible(
 }
 
 fn report_impossible_issue(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     assertion_string: &String,
     key: &String,
@@ -960,7 +960,7 @@ fn report_impossible_issue(
         ),
     };
 
-    context.buffer.report(
+    context.collector.report_with_code(
         issue_kind,
         Issue::warning(format!("Impossible condition: variable {subject_desc} {main_message_verb}."))
             .with_annotation(
@@ -972,7 +972,7 @@ fn report_impossible_issue(
 }
 
 fn report_redundant_issue(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     assertion_string: &String,
     key: &String,
@@ -1042,7 +1042,7 @@ fn report_redundant_issue(
         ),
     };
 
-    context.buffer.report(
+    context.collector.report_with_code(
         issue_kind,
         Issue::help(format!("Redundant condition: variable {subject_desc} {main_message_verb}."))
             .with_annotation(

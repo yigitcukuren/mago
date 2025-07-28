@@ -64,7 +64,7 @@ impl Analyzable for EnumCaseBackedItem {
         let case_name = context.interner.lookup(&self.name.value);
 
         let Some(backing_type) = &current_enum.enum_type else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidEnumCaseValue,
                 Issue::error(format!(
                     "Case `{case_name}` in pure enum `{enum_name}` cannot have a value."
@@ -83,7 +83,7 @@ impl Analyzable for EnumCaseBackedItem {
         self.value.analyze(context, block_context, artifacts)?;
 
         let Some(value_type) = artifacts.get_rc_expression_type(&self.value).cloned() else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidEnumCaseValue,
                 Issue::error(format!("Could not infer the type of the value for case `{enum_name}::{case_name}`."))
                     .with_annotation(Annotation::primary(self.value.span()).with_message("The type of this value could not be determined"))
@@ -99,7 +99,7 @@ impl Analyzable for EnumCaseBackedItem {
         if (backing_type.is_int() && !value_type.is_int()) || (backing_type.is_string() && !value_type.is_string()) {
             let value_type_str = value_type.get_id(Some(context.interner));
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidEnumCaseValue,
                 Issue::error(format!(
                     "Invalid case value for `{enum_name}::{case_name}`. Expected `{backing_type_str}`, but got `{value_type_str}`."

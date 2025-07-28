@@ -157,7 +157,6 @@ impl Statement {
         matches!(
             self,
             Statement::Declare(_)
-                | Statement::Use(_)
                 | Statement::Namespace(_)
                 | Statement::Class(_)
                 | Statement::Interface(_)

@@ -43,7 +43,7 @@ impl Analyzable for Construct {
             Construct::Exit(exit_construct) => exit_construct.analyze(context, block_context, artifacts),
             Construct::Die(die_construct) => die_construct.analyze(context, block_context, artifacts),
             Construct::Eval(_) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnsupportedFeature,
                     Issue::warning("Analysis for eval expression is not yet implemented.")
                         .with_annotation(
@@ -59,7 +59,7 @@ impl Analyzable for Construct {
                 Ok(())
             }
             Construct::Empty(_) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnsupportedFeature,
                     Issue::warning("Analysis for empty expression is not yet implemented.")
                         .with_annotation(
@@ -313,7 +313,7 @@ fn analyze_include<'a>(
     };
 
     if !context.settings.allow_include {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::DisallowedInclude,
             Issue::error(format!(
                 "File inclusion via `{construct_name_str}` is disallowed by your project configuration.",
@@ -326,7 +326,7 @@ fn analyze_include<'a>(
 
     let included_file_type = artifacts.get_expression_type(included_file).cloned().unwrap_or_else(get_mixed_any);
     if !included_file_type.is_string() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::InvalidIncludeArgument,
             Issue::error(format!(
                 "Argument for `{construct_name_str}` must be a string representing a file path, but found type `{}`.",
@@ -341,7 +341,7 @@ fn analyze_include<'a>(
     }
 
     if block_context.scope.is_mutation_free() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::ImpureInclude,
             Issue::error(format!(
                 "Impure use of `{construct_name_str}` in a context declared as mutation-free or pure.",
@@ -353,7 +353,7 @@ fn analyze_include<'a>(
     }
 
     if is_include {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::IncludeInsteadOfRequire,
             Issue::help("Consider using `require` or `require_once` for better error handling.")
                 .with_annotation(Annotation::primary(keyword_span).with_message(format!(
@@ -368,7 +368,7 @@ fn analyze_include<'a>(
     }
 
     if !is_once {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::IncludeInsteadOfOnceVariant,
             Issue::help(format!(
                 "Consider using `{construct_name_str}_once` to prevent multiple inclusions of the same file.",

@@ -4,13 +4,13 @@ use toml::Value;
 use mago_fixer::SafetyClassification;
 use mago_reporting::*;
 use mago_syntax::ast::*;
+use mago_syntax::comments::comment_lines;
 
 use crate::context::LintContext;
 use crate::definition::RuleDefinition;
 use crate::definition::RuleOptionDefinition;
 use crate::directive::LintDirective;
 use crate::rule::Rule;
-use crate::utils::comment_lines;
 
 #[derive(Clone, Debug)]
 pub struct NoEmptyCommentsRule;
@@ -48,7 +48,7 @@ impl Rule for NoEmptyCommentsRule {
                 continue;
             }
 
-            let is_empty = comment_lines(trivia, context.interner).iter().all(|line| line.trim().is_empty());
+            let is_empty = comment_lines(trivia, context.interner).iter().all(|(_, line)| line.trim().is_empty());
 
             if is_empty {
                 let issue = Issue::new(context.level(), "Empty comments are not allowed.")

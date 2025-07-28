@@ -58,7 +58,7 @@ pub fn analyze_attributes(
         let attribute_name_str = context.interner.lookup(attribute_name);
 
         let Some(metadata) = get_class_like(context.codebase, context.interner, attribute_name) else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NonExistentAttributeClass,
                 Issue::error(format!("Attribute class `{attribute_name_str}` not found or could not be autoloaded."))
                 .with_annotation(
@@ -74,7 +74,7 @@ pub fn analyze_attributes(
         let class_like_kind_str = metadata.kind.as_str();
 
         if !metadata.kind.is_class() {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NonClassUsedAsAttribute,
                 Issue::error(format!(
                     "The {class_like_kind_str} `{attribute_name_str}` cannot be used as an attribute.",
@@ -102,7 +102,7 @@ pub fn analyze_attributes(
         }
 
         if metadata.is_abstract {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::AbstractClassUsedAsAttribute,
                 Issue::error(format!("The abstract class `{attribute_name_str}` cannot be used as an attribute.",))
                     .with_annotation(Annotation::primary(attribute.name.span()).with_message(format!(
@@ -120,7 +120,7 @@ pub fn analyze_attributes(
         }
 
         let Some(attribute_flags) = &metadata.attribute_flags else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::ClassNotMarkedAsAttribute,
                 Issue::error(format!(
                     "Class `{attribute_name_str}` is used as an attribute but is not declared with `#[Attribute]`.",
@@ -142,7 +142,7 @@ pub fn analyze_attributes(
         if let Some(first_usage_span) = used_attributes.get(attribute_name)
             && !attribute_flags.is_repeatable()
         {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::AttributeNotRepeatable,
                 Issue::error(format!("Attribute `{attribute_name_str}` is not declared as repeatable and has already been used."))
                 .with_annotation(
@@ -198,7 +198,7 @@ fn report_invalid_target(
     let short_attribute_name_str = attribute_name_str.split("\\").last().unwrap_or(attribute_name_str);
     let allowed_targets = flags.get_target_names().join(", ");
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::InvalidAttributeTarget,
         Issue::error(format!("Attribute `{attribute_name_str}` cannot be used on {}.", target.as_str()))
             .with_annotation(Annotation::primary(attribute.name.span()).with_message("This attribute is not allowed here"))

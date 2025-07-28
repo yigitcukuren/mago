@@ -69,7 +69,7 @@ impl Analyzable for YieldValue {
             false,
             &mut ComparisonResult::new(),
         ) {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidYieldValueType,
                 Issue::error(format!(
                     "Invalid value type yielded; expected `{}`, but found `{}`.",
@@ -95,7 +95,7 @@ impl Analyzable for YieldValue {
             false,
             &mut ComparisonResult::new(),
         ) {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidYieldKeyType,
                 Issue::error(format!(
                     "Invalid key type yielded implicitly; expected `{}`, but implicit key is `{}`.",
@@ -156,7 +156,7 @@ impl Analyzable for YieldPair {
             false,
             &mut ComparisonResult::new(),
         ) {
-            context.buffer.report(
+            context.collector.report_with_code(
                TypingIssueKind::InvalidYieldValueType,
                Issue::error(format!(
                    "Invalid value type yielded; expected `{}`, but found `{}`.",
@@ -182,7 +182,7 @@ impl Analyzable for YieldPair {
             false,
             &mut ComparisonResult::new(),
         ) {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidYieldKeyType,
                 Issue::error(format!(
                     "Invalid key type yielded; expected `{}`, but found `{}`.",
@@ -221,7 +221,7 @@ impl Analyzable for YieldFrom {
         };
 
         let Some(iterator_type) = artifacts.get_rc_expression_type(&self.iterator).cloned() else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::UnknownYieldFromIteratorType,
                 Issue::error("Cannot determine the type of the expression in `yield from`.")
                     .with_annotation(
@@ -255,7 +255,7 @@ impl Analyzable for YieldFrom {
                     false,
                     &mut ComparisonResult::new(),
                 ) {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::YieldFromInvalidSendType,
                         Issue::error(format!(
                             "Incompatible `send` type for `yield from`: current generator expects to be sent `{}`, but yielded generator expects `{}`.",
@@ -275,7 +275,7 @@ impl Analyzable for YieldFrom {
             } else if let Some(parameters) = get_iterable_parameters(atomic, context.codebase, context.interner) {
                 parameters
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::YieldFromNonIterable,
                     Issue::error(format!(
                         "Cannot `yield from` non-iterable type `{}`.",
@@ -304,7 +304,7 @@ impl Analyzable for YieldFrom {
                 false,
                 &mut ComparisonResult::new(),
             ) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::YieldFromInvalidValueType,
                     Issue::error(format!(
                         "Invalid value type from `yield from`: current generator expects to yield `{}`, but the inner iterable yields `{}`.",
@@ -330,7 +330,7 @@ impl Analyzable for YieldFrom {
                 false,
                 &mut ComparisonResult::new(),
             ) {
-                context.buffer.report(
+                context.collector.report_with_code(
                    TypingIssueKind::YieldFromInvalidKeyType,
                    Issue::error(format!(
                        "Invalid key type from `yield from`: current generator expects to yield keys of type `{}`, but the inner iterable yields keys of type `{}`.",
@@ -359,7 +359,7 @@ fn get_current_generator_parameters<'a>(
     yield_span: Span,
 ) -> Option<(TUnion, TUnion, TUnion, TUnion)> {
     let Some(function) = block_context.scope.get_function_like() else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::YieldOutsideFunction,
             Issue::error("`yield` can only be used inside a function or method.")
                 .with_annotation(
@@ -397,7 +397,7 @@ fn get_current_generator_parameters<'a>(
                     r#return = Some(get_mixed());
                 }
                 None => {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidGeneratorReturnType,
                         Issue::error(format!(
                             "Declared return type `{}` for generator function `{}` is not a valid Generator or iterable type.",

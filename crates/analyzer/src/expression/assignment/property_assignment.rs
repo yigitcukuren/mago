@@ -112,7 +112,7 @@ pub fn analyze<'a>(
                     )));
                 }
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     issue_kind,
                     issue.with_help(
                         "Consider adding a type assertion to narrow the type of the value before the assignment.",
@@ -143,7 +143,7 @@ pub fn analyze<'a>(
                     )));
                 }
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidPropertyAssignmentValue,
                     issue
                          .with_note(format!("The type `{assigned_type_str}` is not compatible with and cannot be assigned to `{property_type_str}`."))

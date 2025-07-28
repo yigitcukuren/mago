@@ -30,7 +30,7 @@ impl Analyzable for ConstantAccess {
         let Some(constant_metadata) = constant_metadata else {
             let constant_name = context.interner.lookup(name);
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NonExistentConstant,
                 Issue::error(format!(
                     "Undefined constant: `{constant_name}`."
@@ -55,7 +55,7 @@ impl Analyzable for ConstantAccess {
         if constant_metadata.is_deprecated {
             let constant_name = context.interner.lookup(name);
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::DeprecatedConstant,
                 Issue::warning(format!("Using deprecated constant: `{constant_name}`."))
                     .with_annotation(Annotation::primary(self.span()).with_message("This constant is deprecated."))

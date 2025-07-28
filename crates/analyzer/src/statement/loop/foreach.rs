@@ -88,7 +88,7 @@ impl Analyzable for Foreach {
             )?;
 
             if !assigned {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidForeachKey,
                     Issue::error("The key expression in `foreach` is not assignable.")
                         .with_annotation(
@@ -124,7 +124,7 @@ impl Analyzable for Foreach {
         )?;
 
         if !assigned {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidForeachValue,
                 Issue::error("The value expression in `foreach` is not assignable.")
                     .with_annotation(
@@ -139,7 +139,7 @@ impl Analyzable for Foreach {
         }
 
         if has_reference {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::UnsupportedReferenceOperation,
                 Issue::error("Using references in `foreach` is not supported.")
                     .with_annotation(

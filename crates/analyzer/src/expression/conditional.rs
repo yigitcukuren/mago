@@ -50,7 +50,7 @@ impl Analyzable for Conditional {
 
         let assertion_context = context.get_assertion_context_from_block(block_context);
         let mut if_clauses = get_formula(self.condition.span(), self.condition.span(), &self.condition, assertion_context, artifacts).unwrap_or_else(|| {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::ConditionIsTooComplex,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
@@ -114,7 +114,7 @@ impl Analyzable for Conditional {
 
         check_for_paradox(
             context.interner,
-            &mut context.buffer,
+            &mut context.collector,
             &entry_clauses,
             &if_clauses,
             &self.condition.span(),
@@ -168,7 +168,7 @@ impl Analyzable for Conditional {
         if !reconcilable_if_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -202,7 +202,7 @@ impl Analyzable for Conditional {
         if !if_scope.negated_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -342,7 +342,7 @@ impl Analyzable for Conditional {
             }
         } else if let Some(condition_type) = condition_type.as_ref() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             let if_return_type_reconciled = assertion_reconciler::reconcile(
                 &mut reconcilation_context,

@@ -23,7 +23,7 @@ impl Analyzable for Static {
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         if block_context.is_mutation_free() && context.settings.analyze_effects {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::StaticInMutationFreeContext,
                 Issue::error(
                     "Cannot declare `static` variables inside a mutation-free function or method."

@@ -224,7 +224,7 @@ fn get_function_like_target<'a>(
             )
         };
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::NonExistentFunction,
             issue.with_note("This often means the function/method is misspelled, not imported correctly (e.g., missing `use` statement for namespaced functions), or not defined/autoloaded.")
                 .with_help(format!("Check for typos in `{name_str}`. Verify namespace imports if applicable, and ensure the {kind_str} is defined and accessible."))
@@ -280,7 +280,7 @@ fn inspect_arguments<'a>(
         issue = issue.with_annotation(annotation);
     }
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::TypeInspection,
         issue
             .with_note(
@@ -318,7 +318,7 @@ fn confirm_argument_type<'a>(
     let arguments = invocation_arguments.get_arguments();
 
     if arguments.len() != 2 {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::error(format!(
                 "`Mago\\confirm()` expects exactly 2 arguments (a value and an expected type string), but {} {} provided.",
@@ -344,7 +344,7 @@ fn confirm_argument_type<'a>(
     let value_expression = value_to_check_argument.value();
     let expected_type_expression = expected_type_string_argument.value();
     let Some(actual_argument_type) = artifacts.get_expression_type(value_expression) else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::error("Cannot determine the type of the first argument passed to `Mago\\confirm()`.")
                 .with_annotation(
@@ -363,7 +363,7 @@ fn confirm_argument_type<'a>(
     };
 
     let Some(expected_type_expression_type) = artifacts.get_expression_type(expected_type_expression) else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::error(
                 "Cannot determine the type of the second argument (the expected type string) passed to `Mago\\confirm()`."
@@ -383,7 +383,7 @@ fn confirm_argument_type<'a>(
     };
 
     let Some(expected_type_literal_string) = expected_type_expression_type.get_single_literal_string_value() else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::error(format!(
                 "Second argument to `Mago\\confirm()` must be a literal string, but found type `{}`.",
@@ -405,7 +405,7 @@ fn confirm_argument_type<'a>(
     let is_match = expected_type_literal_string.eq_ignore_ascii_case(&actual_argument_type_string);
 
     if is_match {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::help(format!("Type of expression is `{actual_argument_type_string}` as expected.",))
                 .with_annotation(
@@ -420,7 +420,7 @@ fn confirm_argument_type<'a>(
                 .with_help("This debugging utility (`Mago\\confirm()`) should be removed before committing code."),
         );
     } else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TypeConfirmation,
             Issue::error(format!(
                 "Type of expression is `{actual_argument_type_string}`, but expected `{expected_type_literal_string}`."

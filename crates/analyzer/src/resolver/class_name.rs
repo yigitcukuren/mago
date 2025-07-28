@@ -188,7 +188,7 @@ pub fn resolve_classnames_from_expression<'a>(
                 possible_types.push(class_name);
             } else {
                 possible_types.push(ResolvedClassname::invalid());
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::SelfOutsideClassScope,
                     Issue::error("Cannot use `self` keyword outside of a class context.")
                         .with_annotation(Annotation::primary(self_keyword.span()).with_message("`self` used here"))
@@ -205,7 +205,7 @@ pub fn resolve_classnames_from_expression<'a>(
                 possible_types.push(classname);
             } else {
                 possible_types.push(ResolvedClassname::invalid());
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::StaticOutsideClassScope,
                     Issue::error("Cannot use `static` keyword outside of a class scope.")
                         .with_annotation(Annotation::primary(static_keyword.span()).with_message("`static` used here"))
@@ -228,7 +228,7 @@ pub fn resolve_classnames_from_expression<'a>(
 
                     possible_types.push(classname);
                 } else {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidParentType,
                         Issue::error(format!(
                             "Cannot use `parent` as the current type (`{}`) does not have a parent class.",
@@ -246,7 +246,7 @@ pub fn resolve_classnames_from_expression<'a>(
                     possible_types.push(ResolvedClassname::invalid());
                 }
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ParentOutsideClassScope,
                     Issue::error("Cannot use `parent` keyword outside of a class context.")
                         .with_annotation(Annotation::primary(parent_keyword.span()).with_message("`parent` used here"))
@@ -272,7 +272,7 @@ pub fn resolve_classnames_from_expression<'a>(
                     possible_types.push(resolved_classname);
                 } else {
                     possible_types.push(ResolvedClassname::invalid());
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidClassStringExpression,
                         Issue::error(format!(
                             "Expression of type `{}` cannot be used as a class name.",
@@ -415,7 +415,7 @@ fn get_intersections_from_metadata(context: &Context<'_>, metadata: &ClassLikeMe
 pub fn report_non_existent_class_like(context: &mut Context, span: Span, classname: &StringIdentifier) {
     let class_name_str = context.interner.lookup(classname);
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::NonExistentClassLike,
         Issue::error(format!("Class, Interface, or Trait `{class_name_str}` does not exist."))
             .with_annotation(

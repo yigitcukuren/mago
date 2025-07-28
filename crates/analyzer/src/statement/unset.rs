@@ -50,7 +50,7 @@ impl Analyzable for Unset {
                     true,
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                 );
             }
@@ -85,7 +85,7 @@ impl Analyzable for Unset {
                     if let TAtomic::Scalar(scalar) = &atomic {
                         let scalar_str = scalar.get_id(Some(context.interner));
 
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::InvalidUnset,
                             Issue::error(format!(
                                 "Cannot apply `unset` to an offset of non-array type `{scalar_str}`."
@@ -315,7 +315,7 @@ impl Analyzable for Unset {
                 block_context.remove_variable_from_conflicting_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     &array_id,
                     Some(rc.as_ref()),

@@ -76,7 +76,7 @@ impl Analyzable for Throw {
                     &mut ComparisonResult::new(),
                 ) {
                     let candidate_str = candidate.get_id(Some(context.interner));
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidThrow,
                         Issue::error(format!(
                             "Cannot throw type `{candidate_str}` because it is not an instance of Throwable."

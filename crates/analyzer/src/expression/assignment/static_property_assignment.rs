@@ -58,7 +58,7 @@ pub(crate) fn analyze<'a>(
         );
 
         if !type_match_found && union_comparison_result.type_coerced.is_none() {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidPropertyAssignmentValue,
                 Issue::error("Invalid property assignment value").with_annotation(
                     Annotation::primary(property_access.class.span()).with_message(format!(
@@ -74,7 +74,7 @@ pub(crate) fn analyze<'a>(
 
         if union_comparison_result.type_coerced.is_some() {
             if union_comparison_result.type_coerced_from_nested_mixed.is_some() {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::MixedPropertyTypeCoercion,
                     Issue::error("Mixed property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(
@@ -86,7 +86,7 @@ pub(crate) fn analyze<'a>(
                     ),
                 );
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::PropertyTypeCoercion,
                     Issue::error("Property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(

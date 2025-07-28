@@ -152,7 +152,7 @@ fn handle_class_magic_constant(
     selector: &ClassLikeConstantSelector,
 ) -> Option<TUnion> {
     if matches!(class_resolution.origin, ResolutionOrigin::GenericString) {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::InvalidClassConstantOnString,
             Issue::error("Cannot use `::class` on an expression of type string.")
                 .with_annotation(
@@ -214,7 +214,7 @@ fn find_constant_in_class(
 /// Reports an error for a class-like that cannot be found in the codebase.
 fn report_non_existent_class(context: &mut Context, class_id: &StringIdentifier, class_span: Span) {
     let class_name_str = context.interner.lookup(class_id);
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::NonExistentClassLike,
         Issue::error(format!("Class, interface, enum, or trait `{class_name_str}` not found."))
             .with_annotation(
@@ -251,7 +251,7 @@ fn report_undefined_constant(
         )
     };
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::UndefinedClassLikeConstant,
         Issue::error(main_message)
             .with_annotation(
@@ -269,7 +269,7 @@ fn report_undefined_constant(
 
 /// Reports a warning when a constant is accessed on an ambiguous type like `object` or `class-string`.
 fn report_ambiguous_constant_access(context: &mut Context, class_expr: &Expression) {
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::AmbiguousClassLikeConstantAccess,
         Issue::warning("Cannot reliably determine class for constant access due to an ambiguous type.")
             .with_annotation(

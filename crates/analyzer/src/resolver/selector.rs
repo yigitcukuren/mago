@@ -137,7 +137,7 @@ fn resolve_selector_from_type(
             SelectorKind::Member => TypingIssueKind::UnknownMemberSelectorType,
         };
 
-        context.buffer.report(
+        context.collector.report_with_code(
             issue_kind,
             Issue::error(format!("Cannot determine the type of the expression used as a {kind_str} selector."))
                 .with_annotation(Annotation::primary(selector_span).with_message("The type of this expression is unknown"))
@@ -166,7 +166,7 @@ fn resolve_selector_from_type(
                 SelectorKind::Member => TypingIssueKind::StringMemberSelector,
             };
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 issue_kind,
                 Issue::warning(format!("This {kind_str} selector uses a non-literal string type (`{atomic_type_id}`); its specific value cannot be statically determined."))
                     .with_annotation(Annotation::primary(selector_span).with_message(format!("This expression (type `{atomic_type_id}`) provides the {kind_str} name")))
@@ -180,7 +180,7 @@ fn resolve_selector_from_type(
                 SelectorKind::Member => TypingIssueKind::InvalidMemberSelector,
             };
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 issue_kind,
                 Issue::error(format!(
                     "Invalid type `{atomic_type_id}` used as a {kind_str} selector; a string is expected."

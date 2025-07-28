@@ -198,7 +198,7 @@ fn add_parameter_types_to_context<'a>(
 
                 for type_node in parameter_type.get_all_child_nodes() {
                     if let TypeRef::Atomic(TAtomic::Reference(TReference::Symbol { name, .. })) = type_node {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::NonExistentClassLike,
                             Issue::error(format!(
                                 "Class or interface or enum `{}` not found",

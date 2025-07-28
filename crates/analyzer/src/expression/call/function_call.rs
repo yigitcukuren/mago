@@ -82,7 +82,7 @@ pub(super) fn resolve_targets<'a>(
         let Some(callable) = as_callable else {
             let type_name = atomic.get_id(Some(context.interner));
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidCallable,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be called as a function or method.",

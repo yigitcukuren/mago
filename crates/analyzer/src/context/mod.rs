@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
-use itertools::Itertools;
-
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::reference::ReferenceSource;
 use mago_codex::ttype::resolution::TypeResolutionContext;
+use mago_collector::Collector;
 use mago_docblock::document::Document;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
@@ -12,6 +11,7 @@ use mago_names::ResolvedNames;
 use mago_names::scope::NamespaceScope;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
 use mago_source::Source;
 use mago_span::HasSpan;
 use mago_span::Span;
@@ -23,7 +23,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::assertion::AssertionContext;
 use crate::context::block::BlockContext;
 use crate::context::scope::loop_scope::LoopScope;
-use crate::issue::TypingIssueBuffer;
 use crate::issue::TypingIssueKind;
 use crate::settings::Settings;
 
@@ -42,8 +41,7 @@ pub struct Context<'a> {
     pub(super) comments: &'a [Trivia],
     pub(super) settings: &'a Settings,
     pub(super) scope: NamespaceScope,
-    pub(super) buffer: TypingIssueBuffer,
-    /// The span of the statement being analyzed.
+    pub(super) collector: Collector<'a>,
     pub(super) statement_span: Span,
 }
 
@@ -56,6 +54,7 @@ impl<'a> Context<'a> {
         settings: &'a Settings,
         statement_span: Span,
         comments: &'a [Trivia],
+        collector: Collector<'a>,
     ) -> Self {
         Self {
             interner,
@@ -67,8 +66,8 @@ impl<'a> Context<'a> {
             comments,
             settings,
             scope: NamespaceScope::default(),
-            buffer: TypingIssueBuffer::new(),
             statement_span,
+            collector,
         }
     }
 
@@ -157,36 +156,23 @@ impl<'a> Context<'a> {
 
                 issue = issue.with_help(error.help());
 
-                self.buffer.report(TypingIssueKind::InvalidDocblock, issue);
+                self.collector.report_with_code(TypingIssueKind::InvalidDocblock, issue);
 
                 None
             }
         }
     }
 
-    pub fn record<T>(&mut self, callback: impl FnOnce(&mut Context<'a>) -> T) -> (T, Vec<Issue>) {
-        let issue_counts = std::mem::take(&mut self.buffer.issue_counts);
-        let mut issues = std::mem::take(&mut self.buffer.issues);
-
+    pub fn record<T>(&mut self, callback: impl FnOnce(&mut Context<'a>) -> T) -> (T, IssueCollection) {
+        self.collector.start_recording();
         let result = callback(self);
-
-        self.buffer.issue_counts = issue_counts;
-        std::mem::swap(&mut self.buffer.issues, &mut issues);
+        let issues = self.collector.finish_recording().unwrap_or_default();
 
         (result, issues)
     }
 
     pub fn finish(self, artifacts: AnalysisArtifacts, analysis_result: &mut AnalysisResult) {
-        analysis_result
-            .emitted_issues
-            .entry(self.source.identifier)
-            .or_default()
-            .extend(self.buffer.issues.into_iter().unique().collect::<Vec<_>>());
-
+        analysis_result.issues.extend(self.collector.finish());
         analysis_result.symbol_references.extend(artifacts.symbol_references);
-
-        for (kind, count) in self.buffer.issue_counts {
-            *analysis_result.issue_counts.entry(kind.to_string()).or_insert(0) += count;
-        }
     }
 }

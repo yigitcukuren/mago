@@ -65,7 +65,7 @@ impl Analyzable for Instantiation {
                 .get_expression_type(&self.class)
                 .map_or("<unknown>".to_string(), |u| u.get_id(Some(context.interner)));
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::AmbiguousInstantiationTarget,
                 Issue::warning("Ambiguous instantiation: the expression used with `new` can resolve to multiple different classes.".to_string())
                 .with_annotation(
@@ -137,7 +137,7 @@ fn analyze_class_instantiation<'a>(
     }
 
     let Some(fq_class_id) = classname.fq_class_id else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::UnknownClassInstantiation,
             Issue::error("Cannot determine the concrete class for instantiation.")
                 .with_annotation(Annotation::primary(class_expression_span).with_message("This expression resolves to an unknown or non-specific class type"))
@@ -154,7 +154,7 @@ fn analyze_class_instantiation<'a>(
     let Some(metadata) = get_class_like(context.codebase, context.interner, &fq_class_id) else {
         let class_name_str = context.interner.lookup(&fq_class_id);
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::NonExistentClass,
             Issue::error(format!("Class `{class_name_str}` not found."))
             .with_annotation(
@@ -174,7 +174,7 @@ fn analyze_class_instantiation<'a>(
     let class_name_str = context.interner.lookup(&metadata.original_name);
 
     if metadata.kind.is_interface() {
-        context.buffer.report(
+        context.collector.report_with_code(
              TypingIssueKind::InterfaceInstantiation,
              Issue::error(format!("Interface `{class_name_str}` cannot be instantiated with `new`."))
                  .with_annotation(
@@ -189,7 +189,7 @@ fn analyze_class_instantiation<'a>(
 
         return Ok(get_never());
     } else if metadata.kind.is_trait() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TraitInstantiation,
             Issue::error(format!("Trait `{class_name_str}` cannot be instantiated with `new`."))
                 .with_annotation(
@@ -205,7 +205,7 @@ fn analyze_class_instantiation<'a>(
 
         return Ok(get_never());
     } else if metadata.kind.is_enum() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::EnumInstantiation,
             Issue::error(format!("Enum `{class_name_str}` cannot be instantiated with `new`."))
                 .with_annotation(
@@ -225,7 +225,7 @@ fn analyze_class_instantiation<'a>(
 
     let mut is_impossible = false;
     if metadata.is_abstract && !classname.can_extend_static() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::AbstractInstantiation,
             Issue::error(format!("Cannot instantiate abstract class `{class_name_str}`."))
                 .with_annotation(
@@ -245,7 +245,7 @@ fn analyze_class_instantiation<'a>(
     if metadata.is_deprecated
         && block_context.scope.get_class_like_name().is_none_or(|self_id| *self_id != metadata.original_name)
     {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::DeprecatedClass,
             Issue::warning(format!("Class `{class_name_str}` is deprecated and should no longer be used."))
                 .with_annotation(
@@ -374,7 +374,7 @@ fn analyze_class_instantiation<'a>(
     } else if let Some(argument_list) = &argument_list
         && !argument_list.arguments.is_empty()
     {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::TooManyArguments,
             Issue::error(format!(
                 "Class `{class_name_str}` has no `__construct` method, but arguments were provided to `new`."
@@ -431,7 +431,7 @@ fn analyze_class_instantiation<'a>(
             );
         }
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::UnsafeInstantiation,
             issue
                 .with_help("Ensure constructor signature consistency across inheritance (e.g., using `@consistent-constructor` if applicable) or mark the class/constructor as final.")

@@ -213,7 +213,7 @@ fn analyze<'a, 'b>(
 
         if let Some(statements_span) = statements_span {
             for complex_condition in complex_conditions {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ConditionIsTooComplex,
                     Issue::warning("Loop condition is too complex for precise type analysis.")
                         .with_annotation(
@@ -395,7 +395,7 @@ fn analyze<'a, 'b>(
                         pre_loop_context.remove_variable_from_conflicting_clauses(
                             context.interner,
                             context.codebase,
-                            &mut context.buffer,
+                            &mut context.collector,
                             artifacts,
                             &variable_id,
                             None,
@@ -425,7 +425,7 @@ fn analyze<'a, 'b>(
                         pre_loop_context.remove_variable_from_conflicting_clauses(
                             context.interner,
                             context.codebase,
-                            &mut context.buffer,
+                            &mut context.collector,
                             artifacts,
                             &variable_id,
                             None,
@@ -551,7 +551,7 @@ fn analyze<'a, 'b>(
 
         if !recorded_issues.is_empty() {
             for issue in recorded_issues {
-                context.buffer.add_issue(issue);
+                context.collector.report(issue);
             }
         }
     }
@@ -620,7 +620,7 @@ fn analyze<'a, 'b>(
                 loop_parent_context.remove_variable_from_conflicting_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     variable_id,
                     None,
@@ -643,7 +643,7 @@ fn analyze<'a, 'b>(
                     loop_parent_context.remove_variable_from_conflicting_clauses(
                         context.interner,
                         context.codebase,
-                        &mut context.buffer,
+                        &mut context.collector,
                         artifacts,
                         &variable_id,
                         None,
@@ -662,7 +662,7 @@ fn analyze<'a, 'b>(
                     loop_parent_context.remove_variable_from_conflicting_clauses(
                         context.interner,
                         context.codebase,
-                        &mut context.buffer,
+                        &mut context.collector,
                         artifacts,
                         &variable_id,
                         None,
@@ -689,7 +689,7 @@ fn analyze<'a, 'b>(
         if !negated_pre_condition_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -712,7 +712,7 @@ fn analyze<'a, 'b>(
                     loop_parent_context.remove_variable_from_conflicting_clauses(
                         context.interner,
                         context.codebase,
-                        &mut context.buffer,
+                        &mut context.collector,
                         artifacts,
                         &variable_id,
                         None,
@@ -835,7 +835,7 @@ fn apply_pre_condition_to_loop_context<'a>(
 
     if !reconcilable_while_types.is_empty() {
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -861,7 +861,7 @@ fn apply_pre_condition_to_loop_context<'a>(
             loop_context_clauses = BlockContext::filter_clauses(
                 context.interner,
                 context.codebase,
-                &mut context.buffer,
+                &mut context.collector,
                 artifacts,
                 variable_id,
                 loop_context_clauses,
@@ -947,7 +947,7 @@ fn analyze_iterator<'a>(
     } else if let Some(var_type) = iterator_variable_id.and_then(|v| block_context.locals.get(v).cloned()) {
         var_type
     } else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::UnknownIteratorType,
             Issue::error("Cannot determine the type of the expression provided to `foreach`.")
                 .with_annotation(
@@ -970,7 +970,7 @@ fn analyze_iterator<'a>(
     }
 
     if iterator_type.is_null() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::NullIterator,
             Issue::error("Iterating over `null` in `foreach`.")
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This expression is `null`"))
@@ -984,7 +984,7 @@ fn analyze_iterator<'a>(
     }
 
     if iterator_type.is_false() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::FalseIterator,
             Issue::error("Iterating over `false` in `foreach`.")
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This expression is `false`"))
@@ -998,7 +998,7 @@ fn analyze_iterator<'a>(
     }
 
     if iterator_type.is_nullable() && !iterator_type.ignore_nullable_issues {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::PossiblyNullIterator,
             Issue::warning(format!("Expression being iterated (type `{}`) might be `null` at runtime.", iterator_type.get_id(Some(context.interner))))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `null`"))
@@ -1009,7 +1009,7 @@ fn analyze_iterator<'a>(
     }
 
     if iterator_type.is_falsable() && !iterator_type.ignore_falsable_issues {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::PossiblyFalseIterator,
             Issue::warning(format!("Expression being iterated (type `{}`) might be `false` at runtime.", iterator_type.get_id(Some(context.interner))))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `false`"))
@@ -1056,7 +1056,7 @@ fn analyze_iterator<'a>(
             TAtomic::Object(object) => {
                 let (obj_key_type, obj_value_type) = match object {
                     TObject::Any => {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::GenericObjectIteration,
                             Issue::warning("Iterating over a generic `object`. This will iterate its public properties.")
                                 .with_annotation(Annotation::primary(iterator.span()).with_message("Iterating a generic `object` type"))
@@ -1075,7 +1075,7 @@ fn analyze_iterator<'a>(
                             let class_name = context.interner.lookup(&atomic_object.name);
                             let iterator_atomic_str = iterator_atomic.get_id(Some(context.interner));
 
-                            context.buffer.report(
+                            context.collector.report_with_code(
                                 TypingIssueKind::NonIterableObjectIteration,
                                 Issue::warning(format!(
                                     "Iterating over object of type `{class_name}` which does not implement `Iterator` or `IteratorAggregate`.",
@@ -1100,7 +1100,7 @@ fn analyze_iterator<'a>(
                             get_enum(context.codebase, context.interner, enum_instance.get_name_ref())
                                 .and_then(|class_like| class_like.enum_type.as_ref());
 
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::EnumIteration,
                             Issue::warning(format!("Iterating directly over the enum enum `{enum_name}`. This will yield its public properties.",))
                                 .with_annotation(
@@ -1157,7 +1157,7 @@ fn analyze_iterator<'a>(
             )
         };
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::InvalidIterator,
             Issue::error(format!(
                 "The expression provided to `foreach` is not iterable. It {problematic_types_str}."
@@ -1182,7 +1182,7 @@ fn analyze_iterator<'a>(
         let iterator_type_id_str = iterator_type.get_id(Some(context.interner));
         let problematic_types_list_str = invalid_atomic_ids.join("`, `");
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::PossiblyInvalidIterator,
             Issue::warning(format!(
                 "The expression provided to `foreach` (type `{iterator_type_id_str}`) might not be iterable at runtime."

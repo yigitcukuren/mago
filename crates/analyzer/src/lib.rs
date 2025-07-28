@@ -2,6 +2,7 @@
 
 use mago_codex::context::ScopeContext;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_collector::Collector;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
 use mago_source::Source;
@@ -34,6 +35,8 @@ mod statement;
 mod utils;
 mod visibility;
 
+const COLLECTOR_CATEGORY: &str = "analysis";
+
 #[derive(Clone, Debug)]
 pub struct Analyzer<'a> {
     pub source: Source,
@@ -65,6 +68,8 @@ impl<'a> Analyzer<'a> {
         let statements = program.statements.as_slice();
 
         let mut context = {
+            let collector = Collector::new(&self.source, program, self.interner, COLLECTOR_CATEGORY);
+
             Context::new(
                 self.interner,
                 self.codebase,
@@ -73,6 +78,7 @@ impl<'a> Analyzer<'a> {
                 &self.settings,
                 statements[0].span(),
                 program.trivia.as_slice(),
+                collector,
             )
         };
 
@@ -102,7 +108,6 @@ mod tests {
     use mago_codex::scanner::scan_program;
     use mago_interner::ThreadedInterner;
     use mago_names::resolver::NameResolver;
-    use mago_reporting::Issue;
     use mago_source::Source;
     use mago_syntax::parser::parse_source;
 
@@ -173,19 +178,16 @@ mod tests {
             panic!("Test '{}': Expected analysis to succeed, but it failed with an error: {}", config.name, err);
         }
 
-        verify_reported_issues(config.name, &analysis_result, codebase, &config.expected_issues);
+        verify_reported_issues(config.name, analysis_result, codebase, &config.expected_issues);
     }
 
     fn verify_reported_issues(
         test_name: &str,
-        analysis_result: &AnalysisResult,
+        mut analysis_result: AnalysisResult,
         mut codebase: CodebaseMetadata,
         expected_issue_kinds: &[String],
     ) {
-        let mut actual_issues_collected: Vec<Issue> = Vec::new();
-        for issues_in_file in analysis_result.emitted_issues.values() {
-            actual_issues_collected.extend(issues_in_file.clone());
-        }
+        let mut actual_issues_collected = std::mem::take(&mut analysis_result.issues);
 
         actual_issues_collected.extend(codebase.take_issues(true));
 
@@ -196,7 +198,7 @@ mod tests {
         }
 
         let mut actual_issue_counts: BTreeMap<String, usize> = BTreeMap::new();
-        for actual_issue in &actual_issues_collected {
+        for actual_issue in actual_issues_collected.iter() {
             let Some(issue_code) = actual_issue.code.as_ref().cloned() else {
                 panic!("Analyzer returned an issue with no code: {actual_issue:?}");
             };

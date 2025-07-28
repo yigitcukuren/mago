@@ -1,0 +1,21 @@
+[package]
+name = "mago-collector"
+description = "Provides a utility for gathering and managing issues from various Mago tools, including support for suppression pragmas."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mago-interner = { workspace = true }
+mago-span = { workspace = true }
+mago-source = { workspace = true }
+mago-fixer = { workspace = true }
+mago-reporting = { workspace = true }
+mago-syntax = { workspace = true }

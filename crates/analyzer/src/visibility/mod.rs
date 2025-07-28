@@ -281,5 +281,5 @@ fn report_visibility_issue(
 
     issue = issue.with_help(help_text);
 
-    context.buffer.report(kind, issue);
+    context.collector.report_with_code(kind, issue);
 }

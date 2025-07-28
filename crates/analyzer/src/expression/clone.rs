@@ -82,7 +82,7 @@ impl Analyzable for Clone {
         }
 
         if has_mixed_type {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::MixedClone,
                 Issue::warning("Cannot statically verify `clone` on a `mixed` type.")
                     .with_annotation(Annotation::primary(self.object.span()).with_message(format!(
@@ -99,7 +99,7 @@ impl Analyzable for Clone {
                 invalid_clone_atomics.iter().map(|t| t.get_id(Some(context.interner))).collect::<Vec<_>>().join("|");
 
             if has_clonable_object || has_mixed_type {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::PossiblyInvalidClone,
                     Issue::warning(format!(
                         "Expression of type `{}` might not be a cloneable object.",
@@ -124,7 +124,7 @@ impl Analyzable for Clone {
                     )
                 };
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidClone,
                     Issue::error(format!(
                         "Invalid `clone` operation on non-cloneable type `{invalid_types_str}`."

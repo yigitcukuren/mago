@@ -24,6 +24,7 @@ mago-casing = { workspace = true }
 mago-codex = { workspace = true }
 mago-names = { workspace = true }
 mago-php-version = { workspace = true }
+mago-collector = { workspace = true }
 ahash = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

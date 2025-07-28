@@ -52,7 +52,7 @@ impl Analyzable for Match {
                 }
                 MatchArm::Default(match_default_arm) => {
                     if let Some(previous_default_arm) = default_arm {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::DuplicateMatchDefaultArm,
                             Issue::error("Match expression cannot have multiple `default` arms.")
                                 .with_annotation(Annotation::primary(match_default_arm.span()).with_message("This `default` arm is a duplicate."))
@@ -69,7 +69,7 @@ impl Analyzable for Match {
 
         if match_arms.is_empty() {
             if let Some(default_arm) = default_arm {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::MatchExpressionOnlyDefaultArm,
                     Issue::error("Match expression contains only a `default` arm.")
                     .with_annotation(
@@ -95,7 +95,7 @@ impl Analyzable for Match {
 
                 return Ok(());
             } else {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::EmptyMatchExpression,
                     Issue::error("Match expression must have at least one arm.")
                     .with_annotation(
@@ -114,7 +114,7 @@ impl Analyzable for Match {
         let subject_type = match artifacts.get_expression_type(&self.expression).cloned() {
             Some(subject_type) => subject_type,
             None => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnknownMatchSubjectType,
                     Issue::error("Match subject expression type cannot be determined.")
                         .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has an unknown type."))
@@ -128,7 +128,7 @@ impl Analyzable for Match {
         };
 
         if subject_type.is_never() {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::MatchSubjectTypeIsNever,
                 Issue::error("Match subject expression type is `never`.")
                     .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has type `never`."))
@@ -151,7 +151,7 @@ impl Analyzable for Match {
             if remaining_subject_type.is_never() {
                 arm_is_unreachable = true;
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnreachableMatchArm,
                     Issue::warning("This match arm is unreachable because all possible values of the subject expression have been handled by preceding arms.")
                         .with_annotation(Annotation::primary(match_expression_arm.span()).with_message("This arm will never be reached"))
@@ -170,7 +170,7 @@ impl Analyzable for Match {
                 condition.analyze(context, &mut arm_block_context, artifacts)?;
 
                 let Some(condition_type) = artifacts.get_expression_type(condition) else {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UnknownMatchConditionType,
                         Issue::error("Cannot infer the type of this match condition.")
                             .with_annotation(
@@ -206,7 +206,7 @@ impl Analyzable for Match {
                     let condition_type_str = condition_type.get_id(Some(context.interner));
                     let subject_type_str = subject_type.get_id(Some(context.interner));
 
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::MatchArmAlwaysTrue,
                         Issue::error(format!(
                             "This condition (type `{condition_type_str}`) always strictly matches the subject (type `{subject_type_str}`)."
@@ -236,7 +236,7 @@ impl Analyzable for Match {
             };
 
             if let Some(matched_arm) = definite_match {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnreachableMatchArm,
                     Issue::warning("This match arm will never be executed.")
                         .with_annotation(
@@ -261,7 +261,7 @@ impl Analyzable for Match {
                 let subject_type_str = subject_type.get_id(Some(context.interner));
 
                 if unreachable_conditions.len() == match_expression_arm.conditions.len() {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UnreachableMatchArm,
                         Issue::warning("This match arm will never be executed.")
                             .with_annotation(
@@ -298,7 +298,7 @@ impl Analyzable for Match {
                     continue;
                 } else {
                     for (condition_type_str, condition) in unreachable_conditions {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::UnreachableMatchArmCondition,
                             Issue::error(format!(
                                 "This condition type `{condition_type_str}` can never strictly equal the subject type `{subject_type_str}`."
@@ -327,7 +327,7 @@ impl Analyzable for Match {
             default_arm.expression.analyze(context, &mut default_arm_block_context, artifacts)?;
 
             if let Some(definite_match) = definite_match {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::UnreachableMatchDefaultArm,
                     Issue::warning("This default arm will never be executed.")
                         .with_annotation(
@@ -348,7 +348,7 @@ impl Analyzable for Match {
                 );
             } else {
                 if remaining_subject_type.is_never() {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UnreachableMatchDefaultArm,
                         Issue::warning(
                             "The `default` arm of this match expression is unreachable."
@@ -370,7 +370,7 @@ impl Analyzable for Match {
 
                 if let Some(default_arm_type) = artifacts.get_expression_type(&default_arm.expression).cloned() {
                     if possible_results.is_empty() && !match_arms.is_empty() {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::MatchDefaultArmAlwaysExecuted,
                             Issue::warning("This default arm will always execute.")
                                 .with_annotation(
@@ -417,7 +417,7 @@ impl Analyzable for Match {
             }
 
             if !skip_check {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::MatchNotExhaustive,
                     Issue::error(format!(
                         "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
@@ -517,7 +517,7 @@ pub fn subtract_union_types(
 
     let mut final_refined_union = subtract_handled_enum_cases(context, existing_type, &type_to_remove);
     let mut reconcilation_context =
-        ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+        ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
     for atomic in type_to_remove.types {
         if let TAtomic::Object(TObject::Enum(_)) = atomic {

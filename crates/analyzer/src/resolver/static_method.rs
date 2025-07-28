@@ -343,7 +343,7 @@ fn get_metadata_object<'a>(
 fn report_non_static_access(context: &mut Context, method_id: &MethodIdentifier, span: Span) {
     let method_name = context.interner.lookup(method_id.get_method_name());
     let class_name = context.interner.lookup(method_id.get_class_name());
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::InvalidStaticMethodAccess,
         Issue::error(format!("Cannot call non-static method `{class_name}::{method_name}` statically."))
             .with_annotation(Annotation::primary(span).with_message("This is a non-static method"))
@@ -360,7 +360,7 @@ fn report_static_call_on_interface(
     let name_str = context.interner.lookup(name);
 
     if from_class_string {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::PossiblyStaticAccessOnInterface,
             Issue::warning(format!("Potential static method call on interface `{name_str}` via `class-string`."))
                 .with_annotation(
@@ -373,7 +373,7 @@ fn report_static_call_on_interface(
                 .with_help("Ensure the variable or expression always holds the name of a concrete class, not an interface."),
         );
     } else {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::StaticAccessOnInterface,
             Issue::error(format!("Cannot call a static method directly on an interface (`{name_str}`)."))
                 .with_annotation(Annotation::primary(span).with_message("This is a direct static call on an interface"))
@@ -387,7 +387,7 @@ fn report_static_call_on_interface(
 
 fn report_deprecated_static_access_on_trait(context: &mut Context, name: &StringIdentifier, span: Span) {
     let name_str = context.interner.lookup(name);
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::DeprecatedFeature,
         Issue::warning(format!("Calling static methods directly on traits (`{name_str}`) is deprecated."))
             .with_annotation(Annotation::primary(span).with_message("This is a trait"))

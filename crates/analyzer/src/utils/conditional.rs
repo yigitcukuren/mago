@@ -44,7 +44,7 @@ pub(crate) fn analyze<'a>(
             let mut tmp_context = outer_context.clone();
 
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -212,7 +212,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
     let type_id = expression_type.get_id(Some(context.interner));
 
     if expression_type.is_always_falsy() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::ImpossibleCondition,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to false."
@@ -229,7 +229,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
             ),
         );
     } else if expression_type.is_always_truthy() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::RedundantCondition,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to true."

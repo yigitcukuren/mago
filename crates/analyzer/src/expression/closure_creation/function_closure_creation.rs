@@ -88,7 +88,7 @@ fn resolve_function_callable_types<'a, 'b>(
                 )
             };
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NonExistentFunction,
                 issue.with_note("This often means the function is misspelled, not imported correctly (e.g., missing `use` statement for namespaced functions), or not defined/autoloaded.")
                     .with_help(format!("Check for typos in `{name_str}`. Verify namespace imports if applicable, and ensure the function is defined and accessible."))
@@ -116,7 +116,7 @@ fn resolve_function_callable_types<'a, 'b>(
         let Some(callable) = as_callable else {
             let type_name = atomic.get_id(Some(context.interner));
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidCallable,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be treated as a callable.",

@@ -32,7 +32,7 @@ impl Analyzable for Continue {
                 } else {
                     expression.analyze(context, block_context, artifacts)?;
 
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidContinue,
                         Issue::error("Continue level must be an integer literal.").with_annotation(
                             Annotation::primary(expression.span()).with_message(format!(
@@ -83,7 +83,7 @@ impl Analyzable for Continue {
                     );
                 }
 
-                context.buffer.report(TypingIssueKind::InvalidContinue, issue);
+                context.collector.report_with_code(TypingIssueKind::InvalidContinue, issue);
 
                 block_context.has_returned = true;
 
@@ -96,7 +96,7 @@ impl Analyzable for Continue {
         }
 
         let Some(loop_scope) = loop_scope_ref else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidContinue,
                 Issue::error("Continue statement used outside of loop.").with_annotation(
                     Annotation::primary(self.span())

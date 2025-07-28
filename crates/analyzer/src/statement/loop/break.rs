@@ -34,7 +34,7 @@ impl Analyzable for Break {
                 } else {
                     expression.analyze(context, block_context, artifacts)?;
 
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidBreak,
                         Issue::error("Break level must be an integer literal.").with_annotation(
                             Annotation::primary(expression.span()).with_message(format!(
@@ -148,7 +148,7 @@ impl Analyzable for Break {
             }
         } else if !leaving_loop {
             // `break` outside of a loop or switch
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidBreak,
                 Issue::error("Break statement outside of a loop or switch.").with_annotation(
                     Annotation::primary(self.span()).with_message("This break statement is not valid here."),

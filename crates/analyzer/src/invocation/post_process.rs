@@ -80,7 +80,7 @@ pub fn post_invocation_process<'a>(
             FunctionLikeIdentifier::Closure(_) => TypingIssueKind::DeprecatedClosure,
         };
 
-        context.buffer.report(
+        context.collector.report_with_code(
             issue_kind,
             Issue::warning(format!("Call to deprecated {callable_kind_str}: {full_callable_name}."))
                 .with_annotation(
@@ -98,7 +98,7 @@ pub fn post_invocation_process<'a>(
     if context.settings.analyze_effects {
         if block_context.is_mutation_free() {
             if !metadata.is_mutation_free && !metadata.is_pure {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ImpureCallInPureContext,
                     Issue::error(format!(
                         "Impure call to {callable_kind_str} {full_callable_name} within a mutation-free context."
@@ -118,7 +118,7 @@ pub fn post_invocation_process<'a>(
             && !metadata.is_mutation_free
             && !metadata.is_pure
         {
-            context.buffer.report(
+            context.collector.report_with_code(
                     TypingIssueKind::ExternalImpureCallInExternalPureContext,
                     Issue::error(format!(
                         "Call to {callable_kind_str} {full_callable_name} with external side effects within an external-mutation-free context."
@@ -149,7 +149,7 @@ pub fn post_invocation_process<'a>(
                 continue; // Skip if it's not a named argument
             };
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NamedArgumentNotAllowed,
                 Issue::error(format!("Named arguments are not allowed for {full_callable_name}."))
                     .with_annotation(Annotation::primary(argument.span()).with_message("Named argument used here"))
@@ -254,7 +254,7 @@ fn apply_assertion_to_call_context<'a>(
     }
 
     reconciler::reconcile_keyed_types(
-        &mut ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts),
+        &mut ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector),
         &type_assertions,
         active_type_assertions,
         block_context,
@@ -364,8 +364,8 @@ fn resolve_invocation_assertion<'a>(
                                     &mut ReconcilationContext::new(
                                         context.interner,
                                         context.codebase,
-                                        &mut context.buffer,
                                         artifacts,
+                                        &mut context.collector,
                                     ),
                                     asserted_type,
                                     &resolved_assertion_type,

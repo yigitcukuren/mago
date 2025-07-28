@@ -47,7 +47,7 @@ impl Analyzable for Return {
             if let Some(inferred_return_type) = &inferred_return_type
                 && inferred_return_type.is_never()
             {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::NeverReturn,
                     Issue::error("Cannot return value with type 'never' from this function.")
                     .with_annotation(
@@ -207,7 +207,7 @@ pub fn handle_return_value<'a>(
                         .unwrap_or_else(|| function_like_metadata.span);
 
                     if let Some(return_value) = return_value {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::HiddenGeneratorReturn,
                             Issue::warning(format!(
                                 "The value returned by generator function `{function_name}` may be inaccessible to callers.",
@@ -241,7 +241,7 @@ pub fn handle_return_value<'a>(
     if let Some(return_value) = return_value {
         if !expected_return_type.is_mixed() {
             if expected_return_type.is_void() {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidReturnStatement,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return 'void' but returns a value."
@@ -267,7 +267,7 @@ pub fn handle_return_value<'a>(
             let mut mixed_with_any = false;
 
             if inferred_return_type.is_mixed_with_any(&mut mixed_with_any) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     if mixed_with_any {
                         TypingIssueKind::MixedAnyReturnStatement
                     } else {
@@ -321,7 +321,7 @@ pub fn handle_return_value<'a>(
 
                 if union_comparison_result.type_coerced.unwrap_or(false) {
                     if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::LessSpecificNestedAnyReturnStatement,
                             Issue::error(format!(
                                 "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'any'."
@@ -341,7 +341,7 @@ pub fn handle_return_value<'a>(
                         );
                     } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
                         if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
-                            context.buffer.report(
+                            context.collector.report_with_code(
                                 TypingIssueKind::LessSpecificNestedReturnStatement,
                                 Issue::error(format!(
                                     "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'mixed'."
@@ -361,7 +361,7 @@ pub fn handle_return_value<'a>(
                             );
                         }
                     } else if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
-                        context.buffer.report(
+                        context.collector.report_with_code(
                             TypingIssueKind::LessSpecificReturnStatement,
                             Issue::error(format!(
                                 "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}`."
@@ -383,7 +383,7 @@ pub fn handle_return_value<'a>(
                         );
                     }
                 } else {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidReturnStatement,
                         Issue::error(format!(
                             "Invalid return type for function `{function_name}`: expected `{expected_return_type_str}`, but found `{inferred_return_type_str}`."
@@ -438,7 +438,7 @@ pub fn handle_return_value<'a>(
                 let expected_type_str = expected_return_type.get_id(Some(context.interner));
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::NullableReturnStatement,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns a nullable value (inferred as `{inferred_type_str}`).",
@@ -472,7 +472,7 @@ pub fn handle_return_value<'a>(
                 let expected_type_str = expected_return_type.get_id(Some(context.interner));
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::FalsableReturnStatement,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns 'false' (inferred as `{inferred_type_str}`).",
@@ -507,7 +507,7 @@ pub fn handle_return_value<'a>(
 
         let expected_type_str = expected_return_type.get_id(Some(context.interner));
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::InvalidReturnStatement,
             Issue::error(format!(
                 "Function `{function_name}` is declared to return `{expected_type_str}` but no return value was specified.",

@@ -160,7 +160,7 @@ fn find_static_property_in_class<'a>(
         let class_name_str = context.interner.lookup(&declaring_class_metadata.original_name);
         let prop_name_str = context.interner.lookup(prop_name);
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::InvalidStaticPropertyAccess,
             Issue::error(format!("Cannot access instance property `{class_name_str}::{prop_name_str}` statically."))
                 .with_annotation(Annotation::primary(variable.span()).with_message("This is an instance property"))
@@ -220,7 +220,7 @@ fn report_non_existent_property(
     let class_kind_str =
         get_class_like(context.codebase, context.interner, classname).map_or("class", |m| m.kind.as_str());
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::NonExistentProperty,
         Issue::error(format!(
             "Static property `{property_name_str}` does not exist on {class_kind_str} `{class_name_str}`."

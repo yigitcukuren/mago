@@ -1644,6 +1644,7 @@ dependencies = [
  "itertools 0.14.0",
  "mago-algebra",
  "mago-codex",
+ "mago-collector",
  "mago-docblock",
  "mago-fixer",
  "mago-interner",
@@ -1688,6 +1689,18 @@ dependencies = [
  "serde",
  "strum",
  "tracing",
+]
+
+[[package]]
+name = "mago-collector"
+version = "1.0.0-alpha.1"
+dependencies = [
+ "mago-fixer",
+ "mago-interner",
+ "mago-reporting",
+ "mago-source",
+ "mago-span",
+ "mago-syntax",
 ]
 
 [[package]]
@@ -1754,6 +1767,7 @@ dependencies = [
  "indoc",
  "mago-casing",
  "mago-codex",
+ "mago-collector",
  "mago-docblock",
  "mago-fixer",
  "mago-interner",

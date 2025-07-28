@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use clap::Parser;
 use colored::Colorize;
-use mago_semantics::SemanticsChecker;
 use tokio::task::JoinHandle;
 
 use mago_analyzer::Analyzer;
@@ -15,6 +14,7 @@ use mago_codex::reference::SymbolReferences;
 use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
 use mago_reporting::Issue;
+use mago_semantics::SemanticsChecker;
 use mago_source::Source;
 use mago_source::SourceCategory;
 use mago_source::SourceManager;
@@ -158,7 +158,7 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
     .await?;
 
     let mut issues = codebase.take_issues(true);
-    issues.extend(analysis_result.emitted_issues.into_values().flatten());
+    issues.extend(analysis_result.issues);
 
     command.reporting.process_issues(issues, configuration, interner, source_manager).await
 }
@@ -259,20 +259,24 @@ fn perform_single_source_analysis(
 
     let mut analysis_result = AnalysisResult::new(SymbolReferences::new());
     if let Some(parsing_error) = parsing_error {
-        analysis_result.emitted_issues.entry(source.identifier).or_default().push(Issue::from(&parsing_error));
+        analysis_result.issues.push(Issue::from(&parsing_error));
     }
 
     let resolver = NameResolver::new(interner);
     let resolved_names = resolver.resolve(&program);
-    tracing::trace!("Analyzing source: {}", interner.lookup(&source.identifier.0));
+    let source_name = interner.lookup(&source.identifier.0);
 
-    analysis_result.emitted_issues.entry(source.identifier).or_default().extend(semantics_checker.check(
-        &source,
-        &program,
-        &resolved_names,
-    ));
+    tracing::trace!("Analyzing source `{source_name}`...");
+
+    analysis_result.issues.extend(semantics_checker.check(&source, &program, &resolved_names));
 
     Analyzer::new(source, &resolved_names, codebase, interner, settings).analyze(&program, &mut analysis_result)?;
+
+    tracing::trace!(
+        "Analysis for source `{source_name}` completed in {} seconds, with {} issues found.",
+        analysis_result.time_in_analysis.as_secs_f64(),
+        analysis_result.issues.len()
+    );
 
     Ok(analysis_result)
 }

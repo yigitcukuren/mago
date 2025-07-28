@@ -69,7 +69,7 @@ impl Analyzable for Closure {
                 let variable_str = context.interner.lookup(&variable);
 
                 if let Some(ampersand_span) = use_variable.ampersand.as_ref() {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UnsupportedReferenceInClosureUse,
                         Issue::warning(format!(
                             "Unsupported by-reference import: Mago does not analyze by-reference captures (`use (&$var)`) for closures like `{variable_str}`.",
@@ -97,7 +97,7 @@ impl Analyzable for Closure {
                 }
 
                 if let Some(previous_span) = variable_spans.get(&variable) {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::DuplicateClosureUseVariable,
                         Issue::error(
                             format!("Variable `{variable_str}` is imported multiple times into the closure.",),
@@ -116,7 +116,7 @@ impl Analyzable for Closure {
                 }
 
                 if !block_context.has_variable(variable_str) {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::UndefinedVariableInClosureUse,
                         Issue::error(format!(
                             "Cannot import undefined variable `{variable_str}` into closure.",

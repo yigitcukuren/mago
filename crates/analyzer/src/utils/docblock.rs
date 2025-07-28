@@ -110,7 +110,7 @@ pub fn get_docblock_variables<'a>(
                     Some((variable_name, variable_type, type_string.span))
                 }
                 Err(type_error) => {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidDocblock,
                         Issue::error(format!(
                             "Invalid type in `@var` tag for variable `{}`.",
@@ -194,7 +194,7 @@ pub fn insert_variabel_from_docblock<'a>(
         let variable_type_str = variable_type.get_id(Some(context.interner));
         let previous_type_str = previous_type.get_id(Some(context.interner));
 
-        context.buffer.report(
+        context.collector.report_with_code(
                 TypingIssueKind::DocblockTypeMismatch,
                 Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
                     .with_annotation(
@@ -267,6 +267,6 @@ pub fn check_docblock_type_incompatibility<'a>(
             ));
         }
 
-        context.buffer.report(TypingIssueKind::DocblockTypeMismatch, issue);
+        context.collector.report_with_code(TypingIssueKind::DocblockTypeMismatch, issue);
     }
 }

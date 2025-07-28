@@ -402,7 +402,7 @@ fn report_access_on_null(
 ) {
     match (from_void, is_always_null) {
         (true, true) => {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NullPropertyAccess,
                 Issue::error("Attempting to access a property on an expression of type `void`.")
                     .with_annotation(
@@ -414,7 +414,7 @@ fn report_access_on_null(
             );
         }
         (true, false) => {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::PossiblyNullPropertyAccess,
                 Issue::error("Attempting to access a property on an expression that can be `void`.")
                     .with_annotation(
@@ -427,7 +427,7 @@ fn report_access_on_null(
             );
         }
         (false, true) => {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NullPropertyAccess,
                 Issue::error("Attempting to access a property on an expression that is always `null`.")
                     .with_annotation(
@@ -441,7 +441,7 @@ fn report_access_on_null(
         (false, false) => {
             if !block_context.inside_isset {
                 if block_context.inside_assignment {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::PossiblyNullPropertyAccess,
                         Issue::error("Attempting to access a property on a possibly `null` value.")
                             .with_annotation(
@@ -452,7 +452,7 @@ fn report_access_on_null(
                             .with_help("Add a check to ensure the value is not `null` (e.g., `if ($obj !== null)`).")
                     );
                 } else {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::PossiblyNullPropertyAccess,
                         Issue::error("Attempting to access a property on a possibly `null` value.")
                             .with_annotation(
@@ -501,7 +501,7 @@ fn report_redundant_nullsafe<'a>(
         )
     };
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::RedundantNullsafeOperator,
         Issue::help("Redundant nullsafe operator (`?->`) used on an expression that is never `null`.")
             .with_annotation(
@@ -523,7 +523,7 @@ fn report_access_on_non_object(
     object_span: Span,
 ) {
     let type_str = atomic_type.get_id(Some(context.interner));
-    context.buffer.report(
+    context.collector.report_with_code(
         if atomic_type.is_any() {
             TypingIssueKind::MixedAnyPropertyAccess
         } else if atomic_type.is_mixed() {
@@ -540,7 +540,7 @@ fn report_access_on_non_object(
 }
 
 fn report_ambiguous_access(context: &mut Context, selector: &ClassLikeMemberSelector, object_span: Span) {
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::AmbiguousObjectPropertyAccess,
         Issue::warning("Cannot statically verify property access on a generic `object` type.")
             .with_annotation(Annotation::primary(selector.span()).with_message("Accessing property here"))
@@ -563,7 +563,7 @@ fn report_non_existent_property(
     let class_kind_str =
         get_class_like(context.codebase, context.interner, classname).map_or("class", |m| m.kind.as_str());
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::NonExistentProperty,
         Issue::error(format!("Property `${property_name_str}` does not exist on {class_kind_str} `{class_name_str}`."))
             .with_annotation(Annotation::primary(selector_span).with_message("Property not found here"))

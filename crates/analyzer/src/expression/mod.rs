@@ -74,7 +74,7 @@ impl Analyzable for Expression {
             Expression::LegacyArray(expr) => expr.analyze(context, block_context, artifacts),
             Expression::ArrayAccess(expr) => expr.analyze(context, block_context, artifacts),
             Expression::ArrayAppend(_) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ArrayAppendInReadContext,
                     Issue::error("Array append syntax `[]` cannot be used in a read context.")
                     .with_annotation(
@@ -132,7 +132,7 @@ impl Analyzable for Expression {
             Expression::MagicConstant(expr) => expr.analyze(context, block_context, artifacts),
             Expression::Pipe(expr) => expr.analyze(context, block_context, artifacts),
             Expression::List(list_expr) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ListUsedInReadContext,
                     Issue::error("`list()` construct cannot be used as a value.")
                         .with_annotation(
@@ -154,7 +154,7 @@ impl Analyzable for Expression {
             Expression::Self_(keyword) | Expression::Static(keyword) | Expression::Parent(keyword) => {
                 let keyword_str = context.interner.lookup(&keyword.value);
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidScopeKeywordContext,
                     Issue::error(format!("The `{keyword_str}` keyword cannot be used as a standalone value."))
                         .with_annotation(
@@ -226,7 +226,7 @@ pub fn find_expression_logic_issues<'a>(
         context.get_assertion_context_from_block(block_context),
         artifacts,
     ) else {
-        context.buffer.report(
+        context.collector.report_with_code(
            TypingIssueKind::ExpressionIsTooComplex,
            Issue::warning("Expression is too complex for complete logical analysis.")
                .with_annotation(
@@ -290,7 +290,7 @@ pub fn find_expression_logic_issues<'a>(
     // this will see whether any of the clauses in set A conflict with the clauses in set B
     check_for_paradox(
         context.interner,
-        &mut context.buffer,
+        &mut context.collector,
         &block_context.clauses,
         &expression_clauses,
         &expression_span,
@@ -306,7 +306,7 @@ pub fn find_expression_logic_issues<'a>(
     );
 
     let mut reconcilation_context =
-        ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+        ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
     reconcile_keyed_types(
         &mut reconcilation_context,

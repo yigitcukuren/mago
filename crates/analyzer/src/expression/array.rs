@@ -136,7 +136,7 @@ fn analyze_array_elements<'a>(
                         } else if key_type.is_float() {
                             key_type = get_int()
                         } else if !key_type.is_any_string() && !key_type.is_int() {
-                            context.buffer.report(
+                            context.collector.report_with_code(
                                 TypingIssueKind::InvalidArrayElementKey,
                                 Issue::error("Array key must be a string or an integer.")
                                     .with_annotation(
@@ -185,7 +185,7 @@ fn analyze_array_elements<'a>(
             ArrayElement::Value(value_array_element) => {
                 // check if we have reached PHP_INT_MAX
                 if array_creation_info.int_offset == i64::MAX {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::InvalidArrayIndex,
                         Issue::error(
                             "Cannot add array item implicitly; the next available integer key would exceed PHP_INT_MAX."
@@ -242,7 +242,7 @@ fn analyze_array_elements<'a>(
                 continue;
             }
             ArrayElement::Missing(missing_array_element) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidArrayElement,
                     Issue::error(
                         "Missing array element: skipping elements is only allowed in list assignments (destructuring)."
@@ -271,7 +271,7 @@ fn analyze_array_elements<'a>(
 
         if let Some(item_key_value) = item_key_value.clone() {
             if array_creation_info.array_keys.contains(&item_key_value) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::DuplicateArrayKey,
                     Issue::error(format!(
                         "Duplicate array key `{item_key_value}` detected."
@@ -430,7 +430,7 @@ fn handle_variadic_array_element(
                             let new_offset_key = match key {
                                 ArrayKey::Integer(_) => {
                                     if array_creation_info.int_offset == i64::MAX {
-                                        context.buffer.report(
+                                        context.collector.report_with_code(
                                             TypingIssueKind::InvalidArrayIndex,
                                             Issue::error(
                                                 "Cannot add an item with an offset beyond `PHP_INT_MAX`."
@@ -498,7 +498,7 @@ fn handle_variadic_array_element(
                             }
 
                             if array_creation_info.int_offset == i64::MAX {
-                                context.buffer.report(
+                                context.collector.report_with_code(
                                     TypingIssueKind::InvalidArrayIndex,
                                     Issue::error(
                                         "Cannot add an item with an offset beyond `PHP_INT_MAX`."
@@ -545,7 +545,7 @@ fn handle_variadic_array_element(
                 array_creation_info.item_key_atomic_types.push(TAtomic::Scalar(TScalar::ArrayKey));
                 array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::vanilla()));
 
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidArrayElement,
                     Issue::error(
                         "Cannot use spread operator on non-iterable type."
@@ -583,7 +583,7 @@ fn handle_variadic_array_element(
                 false,
                 &mut ComparisonResult::new(),
             ) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidArrayElement,
                     Issue::error(
                         "Cannot use spread operator on iterable with key type."

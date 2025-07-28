@@ -81,7 +81,7 @@ impl Analyzable for If {
             context.get_assertion_context_from_block(block_context),
             artifacts,
         ).unwrap_or_else(|| {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::ConditionIsTooComplex,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
@@ -130,7 +130,7 @@ impl Analyzable for If {
 
         check_for_paradox(
             context.interner,
-            &mut context.buffer,
+            &mut context.collector,
             &block_context.clauses,
             &if_clauses,
             &self.condition.span(),
@@ -177,7 +177,7 @@ impl Analyzable for If {
 
         if !if_scope.negated_types.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -271,7 +271,7 @@ impl Analyzable for If {
                     if_scope.reasonable_clauses = BlockContext::filter_clauses(
                         context.interner,
                         context.codebase,
-                        &mut context.buffer,
+                        &mut context.collector,
                         artifacts,
                         &variable_id,
                         if_scope.reasonable_clauses,
@@ -311,7 +311,7 @@ impl Analyzable for If {
             block_context.remove_descendants(
                 context.interner,
                 context.codebase,
-                &mut context.buffer,
+                &mut context.collector,
                 artifacts,
                 &variable_id,
                 &existing_type,
@@ -376,7 +376,7 @@ fn analyze_if_statement_block<'a>(
     if !reconcilable_if_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -437,7 +437,7 @@ fn analyze_if_statement_block<'a>(
         outer_block_context.remove_variable_from_conflicting_clauses(
             context.interner,
             context.codebase,
-            &mut context.buffer,
+            &mut context.collector,
             artifacts,
             variable_id,
             None,
@@ -482,7 +482,7 @@ fn analyze_if_statement_block<'a>(
                 if_scope.reasonable_clauses = BlockContext::filter_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     &variable_id,
                     previous_clauses,
@@ -587,7 +587,7 @@ fn analyze_else_if_clause<'a>(
         };
 
         if let Some(clauses_statements_span) = clauses_statements_span {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::ConditionIsTooComplex,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
@@ -663,7 +663,7 @@ fn analyze_else_if_clause<'a>(
 
     check_for_paradox(
         context.interner,
-        &mut context.buffer,
+        &mut context.collector,
         &entry_clauses,
         &else_if_clauses,
         &else_if_clause.0.span(),
@@ -745,7 +745,7 @@ fn analyze_else_if_clause<'a>(
     let mut newly_reconciled_variable_ids = HashSet::default();
     if !reconcilable_else_if_types.is_empty() {
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -796,7 +796,7 @@ fn analyze_else_if_clause<'a>(
         outer_block_context.remove_variable_from_conflicting_clauses(
             context.interner,
             context.codebase,
-            &mut context.buffer,
+            &mut context.collector,
             artifacts,
             variable_id,
             None,
@@ -864,7 +864,7 @@ fn analyze_else_if_clause<'a>(
             let mut implied_outer_context = else_if_block_context.clone();
 
             reconcile_keyed_types(
-                &mut ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts),
+                &mut ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector),
                 &negated_else_if_types,
                 BTreeMap::new(),
                 &mut implied_outer_context,
@@ -957,7 +957,7 @@ fn analyze_else_statements<'a>(
     if !else_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, &mut context.buffer, artifacts);
+            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -1010,7 +1010,7 @@ fn analyze_else_statements<'a>(
         outer_block_context.remove_variable_from_conflicting_clauses(
             context.interner,
             context.codebase,
-            &mut context.buffer,
+            &mut context.collector,
             artifacts,
             variable_id,
             None,

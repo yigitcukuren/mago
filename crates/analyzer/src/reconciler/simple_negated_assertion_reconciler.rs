@@ -27,7 +27,7 @@ use crate::reconciler::simple_assertion_reconciler::intersect_null;
 use crate::reconciler::trigger_issue_for_impossible;
 
 pub(crate) fn reconcile(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     possibly_undefined: bool,
@@ -237,7 +237,7 @@ pub(crate) fn reconcile(
 }
 
 fn subtract_object(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -302,7 +302,7 @@ fn subtract_object(
 }
 
 fn subtract_list_array(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -366,7 +366,7 @@ fn subtract_list_array(
 }
 
 fn subtract_keyed_array(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -427,7 +427,7 @@ fn subtract_keyed_array(
 }
 
 fn subtract_string(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -515,7 +515,7 @@ fn subtract_string(
 }
 
 fn subtract_int(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -609,7 +609,7 @@ fn subtract_int(
 }
 
 fn subtract_float(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -680,7 +680,7 @@ fn subtract_float(
 }
 
 fn subtract_arraykey(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -747,7 +747,7 @@ fn subtract_arraykey(
 }
 
 fn subtract_bool(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -815,7 +815,7 @@ fn subtract_bool(
 }
 
 pub(crate) fn subtract_null(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -872,7 +872,7 @@ pub(crate) fn subtract_null(
 }
 
 pub(crate) fn subtract_resource(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -938,7 +938,7 @@ pub(crate) fn subtract_resource(
 }
 
 fn subtract_false(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1011,7 +1011,7 @@ fn subtract_false(
 }
 
 fn subtract_true(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1085,7 +1085,7 @@ fn subtract_true(
 }
 
 fn reconcile_falsy_or_empty(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1173,7 +1173,7 @@ fn reconcile_falsy_or_empty(
 }
 
 fn reconcile_not_isset(
-    _context: &mut ReconcilationContext<'_>,
+    _context: &mut ReconcilationContext<'_, '_>,
     existing_var_type: &TUnion,
     possibly_undefined: bool,
     key: Option<&String>,
@@ -1199,7 +1199,7 @@ fn reconcile_not_isset(
 }
 
 fn reconcile_empty_countable(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1245,7 +1245,7 @@ fn reconcile_empty_countable(
 }
 
 fn reconcile_not_exactly_countable(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1291,7 +1291,7 @@ fn reconcile_not_exactly_countable(
 }
 
 fn reconcile_not_in_array(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,
@@ -1323,7 +1323,7 @@ fn reconcile_not_in_array(
 }
 
 fn reconcile_no_array_key(
-    context: &mut ReconcilationContext<'_>,
+    context: &mut ReconcilationContext<'_, '_>,
     assertion: &Assertion,
     existing_var_type: &TUnion,
     key: Option<&String>,

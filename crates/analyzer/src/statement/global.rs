@@ -22,7 +22,7 @@ impl Analyzable for Global {
         _artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         if block_context.is_global_scope() {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidGlobal,
                 Issue::error("The 'global' keyword has no effect in the global scope.")
                     .with_annotation(Annotation::primary(self.span()).with_message("This statement is redundant here."))

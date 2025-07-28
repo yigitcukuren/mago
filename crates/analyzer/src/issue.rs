@@ -1,12 +1,9 @@
 use std::hash::Hash;
 
-use ahash::HashMap;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
 use strum::EnumString;
-
-use mago_reporting::Issue;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug, PartialOrd, Ord, Serialize, Deserialize, EnumString)]
 #[strum(serialize_all = "kebab-case")]
@@ -282,44 +279,6 @@ pub(crate) enum TypingIssueKind {
     InvalidEnumCaseValue,
     ConditionIsTooComplex,
     ExpressionIsTooComplex,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub(crate) struct TypingIssueBuffer {
-    pub issues: Vec<Issue>,
-    pub issue_counts: HashMap<TypingIssueKind, usize>,
-}
-
-impl Default for TypingIssueBuffer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TypingIssueBuffer {
-    pub fn new() -> Self {
-        Self { issues: vec![], issue_counts: HashMap::default() }
-    }
-
-    pub fn report(&mut self, kind: TypingIssueKind, issue: Issue) {
-        if !self.can_output_issue(kind) {
-            return;
-        }
-
-        self.add_issue(issue.with_code(kind.to_string()));
-    }
-
-    pub fn add_issue(&mut self, issue: Issue) {
-        if !self.issues.contains(&issue) {
-            self.issues.push(issue);
-        }
-    }
-
-    fn can_output_issue(&mut self, kind: TypingIssueKind) -> bool {
-        *self.issue_counts.entry(kind).or_insert(0) += 1;
-
-        true
-    }
 }
 
 impl From<TypingIssueKind> for String {

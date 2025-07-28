@@ -1,6 +1,7 @@
 use mago_codex::constant_exists;
 use mago_codex::function_exists;
 use mago_names::ResolvedNames;
+use mago_reporting::IssueCollection;
 use mago_source::Source;
 use toml::value::Value;
 
@@ -9,18 +10,14 @@ use mago_fixer::FixPlan;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
-use mago_reporting::Annotation;
-use mago_reporting::AnnotationKind;
 use mago_reporting::Issue;
 use mago_reporting::Level;
 use mago_span::HasPosition;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
-use crate::ast::AstNode;
+use crate::ast::PreComputedNode;
 use crate::directive::LintDirective;
-use crate::pragma::Pragma;
-use crate::pragma::PragmaKind;
 use crate::rule::ConfiguredRule;
 use crate::scope::ClassLikeScope;
 use crate::scope::FunctionLikeScope;
@@ -35,12 +32,8 @@ pub struct LintContext<'a> {
     pub codebase: &'a CodebaseMetadata,
     pub source: &'a Source,
     pub resolved_names: &'a ResolvedNames,
-    pub pragmas: Vec<&'a Pragma<'a>>,
     pub scope: ScopeStack,
-
-    unused_pragmas: Vec<&'a Pragma<'a>>,
-    unfufilled_expects: Vec<(&'a Pragma<'a>, bool)>,
-    issues: Vec<Issue>,
+    pub issues: IssueCollection,
 }
 
 impl<'a> LintContext<'a> {
@@ -51,7 +44,6 @@ impl<'a> LintContext<'a> {
         codebase: &'a CodebaseMetadata,
         source: &'a Source,
         resolved_names: &'a ResolvedNames,
-        pragmas: Vec<&'a Pragma<'a>>,
     ) -> LintContext<'a> {
         LintContext {
             php_version,
@@ -60,11 +52,8 @@ impl<'a> LintContext<'a> {
             codebase,
             source,
             resolved_names,
-            pragmas,
+            issues: IssueCollection::new(),
             scope: ScopeStack::new(),
-            unused_pragmas: Vec::new(),
-            unfufilled_expects: Vec::new(),
-            issues: Vec::new(),
         }
     }
 
@@ -286,213 +275,27 @@ impl<'a> LintContext<'a> {
         }
     }
 
-    /// Takes applicable pragmas of a specific kind for the given node.
-    ///
-    /// This method iterates through the active pragmas and returns a vector of pragmas
-    /// of the specified kind that apply to the given node.
-    ///
-    /// # Parameters
-    ///
-    /// - `node`: A reference to the AST node (implementing [`HasSpan`]) to check against.
-    /// - `kind`: The kind of pragmas to take (Ignore or Expect).
-    ///
-    /// # Returns
-    ///
-    /// A vector of applicable pragmas of the specified kind.
     #[inline]
-    fn take_applicable_pragmas(&mut self, node: impl HasSpan, kind: PragmaKind) -> Vec<&'a Pragma<'a>> {
-        let node_start_line = self.source.line_number(node.span().start.offset);
-        let node_end_line = self.source.line_number(node.span().end.offset);
-
-        let mut applicable_pragmas = Vec::new();
-        let mut remaining = Vec::with_capacity(self.pragmas.len());
-
-        for pragma in self.pragmas.drain(..) {
-            if pragma.kind != kind {
-                remaining.push(pragma);
-                continue;
-            }
-
-            let applies = if pragma.own_line {
-                pragma.start_line < node_start_line
-            } else {
-                pragma.start_line == node_start_line
-                    || pragma.end_line == node_start_line
-                    || pragma.start_line == node_end_line
-                    || pragma.end_line == node_end_line
-            };
-
-            if applies {
-                applicable_pragmas.push(pragma);
-            } else {
-                remaining.push(pragma);
-            }
-        }
-
-        self.pragmas = remaining;
-
-        applicable_pragmas
-    }
-
-    /// Checks if the given node should be ignored based on active ignore directives.
-    ///
-    /// This method examines the node's starting line (using the source's precomputed line numbers)
-    /// and removes (consumes) from the active ignore pool any directives that appear before the node.
-    /// The first applicable ignore is used to suppress the node (causing the method to return `true`).
-    /// Any further applicable ignores are moved to the `unused_ignores` vector for later reporting.
-    /// Non-applicable ignores are returned to the active pool.
-    ///
-    /// # Parameters
-    ///
-    /// - `node`: A reference to the AST node (implementing [`HasSpan`]) to check against.
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if at least one ignore directive was applied (i.e. the node should be skipped),
-    /// and `false` otherwise.
-    #[inline]
-    fn ignores(&mut self, node: impl HasSpan) -> bool {
-        let applicable = self.take_applicable_pragmas(node, PragmaKind::Ignore);
-
-        let mut applied = false;
-        for pragma in applicable {
-            if !applied {
-                applied = true;
-            } else {
-                self.unused_pragmas.push(pragma);
-            }
-        }
-
-        applied
+    pub fn report(&mut self, issue: Issue) {
+        self.issues.push(issue.with_code(&self.rule.slug))
     }
 
     #[inline]
-    fn get_expect(&mut self, node: impl HasSpan) -> Option<&'a Pragma<'a>> {
-        let applicable = self.take_applicable_pragmas(node, PragmaKind::Expect);
-
-        let mut expect = None;
-        for pragma in applicable {
-            if expect.is_none() {
-                expect = Some(pragma);
-            } else {
-                self.unused_pragmas.push(pragma);
-            }
-        }
-
-        expect
-    }
-
-    /// Immediately reports the provided issue without performing any ignore checks.
-    ///
-    /// This method augments the issue with the current rule's slug (used as its code) and appends it to
-    /// the issue collection.
-    ///
-    /// # Parameters
-    ///
-    /// - `issue`: The issue to be reported.
-    #[inline]
-    pub fn force_report(&mut self, issue: Issue) {
-        self.issues.push(issue.with_code(&self.rule.slug));
-    }
-
-    /// Reports an issue if it is not suppressed by an applicable ignore directive.
-    ///
-    /// This method inspects the issue's annotations for a primary annotation. If found, it checks the
-    /// corresponding span against active ignore directives via `ignores()`. If an applicable ignore is found,
-    /// the issue is suppressed and the method returns `false`. Otherwise, the issue is reported via
-    /// `force_report()` and the method returns `true`.
-    ///
-    /// # Parameters
-    ///
-    /// - `issue`: The issue to be reported.
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the issue was reported; `false` if it was suppressed.
-    #[inline]
-    pub fn report(&mut self, issue: Issue) -> bool {
-        let mut span = None;
-        for annotation in issue.annotations.iter() {
-            if let AnnotationKind::Primary = annotation.kind {
-                span = Some(annotation.span);
-                break;
-            }
-        }
-
-        if let Some(span) = span {
-            if self.ignores(span) {
-                return false;
-            }
-
-            if self.get_expect(span).is_some() {
-                return false;
-            }
-        }
-
-        self.force_report(issue);
-        true
-    }
-
-    /// Reports an issue along with a fix suggestion.
-    ///
-    /// This method creates a new fix plan and passes it to the provided closure `f` to configure the
-    /// suggested fix. The fix is then attached to the issue (using the source identifier) and the issue
-    /// is reported via `report()`. It returns `true` if the issue was reported, or `false` if it was suppressed.
-    ///
-    /// # Parameters
-    ///
-    /// - `issue`: The issue to be reported.
-    /// - `f`: A closure that accepts a mutable reference to a [`FixPlan`] to configure a suggested fix.
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the issue was reported; `false` if it was suppressed.
-    #[inline]
-    pub fn propose<F>(&mut self, issue: Issue, f: F) -> bool
+    pub fn propose<F>(&mut self, mut issue: Issue, f: F)
     where
         F: FnOnce(&mut FixPlan),
     {
         let mut plan = FixPlan::new();
         f(&mut plan);
-        if plan.is_empty() {
-            return self.report(issue);
+        if !plan.is_empty() {
+            issue = issue.with_suggestion(self.source.identifier, plan);
         }
-
-        let issue = issue.with_suggestion(self.source.identifier, plan);
 
         self.report(issue)
     }
 
-    /// Recursively lints an AST node.
-    ///
-    /// This method applies the current rule's `lint_node` method to the node and recurses into its children
-    /// based on the directive returned:
-    /// - **Continue:** Lint the children.
-    /// - **Prune:** Skip the children.
-    /// - **Abort:** Abort the current branch.
-    ///
-    /// After processing the node, `filter_unused()` is called to move any ignore directives that apply to the
-    /// node into the `unused_ignores` vector.
-    ///
-    /// # Parameters
-    ///
-    /// - `ast_node`: The current AST node being linted.
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the linting process should be aborted for the current branch; otherwise, `false`.
     #[inline]
-    pub(crate) fn lint(&mut self, ast_node: &AstNode<'_>) -> bool {
-        let expect = self.get_expect(ast_node.node);
-
-        if self.ignores(ast_node.node) {
-            if let Some(expect) = expect {
-                self.unfufilled_expects.push((expect, true));
-            }
-
-            return false;
-        }
-
+    pub(crate) fn lint(&mut self, ast_node: &PreComputedNode<'_>) -> bool {
         let should_pop_scope = if let Some(scope) = match ast_node.node {
             Node::Class(class) => Some(Scope::ClassLike(ClassLikeScope::Class(*self.resolved_names.get(&class.name)))),
             Node::Interface(interface) => {
@@ -517,8 +320,6 @@ impl<'a> LintContext<'a> {
             false
         };
 
-        let issue_count = self.issues.len();
-
         // Apply the lint rule to the current node.
         let directive = self.rule.rule.lint_node(ast_node.node, self);
         let result = 'lint: {
@@ -542,61 +343,10 @@ impl<'a> LintContext<'a> {
             self.scope.pop();
         }
 
-        if let Some(expect) = expect {
-            if self.issues.len() == issue_count {
-                self.unfufilled_expects.push((expect, false));
-            } else {
-                // Remove the issues that were reported for this node.
-                self.issues.drain(issue_count..);
-            }
-        }
-
         result
     }
 
-    /// Finalizes the linting context by reporting any remaining unused ignore directives.
-    ///
-    /// This method drains any ignore directives still left in the active pool (adding them to `unused_ignores`)
-    /// and then reports each unused ignore as an issue. Each reported issue includes a primary annotation
-    /// indicating the ignore's source span, a note explaining that the directive did not match any node in the AST,
-    /// and a help message suggesting that it be removed or updated.
-    ///
-    /// # Returns
-    ///
-    /// An iterator over all reported issues.
-    #[inline]
-    pub fn finish(mut self) -> impl Iterator<Item = Issue> {
-        let mut issues = std::mem::take(&mut self.issues);
-        for (pragma, due_to_ignore) in self.unfufilled_expects.drain(..) {
-            let mut issue = Issue::warning("This lint expectation was not fulfilled.")
-                .with_code(&self.rule.slug)
-                .with_annotation(Annotation::primary(pragma.span).with_message(
-                    "This expect pragma was not fulfilled. No issue was reported for the corresponding node.",
-                ))
-                .with_help("Ensure that the expected issue is actually being triggered by the corresponding node.");
-
-            if due_to_ignore {
-                issue = issue.with_note(
-                    "This expect pragma was not fulfilled because the corresponding node was ignored by an active ignore pragma.",
-                );
-            }
-
-            issues.push(issue);
-        }
-
-        for pragma in self.pragmas.drain(..).chain(self.unused_pragmas.drain(..)) {
-            issues.push(
-                Issue::help("This lint pragma was not used and may be removed.")
-                    .with_code(&self.rule.slug)
-                    .with_annotation(
-                        Annotation::primary(pragma.span)
-                            .with_message("This pragma directive does not match any node in the AST."),
-                    )
-                    .with_note("This directive was not used during linting and did not match any node in the AST.")
-                    .with_help("Remove this pragma directive if it is no longer needed."),
-            );
-        }
-
-        issues.into_iter()
+    pub fn finish(self) -> IssueCollection {
+        self.issues
     }
 }

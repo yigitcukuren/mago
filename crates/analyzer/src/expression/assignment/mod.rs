@@ -167,7 +167,7 @@ pub fn analyze_assignment<'a>(
         && context.interner.lookup(&cloned_var.name) == target_variable_id
         && let Some(assignment_span) = assignment_span
     {
-        context.buffer.report(
+        context.collector.report_with_code(
                     TypingIssueKind::CloneInsideLoop,
                     Issue::warning(format!(
                         "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
@@ -193,7 +193,7 @@ pub fn analyze_assignment<'a>(
         block_context.remove_descendants(
             context.interner,
             context.codebase,
-            &mut context.buffer,
+            &mut context.collector,
             artifacts,
             target_variable_id,
             existing_target_type,
@@ -208,7 +208,7 @@ pub fn analyze_assignment<'a>(
             block_context.remove_variable_from_conflicting_clauses(
                 context.interner,
                 context.codebase,
-                &mut context.buffer,
+                &mut context.collector,
                 artifacts,
                 &root_var_id,
                 Some(&existing_root_type),
@@ -232,7 +232,7 @@ pub fn analyze_assignment<'a>(
             target_expression,
             Expression::Identifier(_) | Expression::ConstantAccess(_) | Expression::Access(Access::ClassConstant(_))
         ) {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::AssignmentToConstant,
                 Issue::error("Cannot assign to a constant.")
                     .with_annotation(
@@ -243,7 +243,7 @@ pub fn analyze_assignment<'a>(
                     .with_help("Assign the value to a variable instead, or remove the assignment."),
             );
         } else {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidAssignment,
                 Issue::error(
                     "Invalid target for assignment."
@@ -354,7 +354,7 @@ pub fn analyze_assignment_to_variable<'a>(
     destructuring: bool,
 ) {
     if variable_id.eq("$this") {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::AssignmentToThis,
             Issue::error("Cannot assign to `$this`.")
                 .with_annotation(
@@ -380,7 +380,7 @@ pub fn analyze_assignment_to_variable<'a>(
             );
         }
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::ImpossibleAssignment,
             issue
                 .with_note(
@@ -421,7 +421,7 @@ pub fn analyze_assignment_to_variable<'a>(
             );
         }
 
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::MixedAssignment,
             issue.with_annotation(Annotation::primary(variable_span).with_message("Assigning `mixed` type here."))
                 .with_note("Using `mixed` can lead to runtime errors if the variable is used in a way that assumes a specific type.")
@@ -490,7 +490,7 @@ fn analyze_destructuring<'a>(
                 "Ensure the value on the right-hand side is an array before attempting to destructure it.",
             );
 
-        context.buffer.report(TypingIssueKind::InvalidArrayDestructuring, issue);
+        context.collector.report_with_code(TypingIssueKind::InvalidArrayDestructuring, issue);
 
         non_array = true;
     }
@@ -536,7 +536,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.buffer.report(TypingIssueKind::MixedKeyedAndNonKeyedArrayDestructuring, issue);
+            context.collector.report_with_code(TypingIssueKind::MixedKeyedAndNonKeyedArrayDestructuring, issue);
 
             impossible = true;
         }
@@ -570,7 +570,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.buffer.report(TypingIssueKind::MixedKeyedAndSkippedArrayDestructuring, issue);
+            context.collector.report_with_code(TypingIssueKind::MixedKeyedAndSkippedArrayDestructuring, issue);
 
             impossible = true;
         }
@@ -652,7 +652,7 @@ fn analyze_destructuring<'a>(
                 )?;
             }
             ArrayElement::Variadic(variadic_element) => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidVariadicInDestructuring,
                     Issue::error("Variadic unpacking (`...`) is not permitted in a destructuring assignment.")
                         .with_annotation(Annotation::primary(variadic_element.span()).with_message("This syntax is not allowed here"))
@@ -752,7 +752,7 @@ fn handle_assignment_with_boolean_logic(
     let right_clauses = BlockContext::filter_clauses(
         context.interner,
         context.codebase,
-        &mut context.buffer,
+        &mut context.collector,
         artifacts,
         variable_id,
         right_clauses.into_iter().map(Rc::new).collect(),

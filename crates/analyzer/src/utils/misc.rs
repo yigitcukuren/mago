@@ -6,6 +6,7 @@ use mago_algebra::clause::Clause;
 use mago_algebra::negate_formula;
 use mago_codex::get_class_like;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_collector::Collector;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
@@ -14,14 +15,13 @@ use mago_reporting::Issue;
 use mago_span::Span;
 use mago_syntax::ast::Expression;
 
-use crate::issue::TypingIssueBuffer;
 use crate::issue::TypingIssueKind;
 
 /// Checks for two types of logical issues between a set of existing assertions (`formula_1`)
 /// and a new set of assertions (`formula_2`) from a conditional expression.
 pub fn check_for_paradox(
     interner: &ThreadedInterner,
-    buffer: &mut TypingIssueBuffer,
+    buffer: &mut Collector<'_>,
     formula_1: &[Rc<Clause>],
     formula_2: &[Clause],
     span: &Span,
@@ -78,7 +78,7 @@ pub fn check_for_paradox(
 
 fn report_redundant_condition(
     interner: &ThreadedInterner,
-    buffer: &mut TypingIssueBuffer,
+    collector: &mut Collector<'_>,
     redundant_clause: &Clause,
     redundant_span: Span,
     original_span: Span,
@@ -105,12 +105,12 @@ fn report_redundant_condition(
         );
     }
 
-    buffer.report(kind, issue);
+    collector.report_with_code(kind, issue);
 }
 
 fn report_paradoxical_condition(
     interner: &ThreadedInterner,
-    buffer: &mut TypingIssueBuffer,
+    collector: &mut Collector<'_>,
     original_clause: &Clause,
     negated_conflicting_clause: &Clause,
     paradox_span: Span,
@@ -122,7 +122,7 @@ fn report_paradoxical_condition(
     let new_condition_str = conflicting_clause.iter().map(|c| c.to_string(interner)).collect::<Vec<_>>().join(" && ");
     let established_fact_str = original_clause.to_string(interner);
 
-    buffer.report(
+    collector.report_with_code(
         TypingIssueKind::ParadoxicalCondition,
         Issue::error("Paradoxical condition")
             .with_annotation(

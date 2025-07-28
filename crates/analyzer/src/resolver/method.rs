@@ -119,7 +119,7 @@ pub fn resolve_method_targets<'a>(
                 if !is_null_safe {
                     result.has_invalid_target = true;
 
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         if object_type.is_null() {
                             TypingIssueKind::MethodAccessOnNull
                         } else {
@@ -340,7 +340,7 @@ pub fn get_method_ids_from_object<'a, 'b>(
 fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_span: Span, selector_span: Span) {
     let type_str = atomic_type.get_id(Some(context.interner));
 
-    context.buffer.report(
+    context.collector.report_with_code(
         if atomic_type.is_any() {
             TypingIssueKind::MixedAnyMethodAccess
         } else if atomic_type.is_mixed() {
@@ -357,7 +357,7 @@ fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_s
 }
 
 fn report_call_on_ambiguous_object(context: &mut Context, obj_span: Span, selector_span: Span) {
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::AmbiguousObjectMethodAccess,
         Issue::warning("Cannot statically verify method call on a generic `object` type.")
             .with_annotation(Annotation::primary(selector_span).with_message("Cannot verify this method call"))
@@ -378,7 +378,7 @@ pub(super) fn report_non_existent_method(
     let method_name_str = context.interner.lookup(&method_name);
     let class_name_str = context.interner.lookup(class_name);
 
-    context.buffer.report(
+    context.collector.report_with_code(
         TypingIssueKind::NonExistentMethod,
         Issue::error(format!("Method `{method_name_str}` does not exist on type `{class_name_str}`."))
             .with_annotation(Annotation::primary(selector_span).with_message("This method selection is invalid"))

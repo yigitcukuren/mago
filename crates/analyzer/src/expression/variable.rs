@@ -139,7 +139,7 @@ fn read_variable<'a>(
 
                 global_variable_type
             } else if block_context.variables_possibly_in_scope.contains(variable_name) {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::PossiblyUndefinedVariable,
                     Issue::warning(format!(
                         "Variable `{variable_name}` might not have been defined on all execution paths leading to this point.",
@@ -155,7 +155,7 @@ fn read_variable<'a>(
 
                 get_mixed()
             } else if block_context.inside_variable_reference {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::ReferenceToUndefinedVariable,
                     Issue::help(format!("Reference created from a previously undefined variable `{variable_name}`.",))
                         .with_annotation(
@@ -221,7 +221,7 @@ fn read_variable<'a>(
                     );
                 }
 
-                context.buffer.report(TypingIssueKind::UndefinedVariable, issue.with_help(help_message));
+                context.collector.report_with_code(TypingIssueKind::UndefinedVariable, issue.with_help(help_message));
 
                 get_mixed_any()
             }
@@ -229,7 +229,7 @@ fn read_variable<'a>(
     };
 
     if variable_type.possibly_undefined_from_try {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::PossiblyUndefinedVariable,
             Issue::warning(format!(
                 "Variable `{variable_name}` might be undefined here because its assignment occurs within a `try` block.",

@@ -24,6 +24,7 @@ mago-source = { workspace = true }
 mago-algebra = { workspace = true }
 mago-php-version = { workspace = true }
 mago-docblock = { workspace = true }
+mago-collector = { workspace = true }
 ahash = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

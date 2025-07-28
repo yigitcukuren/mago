@@ -131,7 +131,7 @@ impl Analyzable for Try {
                 block_context.remove_variable_from_conflicting_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     assigned_variable_id,
                     None,
@@ -142,7 +142,7 @@ impl Analyzable for Try {
                 try_block_context.remove_variable_from_conflicting_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     assigned_variable_id,
                     None,
@@ -208,7 +208,7 @@ impl Analyzable for Try {
                 catch_block_context.remove_variable_from_conflicting_clauses(
                     context.interner,
                     context.codebase,
-                    &mut context.buffer,
+                    &mut context.collector,
                     artifacts,
                     catch_variable_id,
                     None,
@@ -398,7 +398,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
                 let id = *context.resolved_names.get(identifier);
 
                 if let Some(&first_span) = caught.get(&id) {
-                    context.buffer.report(
+                    context.collector.report_with_code(
                         TypingIssueKind::DuplicateCaughtType,
                         Issue::error(format!(
                             "Type `{}` is caught multiple times in the same `catch` clause.",
@@ -423,7 +423,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
                 walk(context, &union_hint.right, caught);
             }
             _ => {
-                context.buffer.report(
+                context.collector.report_with_code(
                     TypingIssueKind::InvalidCatchType,
                     Issue::error("Invalid type used in `catch` declaration. Only class or interface names are allowed.")
                     .with_annotation(
@@ -455,7 +455,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
         let Some(class_like_metadata) = get_class_like(context.codebase, context.interner, &caught_type) else {
             let caught_type_str = context.interner.lookup(&caught_type);
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::NonExistentCatchType,
                 Issue::error(format!("Attempting to catch an undefined class or interface: `{caught_type_str}`."))
                 .with_annotation(
@@ -477,7 +477,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
             let caught_type_str = context.interner.lookup(&caught_type);
             let kind_str = if class_like_metadata.kind.is_enum() { "an enum" } else { "a trait" };
 
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::InvalidCatchTypeNotClassOrInterface,
                 Issue::error(format!(
                     "Only classes or interfaces can be caught, but `{caught_type_str}` is {kind_str}.",
@@ -500,7 +500,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
         let is_throwable = is_instance_of(context.codebase, context.interner, &caught_type, &throwable);
 
         if !is_throwable {
-            context.buffer.report(
+            context.collector.report_with_code(
                 TypingIssueKind::CatchTypeNotThrowable,
                 Issue::error(format!(
                     "The type `{caught_type_str}` caught in a catch block must implement the `Throwable` interface.",
@@ -524,7 +524,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
     }
 
     if caught_classes.is_empty() {
-        context.buffer.report(
+        context.collector.report_with_code(
             TypingIssueKind::NoValidCatchTypeFound,
             Issue::error(
                 "None of the types specified in the `catch` declaration are valid catchable exceptions."
