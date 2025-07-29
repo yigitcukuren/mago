@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use ahash::HashMap;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -21,13 +22,38 @@ pub type TemplateTuple = (StringIdentifier, Vec<(GenericParent, TUnion)>);
 /// Contains metadata specific to methods defined within classes, interfaces, enums, or traits.
 ///
 /// This complements the more general `FunctionLikeMetadata`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MethodMetadata {
+    /// Marks whether this method is declared as `final`, preventing further overriding.
     pub is_final: bool,
+
+    /// Marks whether this method is declared as `abstract`, requiring implementation in subclasses.
     pub is_abstract: bool,
+
+    /// Marks whether this method is declared as `static`, allowing it to be called without an instance.
     pub is_static: bool,
+
+    /// Marks whether this method is a constructor (`__construct`).
     pub is_constructor: bool,
+
+    /// Marks whether this method is declared as `public`, `protected`, or `private`.
     pub visibility: Visibility,
+
+    /// A map of constraints defined by `@where` docblock tags.
+    ///
+    /// The key is the name of a class-level template parameter (e.g., `T`), and the value
+    /// is the `TUnion` type constraint that `T` must satisfy for this specific method
+    /// to be considered callable.
+    pub where_constraints: HashMap<StringIdentifier, TypeMetadata>,
+
+    /// The type that the object instance (`$this`) will have *after* this method is called.
+    ///
+    /// This is populated from the `@this-out` tag (and its aliases: `@self-out`,
+    /// `@psalm-this-out`, `@phpstan-this-out`, etc.). It is crucial for typing mutable
+    /// objects, builders, and fluent interfaces where a method call changes the
+    /// object's state in a way that affects its type, such as specializing a generic
+    /// template parameter (e.g., a `Box<T>` becoming a `Box<string>`).
+    pub this_out_type: Option<TypeMetadata>,
 }
 
 /// Distinguishes between different kinds of callable constructs in PHP.
@@ -43,7 +69,7 @@ pub enum FunctionLikeKind {
     ArrowFunction,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FunctionLikeMetadata {
     /// The kind of function-like structure this metadata represents.
     pub kind: FunctionLikeKind,
@@ -96,14 +122,6 @@ pub struct FunctionLikeMetadata {
     /// `true` if this function/method is defined in user-controlled code (vs. internal stubs/PHP core).
     /// Often determined from the source file info within the `span`.
     pub(crate) user_defined: bool,
-
-    /// The type of `$this` *after* this function/method executes, typically specified by
-    /// `@psalm-self-out`, `@phpstan-self-out`, or `@self-out` docblock tags. Used for refining `$this` type.
-    pub this_out_type: Option<TypeMetadata>,
-
-    /// A type constraint on `$this` required for the function/method body to be valid,
-    /// specified by `@psalm-if-this-is`, `@phpstan-if-this-is`, or `@if-this-is` tags.
-    pub if_this_is_type: Option<TypeMetadata>,
 
     /// A list of types that this function/method might throw, derived from `@throws` docblock tags
     /// or inferred from `throw` statements within the body.
@@ -247,13 +265,11 @@ impl FunctionLikeMetadata {
             is_mutation_free: false,
             is_external_mutation_free: false,
             allows_named_arguments: true,
-            this_out_type: None,
-            if_this_is_type: None,
-            issues: vec![],
             assertions: BTreeMap::new(),
             if_true_assertions: BTreeMap::new(),
             if_false_assertions: BTreeMap::new(),
             unchecked: false,
+            issues: vec![],
         }
     }
 

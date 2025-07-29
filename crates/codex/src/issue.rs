@@ -9,7 +9,7 @@ pub(crate) enum ScanningIssueKind {
     MalformedDocblockComment,
     InvalidReturnTag,
     InvalidThisOutTag,
-    InvalidIfThisIsTag,
+    InvalidWhereTag,
     InvalidParamOutTag,
     InvalidParamTag,
     InvalidThrowsTag,

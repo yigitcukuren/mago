@@ -69,6 +69,8 @@ pub fn scan_method(
         } else {
             Visibility::Public
         },
+        where_constraints: Default::default(),
+        this_out_type: None,
     };
 
     if let MethodBody::Concrete(block) = &method.body {
@@ -392,6 +394,23 @@ fn scan_function_like_docblock(
         }
     }
 
+    if let Some(return_type) = docblock.return_type.as_ref() {
+        match get_type_metadata_from_type_string(&return_type.type_string, classname, &type_context, context, scope) {
+            Ok(return_type_signature) => metadata.set_return_type_metadata(Some(return_type_signature)),
+            Err(typing_error) => {
+                metadata.issues.push(
+                    Issue::error("Failed to resolve `@return` type string.")
+                        .with_code(ScanningIssueKind::InvalidReturnTag)
+                        .with_annotation(
+                            Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
+                        )
+                        .with_note(typing_error.note())
+                        .with_help(typing_error.help()),
+                );
+            }
+        }
+    }
+
     'this_out: {
         let Some(this_out) = docblock.this_out else {
             // If there is no `@this-out` tag, we can skip this section.
@@ -430,7 +449,7 @@ fn scan_function_like_docblock(
 
         match get_type_metadata_from_type_string(&this_out.type_string, classname, &type_context, context, scope) {
             Ok(out_type_metadata) => {
-                metadata.this_out_type = Some(out_type_metadata);
+                method_metadata.this_out_type = Some(out_type_metadata);
             }
             Err(typing_error) => {
                 metadata.issues.push(
@@ -446,75 +465,51 @@ fn scan_function_like_docblock(
         }
     }
 
-    if let Some(return_type) = docblock.return_type.as_ref() {
-        match get_type_metadata_from_type_string(&return_type.type_string, classname, &type_context, context, scope) {
-            Ok(return_type_signature) => metadata.set_return_type_metadata(Some(return_type_signature)),
-            Err(typing_error) => {
-                metadata.issues.push(
-                    Issue::error("Failed to resolve `@return` type string.")
-                        .with_code(ScanningIssueKind::InvalidReturnTag)
-                        .with_annotation(
-                            Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
-                        )
-                        .with_note(typing_error.note())
-                        .with_help(typing_error.help()),
-                );
-            }
-        }
-    }
-
-    'if_this_is: {
-        let Some(if_this_is) = docblock.if_this_is else {
-            // If there is no `@if-this-is` tag, we can skip this section.
-            break 'if_this_is;
-        };
-
+    for where_tag in docblock.where_constraints {
         let Some(method_metadata) = metadata.get_method_metadata_mut() else {
             metadata.issues.push(
-                Issue::error("`@if-this-is` tag used in a non-method function-like.")
-                    .with_code(ScanningIssueKind::InvalidIfThisIsTag)
+                Issue::error("`@where` tag cannot be used on functions or closures.")
+                    .with_code(ScanningIssueKind::InvalidWhereTag)
                     .with_annotation(
-                        Annotation::primary(if_this_is.type_string.span)
-                            .with_message("`@if-this-is` can only be used in methods, not in functions or closures"),
+                        Annotation::primary(where_tag.span)
+                            .with_message("`@where` is only valid on instance methods"),
                     )
-                    .with_note("The `@if-this-is` tag is specific to methods that check the type of `this`.")
-                    .with_help("Ensure this tag is only used in method docblocks."),
+                    .with_note("The `@where` tag constrains template types based on the instance type of `$this`. Functions and closures do not have a `$this` context.")
+                    .with_help("Remove the `@where` tag. If you need this logic, consider refactoring it into an instance method on a class."),
             );
 
-            break 'if_this_is;
+            continue;
         };
 
         if method_metadata.is_static {
             metadata.issues.push(
-                Issue::error("`@if-this-is` tag used in a static method.")
-                    .with_code(ScanningIssueKind::InvalidIfThisIsTag)
+                Issue::error("`@where` tag cannot be used on static methods.")
+                    .with_code(ScanningIssueKind::InvalidWhereTag)
                     .with_annotation(
-                        Annotation::primary(if_this_is.type_string.span)
-                            .with_message("`@if-this-is` cannot be used in static methods"),
+                        Annotation::primary(where_tag.span)
+                            .with_message("This constraint is not allowed on a static method"),
                     )
-                    .with_note("The `@if-this-is` tag is intended for instance methods that check the type of `this`.")
-                    .with_help("Remove the `@if-this-is` tag from static method docblocks."),
+                    .with_note("The `@where` tag constrains template types based on the instance type of `$this`. Static methods are not tied to an instance and have no `$this` context.")
+                    .with_help("Remove the `@where` tag. To constrain a template type on a static method, use a type bound like `@template T of SomeInterface` instead."),
             );
 
-            break 'if_this_is;
+            continue;
         }
 
-        match get_type_metadata_from_type_string(&if_this_is.type_string, classname, &type_context, context, scope) {
+        match get_type_metadata_from_type_string(&where_tag.type_string, classname, &type_context, context, scope) {
             Ok(constraint_type) => {
-                metadata.if_this_is_type = Some(constraint_type);
+                let template_name = context.interner.intern(&where_tag.name);
+
+                method_metadata.where_constraints.insert(template_name, constraint_type);
             }
-            Err(typing_error) => {
-                metadata.issues.push(
-                    Issue::error("Failed to resolve `@if-this-is` type string.")
-                        .with_code(ScanningIssueKind::InvalidIfThisIsTag)
-                        .with_annotation(
-                            Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
-                        )
-                        .with_note(typing_error.note())
-                        .with_help(typing_error.help()),
-                );
-            }
-        }
+            Err(typing_error) => metadata.issues.push(
+                Issue::error(format!("Invalid constraint type `{}` in `@where` tag.", where_tag.type_string.value))
+                    .with_code(ScanningIssueKind::InvalidWhereTag)
+                    .with_annotation(Annotation::primary(typing_error.span()).with_message(typing_error.to_string()))
+                    .with_note(typing_error.note())
+                    .with_help(typing_error.help()),
+            ),
+        };
     }
 
     for thrown in docblock.throws {

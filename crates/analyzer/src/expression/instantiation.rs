@@ -276,7 +276,7 @@ fn analyze_class_instantiation<'a>(
     let is_spl_object_storage = class_name_str.eq_ignore_ascii_case("splobjectstorage");
     if let Some(constructor) = get_method_by_id(context.codebase, context.interner, &constructor_declraing_id) {
         has_inconsistent_constructor =
-            has_inconsistent_constructor && !constructor.method_metadata.is_some_and(|meta| meta.is_final);
+            has_inconsistent_constructor && !constructor.method_metadata.as_ref().is_some_and(|meta| meta.is_final);
         constructor_span = Some(constructor.name_span.unwrap_or(constructor.span));
 
         artifacts.symbol_references.add_reference_for_method_call(&block_context.scope, &constructor_declraing_id);

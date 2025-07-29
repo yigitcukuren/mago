@@ -53,12 +53,6 @@ pub struct ThisOutTag {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub struct IfThisIsTag {
-    pub span: Span,
-    pub type_string: TypeString,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ThrowsTag {
     pub span: Span,
     pub type_string: TypeString,
@@ -66,7 +60,7 @@ pub struct ThrowsTag {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(i8)]
+#[repr(u8)]
 pub enum TemplateModifier {
     Of,
     As,
@@ -87,6 +81,25 @@ pub struct TemplateTag {
     pub covariant: bool,
     /// Whether the template was declared as contravariant (`@template-contravariant`).
     pub contravariant: bool,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[repr(u8)]
+pub enum WhereModifier {
+    Is,
+    Colon,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+pub struct WhereTag {
+    /// The full span of the original content parsed (e.g., "T is Foo").
+    pub span: Span,
+    /// The name of the template parameter (e.g., "T").
+    pub name: String,
+    /// The modifier (`is`, `:`).
+    pub modifier: WhereModifier,
+    /// The constraint type string following the modifier, with its span.
+    pub type_string: TypeString,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
@@ -203,6 +216,44 @@ pub fn parse_template_tag(
     }
 
     Some(TemplateTag { span, name, modifier, type_string: type_string_opt, covariant, contravariant })
+}
+
+/// Parses the content string of a `@where` tag.
+///
+/// # Arguments
+///
+/// * `content` - The string slice content following `@where`.
+/// * `span` - The original `Span` of the `content` slice.
+///
+/// # Returns
+///
+/// `Some(WhereTag)` if parsing is successful, `None` otherwise.
+pub fn parse_where_tag(content: &str, span: Span) -> Option<WhereTag> {
+    let name_end_pos = content.find(char::is_whitespace)?;
+    let (name_part, mut rest) = content.split_at(name_end_pos);
+
+    if !is_valid_identifier_start(name_part, false) {
+        return None;
+    }
+
+    rest = rest.trim_start();
+    let modifier = if rest.starts_with("is") && rest.chars().nth(2).is_some_and(char::is_whitespace) {
+        rest = &rest[2..];
+        WhereModifier::Is
+    } else if rest.starts_with(':') {
+        rest = &rest[1..];
+        WhereModifier::Colon
+    } else {
+        return None;
+    };
+
+    let consumed_len = content.len() - rest.len();
+    let type_part_start_pos = span.start.forward(consumed_len);
+    let type_part_span = Span::new(type_part_start_pos, span.end);
+
+    let (type_string, _rest) = split_tag_content(rest, type_part_span)?;
+
+    Some(WhereTag { span, name: name_part.to_owned(), modifier, type_string })
 }
 
 /// Parses the content string of a `@param` tag.
@@ -334,36 +385,6 @@ pub fn parse_throws_tag(content: &str, span: Span) -> Option<ThrowsTag> {
     let description = rest_slice.to_owned();
 
     Some(ThrowsTag { span, type_string, description })
-}
-
-/// Parses the content string of a `@if-this-is` tag.
-///
-/// # Arguments
-///
-/// * `content` - The string slice content following the tag.
-/// * `span` - The original `Span` of the `content` slice.
-///
-/// # Returns
-///
-/// `Some(IfThisIsTag)` if parsing is successful, `None` otherwise.
-pub fn parse_if_this_is_tag(content: &str, span: Span) -> Option<IfThisIsTag> {
-    let (type_string, rest_slice) = split_tag_content(content, span)?;
-
-    // Type cannot start with '{'
-    if type_string.value.starts_with('{') {
-        return None;
-    }
-
-    // Type cannot start with '$' unless it is "$this"
-    if type_string.value.starts_with('$') && type_string.value != "$this" {
-        return None;
-    }
-
-    if rest_slice.is_empty() {
-        return None;
-    }
-
-    Some(IfThisIsTag { span, type_string })
 }
 
 /// Parses the content string of a `@this-out` tag.

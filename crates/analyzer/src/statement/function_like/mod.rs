@@ -89,7 +89,7 @@ pub fn analyze_function_like<'a, 'ast>(
     {
         block_context.locals.insert(
             "$this".to_string(),
-            Rc::new(wrap_atomic(TAtomic::Object(get_this_type(context, class_like_metadata)))),
+            Rc::new(wrap_atomic(TAtomic::Object(get_this_type(context, class_like_metadata, function_like_metadata)))),
         );
     }
 
@@ -289,7 +289,7 @@ fn add_properties_to_context<'a>(
         let expression_id = if property_metadata.is_static() {
             format!("{}::${raw_property_name}", context.interner.lookup(&class_like_metadata.name),)
         } else {
-            let this_type = get_this_type(context, class_like_metadata);
+            let this_type = get_this_type(context, class_like_metadata, function_like_metadata);
 
             property_type = localize_property_type(
                 context,
@@ -328,7 +328,11 @@ fn add_properties_to_context<'a>(
     Ok(())
 }
 
-fn get_this_type(context: &Context<'_>, class_like_metadata: &ClassLikeMetadata) -> TObject {
+fn get_this_type(
+    context: &Context<'_>,
+    class_like_metadata: &ClassLikeMetadata,
+    function_like_metadata: &FunctionLikeMetadata,
+) -> TObject {
     if class_like_metadata.kind.is_enum() {
         return TObject::Enum(TEnum { name: class_like_metadata.original_name, case: None });
     }
@@ -339,7 +343,8 @@ fn get_this_type(context: &Context<'_>, class_like_metadata: &ClassLikeMetadata)
             continue;
         };
 
-        let TObject::Named(mut interface_type) = get_this_type(context, interface_metadata) else {
+        let TObject::Named(mut interface_type) = get_this_type(context, interface_metadata, function_like_metadata)
+        else {
             continue;
         };
 
@@ -357,7 +362,8 @@ fn get_this_type(context: &Context<'_>, class_like_metadata: &ClassLikeMetadata)
             continue;
         };
 
-        let TObject::Named(mut parent_type) = get_this_type(context, parent_class_metadata) else {
+        let TObject::Named(mut parent_type) = get_this_type(context, parent_class_metadata, function_like_metadata)
+        else {
             continue;
         };
 
@@ -370,28 +376,29 @@ fn get_this_type(context: &Context<'_>, class_like_metadata: &ClassLikeMetadata)
         }
     }
 
+    let mut type_parameters = vec![];
+    for (template_name, template_map) in &class_like_metadata.template_types {
+        if let Some(constraint) = function_like_metadata
+            .method_metadata
+            .as_ref()
+            .and_then(|method_metadata| method_metadata.where_constraints.get(template_name))
+        {
+            type_parameters.push(constraint.type_union.clone());
+        } else {
+            let (defining_entry, constraint) = template_map.iter().next().unwrap();
+
+            type_parameters.push(wrap_atomic(TAtomic::GenericParameter(TGenericParameter {
+                parameter_name: *template_name,
+                constraint: Box::new(constraint.clone()),
+                defining_entity: *defining_entry,
+                intersection_types: None,
+            })));
+        }
+    }
+
     TObject::Named(TNamedObject {
         name: class_like_metadata.original_name,
-        type_parameters: if !class_like_metadata.template_types.is_empty() {
-            Some(
-                class_like_metadata
-                    .template_types
-                    .iter()
-                    .map(|(parameter_name, template_map)| {
-                        let (defining_entry, constraint) = template_map.iter().next().unwrap();
-
-                        wrap_atomic(TAtomic::GenericParameter(TGenericParameter {
-                            parameter_name: *parameter_name,
-                            constraint: Box::new(constraint.clone()),
-                            defining_entity: *defining_entry,
-                            intersection_types: None,
-                        }))
-                    })
-                    .collect::<Vec<_>>(),
-            )
-        } else {
-            None
-        },
+        type_parameters: if !type_parameters.is_empty() { Some(type_parameters) } else { None },
         is_this: true,
         intersection_types: if intersections.is_empty() { None } else { Some(intersections) },
         remapped_parameters: false,

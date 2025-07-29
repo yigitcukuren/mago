@@ -599,4 +599,144 @@ mod tests {
             }
         "#},
     }
+
+    test_analysis! {
+        name = where_constraints,
+        code = indoc! {r#"
+            <?php
+
+            interface Stringable
+            {
+                public function __toString(): string;
+            }
+
+            function take_string(string $s): void
+            {
+                take_string($s);
+            }
+
+            function take_int(int $i): void
+            {
+                take_int($i);
+            }
+
+            function take_array(array $arr): void
+            {
+                take_array($arr);
+            }
+
+            /** @param scalar|Stringable $value */
+            function take_scalar_or_stringable(mixed $value): void
+            {
+                take_scalar_or_stringable($value);
+            }
+
+            final class Message implements Stringable
+            {
+                public function __construct(
+                    private string $message,
+                ) {}
+
+                public function __toString(): string
+                {
+                    return $this->message;
+                }
+            }
+
+            /**
+             * @template-covariant T
+             */
+            final class Box
+            {
+                /**
+                 * @param T $value
+                 */
+                public function __construct(
+                    public mixed $value,
+                ) {}
+
+                /**
+                 * @where T is string|int|float|Stringable
+                 */
+                public function toString(): string
+                {
+                    take_scalar_or_stringable($this->value);
+
+                    return (string) $this->value;
+                }
+
+                /**
+                 * @template Y
+                 * @template Z
+                 *
+                 * @where T is list{Y, Z}
+                 *
+                 * @return list{Box<Y>, Box<Z>}
+                 */
+                public function unzip(): array
+                {
+                    take_array($this->value);
+
+                    [$first, $second] = $this->value;
+
+                    return [
+                        new Box($first),
+                        new Box($second),
+                    ];
+                }
+            }
+
+            $a = new Box('Hello, World!');
+            take_string($a->toString()); // OK
+
+            $b = new Box(42);
+            take_string($b->toString()); // OK
+
+            $c = new Box(3.14);
+            take_string($c->toString()); // OK
+
+            $d = new Box(new Message('This is a message.'));
+            take_string($d->toString()); // OK
+
+            $f = new Box(['foo', 123]);
+            [$g, $h] = $f->unzip(); // OK
+
+            take_string($g->value); // OK
+            take_int($h->value); // OK
+        "#},
+    }
+
+    test_analysis! {
+        name = where_constraints_violation,
+        code = indoc! {r#"
+            <?php
+
+            /**
+             * @template-covariant T
+             */
+            final class Box
+            {
+                /**
+                 * @param T $value
+                 */
+                public function __construct(
+                    public mixed $value,
+                ) {}
+
+                /**
+                 * @where T is string|int|float
+                 */
+                public function toString(): string
+                {
+                    return (string) $this->value;
+                }
+            }
+
+            $a = new Box(['foo', 123]);
+            $a->toString(); // violation of @where constraint
+        "#},
+        issues = [
+            TypingIssueKind::WhereConstraintViolation
+        ]
+    }
 }

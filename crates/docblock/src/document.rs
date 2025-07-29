@@ -205,10 +205,14 @@ pub enum TagKind {
     EnumInterface,
     MagoUnchecked,
     Unchecked,
+    ThisOut,
+    SelfOut,
+    Where,
     Other,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum TagVendor {
     Mago,
     Phpstan,
@@ -357,6 +361,8 @@ impl TagKind {
             Self::PsalmImportType => Some(Self::ImportType),
             Self::PhpstanRequireExtends | Self::PsalmRequireExtends => Some(Self::RequireExtends),
             Self::PhpstanRequireImplements | Self::PsalmRequireImplements => Some(Self::RequireImplements),
+            Self::PsalmThisOut | Self::PhpstanThisOut => Some(Self::ThisOut),
+            Self::PhpstanSelfOut => Some(Self::SelfOut),
             _ => None,
         }
     }
@@ -413,6 +419,7 @@ impl TagKind {
                 | Self::RequireExtends
                 | Self::PsalmRequireExtends
                 | Self::PhpstanRequireExtends
+                | Self::Where
         )
     }
 }
@@ -575,8 +582,8 @@ where
             "phpstan-assert" => TagKind::PhpstanAssert,
             "phpstan-assert-if-true" => TagKind::PhpstanAssertIfTrue,
             "phpstan-assert-if-false" => TagKind::PhpstanAssertIfFalse,
-            "phpstan-self-out" => TagKind::PhpstanSelfOut,
-            "phpstan-this-out" => TagKind::PhpstanThisOut,
+            "phpstan-self-out" | "phpstanselfout" => TagKind::PhpstanSelfOut,
+            "phpstan-this-out" | "phpstanthisout" => TagKind::PhpstanThisOut,
             "phpstan-require-extends" | "phpstanrequireextends" => TagKind::PhpstanRequireExtends,
             "phpstan-require-implements" | "phpstanrequireimplements" => TagKind::PhpstanRequireImplements,
             "template" => TagKind::Template,
@@ -603,7 +610,20 @@ where
             "import-type" | "importtype" => TagKind::ImportType,
             "require-implements" | "requireimplements" => TagKind::RequireImplements,
             "require-extends" | "requireextends" => TagKind::RequireExtends,
+            "self-out" | "selfout" => TagKind::SelfOut,
+            "this-out" | "thisout" => TagKind::ThisOut,
+            "where" => TagKind::Where,
             _ => TagKind::Other,
+        }
+    }
+}
+
+impl TagVendor {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mago => "mago",
+            Self::Phpstan => "phpstan",
+            Self::Psalm => "psalm",
         }
     }
 }

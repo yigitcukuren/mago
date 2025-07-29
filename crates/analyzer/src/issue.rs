@@ -279,6 +279,7 @@ pub(crate) enum TypingIssueKind {
     InvalidEnumCaseValue,
     ConditionIsTooComplex,
     ExpressionIsTooComplex,
+    WhereConstraintViolation,
 }
 
 impl From<TypingIssueKind> for String {

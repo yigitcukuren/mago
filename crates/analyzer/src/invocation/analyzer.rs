@@ -6,33 +6,23 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use mago_codex::get_class_like;
-use mago_codex::is_instance_of;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::misc::GenericParent;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::array::TArray;
-use mago_codex::ttype::atomic::callable::TCallable;
 use mago_codex::ttype::atomic::object::TObject;
-use mago_codex::ttype::atomic::scalar::TScalar;
-use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeString;
-use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::comparator::ComparisonResult;
-use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
 use mago_codex::ttype::comparator::union_comparator::is_contained_by;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
-use mago_codex::ttype::expander::get_signature_of_function_like_identifier;
 use mago_codex::ttype::template::TemplateBound;
 use mago_codex::ttype::template::TemplateResult;
 use mago_codex::ttype::template::inferred_type_replacer;
-use mago_codex::ttype::template::standin_type_replacer::StandinOptions;
 use mago_codex::ttype::template::standin_type_replacer::get_most_specific_type_from_bounds;
-use mago_codex::ttype::template::standin_type_replacer::insert_bound_type;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::*;
 use mago_interner::StringIdentifier;
@@ -53,6 +43,8 @@ use crate::invocation::InvocationArgumentsSource;
 use crate::invocation::InvocationTarget;
 use crate::invocation::InvocationTargetParameter;
 use crate::invocation::MethodTargetContext;
+use crate::invocation::template_inference::infer_templates_for_method_call;
+use crate::invocation::template_inference::infer_templates_from_argument_and_parameter_types;
 use crate::issue::TypingIssueKind;
 use crate::utils::misc::unique_vec;
 use crate::utils::template::get_template_types_for_class_member;
@@ -652,11 +644,11 @@ pub fn populate_template_result_from_invocation(
         return;
     };
 
-    let StaticClassType::Object(TObject::Named(named_object)) = &method_context.class_type else {
+    let StaticClassType::Object(TObject::Named(instance_type)) = &method_context.class_type else {
         return;
     };
 
-    if let Some(type_parameters) = &named_object.type_parameters {
+    if let Some(type_parameters) = &instance_type.type_parameters {
         for (template_index, template_type) in type_parameters.iter().enumerate() {
             let Some(template_name) = method_context
                 .class_like_metadata
@@ -676,30 +668,15 @@ pub fn populate_template_result_from_invocation(
         }
     }
 
-    if let Some(declaring_method_id) = method_context.declaring_method_id
-        && let Some(declaring_class_like_metadata) =
-            get_class_like(context.codebase, context.interner, declaring_method_id.get_class_name())
-        && declaring_class_like_metadata.name != method_context.class_like_metadata.name
-    {
-        for (template_name, _) in &declaring_class_like_metadata.template_types {
-            let template_type = get_specialized_template_type(
-                context.codebase,
-                context.interner,
-                template_name,
-                &declaring_class_like_metadata.name,
-                method_context.class_like_metadata,
-                named_object.type_parameters.as_deref(),
-            );
+    let Some(identifier) = method_context.declaring_method_id else {
+        return;
+    };
 
-            if let Some(template_type) = template_type {
-                template_result.add_lower_bound(
-                    *template_name,
-                    GenericParent::ClassLike(declaring_class_like_metadata.name),
-                    template_type,
-                );
-            }
-        }
-    }
+    let Some(metadata) = get_class_like(context.codebase, context.interner, identifier.get_class_name()) else {
+        return;
+    };
+
+    infer_templates_for_method_call(context, instance_type, method_context, method_metadata, metadata, template_result);
 }
 
 /// Analyzes a single argument expression and stores its inferred type and span.
@@ -757,559 +734,6 @@ fn analyze_and_store_argument_type<'a>(
     }
 
     Ok(())
-}
-
-/// Infers template types by comparing a function's parameter type against a provided argument type.
-///
-/// This function is responsible for determining the concrete types of generic parameters (like `T`)
-/// based on the actual argument passed to a function.
-///
-/// A key feature of this algorithm is its ability to produce more precise inferences by "subtracting"
-/// concrete types that are common to both the parameter and the argument before matching generics.
-///
-/// ### Example of the core logic
-///
-/// - If a function parameter's type is `string | int | T`.
-/// - And the passed argument's type is `string | int | float`.
-///
-/// A naive inference might resolve `T` to the entire argument type `string | int | float`.
-///
-/// This function, however, identifies that `string` and `int` are concrete types present in both.
-/// It removes them from consideration, leaving `T` from the parameter and `float` from the argument.
-/// This leads to a much more precise inference where `T` is correctly resolved to `float`.
-///
-/// This same reconciliation logic is applied recursively for nested types like arrays, callables, and objects.
-///
-/// ### Arguments
-///
-/// - `context`: The shared analysis context, containing the codebase and interner.
-/// - `parameter_type`: The type of the function/method parameter, which may contain generics.
-/// - `argument_type`: The type of the argument that was actually passed.
-/// - `template_result`: A mutable struct where the results of the inference (the "lower bounds" for each template) will be stored.
-/// - `argument_offset`: The argument's position in the function call.
-/// - `argument_span`: The source code location of the argument, used for error reporting.
-/// - `is_callable_argument`: A flag indicating if the argument is a callable, which has slightly different inference rules for bounds.
-fn infer_templates_from_argument_and_parameter_types(
-    context: &mut Context<'_>,
-    parameter_type: &TUnion,
-    argument_type: &TUnion,
-    template_result: &mut TemplateResult,
-    argument_offset: usize,
-    argument_span: Span,
-    is_callable_argument: bool,
-) {
-    if argument_type.is_mixed_with_any(&mut false) {
-        return;
-    }
-
-    let (generic_parameter_parts, concrete_parameter_parts) = parameter_type.types.iter().partition::<Vec<_>, _>(|t| {
-        matches!(
-            t,
-            TAtomic::GenericParameter(_)
-                | TAtomic::Array(_)
-                | TAtomic::Iterable(_)
-                | TAtomic::Object(TObject::Named(_))
-                | TAtomic::Callable(_)
-                | TAtomic::Scalar(TScalar::ClassLikeString(_))
-        )
-    });
-
-    let residual_argument_type = TUnion::new(
-        argument_type
-            .types
-            .iter()
-            .filter(|argument_atomic| {
-                !concrete_parameter_parts.iter().any(|parameter_atomic| {
-                    atomic_comparator::is_contained_by(
-                        context.codebase,
-                        context.interner,
-                        parameter_atomic,
-                        argument_atomic,
-                        false,
-                        &mut ComparisonResult::default(),
-                    )
-                })
-            })
-            .cloned()
-            .collect::<Vec<_>>(),
-    );
-
-    // A map to hold potential violations, to be processed only if no other valid inference is found.
-    let mut potential_template_violations = std::collections::HashMap::new();
-
-    for parameter_atomic in generic_parameter_parts {
-        match parameter_atomic {
-            TAtomic::GenericParameter(parameter_generic_parameter) => {
-                let template_parameter_name = &parameter_generic_parameter.parameter_name;
-
-                let should_add_bound = !is_callable_argument
-                    || template_result
-                        .lower_bounds
-                        .get(template_parameter_name)
-                        .and_then(|map| map.get(&parameter_generic_parameter.defining_entity))
-                        .is_none_or(|bounds| bounds.is_empty());
-
-                if should_add_bound {
-                    let mut has_violation = false;
-
-                    if let Some(template_types) = template_result.template_types.get_mut(template_parameter_name) {
-                        for (_, template_type) in template_types {
-                            if !is_contained_by(
-                                context.codebase,
-                                context.interner,
-                                &residual_argument_type,
-                                template_type,
-                                false,
-                                false,
-                                false,
-                                &mut ComparisonResult::default(),
-                            ) {
-                                potential_template_violations
-                                    .entry((*template_parameter_name, parameter_generic_parameter.defining_entity))
-                                    .or_insert_with(|| {
-                                        (
-                                            residual_argument_type.clone(),
-                                            template_type.clone(),
-                                            parameter_generic_parameter.clone(),
-                                        )
-                                    });
-
-                                has_violation = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if !has_violation {
-                        insert_bound_type(
-                            template_result,
-                            *template_parameter_name,
-                            &parameter_generic_parameter.defining_entity,
-                            residual_argument_type.clone(),
-                            StandinOptions { appearance_depth: 1, ..Default::default() },
-                            Some(argument_offset),
-                            Some(argument_span),
-                        );
-                    }
-                }
-            }
-            TAtomic::Array(parameter_array) => {
-                for argument_atomic in &residual_argument_type.types {
-                    if let TAtomic::Array(argument_array) = argument_atomic {
-                        match (parameter_array, argument_array) {
-                            (TArray::List(_), TArray::List(_)) => {
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &get_array_value_parameter(parameter_array, context.codebase, context.interner),
-                                    &get_array_value_parameter(argument_array, context.codebase, context.interner),
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-                            }
-                            (TArray::Keyed(_), TArray::Keyed(_)) => {
-                                let (parameter_key, parameter_value) =
-                                    get_array_parameters(parameter_array, context.codebase, context.interner);
-                                let (argument_key, argument_value) =
-                                    get_array_parameters(argument_array, context.codebase, context.interner);
-
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &parameter_key,
-                                    &argument_key,
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &parameter_value,
-                                    &argument_value,
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-                            }
-                            (TArray::List(_), TArray::Keyed(_)) => {
-                                let parameter_value_type =
-                                    get_array_value_parameter(parameter_array, context.codebase, context.interner);
-                                let (_, argument_value_type) =
-                                    get_array_parameters(argument_array, context.codebase, context.interner);
-
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &parameter_value_type,
-                                    &argument_value_type,
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-                            }
-                            (TArray::Keyed(_), TArray::List(_)) => {
-                                let (parameter_key_type, parameter_value_type) =
-                                    get_array_parameters(parameter_array, context.codebase, context.interner);
-                                let argument_value_type =
-                                    get_array_value_parameter(argument_array, context.codebase, context.interner);
-
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &parameter_key_type,
-                                    &TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::non_negative()))]),
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-
-                                infer_templates_from_argument_and_parameter_types(
-                                    context,
-                                    &parameter_value_type,
-                                    &argument_value_type,
-                                    template_result,
-                                    argument_offset,
-                                    argument_span,
-                                    is_callable_argument,
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            TAtomic::Iterable(parameter_iterable) => {
-                for argument_atomic in &residual_argument_type.types {
-                    let Some((argument_key, argument_value)) =
-                        get_iterable_parameters(argument_atomic, context.codebase, context.interner)
-                    else {
-                        return;
-                    };
-
-                    infer_templates_from_argument_and_parameter_types(
-                        context,
-                        parameter_iterable.get_key_type(),
-                        &argument_key,
-                        template_result,
-                        argument_offset,
-                        argument_span,
-                        is_callable_argument,
-                    );
-
-                    infer_templates_from_argument_and_parameter_types(
-                        context,
-                        parameter_iterable.get_value_type(),
-                        &argument_value,
-                        template_result,
-                        argument_offset,
-                        argument_span,
-                        is_callable_argument,
-                    );
-                }
-            }
-            TAtomic::Callable(parameter_callable) => {
-                let parameter_signature = match parameter_callable {
-                    TCallable::Signature(signature) => Cow::Borrowed(signature),
-                    TCallable::Alias(id) => {
-                        let Some(signature) =
-                            get_signature_of_function_like_identifier(id, context.codebase, context.interner)
-                        else {
-                            continue;
-                        };
-
-                        Cow::Owned(signature)
-                    }
-                };
-
-                for argument_atomic in &residual_argument_type.types {
-                    let argument_signature = match argument_atomic {
-                        TAtomic::Callable(TCallable::Signature(argument_signature)) => {
-                            Cow::Borrowed(argument_signature)
-                        }
-                        TAtomic::Callable(TCallable::Alias(id)) => {
-                            let Some(signature) =
-                                get_signature_of_function_like_identifier(id, context.codebase, context.interner)
-                            else {
-                                continue;
-                            };
-
-                            Cow::Owned(signature)
-                        }
-                        _ => continue,
-                    };
-
-                    let parameter_parameters = parameter_signature.get_parameters();
-                    let argument_parameters = argument_signature.get_parameters();
-
-                    let parameter_count = parameter_parameters.len();
-                    let argument_count = argument_parameters.iter().filter(|s| !s.has_default()).count();
-                    let minimum_count = std::cmp::min(parameter_count, argument_count);
-                    for i in 0..minimum_count {
-                        let Some(parameter_parameter) = parameter_parameters.get(i) else {
-                            continue;
-                        };
-
-                        let Some(argument_parameter) = argument_parameters.get(i) else {
-                            continue;
-                        };
-
-                        let Some(parameter_parameter_type) = parameter_parameter.get_type_signature() else {
-                            continue;
-                        };
-
-                        let Some(argument_parameter_type) = argument_parameter.get_type_signature() else {
-                            continue;
-                        };
-
-                        infer_templates_from_argument_and_parameter_types(
-                            context,
-                            parameter_parameter_type,
-                            argument_parameter_type,
-                            template_result,
-                            argument_offset,
-                            argument_span,
-                            true,
-                        );
-                    }
-
-                    let Some(parameter_return) = parameter_signature.get_return_type() else {
-                        continue;
-                    };
-
-                    let Some(argument_return) = argument_signature.get_return_type() else {
-                        continue;
-                    };
-
-                    infer_templates_from_argument_and_parameter_types(
-                        context,
-                        parameter_return,
-                        argument_return,
-                        template_result,
-                        argument_offset,
-                        argument_span,
-                        true,
-                    );
-                }
-            }
-            TAtomic::Object(TObject::Named(parameter_object)) if parameter_object.has_type_parameters() => {
-                let Some(parameter_class_metadata) =
-                    get_class_like(context.codebase, context.interner, &parameter_object.name)
-                else {
-                    return;
-                };
-
-                let Some(parameter_type_parameters) = parameter_object.get_type_parameters() else {
-                    return;
-                };
-
-                for argument_atomic in &residual_argument_type.types {
-                    let TAtomic::Object(TObject::Named(argument_object)) = argument_atomic else {
-                        continue;
-                    };
-
-                    let Some(argument_class_metadata) =
-                        get_class_like(context.codebase, context.interner, &argument_object.name)
-                    else {
-                        continue;
-                    };
-
-                    if !is_instance_of(
-                        context.codebase,
-                        context.interner,
-                        &argument_object.name,
-                        &parameter_object.name,
-                    ) {
-                        continue;
-                    }
-
-                    for (index, parameter_template_union) in parameter_type_parameters.iter().enumerate() {
-                        let generic_parameters =
-                            parameter_template_union.types.iter().filter_map(|atomic| match atomic {
-                                TAtomic::GenericParameter(generic_parameter) => Some(generic_parameter),
-                                _ => None,
-                            });
-
-                        for generic_parameter in generic_parameters {
-                            let Some((template_name, _)) = parameter_class_metadata.template_types.get(index) else {
-                                continue;
-                            };
-
-                            if let Some(inferred_bound) = get_specialized_template_type(
-                                context.codebase,
-                                context.interner,
-                                template_name,
-                                &parameter_class_metadata.name,
-                                argument_class_metadata,
-                                argument_object.get_type_parameters(),
-                            ) {
-                                if !is_contained_by(
-                                    context.codebase,
-                                    context.interner,
-                                    &inferred_bound,
-                                    &generic_parameter.constraint,
-                                    false,
-                                    false,
-                                    false,
-                                    &mut ComparisonResult::default(),
-                                ) {
-                                    context.collector.report_with_code(
-                                        TypingIssueKind::TemplateConstraintViolation,
-                                        Issue::error(format!(
-                                            "Inferred type for template `{}` does not satisfy its constraint.",
-                                            context.interner.lookup(template_name),
-                                        ))
-                                        .with_annotation(
-                                            Annotation::primary(argument_span)
-                                                .with_message(format!(
-                                                    "This argument's type `{}` provides `{}` for the template parameter `{}`, but the constraint is `{}`.",
-                                                    context.interner.lookup(&argument_class_metadata.original_name),
-                                                    inferred_bound.get_id(Some(context.interner)),
-                                                    context.interner.lookup(template_name),
-                                                    generic_parameter.constraint.get_id(Some(context.interner)),
-                                                )),
-                                        )
-                                        .with_note(format!(
-                                            "The template parameter `{}` is constrained to be `{}`, but the inferred type `{}` does not satisfy this constraint.",
-                                            context.interner.lookup(template_name),
-                                            generic_parameter.constraint.get_id(Some(context.interner)),
-                                            inferred_bound.get_id(Some(context.interner)),
-                                        ))
-                                        .with_help("Ensure the provided argument specializes the template with a type that matches the constraint."),
-                                    );
-                                }
-
-                                insert_bound_type(
-                                    template_result,
-                                    generic_parameter.parameter_name,
-                                    &generic_parameter.defining_entity,
-                                    inferred_bound,
-                                    StandinOptions { appearance_depth: 1, ..Default::default() },
-                                    Some(argument_offset),
-                                    Some(argument_span),
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::Generic {
-                parameter_name,
-                defining_entity,
-                ..
-            })) => {
-                let should_add_bound = !is_callable_argument
-                    || template_result
-                        .lower_bounds
-                        .get(parameter_name)
-                        .and_then(|map| map.get(defining_entity))
-                        .is_none_or(|bounds| bounds.is_empty());
-
-                let mut argument_object_atomics = vec![];
-                for argument_atomic in residual_argument_type.types.iter() {
-                    let TAtomic::Scalar(TScalar::ClassLikeString(class_string)) = argument_atomic else {
-                        continue;
-                    };
-
-                    argument_object_atomics.push(class_string.get_object_type(context.codebase, context.interner));
-                }
-
-                let mut lower_bound_type = TUnion::new(argument_object_atomics);
-
-                if should_add_bound {
-                    if let Some(template_types) = template_result.template_types.get_mut(parameter_name) {
-                        for (_, template_type) in template_types {
-                            if !is_contained_by(
-                                context.codebase,
-                                context.interner,
-                                &lower_bound_type,
-                                template_type,
-                                false,
-                                false,
-                                false,
-                                &mut ComparisonResult::default(),
-                            ) {
-                                lower_bound_type = template_type.clone();
-
-                                context.collector.report_with_code(
-                                    TypingIssueKind::TemplateConstraintViolation,
-                                    Issue::error(format!(
-                                        "Argument type mismatch for class string of `{}`.",
-                                        context.interner.lookup(parameter_name),
-                                    ))
-                                    .with_annotation(
-                                        Annotation::primary(argument_span)
-                                            .with_message(format!(
-                                                "This argument has type `{}`, which is not compatible with the required class string constraint `{}`.",
-                                                argument_type.get_id(Some(context.interner)),
-                                                template_type.get_id(Some(context.interner))
-                                            ))
-                                    )
-                                    .with_note(format!(
-                                        "Class string parameter `{}` is constrained with `{}`.",
-                                        context.interner.lookup(parameter_name),
-                                        template_type.get_id(Some(context.interner))
-                                    ))
-                                    .with_help("Ensure the argument's type satisfies the class string constraint."),
-                                );
-                            }
-                        }
-                    }
-
-                    insert_bound_type(
-                        template_result,
-                        *parameter_name,
-                        defining_entity,
-                        lower_bound_type,
-                        StandinOptions { appearance_depth: 1, ..Default::default() },
-                        Some(argument_offset),
-                        Some(argument_span),
-                    );
-                }
-            }
-            _ => {}
-        }
-    }
-
-    for ((template_parameter_name, defining_entity), (inferred_type, constraint, _)) in potential_template_violations {
-        let is_unresolved = template_result
-            .lower_bounds
-            .get(&template_parameter_name)
-            .and_then(|map| map.get(&defining_entity))
-            .is_none_or(|bounds| bounds.is_empty());
-
-        if is_unresolved {
-            context.collector.report_with_code(
-                TypingIssueKind::TemplateConstraintViolation,
-                Issue::error(format!(
-                    "Argument type mismatch for template `{}`.",
-                    context.interner.lookup(&template_parameter_name),
-                ))
-                .with_annotation(Annotation::primary(argument_span).with_message(format!(
-                    "This argument has type `{}`, which is not compatible with the required template constraint `{}`.",
-                    inferred_type.get_id(Some(context.interner)),
-                    constraint.get_id(Some(context.interner))
-                )))
-                .with_note(format!(
-                    "Template parameter `{}` is constrained with `{}`.",
-                    context.interner.lookup(&template_parameter_name),
-                    constraint.get_id(Some(context.interner))
-                ))
-                .with_help("Ensure the argument's type satisfies the template constraint."),
-            );
-
-            insert_bound_type(
-                template_result,
-                template_parameter_name,
-                &defining_entity,
-                constraint,
-                StandinOptions { appearance_depth: 1, ..Default::default() },
-                Some(argument_offset),
-                Some(argument_span),
-            );
-        }
-    }
 }
 
 /// Extracts and resolves concrete types for class-level template parameters based on inferred lower bounds.

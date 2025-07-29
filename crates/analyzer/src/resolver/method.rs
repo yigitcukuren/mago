@@ -1,8 +1,10 @@
 use mago_codex::get_class_like;
 use mago_codex::get_declaring_method_id;
+use mago_codex::get_method_by_id;
 use mago_codex::get_method_id;
 use mago_codex::identifier::method::MethodIdentifier;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
+use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::method_id_exists;
 use mago_codex::misc::GenericParent;
 use mago_codex::ttype::TType;
@@ -10,7 +12,11 @@ use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::generic::TGenericParameter;
 use mago_codex::ttype::atomic::mixed::TMixed;
 use mago_codex::ttype::atomic::object::TObject;
+use mago_codex::ttype::comparator::ComparisonResult;
+use mago_codex::ttype::comparator::union_comparator::is_contained_by;
 use mago_codex::ttype::expander::StaticClassType;
+use mago_codex::ttype::get_mixed;
+use mago_codex::ttype::get_specialized_template_type;
 use mago_codex::ttype::template::TemplateResult;
 use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
@@ -276,19 +282,31 @@ pub fn get_method_ids_from_object<'a, 'b>(
         method_id = get_declaring_method_id(context.codebase, context.interner, &method_id);
     }
 
-    if method_id_exists(context.codebase, context.interner, &method_id) {
-        ids.push((class_metadata, method_id, outer_object, *name));
-    }
+    if let Some(function_like_metadata) = get_method_by_id(context.codebase, context.interner, &method_id) {
+        if !check_method_visibility(
+            context,
+            block_context,
+            method_id.get_class_name(),
+            method_id.get_method_name(),
+            access_span,
+            Some(selector.span()),
+        ) {
+            result.has_invalid_target = true;
+        }
 
-    if !check_method_visibility(
-        context,
-        block_context,
-        method_id.get_class_name(),
-        method_id.get_method_name(),
-        access_span,
-        Some(selector.span()),
-    ) {
-        result.has_invalid_target = true;
+        if !check_where_method_constraints(
+            context,
+            object_type,
+            object,
+            selector,
+            class_metadata,
+            function_like_metadata,
+            method_id.get_class_name(),
+        ) {
+            result.has_invalid_target = true;
+        }
+
+        ids.push((class_metadata, method_id, outer_object, *name));
     }
 
     if let Some(intersection_types) = object_type.get_intersection_types() {
@@ -335,6 +353,86 @@ pub fn get_method_ids_from_object<'a, 'b>(
     }
 
     ids
+}
+
+fn check_where_method_constraints(
+    context: &mut Context,
+    object_type: &TObject,
+    object: &Expression,
+    selector: &ClassLikeMemberSelector,
+    class_like_metadata: &ClassLikeMetadata,
+    function_like_metadata: &FunctionLikeMetadata,
+    defining_class_id: &StringIdentifier,
+) -> bool {
+    let Some(method_metadata) = function_like_metadata.method_metadata.as_ref() else {
+        return true;
+    };
+
+    if method_metadata.where_constraints.is_empty() {
+        return true;
+    }
+
+    for (template_name, constraint) in &method_metadata.where_constraints {
+        let actual_template_type = get_specialized_template_type(
+            context.codebase,
+            context.interner,
+            template_name,
+            defining_class_id,
+            class_like_metadata,
+            object_type.get_type_parameters(),
+        )
+        .unwrap_or_else(get_mixed);
+
+        if is_contained_by(
+            context.codebase,
+            context.interner,
+            &actual_template_type,
+            &constraint.type_union,
+            false,
+            false,
+            false,
+            &mut ComparisonResult::default(),
+        ) {
+            continue;
+        }
+
+        let template_name_str = context.interner.lookup(template_name);
+        let required_constraint_str = constraint.type_union.get_id(Some(context.interner));
+        let actual_template_type_str = actual_template_type.get_id(Some(context.interner));
+
+        context.collector.report_with_code(
+            TypingIssueKind::WhereConstraintViolation,
+            Issue::error(format!(
+                "Method call violates `@where` constraint for template `{template_name_str}`.",
+            ))
+            .with_annotation(
+                Annotation::primary(selector.span())
+                    .with_message("This method cannot be called here..."),
+            )
+            .with_annotation(
+                Annotation::secondary(object.span())
+                    .with_message(format!(
+                        "...because this object's template parameter `{template_name_str}` is type `{actual_template_type_str}`...",
+                    )),
+            )
+            .with_annotation(
+                Annotation::secondary(constraint.span)
+                    .with_message(format!(
+                        "...but this `@where` clause requires it to be `{required_constraint_str}`.",
+                    )),
+            )
+            .with_note(
+                "The `@where` tag on a method adds a constraint that must be satisfied by the object's generic types at the time of the call."
+            )
+            .with_help(
+                format!("Ensure the object's template parameter `{template_name_str}` satisfies the `{required_constraint_str}` constraint before calling this method.")
+            ),
+        );
+
+        return false;
+    }
+
+    true
 }
 
 fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_span: Span, selector_span: Span) {

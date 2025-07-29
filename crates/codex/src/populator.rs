@@ -401,26 +401,28 @@ fn populate_function_like_metadata(
         }
     }
 
-    if let Some(type_metadata) = metadata.if_this_is_type.as_mut() {
-        populate_union_type(
-            &mut type_metadata.type_union,
-            codebase_symbols,
-            interner,
-            Some(reference_source),
-            symbol_references,
-            force_type_population,
-        );
-    }
+    if let Some(method_metadata) = metadata.method_metadata.as_mut() {
+        for where_constraint in method_metadata.where_constraints.values_mut() {
+            populate_union_type(
+                &mut where_constraint.type_union,
+                codebase_symbols,
+                interner,
+                Some(reference_source),
+                symbol_references,
+                force_type_population,
+            );
+        }
 
-    if let Some(type_metadata) = metadata.this_out_type.as_mut() {
-        populate_union_type(
-            &mut type_metadata.type_union,
-            codebase_symbols,
-            interner,
-            Some(reference_source),
-            symbol_references,
-            force_type_population,
-        );
+        if let Some(type_metadata) = method_metadata.this_out_type.as_mut() {
+            populate_union_type(
+                &mut type_metadata.type_union,
+                codebase_symbols,
+                interner,
+                Some(reference_source),
+                symbol_references,
+                force_type_population,
+            );
+        }
     }
 
     for thrown_type in &mut metadata.thrown_types {

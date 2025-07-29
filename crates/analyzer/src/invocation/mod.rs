@@ -24,6 +24,7 @@ use mago_syntax::ast::*;
 
 mod resolver;
 mod special_function_like_handler;
+mod template_inference;
 
 pub mod analyzer;
 pub mod post_process;
