@@ -290,7 +290,9 @@ fn handle_literal_negated_equality(
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
-    let assertion_type = assertion.get_type().unwrap();
+    let Some(assertion_type) = assertion.get_type() else {
+        return get_never();
+    };
 
     let mut did_remove_type = false;
     let mut new_var_type = existing_var_type.clone();

@@ -706,7 +706,8 @@ impl TInteger {
         merged.push(intervals[0]);
 
         for current in intervals.iter().skip(1) {
-            let last = merged.last_mut().unwrap();
+            // SAFETY: we know `merged` is has at least 1 item.
+            let last = unsafe { merged.last_mut().unwrap_unchecked() };
 
             if current.0 <= last.1.saturating_add(1) {
                 last.1 = max(last.1, current.1);

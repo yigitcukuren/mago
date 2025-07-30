@@ -52,9 +52,8 @@ impl Analyzable for ArrayAccess {
 
         if let Some(keyed_array_var_id) = &keyed_array_var_id
             && block_context.has_variable(keyed_array_var_id)
+            && let Some(array_access_type) = block_context.locals.remove(keyed_array_var_id)
         {
-            let array_access_type = block_context.locals.remove(keyed_array_var_id).unwrap();
-
             artifacts.set_rc_expression_type(self, array_access_type.clone());
 
             block_context.locals.insert(keyed_array_var_id.clone(), array_access_type.clone());

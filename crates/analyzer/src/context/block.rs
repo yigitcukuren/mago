@@ -252,7 +252,6 @@ impl<'a> BlockContext<'a> {
         new_type: Option<&TUnion>,
     ) -> Vec<Rc<Clause>> {
         let mut clauses_to_keep = Vec::new();
-
         let mut other_clauses = Vec::new();
 
         'outer: for clause in clauses {
@@ -276,8 +275,13 @@ impl<'a> BlockContext<'a> {
         {
             for clause in other_clauses {
                 let mut type_changed = false;
+                let Some(possibilities) = clause.possibilities.get(remove_var_id) else {
+                    clauses_to_keep.push(clause.clone());
 
-                for (_, assertion) in clause.possibilities.get(remove_var_id).unwrap() {
+                    continue;
+                };
+
+                for (_, assertion) in possibilities {
                     if assertion.is_negation() {
                         type_changed = true;
                         break;
@@ -476,15 +480,12 @@ impl<'a> BlockContext<'a> {
 
 fn should_keep_clause(clause: &Rc<Clause>, remove_var_id: &str, new_type: Option<&TUnion>) -> bool {
     if let Some(possibilities) = clause.possibilities.get(remove_var_id) {
-        if possibilities.len() == 1 {
-            let assertion = possibilities.values().next().unwrap();
-
-            if let Assertion::IsType(assertion_type) = assertion
-                && let Some(new_type) = new_type
-                && new_type.is_single()
-            {
-                return new_type.get_single() == assertion_type;
-            }
+        if possibilities.len() == 1
+            && let Some((_, Assertion::IsType(assertion_type))) = possibilities.first()
+            && let Some(new_type) = new_type
+            && new_type.is_single()
+        {
+            return new_type.get_single() == assertion_type;
         }
 
         false

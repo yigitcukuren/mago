@@ -253,10 +253,14 @@ fn analyze<'a, 'b>(
         continue_context = loop_context.clone();
 
         for (condition_offset, pre_condition) in pre_conditions.iter().enumerate() {
+            let Some(clauses) = pre_condition_clauses.get(condition_offset) else {
+                continue;
+            };
+
             apply_pre_condition_to_loop_context(
                 context,
                 pre_condition,
-                pre_condition_clauses.get(condition_offset).unwrap(),
+                clauses,
                 &mut continue_context,
                 loop_parent_context,
                 artifacts,
@@ -269,7 +273,10 @@ fn analyze<'a, 'b>(
 
         context.set_loop_scope(loop_scope.clone());
         analyze_statements(statements, context, &mut continue_context, artifacts)?;
-        loop_scope = context.take_loop_scope().unwrap();
+        loop_scope =
+            // SAFETY: we know the loop scope will remain in the context.
+            unsafe { context.take_loop_scope().unwrap_unchecked() };
+
         update_loop_scope_contexts(&mut loop_scope, loop_context, &mut continue_context, loop_parent_context, context);
 
         loop_context.inside_loop_expressions = true;

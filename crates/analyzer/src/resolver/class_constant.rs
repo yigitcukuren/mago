@@ -165,15 +165,11 @@ fn handle_class_magic_constant(
         return None;
     }
 
-    artifacts.symbol_references.add_reference_to_symbol(
-        &block_context.scope,
-        class_resolution.fq_class_id.unwrap(),
-        false,
-    );
+    let fq_class_id = class_resolution.fq_class_id?;
 
-    let class_string_type = TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(
-        class_resolution.fq_class_id.expect("class-like resolution should yield a valid FQ class ID"),
-    )));
+    artifacts.symbol_references.add_reference_to_symbol(&block_context.scope, fq_class_id, false);
+
+    let class_string_type = TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(fq_class_id)));
 
     Some(TUnion::new(vec![class_string_type]))
 }

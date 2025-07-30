@@ -292,14 +292,15 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             .map(|t| t.get_id(Some(context.interner)))
             .collect::<Vec<_>>();
 
-        let expected_types_list = match expected_index_types_str.len() {
-            0 => "an expected type".to_string(),
-            1 => format!("`{}`", expected_index_types_str[0]),
-            _ => {
-                let last = expected_index_types_str.last().unwrap();
+        let expected_types_list = if let Some(last_index_str) = expected_index_types_str.last() {
+            if expected_index_types_str.len() == 1 {
+                format!("`{last_index_str}`")
+            } else {
                 let rest = &expected_index_types_str[..expected_index_types_str.len() - 1];
-                format!("`{}` or `{}`", rest.join("`, `"), last)
+                format!("`{}` or `{}`", rest.join("`, `"), last_index_str)
             }
+        } else {
+            "an expected type".to_string()
         };
 
         let mut mixed_with_any = false;

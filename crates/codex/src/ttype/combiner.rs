@@ -31,7 +31,6 @@ use crate::ttype::combination::TypeCombination;
 use crate::ttype::combine_union_types;
 use crate::ttype::comparator::ComparisonResult;
 use crate::ttype::comparator::object_comparator;
-use crate::ttype::get_int;
 use crate::ttype::template::variance::Variance;
 use crate::ttype::union::TUnion;
 use crate::utils::str_is_numeric;
@@ -962,59 +961,6 @@ fn get_combiner_key(
         .as_str();
     str += ">";
     str
-}
-
-// TODO(azjezz): somehow this is unused now?
-#[allow(dead_code)]
-fn merge_array_subtype(
-    combination: &mut TypeCombination,
-    fq_class_name: &StringIdentifier,
-    codebase: &CodebaseMetadata,
-    interner: &ThreadedInterner,
-) {
-    let fq_class_name_key = fq_class_name.to_string();
-    let keyed_container_types = combination.object_type_params.get(&fq_class_name_key);
-    // array<string, Foo>|Traversable<int, Bar> => Traversable<string|int, Foo|Bar>
-    if let Some(ref array_parameters) = combination.keyed_array_parameters {
-        let container_key_type = if let Some((_, keyed_container_types)) = keyed_container_types {
-            combine_union_types(keyed_container_types.first().unwrap(), &array_parameters.0, codebase, interner, false)
-        } else {
-            array_parameters.1.clone()
-        };
-
-        let container_value_type = if let Some((_, keyed_container_types)) = keyed_container_types {
-            combine_union_types(keyed_container_types.get(1).unwrap(), &array_parameters.1, codebase, interner, false)
-        } else {
-            array_parameters.1.clone()
-        };
-
-        combination
-            .object_type_params
-            .insert(fq_class_name_key.clone(), (*fq_class_name, vec![container_key_type, container_value_type]));
-
-        combination.keyed_array_parameters = None;
-        combination.has_keyed_array = false;
-    }
-    // vec<Foo>|KeyedContainer<string, Bar> => Container<int|string, Foo|Bar>
-    if let Some(ref value_param) = combination.list_array_parameter {
-        let keyed_container_types = combination.object_type_params.get(&fq_class_name_key);
-        let container_key_type = if let Some((_, keyed_container_types)) = keyed_container_types {
-            combine_union_types(keyed_container_types.first().unwrap(), &get_int(), codebase, interner, false)
-        } else {
-            get_int()
-        };
-
-        let container_value_type = if let Some((_, keyed_container_types)) = keyed_container_types {
-            combine_union_types(keyed_container_types.get(1).unwrap(), value_param, codebase, interner, false)
-        } else {
-            value_param.clone()
-        };
-        combination
-            .object_type_params
-            .insert(fq_class_name_key.clone(), (*fq_class_name, vec![container_key_type, container_value_type]));
-
-        combination.list_array_parameter = None;
-    }
 }
 
 fn combine_string_scalars(s1: &TString, s2: TString) -> TString {

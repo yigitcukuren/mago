@@ -86,7 +86,7 @@ pub fn check_method_visibility<'a>(
             visibility,
             access_span,
             member_span,
-            method_metadata.span,
+            Some(method_metadata.span),
             help_text,
         );
     }
@@ -147,7 +147,7 @@ pub fn check_property_read_visibility<'a>(
             visibility,
             access_span,
             member_span,
-            property_metadata.span.unwrap_or_else(|| property_metadata.name_span.unwrap()),
+            property_metadata.span.or(property_metadata.name_span),
             help_text,
         );
     }
@@ -205,7 +205,7 @@ pub fn check_property_write_visibility<'a>(
             visibility,
             access_span,
             member_span,
-            property_metadata.span.unwrap_or_else(|| property_metadata.name_span.unwrap()),
+            property_metadata.span.or(property_metadata.name_span),
             help_text,
         );
     }
@@ -252,7 +252,7 @@ fn report_visibility_issue(
     visibility: Visibility,
     access_span: Span,
     member_span: Option<Span>,
-    definition_span: Span,
+    definition_span: Option<Span>,
     help_text: String,
 ) {
     let current_scope_str = if let Some(current_class_id) = block_context.scope.get_class_like_name() {
@@ -272,7 +272,9 @@ fn report_visibility_issue(
             Annotation::secondary(access_span).with_message(format!("Invalid access occurs here, {current_scope_str}")),
         );
 
-    if definition_span != primary_annotation_span {
+    if let Some(definition_span) = definition_span
+        && definition_span != primary_annotation_span
+    {
         issue = issue.with_annotation(
             Annotation::secondary(definition_span)
                 .with_message(format!("Member is defined as `{}` here", visibility.as_str())),

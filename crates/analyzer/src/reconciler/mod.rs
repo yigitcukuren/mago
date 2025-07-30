@@ -4,15 +4,16 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 
 use ahash::HashSet;
-use mago_collector::Collector;
 use regex::Regex;
 
 use mago_codex::assertion::Assertion;
+use mago_codex::class_like_exists;
 use mago_codex::class_or_interface_exists;
 use mago_codex::get_class_constant_type;
 use mago_codex::get_declaring_class_for_property;
 use mago_codex::get_property;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -33,6 +34,7 @@ use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_string;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
+use mago_collector::Collector;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_reporting::Annotation;
@@ -159,7 +161,7 @@ pub fn reconcile_keyed_types(
                     Some(span),
                     can_report_issues
                         && if referenced_var_ids.contains(key) && active_new_types.contains_key(key) {
-                            active_new_types.get(key).unwrap().get(&i).is_some()
+                            active_new_types.get(key).is_some_and(|active_new_type| active_new_type.get(&i).is_some())
                         } else {
                             false
                         },
@@ -228,7 +230,9 @@ fn adjust_array_type(
     result_type: &TUnion,
 ) {
     key_parts.pop();
-    let array_key = key_parts.pop().unwrap();
+    let Some(array_key) = key_parts.pop() else {
+        return;
+    };
     key_parts.pop();
 
     if array_key.starts_with('$') {
@@ -343,7 +347,6 @@ fn add_nested_assertions(
             key_parts.reverse();
 
             let mut nesting = 0;
-
             let mut base_key = key_parts.pop().unwrap();
 
             if !&base_key.starts_with('$') && key_parts.len() > 2 && key_parts.last().unwrap() == "::$" {
@@ -358,13 +361,15 @@ fn add_nested_assertions(
             };
 
             if !base_key_set {
-                if !new_types.contains_key(&base_key) {
-                    new_types.insert(base_key.clone(), vec![vec![Assertion::IsEqualIsset]]);
-                } else {
-                    let mut existing_entry = new_types.get(&base_key).unwrap().clone();
-                    existing_entry.push(vec![Assertion::IsEqualIsset]);
-                    new_types.insert(base_key.clone(), existing_entry);
-                }
+                new_types.insert(
+                    base_key.clone(),
+                    if let Some(mut existing_entry) = new_types.get(&base_key).cloned() {
+                        existing_entry.push(vec![Assertion::IsEqualIsset]);
+                        existing_entry
+                    } else {
+                        vec![vec![Assertion::IsEqualIsset]]
+                    },
+                );
             }
 
             while let Some(divider) = key_parts.pop() {
@@ -451,7 +456,11 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
 
     while let Some(c) = chars.next() {
         if let Some(quote) = string_char {
-            parts.last_mut().unwrap().push(c);
+            // SAFETY: the `parts` vector will always contain at least 1 string.
+            unsafe {
+                parts.last_mut().unwrap_unchecked().push(c);
+            }
+
             if c == quote && !escape_char {
                 string_char = None;
             }
@@ -555,7 +564,7 @@ fn get_value_for_key(
             let const_name = base_key_parts[1].to_string();
 
             let fq_class_name = context.interner.intern(fq_class_name.as_str());
-            if !class_or_interface_exists(context.codebase, context.interner, &fq_class_name) {
+            if !class_like_exists(context.codebase, context.interner, &fq_class_name) {
                 return None;
             }
 
@@ -566,12 +575,12 @@ fn get_value_for_key(
             };
 
             if let Some(class_constant) = class_constant {
-                let class_constant = match class_constant {
+                let class_constant = Rc::new(match class_constant {
                     Cow::Borrowed(t) => t.clone(),
                     Cow::Owned(t) => t,
-                };
+                });
 
-                block_context.locals.insert(base_key.clone(), Rc::new(class_constant));
+                block_context.locals.insert(base_key.clone(), class_constant);
             } else {
                 return None;
             }
@@ -581,8 +590,11 @@ fn get_value_for_key(
     }
 
     while let Some(divider) = key_parts.pop() {
+        let base_key_type = block_context.locals.get(&base_key)?;
+
         if divider == "[" {
-            let array_key = key_parts.pop().unwrap();
+            let array_key = key_parts.pop()?;
+
             key_parts.pop();
 
             let array_key_offset = if INTEGER_REGEX.is_match(&array_key)
@@ -602,12 +614,10 @@ fn get_value_for_key(
             let new_base_key = base_key.clone() + "[" + array_key.as_str() + "]";
 
             if !block_context.locals.contains_key(&new_base_key) {
-                let mut new_base_type: Option<TUnion> = None;
-
-                let mut atomic_types = block_context.locals.get(&base_key).unwrap().types.clone();
+                let mut new_base_type: Option<Rc<TUnion>> = None;
+                let mut atomic_types = base_key_type.types.clone();
 
                 atomic_types.reverse();
-
                 while let Some(existing_key_type_part) = atomic_types.pop() {
                     if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = existing_key_type_part {
                         atomic_types.extend(constraint.types.clone());
@@ -733,33 +743,31 @@ fn get_value_for_key(
                         return Some(get_mixed_any());
                     }
 
-                    new_base_type = if let Some(new_base_type) = new_base_type {
-                        Some(add_union_type(
+                    let resulting_type = Rc::new(if let Some(new_base_type) = &new_base_type {
+                        add_union_type(
+                            new_base_type_candidate,
                             new_base_type,
-                            &new_base_type_candidate,
                             context.codebase,
                             context.interner,
                             false,
-                        ))
+                        )
                     } else {
-                        Some(new_base_type_candidate.clone())
-                    };
+                        new_base_type_candidate.clone()
+                    });
 
-                    block_context.locals.insert(new_base_key.clone(), Rc::new(new_base_type.clone().unwrap()));
+                    new_base_type = Some(resulting_type.clone());
+                    block_context.locals.insert(new_base_key.clone(), resulting_type);
                 }
             }
 
             base_key = new_base_key;
         } else if divider == "->" || divider == "::$" {
-            let property_name = key_parts.pop().unwrap();
+            let property_name = key_parts.pop()?;
             let new_base_key = base_key.clone() + "->" + property_name.as_str();
 
             if !block_context.locals.contains_key(&new_base_key) {
-                let mut new_base_type: Option<TUnion> = None;
-
-                let base_type = block_context.locals.get(&base_key).unwrap();
-
-                let mut atomic_types = base_type.types.clone();
+                let mut new_base_type: Option<Rc<TUnion>> = None;
+                let mut atomic_types = base_key_type.types.clone();
 
                 while let Some(existing_key_type_part) = atomic_types.pop() {
                     if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = existing_key_type_part {
@@ -789,19 +797,15 @@ fn get_value_for_key(
                         class_property_type = get_mixed_any();
                     }
 
-                    new_base_type = if let Some(new_base_type) = new_base_type {
-                        Some(add_union_type(
-                            new_base_type,
-                            &class_property_type,
-                            context.codebase,
-                            context.interner,
-                            false,
-                        ))
-                    } else {
-                        Some(class_property_type)
-                    };
+                    let resulting_type = Rc::new(add_optional_union_type(
+                        class_property_type,
+                        new_base_type.as_deref(),
+                        context.codebase,
+                        context.interner,
+                    ));
 
-                    block_context.locals.insert(new_base_key.clone(), Rc::new(new_base_type.clone().unwrap()));
+                    new_base_type = Some(resulting_type.clone());
+                    block_context.locals.insert(new_base_key.clone(), resulting_type);
                 }
             }
 

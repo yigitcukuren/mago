@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use ahash::HashMap;
 use ahash::HashSet;
 use ahash::RandomState;
@@ -31,6 +33,7 @@ use crate::ttype::expander::StaticClassType;
 use crate::ttype::expander::TypeExpansionOptions;
 use crate::ttype::get_iterable_parameters;
 use crate::ttype::get_iterable_value_parameter;
+use crate::ttype::get_mixed;
 use crate::ttype::get_mixed_any;
 use crate::ttype::get_mixed_maybe_from_loop;
 use crate::ttype::template::TemplateBound;
@@ -378,12 +381,14 @@ fn replace_atomic(
             let object_rempped_parameters = named_object.remapped_parameters;
 
             if let Some(type_parameters) = named_object.get_type_parameters_mut() {
-                let mapped_type_parameters = if matches!(&input_type, Some(TAtomic::Object(TObject::Named(o))) if o.has_type_parameters())
+                let mapped_type_parameters = if let Some(
+                    object @ TAtomic::Object(TObject::Named(TNamedObject { type_parameters: Some(_), .. })),
+                ) = &input_type
                 {
                     Some(get_mapped_generic_type_parameters(
                         codebase,
                         interner,
-                        &input_type.clone().unwrap(),
+                        object,
                         &object_name,
                         object_rempped_parameters,
                     ))
@@ -396,25 +401,6 @@ fn replace_atomic(
                         Some(input_inner) => match input_inner {
                             TAtomic::Object(TObject::Named(object)) => {
                                 object.get_type_parameters().and_then(|parameters| parameters.get(offset)).cloned()
-                            }
-                            TAtomic::Array(_) => {
-                                // TODO(azjezz): this is wrong:
-                                // let (key_param, value_param) = get_arrayish_params(input_inner, codebase).unwrap();
-                                //
-                                // match name {
-                                //     &StringIdentifier::KEYED_CONTAINER | &StringIdentifier::KEYED_TRAVERSABLE => {
-                                //         if offset == 0 {
-                                //             Some(key_param)
-                                //         } else {
-                                //             Some(value_param)
-                                //         }
-                                //     }
-                                //     &crate::StringIdentifier::CONTAINER | &StringIdentifier::TRAVERSABLE => {
-                                //         Some(value_param)
-                                //     }
-                                //     _ => None,
-                                // }
-                                None
                             }
                             TAtomic::Mixed(mixed) => {
                                 if mixed.is_isset_from_loop() {
@@ -644,8 +630,9 @@ fn handle_template_param_standin(
                 constraint: replacement_as_type,
                 ..
             }) = replacement_atomic_type
-                && (options.calling_class.is_none()
-                    || replacement_defining_entity != &GenericParent::ClassLike(*options.calling_class.unwrap()))
+                && options.calling_class.is_none_or(|calling_class| {
+                    replacement_defining_entity != &GenericParent::ClassLike(*calling_class)
+                })
                 && match options.calling_function {
                     Some(FunctionLikeIdentifier::Function(calling_function)) => {
                         replacement_defining_entity
@@ -1188,22 +1175,24 @@ pub fn get_mapped_generic_type_parameters(
     let mut input_type_parameters = match input_type_part {
         TAtomic::Object(TObject::Named(named_object)) => named_object
             .get_type_parameters()
-            .unwrap_or_else(|| panic!("Expected type parameters for object: {named_object:?}"))
+            .unwrap_or_default()
             .iter()
             .enumerate()
             .map(|(k, v)| (Some(k), v.clone()))
             .collect::<Vec<_>>(),
-        _ => panic!(),
+        _ => {
+            return vec![];
+        }
     };
 
     let input_name = match input_type_part {
         TAtomic::Object(TObject::Named(o)) => o.name,
-        _ => panic!(),
+        _ => {
+            return vec![];
+        }
     };
 
-    let input_class_metadata = if let Some(metadata) = get_class_like(codebase, interner, &input_name) {
-        metadata
-    } else {
+    let Some(input_class_metadata) = get_class_like(codebase, interner, &input_name) else {
         return vec![];
     };
 
@@ -1271,15 +1260,19 @@ pub fn get_mapped_generic_type_parameters(
                 };
             }
 
-            new_input_parameters.push((
-                mapped_input_offset,
-                inferred_type_replacer::replace(
-                    &new_input_parameter.unwrap(),
-                    &TemplateResult::new(IndexMap::with_hasher(RandomState::new()), replacement_templates.clone()),
-                    codebase,
-                    interner,
-                ),
-            ));
+            if let Some(new_input_parameter) = new_input_parameter {
+                new_input_parameters.push((
+                    mapped_input_offset,
+                    inferred_type_replacer::replace(
+                        &new_input_parameter,
+                        &TemplateResult::new(IndexMap::with_hasher(RandomState::new()), replacement_templates.clone()),
+                        codebase,
+                        interner,
+                    ),
+                ));
+            } else {
+                new_input_parameters.push((mapped_input_offset, get_mixed()));
+            }
         }
 
         input_type_parameters = new_input_parameters
@@ -1403,7 +1396,7 @@ pub fn get_relevant_bounds(lower_bounds: &[TemplateBound]) -> Vec<&TemplateBound
         return lower_bounds;
     }
 
-    lower_bounds.sort_by(|a, b| a.appearance_depth.partial_cmp(&b.appearance_depth).unwrap());
+    lower_bounds.sort_by(|a, b| a.appearance_depth.partial_cmp(&b.appearance_depth).unwrap_or(Ordering::Equal));
 
     let mut current_depth = None;
     let mut had_invariant = false;

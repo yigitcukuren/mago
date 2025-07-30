@@ -466,14 +466,11 @@ pub fn combine_optional_union_types(
     codebase: &CodebaseMetadata,
     interner: &ThreadedInterner,
 ) -> TUnion {
-    if let Some(type_1) = type_1 {
-        if let Some(type_2) = type_2 {
-            combine_union_types(type_1, type_2, codebase, interner, false)
-        } else {
-            type_1.clone()
-        }
-    } else {
-        type_2.unwrap().clone()
+    match (type_1, type_2) {
+        (Some(type_1), Some(type_2)) => combine_union_types(type_1, type_2, codebase, interner, false),
+        (Some(type_1), None) => type_1.clone(),
+        (None, Some(type_2)) => type_2.clone(),
+        (None, None) => get_mixed_any(),
     }
 }
 

@@ -692,7 +692,9 @@ impl TUnion {
     }
 
     pub fn is_literal_of(&self, other: &TUnion) -> bool {
-        let other_atomic_type = other.types.first().unwrap();
+        let Some(other_atomic_type) = other.types.first() else {
+            return false;
+        };
 
         match other_atomic_type {
             TAtomic::Scalar(TScalar::String(_)) => {

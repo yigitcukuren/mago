@@ -412,11 +412,14 @@ pub(crate) fn can_be_identical<'a>(
         // If either part is `mixed`, they can be identical
         (TAtomic::Mixed(_), _) | (_, TAtomic::Mixed(_))
         // If one is `iterable` and other is `array`, `object`, or `iterable`, they can be identical
-        | (TAtomic::Iterable(_),TAtomic::Iterable(_) | TAtomic::Array(_) | TAtomic::Object(_))
+        | (TAtomic::Iterable(_), TAtomic::Iterable(_) | TAtomic::Array(_) | TAtomic::Object(_))
         | (TAtomic::Array(_) | TAtomic::Object(_), TAtomic::Iterable(_))
-        // If one is `numeric` and other is `string`, they can be identical
-        | (TAtomic::Scalar(TScalar::Numeric), TAtomic::Scalar(TScalar::String(_)))
-        | (TAtomic::Scalar(TScalar::String(_)), TAtomic::Scalar(TScalar::Numeric))
+        // If one is `numeric` or `array-key` and other is `string`, they can be identical
+        | (TAtomic::Scalar(TScalar::Numeric | TScalar::ArrayKey), TAtomic::Scalar(TScalar::String(_)))
+        | (TAtomic::Scalar(TScalar::String(_)), TAtomic::Scalar(TScalar::Numeric | TScalar::ArrayKey))
+        // If one is `int`|`float`, and the other is `numeric`, they can be identical
+        | (TAtomic::Scalar(TScalar::Integer(_) | TScalar::Float(_)), TAtomic::Scalar(TScalar::Numeric))
+        | (TAtomic::Scalar(TScalar::Numeric), TAtomic::Scalar(TScalar::Integer(_) | TScalar::Float(_)))
     ) {
         return true;
     }
@@ -431,13 +434,19 @@ pub(crate) fn can_be_identical<'a>(
     if (first_part.is_list() && second_part.is_non_empty_list())
         || (second_part.is_list() && first_part.is_non_empty_list())
     {
-        return union_comparator::can_expression_types_be_identical(
-            codebase,
-            interner,
-            first_part.get_list_element_type().unwrap(),
-            second_part.get_list_element_type().unwrap(),
-            inside_assertion,
-        );
+        return if let Some(first_element_type) = first_part.get_list_element_type()
+            && let Some(second_element_type) = first_part.get_list_element_type()
+        {
+            union_comparator::can_expression_types_be_identical(
+                codebase,
+                interner,
+                first_element_type,
+                second_element_type,
+                inside_assertion,
+            )
+        } else {
+            false
+        };
     }
 
     if let (TAtomic::Array(TArray::Keyed(first_array)), TAtomic::Array(TArray::Keyed(second_array))) =

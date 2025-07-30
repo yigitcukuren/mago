@@ -357,9 +357,7 @@ pub fn can_expression_types_be_identical(
         return true;
     }
 
-    if (type1.is_nullable() && (type2.is_nullable() || type2.is_null()))
-        || (type2.is_nullable() && (type1.is_nullable() || type1.is_null()))
-    {
+    if (type1.is_nullable() && type2.has_nullish()) || (type2.is_nullable() && type1.has_nullish()) {
         return true;
     }
 

@@ -469,12 +469,10 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
 
             artifacts.set_rc_expression_type(array_target.get_array(), array_expression_type.clone());
         } else if let Some(parent_var_id) = parent_var_id.to_owned()
-            && block_context.locals.contains_key(&parent_var_id)
+            && let Some(scoped_type) = block_context.locals.get(&parent_var_id).cloned()
         {
-            let scoped_type = block_context.locals.get(&parent_var_id).unwrap();
             artifacts.set_rc_expression_type(array_target.get_array(), scoped_type.clone());
-
-            array_expression_type = scoped_type.clone();
+            array_expression_type = scoped_type;
         }
 
         let new_index_type = array_target_index_type.clone().unwrap_or(Rc::new(get_int()));
