@@ -49,9 +49,9 @@ impl Rule for NoSprintfConcatenationRule {
             return LintDirective::default();
         };
 
-        let (sprintf_call_expr, other_expr) = if is_sprintf_call(context, lhs) {
+        let (sprintf_call_expr, other_expr) = if is_sprintf_call(lhs, context) {
             (lhs, rhs)
-        } else if is_sprintf_call(context, rhs) {
+        } else if is_sprintf_call(rhs, context) {
             (rhs, lhs)
         } else {
             return LintDirective::default();
@@ -83,7 +83,7 @@ impl Rule for NoSprintfConcatenationRule {
     }
 }
 
-fn is_sprintf_call<'a>(context: &LintContext<'a>, expression: &'a Expression) -> bool {
+fn is_sprintf_call(expression: &Expression, context: &LintContext<'_>) -> bool {
     let Expression::Call(Call::Function(FunctionCall { function, .. })) = expression else {
         return false;
     };

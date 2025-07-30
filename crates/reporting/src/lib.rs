@@ -93,6 +93,20 @@ pub struct IssueCollection {
     issues: Vec<Issue>,
 }
 
+impl AnnotationKind {
+    /// Returns `true` if this annotation kind is primary.
+    #[inline]
+    pub const fn is_primary(&self) -> bool {
+        matches!(self, AnnotationKind::Primary)
+    }
+
+    /// Returns `true` if this annotation kind is secondary.
+    #[inline]
+    pub const fn is_secondary(&self) -> bool {
+        matches!(self, AnnotationKind::Secondary)
+    }
+}
+
 impl Annotation {
     /// Creates a new annotation with the given kind and span.
     ///
@@ -406,6 +420,10 @@ impl IssueCollection {
     }
 
     pub fn push(&mut self, issue: Issue) {
+        if self.issues.contains(&issue) {
+            return; // Avoid duplicates
+        }
+
         self.issues.push(issue);
     }
 

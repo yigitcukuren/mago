@@ -89,6 +89,7 @@ pub enum TagKind {
     NoNamedArguments,
     Api,
     PsalmApi,
+    Inheritors,
     PsalmInheritors,
     Return,
     See,
@@ -105,14 +106,19 @@ pub enum TagKind {
     ParamLaterInvokedCallable,
     ParamImmediatelyInvokedCallable,
     ParamClosureThis,
+    TemplateExtends,
     Extends,
+    TemplateImplements,
     Implements,
+    TemplateUse,
     Use,
     NotDeprecated,
     PhpstanImpure,
     PhpstanPure,
     Pure,
     Immutable,
+    RequireExtends,
+    RequireImplements,
     InheritDoc,
     ParamOut,
     Assert,
@@ -136,6 +142,8 @@ pub enum TagKind {
     PsalmAssertIfFalse,
     PsalmIfThisIs,
     PsalmThisOut,
+    IgnoreNullableReturn,
+    IgnoreFalsableReturn,
     PsalmIgnoreNullableReturn,
     PsalmIgnoreFalsableReturn,
     PsalmSealProperties,
@@ -161,7 +169,9 @@ pub enum TagKind {
     PsalmTaintUnescape,
     PsalmTaintSpecialize,
     PsalmFlow,
+    Type,
     PsalmType,
+    ImportType,
     PsalmImportType,
     PsalmRequireExtends,
     PsalmRequireImplements,
@@ -192,11 +202,19 @@ pub enum TagKind {
     PhpstanTemplateInvariant,
     PhpstanTemplateCovariant,
     PhpstanTemplateContravariant,
+    EnumInterface,
+    MagoUnchecked,
+    Unchecked,
+    ThisOut,
+    SelfOut,
+    Where,
     Other,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum TagVendor {
+    Mago,
     Phpstan,
     Psalm,
 }
@@ -264,7 +282,6 @@ impl TagKind {
             | Self::PsalmTaintSpecialize
             | Self::PsalmFlow
             | Self::PsalmType
-            | Self::PsalmImportType
             | Self::PsalmRequireExtends
             | Self::PsalmRequireImplements
             | Self::PsalmIgnoreVariableProperty
@@ -273,7 +290,9 @@ impl TagKind {
             | Self::PsalmTemplate
             | Self::PsalmTemplateInvariant
             | Self::PsalmTemplateCovariant
-            | Self::PsalmTemplateContravariant => Some(TagVendor::Psalm),
+            | Self::PsalmTemplateContravariant
+            | Self::PsalmInheritors
+            | Self::PsalmImportType => Some(TagVendor::Psalm),
             Self::PhpstanAssert
             | Self::PhpstanAssertIfTrue
             | Self::PhpstanAssertIfFalse
@@ -290,6 +309,7 @@ impl TagKind {
             | Self::PhpstanVar
             | Self::PhpstanReadOnly
             | Self::PhpstanImmutable => Some(TagVendor::Phpstan),
+            Self::MagoUnchecked => Some(TagVendor::Mago),
             _ => None,
         }
     }
@@ -333,6 +353,16 @@ impl TagKind {
             Self::PhpstanTemplateContravariant | Self::PsalmTemplateContravariant => Some(Self::TemplateContravariant),
             Self::PsalmMutationFree => Some(Self::MutationFree),
             Self::PsalmExternalMutationFree => Some(Self::ExternalMutationFree),
+            Self::PsalmIgnoreFalsableReturn => Some(Self::IgnoreFalsableReturn),
+            Self::PsalmIgnoreNullableReturn => Some(Self::IgnoreNullableReturn),
+            Self::PsalmInheritors => Some(Self::Inheritors),
+            Self::MagoUnchecked => Some(Self::Unchecked),
+            Self::PsalmType => Some(Self::Type),
+            Self::PsalmImportType => Some(Self::ImportType),
+            Self::PhpstanRequireExtends | Self::PsalmRequireExtends => Some(Self::RequireExtends),
+            Self::PhpstanRequireImplements | Self::PsalmRequireImplements => Some(Self::RequireImplements),
+            Self::PsalmThisOut | Self::PhpstanThisOut => Some(Self::ThisOut),
+            Self::PhpstanSelfOut => Some(Self::SelfOut),
             _ => None,
         }
     }
@@ -358,6 +388,38 @@ impl TagKind {
                 | Self::Throws
                 | Self::Uses
                 | Self::Var
+                | Self::Template
+                | Self::TemplateInvariant
+                | Self::TemplateCovariant
+                | Self::TemplateContravariant
+                | Self::PsalmTemplate
+                | Self::PsalmTemplateInvariant
+                | Self::PsalmTemplateCovariant
+                | Self::PsalmTemplateContravariant
+                | Self::PhpstanTemplate
+                | Self::PhpstanTemplateInvariant
+                | Self::PhpstanTemplateCovariant
+                | Self::PhpstanTemplateContravariant
+                | Self::PhpstanParam
+                | Self::PhpstanVar
+                | Self::PsalmVar
+                | Self::PsalmParam
+                | Self::Extends
+                | Self::TemplateExtends
+                | Self::Implements
+                | Self::TemplateImplements
+                | Self::Use
+                | Self::TemplateUse
+                | Self::PsalmType
+                | Self::Type
+                | Self::PsalmImportType
+                | Self::RequireImplements
+                | Self::PsalmRequireImplements
+                | Self::PhpstanRequireImplements
+                | Self::RequireExtends
+                | Self::PsalmRequireExtends
+                | Self::PhpstanRequireExtends
+                | Self::Where
         )
     }
 }
@@ -405,7 +467,8 @@ where
             "no-named-arguments" => TagKind::NoNamedArguments,
             "api" => TagKind::Api,
             "psalm-api" => TagKind::PsalmApi,
-            "psalm-inheritors" => TagKind::PsalmInheritors,
+            "psalm-inheritors" | "psalminheritors" => TagKind::PsalmInheritors,
+            "inheritors" => TagKind::Inheritors,
             "return" => TagKind::Return,
             "see" => TagKind::See,
             "since" => TagKind::Since,
@@ -430,12 +493,14 @@ where
             "param-closure-this" => TagKind::ParamClosureThis,
             "paramclosurethis" => TagKind::ParamClosureThis,
             "extends" => TagKind::Extends,
+            "template-extends" | "templateextends" => TagKind::TemplateExtends,
             "implements" => TagKind::Implements,
+            "template-implements" | "templateimplements" => TagKind::TemplateImplements,
             "use" => TagKind::Use,
-            "not-deprecated" => TagKind::NotDeprecated,
-            "notdeprecated" => TagKind::NotDeprecated,
-            "phpstan-impure" => TagKind::PhpstanImpure,
-            "phpstan-pure" => TagKind::PhpstanPure,
+            "template-use" | "templateuse" => TagKind::TemplateUse,
+            "not-deprecated" | "notdeprecated" => TagKind::NotDeprecated,
+            "phpstan-impure" | "phpstanimpure" => TagKind::PhpstanImpure,
+            "phpstan-pure" | "phpstanpure" => TagKind::PhpstanPure,
             "pure" => TagKind::Pure,
             "immutable" => TagKind::Immutable,
             "inheritdoc" => TagKind::InheritDoc,
@@ -458,18 +523,14 @@ where
             "psalmignorevar" => TagKind::PsalmIgnoreVar,
             "psalm-suppress" => TagKind::PsalmSuppress,
             "psalm-assert" => TagKind::PsalmAssert,
-            "psalm-assert-if-true" => TagKind::PsalmAssertIfTrue,
-            "psalm-assertiftrue" => TagKind::PsalmAssertIfTrue,
-            "psalm-assert-if-false" => TagKind::PsalmAssertIfFalse,
-            "psalm-assertiffalse" => TagKind::PsalmAssertIfFalse,
-            "psalm-if-this-is" => TagKind::PsalmIfThisIs,
-            "psalmifthisis" => TagKind::PsalmIfThisIs,
-            "psalm-this-out" => TagKind::PsalmThisOut,
-            "psalmthisout" => TagKind::PsalmThisOut,
-            "psalm-ignore-nullable-return" => TagKind::PsalmIgnoreNullableReturn,
-            "psalmignorenullablereturn" => TagKind::PsalmIgnoreNullableReturn,
-            "psalm-ignore-falsable-return" => TagKind::PsalmIgnoreFalsableReturn,
-            "psalmignorefalsablereturn" => TagKind::PsalmIgnoreFalsableReturn,
+            "psalm-assert-if-true" | "psalmassertiftrue" => TagKind::PsalmAssertIfTrue,
+            "psalm-assert-if-false" | "psalmassertiffalse" => TagKind::PsalmAssertIfFalse,
+            "psalm-if-this-is" | "psalmifthisis" => TagKind::PsalmIfThisIs,
+            "psalm-this-out" | "psalmthisout" => TagKind::PsalmThisOut,
+            "ignore-nullable-return" | "ignorenullablereturn" => TagKind::IgnoreNullableReturn,
+            "ignore-falsable-return" | "ignorefalsablereturn" => TagKind::IgnoreFalsableReturn,
+            "psalm-ignore-nullable-return" | "psalmignorenullablereturn" => TagKind::PsalmIgnoreNullableReturn,
+            "psalm-ignore-falsable-return" | "psalmignorefalsablereturn" => TagKind::PsalmIgnoreFalsableReturn,
             "psalm-seal-properties" => TagKind::PsalmSealProperties,
             "psalmsealproperties" => TagKind::PsalmSealProperties,
             "psalm-no-seal-properties" => TagKind::PsalmNoSealProperties,
@@ -507,8 +568,8 @@ where
             "psalmtaintspecialize" => TagKind::PsalmTaintSpecialize,
             "psalm-flow" => TagKind::PsalmFlow,
             "psalmflow" => TagKind::PsalmFlow,
-            "psalm-type" => TagKind::PsalmType,
-            "psalm-import-type" => TagKind::PsalmImportType,
+            "psalm-type" | "psalmtype" => TagKind::PsalmType,
+            "psalm-import-type" | "psalmimporttype" => TagKind::PsalmImportType,
             "psalm-require-extends" => TagKind::PsalmRequireExtends,
             "psalmrequireextends" => TagKind::PsalmRequireExtends,
             "psalm-require-implements" => TagKind::PsalmRequireImplements,
@@ -521,10 +582,10 @@ where
             "phpstan-assert" => TagKind::PhpstanAssert,
             "phpstan-assert-if-true" => TagKind::PhpstanAssertIfTrue,
             "phpstan-assert-if-false" => TagKind::PhpstanAssertIfFalse,
-            "phpstan-self-out" => TagKind::PhpstanSelfOut,
-            "phpstan-this-out" => TagKind::PhpstanThisOut,
-            "phpstan-require-extends" => TagKind::PhpstanRequireExtends,
-            "phpstan-require-implements" => TagKind::PhpstanRequireImplements,
+            "phpstan-self-out" | "phpstanselfout" => TagKind::PhpstanSelfOut,
+            "phpstan-this-out" | "phpstanthisout" => TagKind::PhpstanThisOut,
+            "phpstan-require-extends" | "phpstanrequireextends" => TagKind::PhpstanRequireExtends,
+            "phpstan-require-implements" | "phpstanrequireimplements" => TagKind::PhpstanRequireImplements,
             "template" => TagKind::Template,
             "template-invariant" | "templateinvariant" => TagKind::TemplateInvariant,
             "template-covariant" | "templatecovariant" => TagKind::TemplateCovariant,
@@ -542,7 +603,27 @@ where
             "phpstan-var" => TagKind::PhpstanVar,
             "phpstan-readonly" => TagKind::PhpstanReadOnly,
             "phpstan-immutable" => TagKind::PhpstanImmutable,
+            "enuminterface" | "enum-interface" => TagKind::EnumInterface,
+            "mago-unchecked" | "magounchecked" => TagKind::MagoUnchecked,
+            "unchecked" => TagKind::Unchecked,
+            "type" => TagKind::Type,
+            "import-type" | "importtype" => TagKind::ImportType,
+            "require-implements" | "requireimplements" => TagKind::RequireImplements,
+            "require-extends" | "requireextends" => TagKind::RequireExtends,
+            "self-out" | "selfout" => TagKind::SelfOut,
+            "this-out" | "thisout" => TagKind::ThisOut,
+            "where" => TagKind::Where,
             _ => TagKind::Other,
+        }
+    }
+}
+
+impl TagVendor {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mago => "mago",
+            Self::Phpstan => "phpstan",
+            Self::Psalm => "psalm",
         }
     }
 }

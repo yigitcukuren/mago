@@ -2,16 +2,21 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 
+use mago_codex::metadata::CodebaseMetadata;
+use mago_collector::Collector;
 use mago_interner::ThreadedInterner;
-use mago_project::module::Module;
-use mago_reflection::CodebaseReflection;
+use mago_names::ResolvedNames;
 use mago_reporting::IssueCollection;
 use mago_reporting::Level;
+use mago_source::Source;
+use mago_syntax::ast::Node;
+use mago_syntax::ast::Program;
 
+use crate::ast::PreComputedNode;
+use crate::context::LintContext;
 use crate::plugin::Plugin;
 use crate::rule::ConfiguredRule;
 use crate::rule::Rule;
-use crate::runner::Runner;
 use crate::settings::RuleSettings;
 use crate::settings::Settings;
 
@@ -25,154 +30,100 @@ pub mod scope;
 pub mod settings;
 
 mod ast;
-mod pragma;
-mod runner;
-mod utils;
 
+const COLLECTOR_CATEGORY: &str = "lint";
+
+/// The main linter instance that orchestrates the linting process.
+///
+/// This struct holds the configuration, registered rules, and shared data
+/// required to analyze source files.
 #[derive(Debug, Clone)]
 pub struct Linter {
     settings: Settings,
     interner: ThreadedInterner,
-    codebase: Arc<CodebaseReflection>,
+    codebase: Arc<CodebaseMetadata>,
     rules: Arc<RwLock<Vec<ConfiguredRule>>>,
 }
 
 impl Linter {
-    /// Creates a new linter.
-    ///
-    /// This method will create a new linter with the given settings and interner.
+    /// Creates a new linter with the given configuration.
     ///
     /// # Parameters
     ///
     /// - `settings`: The settings to use for the linter.
-    /// - `interner`: The interner to use for the linter, usually the same one used by the parser, and the module.
-    /// - `codebase`: The codebase reflection to use for the linter.
-    ///
-    /// # Returns
-    ///
-    /// A new linter.
-    pub fn new(settings: Settings, interner: ThreadedInterner, codebase: CodebaseReflection) -> Self {
+    /// - `interner`: The interner to use, typically shared with the parser.
+    /// - `codebase`: The codebase metadata for project-wide analysis.
+    pub fn new(settings: Settings, interner: ThreadedInterner, codebase: CodebaseMetadata) -> Self {
         Self { settings, interner, codebase: Arc::new(codebase), rules: Arc::new(RwLock::new(Vec::new())) }
     }
 
-    /// Creates a new linter with all plugins enabled.
+    /// Creates a new linter and enables all available default plugins.
     ///
-    /// This method will create a new linter with all plugins enabled. This is useful for
-    /// when you want to lint a source with all available rules.
-    ///
-    /// # Parameters
-    ///
-    /// - `settings`: The settings to use for the linter.
-    /// - `interner`: The interner to use for the linter, usually the same one used by the parser, and the module.
-    /// - `codebase`: The codebase reflection to use for the linter.
-    ///
-    /// # Returns
-    ///
-    /// A new linter with all plugins enabled.
-    pub fn with_all_plugins(settings: Settings, interner: ThreadedInterner, codebase: CodebaseReflection) -> Self {
+    /// This is a convenience constructor for quickly setting up a linter with a
+    /// comprehensive set of rules.
+    pub fn with_all_plugins(settings: Settings, interner: ThreadedInterner, codebase: CodebaseMetadata) -> Self {
         let mut linter = Self::new(settings, interner, codebase);
-
         crate::foreach_plugin!(|plugin| linter.add_plugin(plugin));
-
         linter
     }
 
-    /// Adds a plugin to the linter.
-    ///
-    /// This method will add a plugin to the linter. The plugin will be enabled if it is enabled in the settings.
-    /// If the plugin is not enabled in the settings, it will only be enabled if it is a default plugin.
-    ///
-    /// # Parameters
-    ///
-    /// - `plugin`: The plugin to add to the linter.
+    /// Registers a plugin and configures its rules based on the linter's settings.
     pub fn add_plugin(&mut self, plugin: impl Plugin) {
         let plugin_definition = plugin.get_definition();
         let plugin_slug = plugin_definition.get_slug();
 
         tracing::debug!("Loading plugin: {plugin_slug}");
 
-        let enabled = self.settings.plugins.iter().any(|p| p.eq_ignore_ascii_case(&plugin_slug));
-        if !enabled {
-            if self.settings.default_plugins && plugin_definition.enabled_by_default {
-                tracing::debug!("Enabling default plugin: {plugin_slug}");
-            } else {
-                tracing::debug!("Plugin '{plugin_slug}' skipped, as it is not enabled by default or in the settings.",);
+        let is_explicitly_enabled = self.settings.plugins.iter().any(|p| p.eq_ignore_ascii_case(&plugin_slug));
+        let is_default_enabled = self.settings.default_plugins && plugin_definition.enabled_by_default;
 
-                return;
-            }
-        } else {
-            tracing::debug!("Enabling plugin: {plugin_slug}");
+        if !is_explicitly_enabled && !is_default_enabled {
+            tracing::debug!("Plugin '{plugin_slug}' skipped as it is not enabled.");
+            return;
         }
 
+        tracing::debug!("Enabling plugin: {plugin_slug}");
         for rule in plugin.get_rules() {
             self.add_rule(&plugin_slug, rule);
         }
-
         tracing::debug!("Plugin '{plugin_slug}' loaded successfully.");
     }
 
-    /// Adds a rule to the linter.
-    ///
-    /// This method will add a rule to the linter. The rule will be enabled if it is enabled in the settings.
-    ///
-    /// # Parameters
-    ///
-    /// - `plugin_slug`: The slug of the plugin that the rule belongs to.
-    /// - `rule`: The rule to add to the linter.
+    /// Registers a single rule from a plugin if it is supported and enabled.
     pub fn add_rule(&mut self, plugin_slug: impl Into<String>, rule: Box<dyn Rule>) {
         let rule_definition = rule.get_definition();
         let plugin_slug = plugin_slug.into();
         let slug = format!("{}/{}", plugin_slug, rule_definition.get_slug());
 
-        tracing::debug!("Initializing rule `{slug}`...");
+        tracing::trace!("Initializing rule `{slug}`...");
 
-        let settings = self.settings.get_rule_settings(slug.as_str());
+        // Skip rule if it doesn't support the configured PHP version.
         if !rule_definition.supports_php_version(self.settings.php_version) {
-            tracing::debug!("Rule `{slug}` does not support PHP version `{}`.", self.settings.php_version);
-
-            if let Some(version) = rule_definition.minimum_supported_php_version {
-                tracing::debug!("Rule `{slug}` requires PHP >= `{version}`.");
-            }
-
-            if let Some(version) = rule_definition.maximum_supported_php_version {
-                tracing::debug!("Rule `{slug}` requires PHP < `{version}`.");
-            }
-
-            if settings.is_some() {
-                tracing::warn!("Configuration for rule `{slug}` ignored due to PHP version mismatch.");
-            }
-
-            tracing::debug!("Rule `{slug}` skipped due to PHP version mismatch.");
-
+            tracing::trace!("Rule `{slug}` skipped due to PHP version mismatch.");
             return;
         }
 
-        let settings = settings.cloned().unwrap_or_else(|| {
-            tracing::debug!("No configuration found for rule `{slug}`, using default.");
-
-            RuleSettings::from_level(rule_definition.level)
-        });
+        let settings = self
+            .settings
+            .get_rule_settings(&slug)
+            .cloned()
+            .unwrap_or_else(|| RuleSettings::from_level(rule_definition.level));
 
         if !settings.enabled {
-            tracing::debug!("Rule `{slug}` has been disabled.");
-
+            tracing::trace!("Rule `{slug}` has been disabled.");
             return;
         }
 
-        let level = match settings.level {
+        // Determine the final severity level for the rule.
+        let level = match settings.level.or(rule_definition.level) {
             Some(level) => level,
-            None => match rule_definition.level {
-                Some(level) => level,
-                None => {
-                    tracing::debug!("Rule `{slug}` is disabled");
-
-                    return;
-                }
-            },
+            None => {
+                tracing::trace!("Rule `{slug}` is disabled because no level is configured.");
+                return;
+            }
         };
 
-        tracing::debug!("Rule `{slug}` is enabled with level `{level}`.");
-
+        tracing::trace!("Rule `{slug}` is enabled with level `{level}`.");
         self.rules.write().expect("Unable to add rule: poisoned lock").push(ConfiguredRule {
             slug,
             level,
@@ -181,63 +132,63 @@ impl Linter {
         });
     }
 
-    /// Returns a read lock for the vector of [`ConfiguredRule`] instances maintained by the linter.
-    ///
-    /// This method provides direct, read-only access to all currently configured rules.
-    /// You can iterate over them or inspect their fields (e.g., `slug`, `level`, etc.).
+    /// Returns a read-only view of the currently configured rules.
     ///
     /// # Panics
     ///
-    /// If the underlying `RwLock` is poisoned (e.g. another thread panicked while holding
-    /// the lock), this method will panic with `"Unable to get rule: poisoned lock"`.
+    /// This method will panic if the underlying `RwLock` is poisoned.
     pub fn get_configured_rules(&self) -> RwLockReadGuard<'_, Vec<ConfiguredRule>> {
         self.rules.read().expect("Unable to get rule: poisoned lock")
     }
 
-    /// Retrieves the **level** of a rule by its fully qualified slug.
-    ///
-    /// This method looks up a configured rule by its slug (e.g., `"plugin-slug/rule-slug"`)
-    /// and returns the rule’s current level (e.g., `Level::Warning`).
+    /// Retrieves the configured level of a specific rule by its slug.
     ///
     /// # Parameters
     ///
-    /// - `slug`: The fully qualified slug of the rule (e.g. `"best-practices/excessive-nesting"`).
+    /// - `slug`: The fully qualified slug of the rule (e.g., `"best-practices/no-eval"`).
     ///
     /// # Returns
     ///
-    /// An [`Option<Level>`]. Returns `Some(Level)` if the slug is found among the currently
-    /// configured rules, or `None` if no matching rule is found.
+    /// An [`Option<Level>`] containing the rule's level if it is configured, otherwise `None`.
     pub fn get_rule_level(&self, slug: &str) -> Option<Level> {
-        let configured_rules = self.rules.read().expect("Unable to get rule: poisoned lock");
-
-        configured_rules.iter().find(|r| r.slug == slug).map(|r| r.level)
+        self.get_configured_rules().iter().find(|r| r.slug == slug).map(|r| r.level)
     }
 
-    /// Lints the given module.
+    /// Lints a given source file and returns a collection of found issues.
     ///
-    /// This method will lint the given module and return a collection of issues.
+    /// This is the main entry point for linting a file. It performs the following steps:
     ///
-    /// # Parameters
-    ///
-    /// - `module`: The module to lint.
-    ///
-    /// # Returns
-    ///
-    /// A collection of issues.
-    pub fn lint(&self, module: &Module) -> IssueCollection {
+    /// 1. Creates a `Collector` to gather issues for the "lint" category.
+    /// 2. Pre-computes an AST representation for efficient traversal by rules.
+    /// 3. Iterates through each configured rule.
+    /// 4. For each rule, creates a `LintContext` and runs the rule's logic.
+    /// 5. Issues from each rule are passed to the main collector, which handles suppression logic.
+    /// 6. Finally, finalizes the collector to report unused pragmas and returns the complete set of issues.
+    pub fn lint(&self, source: &Source, program: &Program, resolved_names: &ResolvedNames) -> IssueCollection {
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
         if configured_rules.is_empty() {
             tracing::warn!("Linting aborted - no rules configured.");
-
             return IssueCollection::new();
         }
 
-        let program = module.parse(&self.interner);
-        let mut runner = Runner::new(self.settings.php_version, &self.interner, &self.codebase, module, &program);
+        let mut collector = Collector::new(source, program, &self.interner, COLLECTOR_CATEGORY);
+        let node = PreComputedNode::from(Node::Program(program));
+
         for configured_rule in configured_rules.iter() {
-            runner.run(configured_rule);
+            let mut context = LintContext::new(
+                self.settings.php_version,
+                configured_rule,
+                &self.interner,
+                &self.codebase,
+                source,
+                resolved_names,
+            );
+
+            context.lint(&node);
+
+            collector.extend(context.finish());
         }
 
-        runner.finish()
+        collector.finish()
     }
 }

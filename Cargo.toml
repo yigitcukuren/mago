@@ -1,6 +1,6 @@
 [package]
 name = "mago"
-version = "0.26.1"
+version = "1.0.0-alpha.1"
 edition = "2024"
 authors = ["Saif Eddin Gmati <azjezz@carthage.software>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ rust-version = "1.88.0"
 package.edition = "2024"
 package.authors = ["Saif Eddin Gmati <azjezz@carthage.software>"]
 package.license = "MIT OR Apache-2.0"
-package.version = "0.26.1"
+package.version = "1.0.0-alpha.1"
 package.homepage = "https://mago.carthage.software"
 package.repository = "https://github.com/carthage-software/mago"
 package.rust-version = "1.88.0"
@@ -26,29 +26,30 @@ print_stderr = { level = "forbid" }
 dbg_macro = { level = "forbid" }
 
 [workspace.dependencies]
-mago-syntax-core = { path = "crates/syntax-core", version = "0.26.1" }
-mago-syntax = { path = "crates/syntax", version = "0.26.1" }
-mago-type-syntax = { path = "crates/type-syntax", version = "0.26.1" }
-mago-casing = { path = "crates/casing", version = "0.26.1" }
-mago-composer = { path = "crates/composer", version = "0.26.1" }
-mago-docblock = { path = "crates/docblock", version = "0.26.1" }
-mago-fixer = { path = "crates/fixer", version = "0.26.1" }
-mago-formatter = { path = "crates/formatter", version = "0.26.1" }
-mago-interner = { path = "crates/interner", version = "0.26.1" }
-mago-linter = { path = "crates/linter", version = "0.26.1" }
-mago-names = { path = "crates/names", version = "0.26.1" }
-mago-reflection = { path = "crates/reflection", version = "0.26.1" }
-mago-reporting = { path = "crates/reporting", version = "0.26.1" }
-mago-project = { path = "crates/project", version = "0.26.1" }
-mago-source = { path = "crates/source", version = "0.26.1" }
-mago-span = { path = "crates/span", version = "0.26.1" }
-mago-symbol-table = { path = "crates/symbol-table", version = "0.26.1" }
-mago-traverser = { path = "crates/traverser", version = "0.26.1" }
-mago-trinary = { path = "crates/trinary", version = "0.26.1" }
-mago-typing = { path = "crates/typing", version = "0.26.1" }
-mago-wasm = { path = "crates/wasm", version = "0.26.1" }
-mago-php-version = { path = "crates/php-version", version = "0.26.1" }
-mago-reference = { path = "crates/reference", version = "0.26.1" }
+mago-syntax-core = { path = "crates/syntax-core", version = "1.0.0-alpha.1" }
+mago-syntax = { path = "crates/syntax", version = "1.0.0-alpha.1" }
+mago-type-syntax = { path = "crates/type-syntax", version = "1.0.0-alpha.1" }
+mago-casing = { path = "crates/casing", version = "1.0.0-alpha.1" }
+mago-composer = { path = "crates/composer", version = "1.0.0-alpha.1" }
+mago-docblock = { path = "crates/docblock", version = "1.0.0-alpha.1" }
+mago-fixer = { path = "crates/fixer", version = "1.0.0-alpha.1" }
+mago-formatter = { path = "crates/formatter", version = "1.0.0-alpha.1" }
+mago-interner = { path = "crates/interner", version = "1.0.0-alpha.1" }
+mago-linter = { path = "crates/linter", version = "1.0.0-alpha.1" }
+mago-names = { path = "crates/names", version = "1.0.0-alpha.1" }
+mago-reporting = { path = "crates/reporting", version = "1.0.0-alpha.1" }
+mago-source = { path = "crates/source", version = "1.0.0-alpha.1" }
+mago-span = { path = "crates/span", version = "1.0.0-alpha.1" }
+mago-symbol-table = { path = "crates/symbol-table", version = "1.0.0-alpha.1" }
+mago-traverser = { path = "crates/traverser", version = "1.0.0-alpha.1" }
+mago-wasm = { path = "crates/wasm", version = "1.0.0-alpha.1" }
+mago-php-version = { path = "crates/php-version", version = "1.0.0-alpha.1" }
+mago-reference = { path = "crates/reference", version = "1.0.0-alpha.1" }
+mago-analyzer = { path = "crates/analyzer", version = "1.0.0-alpha.1" }
+mago-algebra = { path = "crates/algebra", version = "1.0.0-alpha.1" }
+mago-codex = { path = "crates/codex", version = "1.0.0-alpha.1" }
+mago-semantics = { path = "crates/semantics", version = "1.0.0-alpha.1" }
+mago-collector = { path = "crates/collector", version = "1.0.0-alpha.1" }
 tracing = { version = "0.1.40" }
 ahash = { version = "0.8", default-features = false, features = ["compile-time-rng", "std"] }
 serde_json = { version = "1.0.138" }
@@ -61,20 +62,19 @@ either = { version = "1.13.0" }
 codespan-reporting = { version = "0.12.0", features = ["serde", "serialization"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 config = { version = "0.15.4", features = ["toml"] }
-toml = { version = "0.8.19" }
+toml = "0.9.2"
 num_cpus = "1.16.0"
 regex = "1.11.0"
 cruet = "0.15.0"
-indicatif = { version = "0.17.11", features = ["tokio"] }
+indicatif = { version = "0.18.0", features = ["tokio"] }
 glob-match = "0.2.1"
 paste = "1.0.15"
-criterion = "0.6.0"
+criterion = "0.7.0"
 lasso = { version = "0.7.3", features = ["multi-threaded", "ahasher", "inline-more"] }
 clap = { version = "4.5.20", features = ["cargo", "derive", "unicode", "wrap_help"] }
 futures = "0.3.31"
 async-walkdir = "2.0.0"
 termtree = "0.5.1"
-bitflags = "2.6.0"
 wasm-bindgen = "0.2.97"
 serde-wasm-bindgen = "0.6"
 diffy = "0.4.0"
@@ -89,21 +89,29 @@ memchr = "2.7.4"
 parking_lot = "0.12.3"
 dialoguer = "0.11.0"
 unicode-width = { version = "0.2.0", default-features = false }
+derivative = "2.2.0"
+itertools = "0.14.0"
+indexmap = { version = "2.8.0", features = ["serde"] }
+rand = "0.9.0"
+bitflags = { version = "2.9.1", features = ["serde"] }
+strsim = "0.11.1"
+ariadne = "0.5.1"
 
 [dependencies]
 mago-syntax = { workspace = true }
 mago-reporting = { workspace = true }
 mago-interner = { workspace = true }
 mago-source = { workspace = true }
-mago-project = { workspace = true }
 mago-linter = { workspace = true }
-mago-reflection = { workspace = true }
 mago-names = { workspace = true }
 mago-formatter = { workspace = true }
 mago-fixer = { workspace = true }
 mago-php-version = { workspace = true }
 mago-reference = { workspace = true }
 mago-composer = { workspace = true }
+mago-semantics = { workspace = true }
+mago-codex = { workspace = true }
+mago-analyzer = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }
@@ -125,6 +133,7 @@ tracing-subscriber = { workspace = true }
 indicatif = { workspace = true }
 colored = { workspace = true }
 dialoguer = { workspace = true }
+blake3 = { workspace = true }
 
 [dev-dependencies]
 temp-env = "0.3.6"
@@ -132,6 +141,9 @@ pretty_assertions = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 openssl = { workspace = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_env = "musl"))'.dependencies]
+mimalloc = { version = "*" }
 
 [profile.release]
 opt-level = 3
@@ -144,3 +156,9 @@ panic = 'abort'
 incremental = true
 codegen-units = 1
 rpath = true
+
+[profile.dev]
+debug = 'full'
+opt-level = 0
+lto = 'off'
+panic = 'unwind'
