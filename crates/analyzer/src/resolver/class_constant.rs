@@ -151,7 +151,7 @@ fn handle_class_magic_constant(
     class_expr: &Expression,
     selector: &ClassLikeConstantSelector,
 ) -> Option<TUnion> {
-    if matches!(class_resolution.origin, ResolutionOrigin::GenericString) {
+    if matches!(class_resolution.origin, ResolutionOrigin::AnyString) {
         context.collector.report_with_code(
             TypingIssueKind::InvalidClassConstantOnString,
             Issue::error("Cannot use `::class` on an expression of type string.")

@@ -438,7 +438,7 @@ fn analyze_class_instantiation<'a>(
         );
     }
 
-    if classname.is_from_class_string() || classname.is_from_generic_object() {
+    if classname.is_from_class_string() || classname.is_from_any_object() {
         let descendants = get_all_descendants(context.codebase, context.interner, &metadata.name);
 
         for descendant_class in descendants {

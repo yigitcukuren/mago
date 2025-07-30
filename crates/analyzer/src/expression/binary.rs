@@ -95,6 +95,13 @@ impl Analyzable for Binary {
             BinaryOperator::Instanceof(_) => {
                 self.lhs.analyze(context, block_context, artifacts)?;
 
+                if !matches!(
+                    self.rhs.as_ref(),
+                    Expression::Identifier(_) | Expression::Self_(_) | Expression::Static(_) | Expression::Parent(_)
+                ) {
+                    self.rhs.analyze(context, block_context, artifacts)?;
+                }
+
                 artifacts.expression_types.insert(get_expression_range(self), Rc::new(get_bool()));
 
                 Ok(())
@@ -3313,6 +3320,73 @@ mod tests {
                 }
 
                 return [] === $output ? '0 second(s)' : join(', ', $output);
+            }
+        "#},
+    }
+
+    test_analysis! {
+        name = assert_instanceof_class_string,
+        code = indoc! {r#"
+            <?php
+
+            /**
+             * @template T as object
+             */
+            final readonly class InstanceOfType
+            {
+                /**
+                 * @var class-string<T> $classname
+                 */
+                private string $classname;
+
+                /**
+                 * @psalm-mutation-free
+                 *
+                 * @param class-string<T> $classname
+                 */
+                public function __construct(string $classname)
+                {
+                    $this->classname = $classname;
+                }
+
+                /**
+                 * @psalm-assert-if-true T $value
+                 */
+                public function matches(mixed $value): bool
+                {
+                    return $value instanceof $this->classname;
+                }
+
+                /**
+                 * @return T
+                 */
+                public function coerce(mixed $value): object
+                {
+                    if ($value instanceof $this->classname) {
+                        return $value;
+                    }
+
+                    return $this->assert($value);
+                }
+
+                /**
+                 * @return T
+                 *
+                 * @psalm-assert T $value
+                 */
+                public function assert(mixed $value): object
+                {
+                    if ($value instanceof $this->classname) {
+                        return $value;
+                    }
+
+                    return $this->coerce($value);
+                }
+
+                public function toString(): string
+                {
+                    return $this->classname;
+                }
             }
         "#},
     }

@@ -1051,14 +1051,17 @@ fn scrape_instanceof_assertions(
                 if let Some(expression_type) = artifacts.get_expression_type(expression) {
                     let mut assertions = vec![];
                     for atomic in &expression_type.types {
-                        let Some(classname) = get_class_name_from_atomic(context.interner, atomic) else {
+                        let Some(name) = get_class_name_from_atomic(context.interner, atomic) else {
                             continue;
                         };
 
-                        if let Some(fq_id) = classname.fq_class_id {
-                            assertions
-                                .push(Assertion::IsType(TAtomic::Object(TObject::Named(TNamedObject::new(fq_id)))));
-                        }
+                        assertions.push(Assertion::IsType(name.get_object_type(context.codebase, context.interner)));
+                    }
+
+                    // If we failed to resolve the class-name on the rhs of
+                    // `instanceof`, assert that the lhs is a generic `object`.
+                    if assertions.is_empty() && !expression_type.is_objecty() {
+                        assertions.push(Assertion::IsType(TAtomic::Object(TObject::Any)));
                     }
 
                     if !assertions.is_empty() {
