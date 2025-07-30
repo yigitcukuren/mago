@@ -12,7 +12,6 @@ pub fn main() -> io::Result<()> {
     // Determine the stubs directory and output path
     let stubs_dir = Path::new("stubs");
 
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR environment variable not set");
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
     let output_file = Path::new(&out_dir).join("stubs_map.rs");
 
@@ -23,7 +22,6 @@ pub fn main() -> io::Result<()> {
 
     // Collect all PHP stub files
     let mut stubs_map = Vec::new();
-    stubs_map.push(("mago-internal".to_string(), format!("{manifest_dir}/composer/functions.php")));
 
     collect_files(stubs_dir, stubs_dir, &mut stubs_map)?;
 
@@ -31,7 +29,7 @@ pub fn main() -> io::Result<()> {
     let map_content = stubs_map
         .into_iter()
         .map(|(simplified_path, include_path)| {
-            format!(r##"    (r#"@{simplified_path}"#, include_str!(r"{include_path}"))"##)
+            format!(r##"    (r#":{simplified_path}"#, include_str!(r"{include_path}"))"##)
         })
         .collect::<Vec<_>>();
     let count = map_content.len();
