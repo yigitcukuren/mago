@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/carthage-software/mago/actions/workflows/cd.yml"><img src="https://github.com/carthage-software/mago/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+    <a href="https://github.com/carthage-software/mago/actions/workflows/ci.yml"><img src="https://github.com/carthage-software/mago/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
     <a href="https://github.com/carthage-software/mago/actions/workflows/cd.yml"><img src="https://github.com/carthage-software/mago/actions/workflows/cd.yml/badge.svg" alt="CD Status"></a>
     <a href="https://crates.io/crates/mago"><img src="https://img.shields.io/crates/v/mago.svg" alt="Crates.io"></a>
     <a href="https://packagist.org/packages/carthage-software/mago"><img src="https://poser.pugx.org/carthage-software/mago/v" alt="Latest Stable Version for PHP"></a>
