@@ -189,6 +189,8 @@ fn read_variable<'a>(
                 get_null()
             } else if block_context.inside_unset {
                 get_null()
+            } else if block_context.inside_isset {
+                get_mixed_any()
             } else {
                 let mut issue = Issue::error(format!("Undefined variable: `{variable_name}`.")).with_annotation(
                     Annotation::primary(variable_span)

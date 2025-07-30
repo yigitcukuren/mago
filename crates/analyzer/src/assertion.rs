@@ -1,17 +1,16 @@
 use ahash::HashMap;
 
+use mago_codex::assertion::Assertion;
 use mago_codex::get_class_like;
+use mago_codex::ttype::atomic::TAtomic;
+use mago_codex::ttype::atomic::object::TObject;
+use mago_codex::ttype::atomic::object::named::TNamedObject;
+use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::atomic::scalar::string::TString;
 use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
-
-use mago_codex::assertion::Assertion;
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::object::TObject;
-use mago_codex::ttype::atomic::object::named::TNamedObject;
-use mago_codex::ttype::atomic::scalar::TScalar;
 
 use crate::artifacts::AnalysisArtifacts;
 use crate::context::assertion::AssertionContext;
@@ -30,18 +29,6 @@ pub fn scrape_assertions(
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
 ) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
-    let expression = unwrap_expression(expression);
-    if let Expression::Call(call) = expression {
-        let mut assertions = scrape_function_assertions(&call.span(), artifacts);
-        if assertions.is_empty()
-            && let Call::Function(function_call) = call
-        {
-            assertions = scrape_special_function_call_assertions(assertion_context, function_call);
-        }
-
-        return assertions;
-    }
-
     let mut if_types = HashMap::default();
 
     if let Some(var_name) = get_expression_id(
@@ -54,14 +41,99 @@ pub fn scrape_assertions(
         if_types.insert(var_name, vec![vec![Assertion::Truthy]]);
     }
 
-    if let Expression::UnaryPrefix(unary_prefix) = &expression
-        && let UnaryPrefixOperator::Not(_) = unary_prefix.operator
-    {
-        return Vec::new();
-    }
+    match unwrap_expression(expression) {
+        Expression::Call(call) => {
+            // Collect `@assert` assertions.
+            if_types.extend(process_custom_assertions(call.span(), artifacts));
 
-    if let Expression::Binary(binary) = &expression {
-        match binary.operator {
+            match call {
+                // If the function does not have any, try collecting
+                // assertions for special functions.
+                Call::Function(function_call) if if_types.is_empty() => {
+                    if_types.extend(scrape_special_function_call_assertions(assertion_context, function_call));
+                }
+                // If its a null-safe method call, assert that
+                // the lhs is non-null.
+                Call::NullSafeMethod(null_safe_method_call) => {
+                    let object_var_id = get_expression_id(
+                        &null_safe_method_call.object,
+                        assertion_context.this_class_name,
+                        assertion_context.resolved_names,
+                        assertion_context.interner,
+                        Some(assertion_context.codebase),
+                    );
+
+                    if let Some(object_var_id) = object_var_id {
+                        if_types.insert(object_var_id, vec![vec![Assertion::IsNotType(TAtomic::Null)]]);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Expression::Construct(construct) => match construct {
+            Construct::Empty(empty_construct) => {
+                let Some(value_id) = get_expression_id(
+                    &empty_construct.value,
+                    assertion_context.this_class_name,
+                    assertion_context.resolved_names,
+                    assertion_context.interner,
+                    Some(assertion_context.codebase),
+                ) else {
+                    return vec![];
+                };
+
+                if let Expression::Variable(variable) = empty_construct.value.as_ref()
+                    && let Some(expression_type) = artifacts.get_expression_type(variable)
+                    && !expression_type.is_mixed()
+                    && !expression_type.possibly_undefined
+                {
+                    if_types.insert(value_id, vec![vec![Assertion::Falsy]]);
+                } else {
+                    if_types.insert(value_id, vec![vec![Assertion::Empty]]);
+                }
+            }
+            Construct::Isset(isset_construct) => {
+                for value in isset_construct.values.iter() {
+                    if let Some(value_id) = get_expression_id(
+                        value,
+                        assertion_context.this_class_name,
+                        assertion_context.resolved_names,
+                        assertion_context.interner,
+                        Some(assertion_context.codebase),
+                    ) {
+                        if let Expression::Variable(variable) = value
+                            && let Some(expression_type) = artifacts.get_expression_type(variable)
+                            && !expression_type.is_mixed()
+                            && !expression_type.possibly_undefined
+                            && !expression_type.possibly_undefined_from_try
+                        {
+                            if_types.insert(value_id, vec![vec![Assertion::IsNotType(TAtomic::Null)]]);
+                        } else {
+                            if_types.insert(value_id, vec![vec![Assertion::IsIsset]]);
+                        }
+                    } else {
+                        let mut root_array_id = None;
+                        let mut root_array: &Expression = value;
+                        while let (None, Expression::ArrayAccess(array_access)) = (root_array_id.as_ref(), root_array) {
+                            root_array = array_access.array.as_ref();
+                            root_array_id = get_expression_id(
+                                root_array,
+                                assertion_context.this_class_name,
+                                assertion_context.resolved_names,
+                                assertion_context.interner,
+                                Some(assertion_context.codebase),
+                            );
+                        }
+
+                        if let Some(root_array_id) = root_array_id {
+                            if_types.insert(root_array_id, vec![vec![Assertion::IsEqualIsset]]);
+                        }
+                    }
+                }
+            }
+            _ => {}
+        },
+        Expression::Binary(binary) => match binary.operator {
             BinaryOperator::Equal(_) | BinaryOperator::Identical(_) => {
                 return scrape_equality_assertions(
                     &binary.lhs,
@@ -118,14 +190,28 @@ pub fn scrape_assertions(
                 return scrape_instanceof_assertions(&binary.lhs, &binary.rhs, artifacts, assertion_context);
             }
             _ => {}
+        },
+        Expression::Access(Access::NullSafeProperty(null_safe_property_access)) => {
+            let object_var_id = get_expression_id(
+                &null_safe_property_access.object,
+                assertion_context.this_class_name,
+                assertion_context.resolved_names,
+                assertion_context.interner,
+                Some(assertion_context.codebase),
+            );
+
+            if let Some(object_var_id) = object_var_id {
+                if_types.insert(object_var_id, vec![vec![Assertion::IsNotType(TAtomic::Null)]]);
+            }
         }
+        _ => {}
     }
 
-    vec![if_types]
+    if if_types.is_empty() { vec![] } else { vec![if_types] }
 }
 
 fn process_custom_assertions(
-    expression_span: &Span,
+    expression_span: Span,
     artifacts: &mut AnalysisArtifacts,
 ) -> HashMap<String, Vec<Vec<Assertion>>> {
     let mut if_true_assertions = artifacts
@@ -157,9 +243,11 @@ fn process_custom_assertions(
 fn scrape_special_function_call_assertions(
     assertion_context: AssertionContext<'_>,
     function_call: &FunctionCall,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> HashMap<String, Vec<Vec<Assertion>>> {
+    let mut if_types = HashMap::default();
+
     let Expression::Identifier(function_identifier) = function_call.function.as_ref() else {
-        return Vec::new();
+        return if_types;
     };
 
     let resolved_function_name_id = assertion_context.resolved_names.get(function_identifier);
@@ -169,7 +257,7 @@ fn scrape_special_function_call_assertions(
     } else if function_identifier.is_local() {
         assertion_context.interner.lookup(function_identifier.value())
     } else {
-        return Vec::new();
+        return if_types;
     };
 
     let function_assertion = match function_name {
@@ -180,7 +268,7 @@ fn scrape_special_function_call_assertions(
         "ctype_lower" => {
             Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, true))))
         }
-        _ => return Vec::new(),
+        _ => return if_types,
     };
 
     let Some(first_argument_variable_id) =
@@ -194,13 +282,12 @@ fn scrape_special_function_call_assertions(
             )
         })
     else {
-        return Vec::new();
+        return if_types;
     };
 
-    let mut if_types = HashMap::default();
     if_types.insert(first_argument_variable_id, vec![vec![function_assertion]]);
 
-    vec![if_types]
+    if_types
 }
 
 fn scrape_equality_assertions(
@@ -273,7 +360,7 @@ fn scrape_equality_assertions(
         );
     }
 
-    Vec::new()
+    vec![]
 }
 
 fn scrape_inequality_assertions(
@@ -352,16 +439,7 @@ fn scrape_inequality_assertions(
         );
     }
 
-    Vec::new()
-}
-
-fn scrape_function_assertions(
-    span: &Span,
-    artifacts: &mut AnalysisArtifacts,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
-    let if_types = process_custom_assertions(span, artifacts);
-
-    if if_types.is_empty() { vec![] } else { vec![if_types] }
+    vec![]
 }
 
 fn get_empty_array_equality_assertions(
@@ -654,7 +732,7 @@ fn scrape_lesser_than_assertions(
     let (left_integer, right_integer) = get_comparison_literal_operand(artifacts, left, right);
 
     if left_integer.is_none() && right_integer.is_none() {
-        return Vec::new();
+        return vec![];
     }
 
     let mut if_types = HashMap::default();
@@ -810,7 +888,7 @@ fn scrape_greater_than_assertions(
     let (left_integer, right_integer) = get_comparison_literal_operand(artifacts, left, right);
 
     if left_integer.is_none() && right_integer.is_none() {
-        return Vec::new();
+        return vec![];
     }
 
     let mut if_types = HashMap::default();
@@ -1086,7 +1164,7 @@ fn get_true_equality_assertions(
         return vec![if_types];
     }
 
-    Vec::new()
+    vec![]
 }
 
 pub fn has_typed_value_comparison(
