@@ -45,6 +45,8 @@ use mago_span::Span;
 
 use crate::intersect_simple;
 use crate::reconciler::ReconcilationContext;
+use crate::reconciler::map_concrete_generic_constraint;
+use crate::reconciler::map_generic_constraint_or_else;
 use crate::reconciler::refine_array_key;
 use crate::reconciler::simple_negated_assertion_reconciler::subtract_null;
 use crate::reconciler::trigger_issue_for_impossible;
@@ -378,18 +380,13 @@ pub(crate) fn intersect_null(
                 acceptable_types.push(TAtomic::Null);
                 did_remove_type = true;
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(get_null());
-
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic
-                        .replace_template_constraint(intersect_null(context, assertion, constraint, None, false, None));
-
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_null, |constraint| {
+                    intersect_null(context, assertion, constraint, None, false, None)
+                }) {
                     acceptable_types.push(atomic);
                 }
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if !existing_var_type.is_nullable() {
@@ -463,18 +460,13 @@ pub(crate) fn intersect_resource(
                     did_remove_type = true;
                 }
             },
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(get_null());
-
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic
-                        .replace_template_constraint(intersect_null(context, assertion, constraint, None, false, None));
-
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_null, |constraint| {
+                    intersect_null(context, assertion, constraint, None, false, None)
+                }) {
                     acceptable_types.push(atomic);
                 }
-                did_remove_type = true;
             }
             _ => {
                 did_remove_type = true;
@@ -517,26 +509,14 @@ fn intersect_object(
     for atomic in &existing_var_type.types {
         if atomic.is_object_type() {
             object_types.push(atomic.clone());
-        } else if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = atomic {
-            if constraint.is_mixed() {
-                let atomic = atomic.replace_template_constraint(get_object());
+        } else if let TAtomic::GenericParameter(generic_parameter) = atomic {
+            did_remove_type = true;
 
-                object_types.push(atomic);
-            } else if constraint.has_object_type() || constraint.is_mixed() {
-                let atomic = atomic.replace_template_constraint(intersect_object(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
+            if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_object, |constraint| {
+                intersect_object(context, assertion, constraint, None, false, None, is_equality)
+            }) {
                 object_types.push(atomic);
             }
-
-            did_remove_type = true;
         } else {
             did_remove_type = true;
         }
@@ -582,26 +562,16 @@ fn intersect_iterable(
         }
 
         match atomic {
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(get_mixed_iterable());
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
 
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_iterable(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        span,
-                        is_equality,
-                    ));
-
+                if let Some(atomic) =
+                    map_generic_constraint_or_else(generic_parameter, get_mixed_iterable, |constraint| {
+                        intersect_iterable(context, assertion, constraint, None, false, span, is_equality)
+                    })
+                {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -707,27 +677,14 @@ fn intersect_array_list(
                     TAtomic::Array(TArray::List(TList::new(Box::new(element_type.clone()))))
                 });
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(get_mixed_list());
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
 
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_array_list(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        span,
-                        is_equality,
-                        is_non_empty,
-                    ));
-
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_mixed_list, |constraint| {
+                    intersect_array_list(context, assertion, constraint, None, false, span, is_equality, is_non_empty)
+                }) {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -820,25 +777,16 @@ fn intersect_keyed_array(
                     Box::new(value_type.clone()),
                 ))));
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(get_mixed_keyed_array());
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
 
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_keyed_array(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                    ));
+                if let Some(atomic) =
+                    map_generic_constraint_or_else(generic_parameter, get_mixed_keyed_array, |constraint| {
+                        intersect_keyed_array(context, assertion, constraint, None, false, None, is_equality)
+                    })
+                {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -967,24 +915,13 @@ fn intersect_numeric(
 
                 acceptable_types.push(TAtomic::Scalar(TScalar::String(existing_string.as_numeric(false))));
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    acceptable_types.push(atomic.replace_template_constraint(get_numeric()));
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_numeric(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                    ));
-
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_numeric, |constraint| {
+                    intersect_numeric(context, assertion, constraint, None, false, None, is_equality)
+                }) {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -1062,33 +999,30 @@ fn intersect_string(
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
                 return get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase);
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    acceptable_types.push(atomic.replace_template_constraint(get_string_with_props(
-                        is_numeric,
-                        is_truthy,
-                        is_non_empty,
-                        is_lowercase,
-                    )));
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_string(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                        is_non_empty,
-                        is_truthy,
-                        is_numeric,
-                        is_lowercase,
-                    ));
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
 
+                if let Some(atomic) = map_generic_constraint_or_else(
+                    generic_parameter,
+                    || get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase),
+                    |constraint| {
+                        intersect_string(
+                            context,
+                            assertion,
+                            constraint,
+                            None,
+                            false,
+                            None,
+                            is_equality,
+                            is_non_empty,
+                            is_truthy,
+                            is_numeric,
+                            is_lowercase,
+                        )
+                    },
+                ) {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -1171,27 +1105,16 @@ fn intersect_int(
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
                 return TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]);
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    let atomic = atomic
-                        .replace_template_constraint(TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]));
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
 
-                    acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic.replace_template_constraint(intersect_int(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                        integer,
-                    ));
+                if let Some(atomic) = map_generic_constraint_or_else(
+                    generic_parameter,
+                    || TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]),
+                    |constraint| intersect_int(context, assertion, constraint, None, false, None, is_equality, integer),
+                ) {
                     acceptable_types.push(atomic);
                 }
-
-                did_remove_type = true;
             }
             TAtomic::Variable(name) => {
                 if let Some(span) = span {
@@ -1272,14 +1195,10 @@ fn reconcile_truthy_or_non_empty(
             did_remove_type = true;
 
             match atomic {
-                TAtomic::GenericParameter(TGenericParameter { ref constraint, .. }) => {
-                    if !constraint.is_mixed() {
-                        let atomic = atomic.replace_template_constraint(reconcile_truthy_or_non_empty(
-                            context, assertion, constraint, None, false, None,
-                        ));
-
-                        acceptable_types.push(atomic);
-                    } else {
+                TAtomic::GenericParameter(generic_parameter) => {
+                    if let Some(atomic) = map_concrete_generic_constraint(&generic_parameter, |constraint| {
+                        reconcile_truthy_or_non_empty(context, assertion, constraint, None, false, None)
+                    }) {
                         acceptable_types.push(atomic);
                     }
                 }
@@ -1290,11 +1209,13 @@ fn reconcile_truthy_or_non_empty(
                 TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_general() => {
                     acceptable_types.push(TAtomic::Scalar(TScalar::r#true()));
                 }
-                TAtomic::Array(TArray::List(_)) => {
-                    acceptable_types.push(atomic.get_non_empty_list(None));
+                TAtomic::Array(TArray::List(mut list)) => {
+                    list.non_empty = true;
+                    acceptable_types.push(TAtomic::Array(TArray::List(list)));
                 }
-                TAtomic::Array(TArray::Keyed(_)) => {
-                    acceptable_types.push(atomic.clone().make_non_empty_keyed_array());
+                TAtomic::Array(TArray::Keyed(mut keyed_array)) => {
+                    keyed_array.non_empty = true;
+                    acceptable_types.push(TAtomic::Array(TArray::Keyed(keyed_array)));
                 }
                 TAtomic::Mixed(mixed) => {
                     acceptable_types.push(TAtomic::Mixed(
@@ -1493,27 +1414,32 @@ fn reconcile_exactly_countable(
     let mut existing_var_type = existing_var_type.clone();
 
     for atomic in existing_var_types {
-        if let TAtomic::Array(TArray::List(TList { non_empty, known_count, element_type, .. })) = atomic {
+        if let TAtomic::Array(TArray::List(TList { non_empty, known_count, element_type, known_elements })) = atomic {
             let min_under_count = if let Some(known_count) = known_count { known_count < count } else { false };
             if !non_empty || min_under_count {
                 if element_type.is_never() {
                     existing_var_type.remove_type(atomic);
                 } else {
-                    let non_empty_vec = atomic.get_non_empty_list(Some(*count));
-
-                    existing_var_type.types.push(non_empty_vec);
+                    existing_var_type.types.push(TAtomic::Array(TArray::List(TList {
+                        element_type: element_type.clone(),
+                        known_elements: known_elements.clone(),
+                        known_count: Some(*count),
+                        non_empty: true,
+                    })));
                 }
 
                 did_remove_type = true;
             }
-        } else if let TAtomic::Array(TArray::Keyed(TKeyedArray { non_empty, parameters, known_items, .. })) = atomic {
+        } else if let TAtomic::Array(TArray::Keyed(TKeyedArray { non_empty, parameters, known_items })) = atomic {
             if !non_empty {
                 if parameters.is_none() {
                     existing_var_type.remove_type(atomic);
                 } else {
-                    let non_empty_dict = atomic.clone().make_non_empty_keyed_array();
-
-                    existing_var_type.types.push(non_empty_dict);
+                    existing_var_type.types.push(TAtomic::Array(TArray::Keyed(TKeyedArray {
+                        known_items: known_items.clone(),
+                        parameters: parameters.clone(),
+                        non_empty: true,
+                    })));
                 }
 
                 did_remove_type = true;
@@ -2119,11 +2045,10 @@ fn reconcile_has_nonnull_entry_for_key(
                     did_remove_type = true;
                 }
             }
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if constraint.is_mixed() {
-                    acceptable_types.push(atomic);
-                } else {
-                    let new_type = reconcile_has_nonnull_entry_for_key(
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+                if let Some(atomic) = map_concrete_generic_constraint(generic_parameter, |constraint| {
+                    reconcile_has_nonnull_entry_for_key(
                         context,
                         assertion,
                         constraint,
@@ -2132,13 +2057,10 @@ fn reconcile_has_nonnull_entry_for_key(
                         negated,
                         possibly_undefined,
                         None,
-                    );
-
-                    let atomic = atomic.replace_template_constraint(new_type);
-
+                    )
+                }) {
                     acceptable_types.push(atomic);
                 }
-                did_remove_type = true;
             }
             TAtomic::Variable { .. } => {
                 did_remove_type = true;

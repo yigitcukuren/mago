@@ -1057,6 +1057,42 @@ fn report_redundant_issue(
     );
 }
 
+fn map_generic_constraint<F>(generic_parameter: &TGenericParameter, f: F) -> Option<TAtomic>
+where
+    F: FnOnce(&TUnion) -> TUnion,
+{
+    let parameter = generic_parameter.with_constraint(f(&generic_parameter.constraint));
+
+    if parameter.constraint.is_never() { None } else { Some(TAtomic::GenericParameter(parameter)) }
+}
+
+fn map_concrete_generic_constraint<F>(generic_parameter: &TGenericParameter, f: F) -> Option<TAtomic>
+where
+    F: FnOnce(&TUnion) -> TUnion,
+{
+    let parameter = if generic_parameter.constraint.is_mixed() {
+        generic_parameter.clone()
+    } else {
+        generic_parameter.with_constraint(f(&generic_parameter.constraint))
+    };
+
+    if parameter.constraint.is_never() { None } else { Some(TAtomic::GenericParameter(parameter)) }
+}
+
+fn map_generic_constraint_or_else<F, D>(generic_parameter: &TGenericParameter, d: D, f: F) -> Option<TAtomic>
+where
+    F: FnOnce(&TUnion) -> TUnion,
+    D: FnOnce() -> TUnion,
+{
+    let parameter = if generic_parameter.constraint.is_mixed() {
+        generic_parameter.with_constraint(d())
+    } else {
+        generic_parameter.with_constraint(f(&generic_parameter.constraint))
+    };
+
+    if parameter.constraint.is_never() { None } else { Some(TAtomic::GenericParameter(parameter)) }
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -2087,6 +2123,61 @@ mod tests {
 
             if ($session?->getUsername()) {
                 $session->recordActivity();
+            }
+        "#},
+    }
+
+    test_analysis! {
+        name = reconciling_generic_parameter,
+        code = indoc! {r#"
+            <?php
+
+            /** @assert-if-true int $a */
+            function is_int(mixed $a): bool
+            {
+                return is_int($a);
+            }
+
+            /** @assert-if-true string $a */
+            function is_string(mixed $a): bool
+            {
+                return is_string($a);
+            }
+
+            function use_int(int $a): void
+            {
+                echo "I got integer: $a";
+            }
+
+            function use_string(string $a): void
+            {
+                echo "I got string: $a";
+            }
+
+            /**
+             * @template K of array-key
+             * @template V
+             *
+             * @param K $key
+             * @param V $value
+             *
+             * @return array<K, V>
+             */
+            function create(string|int $key, mixed $value): array
+            {
+                if (is_string($key)) {
+                    use_string($key);
+                } else {
+                    use_int($key);
+                }
+
+                if (is_int($key)) {
+                    use_int($key);
+                } else {
+                    use_string($key);
+                }
+
+                return [$key => $value];
             }
         "#},
     }

@@ -62,14 +62,22 @@ impl TUnion {
                 panic!("TUnion::new() should not be called with an empty Vec.");
             }
 
-            if types.len() > 1 && types.iter().any(|t| matches!(t, TAtomic::Never)) {
-                panic!("TUnion::new() was called with a mix of 'never' and other types.");
+            if types.len() > 1
+                && types.iter().any(|atomic| {
+                    atomic.is_never()
+                        || atomic.map_generic_parameter_constraint(|constraint| constraint.is_never()).unwrap_or(false)
+                })
+            {
+                panic!("TUnion::new() was called with a mix of 'never' and other types: {types:#?}")
             }
         } else {
             // If we have more than one type, 'never' is redundant and can be removed,
             // as the union `A|never` is simply `A`.
             if types.len() > 1 {
-                types.retain(|atomic| !matches!(atomic, TAtomic::Never));
+                types.retain(|atomic| {
+                    !atomic.is_never()
+                        && !atomic.map_generic_parameter_constraint(|constraint| constraint.is_never()).unwrap_or(false)
+                });
             }
 
             // If the vector was originally empty, or contained only 'never' types
@@ -333,13 +341,10 @@ impl TUnion {
     pub fn is_always_array_key(&self, ignore_never: bool) -> bool {
         self.types.iter().all(|atomic| match atomic {
             TAtomic::Never => ignore_never,
-            TAtomic::Scalar(scalar) => match scalar {
-                TScalar::ArrayKey => true,
-                TScalar::Integer(_) => true,
-                TScalar::String(_) => true,
-                TScalar::ClassLikeString(_) => true,
-                _ => false,
-            },
+            TAtomic::Scalar(scalar) => matches!(
+                scalar,
+                TScalar::ArrayKey | TScalar::Integer(_) | TScalar::String(_) | TScalar::ClassLikeString(_)
+            ),
             TAtomic::GenericParameter(generic_parameter) => {
                 generic_parameter.constraint.is_always_array_key(ignore_never)
             }
@@ -369,6 +374,10 @@ impl TUnion {
 
     pub fn is_never(&self) -> bool {
         self.types.iter().all(|t| t.is_never()) && !self.types.is_empty()
+    }
+
+    pub fn is_never_template(&self) -> bool {
+        self.types.iter().all(|t| t.is_templated_as_never()) && !self.types.is_empty()
     }
 
     pub fn is_placeholder(&self) -> bool {

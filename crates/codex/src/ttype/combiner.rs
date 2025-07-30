@@ -235,7 +235,7 @@ pub fn combine(
             continue;
         }
 
-        if let TAtomic::Never = atomic
+        if (atomic.is_never() || atomic.is_templated_as_never())
             && (combination_value_type_count > 1 || !new_types.is_empty())
         {
             has_never = true;

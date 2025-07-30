@@ -5,7 +5,6 @@ use mago_codex::ttype::atomic::array::TArray;
 use mago_codex::ttype::atomic::array::key::ArrayKey;
 use mago_codex::ttype::atomic::array::keyed::TKeyedArray;
 use mago_codex::ttype::atomic::array::list::TList;
-use mago_codex::ttype::atomic::generic::TGenericParameter;
 use mago_codex::ttype::atomic::mixed::truthiness::TMixedTruthiness;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
@@ -22,6 +21,7 @@ use mago_codex::ttype::union::TUnion;
 use mago_span::Span;
 
 use crate::reconciler::ReconcilationContext;
+use crate::reconciler::map_generic_constraint;
 use crate::reconciler::simple_assertion_reconciler::get_acceptable_type;
 use crate::reconciler::simple_assertion_reconciler::intersect_null;
 use crate::reconciler::trigger_issue_for_impossible;
@@ -258,19 +258,13 @@ fn subtract_object(
     let mut acceptable_types = vec![];
 
     for atomic in existing_var_types {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_object(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                acceptable_types.push(new_atomic);
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_object(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
@@ -319,19 +313,13 @@ fn subtract_list_array(
     let mut acceptable_types = vec![];
 
     for atomic in new_var_type.types.drain(..) {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_list_array(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                acceptable_types.push(new_atomic);
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_list_array(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
@@ -383,19 +371,13 @@ fn subtract_keyed_array(
     let mut acceptable_types = vec![];
 
     for atomic in new_var_type.types.drain(..) {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_keyed_array(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                acceptable_types.push(new_atomic);
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_keyed_array(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
@@ -444,24 +426,18 @@ fn subtract_string(
     let mut acceptable_types = vec![];
 
     for atomic in new_var_type.types.drain(..) {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_string(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            did_remove_type = true;
 
-                acceptable_types.push(new_atomic);
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_string(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
-
-            did_remove_type = true;
         } else if let TAtomic::Scalar(TScalar::ArrayKey) = atomic {
             did_remove_type = true;
 
@@ -533,25 +509,18 @@ fn subtract_int(
     let mut acceptable_types = vec![];
 
     for atomic in new_var_type.types.drain(..) {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_int(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                    integer_to_subtract,
-                ));
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            did_remove_type = true;
 
-                acceptable_types.push(new_atomic);
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_int(context, assertion, constraint, None, false, None, is_equality, integer_to_subtract)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
-
-            did_remove_type = true;
         } else if let TAtomic::Scalar(TScalar::ArrayKey) = atomic {
             did_remove_type = true;
 
@@ -626,19 +595,13 @@ fn subtract_float(
     let mut acceptable_types = vec![];
 
     for atomic in new_var_type.types.drain(..) {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = &atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let new_atomic = atomic.replace_template_constraint(subtract_float(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                acceptable_types.push(new_atomic);
+        if let TAtomic::GenericParameter(generic_parameter) = &atomic {
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(new_atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_float(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(new_atomic);
+                }
             } else {
                 acceptable_types.push(atomic);
             }
@@ -698,22 +661,17 @@ fn subtract_arraykey(
     let mut existing_var_type = existing_var_type.clone();
 
     for atomic in existing_var_types {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let atomic = atomic.replace_template_constraint(subtract_arraykey(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
+        if let TAtomic::GenericParameter(generic_parameter) = atomic {
+            did_remove_type = true;
 
+            if !is_equality
+                && !generic_parameter.constraint.is_mixed()
+                && let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_arraykey(context, assertion, constraint, None, false, None, is_equality)
+                })
+            {
                 existing_var_type.remove_type(&atomic);
                 existing_var_type.types.push(atomic);
-            } else {
-                did_remove_type = true;
             }
         } else if let TAtomic::Scalar(TScalar::Generic) = atomic {
             if !is_equality {
@@ -765,20 +723,14 @@ fn subtract_bool(
     let mut existing_var_type = existing_var_type.clone();
 
     for atomic in existing_var_types {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let atomic = atomic.replace_template_constraint(subtract_bool(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                existing_var_type.remove_type(&atomic);
-                existing_var_type.types.push(atomic);
+        if let TAtomic::GenericParameter(generic_parameter) = atomic {
+            if !is_equality && !generic_parameter.constraint.is_mixed() {
+                if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    subtract_bool(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    existing_var_type.remove_type(&atomic);
+                    existing_var_type.types.push(atomic);
+                }
             } else {
                 did_remove_type = true;
             }
@@ -828,13 +780,14 @@ pub(crate) fn subtract_null(
 
     for atomic in new_var_type.types.drain(..) {
         match atomic {
-            TAtomic::GenericParameter(TGenericParameter { ref constraint, .. }) => {
-                let new_atomic = atomic
-                    .replace_template_constraint(subtract_null(context, assertion, constraint, None, false, None));
-
-                acceptable_types.push(new_atomic);
-
+            TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
+
+                if let Some(atomic) = map_generic_constraint(&generic_parameter, |constraint| {
+                    subtract_null(context, assertion, constraint, None, false, None)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             }
             TAtomic::Variable { .. } => {
                 did_remove_type = true;
@@ -886,20 +839,14 @@ pub(crate) fn subtract_resource(
 
     for atomic in new_var_type.types.drain(..) {
         match atomic {
-            TAtomic::GenericParameter(TGenericParameter { ref constraint, .. }) => {
-                let new_atomic = atomic.replace_template_constraint(subtract_resource(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    resource_to_subtract,
-                ));
-
-                acceptable_types.push(new_atomic);
-
+            TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
+
+                if let Some(atomic) = map_generic_constraint(&generic_parameter, |constraint| {
+                    subtract_resource(context, assertion, constraint, None, false, None, resource_to_subtract)
+                }) {
+                    acceptable_types.push(atomic);
+                }
             }
             TAtomic::Resource(existing_resource) => match (existing_resource.closed, resource_to_subtract.closed) {
                 (Some(true), Some(true)) | (Some(false), Some(false)) | (_, None) => {
@@ -957,20 +904,14 @@ fn subtract_false(
 
     for atomic in existing_var_types {
         match atomic {
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if !is_equality && !constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(subtract_false(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                    ));
-
+            TAtomic::GenericParameter(generic_parameter) => {
+                if !is_equality
+                    && let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                        subtract_false(context, assertion, constraint, None, false, None, is_equality)
+                    })
+                {
                     existing_var_type.remove_type(&atomic);
-                    existing_var_type.types.push(atomic)
+                    existing_var_type.types.push(atomic);
                 } else {
                     did_remove_type = true;
                 }
@@ -1030,18 +971,12 @@ fn subtract_true(
 
     for atomic in existing_var_types {
         match atomic {
-            TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {
-                if !is_equality && !constraint.is_mixed() {
-                    let atomic = atomic.replace_template_constraint(subtract_true(
-                        context,
-                        assertion,
-                        constraint,
-                        None,
-                        false,
-                        None,
-                        is_equality,
-                    ));
-
+            TAtomic::GenericParameter(generic_parameter) => {
+                if !is_equality
+                    && let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                        subtract_true(context, assertion, constraint, None, false, None, is_equality)
+                    })
+                {
                     existing_var_type.remove_type(&atomic);
                     existing_var_type.types.push(atomic);
                 } else {
@@ -1105,12 +1040,10 @@ fn reconcile_falsy_or_empty(
             did_remove_type = true;
 
             match atomic {
-                TAtomic::GenericParameter(TGenericParameter { ref constraint, .. }) => {
-                    if !constraint.is_mixed() {
-                        let atomic = atomic.replace_template_constraint(reconcile_falsy_or_empty(
-                            context, assertion, constraint, None, false, None,
-                        ));
-
+                TAtomic::GenericParameter(generic_parameter) => {
+                    if let Some(atomic) = map_generic_constraint(&generic_parameter, |constraint| {
+                        reconcile_falsy_or_empty(context, assertion, constraint, None, false, None)
+                    }) {
                         acceptable_types.push(atomic);
                     }
                 }
@@ -1336,8 +1269,8 @@ fn reconcile_no_array_key(
     let mut acceptable_types = vec![];
 
     for mut atomic in new_var_type.types.drain(..) {
-        match atomic {
-            TAtomic::Array(TArray::Keyed(TKeyedArray { ref mut known_items, ref mut parameters, .. })) => {
+        match &mut atomic {
+            TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, parameters, .. })) => {
                 if let Some(known_items) = known_items {
                     if let Some(known_item) = known_items.get(key_name) {
                         if known_item.0 {
@@ -1369,7 +1302,7 @@ fn reconcile_no_array_key(
 
                 acceptable_types.push(atomic);
             }
-            TAtomic::Array(TArray::List(TList { ref mut known_elements, ref mut element_type, .. })) => {
+            TAtomic::Array(TArray::List(TList { known_elements, element_type, .. })) => {
                 if let ArrayKey::Integer(i) = key_name {
                     if let Some(known_elements) = known_elements {
                         if let Some(known_element) = known_elements.get(&(*i as usize)) {
@@ -1387,16 +1320,15 @@ fn reconcile_no_array_key(
 
                 acceptable_types.push(atomic);
             }
-            TAtomic::GenericParameter(TGenericParameter { ref constraint, .. }) => {
-                if constraint.is_mixed() {
+            TAtomic::GenericParameter(generic_parameter) => {
+                if generic_parameter.constraint.is_mixed() {
                     acceptable_types.push(atomic);
-                } else {
-                    let atomic = atomic.replace_template_constraint(reconcile_no_array_key(
-                        context, assertion, constraint, None, None, key_name, negated,
-                    ));
-
+                } else if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
+                    reconcile_no_array_key(context, assertion, constraint, None, None, key_name, negated)
+                }) {
                     acceptable_types.push(atomic);
                 }
+
                 did_remove_type = true;
             }
             TAtomic::Mixed(_) => {

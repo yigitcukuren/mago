@@ -486,24 +486,28 @@ pub fn combine_union_types(
         return type_1.clone();
     }
 
-    let mut combined_type;
-
-    if type_1.is_vanilla_mixed() && type_2.is_vanilla_mixed() {
-        combined_type = get_mixed();
+    let mut combined_type = if type_1.is_never() || type_1.is_never_template() {
+        type_2.clone()
+    } else if type_2.is_never() || type_2.is_never_template() {
+        type_1.clone()
+    } else if type_1.is_vanilla_mixed() && type_2.is_vanilla_mixed() {
+        get_mixed()
     } else {
         let mut all_atomic_types = type_1.types.clone();
         all_atomic_types.extend(type_2.types.clone());
 
-        combined_type = TUnion::new(combiner::combine(all_atomic_types, codebase, interner, overwrite_empty_array));
+        let mut result = TUnion::new(combiner::combine(all_atomic_types, codebase, interner, overwrite_empty_array));
 
         if type_1.had_template && type_2.had_template {
-            combined_type.had_template = true;
+            result.had_template = true;
         }
 
         if type_1.reference_free && type_2.reference_free {
-            combined_type.reference_free = true;
+            result.reference_free = true;
         }
-    }
+
+        result
+    };
 
     if type_1.possibly_undefined || type_2.possibly_undefined {
         combined_type.possibly_undefined = true;

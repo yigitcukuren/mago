@@ -100,6 +100,10 @@ impl TAtomic {
         matches!(self, TAtomic::Never)
     }
 
+    pub fn is_templated_as_never(&self) -> bool {
+        matches!(self, TAtomic::GenericParameter(parameter) if parameter.constraint.is_never())
+    }
+
     pub const fn is_mixed_with_any(&self, has_any: &mut bool) -> bool {
         match self {
             TAtomic::Mixed(mixed) => {
@@ -113,6 +117,13 @@ impl TAtomic {
 
     pub fn is_templated_as_mixed(&self, has_any: &mut bool) -> bool {
         matches!(self, TAtomic::GenericParameter(parameter) if parameter.is_constrainted_as_mixed(has_any))
+    }
+
+    pub fn map_generic_parameter_constraint<F, T>(&self, f: F) -> Option<T>
+    where
+        F: FnOnce(&TUnion) -> T,
+    {
+        if let TAtomic::GenericParameter(parameter) = self { Some(f(parameter.constraint.as_ref())) } else { None }
     }
 
     pub fn is_enum(&self) -> bool {
@@ -579,32 +590,6 @@ impl TAtomic {
                 | TAtomic::Array(TArray::List(_))
                 | TAtomic::Object(TObject::Named(_))
         )
-    }
-
-    pub fn replace_template_constraint(&self, new_as_type: TUnion) -> TAtomic {
-        if let Self::GenericParameter(parameter) = self {
-            return TAtomic::GenericParameter(parameter.with_constraint(new_as_type));
-        }
-
-        panic!("replace_template_constraint called on non-generic parameter type");
-    }
-
-    pub fn get_non_empty_list(&self, known_count: Option<usize>) -> TAtomic {
-        if let TAtomic::Array(TArray::List(list)) = self {
-            return TAtomic::Array(TArray::List(list.clone_non_empty_with_count(known_count)));
-        }
-
-        panic!("get_non_empty_list called on non-list type");
-    }
-
-    pub fn make_non_empty_keyed_array(mut self) -> TAtomic {
-        if let TAtomic::Array(TArray::Keyed(keyed_array)) = &mut self {
-            keyed_array.non_empty = true;
-
-            return self;
-        }
-
-        unreachable!("make_non_empty_keyed_array called on non-keyed array type");
     }
 
     pub fn is_truthy(&self) -> bool {
