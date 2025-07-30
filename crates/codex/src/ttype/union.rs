@@ -57,8 +57,26 @@ impl Hash for TUnion {
 
 impl TUnion {
     pub fn new(mut types: Vec<TAtomic>) -> TUnion {
-        if types.is_empty() {
-            types.push(TAtomic::Never);
+        if cfg!(debug_assertions) {
+            if types.is_empty() {
+                panic!("TUnion::new() should not be called with an empty Vec.");
+            }
+
+            if types.len() > 1 && types.iter().any(|t| matches!(t, TAtomic::Never)) {
+                panic!("TUnion::new() was called with a mix of 'never' and other types.");
+            }
+        } else {
+            // If we have more than one type, 'never' is redundant and can be removed,
+            // as the union `A|never` is simply `A`.
+            if types.len() > 1 {
+                types.retain(|atomic| !matches!(atomic, TAtomic::Never));
+            }
+
+            // If the vector was originally empty, or contained only 'never' types
+            // which were removed, ensure the final union is `never`.
+            if types.is_empty() {
+                types.push(TAtomic::Never);
+            }
         }
 
         TUnion {

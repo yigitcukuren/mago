@@ -76,25 +76,29 @@ fn infer_templates_from_input_and_container_types(
         )
     });
 
-    let residual_input_type = TUnion::new(
-        input_type
-            .types
-            .iter()
-            .filter(|argument_atomic| {
-                !concrete_container_parts.iter().any(|container_atomic| {
-                    atomic_comparator::is_contained_by(
-                        context.codebase,
-                        context.interner,
-                        container_atomic,
-                        argument_atomic,
-                        false,
-                        &mut ComparisonResult::default(),
-                    )
-                })
+    let residual_input_types = input_type
+        .types
+        .iter()
+        .filter(|argument_atomic| {
+            !concrete_container_parts.iter().any(|container_atomic| {
+                atomic_comparator::is_contained_by(
+                    context.codebase,
+                    context.interner,
+                    container_atomic,
+                    argument_atomic,
+                    false,
+                    &mut ComparisonResult::default(),
+                )
             })
-            .cloned()
-            .collect::<Vec<_>>(),
-    );
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    let residual_input_type = if residual_input_types.is_empty() {
+        return;
+    } else {
+        TUnion::new(residual_input_types)
+    };
 
     // A map to hold potential violations, to be processed only if no other valid inference is found.
     let mut potential_template_violations = HashMap::default();
