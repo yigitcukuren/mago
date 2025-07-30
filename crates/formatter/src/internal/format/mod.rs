@@ -1609,15 +1609,12 @@ impl<'a> Format<'a> for FunctionLikeParameter {
             }
 
             contents.extend(print_modifiers(f, &self.modifiers));
-            if let Some(hint) = &self.hint {
-                if !self.modifiers.is_empty() {
-                    contents.push(Document::space());
-                }
-
-                contents.push(hint.format(f));
+            if !self.modifiers.is_empty() {
+                contents.push(Document::space());
             }
 
-            if !contents.is_empty() {
+            if let Some(hint) = &self.hint {
+                contents.push(hint.format(f));
                 contents.push(Document::space());
             }
 
