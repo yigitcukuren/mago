@@ -312,6 +312,23 @@ impl TUnion {
         self.types.iter().all(|t| t.is_string()) && !self.types.is_empty()
     }
 
+    pub fn is_always_array_key(&self, ignore_never: bool) -> bool {
+        self.types.iter().all(|atomic| match atomic {
+            TAtomic::Never => ignore_never,
+            TAtomic::Scalar(scalar) => match scalar {
+                TScalar::ArrayKey => true,
+                TScalar::Integer(_) => true,
+                TScalar::String(_) => true,
+                TScalar::ClassLikeString(_) => true,
+                _ => false,
+            },
+            TAtomic::GenericParameter(generic_parameter) => {
+                generic_parameter.constraint.is_always_array_key(ignore_never)
+            }
+            _ => false,
+        })
+    }
+
     pub fn is_non_empty_string(&self) -> bool {
         self.types.iter().all(|t| t.is_non_empty_string()) && !self.types.is_empty()
     }

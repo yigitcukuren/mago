@@ -124,33 +124,37 @@ fn analyze_array_elements<'a>(
                     .get_expression_type(key_value_array_element.key.as_ref())
                 {
                     Some(item_key_type) => {
-                        let mut key_type = item_key_type.clone();
-                        if key_type.is_null() {
-                            key_type = get_literal_string("".to_string());
-                        } else if key_type.is_true() {
-                            key_type = get_literal_int(1);
-                        } else if key_type.is_false() {
-                            key_type = get_literal_int(0);
-                        } else if let Some(f) = key_type.get_single_literal_float_value() {
-                            key_type = get_literal_int(f.trunc() as i64);
-                        } else if key_type.is_float() {
-                            key_type = get_int()
-                        } else if !key_type.is_any_string() && !key_type.is_int() {
+                        let key_type = if item_key_type.is_null() {
+                            get_literal_string("".to_string())
+                        } else if item_key_type.is_true() {
+                            get_literal_int(1)
+                        } else if item_key_type.is_false() {
+                            get_literal_int(0)
+                        } else if let Some(f) = item_key_type.get_single_literal_float_value() {
+                            get_literal_int(f.trunc() as i64)
+                        } else if item_key_type.is_float() {
+                            get_int()
+                        } else if !item_key_type.is_always_array_key(true) {
+                            let item_key_type_id = item_key_type.get_id(Some(context.interner));
+
                             context.collector.report_with_code(
                                 TypingIssueKind::InvalidArrayElementKey,
-                                Issue::error("Array key must be a string or an integer.")
+                                Issue::error("Invalid array key type.")
                                     .with_annotation(
                                         Annotation::primary(key_value_array_element.key.span()).with_message(format!(
-                                            "Expected a string or integer key, but got `{}`.",
-                                            key_type.get_id(Some(context.interner))
+                                            "This has type `{item_key_type_id}`, which cannot be cast to a string or integer.",
                                         )),
                                     )
-                                    .with_note("PHP arrays can only use strings or integers as keys.")
-                                    .with_help("Consider using a string or integer as the array key."),
+                                    .with_note(format!(
+                                        "In PHP, array keys must be strings or integers. While types like `bool` or `float` are automatically cast, a value of type `{item_key_type_id}` cannot be.",
+                                    ))
+                                    .with_help("Ensure the array key is either a string or an integer."),
                             );
 
-                            key_type = get_arraykey();
-                        }
+                            get_arraykey()
+                        } else {
+                            item_key_type.clone()
+                        };
 
                         let item_key_value =
                             if let Some(item_key_literal_type) = key_type.get_single_literal_string_value() {
@@ -974,5 +978,25 @@ mod tests {
             $list = x();
             take_list_ints($list);
         "#}
+    }
+
+    test_analysis! {
+        name = create_array_using_generic_key,
+        code = indoc! {r#"
+            <?php
+
+            /**
+             * @template K of array-key
+             * @template V
+             *
+             * @param K $k
+             * @param V $v
+             *
+             * @return non-empty-array<K, V>
+             */
+            function create_array($k, $v): array {
+                return [$k => $v];
+            }
+        "#},
     }
 }
