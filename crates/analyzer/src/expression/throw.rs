@@ -56,7 +56,7 @@ impl Analyzable for Throw {
         if let Some(exception_type) = artifacts.get_expression_type(self.exception.as_ref()) {
             let throwable = context.interner.intern("Throwable");
 
-            for exception_atomic in exception_type.types.iter().cloned() {
+            for exception_atomic in &exception_type.types {
                 if !exception_atomic.extends_or_implements(context.codebase, context.interner, throwable) {
                     let exception_atomic_str = exception_atomic.get_id(Some(context.interner));
 

@@ -161,13 +161,12 @@ impl TAtomic {
     pub fn get_all_object_names(&self) -> Vec<StringIdentifier> {
         let mut object_names = vec![];
 
-        match self {
-            TAtomic::Object(object) => match object {
+        if let TAtomic::Object(object) = self {
+            match object {
                 TObject::Named(named_object) => object_names.push(named_object.get_name()),
                 TObject::Enum(r#enum) => object_names.push(r#enum.get_name()),
                 _ => {}
-            },
-            _ => {}
+            }
         };
 
         for intersection_type in self.get_intersection_types().unwrap_or_default() {

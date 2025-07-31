@@ -608,7 +608,7 @@ impl TUnion {
             }
         }
 
-        return true;
+        true
     }
 
     pub fn is_generic_parameter(&self) -> bool {
