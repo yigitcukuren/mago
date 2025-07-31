@@ -158,6 +158,25 @@ impl TAtomic {
         }
     }
 
+    pub fn get_all_object_names(&self) -> Vec<StringIdentifier> {
+        let mut object_names = vec![];
+
+        match self {
+            TAtomic::Object(object) => match object {
+                TObject::Named(named_object) => object_names.push(named_object.get_name()),
+                TObject::Enum(r#enum) => object_names.push(r#enum.get_name()),
+                _ => {}
+            },
+            _ => {}
+        };
+
+        for intersection_type in self.get_intersection_types().unwrap_or_default() {
+            object_names.extend(intersection_type.get_all_object_names());
+        }
+
+        object_names
+    }
+
     pub fn is_stdclass(&self, interner: &ThreadedInterner) -> bool {
         matches!(&self, TAtomic::Object(object) if {
             object.get_name().is_some_and(|name| interner.lookup(name).eq_ignore_ascii_case("stdClass"))

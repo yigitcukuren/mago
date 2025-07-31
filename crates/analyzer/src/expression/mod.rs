@@ -295,6 +295,7 @@ pub fn find_expression_logic_issues<'a>(
         &expression_clauses,
         &expression_span,
         &HashMap::default(),
+        block_context.inside_loop,
     );
 
     expression_clauses.extend(block_context.clauses.iter().map(|v| (**v).clone()).collect::<Vec<_>>());

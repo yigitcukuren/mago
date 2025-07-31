@@ -135,6 +135,7 @@ impl Analyzable for If {
             &if_clauses,
             &self.condition.span(),
             &if_conditional_scope.assigned_in_conditional_variable_ids,
+            block_context.inside_loop,
         );
 
         if_clauses = saturate_clauses(if_clauses.iter());
@@ -668,6 +669,7 @@ fn analyze_else_if_clause<'a>(
         &else_if_clauses,
         &else_if_clause.0.span(),
         &assigned_in_conditional_variable_ids,
+        else_block_context.inside_loop,
     );
 
     let else_if_clauses = saturate_clauses(else_if_clauses.iter());

@@ -596,6 +596,21 @@ impl TUnion {
         true
     }
 
+    pub fn extends_or_implements(
+        &self,
+        codebase: &CodebaseMetadata,
+        interner: &ThreadedInterner,
+        interface: StringIdentifier,
+    ) -> bool {
+        for atomic in &self.types {
+            if !atomic.extends_or_implements(codebase, interner, interface) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     pub fn is_generic_parameter(&self) -> bool {
         self.types.len() == 1 && matches!(self.types[0], TAtomic::GenericParameter(_))
     }

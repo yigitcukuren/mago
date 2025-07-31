@@ -4,12 +4,8 @@ use ahash::HashMap;
 
 use mago_algebra::clause::Clause;
 use mago_algebra::negate_formula;
-use mago_codex::get_class_like;
-use mago_codex::metadata::CodebaseMetadata;
 use mago_collector::Collector;
-use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
-use mago_names::ResolvedNames;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
@@ -26,36 +22,37 @@ pub fn check_for_paradox(
     formula_2: &[Clause],
     span: &Span,
     new_assigned_variable_ids: &HashMap<String, usize>,
+    in_loop: bool,
 ) {
-    let mut previous_clauses: HashMap<&Clause, Span> =
-        HashMap::from_iter(formula_1.iter().map(|c| (&**c, c.condition_span)));
-
-    for formula_2_clause in formula_2 {
-        if !formula_2_clause.generated
-            && !formula_2_clause.wedge
-            && formula_2_clause.reconcilable
-            && !new_assigned_variable_ids.keys().any(|key| formula_2_clause.possibilities.contains_key(key))
-            && let Some(original_span) = previous_clauses.get(formula_2_clause)
-        {
-            report_redundant_condition(interner, buffer, formula_2_clause, *span, *original_span);
-        }
-
-        previous_clauses.entry(formula_2_clause).or_insert(formula_2_clause.condition_span);
-    }
-
     let Some(negated_formula_2) = negate_formula(formula_2.to_vec()) else {
         return;
     };
 
-    let formula_1_clauses = formula_1.iter().map(|c| &**c).collect::<Vec<_>>();
+    let mut previous_clauses: HashMap<usize, Span> =
+        HashMap::from_iter(formula_1.iter().map(|c| (c.hash, c.condition_span)));
 
+    for formula_2_clause in formula_2 {
+        if formula_2_clause.generated
+            && !formula_2_clause.wedge
+            && formula_2_clause.reconcilable
+            && !new_assigned_variable_ids.keys().any(|key| formula_2_clause.possibilities.contains_key(key))
+            && let Some(original_span) = previous_clauses.get(&formula_2_clause.hash)
+            && (!in_loop || (original_span != span))
+        {
+            report_redundant_condition(interner, buffer, formula_2_clause, *span, *original_span);
+        }
+
+        previous_clauses.entry(formula_2_clause.hash).or_insert(formula_2_clause.condition_span);
+    }
+
+    let formula_1_clauses = formula_1.iter().map(|c| &**c).collect::<Vec<_>>();
     for negated_clause_2 in &negated_formula_2 {
         if !negated_clause_2.reconcilable || negated_clause_2.wedge {
             continue;
         }
 
-        for &clause_1 in &formula_1_clauses {
-            if !clause_1.reconcilable || clause_1.wedge {
+        for clause_1 in &formula_1_clauses {
+            if negated_clause_2 == *clause_1 || !clause_1.reconcilable || clause_1.wedge {
                 continue;
             }
 
@@ -150,69 +147,6 @@ pub const fn unwrap_expression(expression: &Expression) -> &Expression {
         Expression::Parenthesized(parenthesized) => unwrap_expression(&parenthesized.expression),
         _ => expression,
     }
-}
-
-#[inline]
-#[allow(dead_code)]
-pub fn get_name_from_expression(
-    expression: &Expression,
-    calling_class: &Option<StringIdentifier>,
-    calling_class_final: bool,
-    codebase: &CodebaseMetadata,
-    interner: &ThreadedInterner,
-    is_static: &mut bool,
-    resolved_names: &ResolvedNames,
-) -> Option<StringIdentifier> {
-    Some(match expression {
-        Expression::Parenthesized(parenthesized) => {
-            return get_name_from_expression(
-                &parenthesized.expression,
-                calling_class,
-                calling_class_final,
-                codebase,
-                interner,
-                is_static,
-                resolved_names,
-            );
-        }
-        Expression::Static(_) => {
-            if !calling_class_final {
-                *is_static = true;
-            }
-
-            let self_name = if let Some(calling_class) = calling_class {
-                calling_class
-            } else {
-                return None;
-            };
-
-            *self_name
-        }
-        Expression::Self_(_) => {
-            let self_name = if let Some(calling_class) = calling_class {
-                calling_class
-            } else {
-                return None;
-            };
-
-            *self_name
-        }
-        Expression::Parent(_) => {
-            let self_name = if let Some(calling_class) = calling_class {
-                calling_class
-            } else {
-                return None;
-            };
-
-            let class_like_metadata = get_class_like(codebase, interner, self_name)?;
-
-            class_like_metadata.direct_parent_class?
-        }
-        Expression::Identifier(identifier) => *resolved_names.get(&identifier),
-        _ => {
-            return None;
-        }
-    })
 }
 
 #[inline]

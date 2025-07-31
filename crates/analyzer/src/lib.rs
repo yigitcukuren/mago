@@ -766,31 +766,146 @@ mod tests {
     test_analysis! {
         name = shape_field_key,
         code = indoc! {r#"
-        <?php
+                <?php
 
-        /**
-         * @return array{
-         *  'literal-string-key': string,
-         *  1: int,
-         *  -2: int,
-         *  +4: int,
-         *  unquoted-key: string,
-         *  list: list<int>,
-         *  int: int,
-         *  float?: float,
-         * }
-         */
-        function example(): array {
-            return [
-                'literal-string-key' => 'value',
-                1 => 42,
-                -2 => -42,
-                +4 => 84,
-                'unquoted-key' => 'value',
-                'list' => [1, 2, 3],
-                'int' => 100,
-            ]; // no `float` key as it is optional
-        }
+                /**
+                * @return array{
+                *  'literal-string-key': string,
+                *  1: int,
+                *  -2: int,
+                *  +4: int,
+                *  unquoted-key: string,
+                *  list: list<int>,
+                *  int: int,
+                *  float?: float,
+                * }
+                */
+                function example(): array {
+                    return [
+                        'literal-string-key' => 'value',
+                        1 => 42,
+                        -2 => -42,
+                        +4 => 84,
+                        'unquoted-key' => 'value',
+                        'list' => [1, 2, 3],
+                        'int' => 100,
+                    ]; // no `float` key as it is optional
+                }
+            "#},
+    }
+
+    test_analysis! {
+        name = shape_type,
+        code = indoc! {r#"
+            <?php
+
+            interface Throwable
+            {
+            }
+
+            class Exception implements Throwable
+            {
+            }
+
+            /** @assert-if-true iterable $val */
+            function is_iterable(mixed $val): bool
+            {
+                return is_iterable($val);
+            }
+
+            /**
+             * @template T
+             */
+            interface TypeInterface
+            {
+                /** @assert-if-true T $value */
+                public function matches(mixed $value): bool;
+
+                /**
+                 * @return T
+                 */
+                public function coerce(mixed $value): mixed;
+
+                public function isOptional(): bool;
+            }
+
+            /** @return TypeInterface<array-key> */
+            function array_key(): TypeInterface
+            {
+                return array_key();
+            }
+
+            /**
+             * @template Tk of array-key
+             * @template Tv
+             *
+             * @mago-expect analysis:mixed-assignment
+             */
+            final class ShapeType
+            {
+                /**
+                 * @param array<Tk, TypeInterface<Tv>> $elements_types
+                 */
+                public function __construct(
+                    private array $elements_types,
+                    private bool $allow_unknown_fields = false,
+                ) {}
+
+                /**
+                 * @throws Exception
+                 *
+                 * @return array<Tk, Tv>
+                 */
+                public function coerceIterable(mixed $value): array
+                {
+                    if (!is_iterable($value)) {
+                        throw new Exception();
+                    }
+
+                    $arrayKeyType = array_key();
+                    $array = [];
+                    try {
+                        foreach ($value as $k => $v) {
+                            if ($arrayKeyType->matches($k)) {
+                                $array[$k] = $v;
+                            }
+                        }
+                    } catch (Throwable $e) {
+                        throw $e;
+                    }
+
+                    $result = [];
+
+                    try {
+                        foreach ($this->elements_types as $element => $type) {
+                            if (isset($array[$element])) {
+                                $result[$element] = $type->coerce($array[$element]);
+
+                                continue;
+                            }
+
+                            if ($type->isOptional()) {
+                                continue;
+                            }
+
+                            throw new Exception();
+                        }
+                    } catch (Exception $e) {
+                        throw $e;
+                    }
+
+                    if ($this->allow_unknown_fields) {
+                        foreach ($array as $k => $v) {
+                            if (!isset($result[$k])) {
+                                $result[$k] = $v;
+                            }
+                        }
+                    }
+
+                    /** @var array<Tk, Tv> */
+                    return $result;
+                }
+            }
         "#},
     }
 }

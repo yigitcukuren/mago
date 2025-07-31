@@ -1,14 +1,8 @@
 use std::rc::Rc;
 
 use mago_codex::ttype::TType;
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::combine_union_types;
-use mago_codex::ttype::comparator::ComparisonResult;
-use mago_codex::ttype::comparator::union_comparator::is_contained_by;
-use mago_codex::ttype::get_named_object;
 use mago_codex::ttype::get_never;
-use mago_codex::ttype::wrap_atomic;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -60,30 +54,20 @@ impl Analyzable for Throw {
         }
 
         if let Some(exception_type) = artifacts.get_expression_type(self.exception.as_ref()) {
-            let throwable = get_named_object(context.interner, context.interner.intern("Throwable"), None);
+            let throwable = context.interner.intern("Throwable");
 
             for exception_atomic in exception_type.types.iter().cloned() {
-                let candidate = wrap_atomic(exception_atomic);
+                if !exception_atomic.extends_or_implements(context.codebase, context.interner, throwable) {
+                    let exception_atomic_str = exception_atomic.get_id(Some(context.interner));
 
-                if !is_contained_by(
-                    context.codebase,
-                    context.interner,
-                    &candidate,
-                    &throwable,
-                    false,
-                    false,
-                    false,
-                    &mut ComparisonResult::new(),
-                ) {
-                    let candidate_str = candidate.get_id(Some(context.interner));
                     context.collector.report_with_code(
                         TypingIssueKind::InvalidThrow,
                         Issue::error(format!(
-                            "Cannot throw type `{candidate_str}` because it is not an instance of Throwable."
+                            "Cannot throw type `{exception_atomic_str}` because it is not an instance of Throwable."
                         ))
                         .with_annotation(
                             Annotation::primary(self.span())
-                                .with_message(format!("This has type `{candidate_str}`, not `Throwable`"))
+                                .with_message(format!("This has type `{exception_atomic_str}`, not `Throwable`"))
                         )
                         .with_note(
                             "Only objects that implement the `Throwable` interface (like `Exception` or `Error`) can be thrown."
@@ -92,8 +76,12 @@ impl Analyzable for Throw {
                             "Ensure the value being thrown is an instance of `Exception`, `Error`, or a subclass thereof."
                         ),
                     );
-                } else if let TAtomic::Object(TObject::Named(named_object)) = candidate.get_single_owned() {
-                    block_context.possibly_thrown_exceptions.entry(named_object.name).or_default().insert(self.span());
+
+                    continue;
+                }
+
+                for object_name in exception_atomic.get_all_object_names() {
+                    block_context.possibly_thrown_exceptions.entry(object_name).or_default().insert(self.span());
                 }
             }
         }

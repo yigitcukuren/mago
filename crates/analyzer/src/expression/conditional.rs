@@ -119,6 +119,7 @@ impl Analyzable for Conditional {
             &if_clauses,
             &self.condition.span(),
             &assigned_in_conditional_variable_ids,
+            block_context.inside_loop,
         );
 
         if_clauses = saturate_clauses(&if_clauses);
