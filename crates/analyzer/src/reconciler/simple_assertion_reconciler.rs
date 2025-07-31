@@ -17,6 +17,7 @@ use mago_codex::ttype::atomic::resource::TResource;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::bool::TBool;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
+use mago_codex::ttype::atomic::scalar::string::TString;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::comparator::union_comparator;
@@ -849,10 +850,53 @@ fn intersect_arraykey(
     let mut did_remove_type = false;
 
     for atomic in &existing_var_type.types {
-        if atomic.is_int() || atomic.is_any_string() || matches!(atomic, TAtomic::Scalar(TScalar::ArrayKey)) {
-            acceptable_types.push(atomic.clone());
-        } else {
-            did_remove_type = true;
+        match atomic {
+            TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) => {
+                return get_arraykey();
+            }
+            TAtomic::Scalar(TScalar::Numeric) => {
+                did_remove_type = true; // removed `float`
+
+                acceptable_types.push(TAtomic::Scalar(TScalar::String(TString::numeric())));
+                acceptable_types.push(TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified)));
+            }
+            TAtomic::Scalar(TScalar::Integer(integer)) => {
+                acceptable_types.push(TAtomic::Scalar(TScalar::Integer(*integer)));
+            }
+            TAtomic::Scalar(TScalar::String(string)) => {
+                acceptable_types.push(TAtomic::Scalar(TScalar::String(string.clone())));
+            }
+            TAtomic::Scalar(TScalar::ClassLikeString(class_like_string)) => {
+                acceptable_types.push(TAtomic::Scalar(TScalar::ClassLikeString(class_like_string.clone())));
+            }
+            TAtomic::Scalar(TScalar::ArrayKey) => {
+                acceptable_types.push(TAtomic::Scalar(TScalar::ArrayKey));
+            }
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_arraykey, |constraint| {
+                    intersect_arraykey(context, assertion, constraint, None, false, None, is_equality)
+                }) {
+                    acceptable_types.push(atomic);
+                }
+            }
+            TAtomic::Variable(name) => {
+                if let Some(span) = span {
+                    let name_str = context.interner.lookup(name);
+                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
+                        let mut bound = TemplateBound::new(get_arraykey(), 0, None, None);
+                        bound.span = Some(*span);
+                        lower_bounds.push(bound);
+                    }
+                }
+
+                acceptable_types.push(atomic.clone());
+                did_remove_type = true;
+            }
+            _ => {
+                did_remove_type = true;
+            }
         }
     }
 

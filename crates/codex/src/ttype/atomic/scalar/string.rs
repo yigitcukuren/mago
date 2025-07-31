@@ -85,6 +85,12 @@ impl TString {
         Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: true, is_lowercase: false }
     }
 
+    /// Creates a numeric string instance.
+    #[inline]
+    pub const fn numeric() -> Self {
+        Self { literal: None, is_numeric: true, is_truthy: false, is_non_empty: true, is_lowercase: false }
+    }
+
     /// Creates a general string instance with explicitly set guaranteed properties (from analysis).
     #[inline]
     pub const fn general_with_props(
