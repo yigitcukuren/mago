@@ -45,15 +45,6 @@ pub struct MethodMetadata {
     /// is the `TUnion` type constraint that `T` must satisfy for this specific method
     /// to be considered callable.
     pub where_constraints: HashMap<StringIdentifier, TypeMetadata>,
-
-    /// The type that the object instance (`$this`) will have *after* this method is called.
-    ///
-    /// This is populated from the `@this-out` tag (and its aliases: `@self-out`,
-    /// `@psalm-this-out`, `@phpstan-this-out`, etc.). It is crucial for typing mutable
-    /// objects, builders, and fluent interfaces where a method call changes the
-    /// object's state in a way that affects its type, such as specializing a generic
-    /// template parameter (e.g., a `Box<T>` becoming a `Box<string>`).
-    pub this_out_type: Option<TypeMetadata>,
 }
 
 /// Distinguishes between different kinds of callable constructs in PHP.

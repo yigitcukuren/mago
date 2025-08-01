@@ -50,7 +50,6 @@ pub struct FunctionLikeDocblockComment {
     pub return_type: Option<ReturnTypeTag>,
     pub parameters: Vec<ParameterTag>,
     pub parameters_out: Vec<ParameterOutTag>,
-    pub this_out: Option<ThisOutTag>,
     pub where_constraints: Vec<WhereTag>,
     pub throws: Vec<ThrowsTag>,
     pub templates: Vec<TemplateTag>,
@@ -298,7 +297,6 @@ impl FunctionLikeDocblockComment {
         let mut return_type: Option<ReturnTypeTag> = None;
         let mut parameters: Vec<ParameterTag> = Vec::new();
         let mut parameters_out: Vec<ParameterOutTag> = Vec::new();
-        let mut this_out: Option<ThisOutTag> = None;
         let mut where_constraints: Vec<WhereTag> = Vec::new();
         let mut throws: Vec<ThrowsTag> = Vec::new();
         let mut templates: Vec<TemplateTag> = Vec::new();
@@ -422,17 +420,6 @@ impl FunctionLikeDocblockComment {
                         if_false_assertions.push(assertion);
                     }
                 }
-                TagKind::PhpstanSelfOut
-                | TagKind::PhpstanThisOut
-                | TagKind::PsalmThisOut
-                | TagKind::ThisOut
-                | TagKind::SelfOut => {
-                    if let Some(this_out_tag) =
-                        parse_this_out_tag(context.interner.lookup(&tag.description), tag.description_span)
-                    {
-                        this_out = Some(this_out_tag);
-                    }
-                }
                 TagKind::Where => {
                     if let Some(where_tag) =
                         parse_where_tag(context.interner.lookup(&tag.description), tag.description_span)
@@ -475,7 +462,6 @@ impl FunctionLikeDocblockComment {
             return_type,
             parameters,
             parameters_out,
-            this_out,
             where_constraints,
             throws,
             templates,

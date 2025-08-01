@@ -8,7 +8,6 @@ use strum::EnumString;
 pub(crate) enum ScanningIssueKind {
     MalformedDocblockComment,
     InvalidReturnTag,
-    InvalidThisOutTag,
     InvalidWhereTag,
     InvalidParamOutTag,
     InvalidParamTag,

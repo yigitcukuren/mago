@@ -47,12 +47,6 @@ pub struct ParameterOutTag {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub struct ThisOutTag {
-    pub span: Span,
-    pub type_string: TypeString,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ThrowsTag {
     pub span: Span,
     pub type_string: TypeString,
@@ -385,36 +379,6 @@ pub fn parse_throws_tag(content: &str, span: Span) -> Option<ThrowsTag> {
     let description = rest_slice.to_owned();
 
     Some(ThrowsTag { span, type_string, description })
-}
-
-/// Parses the content string of a `@this-out` tag.
-///
-/// # Arguments
-///
-/// * `content` - The string slice content following the tag.
-/// * `span` - The original `Span` of the `content` slice.
-///
-/// # Returns
-///
-/// `Some(ThisOutTag)` if parsing is successful, `None` otherwise.
-pub fn parse_this_out_tag(content: &str, span: Span) -> Option<ThisOutTag> {
-    let (type_string, rest_slice) = split_tag_content(content, span)?;
-
-    // Type cannot start with '{'
-    if type_string.value.starts_with('{') {
-        return None;
-    }
-
-    // Type cannot start with '$' unless it is "$this"
-    if type_string.value.starts_with('$') && type_string.value != "$this" {
-        return None;
-    }
-
-    if rest_slice.is_empty() {
-        return None;
-    }
-
-    Some(ThisOutTag { span, type_string })
 }
 
 /// Parses the content string of an `@assert`, `@assert-if-true`, or `@assert-if-false` tag.

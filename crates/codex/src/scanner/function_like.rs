@@ -70,7 +70,6 @@ pub fn scan_method(
             Visibility::Public
         },
         where_constraints: Default::default(),
-        this_out_type: None,
     };
 
     if let MethodBody::Concrete(block) = &method.body {
@@ -401,60 +400,6 @@ fn scan_function_like_docblock(
                 metadata.issues.push(
                     Issue::error("Failed to resolve `@return` type string.")
                         .with_code(ScanningIssueKind::InvalidReturnTag)
-                        .with_annotation(
-                            Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
-                        )
-                        .with_note(typing_error.note())
-                        .with_help(typing_error.help()),
-                );
-            }
-        }
-    }
-
-    'this_out: {
-        let Some(this_out) = docblock.this_out else {
-            // If there is no `@this-out` tag, we can skip this section.
-            break 'this_out;
-        };
-
-        let Some(method_metadata) = metadata.get_method_metadata_mut() else {
-            metadata.issues.push(
-                Issue::error("`@this-out` tag used in a non-method function-like.")
-                    .with_code(ScanningIssueKind::InvalidThisOutTag)
-                    .with_annotation(
-                        Annotation::primary(this_out.type_string.span)
-                            .with_message("`@this-out` can only be used in methods, not in functions or closures"),
-                    )
-                    .with_note("The `@this-out` tag is specific to methods that modify the instance state.")
-                    .with_help("Ensure this tag is only used in method docblocks."),
-            );
-
-            break 'this_out;
-        };
-
-        if method_metadata.is_static {
-            metadata.issues.push(
-                Issue::error("`@this-out` tag used in a static method.")
-                    .with_code(ScanningIssueKind::InvalidThisOutTag)
-                    .with_annotation(
-                        Annotation::primary(this_out.type_string.span)
-                            .with_message("`@this-out` cannot be used in static methods"),
-                    )
-                    .with_note("The `@this-out` tag is intended for instance methods that modify the instance state.")
-                    .with_help("Remove the `@this-out` tag from static method docblocks."),
-            );
-
-            break 'this_out;
-        }
-
-        match get_type_metadata_from_type_string(&this_out.type_string, classname, &type_context, context, scope) {
-            Ok(out_type_metadata) => {
-                method_metadata.this_out_type = Some(out_type_metadata);
-            }
-            Err(typing_error) => {
-                metadata.issues.push(
-                    Issue::error("Failed to resolve `@this-out` type string.")
-                        .with_code(ScanningIssueKind::InvalidThisOutTag)
                         .with_annotation(
                             Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
                         )

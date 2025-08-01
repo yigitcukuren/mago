@@ -412,17 +412,6 @@ fn populate_function_like_metadata(
                 force_type_population,
             );
         }
-
-        if let Some(type_metadata) = method_metadata.this_out_type.as_mut() {
-            populate_union_type(
-                &mut type_metadata.type_union,
-                codebase_symbols,
-                interner,
-                Some(reference_source),
-                symbol_references,
-                force_type_population,
-            );
-        }
     }
 
     for thrown_type in &mut metadata.thrown_types {
