@@ -15,9 +15,9 @@ use mago_span::Span;
 use mago_syntax::ast::Expression;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
-use crate::issue::TypingIssueKind;
 
 /// Populates the context with variable types defined in the docblock.
 ///
@@ -111,7 +111,7 @@ pub fn get_docblock_variables<'a>(
                 }
                 Err(type_error) => {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidDocblock,
+                        Code::INVALID_DOCBLOCK,
                         Issue::error(format!(
                             "Invalid type in `@var` tag for variable `{}`.",
                             variable_name.as_deref().unwrap_or("expression")
@@ -195,7 +195,7 @@ pub fn insert_variabel_from_docblock<'a>(
         let previous_type_str = previous_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-                TypingIssueKind::DocblockTypeMismatch,
+                Code::DOCBLOCK_TYPE_MISMATCH,
                 Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
                     .with_annotation(
                         Annotation::primary(variable_type_span)
@@ -267,6 +267,6 @@ pub fn check_docblock_type_incompatibility<'a>(
             ));
         }
 
-        context.collector.report_with_code(TypingIssueKind::DocblockTypeMismatch, issue);
+        context.collector.report_with_code(Code::DOCBLOCK_TYPE_MISMATCH, issue);
     }
 }

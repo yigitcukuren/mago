@@ -34,9 +34,9 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
+use crate::code::Code;
 use crate::context::Context;
 use crate::invocation::MethodTargetContext;
-use crate::issue::TypingIssueKind;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct InferenceOptions {
@@ -720,7 +720,7 @@ pub fn infer_templates_from_argument_and_parameter_types(
 
     for violation in violations {
         context.collector.report_with_code(
-            TypingIssueKind::TemplateConstraintViolation,
+            Code::TEMPLATE_CONSTRAINT_VIOLATION,
             Issue::error(format!(
                 "Argument type mismatch for template `{}`.",
                 context.interner.lookup(&violation.template_name),

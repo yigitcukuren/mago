@@ -17,7 +17,6 @@ use mago_interner::ThreadedInterner;
 use mago_span::Position;
 use mago_span::Span;
 
-use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::scope::case_scope::CaseScope;
 use crate::context::scope::control_action::ControlAction;
@@ -246,7 +245,6 @@ impl<'a> BlockContext<'a> {
         interner: &ThreadedInterner,
         codebase: &CodebaseMetadata,
         collector: &mut Collector<'_>,
-        artifacts: &mut AnalysisArtifacts,
         remove_var_id: &str,
         clauses: Vec<Rc<Clause>>,
         new_type: Option<&TUnion>,
@@ -287,7 +285,7 @@ impl<'a> BlockContext<'a> {
                         break;
                     }
 
-                    let mut context = ReconcilationContext::new(interner, codebase, artifacts, collector);
+                    let mut context = ReconcilationContext::new(interner, codebase, collector);
                     let result_type = assertion_reconciler::reconcile(
                         &mut context,
                         assertion,
@@ -320,19 +318,11 @@ impl<'a> BlockContext<'a> {
         interner: &ThreadedInterner,
         codebase: &CodebaseMetadata,
         collector: &mut Collector<'_>,
-        artifacts: &mut AnalysisArtifacts,
         remove_var_id: &str,
         new_type: Option<&TUnion>,
     ) {
-        self.clauses = BlockContext::filter_clauses(
-            interner,
-            codebase,
-            collector,
-            artifacts,
-            remove_var_id,
-            self.clauses.clone(),
-            new_type,
-        );
+        self.clauses =
+            BlockContext::filter_clauses(interner, codebase, collector, remove_var_id, self.clauses.clone(), new_type);
 
         self.parent_conflicting_clause_variables.insert(remove_var_id.to_owned());
     }
@@ -342,7 +332,6 @@ impl<'a> BlockContext<'a> {
         interner: &ThreadedInterner,
         codebase: &CodebaseMetadata,
         collector: &mut Collector<'_>,
-        artifacts: &mut AnalysisArtifacts,
         remove_var_id: &str,
         existing_type: &TUnion,
         new_type: Option<&TUnion>,
@@ -351,7 +340,6 @@ impl<'a> BlockContext<'a> {
             interner,
             codebase,
             collector,
-            artifacts,
             remove_var_id,
             if existing_type.is_mixed() {
                 None
@@ -412,12 +400,11 @@ impl<'a> BlockContext<'a> {
         interner: &ThreadedInterner,
         codebase: &CodebaseMetadata,
         collector: &mut Collector<'_>,
-        artifacts: &mut AnalysisArtifacts,
     ) {
         if let Some(existing_type) = self.locals.remove(var_name)
             && remove_descendants
         {
-            self.remove_descendants(interner, codebase, collector, artifacts, var_name, &existing_type, None);
+            self.remove_descendants(interner, codebase, collector, var_name, &existing_type, None);
         }
 
         self.assigned_variable_ids.remove(var_name);
@@ -436,7 +423,6 @@ impl<'a> BlockContext<'a> {
     pub fn update(
         &mut self,
         context: &mut Context<'a>,
-        artifacts: &mut AnalysisArtifacts,
         start_block_context: &Self,
         end_block_context: &mut Self,
         has_leaving_statements: bool,
@@ -466,11 +452,11 @@ impl<'a> BlockContext<'a> {
             let old_type = old_type.as_ref().clone();
             let resulting_type = match new_type {
                 Some(new_type) => {
-                    let updated_type = subtract_union_types(context, artifacts, existing_type, old_type);
+                    let updated_type = subtract_union_types(context, existing_type, old_type);
 
                     combine_union_types(&updated_type, new_type.as_ref(), context.codebase, context.interner, false)
                 }
-                None => subtract_union_types(context, artifacts, existing_type, old_type),
+                None => subtract_union_types(context, existing_type, old_type),
             };
 
             self.locals.insert(variable_id.clone(), Rc::new(resulting_type));

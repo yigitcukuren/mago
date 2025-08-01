@@ -50,7 +50,7 @@ impl Analyzable for ClassConstantAccess {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -106,8 +106,8 @@ mod tests {
             $_ = A::Foo;
         "#},
         issues = [
-            TypingIssueKind::UndefinedClassLikeConstant,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::NON_EXISTENT_CLASS_CONSTANT,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ],
     }
 
@@ -119,8 +119,8 @@ mod tests {
             $_ = NonExistentClass::SOME_CONST;
         "#},
         issues = [
-            TypingIssueKind::NonExistentClassLike,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::NON_EXISTENT_CLASS_LIKE,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -132,8 +132,8 @@ mod tests {
             $_ = self::SOME_CONST;
         "#},
         issues = [
-            TypingIssueKind::SelfOutsideClassScope,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::SELF_OUTSIDE_CLASS_SCOPE,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -145,8 +145,8 @@ mod tests {
             $_ = static::SOME_CONST;
         "#},
         issues = [
-            TypingIssueKind::StaticOutsideClassScope,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::STATIC_OUTSIDE_CLASS_SCOPE,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -158,8 +158,8 @@ mod tests {
             $_ = parent::SOME_CONST;
         "#},
         issues = [
-            TypingIssueKind::ParentOutsideClassScope,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::PARENT_OUTSIDE_CLASS_SCOPE,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -171,10 +171,10 @@ mod tests {
             $const = $unknownVar::{KNOWN_CONST};
         "#},
         issues = [
-            TypingIssueKind::UndefinedVariable, // `$unknownVar` is not defined
-            TypingIssueKind::NonExistentConstant, // `KNOWN_CONST` does not exist
-            TypingIssueKind::UnknownConstantSelectorType, // `{KNOWN_CONST}` is not a valid class constant name
-            TypingIssueKind::MixedAssignment, // Overall assignment is mixed
+            Code::UNDEFINED_VARIABLE,
+            Code::NON_EXISTENT_CONSTANT,
+            Code::UNKNOWN_CONSTANT_SELECTOR_TYPE,
+            Code::MIXED_ASSIGNMENT,
         ]
     }
 
@@ -188,9 +188,9 @@ mod tests {
             $const = MyClass::{$unknownConstName};
         "#},
         issues = [
-            TypingIssueKind::UndefinedVariable,
-            TypingIssueKind::InvalidConstantSelector,
-            TypingIssueKind::MixedAssignment,
+            Code::UNDEFINED_VARIABLE,
+            Code::INVALID_CONSTANT_SELECTOR,
+            Code::MIXED_ASSIGNMENT,
         ]
     }
 
@@ -207,8 +207,8 @@ mod tests {
             $const = MyClass::{$constName};
         "#},
         issues = [
-            TypingIssueKind::StringConstantSelector,
-            TypingIssueKind::MixedAssignment,
+            Code::STRING_CONSTANT_SELECTOR,
+            Code::MIXED_ASSIGNMENT,
         ]
     }
 
@@ -222,8 +222,8 @@ mod tests {
             $_ = MyClass::{$constName};
         "#},
         issues = [
-            TypingIssueKind::InvalidConstantSelector,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::INVALID_CONSTANT_SELECTOR,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -235,8 +235,8 @@ mod tests {
             $_ = $className::class;
         "#},
         issues = [
-            TypingIssueKind::InvalidClassConstantOnString,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::INVALID_CLASS_CONSTANT_ON_STRING,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -252,8 +252,8 @@ mod tests {
             $const = $obj::SOME_CONST;
         "#},
         issues = [
-            TypingIssueKind::AmbiguousClassLikeConstantAccess,
-            TypingIssueKind::MixedAssignment,
+            Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
+            Code::MIXED_ASSIGNMENT,
         ]
     }
 
@@ -266,7 +266,9 @@ mod tests {
                 return $cs::SOME_CONST;
             }
         "#},
-        issues = [TypingIssueKind::AmbiguousClassLikeConstantAccess]
+        issues = [
+            Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
+        ]
     }
 
     test_analysis! {
@@ -277,8 +279,8 @@ mod tests {
             $_ = Suit::Diamonds; // Accessing 'Diamonds' like a const/case
         "#},
         issues = [
-            TypingIssueKind::UndefinedClassLikeConstant,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::NON_EXISTENT_CLASS_CONSTANT,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 

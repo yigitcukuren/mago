@@ -24,11 +24,11 @@ pub mod settings;
 mod analyzable;
 mod artifacts;
 mod assertion;
+mod code;
 mod context;
 mod expression;
 mod formula;
 mod invocation;
-mod issue;
 mod reconciler;
 mod resolver;
 mod statement;
@@ -120,7 +120,7 @@ mod tests {
         name: &'a str,
         content: &'a str,
         settings: Settings,
-        expected_issues: Vec<String>,
+        expected_issues: Vec<&'static str>,
     }
 
     impl<'a> TestCase<'a> {
@@ -143,7 +143,7 @@ mod tests {
             self
         }
 
-        pub fn expect_issues(mut self, kinds: Vec<String>) -> Self {
+        pub fn expect_issues(mut self, kinds: Vec<&'static str>) -> Self {
             self.expected_issues = kinds;
             self
         }
@@ -185,16 +185,16 @@ mod tests {
         test_name: &str,
         mut analysis_result: AnalysisResult,
         mut codebase: CodebaseMetadata,
-        expected_issue_kinds: &[String],
+        expected_issue_kinds: &[&'static str],
     ) {
         let mut actual_issues_collected = std::mem::take(&mut analysis_result.issues);
 
         actual_issues_collected.extend(codebase.take_issues(true));
 
         let actual_issues_count = actual_issues_collected.len();
-        let mut expected_issue_counts: BTreeMap<String, usize> = BTreeMap::new();
+        let mut expected_issue_counts: BTreeMap<&'static str, usize> = BTreeMap::new();
         for kind in expected_issue_kinds {
-            *expected_issue_counts.entry(kind.to_string()).or_insert(0) += 1;
+            *expected_issue_counts.entry(kind).or_insert(0) += 1;
         }
 
         let mut actual_issue_counts: BTreeMap<String, usize> = BTreeMap::new();
@@ -209,7 +209,7 @@ mod tests {
         let mut discrepancies = Vec::new();
 
         for (actual_kind, &actual_count) in &actual_issue_counts {
-            let expected_count = expected_issue_counts.get(actual_kind).copied().unwrap_or(0);
+            let expected_count = expected_issue_counts.get(actual_kind.as_str()).copied().unwrap_or(0);
             if actual_count > expected_count {
                 discrepancies.push(format!(
                     "- Unexpected issue(s) of kind `{}`: found {}, expected {}.",
@@ -220,14 +220,11 @@ mod tests {
             }
         }
 
-        for (expected_kind, &expected_count) in &expected_issue_counts {
+        for (expected_kind, expected_count) in expected_issue_counts {
             let actual_count = actual_issue_counts.get(expected_kind).copied().unwrap_or(0);
             if actual_count < expected_count {
                 discrepancies.push(format!(
-                    "- Missing expected issue(s) of kind `{}`: expected {}, found {}.",
-                    expected_kind.as_str(),
-                    expected_count,
-                    actual_count
+                    "- Missing expected issue(s) of kind `{expected_kind}`: expected {expected_count}, found {actual_count}.",
                 ));
             }
         }
@@ -273,7 +270,7 @@ mod tests {
             #[test]
             pub fn $test_name() {
                 $crate::tests::TestCase::new(stringify!($test_name), $code_str)
-                    .expect_issues(vec![$($issue_kind.to_string()),*])
+                    .expect_issues(vec![$($issue_kind),*])
                     .run();
             }
         };
@@ -282,7 +279,7 @@ mod tests {
             pub fn $test_name() {
                 $crate::tests::TestCase::new(stringify!($test_name), $code_str)
                     .settings($settings)
-                    .expect_issues(vec![$($issue_kind.to_string()),*])
+                    .expect_issues(vec![$($issue_kind),*])
                     .run();
             }
         };

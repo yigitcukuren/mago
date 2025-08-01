@@ -14,11 +14,11 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for Break {
     fn analyze<'a>(
@@ -35,7 +35,7 @@ impl Analyzable for Break {
                     expression.analyze(context, block_context, artifacts)?;
 
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidBreak,
+                        Code::INVALID_BREAK,
                         Issue::error("Break level must be an integer literal.").with_annotation(
                             Annotation::primary(expression.span()).with_message(format!(
                                 "Expected an integer literal here, found an expression of type `{}`.",
@@ -149,7 +149,7 @@ impl Analyzable for Break {
         } else if !leaving_loop {
             // `break` outside of a loop or switch
             context.collector.report_with_code(
-                TypingIssueKind::InvalidBreak,
+                Code::INVALID_BREAK,
                 Issue::error("Break statement outside of a loop or switch.").with_annotation(
                     Annotation::primary(self.span()).with_message("This break statement is not valid here."),
                 ),

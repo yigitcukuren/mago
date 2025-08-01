@@ -552,6 +552,14 @@ impl TAtomic {
     }
 
     #[inline]
+    pub const fn is_falsable(&self) -> bool {
+        matches!(
+            self,
+            TAtomic::Scalar(scalar) if scalar.is_false() || scalar.is_general_bool() || scalar.is_generic()
+        )
+    }
+
+    #[inline]
     pub const fn is_resource(&self) -> bool {
         matches!(self, TAtomic::Resource(_))
     }

@@ -20,10 +20,10 @@ use mago_syntax::comments;
 
 use crate::analysis_result::AnalysisResult;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::assertion::AssertionContext;
 use crate::context::block::BlockContext;
 use crate::context::scope::loop_scope::LoopScope;
-use crate::issue::TypingIssueKind;
 use crate::settings::Settings;
 
 pub mod assertion;
@@ -156,7 +156,7 @@ impl<'a> Context<'a> {
 
                 issue = issue.with_help(error.help());
 
-                self.collector.report_with_code(TypingIssueKind::InvalidDocblock, issue);
+                self.collector.report_with_code(Code::INVALID_DOCBLOCK, issue);
 
                 None
             }

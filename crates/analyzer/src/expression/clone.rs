@@ -15,10 +15,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for Clone {
     fn analyze<'a>(
@@ -83,7 +83,7 @@ impl Analyzable for Clone {
 
         if has_mixed_type {
             context.collector.report_with_code(
-                TypingIssueKind::MixedClone,
+                Code::MIXED_CLONE,
                 Issue::warning("Cannot statically verify `clone` on a `mixed` type.")
                     .with_annotation(Annotation::primary(self.object.span()).with_message(format!(
                         "This expression has type `{}`, which could be a non-object at runtime.",
@@ -100,7 +100,7 @@ impl Analyzable for Clone {
 
             if has_clonable_object || has_mixed_type {
                 context.collector.report_with_code(
-                    TypingIssueKind::PossiblyInvalidClone,
+                    Code::POSSIBLY_INVALID_CLONE,
                     Issue::warning(format!(
                         "Expression of type `{}` might not be a cloneable object.",
                         object_type.get_id(Some(context.interner))
@@ -125,7 +125,7 @@ impl Analyzable for Clone {
                 };
 
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidClone,
+                    Code::INVALID_CLONE,
                     Issue::error(format!(
                         "Invalid `clone` operation on non-cloneable type `{invalid_types_str}`."
                     ))
@@ -158,7 +158,7 @@ impl Analyzable for Clone {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -186,8 +186,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyInvalidClone,
-            TypingIssueKind::InvalidReturnStatement,
+            Code::POSSIBLY_INVALID_CLONE,
+            Code::INVALID_RETURN_STATEMENT,
         ]
     }
 
@@ -203,9 +203,9 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidClone,
-            TypingIssueKind::InvalidReturnStatement,
-            TypingIssueKind::NeverReturn,
+            Code::INVALID_CLONE,
+            Code::INVALID_RETURN_STATEMENT,
+            Code::NEVER_RETURN,
         ]
     }
 }

@@ -14,10 +14,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::utils::expression::get_expression_id;
 
 impl Analyzable for Unset {
@@ -51,7 +51,6 @@ impl Analyzable for Unset {
                     context.interner,
                     context.codebase,
                     &mut context.collector,
-                    artifacts,
                 );
             }
 
@@ -86,7 +85,7 @@ impl Analyzable for Unset {
                         let scalar_str = scalar.get_id(Some(context.interner));
 
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidUnset,
+                            Code::INVALID_UNSET,
                             Issue::error(format!(
                                 "Cannot apply `unset` to an offset of non-array type `{scalar_str}`."
                             ))
@@ -316,7 +315,6 @@ impl Analyzable for Unset {
                     context.interner,
                     context.codebase,
                     &mut context.collector,
-                    artifacts,
                     &array_id,
                     Some(rc.as_ref()),
                 );

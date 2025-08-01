@@ -17,10 +17,10 @@ use mago_syntax::ast::ClassLikeConstantSelector;
 use mago_syntax::ast::Expression;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::resolver::class_name::ResolutionOrigin;
 use crate::resolver::class_name::ResolvedClassname;
 use crate::resolver::class_name::resolve_classnames_from_expression;
@@ -153,7 +153,7 @@ fn handle_class_magic_constant(
 ) -> Option<TUnion> {
     if matches!(class_resolution.origin, ResolutionOrigin::AnyString) {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidClassConstantOnString,
+            Code::INVALID_CLASS_CONSTANT_ON_STRING,
             Issue::error("Cannot use `::class` on an expression of type string.")
                 .with_annotation(
                     Annotation::primary(class_expr.span()).with_message("This expression is a string here"),
@@ -203,7 +203,7 @@ fn find_constant_in_class(
     }
 
     // Not found, report error.
-    report_undefined_constant(context, metadata, const_name, class_span, const_span);
+    report_non_existent_constant(context, metadata, const_name, class_span, const_span);
     None
 }
 
@@ -211,7 +211,7 @@ fn find_constant_in_class(
 fn report_non_existent_class(context: &mut Context, class_id: &StringIdentifier, class_span: Span) {
     let class_name_str = context.interner.lookup(class_id);
     context.collector.report_with_code(
-        TypingIssueKind::NonExistentClassLike,
+        Code::NON_EXISTENT_CLASS_LIKE,
         Issue::error(format!("Class, interface, enum, or trait `{class_name_str}` not found."))
             .with_annotation(
                 Annotation::primary(class_span)
@@ -223,8 +223,7 @@ fn report_non_existent_class(context: &mut Context, class_id: &StringIdentifier,
     );
 }
 
-/// Reports an error for a class constant or enum case that is not defined on a given class-like.
-fn report_undefined_constant(
+fn report_non_existent_constant(
     context: &mut Context,
     metadata: &ClassLikeMetadata,
     const_name: StringIdentifier,
@@ -232,23 +231,23 @@ fn report_undefined_constant(
     const_span: Span,
 ) {
     let class_kind_str = metadata.kind.as_str();
-    let class_str = context.interner.lookup(&metadata.name);
+    let class_str = context.interner.lookup(&metadata.original_name);
     let constant_name_str = context.interner.lookup(&const_name);
 
     let (main_message, primary_annotation_message) = if metadata.kind.is_enum() {
         (
-            format!("Undefined enum constant or case: `{class_str}::{constant_name_str}`."),
-            format!("Constant or case `{constant_name_str}` not found in `{class_str}`"),
+            format!("Enum constant or case `{constant_name_str}` does not exist."),
+            format!("Constant or case `{constant_name_str}` not found in enum `{class_str}`"),
         )
     } else {
         (
-            format!("Undefined {class_kind_str} constant: `{class_str}::{constant_name_str}`."),
+            format!("Class-like constant `{constant_name_str}` does not exist."),
             format!("Constant `{constant_name_str}` not found in `{class_str}`"),
         )
     };
 
     context.collector.report_with_code(
-        TypingIssueKind::UndefinedClassLikeConstant,
+        Code::NON_EXISTENT_CLASS_CONSTANT,
         Issue::error(main_message)
             .with_annotation(
                 Annotation::primary(const_span).with_message(primary_annotation_message),
@@ -266,7 +265,7 @@ fn report_undefined_constant(
 /// Reports a warning when a constant is accessed on an ambiguous type like `object` or `class-string`.
 fn report_ambiguous_constant_access(context: &mut Context, class_expr: &Expression) {
     context.collector.report_with_code(
-        TypingIssueKind::AmbiguousClassLikeConstantAccess,
+        Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
         Issue::warning("Cannot reliably determine class for constant access due to an ambiguous type.")
             .with_annotation(
                 Annotation::primary(class_expr.span())

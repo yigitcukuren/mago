@@ -13,10 +13,10 @@ use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::resolver::static_property::resolve_static_properties;
 
 pub(crate) fn analyze<'a>(
@@ -59,7 +59,7 @@ pub(crate) fn analyze<'a>(
 
         if !type_match_found && union_comparison_result.type_coerced.is_none() {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidPropertyAssignmentValue,
+                Code::INVALID_PROPERTY_ASSIGNMENT_VALUE,
                 Issue::error("Invalid property assignment value").with_annotation(
                     Annotation::primary(property_access.class.span()).with_message(format!(
                         "{}::{} with declared type {}, cannot be assigned type {}",
@@ -75,7 +75,7 @@ pub(crate) fn analyze<'a>(
         if union_comparison_result.type_coerced.is_some() {
             if union_comparison_result.type_coerced_from_nested_mixed.is_some() {
                 context.collector.report_with_code(
-                    TypingIssueKind::MixedPropertyTypeCoercion,
+                    Code::MIXED_PROPERTY_TYPE_COERCION,
                     Issue::error("Mixed property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
@@ -87,7 +87,7 @@ pub(crate) fn analyze<'a>(
                 );
             } else {
                 context.collector.report_with_code(
-                    TypingIssueKind::PropertyTypeCoercion,
+                    Code::PROPERTY_TYPE_COERCION,
                     Issue::error("Property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
@@ -153,7 +153,7 @@ pub(crate) fn analyze<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -205,7 +205,7 @@ mod tests {
             MyClass::$prop = 123;
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyAssignmentValue,
+            Code::INVALID_PROPERTY_ASSIGNMENT_VALUE,
         ]
     }
 
@@ -217,7 +217,7 @@ mod tests {
             MyClass::$undefined = 'new';
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -229,7 +229,7 @@ mod tests {
             PrivateWrite::$value = 1;
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyRead,
+            Code::INVALID_PROPERTY_READ,
         ]
     }
 
@@ -241,7 +241,7 @@ mod tests {
             MyClass::$prop = 500;
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyRead,
+            Code::INVALID_PROPERTY_READ,
         ]
     }
 

@@ -46,7 +46,7 @@ impl Analyzable for MethodClosureCreation {
 
 #[cfg(test)]
 mod tests {
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
     use indoc::indoc;
 
@@ -80,8 +80,8 @@ mod tests {
             $closure = $my_string->method(...);
         "#},
         issues = [
-            TypingIssueKind::InvalidMethodAccess,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::INVALID_METHOD_ACCESS,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -95,7 +95,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::AmbiguousObjectMethodAccess,
+            Code::AMBIGUOUS_OBJECT_METHOD_ACCESS,
         ]
     }
 
@@ -185,8 +185,8 @@ mod tests {
             $closure = $obj->undefinedMethod(...);
         "#},
         issues = [
-            TypingIssueKind::NonExistentMethod,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::NON_EXISTENT_METHOD,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -198,8 +198,8 @@ mod tests {
             $closure = $my_string->method(...);
         "#},
         issues = [
-            TypingIssueKind::InvalidMethodAccess,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::INVALID_METHOD_ACCESS,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -211,8 +211,8 @@ mod tests {
             $closure = $obj->method(...);
         "#},
         issues = [
-            TypingIssueKind::MethodAccessOnNull,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::METHOD_ACCESS_ON_NULL,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -227,7 +227,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossibleMethodAccessOnNull,
+            Code::POSSIBLE_METHOD_ACCESS_ON_NULL,
         ]
     }
 
@@ -241,7 +241,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::MixedMethodAccess,
+            Code::MIXED_METHOD_ACCESS,
         ]
     }
 
@@ -255,7 +255,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::AmbiguousObjectMethodAccess,
+            Code::AMBIGUOUS_OBJECT_METHOD_ACCESS,
         ]
     }
 
@@ -285,8 +285,8 @@ mod tests {
             $_closure = $obj->{$methodName}(...);
         "#},
         issues = [
-            TypingIssueKind::InvalidMemberSelector,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::INVALID_MEMBER_SELECTOR,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -302,7 +302,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidMethodAccess,
+            Code::INVALID_METHOD_ACCESS,
         ]
     }
 
@@ -318,7 +318,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentMethod,
+            Code::NON_EXISTENT_METHOD,
         ]
     }
 }

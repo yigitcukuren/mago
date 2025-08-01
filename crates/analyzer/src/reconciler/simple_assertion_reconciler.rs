@@ -39,7 +39,6 @@ use mago_codex::ttype::get_scalar;
 use mago_codex::ttype::get_string_with_props;
 use mago_codex::ttype::get_true;
 use mago_codex::ttype::intersect_union_types;
-use mago_codex::ttype::template::TemplateBound;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_span::Span;
@@ -389,17 +388,8 @@ pub(crate) fn intersect_null(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
+            TAtomic::Variable(_) => {
                 if !existing_var_type.is_nullable() {
-                    if let Some(span) = span {
-                        let name_str = context.interner.lookup(name);
-                        if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                            let mut bound = TemplateBound::new(get_null(), 0, None, None);
-                            bound.span = Some(*span);
-                            lower_bounds.push(bound);
-                        }
-                    }
-
                     acceptable_types.push(atomic.clone());
                 }
 
@@ -574,16 +564,7 @@ fn intersect_iterable(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(get_mixed_iterable(), 0, None, None);
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -687,16 +668,7 @@ fn intersect_array_list(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(get_mixed_list(), 0, None, None);
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -789,16 +761,7 @@ fn intersect_keyed_array(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(get_mixed_keyed_array(), 0, None, None);
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -881,16 +844,7 @@ fn intersect_arraykey(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(get_arraykey(), 0, None, None);
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -967,16 +921,7 @@ fn intersect_numeric(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(get_numeric(), 0, None, None);
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -1068,21 +1013,7 @@ fn intersect_string(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(
-                            get_string_with_props(is_numeric, is_truthy, is_non_empty, is_lowercase),
-                            0,
-                            None,
-                            None,
-                        );
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }
@@ -1160,22 +1091,7 @@ fn intersect_int(
                     acceptable_types.push(atomic);
                 }
             }
-            TAtomic::Variable(name) => {
-                if let Some(span) = span {
-                    let name_str = context.interner.lookup(name);
-                    if let Some((lower_bounds, _)) = context.artifacts.type_variable_bounds.get_mut(name_str) {
-                        let mut bound = TemplateBound::new(
-                            TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]),
-                            0,
-                            None,
-                            None,
-                        );
-
-                        bound.span = Some(*span);
-                        lower_bounds.push(bound);
-                    }
-                }
-
+            TAtomic::Variable(_) => {
                 acceptable_types.push(atomic.clone());
                 did_remove_type = true;
             }

@@ -26,12 +26,12 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::expression::assignment::assign_to_expression;
 use crate::expression::call::method_call::analyze_implicit_method_call;
-use crate::issue::TypingIssueKind;
 use crate::utils::expression::get_expression_id;
 use crate::utils::php_emulation::str_increment;
 use crate::utils::php_emulation::str_is_numeric;
@@ -64,7 +64,7 @@ impl Analyzable for UnaryPrefix {
         match self.operator {
             UnaryPrefixOperator::Reference(reference_span) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnsupportedReferenceOperation,
+                    Code::UNSUPPORTED_REFERENCE_OPERATION,
                     Issue::warning("Mago's analysis has limited support for by-reference operations (`&`).")
                         .with_annotation(
                             Annotation::primary(reference_span).with_message("By-reference operation (`&`) used here"),
@@ -433,7 +433,7 @@ fn increment_operand<'a>(
                 TScalar::ClassLikeString(_) => {
                     // Incrementing a class name string is highly unusual.
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::warning(
                             "Incrementing a class-string is unusual and likely a bug."
                         )
@@ -447,7 +447,7 @@ fn increment_operand<'a>(
                 }
                 TScalar::Generic | TScalar::ArrayKey => {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::warning(format!(
                             "Incrementing a generic scalar type (`{}`). This may not yield the expected result.",
                             scalar.get_id(Some(context.interner))
@@ -466,7 +466,7 @@ fn increment_operand<'a>(
             TAtomic::Callable(callable) => {
                 if callable.get_signature().is_none_or(|signature| signature.is_closure()) {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error("Cannot increment a closure.")
                             .with_annotation(Annotation::primary(operand.span()).with_message("This is a closure"))
                             .with_note("PHP throws a TypeError when attempting to increment a closure object."),
@@ -475,7 +475,7 @@ fn increment_operand<'a>(
                     possibilities.push(TAtomic::Never);
                 } else {
                     context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::error(format!(
                                 "Cannot reliably increment callable of type `{}`.",
                                 callable.get_id(Some(context.interner))
@@ -490,7 +490,7 @@ fn increment_operand<'a>(
             _ => {
                 let type_name = operand_atomic_type.get_id(Some(context.interner));
                 context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error(format!(
                             "Cannot increment value of type `{type_name}`."
                         ))
@@ -537,7 +537,7 @@ fn increment_operand<'a>(
 
     if !successful {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::error("Failed to assign incremented value to operand.")
                 .with_annotation(Annotation::primary(operation_span).with_message("Failed to assign incremented value"))
                 .with_note("The operand's type may not support assignment after incrementing.")
@@ -611,7 +611,7 @@ fn decrement_operand<'a>(
                             possibilities.push(TAtomic::Scalar(TScalar::String(string_scalar.without_literal())));
                         } else if !string_scalar.is_numeric {
                             context.collector.report_with_code(
-                                TypingIssueKind::InvalidOperand,
+                                Code::INVALID_OPERAND,
                                 Issue::error("Cannot decrement a non-numeric string.")
                                     .with_annotation(
                                         Annotation::primary(operand.span())
@@ -667,7 +667,7 @@ fn decrement_operand<'a>(
                     TScalar::ClassLikeString(_) => {
                         // Incrementing a class name string is highly unusual.
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::warning(
                                 "Decrementing a class-string is unusual and likely a bug."
                             )
@@ -681,7 +681,7 @@ fn decrement_operand<'a>(
                     }
                     TScalar::Generic | TScalar::ArrayKey => {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::warning(format!(
                                 "Decrementing a generic scalar type (`{}`). This may not yield the expected result.",
                                 scalar.get_id(Some(context.interner))
@@ -701,7 +701,7 @@ fn decrement_operand<'a>(
             TAtomic::Callable(callable) => {
                 if callable.get_signature().is_none_or(|signature| signature.is_closure()) {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error("Cannot decrement a closure.")
                             .with_annotation(Annotation::primary(operand.span()).with_message("This is a closure"))
                             .with_note("PHP throws a TypeError when attempting to decrement a closure object."),
@@ -710,7 +710,7 @@ fn decrement_operand<'a>(
                     possibilities.push(TAtomic::Never);
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error(format!(
                             "Cannot reliably decrement callable of type `{}`.",
                             callable.get_id(Some(context.interner))
@@ -725,7 +725,7 @@ fn decrement_operand<'a>(
             _ => {
                 let type_name = operand_atomic_type.get_id(Some(context.interner));
                 context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error(format!(
                             "Cannot decrement value of type `{type_name}`."
                         ))
@@ -772,7 +772,7 @@ fn decrement_operand<'a>(
 
     if !successful {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::error("Failed to assign decremented value to operand.")
                 .with_annotation(Annotation::primary(operation_span).with_message("Failed to assign decremented value"))
                 .with_note("The operand's type may not support assignment after decrementing.")
@@ -790,7 +790,7 @@ fn report_redundant_type_cast(
     context: &mut Context<'_>,
 ) {
     context.collector.report_with_code(
-        TypingIssueKind::RedundantCast,
+        Code::REDUNDANT_CAST,
         Issue::help(format!(
             "Redundant cast to `{}`: the expression already has this type.",
             cast_operator.as_str(context.interner)
@@ -809,7 +809,7 @@ fn report_redundant_type_cast(
 fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_expression: &UnaryPrefix) -> TUnion {
     if operand_type.is_never() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidTypeCast,
+            Code::INVALID_TYPE_CAST,
             Issue::error("Cannot cast type `never` to `array`.")
                 .with_annotation(
                     Annotation::primary(cast_expression.span()).with_message("Invalid cast from `never` to `array`"),
@@ -833,7 +833,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
             TAtomic::Null | TAtomic::Void => {
                 // null or void cast to an empty array.
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidTypeCast,
+                    Code::INVALID_TYPE_CAST,
                     Issue::error(format!(
                         "Casting type `{}` to `array` will produce an empty array.",
                         atomic_type.get_id(Some(context.interner))
@@ -869,7 +869,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                 // stdClass is a special case where we do not report a warning.
                 if !reported_object_warning && !is_stdclass {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::warning(format!(
                             "Object of type `{}` cast to `array`. Property visibility (public, protected, private) affects the resulting array.",
                             atomic_type.get_id(Some(context.interner))
@@ -895,7 +895,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                 if !reported_object_warning {
                     // Reuse flag to avoid spamming for mixed as well
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::warning("Casting `mixed` to `array`.".to_string())
                             .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("This expression has type `mixed`"))
                             .with_note("The structure and element types of the resulting array cannot be determined statically when casting `mixed`.")
@@ -912,7 +912,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
             _ => {
                 if !reported_object_warning {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error(format!(
                             "Cannot reliably cast type `{}` to `array`.",
                             atomic_type.get_id(Some(context.interner))
@@ -962,7 +962,7 @@ fn cast_type_to_bool(operand_type: &TUnion, context: &mut Context<'_>, cast_expr
 
         if atomic_type.is_mixed() {
             context.collector.report_with_code(
-                TypingIssueKind::MixedOperand,
+                Code::MIXED_OPERAND,
                 Issue::warning("Casting `mixed` to `bool`.".to_string()) // Warning, as it's a valid cast but loses type info
                     .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("This expression has type `mixed`"))
                     .with_note("The truthiness of `mixed` cannot be determined statically. The result will be a general `bool`.")
@@ -1039,7 +1039,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
 
                             if !val.is_empty() && num_str.is_empty() && val != "0" {
                                 context.collector.report_with_code(
-                                    TypingIssueKind::InvalidTypeCast,
+                                    Code::INVALID_TYPE_CAST,
                                     Issue::warning(format!("String `{val}` implicitly cast to float `0.0`."))
                                         .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("Non-numeric string cast to float"))
                                         .with_help("Explicitly cast or ensure string is numeric if float conversion is intended."),
@@ -1048,7 +1048,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                         } else {
                             if !s.is_numeric {
                                 context.collector.report_with_code(
-                                    TypingIssueKind::InvalidTypeCast,
+                                    Code::INVALID_TYPE_CAST,
                                     Issue::warning(format!("Non numeric string of type `{}` implicitly cast to `float`.", s.get_id(Some(context.interner))))
                                         .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("String cast to float"))
                                         .with_note("PHP will attempt to parse a leading numeric value; otherwise, it results in `0.0`. This can be error-prone.")
@@ -1061,7 +1061,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                     }
                     TScalar::ClassLikeString(_) => {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidTypeCast,
+                            Code::INVALID_TYPE_CAST,
                             Issue::warning("Class-like string implicitly cast to float `0.0`.".to_string())
                                 .with_annotation(
                                     Annotation::primary(cast_expression.operand.span())
@@ -1088,7 +1088,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
             TAtomic::Object(_) => {
                 if !reported_error_for_object {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error(format!(
                             "Object of type `{}` cannot be cast to `float`. PHP will attempt this and produce `1.0` after an error.",
                             atomic_type.get_id(Some(context.interner))
@@ -1105,7 +1105,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
             }
             TAtomic::Resource(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidTypeCast,
+                    Code::INVALID_TYPE_CAST,
                     Issue::warning("Implicit conversion of `resource` to `float` (its ID).".to_string())
                         .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("Resource ID used as float"))
                         .with_note("PHP converts resources to their numeric ID when cast to float. This is rarely the intended behavior.")
@@ -1117,7 +1117,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
             TAtomic::Never => return get_never(),
             TAtomic::Mixed(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidTypeCast,
+                    Code::INVALID_TYPE_CAST,
                     Issue::warning("Casting `mixed` to `float`.".to_string())
                         .with_annotation(Annotation::primary(cast_expression.operand.span()).with_message("This expression has type `mixed`"))
                         .with_note("The float value of `mixed` cannot be determined statically. The result will be a general `float`.")
@@ -1217,7 +1217,7 @@ fn cast_type_to_object(operand_type: &TUnion, context: &mut Context<'_>, cast_ex
         match t {
             TAtomic::Resource(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidTypeCast,
+                    Code::INVALID_TYPE_CAST,
                     Issue::error("Cannot cast type `resource` to `object`.")
                         .with_annotation(
                             Annotation::primary(cast_expression.span())
@@ -1302,7 +1302,7 @@ pub fn cast_type_to_string<'a>(
             TAtomic::Callable(callable) => {
                 return if callable.get_signature().is_none_or(|signature| signature.is_closure()) {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error("Cannot cast type `Closure` to `string`.")
                             .with_annotation(
                                 Annotation::primary(expression_span.span())
@@ -1317,7 +1317,7 @@ pub fn cast_type_to_string<'a>(
                     Ok(get_never())
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::warning(format!(
                             "Cannot reliably cast callable of type `{}` to `string`.",
                             callable.get_id(Some(context.interner))
@@ -1337,7 +1337,7 @@ pub fn cast_type_to_string<'a>(
                 let class_like_name = match object {
                     TObject::Any => {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidTypeCast,
+                            Code::INVALID_TYPE_CAST,
                             Issue::error("Cannot reliably cast generic `object` to `string`.")
                             .with_annotation(
                                 Annotation::primary(expression_span.span()).with_message("Casting generic `object` to `string`")
@@ -1361,7 +1361,7 @@ pub fn cast_type_to_string<'a>(
 
                 let Some(class_metadata) = get_class_like(context.codebase, context.interner, &class_like_name) else {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error(format!(
                             "Cannot cast object of type `{}` to `string` because the class does not exist.",
                             context.interner.lookup(&class_like_name)
@@ -1379,7 +1379,7 @@ pub fn cast_type_to_string<'a>(
 
                 if class_metadata.kind.is_enum() {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error(format!(
                             "Cannot cast enum instance of type `{}` to `string`.",
                             object.get_id(Some(context.interner)),
@@ -1411,11 +1411,11 @@ pub fn cast_type_to_string<'a>(
                     let class_name_str = context.interner.lookup(&class_metadata.original_name);
 
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidTypeCast,
+                        Code::INVALID_TYPE_CAST,
                         Issue::error(format!(
                             "Cannot cast object of type `{class_name_str}` to `string` because it does not implement `Stringable`.",
                         ))
-                        .with_code(TypingIssueKind::InvalidTypeCast)
+                        .with_code(Code::INVALID_TYPE_CAST)
                         .with_annotation(
                             Annotation::primary(expression_span.span())
                                 .with_message(format!("`{class_name_str}` does not implement `Stringable`."))
@@ -1450,7 +1450,7 @@ pub fn cast_type_to_string<'a>(
             }
             TAtomic::Array(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::ArrayToStringConversion,
+                    Code::ARRAY_TO_STRING_CONVERSION,
                     Issue::warning(
                         "Casting `array` to `string` is deprecated and produces the literal string 'Array'."
                     )

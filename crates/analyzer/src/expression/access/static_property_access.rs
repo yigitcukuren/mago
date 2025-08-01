@@ -94,7 +94,7 @@ impl Analyzable for StaticPropertyAccess {
 
 #[cfg(test)]
 mod tests {
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
     use indoc::indoc;
 
@@ -182,7 +182,7 @@ mod tests {
             echo MyClass::$non_existent;
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -194,8 +194,8 @@ mod tests {
             echo MyClass::$secret;
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyRead,
-            TypingIssueKind::NoValue,
+            Code::INVALID_PROPERTY_READ,
+            Code::NO_VALUE,
         ]
     }
 
@@ -211,7 +211,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -223,8 +223,8 @@ mod tests {
             echo MyClass::$prop;
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyRead,
-            TypingIssueKind::NoValue,
+            Code::INVALID_PROPERTY_READ,
+            Code::NO_VALUE,
         ]
     }
 
@@ -236,8 +236,8 @@ mod tests {
             echo HasInstanceProp::$instance_prop;
         "#},
         issues = [
-            TypingIssueKind::InvalidStaticPropertyAccess,
-            TypingIssueKind::NoValue,
+            Code::INVALID_STATIC_PROPERTY_ACCESS,
+            Code::NO_VALUE,
         ]
     }
 
@@ -249,7 +249,7 @@ mod tests {
             echo MyInterface::$some_prop;
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -261,7 +261,7 @@ mod tests {
             echo MyEnum::$some_prop;
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 

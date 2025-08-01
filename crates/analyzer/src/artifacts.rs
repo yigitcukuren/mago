@@ -4,7 +4,6 @@ use ahash::HashMap;
 
 use mago_codex::assertion::Assertion;
 use mago_codex::reference::SymbolReferences;
-use mago_codex::ttype::template::TemplateBound;
 use mago_codex::ttype::union::TUnion;
 use mago_span::HasSpan;
 
@@ -15,7 +14,6 @@ pub struct AnalysisArtifacts {
     pub if_false_assertions: HashMap<(usize, usize), HashMap<String, Vec<Assertion>>>,
     pub inferred_return_types: Vec<TUnion>,
     pub symbol_references: SymbolReferences,
-    pub type_variable_bounds: HashMap<String, (Vec<TemplateBound>, Vec<TemplateBound>)>,
 }
 
 impl AnalysisArtifacts {
@@ -26,7 +24,6 @@ impl AnalysisArtifacts {
             if_true_assertions: HashMap::default(),
             if_false_assertions: HashMap::default(),
             symbol_references: SymbolReferences::new(),
-            type_variable_bounds: HashMap::default(),
         }
     }
 

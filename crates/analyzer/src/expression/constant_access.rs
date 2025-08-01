@@ -9,10 +9,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for ConstantAccess {
     fn analyze(
@@ -31,7 +31,7 @@ impl Analyzable for ConstantAccess {
             let constant_name = context.interner.lookup(name);
 
             context.collector.report_with_code(
-                TypingIssueKind::NonExistentConstant,
+                Code::NON_EXISTENT_CONSTANT,
                 Issue::error(format!(
                     "Undefined constant: `{constant_name}`."
                 ))
@@ -56,7 +56,7 @@ impl Analyzable for ConstantAccess {
             let constant_name = context.interner.lookup(name);
 
             context.collector.report_with_code(
-                TypingIssueKind::DeprecatedConstant,
+                Code::DEPRECATED_CONSTANT,
                 Issue::warning(format!("Using deprecated constant: `{constant_name}`."))
                     .with_annotation(Annotation::primary(self.span()).with_message("This constant is deprecated."))
                     .with_note("Consider using an alternative constant or variable.")

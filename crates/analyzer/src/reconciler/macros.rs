@@ -21,16 +21,7 @@ macro_rules! intersect_simple {
                     acceptable_types.push(atomic.clone());
                 } else if matches!(atomic, $( $supertype_pattern )|+ $( if $supertype_guard )?) {
                     return Some($max_type);
-                } else if let TAtomic::Variable(name) = atomic {
-                    if let Some(span) = $span {
-                        let name_str = $context.interner.lookup(name);
-                        if let Some((lower_bounds, _)) = $context.artifacts.type_variable_bounds.get_mut(name_str) {
-                            let mut bound = mago_codex::ttype::template::TemplateBound::new($max_type.clone(), 0, None, None);
-                            bound.span = Some(*span);
-                            lower_bounds.push(bound);
-                        }
-                    }
-
+                } else if let TAtomic::Variable(_) = atomic {
                     did_remove_type = true;
                     acceptable_types.push(atomic.clone());
                 } else {

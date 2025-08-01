@@ -144,7 +144,7 @@ fn analyze_property_access<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -216,7 +216,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantNullsafeOperator,
+            Code::REDUNDANT_NULLSAFE_OPERATOR,
         ]
     }
 
@@ -236,7 +236,7 @@ mod tests {
                 }
             "#},
         issues = [
-            TypingIssueKind::RedundantNullsafeOperator, // redundant inside `??` operator
+            Code::REDUNDANT_NULLSAFE_OPERATOR, // redundant inside `??` operator
         ]
     }
 
@@ -256,7 +256,7 @@ mod tests {
                 }
             "#},
         issues = [
-            TypingIssueKind::RedundantNullsafeOperator, // redundant inside `isset`
+            Code::REDUNDANT_NULLSAFE_OPERATOR, // redundant inside `isset`
         ]
     }
 
@@ -274,7 +274,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyNullPropertyAccess,
+            Code::POSSIBLY_NULL_PROPERTY_ACCESS,
         ]
     }
 
@@ -338,8 +338,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::MixedPropertyAccess,
-            TypingIssueKind::MixedAnyArgument,
+            Code::MIXED_PROPERTY_ACCESS,
+            Code::MIXED_ANY_ARGUMENT,
         ]
     }
 
@@ -353,7 +353,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidPropertyAccess,
+            Code::INVALID_PROPERTY_ACCESS,
         ]
     }
 
@@ -373,8 +373,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
-            TypingIssueKind::MixedAnyArgument,
+            Code::NON_EXISTENT_PROPERTY,
+            Code::MIXED_ANY_ARGUMENT,
         ]
     }
 
@@ -416,7 +416,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NullPropertyAccess,
+            Code::NULL_PROPERTY_ACCESS,
         ]
     }
 
@@ -433,9 +433,9 @@ mod tests {
              }
         "#},
         issues = [
-            TypingIssueKind::UndefinedVariable,
-            TypingIssueKind::InvalidMemberSelector,
-            TypingIssueKind::MixedAnyReturnStatement,
+            Code::UNDEFINED_VARIABLE,
+            Code::INVALID_MEMBER_SELECTOR,
+            Code::MIXED_ANY_RETURN_STATEMENT,
         ]
     }
 
@@ -467,8 +467,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidMemberSelector,
-            TypingIssueKind::InvalidReturnStatement,
+            Code::INVALID_MEMBER_SELECTOR,
+            Code::INVALID_RETURN_STATEMENT,
         ]
     }
 
@@ -481,7 +481,7 @@ mod tests {
                 return $obj->some_property;
             }
         "#},
-        issues = [TypingIssueKind::AmbiguousObjectPropertyAccess]
+        issues = [Code::AMBIGUOUS_OBJECT_PROPERTY_ACCESS]
     }
 
     test_analysis! {
@@ -508,8 +508,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
-            TypingIssueKind::MixedAnyReturnStatement,
+            Code::NON_EXISTENT_PROPERTY,
+            Code::MIXED_ANY_RETURN_STATEMENT,
         ]
     }
 
@@ -525,7 +525,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -541,7 +541,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentProperty,
+            Code::NON_EXISTENT_PROPERTY,
         ]
     }
 
@@ -558,7 +558,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyNullPropertyAccess
+            Code::POSSIBLY_NULL_PROPERTY_ACCESS
         ]
     }
 
@@ -587,7 +587,7 @@ mod tests {
             echo $result->property;
         "#},
         issues = [
-            TypingIssueKind::NullPropertyAccess,
+            Code::NULL_PROPERTY_ACCESS,
         ]
     }
 
@@ -645,8 +645,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::NonExistentClassLike,
-            TypingIssueKind::UnusedStatement,
+            Code::NON_EXISTENT_CLASS_LIKE,
+            Code::UNUSED_STATEMENT,
         ]
     }
 

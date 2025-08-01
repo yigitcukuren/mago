@@ -17,13 +17,13 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::assertion_reconciler;
 use crate::reconciler::reconcile_keyed_types;
@@ -51,7 +51,7 @@ impl Analyzable for Conditional {
         let assertion_context = context.get_assertion_context_from_block(block_context);
         let mut if_clauses = get_formula(self.condition.span(), self.condition.span(), &self.condition, assertion_context, artifacts).unwrap_or_else(|| {
             context.collector.report_with_code(
-                TypingIssueKind::ConditionIsTooComplex,
+                Code::CONDITION_IS_TOO_COMPLEX,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(self.condition.span())
@@ -119,7 +119,6 @@ impl Analyzable for Conditional {
             &if_clauses,
             &self.condition.span(),
             &assigned_in_conditional_variable_ids,
-            block_context.inside_loop,
         );
 
         if_clauses = saturate_clauses(&if_clauses);
@@ -169,7 +168,7 @@ impl Analyzable for Conditional {
         if !reconcilable_if_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -203,7 +202,7 @@ impl Analyzable for Conditional {
         if !if_scope.negated_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -343,7 +342,7 @@ impl Analyzable for Conditional {
             }
         } else if let Some(condition_type) = condition_type.as_ref() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             let if_return_type_reconciled = assertion_reconciler::reconcile(
                 &mut reconcilation_context,
@@ -395,7 +394,7 @@ impl Analyzable for Conditional {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -447,7 +446,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ConditionIsTooComplex,
+            Code::CONDITION_IS_TOO_COMPLEX,
         ]
     }
 

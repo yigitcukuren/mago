@@ -8,10 +8,10 @@ use mago_syntax::ast::Global;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::utils::expression::get_variable_id;
 
 impl Analyzable for Global {
@@ -23,7 +23,7 @@ impl Analyzable for Global {
     ) -> Result<(), AnalysisError> {
         if block_context.is_global_scope() {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidGlobal,
+                Code::INVALID_GLOBAL,
                 Issue::error("The 'global' keyword has no effect in the global scope.")
                     .with_annotation(Annotation::primary(self.span()).with_message("This statement is redundant here."))
                     .with_note("The 'global' keyword is used *inside* functions or methods to import variables from the global scope into the local scope.")

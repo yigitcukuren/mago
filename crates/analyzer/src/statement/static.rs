@@ -8,10 +8,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::utils::docblock::check_docblock_type_incompatibility;
 use crate::utils::docblock::get_type_from_var_docblock;
 
@@ -22,9 +22,9 @@ impl Analyzable for Static {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        if block_context.is_mutation_free() && context.settings.analyze_effects {
+        if block_context.is_mutation_free() {
             context.collector.report_with_code(
-                TypingIssueKind::StaticInMutationFreeContext,
+                Code::IMPURE_STATIC_VARIABLE,
                 Issue::error(
                     "Cannot declare `static` variables inside a mutation-free function or method."
                 )

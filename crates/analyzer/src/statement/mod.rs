@@ -1,4 +1,5 @@
 use ahash::HashSet;
+
 use mago_codex::get_function;
 use mago_codex::get_method_by_id;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
@@ -14,9 +15,9 @@ use mago_syntax::ast::*;
 use crate::Context;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::utils::docblock::populate_docblock_variables;
 use crate::utils::expression::get_function_like_id_from_call;
 
@@ -168,7 +169,7 @@ impl Analyzable for Statement {
             Statement::Unset(unset) => unset.analyze(context, block_context, artifacts),
             Statement::Switch(r#switch) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnsupportedFeature,
+                    Code::UNSUPPORTED_FEATURE,
                     Issue::warning("Analysis for `switch` statements is not yet implemented.")
                         .with_annotation(
                             Annotation::primary(r#switch.span())
@@ -223,7 +224,7 @@ pub fn analyze_statements<'a>(
 
                 if is_harmless {
                     context.collector.report_with_code(
-                        TypingIssueKind::UselessControlFlow,
+                        Code::USELESS_CONTROL_FLOW,
                         Issue::help("This control flow is unnecessary")
                             .with_annotation(
                                 Annotation::primary(statement.span()).with_message("This statement has no effect."),
@@ -233,7 +234,7 @@ pub fn analyze_statements<'a>(
                     );
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::UnevaluatedCode,
+                        Code::UNEVALUATED_CODE,
                         Issue::help("Unreachable code detected.")
                             .with_annotation(Annotation::primary(statement.span()).with_message("This code will never be executed."))
                             .with_note("Execution cannot reach this point due to preceding code (e.g., return, throw, break, continue, exit, or an infinite loop).")
@@ -325,7 +326,7 @@ fn detect_unused_statement_expressions(
     };
 
     context.collector.report_with_code(
-        TypingIssueKind::UnusedStatement,
+        Code::UNUSED_STATEMENT,
         Issue::note("Statement has no effect.")
             .with_annotation(Annotation::primary(expression.span()).with_message(useless_expression_message))
             .with_help(
@@ -340,7 +341,7 @@ fn has_unused_must_use<'a>(
     expression: &'a Expression,
     context: &'a Context<'_>,
     artifacts: &'a AnalysisArtifacts,
-) -> Option<(TypingIssueKind, StringIdentifier)> {
+) -> Option<(&'static str, StringIdentifier)> {
     let call_expression = match expression {
         Expression::Call(call_expr) => call_expr,
         _ => return None,
@@ -352,7 +353,7 @@ fn has_unused_must_use<'a>(
     match functionlike_id_from_call {
         FunctionLikeIdentifier::Function(function_id) => {
             let function_metadata = get_function(context.codebase, context.interner, &function_id)?;
-            if function_metadata.must_use { Some((TypingIssueKind::UnusedFunctionCall, function_id)) } else { None }
+            if function_metadata.must_use { Some((Code::UNUSED_FUNCTION_CALL, function_id)) } else { None }
         }
         FunctionLikeIdentifier::Method(method_class, method_name) => {
             let method_metadata = get_method_by_id(
@@ -361,7 +362,7 @@ fn has_unused_must_use<'a>(
                 &MethodIdentifier::new(method_class, method_name),
             )?;
 
-            if method_metadata.must_use { Some((TypingIssueKind::UnusedMethodCall, method_name)) } else { None }
+            if method_metadata.must_use { Some((Code::UNUSED_METHOD_CALL, method_name)) } else { None }
         }
         FunctionLikeIdentifier::Closure(_) => None,
     }

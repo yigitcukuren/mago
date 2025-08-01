@@ -583,7 +583,7 @@ impl HasSpan for InvocationArgument<'_> {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -724,7 +724,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidReturnStatement
+            Code::INVALID_RETURN_STATEMENT
         ]
     }
 

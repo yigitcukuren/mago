@@ -13,12 +13,12 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
 use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::reconcile_keyed_types;
 
@@ -44,7 +44,7 @@ pub(crate) fn analyze<'a>(
             let mut tmp_context = outer_context.clone();
 
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -213,7 +213,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
 
     if expression_type.is_always_falsy() {
         context.collector.report_with_code(
-            TypingIssueKind::ImpossibleCondition,
+            Code::IMPOSSIBLE_CONDITION,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to false."
             ))
@@ -230,7 +230,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
         );
     } else if expression_type.is_always_truthy() {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantCondition,
+            Code::REDUNDANT_CONDITION,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to true."
             ))

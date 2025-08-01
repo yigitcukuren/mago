@@ -32,11 +32,6 @@ pub struct AnalyzeConfiguration {
     /// Defaults to `false`.
     pub analyze_dead_code: bool,
 
-    /// Whether to analyze effects.
-    ///
-    /// Defaults to `false`.
-    pub analyze_effects: bool,
-
     /// Whether to memoize properties.
     ///
     /// Defaults to `true`.
@@ -55,7 +50,6 @@ impl ConfigurationEntry for AnalyzeConfiguration {
             .set_default("analyze.find_unused_definitions", Value::new(None, ValueKind::Boolean(false)))?
             .set_default("analyze.find_unused_expressions", Value::new(None, ValueKind::Boolean(false)))?
             .set_default("analyze.analyze_dead_code", Value::new(None, ValueKind::Boolean(false)))?
-            .set_default("analyze.analyze_effects", Value::new(None, ValueKind::Boolean(false)))?
             .set_default("analyze.memoize_properties", Value::new(None, ValueKind::Boolean(true)))?
             .set_default("analyze.allow_include", Value::new(None, ValueKind::Boolean(true)))
             .map_err(Error::from)
@@ -69,7 +63,6 @@ impl Default for AnalyzeConfiguration {
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,
-            analyze_effects: false,
             memoize_properties: true,
             allow_include: true,
         }

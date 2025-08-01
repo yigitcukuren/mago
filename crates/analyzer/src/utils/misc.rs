@@ -11,7 +11,7 @@ use mago_reporting::Issue;
 use mago_span::Span;
 use mago_syntax::ast::Expression;
 
-use crate::issue::TypingIssueKind;
+use crate::code::Code;
 
 /// Checks for two types of logical issues between a set of existing assertions (`formula_1`)
 /// and a new set of assertions (`formula_2`) from a conditional expression.
@@ -22,7 +22,6 @@ pub fn check_for_paradox(
     formula_2: &[Clause],
     span: &Span,
     new_assigned_variable_ids: &HashMap<String, usize>,
-    in_loop: bool,
 ) {
     let Some(negated_formula_2) = negate_formula(formula_2.to_vec()) else {
         return;
@@ -37,7 +36,7 @@ pub fn check_for_paradox(
             && formula_2_clause.reconcilable
             && !new_assigned_variable_ids.keys().any(|key| formula_2_clause.possibilities.contains_key(key))
             && let Some(original_span) = previous_clauses.get(&formula_2_clause.hash)
-            && (!in_loop || (original_span != span))
+            && original_span != span
         {
             report_redundant_condition(interner, buffer, formula_2_clause, *span, *original_span);
         }
@@ -82,27 +81,25 @@ fn report_redundant_condition(
 ) {
     let clause_string = redundant_clause.to_string(interner);
     let (kind, title) = if clause_string == "isset" {
-        (TypingIssueKind::RedundantIssetCheck, "Redundant `isset` check")
+        (Code::REDUNDANT_ISSET_CHECK, "Redundant `isset` check")
     } else {
-        (TypingIssueKind::RedundantCondition, "Redundant condition")
+        (Code::REDUNDANT_CONDITION, "Redundant condition")
     };
 
-    let mut issue = Issue::warning(title)
-        .with_annotation(
-            Annotation::primary(redundant_span)
-                .with_message(format!("This condition (`{clause_string}`) is always true here")),
-        )
-        .with_note("The analyzer determined this condition is guaranteed to be true based on preceding logic, making this check unnecessary.")
-        .with_help("Consider removing this redundant conditional check to simplify the code.");
-
-    if original_span != redundant_span {
-        issue = issue.with_annotation(
-            Annotation::secondary(original_span)
-                .with_message("This was already established as true by a previous condition here"),
-        );
-    }
-
-    collector.report_with_code(kind, issue);
+    collector.report_with_code(
+        kind,
+        Issue::warning(title)
+            .with_annotation(
+                Annotation::primary(redundant_span)
+                    .with_message(format!("This condition (`{clause_string}`) is always true here")),
+            )
+            .with_annotation(
+                Annotation::secondary(original_span)
+                    .with_message("This was already established as true by a previous condition here"),
+            )
+            .with_note("The analyzer determined this condition is guaranteed to be true based on preceding logic, making this check unnecessary.")
+            .with_help("Consider removing this redundant conditional check to simplify the code.")
+    );
 }
 
 fn report_paradoxical_condition(
@@ -120,7 +117,7 @@ fn report_paradoxical_condition(
     let established_fact_str = original_clause.to_string(interner);
 
     collector.report_with_code(
-        TypingIssueKind::ParadoxicalCondition,
+        Code::PARADOXICAL_CONDITION,
         Issue::error("Paradoxical condition")
             .with_annotation(
                 Annotation::primary(paradox_span)

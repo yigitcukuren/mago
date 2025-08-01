@@ -7,9 +7,9 @@ use ahash::HashSet;
 
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
-use mago_codex::get_method_by_id;
 use mago_codex::get_method_id;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_codex::method_id_exists;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -40,13 +40,13 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
-use crate::issue::TypingIssueKind;
 use crate::reconciler;
 use crate::reconciler::ReconcilationContext;
 use crate::utils::conditional;
@@ -147,7 +147,7 @@ fn analyze_comparison_operation<'a>(
 
         if lhs_is_array && !rhs_is_array && !rhs_type.is_null() {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidOperand,
+                Code::INVALID_OPERAND,
                 Issue::warning(format!(
                     "Comparing an `array` with a non-array type `{}` using `{}`.",
                     rhs_type.get_id(Some(context.interner)),
@@ -161,7 +161,7 @@ fn analyze_comparison_operation<'a>(
             reported_general_invalid_operand = true;
         } else if !lhs_is_array && rhs_is_array && !lhs_type.is_null() {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidOperand,
+                Code::INVALID_OPERAND,
                 Issue::warning(format!(
                     "Comparing a non-array type `{}` with an `array` using `{}`.",
                     lhs_type.get_id(Some(context.interner)),
@@ -370,7 +370,7 @@ fn check_comparison_operand(
 
     if operand_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullOperand,
+            Code::NULL_OPERAND,
             Issue::error(format!(
                 "{side} operand in `{op_str}` comparison is `null`."
             ))
@@ -380,7 +380,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_nullable() && !operand_type.is_mixed() {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyNullOperand,
+            Code::POSSIBLY_NULL_OPERAND,
             Issue::warning(format!(
                 "{} operand in `{}` comparison might be `null` (type `{}`).",
                 side, op_str, operand_type.get_id(Some(context.interner))
@@ -391,7 +391,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_mixed() {
         context.collector.report_with_code(
-            TypingIssueKind::MixedOperand,
+            Code::MIXED_OPERAND,
             Issue::error(format!("{side} operand in `{op_str}` comparison has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note(format!(
@@ -401,7 +401,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_false() {
         context.collector.report_with_code(
-            TypingIssueKind::FalseOperand,
+            Code::FALSE_OPERAND,
             Issue::error(format!(
                "{side} operand in `{op_str}` comparison is `false`."
             ))
@@ -411,7 +411,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyFalseOperand,
+            Code::POSSIBLY_FALSE_OPERAND,
             Issue::warning(format!(
                 "{} operand in `{}` comparison might be `false` (type `{}`).",
                 side, op_str, operand_type.get_id(Some(context.interner))
@@ -434,7 +434,7 @@ fn report_redundant_comparison(
     result_value_str: &str,
 ) {
     context.collector.report_with_code(
-        TypingIssueKind::RedundantComparison,
+        Code::REDUNDANT_COMPARISON,
         Issue::help(format!(
             "Redundant `{}` comparison: left-hand side is {} right-hand side.",
             binary.operator.as_str(context.interner),
@@ -473,8 +473,8 @@ fn analyze_string_concat_operation<'a>(
     binary.lhs.as_ref().analyze(context, block_context, artifacts)?;
     binary.rhs.as_ref().analyze(context, block_context, artifacts)?;
 
-    analyze_string_concat_operand(context, block_context, artifacts, &binary.lhs, "Left")?;
-    analyze_string_concat_operand(context, block_context, artifacts, &binary.rhs, "Right")?;
+    analyze_string_concat_operand(context, artifacts, &binary.lhs, "Left")?;
+    analyze_string_concat_operand(context, artifacts, &binary.rhs, "Right")?;
 
     let mut result_string = TString::general();
     'precise: {
@@ -646,7 +646,6 @@ fn get_concat_operand_string(context: &mut Context<'_>, operand_type: &TUnion) -
 #[inline]
 fn analyze_string_concat_operand(
     context: &mut Context<'_>,
-    block_context: &mut BlockContext<'_>,
     artifacts: &mut AnalysisArtifacts,
     operand: &Expression,
     side: &'static str,
@@ -657,7 +656,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullOperand,
+            Code::NULL_OPERAND,
             Issue::error(format!(
                 "Implicit conversion of `null` to empty string for {} operand in string concatenation.",
                 side.to_ascii_lowercase()
@@ -674,7 +673,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_false() {
         context.collector.report_with_code(
-            TypingIssueKind::FalseOperand,
+            Code::FALSE_OPERAND,
             Issue::error(format!(
                 "Implicit conversion of `false` to empty string for {} operand in string concatenation.",
                 side.to_ascii_lowercase()
@@ -689,7 +688,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_nullable() && !operand_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyNullOperand,
+            Code::POSSIBLY_NULL_OPERAND,
             Issue::warning(format!(
                 "Possibly null {} operand used in string concatenation (type `{}`).",
                 side.to_ascii_lowercase(),
@@ -703,7 +702,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyFalseOperand,
+            Code::POSSIBLY_FALSE_OPERAND,
             Issue::warning(format!(
                 "Possibly false {} operand used in string concatenation (type `{}`).",
                 side.to_ascii_lowercase(),
@@ -743,7 +742,7 @@ fn analyze_string_concat_operand(
                 } else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::error(format!(
                                 "Invalid {} operand: template parameter `{}` constraint `{}` is not compatible with string concatenation.",
                                 side.to_ascii_lowercase(),
@@ -765,7 +764,7 @@ fn analyze_string_concat_operand(
                 let Some(class_like_name) = object.get_name() else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::error(format!(
                                 "Invalid {} operand: cannot determine if generic `object` is stringable.",
                                 side.to_ascii_lowercase()
@@ -788,11 +787,11 @@ fn analyze_string_concat_operand(
                 let to_string_method_name = context.interner.intern("__toString");
                 let method_id = get_method_id(class_like_name, &to_string_method_name);
 
-                if let Some(method_metadata) = get_method_by_id(context.codebase, context.interner, &method_id) {
+                if method_id_exists(context.codebase, context.interner, &method_id) {
                     current_atomic_is_valid = true;
 
                     context.collector.report_with_code(
-                        TypingIssueKind::ImplicitToStringCast,
+                        Code::IMPLICIT_TO_STRING_CAST,
                         Issue::warning(format!(
                             "Implicit conversion to `string` for {} operand via `{}`.",
                             side.to_ascii_lowercase(),
@@ -804,28 +803,10 @@ fn analyze_string_concat_operand(
                         .with_note("Objects implementing `__toString` are automatically converted when used in string context.")
                         .with_help("For clarity, consider explicit casting `(string) $object` or calling the `__toString` method directly."),
                     );
-
-                    if context.settings.analyze_effects
-                        && block_context.is_mutation_free()
-                        && !method_metadata.is_mutation_free
-                    {
-                        context.collector.report_with_code(
-                            TypingIssueKind::ImpureCallInPureContext,
-                            Issue::error(format!(
-                                "Impure `__toString` method called implicitly for {} operand within a mutation-free context.",
-                                side.to_ascii_lowercase()
-                            ))
-                            .with_annotation(Annotation::primary(operand.span())
-                                .with_message(format!("Implicit call to non-pure method `{}`", method_id.as_string(context.interner)))
-                            )
-                            .with_note("Calling methods with side effects violates the mutation-free guarantee.")
-                            .with_help(format!("Ensure `{}` is mutation-free, or avoid using this object in string context within mutation-free scopes.", method_id.as_string(context.interner))),
-                        );
-                    }
                 } else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            TypingIssueKind::InvalidOperand,
+                            Code::INVALID_OPERAND,
                             Issue::error(format!(
                                 "Invalid {} operand: object of type `{}` cannot be converted to `string`.",
                                 side.to_ascii_lowercase(),
@@ -847,7 +828,7 @@ fn analyze_string_concat_operand(
             TAtomic::Array(_) => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        TypingIssueKind::ArrayToStringConversion,
+                        Code::ARRAY_TO_STRING_CONVERSION,
                         Issue::error(format!(
                             "Invalid {} operand: cannot use type `array` in string concatenation.",
                             side.to_ascii_lowercase()
@@ -864,7 +845,7 @@ fn analyze_string_concat_operand(
             }
             TAtomic::Resource(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::ImplicitResourceToStringCast,
+                    Code::IMPLICIT_RESOURCE_TO_STRING_CAST,
                     Issue::warning(format!(
                         "Implicit conversion of `resource` to string for {} operand.",
                         side.to_ascii_lowercase()
@@ -879,7 +860,7 @@ fn analyze_string_concat_operand(
             TAtomic::Mixed(_) => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        TypingIssueKind::MixedOperand,
+                        Code::MIXED_OPERAND,
                         Issue::error(format!(
                             "Invalid {} operand: type `{}` cannot be reliably used in string concatenation.",
                             side.to_ascii_lowercase(),
@@ -898,7 +879,7 @@ fn analyze_string_concat_operand(
             _ => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidOperand,
+                        Code::INVALID_OPERAND,
                         Issue::error(format!(
                             "Invalid type `{}` for {} operand in string concatenation.",
                              operand_atomic_type.get_id(Some(context.interner)),
@@ -920,7 +901,7 @@ fn analyze_string_concat_operand(
 
     if !overall_type_match && !has_at_least_one_valid_operand_type && !reported_invalid_issue {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::error(format!(
                 "Invalid type `{}` for {} operand in string concatenation.",
                 operand_type.get_id(Some(context.interner)), side.to_ascii_lowercase()
@@ -931,7 +912,7 @@ fn analyze_string_concat_operand(
         );
     } else if !overall_type_match && has_at_least_one_valid_operand_type && !reported_invalid_issue {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyInvalidOperand,
+            Code::POSSIBLY_INVALID_OPERAND,
             Issue::warning(format!(
                 "Possibly invalid type `{}` for {} operand in string concatenation.",
                 operand_type.get_id(Some(context.interner)),
@@ -1019,7 +1000,7 @@ fn check_logical_operand(
 
     if operand_type.is_mixed() {
         context.collector.report_with_code(
-            TypingIssueKind::MixedOperand,
+            Code::MIXED_OPERAND,
             Issue::error(format!("{side} operand in `{operator_name}` operation has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note(format!(
@@ -1031,7 +1012,7 @@ fn check_logical_operand(
         critical_error_found = true;
     } else if operand_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullOperand,
+            Code::NULL_OPERAND,
             Issue::warning(format!(
                 "{side} operand in `{operator_name}` operation is `null`, which coerces to `false`."
             ))
@@ -1040,7 +1021,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_array() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is an `array`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is an `array`"))
                 .with_note(
@@ -1050,7 +1031,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_objecty() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is an `object`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is an `object`"))
                 .with_note(
@@ -1060,7 +1041,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_resource() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is a `resource`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is a `resource`"))
                 .with_note("Resources generally coerce to `true`. This implicit conversion can be unclear.")
@@ -1080,7 +1061,7 @@ fn report_redundant_logical_operation(
     result_value_str: &str,
 ) {
     context.collector.report_with_code(
-        TypingIssueKind::RedundantLogicalOperation,
+        Code::REDUNDANT_LOGICAL_OPERATION,
         Issue::help(format!(
             "Redundant `{}` operation: left operand is {} and right operand is {}.",
             binary.operator.as_str(context.interner),
@@ -1132,7 +1113,7 @@ fn analyze_spaceship_operation<'a>(
 
     if lhs_is_array && !rhs_is_array && !rhs_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::error(format!(
                 "Comparing an `array` with a non-array type `{}` using `<=>`.",
                 rhs_type.get_id(Some(context.interner))
@@ -1144,7 +1125,7 @@ fn analyze_spaceship_operation<'a>(
         );
     } else if !lhs_is_array && rhs_is_array && !lhs_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidOperand,
+            Code::INVALID_OPERAND,
             Issue::error(format!(
                 "Comparing a non-array type `{}` with an `array` using `<=>`.",
                 lhs_type.get_id(Some(context.interner))
@@ -1160,7 +1141,7 @@ fn analyze_spaceship_operation<'a>(
         && is_always_greater_than(lhs_type, rhs_type, context.codebase, context.interner)
     {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantTypeComparison,
+            Code::REDUNDANT_TYPE_COMPARISON,
             Issue::help("Redundant spaceship comparison: left-hand side is always greater than right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always greater"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always less"))
@@ -1173,7 +1154,7 @@ fn analyze_spaceship_operation<'a>(
         && is_always_identical_to(lhs_type, rhs_type, context.codebase, context.interner)
     {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantTypeComparison,
+            Code::REDUNDANT_TYPE_COMPARISON,
             Issue::help("Redundant spaceship comparison: left-hand side is always equal to right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always equal"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always equal"))
@@ -1186,7 +1167,7 @@ fn analyze_spaceship_operation<'a>(
         && is_always_less_than(lhs_type, rhs_type, context.codebase, context.interner)
     {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantTypeComparison,
+            Code::REDUNDANT_TYPE_COMPARISON,
             Issue::help("Redundant spaceship comparison: left-hand side is always less than right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always less"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always greater"))
@@ -1216,7 +1197,7 @@ fn check_spaceship_operand(
 ) -> Result<(), AnalysisError> {
     if operand_type.is_null() {
         context.collector.report_with_code(
-             TypingIssueKind::NullOperand,
+             Code::NULL_OPERAND,
              Issue::error(format!(
                  "{side} operand in spaceship comparison (`<=>`) is `null`."
              ))
@@ -1226,7 +1207,7 @@ fn check_spaceship_operand(
          );
     } else if operand_type.is_nullable() && !operand_type.is_mixed() {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyNullOperand,
+            Code::POSSIBLY_NULL_OPERAND,
             Issue::warning(format!(
                 "{side} operand in spaceship comparison (`<=>`) might be `null` (type `{}`).",
                 operand_type.get_id(Some(context.interner))
@@ -1237,7 +1218,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_mixed() {
         context.collector.report_with_code(
-            TypingIssueKind::MixedOperand,
+            Code::MIXED_OPERAND,
             Issue::error(format!("{side} operand in spaceship comparison (`<=>`) has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note("The result of comparing `mixed` types with `<=>` is unpredictable.")
@@ -1245,7 +1226,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_false() {
         context.collector.report_with_code(
-            TypingIssueKind::FalseOperand,
+            Code::FALSE_OPERAND,
             Issue::error(format!(
                 "{side} operand in spaceship comparison (`<=>`) is `false`."
             ))
@@ -1255,7 +1236,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyFalseOperand,
+            Code::POSSIBLY_FALSE_OPERAND,
             Issue::warning(format!(
                 "{side} operand in spaceship comparison (`<=>`) might be `false` (type `{}`).",
                 operand_type.get_id(Some(context.interner))
@@ -1309,7 +1290,7 @@ fn analyze_null_coalesce_operation<'a>(
 
     if lhs_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantNullCoalesce,
+            Code::REDUNDANT_NULL_COALESCE,
             Issue::help("Redundant null coalesce: left-hand side is always `null`.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always `null`"))
                 .with_annotation(
@@ -1324,7 +1305,7 @@ fn analyze_null_coalesce_operation<'a>(
         result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any); // Fallback if RHS analysis fails
     } else if !lhs_type.has_nullish() && !lhs_type.possibly_undefined && !lhs_type.possibly_undefined_from_try {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantNullCoalesce,
+            Code::REDUNDANT_NULL_COALESCE,
             Issue::help(
                 "Redundant null coalesce: left-hand side can never be `null` or undefined."
             )
@@ -1391,7 +1372,7 @@ fn analyze_elvis_operation<'a>(
 
     if lhs_type.is_always_falsy() {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantElvis,
+            Code::REDUNDANT_ELVIS,
             Issue::help("Redundant Elvis operator: left-hand side is always falsy.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always falsy"))
                 .with_annotation(
@@ -1406,7 +1387,7 @@ fn analyze_elvis_operation<'a>(
         result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any);
     } else if lhs_type.is_always_truthy() {
         context.collector.report_with_code(
-            TypingIssueKind::RedundantElvis,
+            Code::REDUNDANT_ELVIS,
             Issue::help("Redundant Elvis operator: left-hand side is always truthy.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message(format!(
                     "This expression (type `{}`) is always truthy",
@@ -1457,7 +1438,7 @@ fn analyze_arithmetic_operation<'a>(
 
     if left_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullOperand,
+            Code::NULL_OPERAND,
             Issue::error("Left operand in arithmetic operation cannot be `null`.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is `null`."))
                 .with_note("Performing arithmetic operations on `null` typically results in `0`.")
@@ -1469,7 +1450,7 @@ fn analyze_arithmetic_operation<'a>(
         final_result_type = Some(get_mixed_any());
     } else if left_type.is_nullable() && !left_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyNullOperand,
+            Code::POSSIBLY_NULL_OPERAND,
             Issue::warning(format!(
                 "Left operand in arithmetic operation might be `null` (type `{}`).",
                 left_type.get_id(Some(context.interner))
@@ -1484,7 +1465,7 @@ fn analyze_arithmetic_operation<'a>(
 
     if right_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullOperand,
+            Code::NULL_OPERAND,
             Issue::error("Right operand in arithmetic operation cannot be `null`.")
                 .with_annotation(Annotation::primary(binary.rhs.span()).with_message("This is `null`."))
                 .with_note("Performing arithmetic operations on `null` typically results in `0`.")
@@ -1494,7 +1475,7 @@ fn analyze_arithmetic_operation<'a>(
         final_result_type = Some(get_mixed_any());
     } else if right_type.is_nullable() && !right_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyNullOperand,
+            Code::POSSIBLY_NULL_OPERAND,
             Issue::warning(format!(
                 "Right operand in arithmetic operation might be `null` (type `{}`).",
                 right_type.get_id(Some(context.interner))
@@ -1521,7 +1502,7 @@ fn analyze_arithmetic_operation<'a>(
 
     if left_type.is_false() {
         context.collector.report_with_code(
-            TypingIssueKind::FalseOperand,
+            Code::FALSE_OPERAND,
             Issue::warning(
                 "Left operand in arithmetic operation is `false`.",
             )
@@ -1535,7 +1516,7 @@ fn analyze_arithmetic_operation<'a>(
         // If *only* false, Psalm might bail; let's continue for now
     } else if left_type.is_falsable() && !left_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyFalseOperand,
+            Code::POSSIBLY_FALSE_OPERAND,
             Issue::warning(format!(
                 "Left operand in arithmetic operation might be `false` (type `{}`).",
                 left_type.get_id(Some(context.interner))
@@ -1555,7 +1536,7 @@ fn analyze_arithmetic_operation<'a>(
 
     if right_type.is_false() {
         context.collector.report_with_code(
-            TypingIssueKind::FalseOperand,
+            Code::FALSE_OPERAND,
             Issue::warning(
                 "Right operand in arithmetic operation is `false`."
             )
@@ -1572,7 +1553,7 @@ fn analyze_arithmetic_operation<'a>(
         );
     } else if right_type.is_falsable() && !right_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyFalseOperand,
+            Code::POSSIBLY_FALSE_OPERAND,
             Issue::warning(format!(
                 "Right operand in arithmetic operation might be `false` (type `{}`).",
                 right_type.get_id(Some(context.interner))
@@ -1633,7 +1614,7 @@ fn analyze_arithmetic_operation<'a>(
 
             if left_atomic.is_mixed() {
                 context.collector.report_with_code(
-                    TypingIssueKind::MixedOperand,
+                    Code::MIXED_OPERAND,
                     Issue::error(
                         "Left operand in binary operation has type `mixed`."
                     )
@@ -1657,7 +1638,7 @@ fn analyze_arithmetic_operation<'a>(
 
             if right_atomic.is_mixed() {
                 context.collector.report_with_code(
-                    TypingIssueKind::MixedOperand,
+                    Code::MIXED_OPERAND,
                     Issue::error(
                         "Right operand in binary operation has type `mixed`."
                     )
@@ -1813,11 +1794,7 @@ fn analyze_arithmetic_operation<'a>(
     }
 
     if !invalid_left_messages.is_empty() {
-        let issue_kind = if has_valid_left_operand {
-            TypingIssueKind::PossiblyInvalidOperand
-        } else {
-            TypingIssueKind::InvalidOperand
-        };
+        let issue_kind = if has_valid_left_operand { Code::POSSIBLY_INVALID_OPERAND } else { Code::INVALID_OPERAND };
 
         let mut issue = if has_valid_left_operand {
             Issue::warning("Possibly invalid type for left operand.".to_string())
@@ -1843,11 +1820,7 @@ fn analyze_arithmetic_operation<'a>(
     }
 
     if !invalid_right_messages.is_empty() {
-        let issue_kind = if has_valid_right_operand {
-            TypingIssueKind::PossiblyInvalidOperand
-        } else {
-            TypingIssueKind::InvalidOperand
-        };
+        let issue_kind = if has_valid_right_operand { Code::POSSIBLY_INVALID_OPERAND } else { Code::INVALID_OPERAND };
 
         let mut issue = if has_valid_right_operand {
             Issue::warning("Possibly invalid type for right operand.".to_string())
@@ -1989,7 +1962,7 @@ fn analyze_logical_and_operation<'a>(
         right_block_context = block_context.clone();
 
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+            ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
         reconciler::reconcile_keyed_types(
             &mut reconcilation_context,
@@ -2143,7 +2116,6 @@ fn analyze_logical_or_operation<'a>(
                 context.interner,
                 context.codebase,
                 &mut context.collector,
-                artifacts,
                 var_id,
                 None,
             );
@@ -2231,7 +2203,7 @@ fn analyze_logical_or_operation<'a>(
     } else {
         if !negated_type_assertions.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconciler::reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -2351,7 +2323,7 @@ fn analyze_logical_or_operation<'a>(
 
         if !right_type_assertions.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             let mut right_changed_var_ids = HashSet::default();
 
@@ -2730,7 +2702,7 @@ pub fn are_definitely_not_identical(lhs: &TUnion, rhs: &TUnion, cb: &CodebaseMet
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -2821,7 +2793,7 @@ mod tests {
             echo "Hello " . $name;
         "#},
         issues = [
-            TypingIssueKind::ArrayToStringConversion,
+            Code::ARRAY_TO_STRING_CONVERSION,
         ]
     }
 
@@ -3103,58 +3075,58 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantLogicalOperation,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::ImpossibleCondition,
-            TypingIssueKind::ImpossibleCondition,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_LOGICAL_OPERATION,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::REDUNDANT_COMPARISON,
+            Code::IMPOSSIBLE_CONDITION,
+            Code::IMPOSSIBLE_CONDITION,
         ]
     }
 

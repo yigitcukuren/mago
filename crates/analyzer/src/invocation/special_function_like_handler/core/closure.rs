@@ -8,11 +8,11 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::invocation::Invocation;
 use crate::invocation::special_function_like_handler::SpecialFunctionLikeHandlerTrait;
-use crate::issue::TypingIssueKind;
 
 #[derive(Debug)]
 pub struct GetCurrentClosureMethodHandler;
@@ -34,7 +34,7 @@ impl SpecialFunctionLikeHandlerTrait for GetCurrentClosureMethodHandler {
             (block_context.scope.get_function_like(), block_context.scope.get_function_like_identifier())
         else {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidStaticMethodCall,
+                Code::INVALID_STATIC_METHOD_CALL,
                 Issue::error("`Closure::getCurrent()` must be called from within a closure.")
                     .with_annotation(Annotation::primary(invocation.span).with_message("This call is in the global scope"))
                     .with_note("This method is only available inside a closure or an arrow function to get a reference to itself, which is useful for recursion.")
@@ -48,7 +48,7 @@ impl SpecialFunctionLikeHandlerTrait for GetCurrentClosureMethodHandler {
             let kind = closure_identifier.kind_str();
 
             context.collector.report_with_code(
-                TypingIssueKind::InvalidStaticMethodCall,
+                Code::INVALID_STATIC_METHOD_CALL,
                 Issue::error(format!(
                     "`Closure::getCurrent()` must be called from within a closure, but it is currently inside a {kind}."
                 ))

@@ -1013,6 +1013,24 @@ impl TUnion {
         })
     }
 
+    pub fn accepts_false(&self) -> bool {
+        self.types.iter().any(|t| match t {
+            TAtomic::GenericParameter(parameter) => parameter.constraint.accepts_false(),
+            TAtomic::Mixed(mixed) if !mixed.is_truthy() => true,
+            TAtomic::Scalar(TScalar::Generic | TScalar::Bool(TBool { value: None | Some(false) })) => true,
+            _ => false,
+        })
+    }
+
+    pub fn accepts_null(&self) -> bool {
+        self.types.iter().any(|t| match t {
+            TAtomic::GenericParameter(generic_parameter) => generic_parameter.constraint.accepts_null(),
+            TAtomic::Mixed(mixed) if !mixed.is_non_null() => true,
+            TAtomic::Null => true,
+            _ => false,
+        })
+    }
+
     pub fn needs_population(&self) -> bool {
         !self.populated || self.types.iter().any(|v| v.needs_population())
     }

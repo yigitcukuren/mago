@@ -11,9 +11,9 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
-use crate::issue::TypingIssueKind;
 
 /// Checks if a method is visible from the current scope and reports a detailed
 /// error if it is not.
@@ -81,7 +81,7 @@ pub fn check_method_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            TypingIssueKind::InvalidMethodAccess,
+            Code::INVALID_METHOD_ACCESS,
             issue_title,
             visibility,
             access_span,
@@ -142,7 +142,7 @@ pub fn check_property_read_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            TypingIssueKind::InvalidPropertyRead,
+            Code::INVALID_PROPERTY_READ,
             issue_title,
             visibility,
             access_span,
@@ -200,7 +200,7 @@ pub fn check_property_write_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            TypingIssueKind::InvalidPropertyWrite,
+            Code::INVALID_PROPERTY_WRITE,
             issue_title,
             visibility,
             access_span,
@@ -247,7 +247,7 @@ fn is_visible_from_scope(
 fn report_visibility_issue(
     context: &mut Context<'_>,
     block_context: &BlockContext<'_>,
-    kind: TypingIssueKind,
+    kind: &'static str,
     title: String,
     visibility: Visibility,
     access_span: Span,

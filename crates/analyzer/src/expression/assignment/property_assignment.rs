@@ -14,10 +14,10 @@ use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::resolver::property::resolve_instance_properties;
 use crate::utils::expression::get_property_access_expression_id;
 
@@ -81,17 +81,17 @@ pub fn analyze<'a>(
                 let issue_kind;
 
                 if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
-                    issue_kind = TypingIssueKind::MixedPropertyTypeCoercion;
+                    issue_kind = Code::MIXED_PROPERTY_TYPE_COERCION;
                     issue = Issue::error(format!(
                         "A value with a less specific type `{assigned_type_str}` is being assigned to property `${property_name_str}` ({property_type_str})."
                     ))
                     .with_note("The assigned value contains a nested `mixed` type, which can hide potential bugs.");
                 } else {
-                    issue_kind = TypingIssueKind::PropertyTypeCoercion;
+                    issue_kind = Code::PROPERTY_TYPE_COERCION;
                     issue = Issue::error(format!(
-                                "A value of a less specific type `{assigned_type_str}` is being assigned to property `${property_name_str}` ({property_type_str})."
-                            ))
-                            .with_note(format!("While `{assigned_type_str}` can be assigned to `{property_type_str}`, it is a wider type which may accept values that are invalid for this property."));
+                        "A value of a less specific type `{assigned_type_str}` is being assigned to property `${property_name_str}` ({property_type_str})."
+                    ))
+                    .with_note(format!("While `{assigned_type_str}` can be assigned to `{property_type_str}`, it is a wider type which may accept values that are invalid for this property."));
                 }
 
                 if let Some(value_span) = assigned_value_span {
@@ -144,30 +144,11 @@ pub fn analyze<'a>(
                 }
 
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidPropertyAssignmentValue,
+                    Code::INVALID_PROPERTY_ASSIGNMENT_VALUE,
                     issue
                          .with_note(format!("The type `{assigned_type_str}` is not compatible with and cannot be assigned to `{property_type_str}`."))
                          .with_help("Change the assigned value to match the property's type, or update the property's type declaration."),
                 );
-            }
-        }
-
-        if type_match_found || union_comparison_result.type_coerced.unwrap_or(false) {
-            for (name, mut bound) in union_comparison_result.type_variable_lower_bounds {
-                let name_str = context.interner.lookup(&name);
-                if let Some((lower_bounds, _)) = artifacts.type_variable_bounds.get_mut(name_str) {
-                    bound.span = Some(property_access.span());
-                    lower_bounds.push(bound);
-                }
-            }
-
-            for (name, mut bound) in union_comparison_result.type_variable_upper_bounds {
-                let name_str = context.interner.lookup(&name);
-
-                if let Some((_, upper_bounds)) = artifacts.type_variable_bounds.get_mut(name_str) {
-                    bound.span = Some(property_access.span());
-                    upper_bounds.push(bound);
-                }
             }
         }
 

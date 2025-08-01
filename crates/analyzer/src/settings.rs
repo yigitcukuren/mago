@@ -7,7 +7,6 @@ pub struct Settings {
     pub find_unused_definitions: bool,
     pub analyze_dead_code: bool,
     pub allow_include: bool,
-    pub analyze_effects: bool,
     pub memoize_properties: bool,
     pub trigger_error_exists: bool,
     pub allow_possibly_undefined_array_keys: bool,
@@ -31,7 +30,6 @@ impl Settings {
             memoize_properties: true,
             trigger_error_exists: false,
             allow_possibly_undefined_array_keys: true,
-            analyze_effects: true,
             diff: false,
         }
     }

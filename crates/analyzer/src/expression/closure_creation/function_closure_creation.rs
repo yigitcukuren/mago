@@ -15,10 +15,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for FunctionClosureCreation {
     fn analyze<'a>(
@@ -89,7 +89,7 @@ fn resolve_function_callable_types<'a, 'b>(
             };
 
             context.collector.report_with_code(
-                TypingIssueKind::NonExistentFunction,
+                Code::NON_EXISTENT_FUNCTION,
                 issue.with_note("This often means the function is misspelled, not imported correctly (e.g., missing `use` statement for namespaced functions), or not defined/autoloaded.")
                     .with_help(format!("Check for typos in `{name_str}`. Verify namespace imports if applicable, and ensure the function is defined and accessible."))
             );
@@ -117,7 +117,7 @@ fn resolve_function_callable_types<'a, 'b>(
             let type_name = atomic.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                TypingIssueKind::InvalidCallable,
+                Code::INVALID_CALLABLE,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be treated as a callable.",
                 ))
@@ -142,7 +142,7 @@ fn resolve_function_callable_types<'a, 'b>(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -155,7 +155,7 @@ mod tests {
             (((((((((strlen(...)))(...))(...))(...))(...))(...))(...))(...))(...)(str: "hello");
         "#},
         issues = [
-            TypingIssueKind::InvalidNamedArgument,
+            Code::UNKNOWN_NAMED_ARGUMENT,
         ],
     }
 
@@ -232,7 +232,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidArgument, // `$tuple` is a tuple/list, not an `int`.
+            Code::INVALID_ARGUMENT, // `$tuple` is a tuple/list, not an `int`.
         ],
     }
 }

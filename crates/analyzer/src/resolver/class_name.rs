@@ -19,10 +19,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 /// Describes the origin and nature of a class name resolution.
 ///
@@ -225,7 +225,7 @@ pub fn resolve_classnames_from_expression<'a>(
             } else {
                 possible_types.push(ResolvedClassname::invalid());
                 context.collector.report_with_code(
-                    TypingIssueKind::SelfOutsideClassScope,
+                    Code::SELF_OUTSIDE_CLASS_SCOPE,
                     Issue::error("Cannot use `self` keyword outside of a class context.")
                         .with_annotation(Annotation::primary(self_keyword.span()).with_message("`self` used here"))
                         .with_note("The `self` keyword refers to the current class and can only be used within a class method.")
@@ -242,7 +242,7 @@ pub fn resolve_classnames_from_expression<'a>(
             } else {
                 possible_types.push(ResolvedClassname::invalid());
                 context.collector.report_with_code(
-                    TypingIssueKind::StaticOutsideClassScope,
+                    Code::STATIC_OUTSIDE_CLASS_SCOPE,
                     Issue::error("Cannot use `static` keyword outside of a class scope.")
                         .with_annotation(Annotation::primary(static_keyword.span()).with_message("`static` used here"))
                         .with_note(
@@ -265,7 +265,7 @@ pub fn resolve_classnames_from_expression<'a>(
                     possible_types.push(classname);
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidParentType,
+                        Code::INVALID_PARENT_TYPE,
                         Issue::error(format!(
                             "Cannot use `parent` as the current type (`{}`) does not have a parent class.",
                             context.interner.lookup(&self_meta.original_name)
@@ -283,7 +283,7 @@ pub fn resolve_classnames_from_expression<'a>(
                 }
             } else {
                 context.collector.report_with_code(
-                    TypingIssueKind::ParentOutsideClassScope,
+                    Code::PARENT_OUTSIDE_CLASS_SCOPE,
                     Issue::error("Cannot use `parent` keyword outside of a class context.")
                         .with_annotation(Annotation::primary(parent_keyword.span()).with_message("`parent` used here"))
                         .with_note("The `parent` keyword refers to the parent class and must be used inside a class."),
@@ -309,7 +309,7 @@ pub fn resolve_classnames_from_expression<'a>(
                 } else {
                     possible_types.push(ResolvedClassname::invalid());
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidClassStringExpression,
+                        Code::INVALID_CLASS_STRING_EXPRESSION,
                         Issue::error(format!(
                             "Expression of type `{}` cannot be used as a class name.",
                             atomic.get_id(Some(context.interner))
@@ -462,7 +462,7 @@ pub fn report_non_existent_class_like(context: &mut Context, span: Span, classna
     let class_name_str = context.interner.lookup(classname);
 
     context.collector.report_with_code(
-        TypingIssueKind::NonExistentClassLike,
+        Code::NON_EXISTENT_CLASS_LIKE,
         Issue::error(format!("Class, Interface, or Trait `{class_name_str}` does not exist."))
             .with_annotation(
                 Annotation::primary(span).with_message("This expression refers to a non-existent class-like type"),

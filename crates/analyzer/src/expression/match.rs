@@ -23,11 +23,11 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::expression::binary::is_always_identical_to;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::negated_assertion_reconciler;
 
@@ -53,7 +53,7 @@ impl Analyzable for Match {
                 MatchArm::Default(match_default_arm) => {
                     if let Some(previous_default_arm) = default_arm {
                         context.collector.report_with_code(
-                            TypingIssueKind::DuplicateMatchDefaultArm,
+                            Code::DUPLICATE_MATCH_DEFAULT_ARM,
                             Issue::error("Match expression cannot have multiple `default` arms.")
                                 .with_annotation(Annotation::primary(match_default_arm.span()).with_message("This `default` arm is a duplicate."))
                                 .with_annotation(Annotation::secondary(previous_default_arm.span()).with_message("The first `default` arm was defined here."))
@@ -70,7 +70,7 @@ impl Analyzable for Match {
         if match_arms.is_empty() {
             if let Some(default_arm) = default_arm {
                 context.collector.report_with_code(
-                    TypingIssueKind::MatchExpressionOnlyDefaultArm,
+                    Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM,
                     Issue::error("Match expression contains only a `default` arm.")
                     .with_annotation(
                         Annotation::primary(self.r#match.span())
@@ -96,7 +96,7 @@ impl Analyzable for Match {
                 return Ok(());
             } else {
                 context.collector.report_with_code(
-                    TypingIssueKind::EmptyMatchExpression,
+                    Code::EMPTY_MATCH_EXPRESSION,
                     Issue::error("Match expression must have at least one arm.")
                     .with_annotation(
                         Annotation::primary(self.span()).with_message("This `match` expression is empty."),
@@ -115,7 +115,7 @@ impl Analyzable for Match {
             Some(subject_type) => subject_type,
             None => {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnknownMatchSubjectType,
+                    Code::UNKNOWN_MATCH_SUBJECT_TYPE,
                     Issue::error("Match subject expression type cannot be determined.")
                         .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has an unknown type."))
                         .with_annotation(Annotation::secondary(self.r#match.span()).with_message("The corresponding match expression is defined here."))
@@ -129,7 +129,7 @@ impl Analyzable for Match {
 
         if subject_type.is_never() {
             context.collector.report_with_code(
-                TypingIssueKind::MatchSubjectTypeIsNever,
+                Code::MATCH_SUBJECT_TYPE_IS_NEVER,
                 Issue::error("Match subject expression type is `never`.")
                     .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has type `never`."))
                     .with_annotation(Annotation::secondary(self.r#match.span()).with_message("The corresponding match expression is defined here."))
@@ -152,7 +152,7 @@ impl Analyzable for Match {
                 arm_is_unreachable = true;
 
                 context.collector.report_with_code(
-                    TypingIssueKind::UnreachableMatchArm,
+                    Code::UNREACHABLE_MATCH_ARM,
                     Issue::warning("This match arm is unreachable because all possible values of the subject expression have been handled by preceding arms.")
                         .with_annotation(Annotation::primary(match_expression_arm.span()).with_message("This arm will never be reached"))
                         .with_annotation(Annotation::secondary(self.expression.span()).with_message(format!("Subject expression of type `{}`", subject_type.get_id(Some(context.interner)))))
@@ -171,7 +171,7 @@ impl Analyzable for Match {
 
                 let Some(condition_type) = artifacts.get_expression_type(condition) else {
                     context.collector.report_with_code(
-                        TypingIssueKind::UnknownMatchConditionType,
+                        Code::UNKNOWN_MATCH_CONDITION_TYPE,
                         Issue::error("Cannot infer the type of this match condition.")
                             .with_annotation(
                                 Annotation::primary(condition.span())
@@ -207,7 +207,7 @@ impl Analyzable for Match {
                     let subject_type_str = subject_type.get_id(Some(context.interner));
 
                     context.collector.report_with_code(
-                        TypingIssueKind::MatchArmAlwaysTrue,
+                        Code::MATCH_ARM_ALWAYS_TRUE,
                         Issue::error(format!(
                             "This condition (type `{condition_type_str}`) always strictly matches the subject (type `{subject_type_str}`)."
                         ))
@@ -220,7 +220,7 @@ impl Analyzable for Match {
                     definitly_matches = true;
                 } else {
                     remaining_subject_type =
-                        subtract_union_types(context, artifacts, remaining_subject_type, condition_type.clone());
+                        subtract_union_types(context, remaining_subject_type, condition_type.clone());
                 }
             }
 
@@ -237,7 +237,7 @@ impl Analyzable for Match {
 
             if let Some(matched_arm) = definite_match {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnreachableMatchArm,
+                    Code::UNREACHABLE_MATCH_ARM,
                     Issue::warning("This match arm will never be executed.")
                         .with_annotation(
                             Annotation::primary(match_expression_arm.span()).with_message("Unreachable arm."),
@@ -262,7 +262,7 @@ impl Analyzable for Match {
 
                 if unreachable_conditions.len() == match_expression_arm.conditions.len() {
                     context.collector.report_with_code(
-                        TypingIssueKind::UnreachableMatchArm,
+                        Code::UNREACHABLE_MATCH_ARM,
                         Issue::warning("This match arm will never be executed.")
                             .with_annotation(
                                 Annotation::primary(match_expression_arm.expression.span())
@@ -299,7 +299,7 @@ impl Analyzable for Match {
                 } else {
                     for (condition_type_str, condition) in unreachable_conditions {
                         context.collector.report_with_code(
-                            TypingIssueKind::UnreachableMatchArmCondition,
+                            Code::UNREACHABLE_MATCH_ARM_CONDITION,
                             Issue::error(format!(
                                 "This condition type `{condition_type_str}` can never strictly equal the subject type `{subject_type_str}`."
                             ))
@@ -328,7 +328,7 @@ impl Analyzable for Match {
 
             if let Some(definite_match) = definite_match {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnreachableMatchDefaultArm,
+                    Code::UNREACHABLE_MATCH_DEFAULT_ARM,
                     Issue::warning("This default arm will never be executed.")
                         .with_annotation(
                             Annotation::primary(default_arm.span()).with_message("Unreachable default arm."),
@@ -349,7 +349,7 @@ impl Analyzable for Match {
             } else {
                 if remaining_subject_type.is_never() {
                     context.collector.report_with_code(
-                        TypingIssueKind::UnreachableMatchDefaultArm,
+                        Code::UNREACHABLE_MATCH_DEFAULT_ARM,
                         Issue::warning(
                             "The `default` arm of this match expression is unreachable."
                         )
@@ -371,7 +371,7 @@ impl Analyzable for Match {
                 if let Some(default_arm_type) = artifacts.get_expression_type(&default_arm.expression).cloned() {
                     if possible_results.is_empty() && !match_arms.is_empty() {
                         context.collector.report_with_code(
-                            TypingIssueKind::MatchDefaultArmAlwaysExecuted,
+                            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED,
                             Issue::warning("This default arm will always execute.")
                                 .with_annotation(
                                     Annotation::primary(default_arm.span()).with_message("This default arm is always executed."),
@@ -418,7 +418,7 @@ impl Analyzable for Match {
 
             if !skip_check {
                 context.collector.report_with_code(
-                    TypingIssueKind::MatchNotExhaustive,
+                    Code::MATCH_NOT_EXHAUSTIVE,
                     Issue::error(format!(
                         "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
                         subject_type.get_id(Some(context.interner))
@@ -482,12 +482,7 @@ impl Analyzable for Match {
 /// # Returns
 ///
 /// A new `TUnion` representing `existing_type - type_to_remove`.
-pub fn subtract_union_types(
-    context: &mut Context<'_>,
-    artifacts: &mut AnalysisArtifacts,
-    existing_type: TUnion,
-    type_to_remove: TUnion,
-) -> TUnion {
+pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, type_to_remove: TUnion) -> TUnion {
     if type_to_remove.is_never() || existing_type.is_never() {
         return existing_type;
     }
@@ -517,7 +512,7 @@ pub fn subtract_union_types(
 
     let mut final_refined_union = subtract_handled_enum_cases(context, existing_type, &type_to_remove);
     let mut reconcilation_context =
-        ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+        ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
     for atomic in type_to_remove.types {
         if let TAtomic::Object(TObject::Enum(_)) = atomic {
@@ -600,7 +595,7 @@ fn subtract_handled_enum_cases(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -614,8 +609,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::EmptyMatchExpression,
-            TypingIssueKind::ImpossibleAssignment,
+            Code::EMPTY_MATCH_EXPRESSION,
+            Code::IMPOSSIBLE_ASSIGNMENT,
         ]
     }
 
@@ -634,7 +629,7 @@ mod tests {
 
             expect_int($result);
         "#},
-        issues = [TypingIssueKind::MatchExpressionOnlyDefaultArm]
+        issues = [Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM]
     }
 
     test_analysis! {
@@ -650,9 +645,9 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::DuplicateMatchDefaultArm, // Duplicate default arm
-            TypingIssueKind::UnreachableMatchArm, // `"a"` is unreachable
-            TypingIssueKind::MatchDefaultArmAlwaysExecuted, // For the default arm
+            Code::DUPLICATE_MATCH_DEFAULT_ARM, // Duplicate default arm
+            Code::UNREACHABLE_MATCH_ARM, // `"a"` is unreachable
+            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED, // For the default arm
         ]
     }
 
@@ -668,8 +663,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::NonExistentFunction, // For undefined_function()
-            TypingIssueKind::UnknownMatchSubjectType
+            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
+            Code::UNKNOWN_MATCH_SUBJECT_TYPE
         ]
     }
 
@@ -685,8 +680,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::NonExistentFunction, // For undefined_function()
-            TypingIssueKind::UnknownMatchConditionType
+            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
+            Code::UNKNOWN_MATCH_CONDITION_TYPE
         ]
     }
 
@@ -702,10 +697,10 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::NonExistentFunction, // For undefined_function()
-            TypingIssueKind::MatchArmAlwaysTrue, // This arm always matches the subject type
-            TypingIssueKind::UnreachableMatchDefaultArm, // Default arm is unreachable
-            TypingIssueKind::ImpossibleAssignment // If the result is unknown
+            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
+            Code::MATCH_ARM_ALWAYS_TRUE, // This arm always matches the subject type
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // Default arm is unreachable
+            Code::IMPOSSIBLE_ASSIGNMENT // If the result is unknown
         ]
     }
 
@@ -781,7 +776,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchDefaultArm, // Default arm is unreachable since all cases are handled
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // Default arm is unreachable since all cases are handled
         ]
     }
 
@@ -820,7 +815,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::MatchNotExhaustive, // Missing cases for ExtendedColor::Blue
+            Code::MATCH_NOT_EXHAUSTIVE, // Missing cases for ExtendedColor::Blue
         ]
     }
 
@@ -874,9 +869,9 @@ mod tests {
         "#},
 
         issues = [
-            TypingIssueKind::UnreachableMatchArm, // `"1"` is unreachable
-            TypingIssueKind::MatchArmAlwaysTrue, // `1` is always true for the subject type
-            TypingIssueKind::UnreachableMatchDefaultArm // Default arm is unreachable
+            Code::UNREACHABLE_MATCH_ARM, // `"1"` is unreachable
+            Code::MATCH_ARM_ALWAYS_TRUE, // `1` is always true for the subject type
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // Default arm is unreachable
         ]
     }
 
@@ -898,9 +893,9 @@ mod tests {
             expect_string($result);
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::UnreachableMatchDefaultArm // For the default arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
         ]
     }
 
@@ -917,9 +912,9 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first `10 => ...`
-            TypingIssueKind::UnreachableMatchArm, // For the second `10 => ...`
-            TypingIssueKind::UnreachableMatchDefaultArm, // For the default arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first `10 => ...`
+            Code::UNREACHABLE_MATCH_ARM, // For the second `10 => ...`
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the default arm
         ]
     }
 
@@ -934,8 +929,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue,
-            TypingIssueKind::UnreachableMatchDefaultArm
+            Code::MATCH_ARM_ALWAYS_TRUE,
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM
         ]
     }
 
@@ -956,9 +951,9 @@ mod tests {
             expect_string($result);
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::UnreachableMatchDefaultArm // For the default arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
         ]
     }
 
@@ -979,9 +974,9 @@ mod tests {
             expect_int($result); // Result type int
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::UnreachableMatchDefaultArm // For the default arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
         ]
     }
 
@@ -1002,11 +997,11 @@ mod tests {
             expect_string($result);
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first arm 2nd condition
-            TypingIssueKind::UnreachableMatchArmCondition, // For the first arm other 1st condition
-            TypingIssueKind::UnreachableMatchArmCondition, // For the first arm other 3rd condition
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::UnreachableMatchDefaultArm // For the default arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm 2nd condition
+            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the first arm other 1st condition
+            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the first arm other 3rd condition
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
 
         ]
     }
@@ -1023,9 +1018,9 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm, // For the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::MatchDefaultArmAlwaysExecuted, // For the default arm
+            Code::UNREACHABLE_MATCH_ARM, // For the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED, // For the default arm
         ]
     }
 
@@ -1041,8 +1036,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::MatchArmAlwaysTrue, // For the first arm
-            TypingIssueKind::UnreachableMatchDefaultArm, // For the second arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the second arm
         ]
     }
 
@@ -1062,8 +1057,8 @@ mod tests {
             expect_int($result);
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm, // For the first arm
-            TypingIssueKind::MatchArmAlwaysTrue, // For the second arm
+            Code::UNREACHABLE_MATCH_ARM, // For the first arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the second arm
         ]
     }
 
@@ -1118,10 +1113,10 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::MatchNotExhaustive, // No default arm to handle unhandled subjects
-            TypingIssueKind::UnreachableMatchArm, // For the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::ImpossibleAssignment, // Result type is never
+            Code::MATCH_NOT_EXHAUSTIVE, // No default arm to handle unhandled subjects
+            Code::UNREACHABLE_MATCH_ARM, // For the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::IMPOSSIBLE_ASSIGNMENT, // Result type is never
         ]
     }
 
@@ -1144,7 +1139,7 @@ mod tests {
             expect_int($result);
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm,
+            Code::UNREACHABLE_MATCH_ARM,
         ]
     }
 
@@ -1161,10 +1156,10 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArmCondition, // For the `1` in the first arm
-            TypingIssueKind::MatchArmAlwaysTrue, // For the `2` in the first arm
-            TypingIssueKind::UnreachableMatchArm, // For the second arm
-            TypingIssueKind::UnreachableMatchDefaultArm, // For the default arm
+            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the `1` in the first arm
+            Code::MATCH_ARM_ALWAYS_TRUE, // For the `2` in the first arm
+            Code::UNREACHABLE_MATCH_ARM, // For the second arm
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the default arm
         ]
     }
 
@@ -1206,7 +1201,7 @@ mod tests {
             take_one_or_two_string($result); // Result type is "one"|"two"
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm,
+            Code::UNREACHABLE_MATCH_ARM,
         ]
     }
 
@@ -1226,7 +1221,7 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm, // For the '3 => C' arm
+            Code::UNREACHABLE_MATCH_ARM, // For the '3 => C' arm
         ]
     }
 
@@ -1244,7 +1239,7 @@ mod tests {
                 default => "unreachable_default", // Useless default
             };
         "#},
-        issues = [TypingIssueKind::UnreachableMatchDefaultArm]
+        issues = [Code::UNREACHABLE_MATCH_DEFAULT_ARM]
     }
 
     test_analysis! {
@@ -1263,7 +1258,7 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::MatchNotExhaustive
+            Code::MATCH_NOT_EXHAUSTIVE
         ]
     }
 
@@ -1283,8 +1278,8 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArmCondition, // For condition '3'
-            TypingIssueKind::UnreachableMatchDefaultArm // Default is unreachable
+            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For condition '3'
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM // Default is unreachable
         ]
     }
 
@@ -1300,10 +1295,10 @@ mod tests {
             };
         "#},
         issues = [
-            TypingIssueKind::UnreachableMatchArm, // For 1 => "one"
-            TypingIssueKind::UnreachableMatchArm, // For true => "trueish"
-            TypingIssueKind::MatchNotExhaustive,  // Because no arms match and no default
-            TypingIssueKind::ImpossibleAssignment // Because $result gets type `never`
+            Code::UNREACHABLE_MATCH_ARM, // For 1 => "one"
+            Code::UNREACHABLE_MATCH_ARM, // For true => "trueish"
+            Code::MATCH_NOT_EXHAUSTIVE,  // Because no arms match and no default
+            Code::IMPOSSIBLE_ASSIGNMENT // Because $result gets type `never`
         ]
     }
 

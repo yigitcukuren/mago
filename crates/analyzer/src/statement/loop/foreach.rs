@@ -7,13 +7,13 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
 use crate::context::scope::loop_scope::LoopScope;
 use crate::error::AnalysisError;
 use crate::expression::assignment::assign_to_expression;
-use crate::issue::TypingIssueKind;
 use crate::statement::r#loop;
 use crate::utils::expression::get_expression_id;
 
@@ -89,7 +89,7 @@ impl Analyzable for Foreach {
 
             if !assigned {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidForeachKey,
+                    Code::INVALID_FOREACH_KEY,
                     Issue::error("The key expression in `foreach` is not assignable.")
                         .with_annotation(
                             Annotation::primary(key_expression.span())
@@ -125,7 +125,7 @@ impl Analyzable for Foreach {
 
         if !assigned {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidForeachValue,
+                Code::INVALID_FOREACH_VALUE,
                 Issue::error("The value expression in `foreach` is not assignable.")
                     .with_annotation(
                         Annotation::primary(value_expression.span())
@@ -140,7 +140,7 @@ impl Analyzable for Foreach {
 
         if has_reference {
             context.collector.report_with_code(
-                TypingIssueKind::UnsupportedReferenceOperation,
+                Code::UNSUPPORTED_REFERENCE_OPERATION,
                 Issue::error("Using references in `foreach` is not supported.")
                     .with_annotation(
                         Annotation::primary(self.span()).with_message("References in `foreach` are not supported"),

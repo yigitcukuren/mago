@@ -33,9 +33,9 @@ use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
 
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
-use crate::issue::TypingIssueKind;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -107,7 +107,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
 
     if index_type.is_null() {
         context.collector.report_with_code(
-            TypingIssueKind::NullArrayIndex,
+            Code::NULL_ARRAY_INDEX,
             Issue::error(format!(
                 "Cannot use `null` as an array index to access element{}.",
                 match extended_var_id {
@@ -125,7 +125,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
 
     if index_type.is_nullable() && !block_context.inside_isset && !index_type.ignore_nullable_issues {
         context.collector.report_with_code(
-                TypingIssueKind::PossiblyNullArrayIndex,
+                Code::POSSIBLY_NULL_ARRAY_INDEX,
                 Issue::warning(format!(
                     "Possibly using `null` as an array index to access element{}.",
                     match extended_var_id {
@@ -246,7 +246,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
                 if !in_assignment {
                     if !block_context.inside_isset {
                         context.collector.report_with_code(
-                            TypingIssueKind::PossiblyNullArrayAccess,
+                            Code::POSSIBLY_NULL_ARRAY_ACCESS,
                             Issue::error("Cannot perform array access on `null`.")
                             .with_annotation(Annotation::primary(access_array_span).with_message("The expression is `null` here."))
                             .with_note("Attempting to read or write an array index on `null` will result in a runtime error.")
@@ -318,7 +318,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             };
 
             context.collector.report_with_code(
-                if mixed_with_any { TypingIssueKind::MixedAnyArrayIndex } else { TypingIssueKind::MixedArrayIndex },
+                if mixed_with_any { Code::MIXED_ANY_ARRAY_INDEX } else { Code::MIXED_ARRAY_INDEX },
                 Issue::error(format!(
                     "Invalid index type `{index_type_str}` used for array access on `{array_like_type_str}`."
                 ))
@@ -330,7 +330,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             );
         } else if index_type.has_array_key_like() && array_like_type.is_array() {
             context.collector.report_with_code(
-                TypingIssueKind::MismatchedArrayIndex,
+                Code::MISMATCHED_ARRAY_INDEX,
                 Issue::error(format!(
                     "Invalid array key type: `{index_type_str}` is not a valid key for this array."
                 ))
@@ -363,7 +363,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             };
 
             context.collector.report_with_code(
-                TypingIssueKind::InvalidArrayIndex,
+                Code::INVALID_ARRAY_INDEX,
                 Issue::error(format!(
                     "Invalid index type `{index_type_str}` used for array access on `{array_like_type_str}`."
                 ))
@@ -430,7 +430,7 @@ pub(crate) fn handle_array_access_on_list(
                     {
                         // oh no!
                         context.collector.report_with_code(
-                            TypingIssueKind::PossiblyUndefinedIntArrayIndex,
+                            Code::POSSIBLY_UNDEFINED_INT_ARRAY_INDEX,
                             Issue::warning(format!(
                                 "Possibly undefined array key `{}` accessed on `{}`.",
                                 val,
@@ -460,7 +460,7 @@ pub(crate) fn handle_array_access_on_list(
                     && let Some(span) = span
                 {
                     context.collector.report_with_code(
-                        TypingIssueKind::UndefinedIntArrayIndex,
+                        Code::UNDEFINED_INT_ARRAY_INDEX,
                         Issue::error(format!(
                             "Undefined list index `{}` accessed on `{}`.",
                             index,
@@ -509,7 +509,7 @@ pub(crate) fn handle_array_access_on_list(
                 && let Some(span) = span
             {
                 context.collector.report_with_code(
-                    TypingIssueKind::ImpossibleArrayAccess,
+                    Code::IMPOSSIBLE_ARRAY_ACCESS,
                     Issue::error(format!(
                         "Cannot access elements of an empty list `{}`.",
                         list.get_id(Some(context.interner))
@@ -599,8 +599,8 @@ pub(crate) fn handle_array_access_on_keyed_array(
                     if !in_assignment && !allow_possibly_undefined {
                         context.collector.report_with_code(
                             match &array_key {
-                                ArrayKey::Integer(_) => TypingIssueKind::PossiblyUndefinedIntArrayIndex,
-                                _ => TypingIssueKind::PossiblyUndefinedStringArrayIndex,
+                                ArrayKey::Integer(_) => Code::POSSIBLY_UNDEFINED_INT_ARRAY_INDEX,
+                                _ => Code::POSSIBLY_UNDEFINED_STRING_ARRAY_INDEX,
                             },
                             Issue::warning(format!(
                                 "Possibly undefined array key {} accessed on `{}`.",
@@ -635,7 +635,7 @@ pub(crate) fn handle_array_access_on_keyed_array(
 
                 let result = if !block_context.inside_isset {
                     context.collector.report_with_code(
-                        TypingIssueKind::UndefinedStringArrayIndex,
+                        Code::UNDEFINED_STRING_ARRAY_INDEX,
                         Issue::error(format!(
                             "Undefined array key {} accessed on `{}`.",
                             array_key,
@@ -658,7 +658,7 @@ pub(crate) fn handle_array_access_on_keyed_array(
                     if has_value_parameter { get_mixed() } else { get_null() }
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::ImpossibleNonnullEntryCheck,
+                        Code::IMPOSSIBLE_NONNULL_ENTRY_CHECK,
                         Issue::warning(format!(
                             "Impossible `isset` check on key `{}` accessed on `{}`.",
                             array_key,
@@ -731,7 +731,7 @@ pub(crate) fn handle_array_access_on_keyed_array(
                     let index_type_str = index_type.get_id(Some(context.interner));
 
                     context.collector.report_with_code(
-                        TypingIssueKind::PossiblyUndefinedArrayIndex,
+                        Code::POSSIBLY_UNDEFINED_ARRAY_INDEX,
                         Issue::warning(format!(
                             "Possibly undefined array key `{index_type_str}` accessed on `{}`.",
                             keyed_array.get_id(Some(context.interner))
@@ -872,7 +872,7 @@ pub(crate) fn handle_array_access_on_named_object<'a>(
         get_array_access_classes(context, named_object)
     else {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidArrayAccess,
+            Code::INVALID_ARRAY_ACCESS,
             Issue::error(format!(
                 "Cannot access array index on object `{}` that does not implement `ArrayAccess`.",
                 named_object.get_id(Some(context.interner))
@@ -960,7 +960,7 @@ pub(crate) fn handle_array_access_on_mixed(
         if block_context.inside_assignment {
             if mixed.is_any() {
                 context.collector.report_with_code(
-                    TypingIssueKind::MixedAnyArrayAssignment,
+                    Code::MIXED_ANY_ARRAY_ASSIGNMENT,
                     Issue::error(format!(
                         "Unsafe array assignment on type `{}`.",
                         mixed.get_id(Some(context.interner))
@@ -978,7 +978,7 @@ pub(crate) fn handle_array_access_on_mixed(
                 );
             } else if let TAtomic::Never = mixed {
                 context.collector.report_with_code(
-                    TypingIssueKind::ImpossibleArrayAssignment,
+                    Code::IMPOSSIBLE_ARRAY_ASSIGNMENT,
                     Issue::error(
                         "Cannot perform array assignment on type `never`."
                     )
@@ -995,7 +995,7 @@ pub(crate) fn handle_array_access_on_mixed(
                 );
             } else {
                 context.collector.report_with_code(
-                    TypingIssueKind::MixedArrayAssignment,
+                    Code::MIXED_ARRAY_ASSIGNMENT,
                     Issue::error(format!(
                         "Unsafe array assignment on type `{}`.",
                         mixed.get_id(Some(context.interner))
@@ -1014,7 +1014,7 @@ pub(crate) fn handle_array_access_on_mixed(
             }
         } else if mixed.is_any() {
             context.collector.report_with_code(
-                TypingIssueKind::MixedAnyArrayAccess,
+                Code::MIXED_ANY_ARRAY_ACCESS,
                 Issue::error(format!(
                     "Unsafe array access on type `{}`.",
                     mixed.get_id(None)
@@ -1032,7 +1032,7 @@ pub(crate) fn handle_array_access_on_mixed(
             );
         } else {
             context.collector.report_with_code(
-                TypingIssueKind::MixedArrayAccess,
+                Code::MIXED_ARRAY_ACCESS,
                 Issue::error(format!("Unsafe array access on type `{}`.", mixed.get_id(None)))
                 .with_annotation(Annotation::primary(span).with_message("Cannot safely access index because base type is `mixed`."))
                 .with_note("The variable being accessed might not be an array at runtime.")

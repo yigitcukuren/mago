@@ -30,10 +30,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 /// Analyzes array literals and their elements.
 ///
@@ -138,7 +138,7 @@ fn analyze_array_elements<'a>(
                             let item_key_type_id = item_key_type.get_id(Some(context.interner));
 
                             context.collector.report_with_code(
-                                TypingIssueKind::InvalidArrayElementKey,
+                                Code::INVALID_ARRAY_ELEMENT_KEY,
                                 Issue::error("Invalid array key type.")
                                     .with_annotation(
                                         Annotation::primary(key_value_array_element.key.span()).with_message(format!(
@@ -190,7 +190,7 @@ fn analyze_array_elements<'a>(
                 // check if we have reached PHP_INT_MAX
                 if array_creation_info.int_offset == i64::MAX {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidArrayIndex,
+                        Code::INVALID_ARRAY_INDEX,
                         Issue::error(
                             "Cannot add array item implicitly; the next available integer key would exceed PHP_INT_MAX."
                         )
@@ -247,7 +247,7 @@ fn analyze_array_elements<'a>(
             }
             ArrayElement::Missing(missing_array_element) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidArrayElement,
+                    Code::INVALID_ARRAY_ELEMENT,
                     Issue::error(
                         "Missing array element: skipping elements is only allowed in list assignments (destructuring)."
                     )
@@ -276,7 +276,7 @@ fn analyze_array_elements<'a>(
         if let Some(item_key_value) = item_key_value.clone() {
             if array_creation_info.array_keys.contains(&item_key_value) {
                 context.collector.report_with_code(
-                    TypingIssueKind::DuplicateArrayKey,
+                    Code::DUPLICATE_ARRAY_KEY,
                     Issue::error(format!(
                         "Duplicate array key `{item_key_value}` detected."
                     ))
@@ -435,7 +435,7 @@ fn handle_variadic_array_element(
                                 ArrayKey::Integer(_) => {
                                     if array_creation_info.int_offset == i64::MAX {
                                         context.collector.report_with_code(
-                                            TypingIssueKind::InvalidArrayIndex,
+                                            Code::INVALID_ARRAY_INDEX,
                                             Issue::error(
                                                 "Cannot add an item with an offset beyond `PHP_INT_MAX`."
                                             )
@@ -503,7 +503,7 @@ fn handle_variadic_array_element(
 
                             if array_creation_info.int_offset == i64::MAX {
                                 context.collector.report_with_code(
-                                    TypingIssueKind::InvalidArrayIndex,
+                                    Code::INVALID_ARRAY_INDEX,
                                     Issue::error(
                                         "Cannot add an item with an offset beyond `PHP_INT_MAX`."
                                     )
@@ -550,7 +550,7 @@ fn handle_variadic_array_element(
                 array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::vanilla()));
 
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidArrayElement,
+                    Code::INVALID_ARRAY_ELEMENT,
                     Issue::error(
                         "Cannot use spread operator on non-iterable type."
                     )
@@ -588,7 +588,7 @@ fn handle_variadic_array_element(
                 &mut ComparisonResult::new(),
             ) {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidArrayElement,
+                    Code::INVALID_ARRAY_ELEMENT,
                     Issue::error(
                         "Cannot use spread operator on iterable with key type."
                     )
@@ -641,7 +641,7 @@ fn handle_variadic_array_element(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -777,7 +777,7 @@ mod tests {
             $arr = [0 => 'a', 0 => 'b'];
             expect_single_string_at_0($arr);
         "#},
-        issues = [TypingIssueKind::DuplicateArrayKey]
+        issues = [Code::DUPLICATE_ARRAY_KEY]
     }
 
     test_analysis! {
@@ -793,7 +793,7 @@ mod tests {
             $arr = ["k" => 'a', "k" => 'b'];
             expect_k_string($arr);
         "#},
-        issues = [TypingIssueKind::DuplicateArrayKey]
+        issues = [Code::DUPLICATE_ARRAY_KEY]
     }
 
     test_analysis! {
@@ -809,7 +809,7 @@ mod tests {
             $arr = [true => 'a', 1 => 'b']; // true becomes 1, so '1' is duplicated
             expect_one_string($arr);
         "#},
-        issues = [TypingIssueKind::DuplicateArrayKey]
+        issues = [Code::DUPLICATE_ARRAY_KEY]
     }
 
     test_analysis! {
@@ -905,7 +905,7 @@ mod tests {
             $arr = [...$num];
             expect_empty_array($arr);
         "#},
-        issues = [TypingIssueKind::InvalidArrayElement]
+        issues = [Code::INVALID_ARRAY_ELEMENT]
     }
 
     test_analysis! {
@@ -915,7 +915,7 @@ mod tests {
 
             $arr = [1, , 3];
         "#},
-        issues = [TypingIssueKind::InvalidArrayElement]
+        issues = [Code::INVALID_ARRAY_ELEMENT]
     }
 
     test_analysis! {

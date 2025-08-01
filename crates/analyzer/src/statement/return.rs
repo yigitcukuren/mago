@@ -13,7 +13,6 @@ use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_void;
 use mago_codex::ttype::union::TUnion;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -22,11 +21,11 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::utils::docblock::check_docblock_type_incompatibility;
 use crate::utils::docblock::get_type_from_var_docblock;
 
@@ -48,7 +47,7 @@ impl Analyzable for Return {
                 && inferred_return_type.is_never()
             {
                 context.collector.report_with_code(
-                    TypingIssueKind::NeverReturn,
+                    Code::NEVER_RETURN,
                     Issue::error("Cannot return value with type 'never' from this function.")
                     .with_annotation(
                         Annotation::primary(return_value.span())
@@ -208,7 +207,7 @@ pub fn handle_return_value<'a>(
 
                     if let Some(return_value) = return_value {
                         context.collector.report_with_code(
-                            TypingIssueKind::HiddenGeneratorReturn,
+                            Code::HIDDEN_GENERATOR_RETURN,
                             Issue::warning(format!(
                                 "The value returned by generator function `{function_name}` may be inaccessible to callers.",
                             ))
@@ -242,7 +241,7 @@ pub fn handle_return_value<'a>(
         if !expected_return_type.is_mixed() {
             if expected_return_type.is_void() {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidReturnStatement,
+                    Code::INVALID_RETURN_STATEMENT,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return 'void' but returns a value."
                     ))
@@ -269,9 +268,9 @@ pub fn handle_return_value<'a>(
             if inferred_return_type.is_mixed_with_any(&mut mixed_with_any) {
                 context.collector.report_with_code(
                     if mixed_with_any {
-                        TypingIssueKind::MixedAnyReturnStatement
+                        Code::MIXED_ANY_RETURN_STATEMENT
                     } else {
-                        TypingIssueKind::MixedReturnStatement
+                        Code::MIXED_RETURN_STATEMENT
                     },
                     Issue::error(format!(
                         "Could not infer a precise return type for function `{}`. Saw type `{}`.",
@@ -322,7 +321,7 @@ pub fn handle_return_value<'a>(
                 if union_comparison_result.type_coerced.unwrap_or(false) {
                     if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
                         context.collector.report_with_code(
-                            TypingIssueKind::LessSpecificNestedAnyReturnStatement,
+                            Code::LESS_SPECIFIC_NESTED_ANY_RETURN_STATEMENT,
                             Issue::error(format!(
                                 "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'any'."
                             ))
@@ -342,7 +341,7 @@ pub fn handle_return_value<'a>(
                     } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
                         if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
                             context.collector.report_with_code(
-                                TypingIssueKind::LessSpecificNestedReturnStatement,
+                                Code::LESS_SPECIFIC_NESTED_RETURN_STATEMENT,
                                 Issue::error(format!(
                                     "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'mixed'."
                                 ))
@@ -362,7 +361,7 @@ pub fn handle_return_value<'a>(
                         }
                     } else if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
                         context.collector.report_with_code(
-                            TypingIssueKind::LessSpecificReturnStatement,
+                            Code::LESS_SPECIFIC_RETURN_STATEMENT,
                             Issue::error(format!(
                                 "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}`."
                             ))
@@ -384,7 +383,7 @@ pub fn handle_return_value<'a>(
                     }
                 } else {
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidReturnStatement,
+                        Code::INVALID_RETURN_STATEMENT,
                         Issue::error(format!(
                             "Invalid return type for function `{function_name}`: expected `{expected_return_type_str}`, but found `{inferred_return_type_str}`."
                         ))
@@ -404,27 +403,6 @@ pub fn handle_return_value<'a>(
                         ),
                     );
                 }
-            } else {
-                for (name, mut bound) in union_comparison_result.type_variable_lower_bounds {
-                    let name_str = context.interner.lookup(&name);
-                    if let Some((lower_bounds, _)) = artifacts.type_variable_bounds.get_mut(name_str) {
-                        bound.span = Some(return_value.span());
-                        lower_bounds.push(bound);
-                    }
-                }
-
-                for (name, mut bound) in union_comparison_result.type_variable_upper_bounds {
-                    let name_str = context.interner.lookup(&name);
-                    if let Some((_, upper_bounds)) = artifacts.type_variable_bounds.get_mut(name_str) {
-                        if bound.equality_bound_classlike.is_none() {
-                            // bit of a hack but this ensures that we add strict checks
-                            bound.equality_bound_classlike = Some(StringIdentifier::empty());
-                        }
-
-                        bound.span = Some(return_value.span());
-                        upper_bounds.push(bound);
-                    }
-                }
             }
 
             if inferred_return_type.is_nullable()
@@ -439,7 +417,7 @@ pub fn handle_return_value<'a>(
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
                 context.collector.report_with_code(
-                    TypingIssueKind::NullableReturnStatement,
+                    Code::NULLABLE_RETURN_STATEMENT,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns a nullable value (inferred as `{inferred_type_str}`).",
                     ))
@@ -473,7 +451,7 @@ pub fn handle_return_value<'a>(
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
                 context.collector.report_with_code(
-                    TypingIssueKind::FalsableReturnStatement,
+                    Code::FALSABLE_RETURN_STATEMENT,
                     Issue::error(format!(
                         "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns 'false' (inferred as `{inferred_type_str}`).",
                     ))
@@ -508,7 +486,7 @@ pub fn handle_return_value<'a>(
         let expected_type_str = expected_return_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-            TypingIssueKind::InvalidReturnStatement,
+            Code::INVALID_RETURN_STATEMENT,
             Issue::error(format!(
                 "Function `{function_name}` is declared to return `{expected_type_str}` but no return value was specified.",
             ))
@@ -574,7 +552,7 @@ fn get_generator_return_type(context: &Context, return_type: &TUnion) -> Option<
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -611,7 +589,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::HiddenGeneratorReturn,
+            Code::HIDDEN_GENERATOR_RETURN,
         ]
     }
 
@@ -678,7 +656,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidReturnStatement,
+            Code::INVALID_RETURN_STATEMENT,
         ]
     }
 

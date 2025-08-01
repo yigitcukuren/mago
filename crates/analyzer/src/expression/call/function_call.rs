@@ -10,6 +10,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -17,7 +18,6 @@ use crate::expression::call::analyze_invocation_targets;
 use crate::expression::call::get_function_like_target;
 use crate::invocation::InvocationArgumentsSource;
 use crate::invocation::InvocationTarget;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for FunctionCall {
     fn analyze<'a>(
@@ -83,7 +83,7 @@ pub(super) fn resolve_targets<'a>(
             let type_name = atomic.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                TypingIssueKind::InvalidCallable,
+                Code::INVALID_CALLABLE,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be called as a function or method.",
                 ))
@@ -133,7 +133,7 @@ pub(super) fn resolve_targets<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -229,7 +229,7 @@ mod tests {
 
             needs_string(123);
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -242,7 +242,7 @@ mod tests {
             needs_int("hello");
         "#},
         issues = [
-            TypingIssueKind::InvalidArgument,
+            Code::INVALID_ARGUMENT,
         ]
     }
 
@@ -256,7 +256,7 @@ mod tests {
             requires_two(1);
         "#},
         issues = [
-            TypingIssueKind::TooFewArguments,
+            Code::TOO_FEW_ARGUMENTS,
         ]
     }
 
@@ -270,7 +270,7 @@ mod tests {
             accepts_one(1, 2);
         "#},
         issues = [
-            TypingIssueKind::TooManyArguments,
+            Code::TOO_MANY_ARGUMENTS,
         ]
     }
 
@@ -279,12 +279,60 @@ mod tests {
         code = indoc! {r#"
             <?php
 
-            function needs_string_not_null(string $s): void {}
+            function needs_string(string $s): void {}
 
-            needs_string_not_null(null);
+            needs_string(null);
         "#},
         issues = [
-            TypingIssueKind::InvalidArgument,
+            Code::NULL_ARGUMENT,
+        ]
+    }
+
+    test_analysis! {
+        name = call_nullable_for_non_nullable_string,
+        code = indoc! {r#"
+            <?php
+
+            function needs_string(string $s): void {}
+            function get_string_or_null(): string|null {
+                return get_string_or_null();
+            }
+
+            needs_string(get_string_or_null());
+        "#},
+        issues = [
+            Code::POSSIBLY_NULL_ARGUMENT,
+        ]
+    }
+
+    test_analysis! {
+        name = call_false_for_non_falsable_string,
+        code = indoc! {r#"
+            <?php
+
+            function needs_string(string $s): void {}
+
+            needs_string(false);
+        "#},
+        issues = [
+            Code::FALSE_ARGUMENT,
+        ]
+    }
+
+    test_analysis! {
+        name = call_falsable_for_non_falsable_string,
+        code = indoc! {r#"
+            <?php
+
+            function needs_string(string $s): void {}
+            function get_string_or_false(): string|false {
+                return get_string_or_false();
+            }
+
+            needs_string(get_string_or_false());
+        "#},
+        issues = [
+            Code::POSSIBLY_FALSE_ARGUMENT,
         ]
     }
 
@@ -299,7 +347,7 @@ mod tests {
             known_params(a: 1, c: "test");
         "#},
         issues = [
-            TypingIssueKind::InvalidNamedArgument,
+            Code::UNKNOWN_NAMED_ARGUMENT,
         ]
     }
 
@@ -323,7 +371,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidArgument
+            Code::INVALID_ARGUMENT
         ]
     }
 
@@ -348,7 +396,7 @@ mod tests {
                 needs_callable_return_int($arg_cb);
             }
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -391,7 +439,7 @@ mod tests {
                 needs_callable_one_param($arg_cb);
             }
         "#},
-        issues = [TypingIssueKind::PossiblyInvalidArgument]
+        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -413,7 +461,7 @@ mod tests {
 
             main_list_of_ints([1, 2, 3]);
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -435,7 +483,7 @@ mod tests {
 
             main_map_to_string(["a" => "apple", "b" => "banana"]);
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -457,7 +505,7 @@ mod tests {
 
             main_list_can_be_empty([]); // Definitely empty
         "#},
-        issues = [TypingIssueKind::PossiblyInvalidArgument]
+        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -479,7 +527,7 @@ mod tests {
 
             main_array_int_keys([0 => 1, 1 => 2]);
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -501,7 +549,7 @@ mod tests {
 
             main_bool_arg(true);
         "#},
-        issues = [TypingIssueKind::InvalidArgument]
+        issues = [Code::INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -533,7 +581,7 @@ mod tests {
                 string_to_int(...)
             );
         "#},
-        issues = [TypingIssueKind::PossiblyInvalidArgument]
+        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
     }
 
     test_analysis! {
@@ -890,11 +938,11 @@ mod tests {
             foo('unknown');          // Error: 'unknown' does not match any pattern
         "#},
         issues = [
-            TypingIssueKind::InvalidArgument,
-            TypingIssueKind::InvalidArgument,
-            TypingIssueKind::InvalidArgument,
-            TypingIssueKind::InvalidArgument,
-            TypingIssueKind::InvalidArgument,
+            Code::INVALID_ARGUMENT,
+            Code::INVALID_ARGUMENT,
+            Code::INVALID_ARGUMENT,
+            Code::INVALID_ARGUMENT,
+            Code::INVALID_ARGUMENT,
         ],
     }
 
@@ -948,8 +996,8 @@ mod tests {
             foo(ChangeKind::REMOVE); // Error: 'remove' does not match any pattern
         "#},
         issues = [
-            TypingIssueKind::PossiblyInvalidArgument,
-            TypingIssueKind::PossiblyInvalidArgument,
+            Code::POSSIBLY_INVALID_ARGUMENT,
+            Code::POSSIBLY_INVALID_ARGUMENT,
         ],
     }
 

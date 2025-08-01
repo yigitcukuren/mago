@@ -160,7 +160,7 @@ impl Analyzable for CompositeString {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -256,7 +256,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::UndefinedVariable,
+            Code::UNDEFINED_VARIABLE,
         ]
     }
 
@@ -272,7 +272,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ArrayToStringConversion,
+            Code::ARRAY_TO_STRING_CONVERSION,
         ]
     }
 
@@ -289,7 +289,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::InvalidTypeCast,
+            Code::INVALID_TYPE_CAST,
         ]
     }
 

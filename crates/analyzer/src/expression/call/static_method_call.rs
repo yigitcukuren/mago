@@ -70,7 +70,7 @@ impl Analyzable for StaticMethodCall {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -251,8 +251,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyStaticAccessOnInterface,
-            TypingIssueKind::PossiblyStaticAccessOnInterface,
+            Code::POSSIBLY_STATIC_ACCESS_ON_INTERFACE,
+            Code::POSSIBLY_STATIC_ACCESS_ON_INTERFACE,
         ]
     }
 
@@ -272,9 +272,9 @@ mod tests {
             echo Example::getSomeValue();
         "#},
         issues = [
-            TypingIssueKind::StaticAccessOnInterface,
-            TypingIssueKind::StaticAccessOnInterface,
-            TypingIssueKind::MixedAnyArgument,
+            Code::STATIC_ACCESS_ON_INTERFACE,
+            Code::STATIC_ACCESS_ON_INTERFACE,
+            Code::MIXED_ANY_ARGUMENT,
         ]
     }
 }

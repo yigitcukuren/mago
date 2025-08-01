@@ -9,10 +9,10 @@ use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
@@ -59,7 +59,7 @@ pub fn analyze_attributes(
 
         let Some(metadata) = get_class_like(context.codebase, context.interner, attribute_name) else {
             context.collector.report_with_code(
-                TypingIssueKind::NonExistentAttributeClass,
+                Code::NON_EXISTENT_ATTRIBUTE_CLASS,
                 Issue::error(format!("Attribute class `{attribute_name_str}` not found or could not be autoloaded."))
                 .with_annotation(
                     Annotation::primary(attribute.name.span()).with_message(format!("Unknown attribute class `{attribute_name_str}`")),
@@ -75,7 +75,7 @@ pub fn analyze_attributes(
 
         if !metadata.kind.is_class() {
             context.collector.report_with_code(
-                TypingIssueKind::NonClassUsedAsAttribute,
+                Code::NON_CLASS_USED_AS_ATTRIBUTE,
                 Issue::error(format!(
                     "The {class_like_kind_str} `{attribute_name_str}` cannot be used as an attribute.",
                 ))
@@ -103,7 +103,7 @@ pub fn analyze_attributes(
 
         if metadata.is_abstract {
             context.collector.report_with_code(
-                TypingIssueKind::AbstractClassUsedAsAttribute,
+                Code::ABSTRACT_CLASS_USED_AS_ATTRIBUTE,
                 Issue::error(format!("The abstract class `{attribute_name_str}` cannot be used as an attribute.",))
                     .with_annotation(Annotation::primary(attribute.name.span()).with_message(format!(
                         "`{attribute_name_str}` is an abstract class and cannot be instantiated as an attribute"
@@ -121,7 +121,7 @@ pub fn analyze_attributes(
 
         let Some(attribute_flags) = &metadata.attribute_flags else {
             context.collector.report_with_code(
-                TypingIssueKind::ClassNotMarkedAsAttribute,
+                Code::CLASS_NOT_MARKED_AS_ATTRIBUTE,
                 Issue::error(format!(
                     "Class `{attribute_name_str}` is used as an attribute but is not declared with `#[Attribute]`.",
                 ))
@@ -143,7 +143,7 @@ pub fn analyze_attributes(
             && !attribute_flags.is_repeatable()
         {
             context.collector.report_with_code(
-                TypingIssueKind::AttributeNotRepeatable,
+                Code::ATTRIBUTE_NOT_REPEATABLE,
                 Issue::error(format!("Attribute `{attribute_name_str}` is not declared as repeatable and has already been used."))
                 .with_annotation(
                     Annotation::primary(attribute.name.span())
@@ -199,7 +199,7 @@ fn report_invalid_target(
     let allowed_targets = flags.get_target_names().join(", ");
 
     context.collector.report_with_code(
-        TypingIssueKind::InvalidAttributeTarget,
+        Code::INVALID_ATTRIBUTE_TARGET,
         Issue::error(format!("Attribute `{attribute_name_str}` cannot be used on {}.", target.as_str()))
             .with_annotation(Annotation::primary(attribute.name.span()).with_message("This attribute is not allowed here"))
             .with_annotation(

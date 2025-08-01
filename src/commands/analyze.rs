@@ -69,11 +69,6 @@ pub struct AnalyzeCommand {
     #[arg(long, help = "Analyze dead code for errors (code known to be unreachable)")]
     pub analyze_dead_code: Option<bool>,
 
-    /// Enable or disable the analysis of effects (e.g., side effects of function calls).
-    /// Overrides the corresponding setting in `mago.toml` if provided.
-    #[arg(long, help = "Analyze effects (e.g., side effects of function calls)")]
-    pub analyze_effects: Option<bool>,
-
     /// Enable or disable memoization of properties.
     #[arg(long, help = "Enable memoization for property assignments and accesses")]
     pub memoize_properties: Option<bool>,
@@ -137,7 +132,6 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
         find_unused_expressions: command
             .find_unused_expressions
             .unwrap_or(configuration.analyze.find_unused_expressions),
-        analyze_effects: command.analyze_effects.unwrap_or(configuration.analyze.analyze_effects),
         memoize_properties: command.memoize_properties.unwrap_or(configuration.analyze.memoize_properties),
         allow_include: command.allow_include.unwrap_or(configuration.analyze.allow_include),
         ..Default::default()

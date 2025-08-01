@@ -34,6 +34,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -45,7 +46,6 @@ use crate::invocation::InvocationTargetParameter;
 use crate::invocation::MethodTargetContext;
 use crate::invocation::template_inference::infer_templates_for_method_call;
 use crate::invocation::template_inference::infer_templates_from_argument_and_parameter_types;
-use crate::issue::TypingIssueKind;
 use crate::utils::misc::unique_vec;
 use crate::utils::template::get_template_types_for_class_member;
 
@@ -264,7 +264,7 @@ pub fn analyze_invocation<'a>(
             if let Some(named_argument) = argument.get_named_argument() {
                 if let Some(previous_span) = assigned_parameters_by_name.get(&named_argument.name.value) {
                     context.collector.report_with_code(
-                        TypingIssueKind::DuplicateNamedArgument,
+                        Code::DUPLICATE_NAMED_ARGUMENT,
                         Issue::error(format!(
                             "Duplicate named argument `${}` in call to {} `{}`.",
                             context.interner.lookup(&named_argument.name.value),
@@ -284,7 +284,7 @@ pub fn analyze_invocation<'a>(
                     if let Some(previous_span) = assigned_parameters_by_position.get(&parameter_offset) {
                         if !parameter_ref.is_variadic() {
                             context.collector.report_with_code(
-                                TypingIssueKind::NamedArgumentOverridesPositional,
+                                Code::NAMED_ARGUMENT_OVERRIDES_POSITIONAL,
                                 Issue::error(format!(
                                     "Named argument `${}` for {} `{}` targets a parameter already provided positionally.",
                                     context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
@@ -295,7 +295,7 @@ pub fn analyze_invocation<'a>(
                             );
                         } else {
                             context.collector.report_with_code(
-                                TypingIssueKind::NamedArgumentForVariadicAfterPositional,
+                                Code::NAMED_ARGUMENT_AFTER_POSITIONAL,
                                  Issue::warning(format!(
                                     "Named argument `${}` for {} `{}` targets a variadic parameter that has already captured positional arguments.",
                                     context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
@@ -335,7 +335,6 @@ pub fn analyze_invocation<'a>(
 
             verify_argument_type(
                 context,
-                &mut artifacts.type_variable_bounds,
                 &argument_value_type,
                 &final_parameter_type,
                 *argument_offset,
@@ -346,34 +345,33 @@ pub fn analyze_invocation<'a>(
             let argument_name = context.interner.lookup(&named_argument.name.value);
 
             context.collector.report_with_code(
-                TypingIssueKind::InvalidNamedArgument,
+                Code::UNKNOWN_NAMED_ARGUMENT,
                 Issue::error(format!(
-                    "Unknown named argument `${argument_name}` in call to {target_kind_str} `{target_name_str}`.",
+                    "Unknown named argument `${argument_name}` for {target_kind_str} `{target_name_str}`"
                 ))
                 .with_annotation(
                     Annotation::primary(named_argument.name.span())
-                        .with_message(format!("Unknown argument name `${argument_name}`",)),
+                        .with_message("Unknown argument name `${argument_name}`"),
                 )
                 .with_annotation(
-                    Annotation::secondary(invocation.target.span()).with_message(format!("For this {target_kind_str}")),
+                    Annotation::secondary(invocation.target.span())
+                        .with_message(format!("Call to {target_kind_str} is here")),
                 )
-                .with_help(
-                    if parameter_refs.is_empty() || !invocation.target.allows_named_arguments() {
-                        format!(
-                            "The {target_kind_str} `{target_name_str}` expects no arguments or named arguments are not supported.",
-                        )
-                    } else {
-                        format!(
-                            "Available parameters are: `{}`.",
-                            parameter_refs
-                                .iter()
-                                .filter_map(|p| p.get_name())
-                                .map(|n| format!("${}", context.interner.lookup(&n.0).trim_start_matches('$')))
-                                .collect::<Vec<_>>()
-                                .join("`, `"),
-                        )
-                    },
-                ),
+                .with_help(if !invocation.target.allows_named_arguments() {
+                    format!("The {target_kind_str} `{target_name_str}` does not support named arguments.")
+                } else if !parameter_refs.is_empty() {
+                    format!(
+                        "Available parameters are: `{}`.",
+                        parameter_refs
+                            .iter()
+                            .filter_map(|p| p.get_name())
+                            .map(|n| context.interner.lookup(&n.0).trim_start_matches('$'))
+                            .collect::<Vec<_>>()
+                            .join("`, `")
+                    )
+                } else {
+                    format!("The {target_kind_str} `{target_name_str}` has no parameters.")
+                }),
             );
 
             break;
@@ -469,7 +467,6 @@ pub fn analyze_invocation<'a>(
 
                     verify_argument_type(
                         context,
-                        &mut artifacts.type_variable_bounds,
                         &unpacked_element_type,
                         &final_variadic_parameter_type,
                         parameter_refs.len() - 1,
@@ -479,7 +476,7 @@ pub fn analyze_invocation<'a>(
                 }
             } else {
                 context.collector.report_with_code(
-                    TypingIssueKind::TooManyArguments,
+                    Code::TOO_MANY_ARGUMENTS,
                     Issue::error(format!(
                         "Cannot unpack arguments into non-variadic {} `{}`.",
                         invocation.target.guess_kind(),
@@ -495,7 +492,7 @@ pub fn analyze_invocation<'a>(
             }
         } else if !unpacked_arguments.is_empty() {
             context.collector.report_with_code(
-                TypingIssueKind::TooManyArguments,
+                Code::TOO_MANY_ARGUMENTS,
                 Issue::error(format!(
                     "Cannot unpack arguments into {} `{}` which expects no arguments.",
                     invocation.target.guess_kind(),
@@ -547,7 +544,7 @@ pub fn analyze_invocation<'a>(
         };
 
         issue = issue.with_help("Provide all required arguments.");
-        context.collector.report_with_code(TypingIssueKind::TooFewArguments, issue);
+        context.collector.report_with_code(Code::TOO_FEW_ARGUMENTS, issue);
     } else if has_too_many_arguments
         || (!parameter_refs.last().is_some_and(|p| p.is_variadic())
             && number_of_provided_parameters > max_params
@@ -596,7 +593,7 @@ pub fn analyze_invocation<'a>(
             .with_note(format!("Expected {max_params} argument(s), but received {number_of_provided_parameters}."))
             .with_help("Remove the extra argument(s).");
 
-        context.collector.report_with_code(TypingIssueKind::TooManyArguments, issue);
+        context.collector.report_with_code(Code::TOO_MANY_ARGUMENTS, issue);
     }
 
     check_template_result(context, template_result, invocation.span);
@@ -791,7 +788,6 @@ fn get_class_template_parameters_from_result(
 /// sources to the parameter representation in the data flow graph.
 fn verify_argument_type(
     context: &mut Context<'_>,
-    type_variable_bounds: &mut HashMap<String, (Vec<TemplateBound>, Vec<TemplateBound>)>,
     input_type: &TUnion,
     parameter_type: &TUnion,
     argument_offset: usize,
@@ -803,7 +799,7 @@ fn verify_argument_type(
 
     if input_type.is_never() {
         context.collector.report_with_code(
-            TypingIssueKind::NoValue,
+            Code::NO_VALUE,
             Issue::error(format!(
                 "Argument #{} passed to {} `{}` has type `never`, meaning it cannot produce a value.",
                 argument_offset + 1,
@@ -828,148 +824,211 @@ fn verify_argument_type(
         return;
     }
 
+    let call_site = Annotation::secondary(invocation_target.span())
+        .with_message(format!("Arguments to this {} are incorrect", invocation_target.guess_kind()));
+
+    let input_type_str = input_type.get_id(Some(context.interner));
+    let parameter_type_str = parameter_type.get_id(Some(context.interner));
+
+    if !parameter_type.accepts_null() {
+        if input_type.is_null() {
+            context.collector.report_with_code(
+                Code::NULL_ARGUMENT,
+                Issue::error(format!(
+                    "Argument #{} of {} `{}` is `null`, but parameter type `{}` does not accept it.",
+                    argument_offset + 1,
+                    target_kind_str,
+                    target_name_str,
+                    parameter_type_str
+                ))
+                .with_annotation(Annotation::primary(input_expression.span()).with_message("This argument is `null`"))
+                .with_annotation(call_site)
+                .with_help(format!(
+                    "Provide a non-null value, or declare the parameter as nullable (e.g., `{parameter_type_str}|null`)."
+                )),
+            );
+
+            return;
+        }
+
+        if input_type.is_nullable() && !input_type.ignore_nullable_issues {
+            context.collector.report_with_code(
+                Code::POSSIBLY_NULL_ARGUMENT,
+                Issue::error(format!(
+                    "Argument #{} of {} `{}` is possibly `null`, but parameter type `{}` does not accept it.",
+                    argument_offset + 1,
+                    target_kind_str,
+                    target_name_str,
+                    parameter_type_str
+                ))
+                .with_annotation(
+                    Annotation::primary(input_expression.span())
+                        .with_message(format!("This argument of type `{input_type_str}` might be `null`")),
+                )
+                .with_annotation(call_site.clone())
+                .with_help("Add a `null` check before this call to ensure the value is not `null`."),
+            );
+        }
+    }
+
+    if !parameter_type.accepts_false() {
+        if input_type.is_false() {
+            context.collector.report_with_code(
+                Code::FALSE_ARGUMENT,
+                Issue::error(format!(
+                    "Argument #{} of {} `{}` is `false`, but parameter type `{}` does not accept it.",
+                    argument_offset + 1,
+                    target_kind_str,
+                    target_name_str,
+                    parameter_type_str
+                ))
+                .with_annotation(Annotation::primary(input_expression.span()).with_message("This argument is `false`"))
+                .with_annotation(call_site)
+                .with_help(format!(
+                    "Provide a different value, or update the parameter type to accept false (e.g., `{parameter_type_str}|false`)."
+                )),
+            );
+
+            return;
+        }
+
+        if input_type.is_falsable() && !input_type.ignore_falsable_issues {
+            context.collector.report_with_code(
+                Code::POSSIBLY_FALSE_ARGUMENT,
+                Issue::error(format!(
+                    "Argument #{} of {} `{}` is possibly `false`, but parameter type `{}` does not accept it.",
+                    argument_offset + 1,
+                    target_kind_str,
+                    target_name_str,
+                    parameter_type_str
+                ))
+                .with_annotation(
+                    Annotation::primary(input_expression.span())
+                        .with_message(format!("This argument of type `{input_type_str}` might be `false`")),
+                )
+                .with_annotation(call_site.clone())
+                .with_help("Add a check to ensure the value is not `false` before this call."),
+            );
+        }
+    }
+
     let mut union_comparison_result = ComparisonResult::new();
     let type_match_found = is_contained_by(
         context.codebase,
         context.interner,
         input_type,
         parameter_type,
-        input_type.ignore_nullable_issues,
-        input_type.ignore_falsable_issues,
+        true,
+        true,
         false,
         &mut union_comparison_result,
     );
 
-    if !type_match_found {
-        let call_site = Annotation::secondary(invocation_target.span())
-            .with_message(format!("Arguments to this {} are incorrect", invocation_target.guess_kind(),));
+    if type_match_found {
+        return;
+    }
 
-        let input_type_str = input_type.get_id(Some(context.interner));
-        let parameter_type_str = parameter_type.get_id(Some(context.interner));
+    let mut mixed_from_any = false;
+    if input_type.is_mixed_with_any(&mut mixed_from_any) {
+        context.collector.report_with_code(
+            if mixed_from_any { Code::MIXED_ANY_ARGUMENT } else { Code::MIXED_ARGUMENT },
+            Issue::error(format!(
+                "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
+                argument_offset + 1,
+                target_name_str,
+                parameter_type_str,
+                input_type_str
+            ))
+            .with_annotation(
+                Annotation::primary(input_expression.span())
+                    .with_message(format!("Argument has type `{input_type_str}`")),
+            )
+            .with_annotation(call_site)
+            .with_note(format!(
+                "The type `{input_type_str}` is too general and does not match the expected type `{parameter_type_str}`."
+            ))
+            .with_help("Add specific type hints or assertions to the argument value."),
+        );
 
-        if !parameter_type.is_mixed() {
-            let mut mixed_from_any = false;
-            if input_type.is_mixed_with_any(&mut mixed_from_any) {
-                context.collector.report_with_code(
-                    if mixed_from_any { TypingIssueKind::MixedAnyArgument } else { TypingIssueKind::MixedArgument },
-                    Issue::error(format!(
-                        "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
-                        argument_offset + 1,
-                        target_name_str,
-                        parameter_type_str,
-                        input_type_str
-                    ))
-                    .with_annotation(
-                        Annotation::primary(input_expression.span())
-                            .with_message(format!("Argument has type `{input_type_str}`")),
-                    )
-                    .with_annotation(call_site)
-                    .with_note(format!(
-                        "The type `{input_type_str}` is too general and does not match the expected type `{parameter_type_str}`."
-                    ))
-                    .with_help("Add specific type hints or assertions to the argument value."),
-                );
+        return;
+    }
 
-                return;
-            }
-        }
+    if union_comparison_result.type_coerced.unwrap_or(false) && !input_type.is_mixed() {
+        let issue_kind;
+        let annotation_msg;
+        let note_msg;
 
-        if union_comparison_result.type_coerced.unwrap_or(false) && !input_type.is_mixed() {
-            let issue_kind;
-            let annotation_msg;
-            let note_msg;
-
-            if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
-                issue_kind = TypingIssueKind::LessSpecificNestedAnyArgumentType;
-                annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `any`.");
-                note_msg = "The structure contains `any`, making it incompatible with the specific structure expected."
-                    .to_string();
-            } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
-                issue_kind = TypingIssueKind::LessSpecificNestedArgumentType;
-                annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `mixed`.");
-                note_msg = "The structure contains `mixed`, making it incompatible.".to_string();
-            } else {
-                issue_kind = TypingIssueKind::LessSpecificArgument;
-                annotation_msg = format!("Provided type `{input_type_str}` is too general.");
-                note_msg = format!(
+        if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
+            issue_kind = Code::LESS_SPECIFIC_NESTED_ANY_ARGUMENT_TYPE;
+            annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `any`.");
+            note_msg = "The structure contains `any`, making it incompatible with the specific structure expected."
+                .to_string();
+        } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
+            issue_kind = Code::LESS_SPECIFIC_NESTED_ARGUMENT_TYPE;
+            annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `mixed`.");
+            note_msg = "The structure contains `mixed`, making it incompatible.".to_string();
+        } else {
+            issue_kind = Code::LESS_SPECIFIC_ARGUMENT;
+            annotation_msg = format!("Provided type `{input_type_str}` is too general.");
+            note_msg = format!(
                     "The provided type `{input_type_str}` can be assigned to `{parameter_type_str}`, but is wider (less specific)."
                 )
                 .to_string();
-            }
+        }
 
+        context.collector.report_with_code(
+            issue_kind,
+            Issue::error(format!(
+                "Argument type mismatch for argument #{} of `{}`: expected `{}`, but provided type `{}` is less specific.",
+                argument_offset + 1, target_name_str, parameter_type_str, input_type_str
+            ))
+            .with_annotation(Annotation::primary(input_expression.span()).with_message(annotation_msg))
+            .with_annotation(call_site)
+            .with_note(note_msg)
+            .with_help(format!("Provide a value that more precisely matches `{parameter_type_str}` or adjust the parameter type.")),
+        );
+    } else if !union_comparison_result.type_coerced.unwrap_or(false) {
+        let types_can_be_identical =
+            can_expression_types_be_identical(context.codebase, context.interner, input_type, parameter_type, false);
+
+        if types_can_be_identical {
             context.collector.report_with_code(
-                issue_kind,
+                Code::POSSIBLY_INVALID_ARGUMENT,
                 Issue::error(format!(
-                    "Argument type mismatch for argument #{} of `{}`: expected `{}`, but provided type `{}` is less specific.",
+                    "Possible argument type mismatch for argument #{} of `{}`: expected `{}`, but possibly received `{}`.",
                     argument_offset + 1, target_name_str, parameter_type_str, input_type_str
                 ))
-                .with_annotation(Annotation::primary(input_expression.span()).with_message(annotation_msg))
+                .with_annotation(Annotation::primary(input_expression.span()).with_message(format!("This might not be type `{parameter_type_str}`")))
                 .with_annotation(call_site)
-                .with_note(note_msg)
-                .with_help(format!("Provide a value that more precisely matches `{parameter_type_str}` or adjust the parameter type.")),
+                .with_note(format!("The provided type `{input_type_str}` overlaps with `{parameter_type_str}` but is not fully contained."))
+                .with_help("Ensure the argument always has the expected type using checks or assertions."),
             );
-        } else if !union_comparison_result.type_coerced.unwrap_or(false) {
-            let types_can_be_identical = can_expression_types_be_identical(
-                context.codebase,
-                context.interner,
-                input_type,
-                parameter_type,
-                false,
+        } else {
+            context.collector.report_with_code(
+                Code::INVALID_ARGUMENT,
+                Issue::error(format!(
+                    "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
+                    argument_offset + 1,
+                    target_name_str,
+                    parameter_type_str,
+                    input_type_str
+                ))
+                .with_annotation(
+                    Annotation::primary(input_expression.span())
+                        .with_message(format!("This has type `{input_type_str}`")),
+                )
+                .with_annotation(call_site)
+                .with_note(format!(
+                    "The provided type `{input_type_str}` is not compatible with the expected type `{parameter_type_str}`."
+                ))
+                .with_help(
+                    if !invocation_target.is_language_construct() {
+                        format!("Change the argument value to match `{parameter_type_str}`, or update the parameter's type declaration.")
+                    } else {
+                        format!("Change the argument value to match `{parameter_type_str}`.")
+                    }
+                ),
             );
-
-            if types_can_be_identical {
-                context.collector.report_with_code(
-                    TypingIssueKind::PossiblyInvalidArgument,
-                    Issue::error(format!(
-                        "Possible argument type mismatch for argument #{} of `{}`: expected `{}`, but possibly received `{}`.",
-                        argument_offset + 1, target_name_str, parameter_type_str, input_type_str
-                    ))
-                    .with_annotation(Annotation::primary(input_expression.span()).with_message(format!("This might not be type `{parameter_type_str}`")))
-                    .with_annotation(call_site)
-                    .with_note(format!("The provided type `{input_type_str}` overlaps with `{parameter_type_str}` but is not fully contained."))
-                    .with_help("Ensure the argument always has the expected type using checks or assertions."),
-                );
-            } else {
-                context.collector.report_with_code(
-                    TypingIssueKind::InvalidArgument,
-                    Issue::error(format!(
-                        "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
-                        argument_offset + 1,
-                        target_name_str,
-                        parameter_type_str,
-                        input_type_str
-                    ))
-                    .with_annotation(
-                        Annotation::primary(input_expression.span())
-                            .with_message(format!("This has type `{input_type_str}`")),
-                    )
-                    .with_annotation(call_site)
-                    .with_note(format!(
-                        "The provided type `{input_type_str}` is not compatible with the expected type `{parameter_type_str}`."
-                    ))
-                    .with_help(
-                        if !invocation_target.is_language_construct() {
-                            format!("Change the argument value to match `{parameter_type_str}`, or update the parameter's type declaration.")
-                        } else {
-                            format!("Change the argument value to match `{parameter_type_str}`.")
-                        }
-                    ),
-                );
-            }
-        }
-    }
-
-    if type_match_found || union_comparison_result.type_coerced.unwrap_or(false) {
-        for (name, mut bound) in union_comparison_result.type_variable_lower_bounds {
-            let name_str = context.interner.lookup(&name);
-            bound.span = Some(input_expression.span());
-
-            type_variable_bounds.entry(name_str.to_string()).or_insert_with(|| (Vec::new(), Vec::new())).0.push(bound);
-        }
-        for (name, mut bound) in union_comparison_result.type_variable_upper_bounds {
-            let name_str = context.interner.lookup(&name);
-            bound.span = Some(input_expression.span());
-            type_variable_bounds.entry(name_str.to_string()).or_insert_with(|| (Vec::new(), Vec::new())).1.push(bound);
         }
     }
 }
@@ -1155,7 +1214,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
             TAtomic::Mixed(mixed) if mixed.is_any() => {
                 if !reported_an_error {
                     context.collector.report_with_code(
-                        TypingIssueKind::MixedAnyArgument,
+                        Code::MIXED_ANY_ARGUMENT,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
                             atomic_type.get_id(Some(context.interner))
@@ -1174,7 +1233,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
             TAtomic::Mixed(_) => {
                 if !reported_an_error {
                     context.collector.report_with_code(
-                        TypingIssueKind::MixedArgument,
+                        Code::MIXED_ARGUMENT,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
                             atomic_type.get_id(Some(context.interner))
@@ -1193,7 +1252,7 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
                 if !reported_an_error {
                     let type_str = atomic_type.get_id(Some(context.interner));
                     context.collector.report_with_code(
-                        TypingIssueKind::InvalidArgument,
+                        Code::INVALID_ARGUMENT,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{type_str}` because it is not an iterable type."
                         ))
@@ -1283,9 +1342,9 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
                 let issue_kind = if comparison_result.type_coerced.unwrap_or(false)
                     && comparison_result.type_coerced_from_as_mixed.unwrap_or(false)
                 {
-                    TypingIssueKind::MixedArgument
+                    Code::MIXED_ARGUMENT
                 } else {
-                    TypingIssueKind::InvalidArgument
+                    Code::INVALID_ARGUMENT
                 };
 
                 context.collector.report_with_code(
@@ -1323,7 +1382,7 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
 
                 if equality_types.len() > 1 {
                     context.collector.report_with_code(
-                        TypingIssueKind::ConflictingTemplateEqualityBounds,
+                        Code::CONFLICTING_TEMPLATE_EQUALITY_BOUNDS,
                         Issue::error(format!(
                             "Conflicting equality requirements found for template `{}`.",
                             interner.lookup(template_name)
@@ -1361,7 +1420,7 @@ fn check_template_result(context: &mut Context<'_>, template_result: &mut Templa
 
                     if !is_contained {
                         context.collector.report_with_code(
-                            TypingIssueKind::IncompatibleTemplateLowerBound,
+                            Code::INCOMPATIBLE_TEMPLATE_LOWER_BOUND,
                             Issue::error(format!(
                                 "Incompatible bounds found for template `{}`.",
                                 interner.lookup(template_name)

@@ -26,10 +26,10 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 
 use super::assignment;
 
@@ -140,7 +140,7 @@ fn read_variable<'a>(
                 global_variable_type
             } else if block_context.variables_possibly_in_scope.contains(variable_name) {
                 context.collector.report_with_code(
-                    TypingIssueKind::PossiblyUndefinedVariable,
+                    Code::POSSIBLY_UNDEFINED_VARIABLE,
                     Issue::warning(format!(
                         "Variable `{variable_name}` might not have been defined on all execution paths leading to this point.",
                     ))
@@ -156,7 +156,7 @@ fn read_variable<'a>(
                 get_mixed()
             } else if block_context.inside_variable_reference {
                 context.collector.report_with_code(
-                    TypingIssueKind::ReferenceToUndefinedVariable,
+                    Code::REFERENCE_TO_UNDEFINED_VARIABLE,
                     Issue::help(format!("Reference created from a previously undefined variable `{variable_name}`.",))
                         .with_annotation(
                             Annotation::primary(variable_span)
@@ -223,7 +223,7 @@ fn read_variable<'a>(
                     );
                 }
 
-                context.collector.report_with_code(TypingIssueKind::UndefinedVariable, issue.with_help(help_message));
+                context.collector.report_with_code(Code::UNDEFINED_VARIABLE, issue.with_help(help_message));
 
                 get_mixed_any()
             }
@@ -232,7 +232,7 @@ fn read_variable<'a>(
 
     if variable_type.possibly_undefined_from_try {
         context.collector.report_with_code(
-            TypingIssueKind::PossiblyUndefinedVariable,
+            Code::POSSIBLY_UNDEFINED_VARIABLE,
             Issue::warning(format!(
                 "Variable `{variable_name}` might be undefined here because its assignment occurs within a `try` block.",
             ))
@@ -647,7 +647,7 @@ fn generate_confusable_character_note(variable_name: &str) -> Option<String> {
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -674,9 +674,9 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyUndefinedVariable, // $key
-            TypingIssueKind::PossiblyUndefinedVariable, // $value
-            TypingIssueKind::PossiblyUndefinedVariable, // $y
+            Code::POSSIBLY_UNDEFINED_VARIABLE, // $key
+            Code::POSSIBLY_UNDEFINED_VARIABLE, // $value
+            Code::POSSIBLY_UNDEFINED_VARIABLE, // $y
         ]
     }
 
@@ -704,8 +704,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantCast, // $key is known to be a string
-            TypingIssueKind::RedundantCast, // $value is known to be a string
+            Code::REDUNDANT_CAST, // $key is known to be a string
+            Code::REDUNDANT_CAST, // $value is known to be a string
         ]
     }
 }

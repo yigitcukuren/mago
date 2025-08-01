@@ -33,17 +33,16 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::issue::TypingIssueKind;
 use crate::resolver::property::localize_property_type;
 use crate::statement::analyze_statements;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
+use crate::statement::r#return::handle_return_value;
 use crate::utils::expression::get_variable_id;
-
-use super::r#return::handle_return_value;
 
 pub mod function;
 
@@ -69,7 +68,6 @@ pub fn analyze_function_like<'a, 'ast>(
 
     let mut block_context = BlockContext::new(scope);
     let mut artifacts = AnalysisArtifacts::new();
-    artifacts.type_variable_bounds = parent_artifacts.type_variable_bounds.clone();
 
     add_parameter_types_to_context(
         context,
@@ -199,7 +197,7 @@ fn add_parameter_types_to_context<'a>(
                 for type_node in parameter_type.get_all_child_nodes() {
                     if let TypeRef::Atomic(TAtomic::Reference(TReference::Symbol { name, .. })) = type_node {
                         context.collector.report_with_code(
-                            TypingIssueKind::NonExistentClassLike,
+                            Code::NON_EXISTENT_CLASS_LIKE,
                             Issue::error(format!(
                                 "Class or interface or enum `{}` not found",
                                 context.interner.lookup(name)

@@ -14,6 +14,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
@@ -24,7 +25,6 @@ use crate::invocation::InvocationTarget;
 use crate::invocation::LanguageConstructKind;
 use crate::invocation::analyzer::analyze_invocation;
 use crate::invocation::return_type_fetcher::fetch_invocation_return_type;
-use crate::issue::TypingIssueKind;
 
 impl Analyzable for Construct {
     fn analyze<'a>(
@@ -44,7 +44,7 @@ impl Analyzable for Construct {
             Construct::Die(die_construct) => die_construct.analyze(context, block_context, artifacts),
             Construct::Eval(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnsupportedFeature,
+                    Code::UNSUPPORTED_FEATURE,
                     Issue::warning("Analysis for eval expression is not yet implemented.")
                         .with_annotation(
                             Annotation::primary(self.span())
@@ -60,7 +60,7 @@ impl Analyzable for Construct {
             }
             Construct::Empty(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::UnsupportedFeature,
+                    Code::UNSUPPORTED_FEATURE,
                     Issue::warning("Analysis for empty expression is not yet implemented.")
                         .with_annotation(
                             Annotation::primary(self.span())
@@ -314,7 +314,7 @@ fn analyze_include<'a>(
 
     if !context.settings.allow_include {
         context.collector.report_with_code(
-            TypingIssueKind::DisallowedInclude,
+            Code::DISALLOWED_INCLUDE,
             Issue::error(format!(
                 "File inclusion via `{construct_name_str}` is disallowed by your project configuration.",
             ))
@@ -327,7 +327,7 @@ fn analyze_include<'a>(
     let included_file_type = artifacts.get_expression_type(included_file).cloned().unwrap_or_else(get_mixed_any);
     if !included_file_type.is_string() {
         context.collector.report_with_code(
-            TypingIssueKind::InvalidIncludeArgument,
+            Code::INVALID_INCLUDE_ARGUMENT,
             Issue::error(format!(
                 "Argument for `{construct_name_str}` must be a string representing a file path, but found type `{}`.",
                 included_file_type.get_id(Some(context.interner))
@@ -342,7 +342,7 @@ fn analyze_include<'a>(
 
     if block_context.scope.is_mutation_free() {
         context.collector.report_with_code(
-            TypingIssueKind::ImpureInclude,
+            Code::IMPURE_INCLUDE,
             Issue::error(format!(
                 "Impure use of `{construct_name_str}` in a context declared as mutation-free or pure.",
             ))
@@ -354,7 +354,7 @@ fn analyze_include<'a>(
 
     if is_include {
         context.collector.report_with_code(
-            TypingIssueKind::IncludeInsteadOfRequire,
+            Code::INCLUDE_INSTEAD_OF_REQUIRE,
             Issue::help("Consider using `require` or `require_once` for better error handling.")
                 .with_annotation(Annotation::primary(keyword_span).with_message(format!(
                     "Using `{construct_name_str}` here will only emit a warning on failure.",
@@ -369,7 +369,7 @@ fn analyze_include<'a>(
 
     if !is_once {
         context.collector.report_with_code(
-            TypingIssueKind::IncludeInsteadOfOnceVariant,
+            Code::INCLUDE_INSTEAD_OF_ONCE_VARIANT,
             Issue::help(format!(
                 "Consider using `{construct_name_str}_once` to prevent multiple inclusions of the same file.",
             ))

@@ -23,6 +23,7 @@ use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::formula::get_formula;
@@ -30,7 +31,6 @@ use crate::formula::negate_or_synthesize;
 use crate::invocation::Invocation;
 use crate::invocation::InvocationArgumentsSource;
 use crate::invocation::resolver::resolve_invocation_type;
-use crate::issue::TypingIssueKind;
 use crate::reconciler;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::assertion_reconciler::intersect_union_with_union;
@@ -75,9 +75,9 @@ pub fn post_invocation_process<'a>(
 
     if metadata.is_deprecated {
         let issue_kind = match identifier {
-            FunctionLikeIdentifier::Function(_) => TypingIssueKind::DeprecatedFunction,
-            FunctionLikeIdentifier::Method(_, _) => TypingIssueKind::DeprecatedMethod,
-            FunctionLikeIdentifier::Closure(_) => TypingIssueKind::DeprecatedClosure,
+            FunctionLikeIdentifier::Function(_) => Code::DEPRECATED_FUNCTION,
+            FunctionLikeIdentifier::Method(_, _) => Code::DEPRECATED_METHOD,
+            FunctionLikeIdentifier::Closure(_) => Code::DEPRECATED_CLOSURE,
         };
 
         context.collector.report_with_code(
@@ -95,51 +95,6 @@ pub fn post_invocation_process<'a>(
         );
     }
 
-    if context.settings.analyze_effects {
-        if block_context.is_mutation_free() {
-            if !metadata.is_mutation_free && !metadata.is_pure {
-                context.collector.report_with_code(
-                    TypingIssueKind::ImpureCallInPureContext,
-                    Issue::error(format!(
-                        "Impure call to {callable_kind_str} {full_callable_name} within a mutation-free context."
-                    ))
-                    .with_annotation(Annotation::primary(invoication.target.span()).with_message("Call to function/method with side effects"))
-                    .with_note(format!(
-                        "The {callable_kind_str} {full_callable_name} is not marked as mutation-free (e.g., with `@pure` or `@mutation-free`)."
-                    ))
-                    .with_note("This violates the contract of the current mutation-free context.")
-                    .with_help(
-                        "Ensure the called entity is mutation-free, or move this call outside the mutation-free context.",
-                    ),
-                );
-            }
-        } else if block_context.is_external_mutation_free()
-            && !metadata.is_external_mutation_free
-            && !metadata.is_mutation_free
-            && !metadata.is_pure
-        {
-            context.collector.report_with_code(
-                    TypingIssueKind::ExternalImpureCallInExternalPureContext,
-                    Issue::error(format!(
-                        "Call to {callable_kind_str} {full_callable_name} with external side effects within an external-mutation-free context."
-                    ))
-                    .with_annotation(
-                        Annotation::primary(invoication.target.span())
-                            .with_message("Call to function/method with external side effects"),
-                    )
-                    .with_note(format!(
-                        "The {callable_kind_str} {full_callable_name} is not marked as external-mutation-free."
-                    ))
-                    .with_note(
-                        "This violates the contract of the current external-mutation-free context."
-                    )
-                    .with_help(
-                        "Ensure the called entity is external-mutation-free, or move this call outside the external-mutation-free context."
-                    ),
-                );
-        }
-    }
-
     // Report if named arguments are used where not allowed
     if !metadata.allows_named_arguments
         && let InvocationArgumentsSource::ArgumentList(argument_list) = invoication.arguments_source
@@ -150,7 +105,7 @@ pub fn post_invocation_process<'a>(
             };
 
             context.collector.report_with_code(
-                TypingIssueKind::NamedArgumentNotAllowed,
+                Code::NAMED_ARGUMENT_NOT_ALLOWED,
                 Issue::error(format!("Named arguments are not allowed for {full_callable_name}."))
                     .with_annotation(Annotation::primary(argument.span()).with_message("Named argument used here"))
                     .with_annotation(Annotation::secondary(invoication.target.span()).with_message(format!(
@@ -254,7 +209,7 @@ fn apply_assertion_to_call_context<'a>(
     }
 
     reconciler::reconcile_keyed_types(
-        &mut ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector),
+        &mut ReconcilationContext::new(context.interner, context.codebase, &mut context.collector),
         &type_assertions,
         active_type_assertions,
         block_context,
@@ -364,7 +319,6 @@ fn resolve_invocation_assertion<'a>(
                                     &mut ReconcilationContext::new(
                                         context.interner,
                                         context.codebase,
-                                        artifacts,
                                         &mut context.collector,
                                     ),
                                     asserted_type,

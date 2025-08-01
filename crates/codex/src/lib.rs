@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use ahash::HashSet;
+
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_span::Position;

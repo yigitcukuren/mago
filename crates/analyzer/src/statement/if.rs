@@ -21,6 +21,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
@@ -29,7 +30,6 @@ use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
 use crate::formula;
 use crate::formula::negate_or_synthesize;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::analyze_statements;
@@ -82,7 +82,7 @@ impl Analyzable for If {
             artifacts,
         ).unwrap_or_else(|| {
             context.collector.report_with_code(
-                TypingIssueKind::ConditionIsTooComplex,
+                Code::CONDITION_IS_TOO_COMPLEX,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(self.condition.span())
@@ -135,7 +135,6 @@ impl Analyzable for If {
             &if_clauses,
             &self.condition.span(),
             &if_conditional_scope.assigned_in_conditional_variable_ids,
-            block_context.inside_loop,
         );
 
         if_clauses = saturate_clauses(if_clauses.iter());
@@ -178,7 +177,7 @@ impl Analyzable for If {
 
         if !if_scope.negated_types.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,
@@ -273,7 +272,6 @@ impl Analyzable for If {
                         context.interner,
                         context.codebase,
                         &mut context.collector,
-                        artifacts,
                         &variable_id,
                         if_scope.reasonable_clauses,
                         block_context.locals.get(&variable_id).map(|rc| rc.as_ref()),
@@ -313,7 +311,6 @@ impl Analyzable for If {
                 context.interner,
                 context.codebase,
                 &mut context.collector,
-                artifacts,
                 &variable_id,
                 &existing_type,
                 Some(&new_type),
@@ -377,7 +374,7 @@ fn analyze_if_statement_block<'a>(
     if !reconcilable_if_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+            ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -439,7 +436,6 @@ fn analyze_if_statement_block<'a>(
             context.interner,
             context.codebase,
             &mut context.collector,
-            artifacts,
             variable_id,
             None,
         );
@@ -484,7 +480,6 @@ fn analyze_if_statement_block<'a>(
                     context.interner,
                     context.codebase,
                     &mut context.collector,
-                    artifacts,
                     &variable_id,
                     previous_clauses,
                     if_block_context.locals.get(&variable_id).map(|rc| rc.as_ref()),
@@ -518,7 +513,6 @@ fn analyze_if_statement_block<'a>(
 
         outer_block_context.update(
             context,
-            artifacts,
             &old_if_block_context,
             &mut if_block_context,
             has_leaving_statements,
@@ -589,7 +583,7 @@ fn analyze_else_if_clause<'a>(
 
         if let Some(clauses_statements_span) = clauses_statements_span {
             context.collector.report_with_code(
-                TypingIssueKind::ConditionIsTooComplex,
+                Code::CONDITION_IS_TOO_COMPLEX,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(else_if_clause.0.span())
@@ -669,7 +663,6 @@ fn analyze_else_if_clause<'a>(
         &else_if_clauses,
         &else_if_clause.0.span(),
         &assigned_in_conditional_variable_ids,
-        else_block_context.inside_loop,
     );
 
     let else_if_clauses = saturate_clauses(else_if_clauses.iter());
@@ -747,7 +740,7 @@ fn analyze_else_if_clause<'a>(
     let mut newly_reconciled_variable_ids = HashSet::default();
     if !reconcilable_else_if_types.is_empty() {
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+            ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -799,7 +792,6 @@ fn analyze_else_if_clause<'a>(
             context.interner,
             context.codebase,
             &mut context.collector,
-            artifacts,
             variable_id,
             None,
         );
@@ -866,7 +858,7 @@ fn analyze_else_if_clause<'a>(
             let mut implied_outer_context = else_if_block_context.clone();
 
             reconcile_keyed_types(
-                &mut ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector),
+                &mut ReconcilationContext::new(context.interner, context.codebase, &mut context.collector),
                 &negated_else_if_types,
                 BTreeMap::new(),
                 &mut implied_outer_context,
@@ -959,7 +951,7 @@ fn analyze_else_statements<'a>(
     if !else_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
         let mut reconcilation_context =
-            ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+            ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
         reconcile_keyed_types(
             &mut reconcilation_context,
@@ -1013,7 +1005,6 @@ fn analyze_else_statements<'a>(
             context.interner,
             context.codebase,
             &mut context.collector,
-            artifacts,
             variable_id,
             None,
         );
@@ -1070,7 +1061,6 @@ fn analyze_else_statements<'a>(
 
         outer_block_context.update(
             context,
-            artifacts,
             &old_else_context,
             else_block_context,
             has_leaving_statements,
@@ -1241,7 +1231,7 @@ fn update_if_scope<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::test_analysis;
 
     test_analysis! {
@@ -1316,10 +1306,10 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantComparison, // `$a > $b` is always false
-            TypingIssueKind::ImpossibleCondition, // `if ($a > $b)` is never executed
-            TypingIssueKind::RedundantComparison, // `$a < $b` is always true
-            TypingIssueKind::RedundantCondition, // `if ($a < $b) { }` is always executed
+            Code::REDUNDANT_COMPARISON, // `$a > $b` is always false
+            Code::IMPOSSIBLE_CONDITION, // `if ($a > $b)` is never executed
+            Code::REDUNDANT_COMPARISON, // `$a < $b` is always true
+            Code::REDUNDANT_CONDITION, // `if ($a < $b) { }` is always executed
         ],
     }
 
@@ -1373,9 +1363,9 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantComparison,
-            TypingIssueKind::ImpossibleCondition,
-            TypingIssueKind::NoValue,
+            Code::REDUNDANT_COMPARISON,
+            Code::IMPOSSIBLE_CONDITION,
+            Code::NO_VALUE,
         ],
     }
 
@@ -1579,7 +1569,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyInvalidArgument, // `expect_x_or_y` expects 'x'|'y', but $result is 'x'|'y'|'z'
+            Code::POSSIBLY_INVALID_ARGUMENT, // `expect_x_or_y` expects 'x'|'y', but $result is 'x'|'y'|'z'
         ]
     }
 
@@ -1616,9 +1606,9 @@ mod tests {
             test_or_lhs_true('text');
         "#},
         issues = [
-            TypingIssueKind::RedundantComparison, // `$input === 'text'` is always true
-            TypingIssueKind::ImpossibleCondition, // `if ($input === 'text')` is never executed
-            TypingIssueKind::NoValue, // `takes_string($input)` is called with 'never' type
+            Code::REDUNDANT_COMPARISON, // `$input === 'text'` is always true
+            Code::IMPOSSIBLE_CONDITION, // `if ($input === 'text')` is never executed
+            Code::NO_VALUE, // `takes_string($input)` is called with 'never' type
         ]
     }
 
@@ -1701,8 +1691,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ImpossibleCondition, // `if ($message = "")` is never executed
-            TypingIssueKind::NoValue, // `takes_string($message)` is called with 'never' type
+            Code::IMPOSSIBLE_CONDITION, // `if ($message = "")` is never executed
+            Code::NO_VALUE, // `takes_string($message)` is called with 'never' type
         ]
     }
 
@@ -1741,7 +1731,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ImpossibleCondition, // `if (false)` is never executed
+            Code::IMPOSSIBLE_CONDITION, // `if (false)` is never executed
         ]
     }
 
@@ -1758,7 +1748,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantCondition, // `if (true)` is always executed
+            Code::REDUNDANT_CONDITION, // `if (true)` is always executed
         ]
     }
 
@@ -1777,9 +1767,9 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantComparison, // `$input === 'b'` is always false after `$input === 'a'`
-            TypingIssueKind::RedundantLogicalOperation, // `$input === 'a' && $input === 'b'` is false because `$input === 'b'` is false.
-            TypingIssueKind::ImpossibleCondition, // `if ($input === 'a' && $input === 'b')` is never executed
+            Code::REDUNDANT_COMPARISON, // `$input === 'b'` is always false after `$input === 'a'`
+            Code::REDUNDANT_LOGICAL_OPERATION, // `$input === 'a' && $input === 'b'` is false because `$input === 'b'` is false.
+            Code::IMPOSSIBLE_CONDITION, // `if ($input === 'a' && $input === 'b')` is never executed
         ]
     }
 
@@ -1803,8 +1793,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantComparison, // `$input === null` is always false in the else block
-            TypingIssueKind::ImpossibleCondition, // `if ($input === null)` in the else block is never executed
+            Code::REDUNDANT_COMPARISON, // `$input === null` is always false in the else block
+            Code::IMPOSSIBLE_CONDITION, // `if ($input === null)` in the else block is never executed
         ]
     }
 
@@ -1822,7 +1812,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ImpossibleCondition, // `if ($val)` is never executed because $val is null
+            Code::IMPOSSIBLE_CONDITION, // `if ($val)` is never executed because $val is null
         ]
     }
 
@@ -1840,7 +1830,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::RedundantCondition, // `if ($val)` is always executed because $val is truthy
+            Code::REDUNDANT_CONDITION, // `if ($val)` is always executed because $val is truthy
         ]
     }
 
@@ -2104,7 +2094,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ConditionIsTooComplex,
+            Code::CONDITION_IS_TOO_COMPLEX,
         ]
     }
 
@@ -2141,7 +2131,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ConditionIsTooComplex,
+            Code::CONDITION_IS_TOO_COMPLEX,
         ]
     }
 }

@@ -20,12 +20,12 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::expression::find_expression_logic_issues;
 use crate::formula::get_formula;
-use crate::issue::TypingIssueKind;
 use crate::utils::docblock::check_docblock_type_incompatibility;
 use crate::utils::docblock::get_type_from_var_docblock;
 use crate::utils::expression::array::get_array_target_type_given_index;
@@ -168,7 +168,7 @@ pub fn analyze_assignment<'a>(
         && let Some(assignment_span) = assignment_span
     {
         context.collector.report_with_code(
-                    TypingIssueKind::CloneInsideLoop,
+                    Code::CLONE_INSIDE_LOOP,
                     Issue::warning(format!(
                         "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
                     ))
@@ -194,7 +194,6 @@ pub fn analyze_assignment<'a>(
             context.interner,
             context.codebase,
             &mut context.collector,
-            artifacts,
             target_variable_id,
             existing_target_type,
             Some(&source_type),
@@ -209,7 +208,6 @@ pub fn analyze_assignment<'a>(
                 context.interner,
                 context.codebase,
                 &mut context.collector,
-                artifacts,
                 &root_var_id,
                 Some(&existing_root_type),
             );
@@ -233,7 +231,7 @@ pub fn analyze_assignment<'a>(
             Expression::Identifier(_) | Expression::ConstantAccess(_) | Expression::Access(Access::ClassConstant(_))
         ) {
             context.collector.report_with_code(
-                TypingIssueKind::AssignmentToConstant,
+                Code::ASSIGNMENT_TO_CONSTANT,
                 Issue::error("Cannot assign to a constant.")
                     .with_annotation(
                         Annotation::primary(target_expression.span())
@@ -244,7 +242,7 @@ pub fn analyze_assignment<'a>(
             );
         } else {
             context.collector.report_with_code(
-                TypingIssueKind::InvalidAssignment,
+                Code::INVALID_ASSIGNMENT,
                 Issue::error(
                     "Invalid target for assignment."
                 )
@@ -355,7 +353,7 @@ pub fn analyze_assignment_to_variable<'a>(
 ) {
     if variable_id.eq("$this") {
         context.collector.report_with_code(
-            TypingIssueKind::AssignmentToThis,
+            Code::ASSIGNMENT_TO_THIS,
             Issue::error("Cannot assign to `$this`.")
                 .with_annotation(
                     Annotation::primary(variable_span).with_message("`$this` cannot be used as an assignment target."),
@@ -381,7 +379,7 @@ pub fn analyze_assignment_to_variable<'a>(
         }
 
         context.collector.report_with_code(
-            TypingIssueKind::ImpossibleAssignment,
+            Code::IMPOSSIBLE_ASSIGNMENT,
             issue
                 .with_note(
                     "An expression with type `never` is guaranteed to exit, throw, or loop indefinitely."
@@ -411,20 +409,29 @@ pub fn analyze_assignment_to_variable<'a>(
     }
 
     if !from_docblock && assigned_type.is_mixed() && !variable_id.starts_with("$_") {
-        let mut issue = Issue::warning("Assigning `mixed` type to a variable may lead to unexpected behavior.");
+        let assigned_type_str = assigned_type.get_id(Some(context.interner));
+
+        let mut issue = Issue::warning(format!(
+            "Assigning `{assigned_type_str}` type to a variable may lead to unexpected behavior."
+        ));
 
         if let Some(source_expression) = source_expression
             && let Expression::Binary(_) = source_expression
         {
             issue = issue.with_annotation(
-                Annotation::secondary(source_expression.span()).with_message("This expression has type `mixed`."),
+                Annotation::secondary(source_expression.span())
+                    .with_message(format!("This expression has type `{assigned_type_str}`.")),
             );
         }
 
         context.collector.report_with_code(
-            TypingIssueKind::MixedAssignment,
-            issue.with_annotation(Annotation::primary(variable_span).with_message("Assigning `mixed` type here."))
-                .with_note("Using `mixed` can lead to runtime errors if the variable is used in a way that assumes a specific type.")
+            if assigned_type.is_any() {
+                Code::MIXED_ANY_ASSIGNMENT
+            } else {
+                Code::MIXED_ASSIGNMENT
+            },
+            issue.with_annotation(Annotation::primary(variable_span).with_message(format!("Assigning `{assigned_type_str}` type here.")))
+                .with_note(format!("Using `{assigned_type_str}` can lead to runtime errors if the variable is used in a way that assumes a specific type."))
                 .with_help("Consider using a more specific type to avoid potential issues."),
         );
     }
@@ -490,7 +497,7 @@ fn analyze_destructuring<'a>(
                 "Ensure the value on the right-hand side is an array before attempting to destructure it.",
             );
 
-        context.collector.report_with_code(TypingIssueKind::InvalidArrayDestructuring, issue);
+        context.collector.report_with_code(Code::INVALID_DESTRUCTURING_SOURCE, issue);
 
         non_array = true;
     }
@@ -536,7 +543,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.collector.report_with_code(TypingIssueKind::MixedKeyedAndNonKeyedArrayDestructuring, issue);
+            context.collector.report_with_code(Code::MIXED_DESTRUCTURING_SHAPE, issue);
 
             impossible = true;
         }
@@ -570,7 +577,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.collector.report_with_code(TypingIssueKind::MixedKeyedAndSkippedArrayDestructuring, issue);
+            context.collector.report_with_code(Code::SKIP_IN_KEYED_DESTRUCTURING, issue);
 
             impossible = true;
         }
@@ -653,7 +660,7 @@ fn analyze_destructuring<'a>(
             }
             ArrayElement::Variadic(variadic_element) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidVariadicInDestructuring,
+                    Code::SPREAD_IN_DESTRUCTURING,
                     Issue::error("Variadic unpacking (`...`) is not permitted in a destructuring assignment.")
                         .with_annotation(Annotation::primary(variadic_element.span()).with_message("This syntax is not allowed here"))
                         .with_note("The `...` operator can be used for argument unpacking in function calls or for spreading elements into a new array on the right-hand side of an expression, but not on the left-hand side of an assignment.")
@@ -753,7 +760,6 @@ fn handle_assignment_with_boolean_logic(
         context.interner,
         context.codebase,
         &mut context.collector,
-        artifacts,
         variable_id,
         right_clauses.into_iter().map(Rc::new).collect(),
         None,
@@ -777,7 +783,7 @@ fn handle_assignment_with_boolean_logic(
 mod tests {
     use indoc::indoc;
 
-    use crate::issue::TypingIssueKind;
+    use crate::code::Code;
     use crate::settings::Settings;
     use crate::test_analysis;
 
@@ -883,7 +889,7 @@ mod tests {
             $scalar = get_list();
         "#},
         issues = [
-            TypingIssueKind::DocblockTypeMismatch,
+            Code::DOCBLOCK_TYPE_MISMATCH,
         ]
     }
 
@@ -1074,8 +1080,8 @@ mod tests {
             i_take_null($e);
         "#},
         issues = [
-            TypingIssueKind::MismatchedArrayIndex,
-            TypingIssueKind::MismatchedArrayIndex,
+            Code::MISMATCHED_ARRAY_INDEX,
+            Code::MISMATCHED_ARRAY_INDEX,
         ]
     }
 
@@ -1092,7 +1098,7 @@ mod tests {
             i_take_null($age);
         "#},
         issues = [
-            TypingIssueKind::UndefinedStringArrayIndex,
+            Code::UNDEFINED_STRING_ARRAY_INDEX,
         ]
     }
 
@@ -1110,7 +1116,7 @@ mod tests {
             i_take_null($b);
         "#},
         issues = [
-            TypingIssueKind::UndefinedIntArrayIndex,
+            Code::UNDEFINED_INT_ARRAY_INDEX,
         ]
     }
 
@@ -1211,8 +1217,8 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::PossiblyUndefinedArrayIndex,
-            TypingIssueKind::PossiblyUndefinedArrayIndex,
+            Code::POSSIBLY_UNDEFINED_ARRAY_INDEX,
+            Code::POSSIBLY_UNDEFINED_ARRAY_INDEX,
         ]
     }
 
@@ -1265,7 +1271,7 @@ mod tests {
             }
         "#},
         issues = [
-            TypingIssueKind::ExpressionIsTooComplex,
+            Code::EXPRESSION_IS_TOO_COMPLEX,
         ]
     }
 }

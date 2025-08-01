@@ -13,6 +13,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
@@ -20,7 +21,6 @@ use crate::context::scope::loop_scope::LoopScope;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::remove_clauses_with_mixed_variables;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::r#loop;
@@ -54,7 +54,7 @@ impl Analyzable for DoWhile {
         )
         .unwrap_or_else(|| {
             context.collector.report_with_code(
-                TypingIssueKind::ConditionIsTooComplex,
+                Code::CONDITION_IS_TOO_COMPLEX,
                 Issue::warning("Loop condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(self.condition.span())
@@ -123,7 +123,7 @@ impl Analyzable for DoWhile {
 
         if !negated_while_types.is_empty() {
             let mut reconcilation_context =
-                ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+                ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
             reconcile_keyed_types(
                 &mut reconcilation_context,

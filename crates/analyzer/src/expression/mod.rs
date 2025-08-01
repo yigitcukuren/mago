@@ -17,12 +17,12 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
-use crate::issue::TypingIssueKind;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::attributes::AttributeTarget;
@@ -75,7 +75,7 @@ impl Analyzable for Expression {
             Expression::ArrayAccess(expr) => expr.analyze(context, block_context, artifacts),
             Expression::ArrayAppend(_) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::ArrayAppendInReadContext,
+                    Code::ARRAY_APPEND_IN_READ_CONTEXT,
                     Issue::error("Array append syntax `[]` cannot be used in a read context.")
                     .with_annotation(
                         Annotation::primary(self.span()).with_message("This syntax is for appending elements, not for reading a value.")
@@ -133,7 +133,7 @@ impl Analyzable for Expression {
             Expression::Pipe(expr) => expr.analyze(context, block_context, artifacts),
             Expression::List(list_expr) => {
                 context.collector.report_with_code(
-                    TypingIssueKind::ListUsedInReadContext,
+                    Code::LIST_USED_IN_READ_CONTEXT,
                     Issue::error("`list()` construct cannot be used as a value.")
                         .with_annotation(
                             Annotation::primary(list_expr.span())
@@ -155,7 +155,7 @@ impl Analyzable for Expression {
                 let keyword_str = context.interner.lookup(&keyword.value);
 
                 context.collector.report_with_code(
-                    TypingIssueKind::InvalidScopeKeywordContext,
+                    Code::INVALID_SCOPE_KEYWORD_CONTEXT,
                     Issue::error(format!("The `{keyword_str}` keyword cannot be used as a standalone value."))
                         .with_annotation(
                             Annotation::primary(keyword.span)
@@ -227,7 +227,7 @@ pub fn find_expression_logic_issues<'a>(
         artifacts,
     ) else {
         context.collector.report_with_code(
-           TypingIssueKind::ExpressionIsTooComplex,
+           Code::EXPRESSION_IS_TOO_COMPLEX,
            Issue::warning("Expression is too complex for complete logical analysis.")
                .with_annotation(
                    Annotation::primary(expression.span())
@@ -295,7 +295,6 @@ pub fn find_expression_logic_issues<'a>(
         &expression_clauses,
         &expression_span,
         &HashMap::default(),
-        block_context.inside_loop,
     );
 
     expression_clauses.extend(block_context.clauses.iter().map(|v| (**v).clone()).collect::<Vec<_>>());
@@ -307,7 +306,7 @@ pub fn find_expression_logic_issues<'a>(
     );
 
     let mut reconcilation_context =
-        ReconcilationContext::new(context.interner, context.codebase, artifacts, &mut context.collector);
+        ReconcilationContext::new(context.interner, context.codebase, &mut context.collector);
 
     reconcile_keyed_types(
         &mut reconcilation_context,
