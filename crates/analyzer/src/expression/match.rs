@@ -51,18 +51,9 @@ impl Analyzable for Match {
                     match_arms.push(match_expression_arm);
                 }
                 MatchArm::Default(match_default_arm) => {
-                    if let Some(previous_default_arm) = default_arm {
-                        context.collector.report_with_code(
-                            Code::DUPLICATE_MATCH_DEFAULT_ARM,
-                            Issue::error("Match expression cannot have multiple `default` arms.")
-                                .with_annotation(Annotation::primary(match_default_arm.span()).with_message("This `default` arm is a duplicate."))
-                                .with_annotation(Annotation::secondary(previous_default_arm.span()).with_message("The first `default` arm was defined here."))
-                                .with_note("The `default` arm in a `match` expression serves as a fallback and is executed only if no other conditional arm matches the subject expression's value.")
-                                .with_help("Remove the redundant `default` arm, or change its condition if a different case was intended."),
-                        );
+                    if default_arm.is_none() {
+                        default_arm = Some(match_default_arm);
                     }
-
-                    default_arm = Some(match_default_arm);
                 }
             }
         }
@@ -645,7 +636,6 @@ mod tests {
             };
         "#},
         issues = [
-            Code::DUPLICATE_MATCH_DEFAULT_ARM, // Duplicate default arm
             Code::UNREACHABLE_MATCH_ARM, // `"a"` is unreachable
             Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED, // For the default arm
         ]

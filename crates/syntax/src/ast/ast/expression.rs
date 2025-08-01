@@ -267,6 +267,15 @@ impl Expression {
     }
 
     #[inline]
+    pub const fn is_true(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_true()
+        } else {
+            matches!(&self, Expression::Literal(Literal::True(_)))
+        }
+    }
+
+    #[inline]
     pub const fn is_literal(&self) -> bool {
         if let Expression::Parenthesized(expression) = self {
             expression.expression.is_literal()

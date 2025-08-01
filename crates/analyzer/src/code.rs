@@ -120,7 +120,6 @@ impl Code {
     pub const TEMPLATE_CONSTRAINT_VIOLATION: &'static str = "template-constraint-violation";
     pub const ARRAY_TO_STRING_CONVERSION: &'static str = "array-to-string-conversion";
     pub const IMPLICIT_RESOURCE_TO_STRING_CAST: &'static str = "implicit-resource-to-string-cast";
-    pub const DUPLICATE_MATCH_DEFAULT_ARM: &'static str = "duplicate-match-default-arm";
     pub const MATCH_EXPRESSION_ONLY_DEFAULT_ARM: &'static str = "match-expression-only-default-arm";
     pub const EMPTY_MATCH_EXPRESSION: &'static str = "empty-match-expression";
     pub const UNKNOWN_MATCH_SUBJECT_TYPE: &'static str = "unknown-match-subject-type";

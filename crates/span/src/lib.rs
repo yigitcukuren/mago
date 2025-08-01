@@ -92,6 +92,10 @@ impl Span {
         Self { start, end }
     }
 
+    pub fn dummy(start_offset: usize, end_offset: usize) -> Self {
+        Self::new(Position::dummy(start_offset), Position::dummy(end_offset))
+    }
+
     pub fn between(start: Span, end: Span) -> Self {
         start.join(end)
     }

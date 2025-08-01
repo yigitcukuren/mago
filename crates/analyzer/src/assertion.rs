@@ -137,7 +137,7 @@ pub fn scrape_assertions(
             BinaryOperator::Equal(_) | BinaryOperator::Identical(_) => {
                 return scrape_equality_assertions(
                     &binary.lhs,
-                    &binary.operator,
+                    binary.operator.is_identity(),
                     &binary.rhs,
                     artifacts,
                     assertion_context,
@@ -290,9 +290,9 @@ fn scrape_special_function_call_assertions(
     if_types
 }
 
-fn scrape_equality_assertions(
+pub(super) fn scrape_equality_assertions(
     left: &Expression,
-    operator: &BinaryOperator,
+    is_identity: bool,
     right: &Expression,
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
@@ -334,15 +334,15 @@ fn scrape_equality_assertions(
     }
 
     if let Some(true_position) = has_true_variable(left, right) {
-        return get_true_equality_assertions(left, operator, right, assertion_context, true_position);
+        return get_true_equality_assertions(left, is_identity, right, assertion_context, true_position);
     }
 
     if let Some(false_position) = has_false_variable(left, right) {
-        return get_false_equality_assertions(left, operator, right, assertion_context, false_position);
+        return get_false_equality_assertions(left, is_identity, right, assertion_context, false_position);
     }
 
     if let Some(empty_array_position) = has_empty_array_variable(left, right) {
-        return get_empty_array_equality_assertions(left, operator, right, assertion_context, empty_array_position);
+        return get_empty_array_equality_assertions(left, is_identity, right, assertion_context, empty_array_position);
     }
 
     if let Some(enum_case_position) = has_enum_case_comparison(left, right, artifacts) {
@@ -352,7 +352,7 @@ fn scrape_equality_assertions(
     if let Some(typed_value_position) = has_typed_value_comparison(left, right, artifacts, assertion_context) {
         return get_typed_value_equality_assertions(
             left,
-            operator,
+            is_identity,
             right,
             artifacts,
             assertion_context,
@@ -444,7 +444,7 @@ fn scrape_inequality_assertions(
 
 fn get_empty_array_equality_assertions(
     left: &Expression,
-    operator: &BinaryOperator,
+    is_identity: bool,
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     null_position: OtherValuePosition,
@@ -464,7 +464,7 @@ fn get_empty_array_equality_assertions(
     );
 
     if let Some(var_name) = var_name {
-        if operator.is_identity() {
+        if is_identity {
             if_types.insert(var_name, vec![vec![Assertion::EmptyCountable]]);
         } else {
             if_types.insert(var_name, vec![vec![Assertion::Falsy]]);
@@ -1138,7 +1138,7 @@ fn is_count_or_size_of_call(assertion_context: AssertionContext<'_>, expression:
 
 fn get_true_equality_assertions(
     left: &Expression,
-    operator: &BinaryOperator,
+    is_identity: bool,
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     true_position: OtherValuePosition,
@@ -1158,7 +1158,7 @@ fn get_true_equality_assertions(
     );
 
     if let Some(var_name) = var_name {
-        if operator.is_identity() {
+        if is_identity {
             if_types.insert(var_name, vec![vec![Assertion::IsType(TAtomic::Scalar(TScalar::r#true()))]]);
         } else {
             if_types.insert(var_name, vec![vec![Assertion::Truthy]]);
@@ -1212,7 +1212,7 @@ pub fn has_typed_value_comparison(
 
 fn get_false_equality_assertions(
     left: &Expression,
-    operator: &BinaryOperator,
+    is_identity: bool,
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     false_position: OtherValuePosition,
@@ -1232,7 +1232,7 @@ fn get_false_equality_assertions(
     );
 
     if let Some(var_name) = var_name {
-        if operator.is_identity() {
+        if is_identity {
             if_types.insert(var_name, vec![vec![Assertion::IsType(TAtomic::Scalar(TScalar::r#false()))]]);
         } else {
             if_types.insert(var_name, vec![vec![Assertion::Falsy]]);
@@ -1246,7 +1246,7 @@ fn get_false_equality_assertions(
 
 fn get_typed_value_equality_assertions(
     left: &Expression,
-    operator: &BinaryOperator,
+    is_identity: bool,
     right: &Expression,
     artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
@@ -1312,7 +1312,7 @@ fn get_typed_value_equality_assertions(
     if other_value_type.is_single() {
         let other_value_atomic = other_value_type.get_single().clone();
 
-        let orred_types = if operator.is_identity() {
+        let orred_types = if is_identity {
             vec![Assertion::IsIdentical(other_value_atomic)]
         } else {
             vec![Assertion::IsEqual(other_value_atomic)]
@@ -1324,7 +1324,7 @@ fn get_typed_value_equality_assertions(
         && !var_type.is_mixed()
         && var_type.is_single()
     {
-        let orred_types = if operator.is_identity() {
+        let orred_types = if is_identity {
             vec![Assertion::IsIdentical(var_type.get_single().clone())]
         } else {
             vec![Assertion::IsEqual(var_type.get_single().clone())]

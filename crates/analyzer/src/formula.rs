@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use ahash::HashMap;
 use indexmap::IndexMap;
 
 use mago_algebra::clause::Clause;
@@ -13,12 +14,44 @@ use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
 use crate::assertion::scrape_assertions;
+use crate::assertion::scrape_equality_assertions;
 use crate::context::assertion::AssertionContext;
 use crate::context::scope::var_has_root;
 use crate::utils::misc::unwrap_expression;
 
 const FORMULA_SIZE_THRESHOLD: usize = 1000;
 
+/// Recursively traverses a conditional expression to generate a corresponding logical formula.
+///
+/// This function serves as the primary entry point for converting control flow conditions
+/// (e.g., from `if`, `while`, or ternary expressions) into a set of logical clauses.
+/// The resulting formula is represented in Disjunctive Normal Form (a vector of clauses
+/// where each clause is a conjunction of assertions).
+///
+/// The function breaks down the expression by handling logical operators:
+/// - **Binary `&&` and `||`**: Delegates to specialized handlers (`handle_binary_and_operation`,
+///   `handle_binary_or_operation`) to correctly combine the formulas from the left and
+///   right-hand sides.
+/// - **Unary `!` (Not)**: Applies negation to the operand's formula. It includes an
+///   optimization for De Morgan's laws, transforming `!(A || B)` into `!A && !B` and
+///   `!(A && B)` into `!A || !B` before processing.
+///
+/// For any other expression (the base case of the recursion), it scrapes atomic
+/// assertions and converts them into a set of clauses.
+///
+/// # Parameters
+///
+/// * `conditional_object_id`: The span of the overall conditional statement (e.g., the `if` keyword).
+/// * `creating_object_id`: The span of the specific part of the expression currently being analyzed.
+/// * `conditional`: The conditional expression to convert into a formula.
+/// * `assertion_context`: The context required for generating assertions.
+/// * `artifacts`: A mutable reference to the analysis artifacts.
+///
+/// # Returns
+///
+/// Returns `Some(Vec<Clause>)` representing the logical formula. Returns `None` if the
+/// formula's complexity exceeds a predefined threshold (`FORMULA_SIZE_THRESHOLD`) at
+/// any point during the recursive process.
 pub fn get_formula(
     conditional_object_id: Span,
     creating_object_id: Span,
@@ -99,8 +132,68 @@ pub fn get_formula(
         return if negated.len() > FORMULA_SIZE_THRESHOLD { None } else { Some(negated) };
     }
 
-    let anded_assertions = scrape_assertions(expression, artifacts, assertion_context);
+    get_formula_from_assertions(
+        conditional_object_id,
+        creating_object_id,
+        expression,
+        scrape_assertions(expression, artifacts, assertion_context),
+    )
+}
 
+/// Creates a logical formula representing a disjunction of equality/identity comparisons.
+///
+/// This function generates clauses for a formula that is logically equivalent to the
+/// expression `subject === conditions[0] || subject === conditions[1] || ...`.
+///
+/// It iterates through each provided condition, generates clauses for the assertion
+/// `subject === condition`, and combines them into a single disjunctive formula. This is
+/// often used to model the behavior of `match` arms.
+///
+/// # Parameters
+///
+/// * `subject`: The expression on the left-hand side of the equal comparisons.
+/// * `conditions`: A slice of expressions to compare against the `subject`.
+/// * `assertion_context`: The context required for generating assertions.
+/// * `artifacts`: A mutable reference to the analysis artifacts.
+/// * `is_identity`: A boolean indicating whether the equality is an identity check (e.g., `===`).
+///
+/// # Returns
+///
+/// Returns `Some(Vec<Clause>)` containing the resulting logical formula if successful.
+///
+/// Returns `None` if the formula's complexity exceeds a predefined threshold
+/// (`FORMULA_SIZE_THRESHOLD`), to avoid performance degradation.
+#[allow(dead_code)]
+pub fn get_disjunctive_equality_formula(
+    subject: &Expression,
+    conditions: &[Expression],
+    assertion_context: AssertionContext<'_>,
+    artifacts: &mut AnalysisArtifacts,
+    is_identity: bool,
+) -> Option<Vec<Clause>> {
+    let subject = unwrap_expression(subject);
+
+    let mut clauses = vec![];
+    for condition in conditions {
+        let condition = unwrap_expression(condition);
+        let assertions = scrape_equality_assertions(subject, is_identity, condition, artifacts, assertion_context);
+        let formula = get_formula_from_assertions(condition.span(), subject.span(), subject, assertions)?;
+
+        clauses = disjoin_clauses(clauses, formula, condition.span());
+        if clauses.len() > FORMULA_SIZE_THRESHOLD {
+            return None;
+        }
+    }
+
+    Some(clauses)
+}
+
+fn get_formula_from_assertions(
+    conditional_object_id: Span,
+    creating_object_id: Span,
+    conditional: &Expression,
+    anded_assertions: Vec<HashMap<String, Vec<Vec<Assertion>>>>,
+) -> Option<Vec<Clause>> {
     let mut clauses = Vec::new();
     for assertions in anded_assertions {
         for (var_id, anded_types) in assertions {
