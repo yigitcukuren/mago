@@ -320,22 +320,3 @@ pub fn find_expression_logic_issues<'a>(
         false,
     );
 }
-
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
-
-    use crate::test_analysis;
-
-    test_analysis! {
-        name = bare_identifier_in_array_access,
-        code = indoc! {r#"
-            <?php
-
-
-            $item = ['link' => 'https://example.com', 'description' => 'Example description'];
-
-            echo "<a href='$item[link]' title='$item[description]'>";
-        "#},
-    }
-}

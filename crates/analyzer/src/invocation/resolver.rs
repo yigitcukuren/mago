@@ -5,7 +5,7 @@ use either::Either;
 
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::misc::GenericParent;
-use mago_codex::ttype::add_optional_union_type;
+use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
@@ -183,30 +183,32 @@ fn resolve_atomic(
     let subject = inferred_type_replacer::replace(&subject, template_result, context.codebase, context.interner);
     let target = inferred_type_replacer::replace(&target, template_result, context.codebase, context.interner);
 
-    if union_comparator::is_contained_by(
-        context.codebase,
-        context.interner,
-        &subject,
-        &target,
-        false,
-        false,
-        false,
-        &mut ComparisonResult::new(),
-    ) {
-        return if negated { Either::Right(otherwise_type) } else { Either::Right(then_type) };
+    if !subject.is_never() {
+        if union_comparator::is_contained_by(
+            context.codebase,
+            context.interner,
+            &subject,
+            &target,
+            false,
+            false,
+            false,
+            &mut ComparisonResult::new(),
+        ) {
+            return if negated { Either::Right(otherwise_type) } else { Either::Right(then_type) };
+        }
+
+        let are_disjoint = !union_comparator::can_expression_types_be_identical(
+            context.codebase,
+            context.interner,
+            &subject,
+            &target,
+            false,
+        );
+
+        if are_disjoint {
+            return if negated { Either::Right(then_type) } else { Either::Right(otherwise_type) };
+        }
     }
 
-    let are_disjoint = !union_comparator::can_expression_types_be_identical(
-        context.codebase,
-        context.interner,
-        &subject,
-        &target,
-        false,
-    );
-
-    if are_disjoint {
-        return if negated { Either::Right(then_type) } else { Either::Right(otherwise_type) };
-    }
-
-    Either::Right(add_optional_union_type(then_type, Some(&otherwise_type), context.codebase, context.interner))
+    Either::Right(add_union_type(then_type, &otherwise_type, context.codebase, context.interner, false))
 }

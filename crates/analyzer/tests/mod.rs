@@ -1,0 +1,78 @@
+mod framework;
+
+/// A macro to automatically generate a test case from a corresponding PHP file.
+///
+/// # Variants
+///
+/// - `test_case!(test_name)`: Creates a test using default settings.
+/// - `test_case!(test_name, settings_expression)`: Creates a test with custom settings.
+///
+/// For a given test name, e.g., `my_test`, this macro will:
+///
+/// 1. Create a test function named `my_test`.
+/// 2. Read the content from the file `cases/my_test.php`.
+/// 3. Create and run a `TestCase` with that content and the specified settings.
+macro_rules! test_case {
+    ($test_name:ident, $settings:expr) => {
+        #[test]
+        fn $test_name() {
+            let content = include_str!(concat!("cases/", stringify!($test_name), ".php"));
+            $crate::framework::TestCase::new(stringify!($test_name), content).settings($settings).run();
+        }
+    };
+    ($test_name:ident) => {
+        #[test]
+        fn $test_name() {
+            let content = include_str!(concat!("cases/", stringify!($test_name), ".php"));
+            $crate::framework::TestCase::new(stringify!($test_name), content).run();
+        }
+    };
+}
+
+test_case!(accessing_undefined_class_constant);
+test_case!(argument_count);
+test_case!(array_list_reconciliation);
+test_case!(array_shape_fields);
+test_case!(assert_generic_array_key_is_array_key);
+test_case!(bare_identifier_in_array_access);
+test_case!(class_like_constant_access);
+test_case!(collection_types);
+test_case!(conditional_return_resolved_to_left);
+test_case!(conditional_return_resolved_to_right);
+test_case!(const_array_key);
+test_case!(docblock_type_narrowing);
+test_case!(docblock_type_parsing_verification);
+test_case!(generic_shape_coercion);
+test_case!(int_or_float);
+test_case!(integer_range_reconciliation);
+test_case!(integer_reconciliation);
+test_case!(isset_and_nullable_access_assertions);
+test_case!(iterable_count);
+test_case!(iterable_reconciliation);
+test_case!(non_empty_string_magic_constant);
+test_case!(numeric_reconciliation);
+test_case!(priority_queue_implementation);
+test_case!(psl_integration);
+test_case!(reconcile_array_index_type);
+test_case!(reconcile_empty_string);
+test_case!(reconcile_non_empty_string);
+test_case!(reconcile_properties);
+test_case!(reconciling_generic_parameter);
+test_case!(recursive_templates);
+test_case!(resource_reconciliation);
+test_case!(scalar_types_reconciliation);
+test_case!(string_reconciliation);
+test_case!(type_guard_followed_by_redundant_check);
+test_case!(type_narrowing_and_assertions);
+test_case!(unspecified_callable_or_closure);
+test_case!(untemplated_generic_parameters);
+test_case!(untyped_callable_parameter);
+test_case!(yield_array_value);
+test_case!(yield_from_generator);
+test_case!(yield_from_invalid_key);
+test_case!(yield_from_invalid_type);
+test_case!(yield_from_non_iterable);
+test_case!(yield_global_scope);
+test_case!(yield_invalid_key);
+test_case!(yield_invalid_value);
+test_case!(yield_merge_iterables);

@@ -82,29 +82,3 @@ impl Analyzable for MagicConstant {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
-
-    use crate::test_analysis;
-
-    test_analysis! {
-        name = non_empty_string_magic_constant,
-        code = indoc! {r#"
-            <?php
-
-            /**
-             * @param non-empty-string $s
-             * @return non-empty-string
-             */
-            function i_take_non_empty_string(string $s): string
-            {
-                return $s;
-            }
-
-            i_take_non_empty_string(__FILE__);
-            i_take_non_empty_string(__DIR__);
-        "#},
-    }
-}
