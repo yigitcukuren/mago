@@ -100,6 +100,7 @@ pub(crate) fn reconcile(
                 &existing_var_type,
                 &wrap_atomic(assertion_type.clone()),
                 true,
+                false,
             )
         {
             trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, pos);

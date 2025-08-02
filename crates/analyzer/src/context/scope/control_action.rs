@@ -1,9 +1,13 @@
+use ahash::HashSet;
+use ahash::HashSetExt;
+
+use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::utils::misc::unique_vec;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Debug)]
+#[repr(u8)]
 pub enum ControlAction {
     End,
     Break,
@@ -15,6 +19,7 @@ pub enum ControlAction {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Debug)]
+#[repr(u8)]
 pub enum BreakType {
     Switch,
     Loop,
@@ -26,10 +31,10 @@ impl ControlAction {
         break_type: Vec<BreakType>,
         artifacts: Option<&AnalysisArtifacts>,
         return_is_exit: bool,
-    ) -> Vec<ControlAction> {
+    ) -> HashSet<ControlAction> {
         let statements_len = statements.len();
         if 0 == statements_len {
-            return vec![ControlAction::None];
+            return HashSet::from_iter([ControlAction::None]);
         }
 
         if 1 == statements_len
@@ -38,7 +43,7 @@ impl ControlAction {
             return ControlAction::from_statements(block.statements.to_vec(), break_type, artifacts, return_is_exit);
         }
 
-        let mut actions = Vec::default();
+        let mut control_actions = HashSet::default();
         'statements_loop: for statement in statements {
             match statement {
                 _ if is_return_or_throw_or_exit(statement) => {
@@ -49,19 +54,19 @@ impl ControlAction {
                             && let Some(return_type) = artifacts.get_expression_type(&expression)
                             && return_type.is_never()
                         {
-                            actions.push(ControlAction::End);
+                            control_actions.insert(ControlAction::End);
 
-                            return unique_vec(actions.into_iter());
+                            return control_actions;
                         }
 
-                        actions.push(ControlAction::Return);
+                        control_actions.insert(ControlAction::Return);
 
-                        return unique_vec(actions.into_iter());
+                        return control_actions;
                     }
 
-                    actions.push(ControlAction::End);
+                    control_actions.insert(ControlAction::End);
 
-                    return unique_vec(actions.into_iter());
+                    return control_actions;
                 }
                 _ if statement.is_loop() => {
                     let (inner_statements, condition) = match statement {
@@ -101,17 +106,18 @@ impl ControlAction {
                     let mut loop_break_types = break_type.clone();
                     loop_break_types.push(BreakType::Loop);
 
-                    let loop_actions =
+                    let mut loop_actions =
                         ControlAction::from_statements(inner_statements, loop_break_types, artifacts, return_is_exit);
+                    loop_actions.retain(|action| !action.is_none());
 
-                    actions.extend(loop_actions.into_iter().filter(|a| !a.is_none()));
+                    control_actions.extend(loop_actions);
 
-                    if !actions.iter().any(|a| a.is_break_immediate_loop() || a.is_exit_path()) {
+                    if !control_actions.iter().any(|a| a.is_break_immediate_loop() || a.is_exit_path()) {
                         if let (Some(artifacts), Some(condition)) = (artifacts, condition)
                             && let Some(condition_type) = artifacts.get_expression_type(condition)
                             && condition_type.is_always_truthy()
                         {
-                            return actions;
+                            return control_actions;
                         }
 
                         if let Some(artifacts) = artifacts
@@ -131,36 +137,39 @@ impl ControlAction {
                             }
 
                             if is_infinite_loop {
-                                return actions;
+                                return control_actions;
                             }
                         }
                     }
 
-                    actions.retain(|a| !a.is_break_immediate_loop());
+                    control_actions.retain(|a| !a.is_break_immediate_loop());
                 }
                 Statement::Block(block) => {
-                    let inner_actions = ControlAction::from_statements(
+                    let mut block_actions = ControlAction::from_statements(
                         block.statements.to_vec(),
                         break_type.clone(),
                         artifacts,
                         return_is_exit,
                     );
 
-                    actions.extend(inner_actions.into_iter().filter(|a| !a.is_none()));
-                    if let Some(last) = actions.last()
-                        && last.is_final()
-                    {
-                        return actions;
+                    if !block_actions.contains(&ControlAction::None) {
+                        control_actions.extend(block_actions);
+                        control_actions.retain(|action| *action != ControlAction::None);
+
+                        return control_actions;
                     }
+
+                    block_actions.retain(|action| *action != ControlAction::None);
+                    control_actions.extend(block_actions);
                 }
                 Statement::Expression(statement_expression) => {
                     if let Some(artifacts) = artifacts
                         && let Some(expression_type) = artifacts.get_expression_type(&statement_expression.expression)
                         && expression_type.is_never()
                     {
-                        actions.push(ControlAction::End);
+                        control_actions.insert(ControlAction::End);
 
-                        return unique_vec(actions.into_iter());
+                        return control_actions;
                     }
                 }
                 Statement::Continue(continue_statement) => {
@@ -176,16 +185,16 @@ impl ControlAction {
                             && break_type_len >= count
                         {
                             if matches!(break_type.get(break_type_len - count), Some(BreakType::Switch)) {
-                                actions.push(ControlAction::LeaveSwitch);
+                                control_actions.insert(ControlAction::LeaveSwitch);
                             }
 
-                            return actions;
+                            return control_actions;
                         }
                     }
 
-                    actions.push(ControlAction::Continue);
+                    control_actions.insert(ControlAction::Continue);
 
-                    return unique_vec(actions.into_iter());
+                    return control_actions;
                 }
                 Statement::Break(continue_statement) => {
                     let break_type_len = break_type.len();
@@ -201,19 +210,19 @@ impl ControlAction {
                         {
                             if let Some(b) = break_type.get(break_type_len - count) {
                                 if b.is_switch() {
-                                    actions.push(ControlAction::LeaveSwitch);
+                                    control_actions.insert(ControlAction::LeaveSwitch);
                                 } else {
-                                    actions.push(ControlAction::BreakImmediateLoop);
+                                    control_actions.insert(ControlAction::BreakImmediateLoop);
                                 }
                             }
 
-                            return actions;
+                            return control_actions;
                         }
                     }
 
-                    actions.push(ControlAction::Break);
+                    control_actions.insert(ControlAction::Break);
 
-                    return unique_vec(actions.into_iter());
+                    return control_actions;
                 }
                 Statement::Switch(switch) => {
                     let mut has_ended = false;
@@ -258,10 +267,14 @@ impl ControlAction {
 
                     all_case_actions.retain(|c| !c.is_none());
 
-                    actions.extend(all_case_actions);
+                    control_actions.extend(all_case_actions);
 
-                    if has_default_terminator {
-                        return unique_vec(actions.into_iter());
+                    if has_default_terminator
+                        || artifacts.is_some_and(|artifacts| {
+                            artifacts.fully_matched_switch_offsets.contains(&switch.span().start.offset)
+                        })
+                    {
+                        return control_actions;
                     }
                 }
                 Statement::If(if_statement) => {
@@ -287,12 +300,12 @@ impl ControlAction {
 
                             else_statement_actions
                         }
-                        None => vec![],
+                        None => HashSet::default(),
                     };
 
                     let mut all_elseif_actions = vec![];
                     for else_if_statements in if_statement.body.else_if_statements() {
-                        let mut elseif_control_actions = ControlAction::from_statements(
+                        let elseif_control_actions = ControlAction::from_statements(
                             else_if_statements.iter().collect(),
                             break_type.clone(),
                             artifacts,
@@ -301,26 +314,18 @@ impl ControlAction {
 
                         all_leave = all_leave && elseif_control_actions.iter().all(|c| !c.is_none());
 
-                        all_elseif_actions.append(&mut elseif_control_actions);
+                        all_elseif_actions.extend(elseif_control_actions);
                     }
+
+                    control_actions.extend(if_statement_actions);
+                    control_actions.extend(else_statement_actions);
+                    control_actions.extend(all_elseif_actions);
 
                     if all_leave {
-                        return unique_vec(
-                            actions
-                                .into_iter()
-                                .chain(if_statement_actions.into_iter())
-                                .chain(else_statement_actions.into_iter())
-                                .chain(all_elseif_actions.into_iter()),
-                        );
+                        return control_actions;
                     }
 
-                    actions = actions
-                        .into_iter()
-                        .chain(if_statement_actions.into_iter())
-                        .chain(else_statement_actions.into_iter())
-                        .chain(all_elseif_actions.into_iter())
-                        .filter(|c| !c.is_none())
-                        .collect();
+                    control_actions.retain(|action| *action != ControlAction::None);
                 }
                 Statement::Try(try_catch) => {
                     let try_statement_actions = ControlAction::from_statements(
@@ -334,7 +339,7 @@ impl ControlAction {
 
                     let mut all_catch_actions = vec![];
                     if !try_catch.catch_clauses.is_empty() {
-                        let mut all_leave = try_leaves;
+                        let mut all_catches_leave = try_leaves;
                         for catch in try_catch.catch_clauses.iter() {
                             let catch_actions = ControlAction::from_statements(
                                 catch.block.statements.to_vec(),
@@ -343,25 +348,25 @@ impl ControlAction {
                                 return_is_exit,
                             );
 
-                            all_leave = all_leave && catch_actions.iter().all(|c| !c.is_none());
+                            all_catches_leave = all_catches_leave && catch_actions.iter().all(|c| !c.is_none());
 
-                            if !all_leave {
-                                actions.extend(catch_actions.into_iter());
+                            if !all_catches_leave {
+                                control_actions.extend(catch_actions);
                             } else {
-                                all_catch_actions.extend(catch_actions.into_iter());
+                                all_catch_actions.extend(catch_actions);
                             }
                         }
 
-                        if all_leave && !try_statement_actions.iter().all(|c| c.is_none()) {
-                            return unique_vec(
-                                actions
-                                    .into_iter()
-                                    .chain(try_statement_actions.into_iter())
-                                    .chain(all_catch_actions.into_iter()),
-                            );
+                        if all_catches_leave && !try_statement_actions.iter().all(|c| c.is_none()) {
+                            control_actions.extend(try_statement_actions);
+                            control_actions.extend(all_catch_actions);
+
+                            return control_actions;
                         }
                     } else if try_leaves {
-                        return unique_vec(actions.into_iter().chain(try_statement_actions.into_iter()));
+                        control_actions.extend(try_statement_actions);
+
+                        return control_actions;
                     }
 
                     if let Some(finally_clause) = try_catch.finally_clause.as_ref()
@@ -375,24 +380,38 @@ impl ControlAction {
                         );
 
                         if !finally_statement_actions.iter().any(|c| c.is_none()) {
-                            return actions
-                                .into_iter()
-                                .filter(|c| !c.is_none())
-                                .chain(finally_statement_actions.into_iter())
-                                .collect();
+                            control_actions.retain(|c| !c.is_none());
+                            control_actions.extend(finally_statement_actions);
+
+                            return control_actions;
                         }
                     }
 
-                    actions =
-                        actions.into_iter().chain(try_statement_actions.into_iter()).filter(|c| !c.is_none()).collect();
+                    control_actions.extend(try_statement_actions);
+                    control_actions.retain(|c| !c.is_none());
                 }
                 _ => {}
             };
         }
 
-        actions.push(ControlAction::None);
+        control_actions.insert(ControlAction::None);
 
-        unique_vec(actions)
+        control_actions
+    }
+
+    pub fn from_expression(expression: &Expression, artifacts: Option<&AnalysisArtifacts>) -> HashSet<ControlAction> {
+        let mut control_actions = HashSet::with_capacity(1);
+
+        if let Some(artifacts) = artifacts
+            && let Some(expression_type) = artifacts.get_expression_type(&expression)
+            && expression_type.is_never()
+        {
+            control_actions.insert(ControlAction::End);
+        } else {
+            control_actions.insert(ControlAction::None);
+        }
+
+        control_actions
     }
 
     #[inline]

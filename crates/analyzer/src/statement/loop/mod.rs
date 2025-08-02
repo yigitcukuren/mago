@@ -271,11 +271,11 @@ fn analyze<'a, 'b>(
 
         pre_conditions_applied = true;
 
-        context.set_loop_scope(loop_scope.clone());
+        artifacts.set_loop_scope(loop_scope.clone());
         analyze_statements(statements, context, &mut continue_context, artifacts)?;
         loop_scope =
             // SAFETY: we know the loop scope will remain in the context.
-            unsafe { context.take_loop_scope().unwrap_unchecked() };
+            unsafe { artifacts.take_loop_scope().unwrap_unchecked() };
 
         update_loop_scope_contexts(&mut loop_scope, loop_context, &mut continue_context, loop_parent_context, context);
 
@@ -310,9 +310,9 @@ fn analyze<'a, 'b>(
             let mut continue_context = loop_context.clone();
 
             loop_scope = {
-                context.set_loop_scope(loop_scope);
+                artifacts.set_loop_scope(loop_scope);
                 analyze_statements(statements, context, &mut continue_context, artifacts)?;
-                context.take_loop_scope().expect("Loop scope should be present after analyzing statements")
+                artifacts.take_loop_scope().expect("Loop scope should be present after analyzing statements")
             };
 
             update_loop_scope_contexts(
@@ -507,9 +507,9 @@ fn analyze<'a, 'b>(
                 clean_nodes(statements, artifacts);
 
                 let mut loop_scope = {
-                    context.set_loop_scope(loop_scope);
+                    artifacts.set_loop_scope(loop_scope);
                     analyze_statements(statements, context, &mut continue_context, artifacts)?;
-                    context.take_loop_scope().expect("Loop scope should be present after analyzing statements")
+                    artifacts.take_loop_scope().expect("Loop scope should be present after analyzing statements")
                 };
 
                 update_loop_scope_contexts(
@@ -808,7 +808,7 @@ fn apply_pre_condition_to_loop_context<'a>(
             false
         };
 
-        if let Some(loop_scope) = context.get_loop_scope_mut() {
+        if let Some(loop_scope) = artifacts.get_loop_scope_mut() {
             loop_scope.truthy_pre_conditions = loop_scope.truthy_pre_conditions && is_truthy;
         }
     }

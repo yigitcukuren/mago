@@ -54,7 +54,7 @@ impl Analyzable for Break {
         };
 
         let mut i = levels;
-        let mut loop_scope_ref = context.loop_scope.as_mut();
+        let mut loop_scope_ref = artifacts.loop_scope.as_mut();
         while let Some(loop_scope) = loop_scope_ref.take() {
             if i > 1 && loop_scope.parent_loop.is_some() {
                 i -= 1;
@@ -128,7 +128,7 @@ impl Analyzable for Break {
             }
         }
 
-        if let Some(case_scope) = block_context.case_scope.as_mut() {
+        if let Some(case_scope) = artifacts.case_scopes.last_mut() {
             if leaving_switch {
                 let mut new_break_vars = case_scope.break_vars.clone().unwrap_or(HashMap::default());
 

@@ -17,31 +17,31 @@ use crate::code::Code;
 /// and a new set of assertions (`formula_2`) from a conditional expression.
 pub fn check_for_paradox(
     interner: &ThreadedInterner,
-    buffer: &mut Collector<'_>,
+    collector: &mut Collector<'_>,
     formula_1: &[Rc<Clause>],
     formula_2: &[Clause],
-    span: &Span,
-    new_assigned_variable_ids: &HashMap<String, usize>,
+    span: Span,
 ) {
     let Some(negated_formula_2) = negate_formula(formula_2.to_vec()) else {
         return;
     };
 
-    let mut previous_clauses: HashMap<usize, Span> =
-        HashMap::from_iter(formula_1.iter().map(|c| (c.hash, c.condition_span)));
+    let formula_1_hashes: HashMap<&Clause, Span> =
+        HashMap::from_iter(formula_1.iter().map(|c| (c.as_ref(), c.condition_span)));
+    let mut formula_2_hashes: HashMap<&Clause, Span> = HashMap::default();
 
     for formula_2_clause in formula_2 {
-        if formula_2_clause.generated
+        if !formula_2_clause.generated
             && !formula_2_clause.wedge
             && formula_2_clause.reconcilable
-            && !new_assigned_variable_ids.keys().any(|key| formula_2_clause.possibilities.contains_key(key))
-            && let Some(original_span) = previous_clauses.get(&formula_2_clause.hash)
-            && original_span != span
+            && let Some(original_span) =
+                formula_1_hashes.get(&formula_2_clause).or_else(|| formula_2_hashes.get(&formula_2_clause))
+            && *original_span != span
         {
-            report_redundant_condition(interner, buffer, formula_2_clause, *span, *original_span);
+            report_redundant_condition(interner, collector, formula_2_clause, span, *original_span);
         }
 
-        previous_clauses.entry(formula_2_clause.hash).or_insert(formula_2_clause.condition_span);
+        formula_2_hashes.entry(formula_2_clause).or_insert(formula_2_clause.condition_span);
     }
 
     let formula_1_clauses = formula_1.iter().map(|c| &**c).collect::<Vec<_>>();
@@ -64,7 +64,7 @@ pub fn check_for_paradox(
             });
 
             if is_subset && !clause_1.possibilities.is_empty() {
-                report_paradoxical_condition(interner, buffer, clause_1, negated_clause_2, *span);
+                report_paradoxical_condition(interner, collector, clause_1, negated_clause_2, span);
 
                 return;
             }

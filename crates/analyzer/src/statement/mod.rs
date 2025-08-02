@@ -31,6 +31,7 @@ pub mod r#if;
 pub mod r#loop;
 pub mod r#return;
 pub mod r#static;
+pub mod switch;
 pub mod r#try;
 pub mod unset;
 
@@ -167,27 +168,7 @@ impl Analyzable for Statement {
             Statement::Global(global) => global.analyze(context, block_context, artifacts),
             Statement::Static(r#static) => r#static.analyze(context, block_context, artifacts),
             Statement::Unset(unset) => unset.analyze(context, block_context, artifacts),
-            Statement::Switch(r#switch) => {
-                context.collector.report_with_code(
-                    Code::UNSUPPORTED_FEATURE,
-                    Issue::warning("Analysis for `switch` statements is not yet implemented.")
-                        .with_annotation(
-                            Annotation::primary(r#switch.span())
-                                .with_message("This `switch` statement will be skipped during analysis"),
-                        )
-                        .with_note(
-                            "Support for `switch` statements is planned for a future release."
-                        )
-                        .with_note(
-                            "In the meantime, types will not be narrowed and variables will not be updated within its branches, which may lead to other errors."
-                        )
-                        .with_help(
-                            "For full type analysis, consider refactoring this logic into an `if` statement, or a `match` expression if possible.",
-                        ),
-                );
-
-                Ok(())
-            }
+            Statement::Switch(r#switch) => r#switch.analyze(context, block_context, artifacts),
         };
 
         result?;

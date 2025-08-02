@@ -276,6 +276,20 @@ impl Expression {
     }
 
     #[inline]
+    pub const fn evaluates_to_boolean(&self) -> bool {
+        match self {
+            Expression::Parenthesized(expression) => expression.expression.evaluates_to_boolean(),
+            Expression::Literal(Literal::True(_)) | Expression::Literal(Literal::False(_)) => true,
+            Expression::Binary(Binary { operator, .. })
+                if operator.is_comparison() || operator.is_logical() || operator.is_instanceof() =>
+            {
+                true
+            }
+            _ => false,
+        }
+    }
+
+    #[inline]
     pub const fn is_literal(&self) -> bool {
         if let Expression::Parenthesized(expression) = self {
             expression.expression.is_literal()

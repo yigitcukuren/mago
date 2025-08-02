@@ -189,23 +189,30 @@ pub fn insert_variabel_from_docblock<'a>(
     variable_type_span: Span,
 ) {
     if let Some(previous_type) = block_context.locals.remove(&variable_name)
-        && !can_expression_types_be_identical(context.codebase, context.interner, &previous_type, &variable_type, false)
+        && !can_expression_types_be_identical(
+            context.codebase,
+            context.interner,
+            &previous_type,
+            &variable_type,
+            false,
+            true,
+        )
     {
         let variable_type_str = variable_type.get_id(Some(context.interner));
         let previous_type_str = previous_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-                Code::DOCBLOCK_TYPE_MISMATCH,
-                Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
-                    .with_annotation(
-                        Annotation::primary(variable_type_span)
-                            .with_message(format!("This docblock asserts the type should be `{variable_type_str}`, but it was previously defined as `{previous_type_str}`.")),
-                    )
-                    .with_note("The type of the variable defined in the docblock does not match the previously defined type.")
-                    .with_help(format!(
-                        "Change the docblock type to match `{previous_type_str}`, or update the variable definition to a compatible type `{variable_type_str}`."
-                    )),
-            );
+            Code::DOCBLOCK_TYPE_MISMATCH,
+            Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
+                .with_annotation(
+                    Annotation::primary(variable_type_span)
+                        .with_message(format!("This docblock asserts the type should be `{variable_type_str}`, but it was previously defined as `{previous_type_str}`.")),
+                )
+                .with_note("The type of the variable defined in the docblock does not match the previously defined type.")
+                .with_help(format!(
+                    "Change the docblock type to match `{previous_type_str}`, or update the variable definition to a compatible type `{variable_type_str}`."
+                )),
+        );
     }
 
     block_context.locals.insert(variable_name, Rc::new(variable_type));
@@ -220,7 +227,8 @@ pub fn check_docblock_type_incompatibility<'a>(
     dockblock_type_span: Span,
     source_expression: Option<&Expression>,
 ) {
-    if !can_expression_types_be_identical(context.codebase, context.interner, inferred_type, docblock_type, false) {
+    if !can_expression_types_be_identical(context.codebase, context.interner, inferred_type, docblock_type, false, true)
+    {
         // Get clean string representations of the types for the error message.
         let docblock_type_str = docblock_type.get_id(Some(context.interner));
         let inferred_type_str = inferred_type.get_id(Some(context.interner));

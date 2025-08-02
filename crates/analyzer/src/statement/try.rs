@@ -120,7 +120,7 @@ impl Analyzable for Try {
         try_block_context.possibly_thrown_exceptions = block_context.possibly_thrown_exceptions.clone();
         try_block_context.variables_possibly_in_scope = block_context.variables_possibly_in_scope.clone();
 
-        let try_leaves_loop = context
+        let try_leaves_loop = artifacts
             .loop_scope
             .as_ref()
             .map(|loop_scope| !loop_scope.final_actions.contains(&ControlAction::None))
@@ -254,7 +254,7 @@ impl Analyzable for Try {
                     .collect();
 
                 let end_action_only =
-                    try_block_control_actions.len() == 1 && try_block_control_actions[0] == ControlAction::End;
+                    try_block_control_actions.len() == 1 && try_block_control_actions.contains(&ControlAction::End);
 
                 for (variable_id, variable_type) in &catch_block_context.locals {
                     if end_action_only {
@@ -300,7 +300,7 @@ impl Analyzable for Try {
             }
         }
 
-        if !try_leaves_loop && let Some(loop_scope) = context.loop_scope.as_mut() {
+        if !try_leaves_loop && let Some(loop_scope) = artifacts.loop_scope.as_mut() {
             loop_scope.final_actions.insert(ControlAction::None);
         }
 

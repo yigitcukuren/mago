@@ -94,6 +94,10 @@ pub enum SwitchCaseSeparator {
 }
 
 impl SwitchBody {
+    pub fn has_default_case(&self) -> bool {
+        self.cases().iter().any(SwitchCase::is_default)
+    }
+
     pub fn cases(&self) -> &[SwitchCase] {
         match self {
             SwitchBody::BraceDelimited(body) => body.cases.as_slice(),
@@ -103,6 +107,14 @@ impl SwitchBody {
 }
 
 impl SwitchCase {
+    /// Returns the case expression if it exists.
+    pub fn expression(&self) -> Option<&Expression> {
+        match self {
+            SwitchCase::Expression(case) => Some(&case.expression),
+            SwitchCase::Default(_) => None,
+        }
+    }
+
     /// Returns the statements within the case.
     pub fn statements(&self) -> &[Statement] {
         match self {

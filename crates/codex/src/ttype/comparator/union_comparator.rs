@@ -351,6 +351,7 @@ pub fn can_expression_types_be_identical(
     type1: &TUnion,
     type2: &TUnion,
     inside_assertion: bool,
+    allow_type_coercion: bool,
 ) -> bool {
     // If either type is mixed, they can be identical
     if type1.has_mixed() || type1.has_mixed_template() || type2.has_mixed() || type2.has_mixed_template() {
@@ -363,7 +364,14 @@ pub fn can_expression_types_be_identical(
 
     for type1_part in &type1.types {
         for type2_part in &type2.types {
-            if atomic_comparator::can_be_identical(codebase, interner, type1_part, type2_part, inside_assertion) {
+            if atomic_comparator::can_be_identical(
+                codebase,
+                interner,
+                type1_part,
+                type2_part,
+                inside_assertion,
+                allow_type_coercion,
+            ) {
                 return true;
             }
         }

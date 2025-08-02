@@ -46,7 +46,6 @@ impl Analyzable for Conditional {
 
         let mut if_block_context = if_conditional_scope.if_body_context;
         let mut conditionally_referenced_variable_ids = if_conditional_scope.conditionally_referenced_variable_ids;
-        let assigned_in_conditional_variable_ids = if_conditional_scope.assigned_in_conditional_variable_ids;
 
         let assertion_context = context.get_assertion_context_from_block(block_context);
         let mut if_clauses = get_formula(self.condition.span(), self.condition.span(), &self.condition, assertion_context, artifacts).unwrap_or_else(|| {
@@ -112,14 +111,7 @@ impl Analyzable for Conditional {
 
         let entry_clauses = block_context.clauses.to_vec();
 
-        check_for_paradox(
-            context.interner,
-            &mut context.collector,
-            &entry_clauses,
-            &if_clauses,
-            &self.condition.span(),
-            &assigned_in_conditional_variable_ids,
-        );
+        check_for_paradox(context.interner, &mut context.collector, &entry_clauses, &if_clauses, self.condition.span());
 
         if_clauses = saturate_clauses(&if_clauses);
         let mut conditional_context_clauses = if entry_clauses.is_empty() {

@@ -18,7 +18,6 @@ use mago_span::Position;
 use mago_span::Span;
 
 use crate::context::Context;
-use crate::context::scope::case_scope::CaseScope;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::finally_scope::FinallyScope;
 use crate::context::scope::var_has_root;
@@ -61,7 +60,6 @@ pub struct BlockContext<'a> {
     pub reconciled_expression_clauses: Vec<Rc<Clause>>,
     pub branch_point: Option<usize>,
     pub break_types: Vec<BreakContext>,
-    pub case_scope: Option<CaseScope>,
     pub finally_scope: Option<Rc<RefCell<FinallyScope>>>,
     pub calling_closure_id: Option<Position>,
     pub has_returned: bool,
@@ -116,7 +114,6 @@ impl<'a> BlockContext<'a> {
             branch_point: None,
             break_types: Vec::new(),
             inside_loop: false,
-            case_scope: None,
             finally_scope: None,
             calling_closure_id: None,
             parent_conflicting_clause_variables: HashSet::default(),
@@ -360,7 +357,7 @@ impl<'a> BlockContext<'a> {
     }
 
     pub fn remove_mutable_object_vars(&mut self) {
-        let mut removed_var_ids = vec![];
+        let mut removed_var_ids = Vec::new();
 
         self.locals.retain(|var_id, _| {
             let retain = !var_id.contains("->") && !var_id.contains("::");

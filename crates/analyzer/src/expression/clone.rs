@@ -204,7 +204,6 @@ mod tests {
         "#},
         issues = [
             Code::INVALID_CLONE,
-            Code::INVALID_RETURN_STATEMENT,
             Code::NEVER_RETURN,
         ]
     }

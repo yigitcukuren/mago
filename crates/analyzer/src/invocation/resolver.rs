@@ -203,6 +203,7 @@ fn resolve_atomic(
             &subject,
             &target,
             false,
+            false,
         );
 
         if are_disjoint {

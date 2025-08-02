@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use ahash::HashMap;
 use ahash::HashSet;
 
 use mago_algebra::clause::Clause;
@@ -287,14 +286,14 @@ pub fn find_expression_logic_issues<'a>(
         .collect::<Vec<Clause>>();
 
     let expression_span = expression.span();
+
     // this will see whether any of the clauses in set A conflict with the clauses in set B
     check_for_paradox(
         context.interner,
         &mut context.collector,
         &block_context.clauses,
         &expression_clauses,
-        &expression_span,
-        &HashMap::default(),
+        expression_span,
     );
 
     expression_clauses.extend(block_context.clauses.iter().map(|v| (**v).clone()).collect::<Vec<_>>());

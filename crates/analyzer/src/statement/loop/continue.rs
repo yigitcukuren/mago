@@ -52,7 +52,7 @@ impl Analyzable for Continue {
         };
 
         let mut i = levels;
-        let mut loop_scope_ref = context.loop_scope.as_mut();
+        let mut loop_scope_ref = artifacts.loop_scope.as_mut();
         let mut loop_spans = vec![];
         while let Some(loop_scope) = loop_scope_ref.take() {
             loop_spans.push(loop_scope.span);

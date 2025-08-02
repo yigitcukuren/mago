@@ -51,7 +51,7 @@ impl Analyzable for If {
             let final_actions =
                 ControlAction::from_statements(self.body.statements().iter().collect(), vec![], Some(artifacts), true);
 
-            let has_leaving_statements = final_actions == [ControlAction::End]
+            let has_leaving_statements = final_actions.len() == 1 && final_actions.contains(&ControlAction::End)
                 || (!final_actions.is_empty() && !final_actions.contains(&ControlAction::None));
 
             if has_leaving_statements {
@@ -133,8 +133,7 @@ impl Analyzable for If {
             &mut context.collector,
             &block_context.clauses,
             &if_clauses,
-            &self.condition.span(),
-            &if_conditional_scope.assigned_in_conditional_variable_ids,
+            self.condition.span(),
         );
 
         if_clauses = saturate_clauses(if_clauses.iter());
@@ -247,7 +246,7 @@ impl Analyzable for If {
             }
         }
 
-        if let Some(loop_scope) = context.loop_scope.as_mut() {
+        if let Some(loop_scope) = artifacts.loop_scope.as_mut() {
             loop_scope.final_actions.extend(if_scope.final_actions);
         }
 
@@ -444,11 +443,11 @@ fn analyze_if_statement_block<'a>(
     let final_actions =
         ControlAction::from_statements(if_statement.body.statements_vec(), vec![], Some(artifacts), true);
 
-    let has_ending_statements = final_actions == [ControlAction::End];
+    let has_ending_statements = final_actions.len() == 1 && final_actions.contains(&ControlAction::End);
+    let has_break_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Break);
+    let has_continue_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Continue);
     let has_leaving_statements =
         has_ending_statements || (!final_actions.is_empty() && !final_actions.contains(&ControlAction::None));
-    let has_break_statement = final_actions == [ControlAction::Break];
-    let has_continue_statement = final_actions == [ControlAction::Continue];
 
     if_scope.if_actions = final_actions.iter().copied().collect();
     if_scope.final_actions = final_actions.iter().copied().collect();
@@ -528,7 +527,7 @@ fn analyze_if_statement_block<'a>(
             .filter(|id| !outer_block_context.variables_possibly_in_scope.contains(id))
             .collect::<HashSet<String>>();
 
-        if let Some(loop_scope) = context.loop_scope.as_mut() {
+        if let Some(loop_scope) = artifacts.loop_scope.as_mut() {
             if !has_continue_statement && !has_break_statement {
                 if_scope.new_variables_possibly_in_scope = variables_possibly_in_scope.clone();
             }
@@ -661,8 +660,7 @@ fn analyze_else_if_clause<'a>(
         &mut context.collector,
         &entry_clauses,
         &else_if_clauses,
-        &else_if_clause.0.span(),
-        &assigned_in_conditional_variable_ids,
+        else_if_clause.0.span(),
     );
 
     let else_if_clauses = saturate_clauses(else_if_clauses.iter());
@@ -817,9 +815,9 @@ fn analyze_else_if_clause<'a>(
         has_continue_statement = false;
         has_leaving_statements = false;
     } else {
-        has_ending_statements = final_actions == [ControlAction::End];
-        has_break_statement = final_actions == [ControlAction::Break];
-        has_continue_statement = final_actions == [ControlAction::Continue];
+        has_ending_statements = final_actions.len() == 1 && final_actions.contains(&ControlAction::End);
+        has_break_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Break);
+        has_continue_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Continue);
         has_leaving_statements = has_ending_statements || !final_actions.contains(&ControlAction::None);
     }
 
@@ -880,7 +878,7 @@ fn analyze_else_if_clause<'a>(
 
         let possibly_assigned_variable_ids = new_possibly_assigned_variable_ids;
 
-        if let Some(loop_scope) = context.loop_scope.as_mut() {
+        if let Some(loop_scope) = artifacts.loop_scope.as_mut() {
             if has_leaving_statements {
                 if !has_continue_statement && !has_break_statement {
                     if_scope.new_variables_possibly_in_scope.extend(variables_possibly_in_scope.clone());
@@ -1019,7 +1017,7 @@ fn analyze_else_statements<'a>(
         Some(else_statements) => {
             ControlAction::from_statements(else_statements.iter().collect(), vec![], Some(artifacts), true)
         }
-        None => vec![ControlAction::None],
+        None => HashSet::from_iter([ControlAction::None]),
     };
 
     let has_actions = !final_actions.is_empty();
@@ -1033,9 +1031,9 @@ fn analyze_else_statements<'a>(
         has_continue_statement = false;
         has_leaving_statements = false;
     } else {
-        has_ending_statements = final_actions == [ControlAction::End];
-        has_break_statement = final_actions == [ControlAction::Break];
-        has_continue_statement = final_actions == [ControlAction::Continue];
+        has_ending_statements = final_actions.len() == 1 && final_actions.contains(&ControlAction::End);
+        has_break_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Break);
+        has_continue_statement = final_actions.len() == 1 && final_actions.contains(&ControlAction::Continue);
         has_leaving_statements = has_ending_statements || !final_actions.contains(&ControlAction::None);
     }
 
@@ -1078,7 +1076,7 @@ fn analyze_else_statements<'a>(
             .collect::<HashSet<String>>();
 
         if has_leaving_statements {
-            if let Some(loop_scope) = context.loop_scope.as_mut() {
+            if let Some(loop_scope) = artifacts.loop_scope.as_mut() {
                 if !has_continue_statement && !has_break_statement {
                     if_scope.new_variables_possibly_in_scope.extend(variables_possibly_in_scope.clone());
                 }

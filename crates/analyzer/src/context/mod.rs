@@ -23,7 +23,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::code::Code;
 use crate::context::assertion::AssertionContext;
 use crate::context::block::BlockContext;
-use crate::context::scope::loop_scope::LoopScope;
 use crate::settings::Settings;
 
 pub mod assertion;
@@ -36,7 +35,6 @@ pub struct Context<'a> {
     pub(super) codebase: &'a CodebaseMetadata,
     pub(super) source: &'a Source,
     pub(super) resolved_names: &'a ResolvedNames,
-    pub(super) loop_scope: Option<LoopScope>,
     pub(super) type_resolution_context: TypeResolutionContext,
     pub(super) comments: &'a [Trivia],
     pub(super) settings: &'a Settings,
@@ -61,7 +59,6 @@ impl<'a> Context<'a> {
             codebase,
             source,
             resolved_names,
-            loop_scope: None,
             type_resolution_context: TypeResolutionContext::new(),
             comments,
             settings,
@@ -71,33 +68,11 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn set_loop_scope(&mut self, loop_scope: LoopScope) {
-        let previous_scope = self.loop_scope.take().map(Box::new);
-        self.loop_scope = Some(loop_scope.with_parent_loop(previous_scope));
-    }
-
-    pub fn take_loop_scope(&mut self) -> Option<LoopScope> {
-        let mut loop_scope = self.loop_scope.take()?;
-        match loop_scope.parent_loop.take() {
-            Some(parent_loop) => {
-                self.loop_scope = Some(*parent_loop);
-            }
-            None => {
-                self.loop_scope = None;
-            }
-        }
-
-        Some(loop_scope)
-    }
-
-    pub fn get_loop_scope_mut(&mut self) -> Option<&mut LoopScope> {
-        self.loop_scope.as_mut()
-    }
-
     pub fn get_assertion_context_from_block<'b>(&'b self, block_context: &'a BlockContext<'_>) -> AssertionContext<'b> {
         self.get_assertion_context(
             block_context.scope.get_class_like_name(),
             block_context.scope.get_reference_source(&self.source.identifier),
+            block_context.inside_loop,
         )
     }
 
@@ -106,6 +81,7 @@ impl<'a> Context<'a> {
         &'b self,
         this_class_name: Option<&'a StringIdentifier>,
         reference_source: Option<ReferenceSource>,
+        inside_loop: bool,
     ) -> AssertionContext<'b> {
         AssertionContext {
             file_source: self.source,
@@ -116,7 +92,7 @@ impl<'a> Context<'a> {
             type_resolution_context: &self.type_resolution_context,
             reference_source,
             settings: self.settings,
-            in_loop: self.loop_scope.is_some(),
+            in_loop: inside_loop,
         }
     }
 

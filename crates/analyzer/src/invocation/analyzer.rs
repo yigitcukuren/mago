@@ -988,8 +988,14 @@ fn verify_argument_type(
             .with_help(format!("Provide a value that more precisely matches `{parameter_type_str}` or adjust the parameter type.")),
         );
     } else if !union_comparison_result.type_coerced.unwrap_or(false) {
-        let types_can_be_identical =
-            can_expression_types_be_identical(context.codebase, context.interner, input_type, parameter_type, false);
+        let types_can_be_identical = can_expression_types_be_identical(
+            context.codebase,
+            context.interner,
+            input_type,
+            parameter_type,
+            false,
+            false,
+        );
 
         if types_can_be_identical {
             context.collector.report_with_code(

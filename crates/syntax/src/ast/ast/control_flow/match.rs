@@ -49,6 +49,26 @@ pub struct MatchDefaultArm {
     pub expression: Box<Expression>,
 }
 
+impl MatchArm {
+    #[inline]
+    pub const fn is_default(&self) -> bool {
+        matches!(self, MatchArm::Default(_))
+    }
+
+    #[inline]
+    pub const fn is_conditional(&self) -> bool {
+        matches!(self, MatchArm::Expression(_))
+    }
+
+    #[inline]
+    pub fn expression(&self) -> &Expression {
+        match self {
+            MatchArm::Expression(arm) => &arm.expression,
+            MatchArm::Default(arm) => &arm.expression,
+        }
+    }
+}
+
 impl HasSpan for Match {
     fn span(&self) -> Span {
         Span::between(self.r#match.span(), self.right_brace)

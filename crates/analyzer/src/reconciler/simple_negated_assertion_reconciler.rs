@@ -1284,6 +1284,7 @@ fn reconcile_no_array_key(
                             &key_name.to_general_union(),
                             key_parameter,
                             false,
+                            false,
                         )
                     {
                         did_remove_type = true;
@@ -1294,6 +1295,7 @@ fn reconcile_no_array_key(
                         context.interner,
                         &key_name.to_general_union(),
                         key_parameter,
+                        false,
                         false,
                     )
                 {

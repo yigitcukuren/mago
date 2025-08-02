@@ -304,6 +304,7 @@ fn resolve_invocation_assertion<'a>(
                                     asserted_type,
                                     &resolved_assertion_type,
                                     false,
+                                    false,
                                 ) {
                                     // TODO(azejzz): report this as an issue.
                                     //

@@ -1,11 +1,15 @@
 use std::rc::Rc;
 
 use ahash::HashMap;
+use ahash::HashSet;
 
 use mago_codex::assertion::Assertion;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::ttype::union::TUnion;
 use mago_span::HasSpan;
+
+use crate::context::scope::case_scope::CaseScope;
+use crate::context::scope::loop_scope::LoopScope;
 
 #[derive(Debug, Clone)]
 pub struct AnalysisArtifacts {
@@ -14,6 +18,9 @@ pub struct AnalysisArtifacts {
     pub if_false_assertions: HashMap<(usize, usize), HashMap<String, Vec<Assertion>>>,
     pub inferred_return_types: Vec<TUnion>,
     pub symbol_references: SymbolReferences,
+    pub loop_scope: Option<LoopScope>,
+    pub case_scopes: Vec<CaseScope>,
+    pub fully_matched_switch_offsets: HashSet<usize>,
 }
 
 impl AnalysisArtifacts {
@@ -24,7 +31,33 @@ impl AnalysisArtifacts {
             if_true_assertions: HashMap::default(),
             if_false_assertions: HashMap::default(),
             symbol_references: SymbolReferences::new(),
+            case_scopes: Vec::new(),
+            loop_scope: None,
+            fully_matched_switch_offsets: HashSet::default(),
         }
+    }
+
+    pub fn set_loop_scope(&mut self, loop_scope: LoopScope) {
+        let previous_scope = self.loop_scope.take().map(Box::new);
+        self.loop_scope = Some(loop_scope.with_parent_loop(previous_scope));
+    }
+
+    pub fn take_loop_scope(&mut self) -> Option<LoopScope> {
+        let mut loop_scope = self.loop_scope.take()?;
+        match loop_scope.parent_loop.take() {
+            Some(parent_loop) => {
+                self.loop_scope = Some(*parent_loop);
+            }
+            None => {
+                self.loop_scope = None;
+            }
+        }
+
+        Some(loop_scope)
+    }
+
+    pub fn get_loop_scope_mut(&mut self) -> Option<&mut LoopScope> {
+        self.loop_scope.as_mut()
     }
 
     /// Set the type of expression `expression` to `t`.

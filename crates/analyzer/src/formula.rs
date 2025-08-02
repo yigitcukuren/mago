@@ -152,7 +152,7 @@ pub fn get_formula(
 /// # Parameters
 ///
 /// * `subject`: The expression on the left-hand side of the equal comparisons.
-/// * `conditions`: A slice of expressions to compare against the `subject`.
+/// * `conditions`: A vec of expressions to compare against the `subject`.
 /// * `assertion_context`: The context required for generating assertions.
 /// * `artifacts`: A mutable reference to the analysis artifacts.
 /// * `is_identity`: A boolean indicating whether the equality is an identity check (e.g., `===`).
@@ -166,20 +166,26 @@ pub fn get_formula(
 #[allow(dead_code)]
 pub fn get_disjunctive_equality_formula(
     subject: &Expression,
-    conditions: &[Expression],
+    conditions: Vec<&Expression>,
     assertion_context: AssertionContext<'_>,
     artifacts: &mut AnalysisArtifacts,
     is_identity: bool,
 ) -> Option<Vec<Clause>> {
     let subject = unwrap_expression(subject);
+    let subject_span = subject.span();
 
     let mut clauses = vec![];
     for condition in conditions {
         let condition = unwrap_expression(condition);
-        let assertions = scrape_equality_assertions(subject, is_identity, condition, artifacts, assertion_context);
-        let formula = get_formula_from_assertions(condition.span(), subject.span(), subject, assertions)?;
+        let condition_span = condition.span();
+        let formula = if subject.is_true() && (!is_identity || condition.evaluates_to_boolean()) {
+            get_formula(condition_span, condition_span, condition, assertion_context, artifacts)?
+        } else {
+            let assertions = scrape_equality_assertions(subject, is_identity, condition, artifacts, assertion_context);
+            get_formula_from_assertions(condition_span, subject_span, subject, assertions)?
+        };
 
-        clauses = disjoin_clauses(clauses, formula, condition.span());
+        clauses = disjoin_clauses(clauses, formula, condition_span);
         if clauses.len() > FORMULA_SIZE_THRESHOLD {
             return None;
         }

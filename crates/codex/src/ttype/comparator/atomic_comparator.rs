@@ -83,6 +83,42 @@ pub fn is_contained_by(
         }
     }
 
+    if input_type_part.is_some_scalar() {
+        if container_type_part.is_generic_scalar() {
+            return true;
+        }
+
+        if container_type_part.is_some_scalar() {
+            return scalar_comparator::is_contained_by(
+                codebase,
+                interner,
+                input_type_part,
+                container_type_part,
+                inside_assertion,
+                atomic_comparison_result,
+            );
+        }
+    }
+
+    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed(&mut false) {
+        if matches!(container_type_part, TAtomic::Mixed(mixed) if mixed.is_non_null())
+            && (matches!(input_type_part, TAtomic::Null)
+                || matches!(input_type_part, TAtomic::Mixed(mixed) if !mixed.is_non_null()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    if matches!(container_type_part, TAtomic::Placeholder) {
+        return true;
+    }
+
+    if matches!(input_type_part, TAtomic::Never) {
+        return true;
+    }
+
     if let TAtomic::Object(TObject::Enum(enum_container)) = container_type_part {
         return match input_type_part {
             TAtomic::Object(TObject::Enum(enum_input)) => {
@@ -115,25 +151,6 @@ pub fn is_contained_by(
         };
     }
 
-    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed(&mut false) {
-        if matches!(container_type_part, TAtomic::Mixed(mixed) if mixed.is_non_null())
-            && (matches!(input_type_part, TAtomic::Null)
-                || matches!(input_type_part, TAtomic::Mixed(mixed) if !mixed.is_non_null()))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    if matches!(container_type_part, TAtomic::Placeholder) {
-        return true;
-    }
-
-    if matches!(input_type_part, TAtomic::Never) {
-        return true;
-    }
-
     let mut input_type_has_any = false;
     if input_type_part.is_mixed_with_any(&mut input_type_has_any)
         || input_type_part.is_templated_as_mixed(&mut input_type_has_any)
@@ -154,23 +171,6 @@ pub fn is_contained_by(
         }
 
         return false;
-    }
-
-    if input_type_part.is_some_scalar() {
-        if container_type_part.is_generic_scalar() {
-            return true;
-        }
-
-        if container_type_part.is_some_scalar() {
-            return scalar_comparator::is_contained_by(
-                codebase,
-                interner,
-                input_type_part,
-                container_type_part,
-                inside_assertion,
-                atomic_comparison_result,
-            );
-        }
     }
 
     if let TAtomic::Callable(TCallable::Signature(_)) = container_type_part {
@@ -404,6 +404,7 @@ pub(crate) fn can_be_identical<'a>(
     first_part: &'a TAtomic,
     second_part: &'a TAtomic,
     inside_assertion: bool,
+    allow_type_coercion: bool,
 ) -> bool {
     if matches!(
         (first_part, second_part),
@@ -443,6 +444,7 @@ pub(crate) fn can_be_identical<'a>(
                 first_element_type,
                 second_element_type,
                 inside_assertion,
+                false,
             )
         } else {
             false
@@ -464,11 +466,20 @@ pub(crate) fn can_be_identical<'a>(
             && second_comparison_result.type_coerced.unwrap_or(false))
     {
         return true;
-    }
+    } else if allow_type_coercion && first_part.is_some_scalar() && second_part.is_some_scalar() {
+        return true;
+    };
 
     if let TAtomic::GenericParameter(first_generic) = first_part {
         for first_constraint_part in first_generic.constraint.types.iter() {
-            if can_be_identical(codebase, interner, first_constraint_part, second_part, inside_assertion) {
+            if can_be_identical(
+                codebase,
+                interner,
+                first_constraint_part,
+                second_part,
+                inside_assertion,
+                allow_type_coercion,
+            ) {
                 return true;
             }
         }
@@ -476,7 +487,14 @@ pub(crate) fn can_be_identical<'a>(
 
     if let TAtomic::GenericParameter(second_generic) = second_part {
         for second_constraint_part in second_generic.constraint.types.iter() {
-            if can_be_identical(codebase, interner, first_part, second_constraint_part, inside_assertion) {
+            if can_be_identical(
+                codebase,
+                interner,
+                first_part,
+                second_constraint_part,
+                inside_assertion,
+                allow_type_coercion,
+            ) {
                 return true;
             }
         }
@@ -508,12 +526,14 @@ fn keyed_arrays_can_be_identical(
                     &first_parameters.0,
                     &second_parameters.0,
                     inside_assertion,
+                    false,
                 ) && union_comparator::can_expression_types_be_identical(
                     codebase,
                     interner,
                     &first_parameters.1,
                     &second_parameters.1,
                     inside_assertion,
+                    false,
                 )
             }
         };
@@ -533,6 +553,7 @@ fn keyed_arrays_can_be_identical(
                             &first_entry.1,
                             &second_entry.1,
                             inside_assertion,
+                            false,
                         ) {
                             return false;
                         }
@@ -545,6 +566,7 @@ fn keyed_arrays_can_be_identical(
                                 &first_entry.1,
                                 &second_parameters.1,
                                 inside_assertion,
+                                false,
                             ) {
                                 return false;
                             }
@@ -560,6 +582,7 @@ fn keyed_arrays_can_be_identical(
                                 &first_parameters.1,
                                 &second_entry.1,
                                 inside_assertion,
+                                false,
                             ) {
                                 return false;
                             }
@@ -582,6 +605,7 @@ fn keyed_arrays_can_be_identical(
                         &first_entry.1,
                         &second_parameters.1,
                         inside_assertion,
+                        false,
                     ) {
                         return false;
                     }
@@ -599,6 +623,7 @@ fn keyed_arrays_can_be_identical(
                         &first_parameters.1,
                         &second_entry.1,
                         inside_assertion,
+                        false,
                     ) {
                         return false;
                     }
@@ -619,12 +644,14 @@ fn keyed_arrays_can_be_identical(
                 &first_parameters.0,
                 &second_parameters.0,
                 inside_assertion,
+                false,
             ) && union_comparator::can_expression_types_be_identical(
                 codebase,
                 interner,
                 &first_parameters.1,
                 &second_parameters.1,
                 inside_assertion,
+                false,
             )
         }
     }

@@ -1799,6 +1799,7 @@ fn reconcile_has_array_key(
                         &key_name.to_general_union(),
                         key_param.as_ref(),
                         false,
+                        false,
                     ) {
                         *known_items = Some(BTreeMap::from([(key_name.clone(), (false, (**value_param).clone()))]));
                     } else {
@@ -1959,6 +1960,7 @@ fn reconcile_has_nonnull_entry_for_key(
                         context.interner,
                         &key_name.to_general_union(),
                         key_param,
+                        false,
                         false,
                     ) {
                         let nonnull = subtract_null(context, assertion, value_param, None, negated, None);

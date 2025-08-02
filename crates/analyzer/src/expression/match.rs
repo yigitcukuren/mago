@@ -27,7 +27,7 @@ use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::expression::binary::is_always_identical_to;
+use crate::expression::binary::utils::is_always_identical_to;
 use crate::reconciler::ReconcilationContext;
 use crate::reconciler::negated_assertion_reconciler;
 
@@ -189,11 +189,10 @@ impl Analyzable for Match {
                     &subject_type,
                     condition_type,
                     true,
+                    false,
                 ) {
                     unreachable_conditions.push((condition_type.get_id(Some(context.interner)), condition.span()));
-                } else if definite_match.is_none()
-                    && is_always_identical_to(condition_type, &subject_type, context.codebase, context.interner)
-                {
+                } else if definite_match.is_none() && is_always_identical_to(condition_type, &subject_type) {
                     let condition_type_str = condition_type.get_id(Some(context.interner));
                     let subject_type_str = subject_type.get_id(Some(context.interner));
 
@@ -482,7 +481,14 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
         return get_never();
     }
 
-    if !can_expression_types_be_identical(context.codebase, context.interner, &existing_type, &type_to_remove, true) {
+    if !can_expression_types_be_identical(
+        context.codebase,
+        context.interner,
+        &existing_type,
+        &type_to_remove,
+        true,
+        false,
+    ) {
         return existing_type;
     }
 

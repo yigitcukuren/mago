@@ -20,8 +20,9 @@ pub struct LoopScope {
     pub possibly_defined_loop_parent_variables: HashMap<String, TUnion>,
     pub variables_possibly_in_scope: HashSet<String>,
     pub final_actions: HashSet<ControlAction>,
-    pub parent_loop: Option<Box<LoopScope>>,
     pub truthy_pre_conditions: bool,
+
+    pub parent_loop: Option<Box<LoopScope>>,
 }
 
 impl LoopScope {
