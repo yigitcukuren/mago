@@ -464,9 +464,8 @@ pub(crate) fn can_be_identical<'a>(
         || is_contained_by(codebase, interner, second_part, first_part, inside_assertion, &mut second_comparison_result)
         || (first_comparison_result.type_coerced.unwrap_or(false)
             && second_comparison_result.type_coerced.unwrap_or(false))
+        || (allow_type_coercion && first_part.is_some_scalar() && second_part.is_some_scalar())
     {
-        return true;
-    } else if allow_type_coercion && first_part.is_some_scalar() && second_part.is_some_scalar() {
         return true;
     };
 

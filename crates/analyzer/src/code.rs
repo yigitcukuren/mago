@@ -246,4 +246,8 @@ impl Code {
     pub const FALSE_ARGUMENT: &'static str = "false-argument";
     pub const POSSIBLY_NULL_ARGUMENT: &'static str = "possibly-null-argument";
     pub const NULL_ARGUMENT: &'static str = "null-argument";
+    pub const NEVER_MATCHING_SWITCH_CASE: &'static str = "always-matching-switch-case";
+    pub const ALWAYS_MATCHING_SWITCH_CASE: &'static str = "always-matching-switch-case";
+    pub const UNREACHABLE_SWITCH_CASE: &'static str = "unreachable-switch-case";
+    pub const UNREACHABLE_SWITCH_DEFAULT: &'static str = "unnecessary-switch-default";
 }

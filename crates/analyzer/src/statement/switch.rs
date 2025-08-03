@@ -6,6 +6,7 @@ use ahash::HashSet;
 use indexmap::IndexMap;
 
 use mago_algebra::clause::Clause;
+use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_optional_union_types;
 use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
@@ -36,6 +37,7 @@ use crate::context::scope::case_scope::CaseScope;
 use crate::context::scope::control_action::BreakType;
 use crate::context::scope::control_action::ControlAction;
 use crate::error::AnalysisError;
+use crate::expression::binary::utils::is_always_identical_to;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
 use crate::reconciler::ReconcilationContext;
@@ -70,6 +72,7 @@ struct SwitchAnalyzer<'a, 'b> {
     last_case_exit_type: ControlAction,
     case_exit_types: HashMap<usize, ControlAction>,
     case_actions: HashMap<usize, HashSet<ControlAction>>,
+    has_default_case: bool,
 }
 
 impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
@@ -94,6 +97,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             last_case_exit_type: ControlAction::Break,
             case_exit_types: HashMap::default(),
             case_actions: HashMap::default(),
+            has_default_case: false,
         }
     }
 
@@ -128,9 +132,21 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
         let original_context = self.block_context.clone();
 
-        let has_default = switch.body.has_default_case();
         let cases = switch.body.cases();
+        if cases.is_empty() {
+            return Ok(());
+        }
+
         let indexed_cases = cases.iter().enumerate().collect::<IndexMap<_, _>>();
+
+        let mut last_case_index = cases.len() - 1;
+        for (i, case) in indexed_cases.iter() {
+            if case.is_default() {
+                self.has_default_case = true;
+                last_case_index = *i;
+                break;
+            }
+        }
 
         for (i, case) in indexed_cases.iter().rev() {
             self.update_case_exit_map(case, *i);
@@ -150,8 +166,9 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
         let mut previous_empty_cases = vec![];
 
+        let mut previously_matching_case = None;
         for (i, case) in indexed_cases {
-            let is_last = i == cases.len() - 1;
+            let is_last = i == last_case_index;
             let case_exit_type = &self.case_exit_types[&i];
             if case_exit_type != &ControlAction::Return {
                 all_options_returned = false;
@@ -165,7 +182,8 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 continue;
             };
 
-            self.analyze_case(
+            let is_matching = self.analyze_case(
+                switch,
                 synthetic_switch_condition.as_ref().unwrap_or(&switch.expression),
                 condition_is_synthetic,
                 &switch_var_id,
@@ -174,7 +192,12 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 &original_context,
                 is_last,
                 i,
+                previously_matching_case,
             )?;
+
+            if let Some(true) = is_matching {
+                previously_matching_case = Some((all_options_returned, case.span()));
+            }
 
             previous_empty_cases = vec![];
         }
@@ -207,13 +230,14 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
         self.artifacts.fully_matched_switch_offsets.insert(switch.start_position().offset);
         self.block_context.assigned_variable_ids.extend(self.new_assigned_variable_ids);
-        self.block_context.has_returned = all_options_returned && has_default;
+        self.block_context.has_returned = all_options_returned && self.has_default_case;
 
         Ok(())
     }
 
     pub(crate) fn analyze_case(
         &mut self,
+        switch: &Switch,
         switch_condition: &Expression,
         condition_is_synthetic: bool,
         switch_var_id: &String,
@@ -222,7 +246,46 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         original_block_context: &BlockContext<'a>,
         is_last: bool,
         case_index: usize,
-    ) -> Result<(), AnalysisError> {
+        previously_matching_case: Option<(bool, Span)>,
+    ) -> Result<Option<bool>, AnalysisError> {
+        if let Some((_, previously_matching_case_span)) = previously_matching_case {
+            if switch_case.is_default() {
+                self.context.collector.report_with_code(
+                    Code::UNREACHABLE_SWITCH_DEFAULT,
+                    Issue::error("Unreachable default case")
+                        .with_annotation(
+                            Annotation::primary(switch_case.span()).with_message("this default case is unreachable"),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(previously_matching_case_span)
+                                .with_message("this previous case always matches, making subsequent cases unreachable"),
+                        )
+                        .with_note("Because a previous case always matches the subject, this default case can never be reached.")
+                        .with_help("Remove this default case or reorder the cases."),
+                );
+            } else {
+                self.context.collector.report_with_code(
+                    Code::UNREACHABLE_SWITCH_CASE,
+                    Issue::error("Unreachable switch case")
+                        .with_annotation(
+                            Annotation::primary(switch_case.span()).with_message("this case is unreachable"),
+                        )
+                        .with_annotation(
+                            Annotation::secondary(previously_matching_case_span)
+                                .with_message("this previous case always matches, making subsequent cases unreachable"),
+                        )
+                        .with_note(
+                            "Because a previous case always matches the subject, this case can never be reached.",
+                        )
+                        .with_help("Remove this case or reorder the cases to ensure it can be reached."),
+                );
+            }
+
+            return Ok(Some(false));
+        }
+
+        let mut result = None;
+
         let case_actions = &self.case_actions[&case_index];
         let case_exit_type = self.case_exit_types[&case_index];
 
@@ -235,41 +298,97 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         let mut old_expression_types = self.artifacts.expression_types.clone();
         let mut case_equality_expression = None;
 
+        if condition_is_synthetic {
+            self.artifacts.set_expression_type(
+                switch_condition,
+                if let Some(t) = self.block_context.locals.get(switch_var_id) {
+                    (**t).clone()
+                } else {
+                    get_mixed_any()
+                },
+            );
+        }
+
+        let switch_condition_type =
+            self.artifacts.get_rc_expression_type(switch_condition).cloned().unwrap_or(Rc::new(get_mixed_any()));
+
+        if switch_condition_type.is_never() {
+            result = Some(false);
+
+            let (code, message, annotation_message) = if switch_case.is_default() {
+                (Code::UNREACHABLE_SWITCH_DEFAULT, "Unreachable default case", "this default case is unreachable")
+            } else {
+                (Code::UNREACHABLE_SWITCH_CASE, "Unreachable switch case", "this case is unreachable")
+            };
+
+            self.context.collector.report_with_code(
+                code,
+                Issue::error(message)
+                    .with_annotation(Annotation::primary(switch_case.span()).with_message(annotation_message))
+                    .with_annotation(
+                        Annotation::secondary(switch.expression.span())
+                            .with_message("The switch subject's type has been fully exhausted by previous cases."),
+                    )
+                    .with_note("The switch subject's type has been fully exhausted by previous cases.")
+                    .with_help("Remove this case or ensure that the switch subject's type can still match it."),
+            );
+        }
+
         if let Some(case_condition) = switch_case.expression() {
             case_condition.analyze(self.context, self.block_context, self.artifacts)?;
 
-            if condition_is_synthetic {
-                self.artifacts.set_expression_type(
-                    switch_condition,
-                    if let Some(t) = self.block_context.locals.get(switch_var_id) {
-                        (**t).clone()
-                    } else {
-                        get_mixed_any()
-                    },
-                );
-            }
-
-            let switch_condition_type =
-                self.artifacts.get_rc_expression_type(switch_condition).cloned().unwrap_or(Rc::new(get_mixed_any()));
-
-            if let Some(condition_type) = self.artifacts.get_rc_expression_type(&case_condition)
-                && !can_expression_types_be_identical(
-                    self.context.codebase,
-                    self.context.interner,
-                    switch_condition_type.as_ref(),
-                    condition_type,
-                    false,
-                    true,
-                )
+            if result.is_none()
+                && let Some(condition_type) = self.artifacts.get_rc_expression_type(case_condition)
             {
-                self.context.collector.report_with_code(
-                    Code::PARADOXICAL_CONDITION,
-                    Issue::error("Switch case condition is not compatible with switch condition".to_string())
-                        .with_annotation(
-                            Annotation::primary(case_condition.span())
-                                .with_message("this case condition is not compatible with the switch condition"),
-                        ),
-                );
+                if (switch_condition_type.is_true() && condition_type.is_always_falsy())
+                    || !can_expression_types_be_identical(
+                        self.context.codebase,
+                        self.context.interner,
+                        switch_condition_type.as_ref(),
+                        condition_type.as_ref(),
+                        false,
+                        true,
+                    )
+                {
+                    result = Some(false);
+
+                    self.context.collector.report_with_code(
+                        Code::NEVER_MATCHING_SWITCH_CASE,
+                        Issue::error("Switch case condition will never match")
+                            .with_annotation(Annotation::primary(case_condition.span()).with_message(format!(
+                                "This case with type `{}` will never match the subject type.",
+                                condition_type.get_id(Some(self.context.interner))
+                            )))
+                            .with_annotation(Annotation::secondary(switch.expression.span()).with_message(format!(
+                                "Switch subject has type `{}`.",
+                                switch_condition_type.get_id(Some(self.context.interner))
+                            )))
+                            .with_note("This case condition will never match the switch subject's type.")
+                            .with_help("Remove this case or ensure that the switch subject's type can still match it."),
+                    );
+                } else if !is_last
+                    && ((switch_condition_type.is_true() && condition_type.is_always_truthy())
+                        || is_always_identical_to(condition_type.as_ref(), switch_condition_type.as_ref()))
+                {
+                    result = Some(true);
+
+                    self.context.collector.report_with_code(
+                        Code::ALWAYS_MATCHING_SWITCH_CASE,
+                        Issue::error("This switch case will always match, making subsequent cases unreachable.")
+                            .with_annotation(
+                                Annotation::primary(case_condition.span())
+                                    .with_message("This case will always match the subject."),
+                            )
+                            .with_annotation(Annotation::secondary(switch.expression.span()).with_message(format!(
+                                "Switch subject has type `{}`.",
+                                switch_condition_type.get_id(Some(self.context.interner))
+                            )))
+                            .with_note("All subsequent `case` and `default` statements are unreachable.")
+                            .with_help(
+                                "Remove this case or rearrange the switch cases to ensure that this case is last.",
+                            ),
+                    );
+                }
             }
 
             case_equality_expression = Some(if !previous_empty_cases.is_empty() {
@@ -287,6 +406,8 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             } else {
                 new_synthetic_equals(switch_condition, case_condition)
             });
+        } else if result.is_none() {
+            result = Some(true);
         }
 
         let mut case_stmts = self.leftover_statements.clone();
@@ -308,7 +429,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
             self.artifacts.expression_types = old_expression_types;
 
-            return Ok(());
+            return Ok(result);
         }
 
         if let Some(leftover_case_equality_expr) = &self.leftover_case_equality_expression {
@@ -326,9 +447,14 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         let assertion_context = self.context.get_assertion_context_from_block(self.block_context);
 
         let case_clauses = if let Some(case_equality_expr) = &case_equality_expression {
+            let span = if let Some(case_condition) = switch_case.expression() {
+                case_condition.span()
+            } else {
+                switch_case.span()
+            };
+
             // todo: complexity!!
-            get_formula(switch_case.span(), switch_case.span(), case_equality_expr, assertion_context, self.artifacts)
-                .unwrap_or_default()
+            get_formula(span, span, case_equality_expr, assertion_context, self.artifacts).unwrap_or_default()
         } else {
             vec![]
         };
@@ -422,7 +548,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         analyze_statements(&case_stmts, self.context, &mut case_block_context, self.artifacts)?;
 
         let Some(case_scope) = self.artifacts.case_scopes.pop() else {
-            return Ok(());
+            return Ok(result);
         };
 
         let new_expression_types = self.artifacts.expression_types.clone();
@@ -430,13 +556,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         self.artifacts.expression_types = old_expression_types;
 
         if !matches!(case_exit_type, ControlAction::Return) {
-            self.handle_non_returning_case(
-                switch_var_id,
-                switch_case,
-                &case_block_context,
-                original_block_context,
-                case_exit_type,
-            )?;
+            self.handle_non_returning_case(&case_block_context, original_block_context, case_exit_type)?;
         }
 
         if let Some(break_vars) = &case_scope.break_vars {
@@ -505,108 +625,92 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             }
         }
 
-        Ok(())
+        Ok(result)
     }
 
     fn handle_non_returning_case(
         &mut self,
-        switch_var_id: &String,
-        switch_case: &SwitchCase,
         case_block_context: &BlockContext<'_>,
         original_block_context: &BlockContext<'_>,
         case_exit_type: ControlAction,
     ) -> Result<(), AnalysisError> {
-        if switch_case.is_default()
-            && let Some(switch_type) = case_block_context.locals.get(switch_var_id)
-            && switch_type.is_never()
-        {
-            self.context.collector.report_with_code(
-                Code::PARADOXICAL_CONDITION,
-                Issue::error("All possible case statements have been met, default is impossible here".to_string())
-                    .with_annotation(
-                        Annotation::primary(switch_case.span()).with_message("this is not going to be reached, ever."),
-                    ),
-            );
-
+        if matches!(case_exit_type, ControlAction::Continue) {
             return Ok(());
         }
 
-        if !matches!(case_exit_type, ControlAction::Continue) {
-            let mut removed_var_ids = HashSet::default();
-            let case_redefined_vars =
-                case_block_context.get_redefined_locals(&original_block_context.locals, false, &mut removed_var_ids);
+        let mut removed_var_ids = HashSet::default();
+        let case_redefined_vars =
+            case_block_context.get_redefined_locals(&original_block_context.locals, false, &mut removed_var_ids);
 
-            if let Some(ref mut possibly_redefined_var_ids) = self.possibly_redefined_variables {
-                for (var_id, var_type) in &case_redefined_vars {
-                    possibly_redefined_var_ids.insert(
+        if let Some(possibly_redefined_var_ids) = &mut self.possibly_redefined_variables {
+            for (var_id, var_type) in &case_redefined_vars {
+                possibly_redefined_var_ids.insert(
+                    var_id.clone(),
+                    combine_optional_union_types(
+                        Some(var_type),
+                        possibly_redefined_var_ids.get(var_id),
+                        self.context.codebase,
+                        self.context.interner,
+                    ),
+                );
+            }
+        } else {
+            self.possibly_redefined_variables = Some(
+                case_redefined_vars
+                    .clone()
+                    .into_iter()
+                    .filter(|(var_id, _)| self.block_context.locals.contains_key(var_id))
+                    .collect(),
+            );
+        }
+
+        if let Some(redefined_vars) = &mut self.redefined_variables {
+            for (var_id, var_type) in redefined_vars.clone() {
+                if let Some(break_var_type) = case_redefined_vars.get(&var_id) {
+                    redefined_vars.insert(
                         var_id.clone(),
-                        combine_optional_union_types(
-                            Some(var_type),
-                            possibly_redefined_var_ids.get(var_id),
+                        Rc::new(combine_union_types(
+                            break_var_type,
+                            &var_type,
                             self.context.codebase,
                             self.context.interner,
-                        ),
+                            false,
+                        )),
                     );
+                } else {
+                    redefined_vars.remove(&var_id);
                 }
-            } else {
-                self.possibly_redefined_variables = Some(
-                    case_redefined_vars
-                        .clone()
-                        .into_iter()
-                        .filter(|(var_id, _)| self.block_context.locals.contains_key(var_id))
-                        .collect(),
-                );
             }
+        } else {
+            self.redefined_variables = Some(case_redefined_vars.into_iter().map(|(k, v)| (k, Rc::new(v))).collect());
+        }
 
-            if let Some(ref mut redefined_vars) = self.redefined_variables {
-                for (var_id, var_type) in redefined_vars.clone() {
-                    if let Some(break_var_type) = case_redefined_vars.get(&var_id) {
-                        redefined_vars.insert(
-                            var_id.clone(),
-                            Rc::new(combine_union_types(
-                                break_var_type,
-                                &var_type,
-                                self.context.codebase,
-                                self.context.interner,
-                                false,
-                            )),
-                        );
-                    } else {
-                        redefined_vars.remove(&var_id);
-                    }
+        if let Some(new_locals) = &mut self.new_locals {
+            for (var_id, var_type) in new_locals.clone() {
+                if case_block_context.locals.contains_key(&var_id) {
+                    new_locals.insert(
+                        var_id.clone(),
+                        Rc::new(combine_union_types(
+                            case_block_context.locals.get(&var_id).unwrap(),
+                            &var_type,
+                            self.context.codebase,
+                            self.context.interner,
+                            false,
+                        )),
+                    );
+                } else {
+                    new_locals.remove(&var_id);
                 }
-            } else {
-                self.redefined_variables =
-                    Some(case_redefined_vars.into_iter().map(|(k, v)| (k, Rc::new(v))).collect());
             }
-
-            if let Some(ref mut new_locals) = self.new_locals {
-                for (var_id, var_type) in new_locals.clone() {
-                    if case_block_context.locals.contains_key(&var_id) {
-                        new_locals.insert(
-                            var_id.clone(),
-                            Rc::new(combine_union_types(
-                                case_block_context.locals.get(&var_id).unwrap(),
-                                &var_type,
-                                self.context.codebase,
-                                self.context.interner,
-                                false,
-                            )),
-                        );
-                    } else {
-                        new_locals.remove(&var_id);
-                    }
-                }
-            } else {
-                self.new_locals = Some(
-                    case_block_context
-                        .locals
-                        .clone()
-                        .into_iter()
-                        .filter(|(k, _)| !self.block_context.locals.contains_key(k))
-                        .collect(),
-                );
-            }
+        } else {
+            self.new_locals = Some(
+                case_block_context
+                    .locals
+                    .clone()
+                    .into_iter()
+                    .filter(|(k, _)| !self.block_context.locals.contains_key(k))
+                    .collect(),
+            );
         }
 
         Ok(())

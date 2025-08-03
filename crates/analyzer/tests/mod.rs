@@ -91,3 +91,7 @@ test_case!(yield_global_scope);
 test_case!(yield_invalid_key);
 test_case!(yield_invalid_value);
 test_case!(yield_merge_iterables);
+test_case!(switch_always_matching_case);
+test_case!(switch_case_after_default_is_unreachable);
+test_case!(switch_logically_unreachable_case);
+test_case!(switch_on_literal);

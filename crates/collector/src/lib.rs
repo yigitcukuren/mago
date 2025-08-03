@@ -66,7 +66,9 @@ impl<'i> Collector<'i> {
     /// If a recording is active (see `start_recording`), the issue is added to the
     /// current recording. Otherwise, it is added to the main issue collection.
     #[inline]
-    pub fn force_report(&mut self, issue: Issue) {
+    pub fn force_report(&mut self, mut issue: Issue) {
+        issue.annotations.retain(|annotation| !annotation.span.start.source.0.is_empty());
+
         if let Some(recording) = self.recordings.last_mut() {
             recording.push(issue);
         } else {
