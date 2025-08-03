@@ -287,8 +287,11 @@ impl ControlAction {
 
                     let mut all_leave = if_statement_actions.iter().all(|c| !c.is_none());
 
+                    let mut has_else_actions = false;
                     let else_statement_actions = match if_statement.body.else_statements() {
                         Some(statements) => {
+                            has_else_actions = true;
+
                             let else_statement_actions = ControlAction::from_statements(
                                 statements.iter().collect(),
                                 break_type.clone(),
@@ -302,6 +305,8 @@ impl ControlAction {
                         }
                         None => HashSet::default(),
                     };
+
+                    all_leave = all_leave && has_else_actions && else_statement_actions.iter().all(|c| !c.is_none());
 
                     let mut all_elseif_actions = vec![];
                     for else_if_statements in if_statement.body.else_if_statements() {

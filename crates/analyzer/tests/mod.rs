@@ -105,3 +105,4 @@ test_case!(elvis_operator_with_falsy_string);
 test_case!(short_ternary_with_truthy);
 test_case!(short_ternary_with_falsy);
 test_case!(conditional_type_narrowing);
+test_case!(type_is_not_narrowed_by_nested_conditional_exit);
