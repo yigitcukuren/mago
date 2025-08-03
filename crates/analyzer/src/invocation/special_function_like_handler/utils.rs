@@ -44,7 +44,6 @@ pub(super) fn get_argument<'argument>(
                 None
             }
         }
-        InvocationArgumentsSource::Slice(_) => None,
         InvocationArgumentsSource::None(_) => None,
     }
 }

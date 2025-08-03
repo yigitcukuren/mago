@@ -638,7 +638,6 @@ mod tests {
              * @param array<TKey, TValue> $_array
              * @param array ...$_arrays
              * @return array<TKey, TValue>
-             * @pure
              */
             function array_intersect(array $_array, array ...$_arrays): array
             {
@@ -678,7 +677,6 @@ mod tests {
             }
 
             /**
-             * Computes the intersection of iterables.
              * @template Tk of array-key
              * @template Tv
              * @param iterable<Tk, Tv> $first

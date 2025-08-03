@@ -534,9 +534,6 @@ pub fn analyze_invocation<'a>(
                 .with_annotation(
                     Annotation::secondary(pipe.input.span()).with_message("This value is passed as the first argument"),
                 ),
-            InvocationArgumentsSource::Slice(_) => issue.with_annotation(
-                Annotation::secondary(invocation.target.span()).with_message("For this language construct"),
-            ),
             InvocationArgumentsSource::None(constructor_or_attribute_span) => issue.with_annotation(
                 Annotation::secondary(constructor_or_attribute_span)
                     .with_message(format!("For this {target_kind_str}")),
@@ -577,11 +574,6 @@ pub fn analyze_invocation<'a>(
                 .with_annotation(
                     Annotation::secondary(pipe.operator).with_message("Pipe operator provides this as an argument"),
                 );
-        } else if let InvocationArgumentsSource::Slice { .. } = invocation.arguments_source {
-            issue = issue.with_annotation(
-                Annotation::secondary(invocation.target.span())
-                    .with_message(format!("For this {target_name_str} construct")),
-            );
         } else {
             issue = issue.with_annotation(
                 Annotation::secondary(invocation.target.span())
@@ -1028,55 +1020,11 @@ fn verify_argument_type(
                     "The provided type `{input_type_str}` is not compatible with the expected type `{parameter_type_str}`."
                 ))
                 .with_help(
-                    if !invocation_target.is_language_construct() {
-                        format!("Change the argument value to match `{parameter_type_str}`, or update the parameter's type declaration.")
-                    } else {
-                        format!("Change the argument value to match `{parameter_type_str}`.")
-                    }
+                    format!("Change the argument value to match `{parameter_type_str}`, or update the parameter's type declaration.")
                 ),
             );
         }
     }
-}
-
-/// Analyzes all arguments within an `ArgumentList` in an arbitrary call context,
-/// setting context flags once for the entire list analysis.
-///
-/// This function iterates through each argument in the list and analyzes its
-/// value expression. It's used when the specific call target signature is
-/// unknown or irrelevant, ensuring all argument expressions are processed.
-///
-/// # Arguments
-///
-/// * `context` - The overall analysis context.
-/// * `artifacts` - Mutable store for analysis results.
-/// * `block_context` - Mutable context for the current code block.
-/// * `argument_list` - The AST node representing the list of arguments.
-///
-/// # Returns
-///
-/// * `Ok(())` if analysis of all arguments completes successfully.
-/// * `Err(AnalysisError)` if an error occurs during the analysis of any argument's value.
-pub(crate) fn evaluate_arbitrary_argument_list<'a>(
-    context: &mut Context<'a>,
-    artifacts: &mut AnalysisArtifacts,
-    block_context: &mut BlockContext<'a>,
-    argument_list: &ArgumentList,
-) -> Result<(), AnalysisError> {
-    let was_inside_call = block_context.inside_call;
-    let was_inside_general_use = block_context.inside_general_use;
-
-    block_context.inside_call = true;
-    block_context.inside_general_use = true;
-
-    for argument in argument_list.arguments.iter() {
-        argument.value().analyze(context, block_context, artifacts)?;
-    }
-
-    block_context.inside_call = was_inside_call;
-    block_context.inside_general_use = was_inside_general_use;
-
-    Ok(())
 }
 
 /// Gets the effective parameter type from a potential parameter reference,

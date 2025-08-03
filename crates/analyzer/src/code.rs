@@ -202,11 +202,8 @@ impl Code {
     pub const INVALID_STATIC_PROPERTY_ACCESS: &'static str = "invalid-static-property-access";
     pub const REDUNDANT_NULLSAFE_OPERATOR: &'static str = "redundant-nullsafe-operator";
     pub const AMBIGUOUS_OBJECT_METHOD_ACCESS: &'static str = "ambiguous-object-method-access";
-    pub const DISALLOWED_INCLUDE: &'static str = "disallowed-include";
-    pub const INVALID_INCLUDE_ARGUMENT: &'static str = "invalid-include-argument";
-    pub const IMPURE_INCLUDE: &'static str = "impure-include";
-    pub const INCLUDE_INSTEAD_OF_REQUIRE: &'static str = "include-instead-of-require";
-    pub const INCLUDE_INSTEAD_OF_ONCE_VARIANT: &'static str = "include-instead-of-once-variant";
+    pub const DISALLOWED_CONSTRUCT: &'static str = "disallowed-construct";
+    pub const IMPURE_CONSTRUCT: &'static str = "impure-construct";
     pub const DOCBLOCK_TYPE_MISMATCH: &'static str = "docblock-type-mismatch";
     pub const INVALID_DESTRUCTURING_SOURCE: &'static str = "invalid-destructuring-source";
     pub const MIXED_DESTRUCTURING_SHAPE: &'static str = "mixed-destructuring-shape";
@@ -215,7 +212,6 @@ impl Code {
     pub const INVALID_STATIC_METHOD_ACCESS: &'static str = "invalid-static-method-access";
     pub const POSSIBLY_STATIC_ACCESS_ON_INTERFACE: &'static str = "possibly-static-access-on-interface";
     pub const STATIC_ACCESS_ON_INTERFACE: &'static str = "static-access-on-interface";
-    pub const UNSUPPORTED_FEATURE: &'static str = "unsupported-feature";
     pub const LIST_USED_IN_READ_CONTEXT: &'static str = "list-used-in-read-context";
     pub const INVALID_SCOPE_KEYWORD_CONTEXT: &'static str = "invalid-scope-keyword-context";
     pub const MIXED_CLONE: &'static str = "mixed-clone";
@@ -249,4 +245,5 @@ impl Code {
     pub const ALWAYS_MATCHING_SWITCH_CASE: &'static str = "always-matching-switch-case";
     pub const UNREACHABLE_SWITCH_CASE: &'static str = "unreachable-switch-case";
     pub const UNREACHABLE_SWITCH_DEFAULT: &'static str = "unnecessary-switch-default";
+    pub const INVALID_ISSET_EXPRESSION: &'static str = "invalid-isset-expression";
 }

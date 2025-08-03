@@ -70,12 +70,24 @@ pub struct AnalyzeCommand {
     pub analyze_dead_code: Option<bool>,
 
     /// Enable or disable memoization of properties.
+    /// Overrides the corresponding setting in `mago.toml` if provided.
     #[arg(long, help = "Enable memoization for property assignments and accesses")]
     pub memoize_properties: Option<bool>,
 
-    /// Enable or disable the use of `include` statements in the analysis.
-    #[arg(long, help = "Allow the use of `include` statements in the analysis")]
+    /// Enable or disable the use of `include` construct in the analysis.
+    /// Overrides the corresponding setting in `mago.toml` if provided.
+    #[arg(long, help = "Allow the use of `include` construct in the analysis")]
     pub allow_include: Option<bool>,
+
+    /// Enable or disable the use of `eval` construct in the analysis.
+    /// Overrides the corresponding setting in `mago.toml` if provided.
+    #[arg(long, help = "Allow the use of `eval` construct in the analysis")]
+    pub allow_eval: Option<bool>,
+
+    /// Enable or disable the use of `empty` construct in the analysis.
+    /// Overrides the corresponding setting in `mago.toml` if provided.
+    #[arg(long, help = "Allow the use of `empty` construct in the analysis")]
+    pub allow_empty: Option<bool>,
 
     /// Arguments related to reporting and fixing issues.
     #[clap(flatten)]
@@ -134,6 +146,8 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
             .unwrap_or(configuration.analyze.find_unused_expressions),
         memoize_properties: command.memoize_properties.unwrap_or(configuration.analyze.memoize_properties),
         allow_include: command.allow_include.unwrap_or(configuration.analyze.allow_include),
+        allow_eval: command.allow_eval.unwrap_or(configuration.analyze.allow_eval),
+        allow_empty: command.allow_empty.unwrap_or(configuration.analyze.allow_empty),
         ..Default::default()
     };
 

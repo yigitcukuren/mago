@@ -1,0 +1,44 @@
+use mago_codex::ttype::get_bool;
+use mago_reporting::Annotation;
+use mago_reporting::Issue;
+use mago_span::HasSpan;
+use mago_syntax::ast::*;
+
+use crate::analyzable::Analyzable;
+use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
+use crate::context::Context;
+use crate::context::block::BlockContext;
+use crate::error::AnalysisError;
+
+impl Analyzable for IssetConstruct {
+    fn analyze<'a>(
+        &self,
+        context: &mut Context<'a>,
+        block_context: &mut BlockContext<'a>,
+        artifacts: &mut AnalysisArtifacts,
+    ) -> Result<(), AnalysisError> {
+        for value in self.values.iter() {
+            if !matches!(value, Expression::Variable(_) | Expression::Access(_) | Expression::ArrayAccess(_)) {
+                context.collector.report_with_code(
+                    Code::INVALID_ISSET_EXPRESSION,
+                    Issue::error("Cannot use `isset()` on the result of an expression.")
+                        .with_annotation(
+                            Annotation::primary(value.span()).with_message("This is not a variable or property"),
+                        )
+                        .with_note("The `isset()` function is designed to check if a variable, property, or array element is set and not null.")
+                        .with_help("Consider using `null !== expression` for this check instead."),
+                );
+            }
+
+            let was_inside_isset = block_context.inside_isset;
+            block_context.inside_isset = true;
+            value.analyze(context, block_context, artifacts)?;
+            block_context.inside_isset = was_inside_isset;
+        }
+
+        artifacts.set_expression_type(self, get_bool());
+
+        Ok(())
+    }
+}

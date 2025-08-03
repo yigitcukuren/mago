@@ -312,9 +312,6 @@ mod tests {
             <?php
 
             class Closure {
-                /**
-                 * @pure
-                 */
                 public static function getCurrent(): Closure
                 {
                     exit(0);
@@ -322,9 +319,6 @@ mod tests {
             }
 
             $fibaonacci =
-                /**
-                 * @pure
-                 */
                 function (int $n): int {
                     if ($n <= 1) {
                         return $n;
@@ -345,9 +339,6 @@ mod tests {
             <?php
 
             class Closure {
-                /**
-                 * @pure
-                 */
                 public static function getCurrent(): Closure
                 {
                     exit(0);
@@ -379,9 +370,6 @@ mod tests {
             <?php
 
             class Closure {
-                /**
-                 * @pure
-                 */
                 public static function getCurrent(): Closure
                 {
                     exit(0);
@@ -415,9 +403,6 @@ mod tests {
             <?php
 
             class Closure {
-                /**
-                 * @pure
-                 */
                 public static function getCurrent(): Closure
                 {
                     exit(0);

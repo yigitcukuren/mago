@@ -5,16 +5,9 @@ use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::metadata::function_like::TemplateTuple;
 use mago_codex::metadata::parameter::FunctionLikeParameterMetadata;
 use mago_codex::misc::VariableIdentifier;
-use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::callable::TCallableSignature;
 use mago_codex::ttype::atomic::callable::parameter::TCallableParameter;
-use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::expander::StaticClassType;
-use mago_codex::ttype::get_literal_int;
-use mago_codex::ttype::get_never;
-use mago_codex::ttype::get_scalar;
-use mago_codex::ttype::get_string;
-use mago_codex::ttype::get_void;
 use mago_codex::ttype::union::TUnion;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
@@ -29,63 +22,6 @@ mod template_inference;
 pub mod analyzer;
 pub mod post_process;
 pub mod return_type_fetcher;
-
-/// Enumerates specific PHP language constructs that can be analyzed like function calls.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LanguageConstructKind {
-    Echo,
-    Print,
-    Exit,
-}
-
-impl LanguageConstructKind {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            LanguageConstructKind::Echo => "echo",
-            LanguageConstructKind::Print => "print",
-            LanguageConstructKind::Exit => "exit",
-        }
-    }
-
-    /// Checks if the construct supports variadic arguments.
-    pub fn is_varadic(&self) -> bool {
-        match self {
-            LanguageConstructKind::Echo => true,
-            LanguageConstructKind::Print => false,
-            LanguageConstructKind::Exit => false,
-        }
-    }
-
-    /// Checks if the construct parameter is optional.
-    pub fn has_default(&self) -> bool {
-        match self {
-            LanguageConstructKind::Echo => false,
-            LanguageConstructKind::Print => false,
-            LanguageConstructKind::Exit => true,
-        }
-    }
-
-    /// Gets the effective parameters for this construct.
-    /// This allows the argument checking logic to be reused.
-    pub fn get_parameter_type(&self) -> TUnion {
-        match self {
-            LanguageConstructKind::Echo => get_scalar().as_nullable(),
-            LanguageConstructKind::Print => get_string(),
-            LanguageConstructKind::Exit => {
-                TUnion::new(vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::string())])
-            }
-        }
-    }
-
-    /// Gets the return type of this construct.
-    pub fn get_return_type(&self) -> TUnion {
-        match self {
-            LanguageConstructKind::Echo => get_void(),
-            LanguageConstructKind::Print => get_literal_int(1),
-            LanguageConstructKind::Exit => get_never(),
-        }
-    }
-}
 
 /// Represents a resolved invocation of a function, method, or any callable expression.
 ///
@@ -153,17 +89,6 @@ pub enum InvocationTarget<'a> {
         /// (e.g., `my_function` in `my_function(...)` or `$obj->myMethod` in `$obj->myMethod(...)`).
         span: Span,
     },
-    /// The invocation target is a language construct (e.g., `echo`, `print`).
-    LanguageConstruct {
-        /// The kind of the construct (e.g., `echo`, `print`).
-        kind: LanguageConstructKind,
-        /// The parameter for the construct, which is a `TCallableParameter`.
-        parameter: TCallableParameter,
-        /// The return type of the construct, which is a `TUnion`.
-        return_type: TUnion,
-        /// The span of the construct in the source code.
-        span: Span,
-    },
 }
 
 /// Represents a parameter definition, abstracting over parameters from statically
@@ -192,8 +117,6 @@ pub enum InvocationArgumentsSource<'a> {
     ArgumentList(&'a ArgumentList),
     /// The single argument is the input from a pipe operator, like `$input` in `$input |> foo(...)`.
     PipeInput(&'a Pipe),
-    /// A slice of expressions, used for constructs like `echo` or `print`.
-    Slice(&'a [Expression]),
 }
 
 /// Represents a single argument passed during an invocation, abstracting whether
@@ -206,8 +129,6 @@ pub enum InvocationArgument<'a> {
     Argument(&'a Argument),
     /// The value provided as input via the pipe operator. This is treated as the first positional argument.
     PipedValue(&'a Expression),
-    /// A single expression, used for constructs like `echo`.
-    Expression(&'a Expression),
 }
 
 impl<'a> Invocation<'a> {
@@ -218,30 +139,13 @@ impl<'a> Invocation<'a> {
 }
 
 impl<'a> InvocationTarget<'a> {
-    pub fn for_language_construct(kind: LanguageConstructKind, span: Span) -> Self {
-        let parameter = TCallableParameter::new(
-            Some(Box::new(kind.get_parameter_type())),
-            false,
-            kind.is_varadic(),
-            kind.has_default(),
-        );
-
-        Self::LanguageConstruct { kind, parameter, return_type: kind.get_return_type(), span }
-    }
-
     /// Attempts to guess a human-readable name for the callable target.
     ///
     /// Returns the name of a function/method if statically known,
     /// or "Closure" or "callable" for dynamic callables.
     pub fn guess_name(&self, interner: &ThreadedInterner) -> String {
         self.get_function_like_identifier().map(|id| id.as_string(interner)).unwrap_or_else(|| {
-            if let InvocationTarget::LanguageConstruct { kind, .. } = self {
-                kind.as_str().to_string()
-            } else if self.is_non_closure_callable() {
-                "callable".to_string()
-            } else {
-                "Closure".to_string()
-            }
+            if self.is_non_closure_callable() { "callable".to_string() } else { "Closure".to_string() }
         })
     }
 
@@ -254,21 +158,13 @@ impl<'a> InvocationTarget<'a> {
                 FunctionLikeIdentifier::Closure(_) => "closure",
             },
             None => {
-                if self.is_language_construct() {
-                    "construct"
-                } else if self.is_non_closure_callable() {
+                if self.is_non_closure_callable() {
                     "callable"
                 } else {
                     "closure"
                 }
             }
         }
-    }
-
-    /// Check if the target is a language construct (e.g., `echo`, `print`).
-    #[inline]
-    pub const fn is_language_construct(&self) -> bool {
-        matches!(self, InvocationTarget::LanguageConstruct { .. })
     }
 
     /// Checks if the target is a dynamic callable that is not explicitly a closure type.
@@ -296,7 +192,6 @@ impl<'a> InvocationTarget<'a> {
         match self {
             InvocationTarget::Callable { source, .. } => source.as_ref(),
             InvocationTarget::FunctionLike { identifier, .. } => Some(identifier),
-            _ => None,
         }
     }
 
@@ -373,9 +268,6 @@ impl<'a> InvocationTarget<'a> {
             InvocationTarget::FunctionLike { metadata, .. } => {
                 metadata.parameters.iter().map(InvocationTargetParameter::FunctionLike).collect()
             }
-            InvocationTarget::LanguageConstruct { parameter, .. } => {
-                vec![InvocationTargetParameter::Callable(parameter)]
-            }
         }
     }
 
@@ -387,7 +279,6 @@ impl<'a> InvocationTarget<'a> {
             InvocationTarget::FunctionLike { metadata, .. } => {
                 metadata.return_type_metadata.as_ref().map(|type_metadata| &type_metadata.type_union)
             }
-            InvocationTarget::LanguageConstruct { return_type, .. } => Some(return_type),
         }
     }
 }
@@ -478,9 +369,6 @@ impl<'a> InvocationArgumentsSource<'a> {
             InvocationArgumentsSource::PipeInput(pipe) => {
                 vec![InvocationArgument::PipedValue(pipe.input.as_ref())]
             }
-            InvocationArgumentsSource::Slice(expr_list) => {
-                expr_list.iter().map(InvocationArgument::Expression).collect()
-            }
             InvocationArgumentsSource::None(_) => {
                 vec![]
             }
@@ -515,7 +403,6 @@ impl<'a> InvocationArgument<'a> {
         match self {
             InvocationArgument::Argument(arg) => arg.value(),
             InvocationArgument::PipedValue(expr) => expr,
-            InvocationArgument::Expression(expr) => expr,
         }
     }
 
@@ -544,7 +431,6 @@ impl HasSpan for InvocationTarget<'_> {
         match self {
             InvocationTarget::Callable { span, .. } => *span,
             InvocationTarget::FunctionLike { span, .. } => *span,
-            InvocationTarget::LanguageConstruct { span, .. } => *span,
         }
     }
 }
@@ -554,16 +440,6 @@ impl HasSpan for InvocationArgumentsSource<'_> {
         match self {
             InvocationArgumentsSource::ArgumentList(arg_list) => arg_list.span(),
             InvocationArgumentsSource::PipeInput(pipe) => pipe.span(),
-            InvocationArgumentsSource::Slice(expr_list) => {
-                let first = expr_list.first();
-                let last = expr_list.last();
-
-                if let (Some(first), Some(last)) = (first, last) {
-                    first.span().join(last.span())
-                } else {
-                    unreachable!("Expression list should have at least one element")
-                }
-            }
             InvocationArgumentsSource::None(span) => *span,
         }
     }
@@ -574,7 +450,6 @@ impl HasSpan for InvocationArgument<'_> {
         match self {
             InvocationArgument::Argument(arg) => arg.span(),
             InvocationArgument::PipedValue(expr) => expr.span(),
-            InvocationArgument::Expression(expr) => expr.span(),
         }
     }
 }

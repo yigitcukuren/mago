@@ -1,5 +1,6 @@
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
+use mago_codex::ttype::get_literal_int;
 use mago_codex::ttype::union::TUnion;
 use mago_syntax::ast::*;
 
@@ -11,7 +12,7 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 
-impl Analyzable for Echo {
+impl Analyzable for PrintConstruct {
     fn analyze<'a>(
         &self,
         context: &mut Context<'a>,
@@ -22,14 +23,16 @@ impl Analyzable for Echo {
             context,
             block_context,
             artifacts,
-            "echo",
-            self.echo.span,
-            ConstructInput::ExpressionList(self.values.as_slice()),
-            TUnion::new(vec![TAtomic::Scalar(TScalar::generic()), TAtomic::Null]),
-            true,
+            "print",
+            self.print.span,
+            ConstructInput::Expression(&self.value),
+            TUnion::new(vec![TAtomic::Scalar(TScalar::string())]),
+            false,
             false,
             true,
         )?;
+
+        artifacts.set_expression_type(self, get_literal_int(1));
 
         Ok(())
     }

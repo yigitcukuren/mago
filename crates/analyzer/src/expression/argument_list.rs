@@ -5,7 +5,6 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::invocation::analyzer::evaluate_arbitrary_argument_list;
 
 impl Analyzable for ArgumentList {
     fn analyze<'a>(
@@ -14,6 +13,19 @@ impl Analyzable for ArgumentList {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        evaluate_arbitrary_argument_list(context, artifacts, block_context, self)
+        let was_inside_call = block_context.inside_call;
+        let was_inside_general_use = block_context.inside_general_use;
+
+        block_context.inside_call = true;
+        block_context.inside_general_use = true;
+
+        for argument in self.arguments.iter() {
+            argument.value().analyze(context, block_context, artifacts)?;
+        }
+
+        block_context.inside_call = was_inside_call;
+        block_context.inside_general_use = was_inside_general_use;
+
+        Ok(())
     }
 }
