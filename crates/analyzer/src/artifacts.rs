@@ -42,8 +42,12 @@ impl AnalysisArtifacts {
         self.loop_scope = Some(loop_scope.with_parent_loop(previous_scope));
     }
 
-    pub fn take_loop_scope(&mut self) -> Option<LoopScope> {
-        let mut loop_scope = self.loop_scope.take()?;
+    pub unsafe fn take_loop_scope_unchecked(&mut self) -> LoopScope {
+        let mut loop_scope = unsafe {
+            // SAFETY: the caller must ensure that `self.loop_scope` is not `None`.
+            self.loop_scope.take().unwrap_unchecked()
+        };
+
         match loop_scope.parent_loop.take() {
             Some(parent_loop) => {
                 self.loop_scope = Some(*parent_loop);
@@ -53,7 +57,7 @@ impl AnalysisArtifacts {
             }
         }
 
-        Some(loop_scope)
+        loop_scope
     }
 
     pub fn get_loop_scope_mut(&mut self) -> Option<&mut LoopScope> {

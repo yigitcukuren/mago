@@ -259,6 +259,10 @@ fn add_properties_to_context<'a>(
     class_like_metadata: &ClassLikeMetadata,
     function_like_metadata: &FunctionLikeMetadata,
 ) -> Result<(), AnalysisError> {
+    let Some(calling_class) = block_context.scope.get_class_like_name() else {
+        return Ok(());
+    };
+
     for (property_name_id, declaring_class) in &class_like_metadata.declaring_property_ids {
         let Some(property_class_metadata) = get_class_like(context.codebase, context.interner, declaring_class) else {
             return Err(AnalysisError::InternalError(
@@ -300,15 +304,13 @@ fn add_properties_to_context<'a>(
             format!("$this->{raw_property_name}")
         };
 
-        let calling_class = block_context.scope.get_class_like_name();
-
         expander::expand_union(
             context.codebase,
             context.interner,
             &mut property_type,
             &TypeExpansionOptions {
-                self_class: calling_class,
-                static_class_type: StaticClassType::Name(*calling_class.unwrap()),
+                self_class: Some(calling_class),
+                static_class_type: StaticClassType::Name(*calling_class),
                 function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
                     method_metadata.is_final
                 } else {
@@ -383,7 +385,10 @@ fn get_this_type(
         {
             type_parameters.push(constraint.type_union.clone());
         } else {
-            let (defining_entry, constraint) = template_map.iter().next().unwrap();
+            let (defining_entry, constraint) = unsafe {
+                // SAFETY: This is safe because we are guaranteed that the template_map is not empty
+                template_map.iter().next().unwrap_unchecked()
+            };
 
             type_parameters.push(wrap_atomic(TAtomic::GenericParameter(TGenericParameter {
                 parameter_name: *template_name,

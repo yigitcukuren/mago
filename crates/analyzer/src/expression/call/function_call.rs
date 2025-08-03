@@ -77,9 +77,34 @@ pub(super) fn resolve_targets<'a>(
     let mut encountered_invalid_targets = false;
     let mut targets = vec![];
     for atomic in &expression_type.types {
-        let as_callable = cast_atomic_to_callable(atomic, context.codebase, context.interner, Some(template_result));
-
-        let Some(callable) = as_callable else {
+        if let Some(callable) =
+            cast_atomic_to_callable(atomic, context.codebase, context.interner, Some(template_result))
+        {
+            match callable.as_ref() {
+                TCallable::Signature(callable_signature) => {
+                    if let Some(id) = callable_signature.get_source() {
+                        if let Some(t) = get_function_like_target(context, id, None, expression.span())? {
+                            targets.push(t);
+                        } else {
+                            encountered_invalid_targets = true;
+                        }
+                    } else {
+                        targets.push(InvocationTarget::Callable {
+                            signature: callable_signature.clone(),
+                            span: expression.span(),
+                            source: callable_signature.get_source(),
+                        });
+                    }
+                }
+                TCallable::Alias(id) => {
+                    if let Some(t) = get_function_like_target(context, *id, None, expression.span())? {
+                        targets.push(t);
+                    } else {
+                        encountered_invalid_targets = true;
+                    }
+                }
+            };
+        } else {
             let type_name = atomic.get_id(Some(context.interner));
 
             context.collector.report_with_code(
@@ -96,34 +121,7 @@ pub(super) fn resolve_targets<'a>(
             );
 
             encountered_invalid_targets = true;
-
-            continue;
-        };
-
-        match callable.as_ref() {
-            TCallable::Signature(callable_signature) => {
-                if let Some(id) = callable_signature.get_source() {
-                    if let Some(t) = get_function_like_target(context, id, None, expression.span())? {
-                        targets.push(t);
-                    } else {
-                        encountered_invalid_targets = true;
-                    }
-                } else {
-                    targets.push(InvocationTarget::Callable {
-                        signature: callable_signature.clone(),
-                        span: expression.span(),
-                        source: callable_signature.get_source(),
-                    });
-                }
-            }
-            TCallable::Alias(id) => {
-                if let Some(t) = get_function_like_target(context, *id, None, expression.span())? {
-                    targets.push(t);
-                } else {
-                    encountered_invalid_targets = true;
-                }
-            }
-        };
+        }
     }
 
     Ok((targets, encountered_invalid_targets))

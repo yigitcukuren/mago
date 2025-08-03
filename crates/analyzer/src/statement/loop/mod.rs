@@ -273,9 +273,10 @@ fn analyze<'a, 'b>(
 
         artifacts.set_loop_scope(loop_scope.clone());
         analyze_statements(statements, context, &mut continue_context, artifacts)?;
-        loop_scope =
+        loop_scope = unsafe {
             // SAFETY: we know the loop scope will remain in the context.
-            unsafe { artifacts.take_loop_scope().unwrap_unchecked() };
+            artifacts.take_loop_scope_unchecked()
+        };
 
         update_loop_scope_contexts(&mut loop_scope, loop_context, &mut continue_context, loop_parent_context, context);
 
@@ -295,7 +296,11 @@ fn analyze<'a, 'b>(
                     apply_pre_condition_to_loop_context(
                         context,
                         pre_condition,
-                        pre_condition_clauses.get(condition_offset).unwrap(),
+                        unsafe {
+                            // SAFETY: we know the pre_condition_clauses will contain
+                            // the clauses for the pre_condition at condition_offset.
+                            pre_condition_clauses.get_unchecked(condition_offset)
+                        },
                         loop_context,
                         loop_parent_context,
                         artifacts,
@@ -312,7 +317,11 @@ fn analyze<'a, 'b>(
             loop_scope = {
                 artifacts.set_loop_scope(loop_scope);
                 analyze_statements(statements, context, &mut continue_context, artifacts)?;
-                artifacts.take_loop_scope().expect("Loop scope should be present after analyzing statements")
+
+                unsafe {
+                    // SAFETY: we know the loop scope will remain in the context.
+                    artifacts.take_loop_scope_unchecked()
+                }
             };
 
             update_loop_scope_contexts(
@@ -330,7 +339,11 @@ fn analyze<'a, 'b>(
                     always_assigned_before_loop_body_variables.extend(apply_pre_condition_to_loop_context(
                         context,
                         pre_condition,
-                        pre_condition_clauses.get(condition_offset).unwrap(),
+                        unsafe {
+                            // SAFETY: we know the pre_condition_clauses will contain
+                            // the clauses for the pre_condition at condition_offset.
+                            pre_condition_clauses.get_unchecked(condition_offset)
+                        },
                         &mut continue_context,
                         loop_parent_context,
                         artifacts,
@@ -472,7 +485,11 @@ fn analyze<'a, 'b>(
                         apply_pre_condition_to_loop_context(
                             context,
                             pre_condition,
-                            pre_condition_clauses.get(condition_offset).unwrap(),
+                            unsafe {
+                                // SAFETY: we know the pre_condition_clauses will contain
+                                // the clauses for the pre_condition at condition_offset.
+                                pre_condition_clauses.get_unchecked(condition_offset)
+                            },
                             &mut continue_context,
                             loop_parent_context,
                             artifacts,
@@ -509,7 +526,11 @@ fn analyze<'a, 'b>(
                 let mut loop_scope = {
                     artifacts.set_loop_scope(loop_scope);
                     analyze_statements(statements, context, &mut continue_context, artifacts)?;
-                    artifacts.take_loop_scope().expect("Loop scope should be present after analyzing statements")
+
+                    unsafe {
+                        // SAFETY: we know the loop scope will remain in the context.
+                        artifacts.take_loop_scope_unchecked()
+                    }
                 };
 
                 update_loop_scope_contexts(
@@ -527,7 +548,11 @@ fn analyze<'a, 'b>(
                         apply_pre_condition_to_loop_context(
                             context,
                             pre_condition,
-                            pre_condition_clauses.get(condition_offset).unwrap(),
+                            unsafe {
+                                // SAFETY: we know the pre_condition_clauses will contain
+                                // the clauses for the pre_condition at condition_offset.
+                                pre_condition_clauses.get_unchecked(condition_offset)
+                            },
                             &mut continue_context,
                             loop_parent_context,
                             artifacts,
@@ -700,7 +725,11 @@ fn analyze<'a, 'b>(
                 &mut continue_context,
                 &mut changed_variable_ids,
                 &HashSet::default(),
-                &pre_conditions.first().unwrap().span(),
+                &unsafe {
+                    // SAFETY: we know that pre_conditions is not empty, so we can safely
+                    // get the span of the first pre_condition.
+                    pre_conditions.get_unchecked(0).span()
+                },
                 true,
                 false,
             );
@@ -762,9 +791,11 @@ fn get_assignment_map_depth(
     first_variable_id: &String,
     assignment_map: &mut BTreeMap<String, HashSet<String>>,
 ) -> usize {
-    let mut max_depth = 0;
-    let assignment_variable_ids = assignment_map.remove(first_variable_id).unwrap();
+    let Some(assignment_variable_ids) = assignment_map.remove(first_variable_id) else {
+        return 0;
+    };
 
+    let mut max_depth = 0;
     for assignment_variable_id in assignment_variable_ids {
         let mut depth = 1;
 
@@ -894,7 +925,10 @@ fn update_loop_scope_contexts(
                 continue_context.locals.insert(
                     variable_id.clone(),
                     Rc::new(combine_union_types(
-                        continue_context.locals.get(variable_id).unwrap(),
+                        unsafe {
+                            // SAFETY: we know that variable_id exists in continue_context.locals.
+                            continue_context.locals.get(variable_id).unwrap_unchecked()
+                        },
                         variable_type,
                         context.codebase,
                         context.interner,

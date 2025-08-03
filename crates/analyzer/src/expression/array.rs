@@ -120,10 +120,9 @@ fn analyze_array_elements<'a>(
                 key_value_array_element.key.analyze(context, block_context, artifacts)?;
                 block_context.inside_general_use = was_inside_general_use;
 
-                let (item_key_value, key_type) = match artifacts
+                let (item_key_value, key_type) = artifacts
                     .get_expression_type(key_value_array_element.key.as_ref())
-                {
-                    Some(item_key_type) => {
+                    .map(|item_key_type| {
                         let key_type = if item_key_type.is_null() {
                             get_literal_string("".to_string())
                         } else if item_key_type.is_true() {
@@ -180,9 +179,8 @@ fn analyze_array_elements<'a>(
                             };
 
                         (item_key_value, key_type)
-                    }
-                    None => (None, get_mixed()),
-                };
+                    })
+                    .unwrap_or((None, get_mixed()));
 
                 (item_key_value, key_type, false, key_value_array_element.value.as_ref())
             }

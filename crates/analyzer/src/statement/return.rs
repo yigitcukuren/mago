@@ -119,8 +119,10 @@ pub fn handle_return_value<'a>(
     block_context.has_returned = true;
     block_context.control_actions.insert(ControlAction::Return);
 
-    let function_like_metadata = if let Some(s) = block_context.scope.get_function_like() {
-        s
+    let (function_like_metadata, function_like_identifier) = if let (Some(s), Some(i)) =
+        (block_context.scope.get_function_like(), block_context.scope.get_function_like_identifier())
+    {
+        (s, i)
     } else {
         // Global return, no function context, exiting.
         return Ok(());
@@ -189,8 +191,7 @@ pub fn handle_return_value<'a>(
             get_mixed_any()
         };
 
-    let function_like_metadata = function_like_metadata.clone();
-    let function_name = block_context.scope.get_function_like_identifier().unwrap().as_string(context.interner);
+    let function_name = function_like_identifier.as_string(context.interner);
 
     if function_like_metadata.has_yield() {
         match get_generator_return_type(context, &expected_return_type) {
@@ -410,9 +411,6 @@ pub fn handle_return_value<'a>(
                 && !expected_return_type.is_nullable()
                 && !expected_return_type.has_template()
             {
-                let function_name =
-                    block_context.scope.get_function_like_identifier().unwrap().as_string(context.interner);
-
                 let expected_type_str = expected_return_type.get_id(Some(context.interner));
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
@@ -444,9 +442,6 @@ pub fn handle_return_value<'a>(
                 && !expected_return_type.is_falsable()
                 && !expected_return_type.has_template()
             {
-                let function_name =
-                    block_context.scope.get_function_like_identifier().unwrap().as_string(context.interner);
-
                 let expected_type_str = expected_return_type.get_id(Some(context.interner));
                 let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
 
@@ -481,8 +476,6 @@ pub fn handle_return_value<'a>(
             if context.interner.lookup(&name).eq_ignore_ascii_case("__construct")
         )
     {
-        let function_name = block_context.scope.get_function_like_identifier().unwrap().as_string(context.interner);
-
         let expected_type_str = expected_return_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(

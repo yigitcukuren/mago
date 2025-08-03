@@ -327,7 +327,10 @@ fn refine_array_key(key_type: &TUnion) -> TUnion {
     refine_array_key_inner(key_type).unwrap_or_else(|| key_type.clone())
 }
 
-static INTEGER_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[0-9]+$").unwrap());
+static INTEGER_REGEX: LazyLock<Regex> = LazyLock::new(|| unsafe {
+    // SAFETY: `unwrap_unchecked` is safe here because the regex is valid and will not panic.
+    Regex::new(r"^[0-9]+$").unwrap_unchecked()
+});
 
 fn add_nested_assertions(
     new_types: &mut BTreeMap<String, Vec<Vec<Assertion>>>,
@@ -344,12 +347,17 @@ fn add_nested_assertions(
             key_parts.reverse();
 
             let mut nesting = 0;
-            let mut base_key = key_parts.pop().unwrap();
+            let mut base_key;
 
-            if !&base_key.starts_with('$') && key_parts.len() > 2 && key_parts.last().unwrap() == "::$" {
-                base_key += key_parts.pop().unwrap().as_str();
-                base_key += key_parts.pop().unwrap().as_str();
-            }
+            unsafe {
+                // SAFETY: `pop` will always return a value because we checked that the key contains either `[` or `->`.
+                base_key = key_parts.pop().unwrap_unchecked();
+
+                if !&base_key.starts_with('$') && key_parts.len() > 2 && key_parts.last().unwrap_unchecked() == "::$" {
+                    base_key += key_parts.pop().unwrap_unchecked().as_str();
+                    base_key += key_parts.pop().unwrap_unchecked().as_str();
+                }
+            };
 
             let base_key_set = if let Some(base_key_type) = context.locals.get(&base_key) {
                 !base_key_type.is_nullable()
@@ -371,7 +379,11 @@ fn add_nested_assertions(
 
             while let Some(divider) = key_parts.pop() {
                 if divider == "[" {
-                    let array_key = key_parts.pop().unwrap();
+                    let array_key = unsafe {
+                        // SAFETY: we know that after `[` there is always an array key, so `pop` will not panic.
+                        key_parts.pop().unwrap_unchecked()
+                    };
+
                     key_parts.pop();
 
                     let new_base_key = base_key.clone() + "[" + array_key.as_str() + "]";
@@ -414,7 +426,10 @@ fn add_nested_assertions(
                 }
 
                 if divider == "->" {
-                    let property_name = key_parts.pop().unwrap();
+                    let property_name = unsafe {
+                        // SAFETY: we know that after `->` there is always a property name, so `pop` will not panic.
+                        key_parts.pop().unwrap_unchecked()
+                    };
 
                     let new_base_key = base_key.clone() + "->" + property_name.as_str();
 
@@ -476,7 +491,10 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
                 }
                 '\'' | '"' => {
                     string_char = Some(c);
-                    parts.last_mut().unwrap().push(c);
+                    unsafe {
+                        // SAFETY: the `parts` vector will always contain at least 1 string.
+                        parts.last_mut().unwrap_unchecked().push(c);
+                    }
                 }
                 ':' if brackets == 0 && chars.peek() == Some(&':') => {
                     let mut lookahead = chars.clone();
@@ -486,7 +504,10 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
                         chars.next();
                         token_found = Some("::$");
                     } else {
-                        parts.last_mut().unwrap().push(c);
+                        unsafe {
+                            // SAFETY: the `parts` vector will always contain at least 1 string.
+                            parts.last_mut().unwrap_unchecked().push(c);
+                        }
                     }
                 }
                 '-' if brackets == 0 && chars.peek() == Some(&'>') => {
@@ -494,13 +515,18 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
                     token_found = Some("->");
                 }
                 _ => {
-                    parts.last_mut().unwrap().push(c);
+                    unsafe {
+                        // SAFETY: the `parts` vector will always contain at least 1 string.
+                        parts.last_mut().unwrap_unchecked().push(c);
+                    }
                 }
             }
 
             if let Some(token) = token_found {
-                if parts.len() > 1 && parts.last().unwrap().is_empty() {
-                    *parts.last_mut().unwrap() = token.to_string();
+                if let Some(last_part) = parts.last_mut()
+                    && last_part.is_empty()
+                {
+                    *last_part = token.to_string();
                 } else {
                     parts.push(token.to_string());
                 }
@@ -535,6 +561,9 @@ fn get_value_for_key(
     possibly_undefined: &mut bool,
 ) -> Option<TUnion> {
     let mut key_parts = break_up_path_into_parts(&key);
+    if key_parts.is_empty() {
+        return None;
+    }
 
     if key_parts.len() == 1 {
         if let Some(t) = block_context.locals.get(&key) {
@@ -546,13 +575,21 @@ fn get_value_for_key(
 
     key_parts.reverse();
 
-    let mut base_key = key_parts.pop().expect("expected at least one part in key_parts, but got empty");
+    let mut base_key;
 
-    if !base_key.starts_with('$') && key_parts.len() > 2 && key_parts.last().is_some_and(|part| part.starts_with("::$"))
-    {
-        base_key += key_parts.pop().expect("expected key_parts to contain at least another entry").as_str();
-        base_key += key_parts.pop().expect("expected key_parts to contain at least another entry").as_str();
-    }
+    unsafe {
+        // SAFETY: `pop` will always return a value because we checked that the key has more than one part.
+        base_key = key_parts.pop().unwrap_unchecked();
+
+        if !base_key.starts_with('$')
+            && key_parts.len() > 2
+            && key_parts.last().is_some_and(|part| part.starts_with("::$"))
+        {
+            // SAFETY: `pop` will always return a value because we checked that the key has more than two parts.
+            base_key += key_parts.pop().unwrap_unchecked().as_str();
+            base_key += key_parts.pop().unwrap_unchecked().as_str();
+        }
+    };
 
     if !block_context.locals.contains_key(&base_key) {
         if base_key.contains("::") {
@@ -653,8 +690,7 @@ fn get_value_for_key(
                                 &existing_key_type_part,
                                 context.codebase,
                                 context.interner,
-                            )
-                            .unwrap();
+                            )?;
 
                             if new_base_type_candidate.is_mixed()
                                 && !has_isset
@@ -704,8 +740,7 @@ fn get_value_for_key(
                                 &existing_key_type_part,
                                 context.codebase,
                                 context.interner,
-                            )
-                            .unwrap();
+                            )?;
 
                             if (has_isset || has_inverted_isset || has_inverted_key_exists)
                                 && new_assertions.contains_key(&new_base_key)

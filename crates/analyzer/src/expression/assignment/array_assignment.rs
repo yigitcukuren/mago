@@ -37,22 +37,19 @@ pub(crate) fn analyze<'a>(
     array_target: ArrayTarget<'_>,
     assign_value_type: TUnion,
 ) -> Result<(), AnalysisError> {
-    let mut array_target_expressions = Vec::new();
-    let mut current_target = array_target;
-
-    loop {
-        array_target_expressions.push(current_target);
-
-        let next_inner_target = match current_target.get_array() {
-            Expression::ArrayAccess(array_access) => ArrayTarget::Access(array_access),
-            Expression::ArrayAppend(array_append) => ArrayTarget::Append(array_append),
-            _ => break,
-        };
-
-        current_target = next_inner_target;
+    let mut array_target_expressions = vec![array_target];
+    while let Some(next_target) = array_target_expressions.last().and_then(|expr| match expr.get_array() {
+        Expression::ArrayAccess(aa) => Some(ArrayTarget::Access(aa)),
+        Expression::ArrayAppend(aa) => Some(ArrayTarget::Append(aa)),
+        _ => None,
+    }) {
+        array_target_expressions.push(next_target);
     }
 
-    let root_array_expression = current_target.get_array();
+    let root_array_expression = unsafe {
+        // SAFETY: We know that `array_target_expressions` is not empty because we started with at least one `ArrayTarget`.
+        array_target_expressions.last().unwrap_unchecked().get_array()
+    };
 
     let was_inside_general_use = block_context.inside_general_use;
     block_context.inside_general_use = true;
@@ -545,7 +542,7 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
     var_id_additions.pop();
 
     for (i, array_target) in array_target_expressions.iter().enumerate() {
-        let mut array_expr_type = artifacts.get_expression_type(array_target).unwrap().clone();
+        let mut array_expr_type = artifacts.get_expression_type(array_target).cloned().unwrap_or_else(get_mixed_any);
 
         let index_type = if let Some(current_index) = last_array_expression_index {
             artifacts.get_rc_expression_type(current_index).cloned()
@@ -563,7 +560,13 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
             context.interner,
             Some(context.codebase),
         )
-        .map(|var_var_id| format!("{}{}", var_var_id, var_id_additions.last().unwrap()));
+        .map(|var_var_id| {
+            format!("{}{}", var_var_id, unsafe {
+                // SAFETY: This is safe because we can guarantee `var_id_additions` is not empty,
+                // so `last()` will always return `Some`.
+                var_id_additions.last().unwrap_unchecked()
+            })
+        });
 
         array_expr_type = update_type_with_key_values(
             context,

@@ -60,14 +60,10 @@ pub fn get_template_types_for_class_member(
     if let Some(declaring_class_meta) = declaring_class_meta {
         let declaring_class_name = declaring_class_meta.name;
 
-        let calling_has_extends = calling_class_meta
-            .map(|calling_meta| {
-                calling_meta.name != declaring_class_name && !calling_meta.template_extended_parameters.is_empty()
-            })
-            .unwrap_or(false);
-
-        if calling_has_extends {
-            let calling_meta = calling_class_meta.unwrap();
+        if let Some(calling_meta) = calling_class_meta
+            && calling_meta.name != declaring_class_name
+            && !calling_meta.template_extended_parameters.is_empty()
+        {
             let calling_template_extended = &calling_meta.template_extended_parameters;
 
             for (extended_class_name, type_map) in calling_template_extended {

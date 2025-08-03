@@ -137,7 +137,13 @@ pub(crate) fn analyze<'a>(
     conditionally_referenced_variable_ids.retain(|k| !assigned_in_conditional_variable_ids.contains_key(k));
     conditionally_referenced_variable_ids.extend(newish_var_ids);
 
-    let mut if_body_context = Rc::unwrap_or_clone(if_conditional_context.if_body_context.unwrap()).into_inner();
+    let mut if_body_context = unsafe {
+        // SAFETY: We know the Option is `Some` and the `Rc` has a strong count of 1.
+        let rc = if_conditional_context.if_body_context.unwrap_unchecked();
+        let ref_cell = Rc::try_unwrap(rc).unwrap_unchecked();
+        ref_cell.into_inner()
+    };
+
     if_body_context.if_body_context = tmp_if_body_context_nested;
 
     Ok((

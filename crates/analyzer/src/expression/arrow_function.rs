@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use ahash::HashMap;
 use ahash::HashSet;
 use mago_codex::context::ScopeContext;
@@ -63,20 +61,9 @@ impl Analyzable for ArrowFunction {
                 continue;
             }
 
-            if !block_context.has_variable(variable_str) {
-                continue;
+            if let Some(existing_type) = block_context.locals.get(variable_str).cloned() {
+                imported_variables.insert(variable_str.to_string(), existing_type);
             }
-
-            let Some(existing_type) = block_context.locals.remove(variable_str) else {
-                continue;
-            };
-
-            let variable_type = existing_type.as_ref().to_owned();
-
-            let local_type = Rc::new(variable_type);
-
-            block_context.locals.insert(variable_str.to_string(), local_type.clone());
-            imported_variables.insert(variable_str.to_string(), local_type);
         }
 
         let (_, inner_artifacts) = analyze_function_like(

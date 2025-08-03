@@ -57,7 +57,11 @@ impl Analyzable for Throw {
             let throwable = context.interner.intern("Throwable");
 
             for exception_atomic in &exception_type.types {
-                if !exception_atomic.extends_or_implements(context.codebase, context.interner, throwable) {
+                if exception_atomic.extends_or_implements(context.codebase, context.interner, throwable) {
+                    for object_name in exception_atomic.get_all_object_names() {
+                        block_context.possibly_thrown_exceptions.entry(object_name).or_default().insert(self.span());
+                    }
+                } else {
                     let exception_atomic_str = exception_atomic.get_id(Some(context.interner));
 
                     context.collector.report_with_code(
@@ -76,12 +80,6 @@ impl Analyzable for Throw {
                             "Ensure the value being thrown is an instance of `Exception`, `Error`, or a subclass thereof."
                         ),
                     );
-
-                    continue;
-                }
-
-                for object_name in exception_atomic.get_all_object_names() {
-                    block_context.possibly_thrown_exceptions.entry(object_name).or_default().insert(self.span());
                 }
             }
         }

@@ -31,14 +31,8 @@ impl Analyzable for ClassConstantAccess {
             ));
         }
 
-        let resulting_type = if resolution.has_invalid_path {
-            get_never()
-        } else {
-            match resulting_type {
-                Some(t) => t,
-                None => get_mixed_any(),
-            }
-        };
+        let resulting_type =
+            if resolution.has_invalid_path { get_never() } else { resulting_type.unwrap_or_else(get_mixed_any) };
 
         artifacts.set_expression_type(self, resulting_type);
 

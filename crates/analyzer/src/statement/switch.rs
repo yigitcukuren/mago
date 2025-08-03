@@ -415,8 +415,10 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         case_stmts.extend(switch_case.statements().iter().cloned());
 
         if !has_leaving_statements && !is_last {
-            // this is safe for non-defaults, and defaults are always last
-            let case_equality_expression = case_equality_expression.unwrap();
+            let case_equality_expression = unsafe {
+                // SAFETY: this is safe for non-defaults, and defaults are always last
+                case_equality_expression.unwrap_unchecked()
+            };
 
             self.leftover_case_equality_expression =
                 Some(if let Some(leftover_case_equality_expr) = &self.leftover_case_equality_expression {
@@ -687,11 +689,11 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
         if let Some(new_locals) = &mut self.new_locals {
             for (var_id, var_type) in new_locals.clone() {
-                if case_block_context.locals.contains_key(&var_id) {
+                if let Some(existing_var_type) = case_block_context.locals.get(&var_id) {
                     new_locals.insert(
                         var_id.clone(),
                         Rc::new(combine_union_types(
-                            case_block_context.locals.get(&var_id).unwrap(),
+                            existing_var_type,
                             &var_type,
                             self.context.codebase,
                             self.context.interner,

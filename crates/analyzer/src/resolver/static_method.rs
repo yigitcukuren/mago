@@ -319,7 +319,10 @@ fn get_metadata_object<'a>(
                         ) {
                             parameter
                         } else {
-                            let (defining_entry, constraint) = template_map.iter().next().unwrap();
+                            let (defining_entry, constraint) = unsafe {
+                                // SAFETY: `template_map` is guaranteed to have at least one entry
+                                template_map.iter().next().unwrap_unchecked()
+                            };
 
                             wrap_atomic(TAtomic::GenericParameter(TGenericParameter {
                                 parameter_name: *parameter_name,
