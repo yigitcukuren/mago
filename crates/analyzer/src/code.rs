@@ -85,7 +85,6 @@ impl Code {
     pub const PROPERTY_TYPE_COERCION: &'static str = "property-type-coercion";
     pub const REDUNDANT_CAST: &'static str = "redundant-cast";
     pub const REDUNDANT_NULL_COALESCE: &'static str = "redundant-null-coalesce";
-    pub const REDUNDANT_ELVIS: &'static str = "redundant-elvis";
     pub const IMPLICIT_TO_STRING_CAST: &'static str = "implicit-to-string-cast";
     pub const REDUNDANT_ISSET_CHECK: &'static str = "redundant-isset-check";
     pub const REDUNDANT_KEY_CHECK: &'static str = "redundant-key-check";

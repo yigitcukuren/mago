@@ -54,7 +54,7 @@ pub(crate) fn analyze<'a>(
                 &mut changed_var_ids,
                 &HashSet::default(),
                 &condition.span(),
-                true,
+                check_for_paradoxes,
                 false,
             );
 
