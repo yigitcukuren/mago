@@ -10,7 +10,7 @@ use crate::parser::internal::array::parse_list;
 use crate::parser::internal::attribute;
 use crate::parser::internal::class_like::member;
 use crate::parser::internal::class_like::parse_anonymous_class;
-use crate::parser::internal::clone::parse_clone;
+use crate::parser::internal::clone::parse_ambiguous_clone_expression;
 use crate::parser::internal::construct::parse_construct;
 use crate::parser::internal::control_flow::r#match::parse_match;
 use crate::parser::internal::function_like::arrow_function::parse_arrow_function_with_attributes;
@@ -105,6 +105,10 @@ fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>, precedence: Precedence
         });
     }
 
+    if matches!(token.kind, T!["clone"]) {
+        return parse_ambiguous_clone_expression(stream);
+    }
+
     if matches!((token.kind, next), (T!["function" | "fn"], _))
         || matches!((token.kind, next), (T!["static"], Some(T!["function" | "fn"])))
     {
@@ -126,7 +130,6 @@ fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>, precedence: Precedence
         (T!["new"], _) => Expression::Instantiation(parse_instantiation(stream)?),
         (T!["throw"], _) => Expression::Throw(parse_throw(stream)?),
         (T!["yield"], _) => Expression::Yield(parse_yield(stream)?),
-        (T!["clone"], _) if !is_call => Expression::Clone(parse_clone(stream)?),
         (T!["\""] | T!["<<<"] | T!["`"], ..) => Expression::CompositeString(parse_string(stream)?),
         (T!["("], _) => Expression::Parenthesized(Parenthesized {
             left_parenthesis: utils::expect_span(stream, T!["("])?,
@@ -139,7 +142,7 @@ fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>, precedence: Precedence
         (T!["$" | "${" | "$variable"], _) => variable::parse_variable(stream).map(Expression::Variable)?,
         (kind, _) if kind.is_magic_constant() => Expression::MagicConstant(parse_magic_constant(stream)?),
         (kind, ..)
-            if matches!(kind, T![Identifier | QualifiedIdentifier | FullyQualifiedIdentifier])
+            if matches!(kind, T![Identifier | QualifiedIdentifier | FullyQualifiedIdentifier | "clone"])
                 || kind.is_soft_reserved_identifier() =>
         {
             Expression::Identifier(identifier::parse_identifier(stream)?)

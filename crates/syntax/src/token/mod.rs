@@ -545,17 +545,7 @@ impl TokenKind {
     pub const fn is_soft_reserved_identifier(&self) -> bool {
         matches!(
             self,
-            T!["parent"
-                | "self"
-                | "true"
-                | "false"
-                | "list"
-                | "null"
-                | "enum"
-                | "from"
-                | "readonly"
-                | "match"
-                | "clone"]
+            T!["parent" | "self" | "true" | "false" | "list" | "null" | "enum" | "from" | "readonly" | "match"]
         )
     }
 
@@ -710,6 +700,11 @@ impl TokenKind {
     #[inline]
     pub const fn is_comment(&self) -> bool {
         matches!(self, T![SingleLineComment | MultiLineComment | DocBlockComment | HashComment])
+    }
+
+    #[inline]
+    pub const fn is_comma(&self) -> bool {
+        matches!(self, T![","])
     }
 
     #[inline]

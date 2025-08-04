@@ -1,3 +1,5 @@
+use mago_span::Span;
+
 use crate::T;
 use crate::ast::ast::*;
 use crate::ast::sequence::TokenSeparatedSequence;
@@ -35,6 +37,46 @@ pub fn parse_argument_list(stream: &mut TokenStream<'_, '_>) -> Result<ArgumentL
 
             TokenSeparatedSequence::new(arguments, commas)
         },
+        right_parenthesis: utils::expect_span(stream, T![")"])?,
+    })
+}
+
+/// Parses the remaining arguments in a list after the opening parenthesis and the first argument
+/// have already been consumed.
+///
+/// This is a helper for parsing constructs where an argument list follows an initial expression,
+/// allowing the parser to reuse the standard argument list parsing logic without backtracking.
+pub fn parse_remaining_argument_list(
+    stream: &mut TokenStream<'_, '_>,
+    left_parenthesis: Span,
+    initial_argument: Argument,
+) -> Result<ArgumentList, ParseError> {
+    let mut arguments = vec![initial_argument];
+    let mut commas = Vec::new();
+
+    // Loop to parse the rest of the arguments
+    loop {
+        let next = utils::peek(stream)?;
+        if next.kind == T![")"] {
+            break;
+        }
+
+        if next.kind == T![","] {
+            commas.push(utils::expect_any(stream)?);
+            // After a comma, another argument might follow, or a closing parenthesis (for trailing commas).
+            if utils::peek(stream)?.kind == T![")"] {
+                break;
+            }
+            arguments.push(parse_argument(stream)?);
+        } else {
+            // If there's no comma, we expect the list to end.
+            break;
+        }
+    }
+
+    Ok(ArgumentList {
+        left_parenthesis,
+        arguments: TokenSeparatedSequence::new(arguments, commas),
         right_parenthesis: utils::expect_span(stream, T![")"])?,
     })
 }
