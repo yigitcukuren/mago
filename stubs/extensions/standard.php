@@ -4698,7 +4698,7 @@ function array_filter(array $array, null|callable $callback = null, int $mode = 
  * @template S
  * @template U
  *
- * @param (callable(V, S): U)|null $callback
+ * @param (callable(V): U)|(callable(V, S): U)|null $callback
  * @param array<K, V> $array
  * @param array<S> ...$arrays
  *

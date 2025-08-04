@@ -110,3 +110,4 @@ test_case!(dynamic_array_key_in_string_interpolation);
 test_case!(big_numbers);
 test_case!(numeric_non_lowercase_string);
 test_case!(not_equal_negation);
+test_case!(overload_resolution_for_callable);
