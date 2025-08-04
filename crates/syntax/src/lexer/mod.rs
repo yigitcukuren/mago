@@ -1,5 +1,5 @@
+use std::collections::VecDeque;
 use std::fmt::Debug;
-use std::mem;
 
 use mago_interner::ThreadedInterner;
 use mago_span::Position;
@@ -39,6 +39,7 @@ pub struct Lexer<'a, 'i> {
     input: Input<'a>,
     mode: LexerMode<'a>,
     interpolating: bool,
+    buffer: VecDeque<Token>,
 }
 
 impl<'a, 'i> Lexer<'a, 'i> {
@@ -53,7 +54,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
     ///
     /// A new `Lexer` instance that reads from the provided byte slice.
     pub fn new(interner: &'i ThreadedInterner, input: Input<'a>) -> Lexer<'a, 'i> {
-        Lexer { interner, input, mode: LexerMode::Inline, interpolating: false }
+        Lexer { interner, input, mode: LexerMode::Inline, interpolating: false, buffer: VecDeque::new() }
     }
 
     /// Creates a new `Lexer` instance for parsing a script block.
@@ -67,7 +68,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
     ///
     /// A new `Lexer` instance that reads from the provided byte slice.
     pub fn scripting(interner: &'i ThreadedInterner, input: Input<'a>) -> Lexer<'a, 'i> {
-        Lexer { interner, input, mode: LexerMode::Script, interpolating: false }
+        Lexer { interner, input, mode: LexerMode::Script, interpolating: false, buffer: VecDeque::new() }
     }
 
     /// Check if the lexer has reached the end of the input.
@@ -139,6 +140,12 @@ impl<'a, 'i> Lexer<'a, 'i> {
     /// - [`SyntaxError`]: Represents errors that can occur during lexing.
     #[inline]
     pub fn advance(&mut self) -> Option<Result<Token, SyntaxError>> {
+        if !self.interpolating
+            && let Some(token) = self.buffer.pop_front()
+        {
+            return Some(Ok(token));
+        }
+
         if self.input.has_reached_eof() {
             return None;
         }
@@ -934,36 +941,36 @@ impl<'a, 'i> Lexer<'a, 'i> {
     }
 
     #[inline]
-    fn token(
-        &mut self,
-        kind: TokenKind,
-        value: &[u8],
-        from: Position,
-        to: Position,
-    ) -> Option<Result<Token, SyntaxError>> {
-        Some(Ok(Token { kind, value: self.interner.intern(String::from_utf8_lossy(value)), span: Span::new(from, to) }))
+    fn token(&mut self, kind: TokenKind, v: &[u8], from: Position, to: Position) -> Option<Result<Token, SyntaxError>> {
+        Some(Ok(Token { kind, value: self.interner.intern(String::from_utf8_lossy(v)), span: Span::new(from, to) }))
     }
 
     #[inline]
-    fn interpolation(&mut self, until: usize, next_mode: LexerMode<'a>) -> Option<Result<Token, SyntaxError>> {
-        let mut mode = LexerMode::Script;
+    fn interpolation(
+        &mut self,
+        end_offset: usize,
+        post_interpolation_mode: LexerMode<'a>,
+    ) -> Option<Result<Token, SyntaxError>> {
+        self.mode = LexerMode::Script;
 
-        mem::swap(&mut self.mode, &mut mode);
+        let was_interpolating = self.interpolating;
         self.interpolating = true;
 
-        let result = self.advance();
+        loop {
+            let subsequent_token = self.advance()?.ok()?;
+            let is_final_token = subsequent_token.span.has_offset(end_offset);
 
-        mem::swap(&mut self.mode, &mut mode);
-        self.interpolating = false;
+            self.buffer.push_back(subsequent_token);
 
-        match result {
-            Some(Ok(token)) if token.span.has_offset(until) => {
-                self.mode = next_mode;
+            if is_final_token {
+                break;
             }
-            _ => {}
         }
 
-        result
+        self.mode = post_interpolation_mode;
+        self.interpolating = was_interpolating;
+
+        self.advance()
     }
 }
 

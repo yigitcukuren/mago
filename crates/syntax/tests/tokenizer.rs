@@ -959,6 +959,81 @@ fn test_escape_in_string() -> Result<(), SyntaxError> {
     })
 }
 
+#[test]
+fn test_dynamic_array_key_in_string_interpolation() -> Result<(), SyntaxError> {
+    let code = r##"<?= "{$a["foo_$n"]}";"##;
+    let expected = vec![
+        TokenKind::EchoTag,
+        TokenKind::Whitespace,
+        TokenKind::DoubleQuote,
+        TokenKind::StringPart,
+        TokenKind::LeftBrace,
+        TokenKind::Variable,
+        TokenKind::LeftBracket,
+        TokenKind::DoubleQuote,
+        TokenKind::StringPart,
+        TokenKind::Variable,
+        TokenKind::DoubleQuote,
+        TokenKind::RightBracket,
+        TokenKind::RightBrace,
+        TokenKind::DoubleQuote,
+        TokenKind::Semicolon,
+    ];
+
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
+        panic!("unexpected error: {err}");
+    })
+}
+
+#[test]
+fn test_braced_dynamic_array_key_in_string_interpolation() -> Result<(), SyntaxError> {
+    let code = r##"<?= "{$a["foo_{$n}"]}";"##;
+    let expected = vec![
+        TokenKind::EchoTag,
+        TokenKind::Whitespace,
+        TokenKind::DoubleQuote,
+        TokenKind::StringPart,
+        TokenKind::LeftBrace,
+        TokenKind::Variable,
+        TokenKind::LeftBracket,
+        TokenKind::DoubleQuote,
+        TokenKind::StringPart,
+        TokenKind::LeftBrace,
+        TokenKind::Variable,
+        TokenKind::RightBrace,
+        TokenKind::DoubleQuote,
+        TokenKind::RightBracket,
+        TokenKind::RightBrace,
+        TokenKind::DoubleQuote,
+        TokenKind::Semicolon,
+    ];
+
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
+        panic!("unexpected error: {err}");
+    })
+}
+
+#[test]
+fn test_braced_string_interpolation() -> Result<(), SyntaxError> {
+    let code = r##"<?= "a {$a} b";"##;
+    let expected = vec![
+        TokenKind::EchoTag,
+        TokenKind::Whitespace,
+        TokenKind::DoubleQuote,
+        TokenKind::StringPart,
+        TokenKind::LeftBrace,
+        TokenKind::Variable,
+        TokenKind::RightBrace,
+        TokenKind::StringPart,
+        TokenKind::DoubleQuote,
+        TokenKind::Semicolon,
+    ];
+
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
+        panic!("unexpected error: {err}");
+    })
+}
+
 fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxError> {
     let interner = ThreadedInterner::new();
     let input = Input::new(SourceIdentifier::dummy(), code);
