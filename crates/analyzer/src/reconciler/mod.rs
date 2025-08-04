@@ -148,7 +148,7 @@ pub fn reconcile_keyed_types(
             let mut orred_type: Option<TUnion> = None;
 
             for assertion in new_type_part_parts {
-                let mut result_type_candidate = assertion_reconciler::reconcile(
+                let result_type_candidate = assertion_reconciler::reconcile(
                     context,
                     assertion,
                     result_type.as_ref(),
@@ -165,15 +165,12 @@ pub fn reconcile_keyed_types(
                     negated,
                 );
 
-                if result_type_candidate.types.is_empty() {
-                    result_type_candidate.types.push(TAtomic::Never);
-                }
-
-                orred_type = if let Some(orred_type) = orred_type {
-                    Some(add_union_type(result_type_candidate, &orred_type, context.codebase, context.interner, false))
-                } else {
-                    Some(result_type_candidate.clone())
-                };
+                orred_type = Some(add_optional_union_type(
+                    result_type_candidate,
+                    orred_type.as_ref(),
+                    context.codebase,
+                    context.interner,
+                ));
             }
 
             result_type = orred_type;

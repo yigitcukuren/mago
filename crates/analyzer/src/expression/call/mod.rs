@@ -284,7 +284,7 @@ fn inspect_arguments<'a>(
         Code::TYPE_INSPECTION,
         issue
             .with_note(
-                "The `Magp\\inspect()` function is a static analysis debugging utility; it has no effect at runtime.",
+                "The `Mago\\inspect()` function is a static analysis debugging utility; it has no effect at runtime.",
             )
             .with_help("Remember to remove `Mago\\inspect()` calls before deploying to production."),
     );

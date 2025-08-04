@@ -526,6 +526,10 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 false,
             );
 
+            for (var_id, _) in reconcilable_if_types {
+                case_block_context.variables_possibly_in_scope.insert(var_id);
+            }
+
             if !changed_var_ids.is_empty() {
                 case_block_context.clauses =
                     BlockContext::remove_reconciled_clause_refs(&case_block_context.clauses, &changed_var_ids).0;

@@ -109,3 +109,4 @@ test_case!(type_is_not_narrowed_by_nested_conditional_exit);
 test_case!(dynamic_array_key_in_string_interpolation);
 test_case!(big_numbers);
 test_case!(numeric_non_lowercase_string);
+test_case!(not_equal_negation);

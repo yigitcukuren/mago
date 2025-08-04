@@ -116,6 +116,7 @@ impl Assertion {
             self,
             Assertion::Falsy
                 | Assertion::IsNotType(_)
+                | Assertion::IsNotEqual(_)
                 | Assertion::IsNotIdentical(_)
                 | Assertion::IsNotIsset
                 | Assertion::NotInArray(..)

@@ -395,6 +395,10 @@ fn handle_literal_negated_equality(
         trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, pos);
     }
 
+    if acceptable_types.is_empty() {
+        return get_never();
+    }
+
     new_var_type.types = acceptable_types;
     new_var_type
 }

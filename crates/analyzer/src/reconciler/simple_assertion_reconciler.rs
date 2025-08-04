@@ -1250,27 +1250,18 @@ fn reconcile_isset(
         }
     }
 
-    if !did_remove_type || acceptable_types.is_empty() {
-        // every type was removed, this is an impossible assertion
-        if let Some(key) = key
-            && let Some(span) = span
-        {
-            let old_var_type_string = existing_var_type.get_id(Some(context.interner));
+    // every type was removed, this is an impossible assertion
+    if let Some(key) = key
+        && let Some(span) = span
+        && (!did_remove_type || acceptable_types.is_empty())
+    {
+        let old_var_type_string = existing_var_type.get_id(Some(context.interner));
 
-            trigger_issue_for_impossible(
-                context,
-                &old_var_type_string,
-                key,
-                assertion,
-                !did_remove_type,
-                negated,
-                span,
-            );
-        }
+        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, span);
+    }
 
-        if acceptable_types.is_empty() {
-            return get_never();
-        }
+    if acceptable_types.is_empty() {
+        acceptable_types.push(TAtomic::Never);
     }
 
     new_var_type.possibly_undefined_from_try = false;
@@ -1328,28 +1319,18 @@ fn reconcile_non_empty_countable(
         }
     }
 
-    if !did_remove_type || acceptable_types.is_empty() {
-        // every type was removed, this is an impossible assertion
-        if let Some(key) = key
-            && let Some(span) = span
-            && !recursive_check
-        {
-            let old_var_type_string = existing_var_type.get_id(Some(context.interner));
+    if let Some(key) = key
+        && let Some(span) = span
+        && !recursive_check
+        && (!did_remove_type || acceptable_types.is_empty())
+    {
+        let old_var_type_string = existing_var_type.get_id(Some(context.interner));
 
-            trigger_issue_for_impossible(
-                context,
-                &old_var_type_string,
-                key,
-                assertion,
-                !did_remove_type,
-                negated,
-                span,
-            );
-        }
+        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, span);
+    }
 
-        if acceptable_types.is_empty() {
-            return get_never();
-        }
+    if acceptable_types.is_empty() {
+        return get_never();
     }
 
     new_var_type.types = acceptable_types;
@@ -1884,31 +1865,21 @@ fn reconcile_has_array_key(
         }
     }
 
-    if !did_remove_type || acceptable_types.is_empty() {
-        // every type was removed, this is an impossible assertion
-        if let Some(key) = key
-            && let Some(span) = span
-        {
-            let old_var_type_string = existing_var_type.get_id(Some(context.interner));
+    // every type was removed, this is an impossible assertion
+    if let Some(key) = key
+        && let Some(span) = span
+        && (!did_remove_type || acceptable_types.is_empty())
+    {
+        let old_var_type_string = existing_var_type.get_id(Some(context.interner));
 
-            trigger_issue_for_impossible(
-                context,
-                &old_var_type_string,
-                key,
-                assertion,
-                !did_remove_type,
-                negated,
-                span,
-            );
-        }
+        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, span);
+    }
 
-        if acceptable_types.is_empty() {
-            return get_never();
-        }
+    if acceptable_types.is_empty() {
+        return get_never();
     }
 
     new_var_type.types = acceptable_types;
-
     new_var_type
 }
 
@@ -2049,31 +2020,21 @@ fn reconcile_has_nonnull_entry_for_key(
         }
     }
 
-    if !did_remove_type || acceptable_types.is_empty() {
-        // every type was removed, this is an impossible assertion
-        if let Some(key) = key
-            && let Some(span) = span
-        {
-            let old_var_type_string = existing_var_type.get_id(Some(context.interner));
+    // every type was removed, this is an impossible assertion
+    if let Some(key) = key
+        && let Some(span) = span
+        && (!did_remove_type || acceptable_types.is_empty())
+    {
+        let old_var_type_string = existing_var_type.get_id(Some(context.interner));
 
-            trigger_issue_for_impossible(
-                context,
-                &old_var_type_string,
-                key,
-                assertion,
-                !did_remove_type,
-                negated,
-                span,
-            );
-        }
+        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, span);
+    }
 
-        if acceptable_types.is_empty() {
-            return get_never();
-        }
+    if acceptable_types.is_empty() {
+        return get_never();
     }
 
     new_var_type.types = acceptable_types;
-
     new_var_type
 }
 
