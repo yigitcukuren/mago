@@ -73,48 +73,49 @@ impl TStringLiteral {
 }
 
 impl TString {
+    /// Creates a new instance of `TString` with the specified properties.
+    pub const fn new(
+        literal: Option<TStringLiteral>,
+        is_numeric: bool,
+        is_truthy: bool,
+        mut is_non_empty: bool,
+        mut is_lowercase: bool,
+    ) -> Self {
+        is_non_empty |= is_numeric || is_truthy;
+        is_lowercase |= is_numeric;
+
+        Self { literal, is_numeric, is_truthy, is_non_empty, is_lowercase }
+    }
+
     /// Creates an instance representing the general `string` type (not known literal, no guaranteed props).
     #[inline]
     pub const fn general() -> Self {
-        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: false, is_lowercase: false }
+        Self::new(None, false, false, false, false)
     }
 
     /// Creates a non-empty string instance with no additional properties.
     #[inline]
     pub const fn non_empty() -> Self {
-        Self { literal: None, is_numeric: false, is_truthy: false, is_non_empty: true, is_lowercase: false }
+        Self::new(None, false, false, true, false)
     }
 
     /// Creates a numeric string instance.
     #[inline]
     pub const fn numeric() -> Self {
-        Self { literal: None, is_numeric: true, is_truthy: false, is_non_empty: true, is_lowercase: false }
+        Self::new(None, true, false, true, false)
     }
 
     /// Creates a general string instance with explicitly set guaranteed properties (from analysis).
     #[inline]
-    pub const fn general_with_props(
-        is_numeric: bool,
-        is_truthy: bool,
-        mut is_non_empty: bool,
-        is_lowercase: bool,
-    ) -> Self {
-        is_non_empty |= is_numeric || is_truthy;
-
-        Self { literal: None, is_numeric, is_truthy, is_non_empty, is_lowercase }
+    pub const fn general_with_props(is_numeric: bool, is_truthy: bool, is_non_empty: bool, is_lowercase: bool) -> Self {
+        Self::new(None, is_numeric, is_truthy, is_non_empty, is_lowercase)
     }
 
     /// Creates an instance representing an unspecified literal string (origin known, value unknown).
     /// Assumes no guaranteed properties unless specified otherwise via `_with_props`.
     #[inline]
     pub const fn unspecified_literal() -> Self {
-        Self {
-            literal: Some(TStringLiteral::Unspecified),
-            is_numeric: false,
-            is_truthy: false,
-            is_non_empty: false,
-            is_lowercase: false,
-        }
+        Self::new(Some(TStringLiteral::Unspecified), false, false, false, false)
     }
 
     /// Creates an unspecified literal string instance with explicitly set guaranteed properties (from analysis).
@@ -125,7 +126,7 @@ impl TString {
         is_non_empty: bool,
         is_lowercase: bool,
     ) -> Self {
-        Self { literal: Some(TStringLiteral::Unspecified), is_numeric, is_truthy, is_non_empty, is_lowercase }
+        Self::new(Some(TStringLiteral::Unspecified), is_numeric, is_truthy, is_non_empty, is_lowercase)
     }
 
     /// Creates an instance representing a known literal string type (e.g., `"hello"`).
@@ -135,9 +136,9 @@ impl TString {
         let is_numeric = str_is_numeric(&value);
         let is_non_empty = is_numeric || !value.is_empty();
         let is_truthy = is_non_empty && value != "0";
-        let is_lowercase = value.chars().all(|c| c.is_lowercase());
+        let is_lowercase = value.chars().all(|c| !c.is_uppercase());
 
-        Self { literal: Some(TStringLiteral::Value(value)), is_numeric, is_truthy, is_non_empty, is_lowercase }
+        Self::new(Some(TStringLiteral::Value(value)), is_numeric, is_truthy, is_non_empty, is_lowercase)
     }
 
     /// Creates an instance representing a known literal string type from a string slice.
@@ -285,7 +286,7 @@ impl TType for TString {
                         "truthy-string"
                     }
                 } else if self.is_numeric {
-                    "numeric-string"
+                    if self.is_lowercase { "lowercase-numeric-string" } else { "numeric-string" }
                 } else if self.is_non_empty {
                     if self.is_lowercase { "lowercase-non-empty-string" } else { "non-empty-string" }
                 } else if self.is_lowercase {
