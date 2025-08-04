@@ -85,7 +85,7 @@ fn get_continue_from_statement(statement: &Statement) -> Option<&Continue> {
     match statement {
         Statement::Block(block) => get_continue_from_statement(block.statements.last()?),
         Statement::Continue(cont) => match cont.level {
-            None | Some(Expression::Literal(Literal::Integer(LiteralInteger { value: 1, .. }))) => Some(cont),
+            None | Some(Expression::Literal(Literal::Integer(LiteralInteger { value: Some(1), .. }))) => Some(cont),
             Some(_) => None,
         },
         _ => None,

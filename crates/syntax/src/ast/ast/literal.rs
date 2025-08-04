@@ -43,7 +43,7 @@ pub struct LiteralString {
 pub struct LiteralInteger {
     pub span: Span,
     pub raw: StringIdentifier,
-    pub value: u64,
+    pub value: Option<u64>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]

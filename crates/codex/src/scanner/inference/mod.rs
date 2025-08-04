@@ -52,7 +52,13 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                     None => get_string(),
                 })
             }
-            Literal::Integer(literal_integer) => Some(get_literal_int(literal_integer.value as i64)),
+            Literal::Integer(literal_integer) => Some(match literal_integer.value {
+                Some(value) => get_literal_int(value as i64),
+                None => TUnion::new(vec![
+                    TAtomic::Scalar(TScalar::Float(TFloat::general())),
+                    TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified)),
+                ]),
+            }),
             Literal::Float(_) => Some(get_float()),
             Literal::True(_) => Some(get_true()),
             Literal::False(_) => Some(get_false()),

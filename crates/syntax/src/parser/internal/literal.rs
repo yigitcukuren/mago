@@ -31,9 +31,7 @@ pub fn parse_literal(stream: &mut TokenStream<'_, '_>) -> Result<Literal, ParseE
             Literal::Integer(LiteralInteger {
                 span: token.span,
                 raw: token.value,
-                value: parse_literal_integer(source).unwrap_or_else(|| {
-                    unreachable!("lexer generated invalid integer `{}`; this should never happen.", source,)
-                }),
+                value: parse_literal_integer(source),
             })
         }
         T!["true"] => Literal::True(utils::to_keyword(token)),

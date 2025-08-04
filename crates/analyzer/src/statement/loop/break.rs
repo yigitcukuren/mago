@@ -29,8 +29,10 @@ impl Analyzable for Break {
     ) -> Result<(), AnalysisError> {
         let levels = match self.level.as_ref() {
             Some(expression) => {
-                if let Expression::Literal(Literal::Integer(integer)) = expression {
-                    integer.value
+                if let Expression::Literal(Literal::Integer(LiteralInteger { value: Some(integer_value), .. })) =
+                    expression
+                {
+                    *integer_value
                 } else {
                     expression.analyze(context, block_context, artifacts)?;
 

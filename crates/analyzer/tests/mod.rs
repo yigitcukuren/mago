@@ -107,3 +107,4 @@ test_case!(short_ternary_with_falsy);
 test_case!(conditional_type_narrowing);
 test_case!(type_is_not_narrowed_by_nested_conditional_exit);
 test_case!(dynamic_array_key_in_string_interpolation);
+test_case!(big_numbers);

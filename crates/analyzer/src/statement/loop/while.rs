@@ -18,7 +18,7 @@ impl Analyzable for While {
         let is_while_true = match self.condition.as_ref() {
             Expression::Literal(literal) => match literal {
                 Literal::True(_) => true,
-                Literal::Integer(integer) => integer.value > 0,
+                Literal::Integer(integer) => integer.value.is_none_or(|v| v > 0),
                 _ => false,
             },
             _ => false,

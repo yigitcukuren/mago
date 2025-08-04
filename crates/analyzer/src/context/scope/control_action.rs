@@ -177,7 +177,9 @@ impl ControlAction {
                     if break_type_len != 0 {
                         let maybe_count = match continue_statement.level.as_ref() {
                             None => Some(1),
-                            Some(Expression::Literal(Literal::Integer(lit_int))) => Some(lit_int.value as usize),
+                            Some(Expression::Literal(Literal::Integer(lit_int))) => {
+                                lit_int.value.as_ref().map(|&value| value as usize)
+                            }
                             _ => None,
                         };
 
@@ -201,7 +203,9 @@ impl ControlAction {
                     if break_type_len != 0 {
                         let maybe_count = match continue_statement.level.as_ref() {
                             None => Some(1),
-                            Some(Expression::Literal(Literal::Integer(lit_int))) => Some(lit_int.value as usize),
+                            Some(Expression::Literal(Literal::Integer(lit_int))) => {
+                                lit_int.value.as_ref().map(|&value| value as usize)
+                            }
                             _ => None,
                         };
 

@@ -93,7 +93,7 @@ impl Rule for RequireStrictTypesRule {
 
                     match &item.value {
                         Expression::Literal(Literal::Integer(integer)) => {
-                            if integer.value == 0
+                            if integer.value == Some(0)
                                 && !context
                                     .option(ALLOW_DISABLING)
                                     .and_then(|o| o.as_bool())

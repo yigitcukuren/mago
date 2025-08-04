@@ -365,7 +365,7 @@ impl Rule for RedundantMathematicalOperationRule {
 const fn get_expression_value(expression: &Expression) -> Option<isize> {
     match expression {
         Expression::Parenthesized(Parenthesized { expression, .. }) => get_expression_value(expression),
-        Expression::Literal(Literal::Integer(LiteralInteger { value, .. })) => Some(*value as isize),
+        Expression::Literal(Literal::Integer(LiteralInteger { value: Some(it), .. })) => Some(*it as isize),
         Expression::UnaryPrefix(UnaryPrefix { operator, operand }) => {
             let value = match get_expression_value(operand) {
                 Some(it) => it,

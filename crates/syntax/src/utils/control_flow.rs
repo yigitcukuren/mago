@@ -153,7 +153,7 @@ pub fn find_control_flows_in_statement(statement: &Statement) -> Vec<ControlFlow
                     ControlFlow::Break(r#break) => {
                         if !matches!(
                             r#break.level,
-                            Some(Expression::Literal(Literal::Integer(LiteralInteger { value: 1, .. }))) | None
+                            Some(Expression::Literal(Literal::Integer(LiteralInteger { value: Some(1), .. }))) | None
                         ) {
                             controls.push(control)
                         }
