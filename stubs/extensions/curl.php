@@ -130,6 +130,13 @@ function curl_multi_init(): CurlMultiHandle
 {
 }
 
+/**
+ * @return list<CurlHandle>
+ */
+function curl_multi_get_handles(CurlMultiHandle $multi_handle): array
+{
+}
+
 function curl_multi_add_handle(CurlMultiHandle $multi_handle, CurlHandle $handle): int
 {
 }

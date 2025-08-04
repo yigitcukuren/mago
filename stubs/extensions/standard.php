@@ -4749,7 +4749,7 @@ function array_key_exists(string|int|float|bool|null $key, array $array): bool
  *
  * @param array<K, mixed> $array
  *
- * @return K|null
+ * @return ($array is non-empty-array ? K : null)
  *
  * @pure
  */
@@ -4758,15 +4758,41 @@ function array_key_first(array $array): string|int|null
 }
 
 /**
+ * @template V
+ *
+ * @param array<array-key, V> $array
+ *
+ * @return ($array is non-empty-array ? V : null)
+ *
+ * @pure
+ */
+function array_first(array $array): mixed
+{
+}
+
+/**
  * @template K as array-key
  *
  * @param array<K, mixed> $array
  *
- * @return K|null
+ * @return ($array is non-empty-array ? K : null)
  *
  * @pure
  */
 function array_key_last(array $array): string|int|null
+{
+}
+
+/**
+ * @template V
+ *
+ * @param array<array-key, V> $array
+ *
+ * @return ($array is non-empty-array ? V : null)
+ *
+ * @pure
+ */
+function array_last(array $array): mixed
 {
 }
 

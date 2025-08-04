@@ -1119,6 +1119,13 @@ function set_error_handler(null|callable $callback, int $error_levels = E_ALL)
 {
 }
 
+/**
+ * @return callable|null
+ */
+function get_error_handler(): null|callable
+{
+}
+
 function restore_error_handler(): true
 {
 }
@@ -1127,6 +1134,13 @@ function restore_error_handler(): true
  * @return callable|null
  */
 function set_exception_handler(null|callable $callback)
+{
+}
+
+/**
+ * @return callable|null
+ */
+function get_exception_handler(): null|callable
 {
 }
 
@@ -1274,6 +1288,18 @@ function get_resources(null|string $type): array
 {
 }
 
+/**
+ * @template T of object
+ *
+ * @param T $object
+ * @param array<string, mixed> $withProperties
+ *
+ * @return T
+ */
+function clone(object $object, array $withProperties = []): object
+{
+}
+
 function exit(string|int $status = 0): never
 {
 }
@@ -1372,6 +1398,8 @@ const PHP_WINDOWS_NT_WORKSTATION = 1;
 const PHP_WINDOWS_EVENT_CTRL_C = 0;
 
 const PHP_WINDOWS_EVENT_CTRL_BREAK = 1;
+
+const PHP_BUILD_DATE = PHP_BUILD_DATE;
 
 const PHP_VERSION = PHP_VERSION;
 

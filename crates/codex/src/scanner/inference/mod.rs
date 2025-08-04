@@ -332,6 +332,7 @@ fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: 
             get_literal_int(-9223372036854775808).get_single_owned(),
             get_literal_int(-2147483648).get_single_owned(),
         ]),
+        "PHP_BUILD_DATE" => get_non_empty_string(),
         "PHP_MAJOR_VERSION" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(8, 9)))]),
         "PHP_ZTS" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)))]),
         "PHP_DEBUG" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)))]),

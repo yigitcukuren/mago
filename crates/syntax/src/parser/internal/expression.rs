@@ -126,7 +126,7 @@ fn parse_lhs_expression(stream: &mut TokenStream<'_, '_>, precedence: Precedence
         (T!["new"], _) => Expression::Instantiation(parse_instantiation(stream)?),
         (T!["throw"], _) => Expression::Throw(parse_throw(stream)?),
         (T!["yield"], _) => Expression::Yield(parse_yield(stream)?),
-        (T!["clone"], _) => Expression::Clone(parse_clone(stream)?),
+        (T!["clone"], _) if !is_call => Expression::Clone(parse_clone(stream)?),
         (T!["\""] | T!["<<<"] | T!["`"], ..) => Expression::CompositeString(parse_string(stream)?),
         (T!["("], _) => Expression::Parenthesized(Parenthesized {
             left_parenthesis: utils::expect_span(stream, T!["("])?,

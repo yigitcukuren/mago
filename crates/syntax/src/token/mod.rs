@@ -545,7 +545,17 @@ impl TokenKind {
     pub const fn is_soft_reserved_identifier(&self) -> bool {
         matches!(
             self,
-            T!["parent" | "self" | "true" | "false" | "list" | "null" | "enum" | "from" | "readonly" | "match"]
+            T!["parent"
+                | "self"
+                | "true"
+                | "false"
+                | "list"
+                | "null"
+                | "enum"
+                | "from"
+                | "readonly"
+                | "match"
+                | "clone"]
         )
     }
 

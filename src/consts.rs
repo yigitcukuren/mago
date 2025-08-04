@@ -49,13 +49,13 @@ pub const DEFAULT_STACK_SIZE: usize = 36 * 1024 * 1024;
 pub const MAXIMUM_STACK_SIZE: usize = 256 * 1024 * 1024;
 
 /// The default php version.
-pub const DEFAULT_PHP_VERSION: PHPVersion = PHPVersion::PHP84;
+pub const DEFAULT_PHP_VERSION: PHPVersion = PHPVersion::LATEST;
 
 /// The minimum supported PHP version.
 pub const MINIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP72;
 
 /// The maximum supported PHP version.
-pub const MAXIMUM_PHP_VERSION: PHPVersion = PHPVersion::PHP84;
+pub const MAXIMUM_PHP_VERSION: PHPVersion = PHPVersion::NEXT;
 
 /// The number of logical CPUs on the system.
 pub static LOGICAL_CPUS: LazyLock<usize> = LazyLock::new(get_logical_cpus);
