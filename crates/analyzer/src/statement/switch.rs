@@ -764,11 +764,11 @@ fn new_synthetic_disjunctive_equality(subject: &Expression, left: &Expression, r
 }
 
 fn new_synthetic_or(left: &Expression, right: &Expression) -> Expression {
-    new_synthetic_binary(left, BinaryOperator::Or(Span::dummy(0, 0)), right)
+    new_synthetic_binary(left, BinaryOperator::Or(Span::dummy(0, 1)), right)
 }
 
 fn new_synthetic_equals(left: &Expression, right: &Expression) -> Expression {
-    new_synthetic_binary(left, BinaryOperator::Equal(Span::dummy(0, 0)), right)
+    new_synthetic_binary(left, BinaryOperator::Equal(Span::dummy(0, 1)), right)
 }
 
 fn new_synthetic_binary(left: &Expression, operator: BinaryOperator, right: &Expression) -> Expression {
@@ -776,5 +776,5 @@ fn new_synthetic_binary(left: &Expression, operator: BinaryOperator, right: &Exp
 }
 
 fn new_synthetic_variable(interner: &ThreadedInterner, name: &str) -> Expression {
-    Expression::Variable(Variable::Direct(DirectVariable { span: Span::dummy(0, 0), name: interner.intern(name) }))
+    Expression::Variable(Variable::Direct(DirectVariable { span: Span::dummy(0, 1), name: interner.intern(name) }))
 }

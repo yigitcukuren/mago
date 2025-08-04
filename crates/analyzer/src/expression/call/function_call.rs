@@ -57,8 +57,11 @@ pub(super) fn resolve_targets<'a>(
         let unqualified_name = function_name.value();
 
         let identifier = FunctionLikeIdentifier::Function(*name);
-        let alternative =
-            if unqualified_name != name { Some(FunctionLikeIdentifier::Function(*unqualified_name)) } else { None };
+        let alternative = if function_name.is_local() && unqualified_name != name {
+            Some(FunctionLikeIdentifier::Function(*unqualified_name))
+        } else {
+            None
+        };
 
         let target = get_function_like_target(context, identifier, alternative, expression.span())?;
 

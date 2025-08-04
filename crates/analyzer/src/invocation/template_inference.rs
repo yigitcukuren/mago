@@ -467,12 +467,12 @@ fn infer_templates_from_input_and_container_types(
             }
             TAtomic::Object(TObject::Named(container_obj)) => {
                 let Some(container_params) = container_obj.get_type_parameters() else {
-                    return;
+                    continue;
                 };
 
                 let Some(container_meta) = get_class_like(context.codebase, context.interner, &container_obj.name)
                 else {
-                    return;
+                    continue;
                 };
 
                 for input_atomic in &residual_input_type.types {
@@ -560,8 +560,11 @@ fn infer_templates_from_input_and_container_types(
                     input_objects.push(class_string.get_object_type(context.codebase, context.interner));
                 }
 
-                let mut lower_bound_type = TUnion::new(input_objects);
+                if input_objects.is_empty() {
+                    continue;
+                }
 
+                let mut lower_bound_type = TUnion::new(input_objects);
                 if should_add_bound {
                     if let Some(template_types) = template_result.template_types.get_mut(parameter_name) {
                         for (_, template_type) in template_types {

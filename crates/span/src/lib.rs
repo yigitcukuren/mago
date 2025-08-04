@@ -87,7 +87,10 @@ impl Position {
 
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
-        debug_assert!(start.source == end.source, "span start and end must be in the same file");
+        debug_assert!(
+            start.source.0.is_empty() || end.source.0.is_empty() || start.source == end.source,
+            "span start and end must be in the same file",
+        );
 
         Self { start, end }
     }

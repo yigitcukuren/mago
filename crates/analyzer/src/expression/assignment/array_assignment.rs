@@ -395,6 +395,10 @@ fn update_array_assignment_child_type(
         }
     }
 
+    if collection_types.is_empty() {
+        return root_type;
+    }
+
     let collection_type = TUnion::new(combiner::combine(collection_types, context.codebase, context.interner, false));
 
     add_union_type(root_type, &collection_type, context.codebase, context.interner, true)
