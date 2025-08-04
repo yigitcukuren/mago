@@ -286,7 +286,7 @@ impl TType for TString {
                         "truthy-string"
                     }
                 } else if self.is_numeric {
-                    if self.is_lowercase { "lowercase-numeric-string" } else { "numeric-string" }
+                    "numeric-string"
                 } else if self.is_non_empty {
                     if self.is_lowercase { "lowercase-non-empty-string" } else { "non-empty-string" }
                 } else if self.is_lowercase {
