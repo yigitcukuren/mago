@@ -111,8 +111,8 @@ impl NamespaceScope {
         match &r#use.items {
             UseItems::Sequence(use_item_sequence) => {
                 for use_item in use_item_sequence.items.iter() {
-                    let name = interner.lookup(use_item.name.value()); // Example: &use_item.name.symbol_id
-                    let alias = use_item.alias.as_ref().map(|alias_node| interner.lookup(&alias_node.identifier.value)); // Example: &alias_node.identifier.symbol_id
+                    let name = interner.lookup(use_item.name.value()).trim_start_matches("\\");
+                    let alias = use_item.alias.as_ref().map(|alias_node| interner.lookup(&alias_node.identifier.value));
 
                     // Add as a default (class/namespace) alias
                     self.add(NameKind::Default, name, alias);
@@ -126,7 +126,7 @@ impl NamespaceScope {
                 };
 
                 for use_item in typed_use_item_sequence.items.iter() {
-                    let name = interner.lookup(use_item.name.value());
+                    let name = interner.lookup(use_item.name.value()).trim_start_matches("\\");
                     let alias = use_item.alias.as_ref().map(|alias_node| interner.lookup(&alias_node.identifier.value));
 
                     // Add with the determined kind (Function or Constant)
@@ -141,7 +141,7 @@ impl NamespaceScope {
                 };
 
                 // Get the common namespace prefix for the group
-                let prefix = interner.lookup(typed_use_item_list.namespace.value());
+                let prefix = interner.lookup(typed_use_item_list.namespace.value()).trim_start_matches("\\");
 
                 for use_item in typed_use_item_list.items.iter() {
                     let name_part = interner.lookup(use_item.name.value());
@@ -156,7 +156,7 @@ impl NamespaceScope {
             }
             UseItems::MixedList(mixed_use_item_list) => {
                 // Get the common namespace prefix for the group
-                let prefix = interner.lookup(mixed_use_item_list.namespace.value());
+                let prefix = interner.lookup(mixed_use_item_list.namespace.value()).trim_start_matches("\\");
 
                 for mixed_use_item in mixed_use_item_list.items.iter() {
                     // Determine the kind for *this specific item* within the mixed list

@@ -1034,6 +1034,29 @@ fn test_braced_string_interpolation() -> Result<(), SyntaxError> {
     })
 }
 
+#[test]
+fn test_use_fully_qualified() -> Result<(), SyntaxError> {
+    let code = r##"<?php use \Foo\{Bar,Baz};"##;
+    let expected = vec![
+        TokenKind::OpenTag,
+        TokenKind::Whitespace,
+        TokenKind::Use,
+        TokenKind::Whitespace,
+        TokenKind::FullyQualifiedIdentifier,
+        TokenKind::NamespaceSeparator,
+        TokenKind::LeftBrace,
+        TokenKind::Identifier,
+        TokenKind::Comma,
+        TokenKind::Identifier,
+        TokenKind::RightBrace,
+        TokenKind::Semicolon,
+    ];
+
+    test_lexer(code.as_bytes(), expected).map_err(|err| {
+        panic!("unexpected error: {err}");
+    })
+}
+
 fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxError> {
     let interner = ThreadedInterner::new();
     let input = Input::new(SourceIdentifier::dummy(), code);

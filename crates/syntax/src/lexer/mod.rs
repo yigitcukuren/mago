@@ -340,6 +340,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
                             }
                         }
 
+                        if last_was_slash {
+                            length -= 1;
+                        }
+
                         (TokenKind::FullyQualifiedIdentifier, length)
                     }
                     [b'$', start_of_identifier!(), ..] => {

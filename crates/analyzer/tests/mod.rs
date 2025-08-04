@@ -111,3 +111,4 @@ test_case!(big_numbers);
 test_case!(numeric_non_lowercase_string);
 test_case!(not_equal_negation);
 test_case!(overload_resolution_for_callable);
+test_case!(fully_qualified_use_prefix);
