@@ -1155,7 +1155,7 @@ function htmlspecialchars(
 function htmlentities(
     string $string,
     int $flags = ENT_QUOTES | ENT_SUBSTITUTE,
-    null|string $encoding,
+    null|string $encoding = null,
     bool $double_encode = true,
 ): string {
 }
@@ -1163,8 +1163,11 @@ function htmlentities(
 /**
  * @pure
  */
-function html_entity_decode(string $string, int $flags = ENT_QUOTES | ENT_SUBSTITUTE, null|string $encoding): string
-{
+function html_entity_decode(
+    string $string,
+    int $flags = ENT_QUOTES | ENT_SUBSTITUTE,
+    null|string $encoding = null,
+): string {
 }
 
 /**
@@ -2282,6 +2285,8 @@ function convert_uudecode(string $string): string|false
 }
 
 /**
+ * @return ($num is int ? int : float)
+ *
  * @pure
  */
 function abs(int|float $num): int|float
@@ -4543,9 +4548,8 @@ function array_change_key_case(array $array, int $case = CASE_LOWER): array
 
 /**
  * @template K as array-key
- * @template V as array-key
  *
- * @param array<K, V> $array
+ * @param array<K, mixed> $array
  * @param int<0, max> $num
  *
  * @return ($num is 1 ? K : array<K>)
@@ -4557,7 +4561,7 @@ function array_rand(array $array, int $num = 1): array|string|int
 }
 
 /**
- * @template K
+ * @template K as array-key
  * @template V
  *
  * @param array<K, V> $array
@@ -4667,7 +4671,7 @@ function array_sum(array $array): int|float
 }
 
 /**
- * @param array<num> $array
+ * @param array<int|float> $array
  *
  * @pure
  */
