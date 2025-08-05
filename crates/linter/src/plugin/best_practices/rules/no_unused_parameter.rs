@@ -31,33 +31,33 @@ impl Rule for NoUnusedParameterRule {
             .with_example(RuleUsageExample::valid(
                 "Function with used parameters",
                 indoc! {r#"
-                <?php
+                    <?php
 
-                declare(strict_types=1);
+                    declare(strict_types=1);
 
-                class Container {
-                    private array $data = [];
+                    class Container {
+                        private array $data = [];
 
-                    public function set(string $key, string $value, ?string $default = null): void {
-                        $this->data[$key] = $value ?? $default;
+                        public function set(string $key, string $value, ?string $default = null): void {
+                            $this->data[$key] = $value ?? $default;
+                        }
                     }
-                }
                 "#},
             ))
             .with_example(RuleUsageExample::invalid(
                 "Function with unused parameter",
                 indoc! {r#"
-                <?php
+                    <?php
 
-                declare(strict_types=1);
+                    declare(strict_types=1);
 
-                class Container {
-                    private array $data = [];
+                    class Container {
+                        private array $data = [];
 
-                    public function set(string $key, string $value, ?string $default = null): void {
-                        $this->data[$key] = $value;
+                        public function set(string $key, string $value, ?string $default = null): void {
+                            $this->data[$key] = $value;
+                        }
                     }
-                }
                 "#},
             ))
     }
@@ -72,11 +72,16 @@ impl Rule for NoUnusedParameterRule {
                 }
 
                 let foreign_variables = get_foreign_variable_names(&function.body, context);
+
                 for parameter in function.parameter_list.parameters.iter() {
-                    if foreign_variables.contains(&parameter.variable.name) {
+                    // A parameter is considered used if it's a foreign variable that is NOT conditional.
+                    // A conditionally foreign variable means it might be used, but only within a branch,
+                    // which doesn't satisfy the requirement of being used in the main function body.
+                    if foreign_variables.iter().any(|v| v.name == parameter.variable.name) {
                         continue;
                     }
 
+                    // This function reports an error:
                     check_parameter(parameter, function, context, "function");
                 }
 
@@ -92,7 +97,7 @@ impl Rule for NoUnusedParameterRule {
                 let foreign_variables = get_foreign_variable_names(&closure.body, context);
 
                 for parameter in closure.parameter_list.parameters.iter() {
-                    if foreign_variables.contains(&parameter.variable.name) {
+                    if foreign_variables.iter().any(|v| v.name == parameter.variable.name) {
                         continue;
                     }
 
@@ -163,14 +168,13 @@ impl Rule for NoUnusedParameterRule {
             }
 
             let foreign_variables = get_foreign_variable_names(block, context);
-
             for parameter in method.parameter_list.parameters.iter() {
                 // Skip promoted properties
                 if parameter.is_promoted_property() {
                     continue;
                 }
 
-                if foreign_variables.contains(&parameter.variable.name) {
+                if foreign_variables.iter().any(|v| v.name == parameter.variable.name) {
                     continue;
                 }
 
