@@ -214,6 +214,8 @@ fn scan_function_like_docblock(
 
     metadata.is_deprecated |= docblock.is_deprecated;
     metadata.is_internal |= docblock.is_internal;
+    metadata.must_use |= docblock.must_use;
+    metadata.unchecked |= docblock.unchecked;
     metadata.is_pure |= docblock.is_pure;
     metadata.is_mutation_free |= docblock.is_mutation_free;
     metadata.is_external_mutation_free |= docblock.is_external_mutation_free;

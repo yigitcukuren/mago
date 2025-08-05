@@ -208,6 +208,7 @@ pub enum TagKind {
     ThisOut,
     SelfOut,
     Where,
+    MustUse,
     Other,
 }
 
@@ -613,6 +614,7 @@ where
             "self-out" | "selfout" => TagKind::SelfOut,
             "this-out" | "thisout" => TagKind::ThisOut,
             "where" => TagKind::Where,
+            "must-use" | "mustuse" => TagKind::MustUse,
             _ => TagKind::Other,
         }
     }

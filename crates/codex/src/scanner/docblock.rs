@@ -56,6 +56,7 @@ pub struct FunctionLikeDocblockComment {
     pub assertions: Vec<AssertionTag>,
     pub if_true_assertions: Vec<AssertionTag>,
     pub if_false_assertions: Vec<AssertionTag>,
+    pub must_use: bool,
     pub unchecked: bool,
 }
 
@@ -304,6 +305,7 @@ impl FunctionLikeDocblockComment {
         let mut if_true_assertions: Vec<AssertionTag> = Vec::new();
         let mut if_false_assertions: Vec<AssertionTag> = Vec::new();
         let mut unchecked = false;
+        let mut must_use = false;
 
         let parsed_docblock = parse_trivia(context.interner, docblock)?;
 
@@ -315,6 +317,9 @@ impl FunctionLikeDocblockComment {
             match tag.kind {
                 TagKind::Unchecked | TagKind::MagoUnchecked => {
                     unchecked = true;
+                }
+                TagKind::MustUse => {
+                    must_use = true;
                 }
                 TagKind::Deprecated => {
                     is_deprecated = true;
@@ -468,6 +473,7 @@ impl FunctionLikeDocblockComment {
             assertions,
             if_true_assertions,
             if_false_assertions,
+            must_use,
             unchecked,
         }))
     }

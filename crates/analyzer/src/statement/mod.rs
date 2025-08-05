@@ -249,7 +249,7 @@ fn detect_unused_statement_expressions(
             issue_kind,
             Issue::error(format!("The return value of '{name_str}' must be used."))
                 .with_annotation(Annotation::primary(statement.span()).with_message("The result of this call is ignored"))
-                .with_note(format!("The function or method '{name_str}' is marked with @must-use, indicating its return value is important and should not be discarded."))
+                .with_note(format!("The function or method '{name_str}' is marked with @must-use or #[NoDiscard], indicating its return value is important and should not be discarded."))
                 .with_help("Assign the result to a variable, pass it to another function, or use it in an expression.")
         );
 
@@ -288,7 +288,7 @@ fn detect_unused_statement_expressions(
             let name = context.resolved_names.get(function_name);
 
             let Some(function) = get_function(context.codebase, context.interner, name).or_else(|| {
-                if function_name.is_fully_qualified() {
+                if !function_name.is_local() {
                     None
                 } else {
                     get_function(context.codebase, context.interner, unqualified_name)
@@ -297,21 +297,33 @@ fn detect_unused_statement_expressions(
                 return;
             };
 
-            if function.is_pure && function.thrown_types.is_empty() && !function.has_throw {
-                "Calling a pure function without using its result has no effect (consider using the result or removing the call)."
-            } else {
+            // If the function has side effects, we don't report it as useless.
+            if !function.is_pure {
                 return;
             }
+
+            // If the function does throw or has thrown types, we don't report it as useless.
+            if !function.thrown_types.is_empty() || function.has_throw {
+                return;
+            }
+
+            // If the function has parameters that are by reference, we don't report it as useless.
+            if function.parameters.iter().any(|param| param.is_by_reference) {
+                return;
+            }
+
+            "Calling a pure function without using its result has no effect (consider using the result or removing the call)."
         }
         _ => return,
     };
 
     context.collector.report_with_code(
         Code::UNUSED_STATEMENT,
-        Issue::note("Statement has no effect.")
+        Issue::note("Expression has no effect as a statement")
             .with_annotation(Annotation::primary(expression.span()).with_message(useless_expression_message))
+            .with_note("This expression does not produce a side effect or return value that is used.")
             .with_help(
-                "Remove this statement or use the expression's value in an assignment, condition, or function call.",
+                "To fix this, assign the value to a variable, return it, or remove the statement if it is truly unnecessary.",
             ),
     );
 }
@@ -334,7 +346,14 @@ fn has_unused_must_use<'a>(
     match functionlike_id_from_call {
         FunctionLikeIdentifier::Function(function_id) => {
             let function_metadata = get_function(context.codebase, context.interner, &function_id)?;
-            if function_metadata.must_use { Some((Code::UNUSED_FUNCTION_CALL, function_id)) } else { None }
+
+            let must_use = function_metadata.must_use
+                || function_metadata
+                    .attributes
+                    .iter()
+                    .any(|attr| context.interner.lookup(&attr.name).eq_ignore_ascii_case("NoDiscard"));
+
+            if must_use { Some((Code::UNUSED_FUNCTION_CALL, function_id)) } else { None }
         }
         FunctionLikeIdentifier::Method(method_class, method_name) => {
             let method_metadata = get_method_by_id(
@@ -343,7 +362,13 @@ fn has_unused_must_use<'a>(
                 &MethodIdentifier::new(method_class, method_name),
             )?;
 
-            if method_metadata.must_use { Some((Code::UNUSED_METHOD_CALL, method_name)) } else { None }
+            let must_use = method_metadata.must_use
+                || method_metadata
+                    .attributes
+                    .iter()
+                    .any(|attr| context.interner.lookup(&attr.name).eq_ignore_ascii_case("NoDiscard"));
+
+            if must_use { Some((Code::UNUSED_METHOD_CALL, method_name)) } else { None }
         }
         FunctionLikeIdentifier::Closure(_) => None,
     }
