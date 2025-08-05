@@ -693,4 +693,30 @@ mod tests {
             "@var string[] this is a really long description\n            that spans multiple lines, and demonstrates how the parser handles\n            docblocks with multiple descriptions, and missing astricks"
         );
     }
+
+    #[test]
+    fn test_code_indent_using_non_ascii_chars() {
+        let interner = ThreadedInterner::new();
+        let phpdoc = r#"/**
+        *    └─ comment 2
+        *       └─ comment 4
+        *    └─ comment 3
+        */"#;
+
+        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
+
+        assert_eq!(document.elements.len(), 1);
+
+        let Element::Code(code) = &document.elements[0] else {
+            panic!("Expected Element::Code, got {:?}", document.elements[0]);
+        };
+
+        let content_str = interner.lookup(&code.content);
+        assert_eq!(content_str, " └─ comment 2\n\u{a0}\u{a0} └─ comment 4\n └─ comment 3");
+        assert_eq!(
+            &phpdoc[code.span.start.offset..code.span.end.offset],
+            " \u{a0} └─ comment 2\n        *    \u{a0}\u{a0} └─ comment 4\n        *  \u{a0} └─ comment 3"
+        );
+    }
 }

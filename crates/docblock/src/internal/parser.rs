@@ -202,8 +202,7 @@ fn parse_indented_code(
         return Err(ParseError::ExpectedLine(tokens[i].span()));
     };
 
-    let indent = content.chars().take_while(|c| c.is_whitespace()).collect::<String>();
-    let indent_len = indent.len();
+    let indent_len = content.chars().take_while(|c| c.is_whitespace()).count();
 
     let mut code_content = String::new();
     let mut end_span = *span;
