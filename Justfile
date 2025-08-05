@@ -53,7 +53,7 @@ publish:
     cargo publish -p mago-reference
     cargo publish -p mago-linter
     cargo publish -p mago-wasm
-    cargo publish -n
+    cargo publish
 
 # Cleans all build artifacts from the workspace.
 clean:
