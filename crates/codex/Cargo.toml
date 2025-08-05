@@ -1,6 +1,6 @@
 [package]
 name = "mago-codex"
-description = "PHP Codebase Metadata"
+description = "PHP type system representation, comparison logic, and codebase metadata for static analysis."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

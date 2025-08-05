@@ -31,28 +31,29 @@ test:
 # Publishes all crates to crates.io in the correct order.
 publish:
     # Note: the order of publishing is important, as some crates depend on others.
-    cargo publish -p mago-casing --allow-dirty
-    cargo publish -p mago-php-version --allow-dirty
-    cargo publish -p mago-fixer --allow-dirty
-    cargo publish -p mago-trinary --allow-dirty
-    cargo publish -p mago-interner --allow-dirty
-    cargo publish -p mago-source --allow-dirty
-    cargo publish -p mago-span --allow-dirty
-    cargo publish -p mago-reporting --allow-dirty
-    cargo publish -p mago-reflection --allow-dirty
-    cargo publish -p mago-syntax-core --allow-dirty
-    cargo publish -p mago-syntax --allow-dirty
-    cargo publish -p mago-type-syntax --allow-dirty
-    cargo publish -p mago-composer --allow-dirty
-    cargo publish -p mago-docblock --allow-dirty
-    cargo publish -p mago-formatter --allow-dirty
-    cargo publish -p mago-names --allow-dirty
-    cargo publish -p mago-typing --allow-dirty
-    cargo publish -p mago-project --allow-dirty
-    cargo publish -p mago-reference --allow-dirty
-    cargo publish -p mago-linter --allow-dirty
-    cargo publish -p mago-wasm --allow-dirty
-    cargo publish --allow-dirty
+    cargo publish -p mago-casing
+    cargo publish -p mago-php-version
+    cargo publish -p mago-fixer
+    cargo publish -p mago-interner
+    cargo publish -p mago-source
+    cargo publish -p mago-span
+    cargo publish -p mago-reporting
+    cargo publish -p mago-syntax-core
+    cargo publish -p mago-syntax
+    cargo publish -p mago-collector
+    cargo publish -p mago-type-syntax
+    cargo publish -p mago-composer
+    cargo publish -p mago-docblock
+    cargo publish -p mago-formatter
+    cargo publish -p mago-names
+    cargo publish -p mago-semantics
+    cargo publish -p mago-codex
+    cargo publish -p mago-algebra
+    cargo publish -p mago-analyzer
+    cargo publish -p mago-reference
+    cargo publish -p mago-linter
+    cargo publish -p mago-wasm
+    cargo publish -n
 
 # Cleans all build artifacts from the workspace.
 clean:

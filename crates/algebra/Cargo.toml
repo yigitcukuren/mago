@@ -1,6 +1,6 @@
 [package]
 name = "mago-algebra"
-description = ""
+description = "The logical reasoning engine for Mago's static analyzer, responsible for manipulating sets of logical clauses."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

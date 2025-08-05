@@ -1,6 +1,6 @@
 [package]
 name = "mago-analyzer"
-description = "A PHP type checker that can detect type errors in PHP code, and provide suggestions for fixing them."
+description = "A PHP static analyzer that can detect type errors in PHP code, and provide suggestions for fixing them."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
