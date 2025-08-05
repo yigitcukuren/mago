@@ -4472,7 +4472,7 @@ function array_column(array $array, string|int|null $column_key, string|int|null
  * @param array<K, V> $array
  * @param bool $preserve_keys
  *
- * @return ($preserve_keys ? array<K, V> : list<V>)
+ * @return ($preserve_keys is true ? array<K, V> : list<V>)
  *
  * @no-named-arguments
  * @pure
@@ -4658,6 +4658,8 @@ function array_diff_assoc(array $array, array ...$arrays): array
 
 /**
  * @param array<int|float> $array
+ *
+ * @return ($array is array<int> ? int : float)
  *
  * @pure
  */
@@ -5273,11 +5275,10 @@ function max(mixed $value, mixed ...$values): mixed
 }
 
 /**
- * @template K of array-key
  * @template V
  *
- * @param K $needle
- * @param array<K, V> $haystack
+ * @param V $needle
+ * @param array<V> $haystack
  *
  * @pure
  */
