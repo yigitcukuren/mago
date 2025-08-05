@@ -4414,7 +4414,7 @@ function array_replace_recursive(array $array, array ...$replacements): array
  * @param V $filter_value
  * @param bool $strict
  *
- * @return ($array is non-empty-array ? non-empty-list<K> : list<K>)
+ * @return ($array is non-empty-array|non-empty-list ? non-empty-list<K> : list<K>)
  *
  * @no-named-arguments
  * @pure
@@ -4429,7 +4429,7 @@ function array_keys(array $array, mixed $filter_value = null, bool $strict = fal
  *
  * @param array<K, V> $array
  *
- * @return ($array is non-empty-array ? non-empty-list<V> : list<V>)
+ * @return ($array is non-empty-array|non-empty-list ? non-empty-list<V> : list<V>)
  *
  * @no-named-arguments
  * @pure
@@ -4523,7 +4523,7 @@ function array_pad(array $array, int $length, mixed $value): array
  *
  * @param array<K, V> $array
  *
- * @return ($array is non-empty-array ? non-empty-array<V, K> : array<V, K>)
+ * @return ($array is non-empty-array|non-empty-list ? non-empty-array<V, K> : array<V, K>)
  *
  * @pure
  */
@@ -4538,7 +4538,7 @@ function array_flip(array $array): array
  * @param array<string, V> $array
  * @param int $case
  *
- * @return ($array is non-empty-array ? non-empty-array<string, V> : array<string, V>)
+ * @return ($array is non-empty-array|non-empty-list ? non-empty-array<string, V> : array<string, V>)
  *
  * @pure
  */
@@ -4729,7 +4729,7 @@ function array_chunk(array $array, int $length, bool $preserve_keys = false): ar
  * @param array<K> $keys
  * @param array<V> $values
  *
- * @return ($keys is non-empty-array ? non-empty-array<K, V> : array<K, V>)
+ * @return ($keys is non-empty-array|non-empty-list ? non-empty-array<K, V> : array<K, V>)
  *
  * @pure
  */
@@ -4749,7 +4749,7 @@ function array_key_exists(string|int|float|bool|null $key, array $array): bool
  *
  * @param array<K, mixed> $array
  *
- * @return ($array is non-empty-array ? K : null)
+ * @return ($array is non-empty-array|non-empty-list ? K : null)
  *
  * @pure
  */
@@ -4762,7 +4762,7 @@ function array_key_first(array $array): string|int|null
  *
  * @param array<array-key, V> $array
  *
- * @return ($array is non-empty-array ? V : null)
+ * @return ($array is non-empty-array|non-empty-list ? V : null)
  *
  * @pure
  */
@@ -4775,7 +4775,7 @@ function array_first(array $array): mixed
  *
  * @param array<K, mixed> $array
  *
- * @return ($array is non-empty-array ? K : null)
+ * @return ($array is non-empty-array|non-empty-list ? K : null)
  *
  * @pure
  */
@@ -4788,7 +4788,7 @@ function array_key_last(array $array): string|int|null
  *
  * @param array<array-key, V> $array
  *
- * @return ($array is non-empty-array ? V : null)
+ * @return ($array is non-empty-array|non-empty-list ? V : null)
  *
  * @pure
  */
@@ -5362,7 +5362,7 @@ function array_push(array &$array, mixed ...$values): int
  *
  * @param-out ($array is list<V> ? list<V> : array<K, V>) $array
  *
- * @return ($array is non-empty-array ? V : V|null)
+ * @return ($array is non-empty-array|non-empty-list ? V : V|null)
  */
 function array_pop(array &$array): mixed
 {
@@ -5375,7 +5375,7 @@ function array_pop(array &$array): mixed
  * @param array<K, V> $array
  * @param-out ($array is list<V> ? list<V> : array<K, V>) $array
  *
- * @return ($array is non-empty-array ? V : V|null)
+ * @return ($array is non-empty-array|non-empty-list ? V : V|null)
  *
  * @pure
  */
