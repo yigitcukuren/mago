@@ -1603,16 +1603,11 @@ function ucwords(string $string, string $separators = " \t\r\n\f\v"): string
 }
 
 /**
+ * @param string|array<string, string> $from
+ *
  * @pure
  */
-function strtr(string $string, string $from, string $to): string
-{
-}
-
-/**
- * @pure
- */
-function strtr(string $str, array $replace_pairs): string
+function strtr(string $string, string|array $from, string $to = ''): string
 {
 }
 
