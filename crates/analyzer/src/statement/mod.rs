@@ -45,27 +45,25 @@ impl Analyzable for Statement {
         let last_statement_span = context.statement_span;
         context.statement_span = self.span();
 
-        let should_populate_docblock_variables =
-            if let Statement::Expression(ExpressionStatement { expression, .. }) = self
-                && matches!(expression.as_ref(), Expression::Assignment(_))
-            {
-                false
-            } else {
-                matches!(
-                    self,
-                    Statement::Block(_)
-                        | Statement::Expression(_)
-                        | Statement::Try(_)
-                        | Statement::Continue(_)
-                        | Statement::Break(_)
-                        | Statement::Return(_)
-                        | Statement::Echo(_)
-                        | Statement::Unset(_)
-                )
-            };
+        let should_populate_docblock_variables = matches!(
+            self,
+            Statement::Block(_)
+                | Statement::Expression(_)
+                | Statement::Try(_)
+                | Statement::Continue(_)
+                | Statement::Break(_)
+                | Statement::Return(_)
+                | Statement::Echo(_)
+                | Statement::Unset(_)
+        );
 
         if should_populate_docblock_variables {
-            populate_docblock_variables(context, block_context, artifacts);
+            let override_existing_variables = match self {
+                Statement::Expression(ExpressionStatement { expression, .. }) if expression.is_assignment() => false,
+                _ => true,
+            };
+
+            populate_docblock_variables(context, block_context, artifacts, override_existing_variables);
         }
 
         let result = match self {

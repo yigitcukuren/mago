@@ -24,17 +24,32 @@ use crate::context::block::BlockContext;
 /// This function retrieves all `@var`, `@psalm-var`, and `@phpstan-var` tags from the docblock
 /// of the current statement in the context, parses their variable types, and inserts them
 /// into the current block context.
+///
+/// # Arguments
+///
+/// * `context`: The main analysis context, providing access to the docblock parser and error collector.
+/// * `block_context`: The current block context, which holds local variables and their types.
+/// * `artifacts`: The analysis artifacts, which may be used to store or retrieve additional information.
+/// * `override_existing`: A boolean indicating whether to override existing variable types in the block context.
 pub fn populate_docblock_variables<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
     artifacts: &mut AnalysisArtifacts,
+    override_existing: bool,
 ) {
     for (name, variable_type, variable_type_span) in get_docblock_variables(context, block_context, artifacts) {
         let Some(variable_name) = name else {
             continue;
         };
 
-        insert_variabel_from_docblock(context, block_context, variable_name, variable_type, variable_type_span);
+        insert_variabel_from_docblock(
+            context,
+            block_context,
+            variable_name,
+            variable_type,
+            variable_type_span,
+            override_existing,
+        );
     }
 }
 
@@ -50,7 +65,7 @@ pub fn populate_docblock_variables<'a>(
 ///
 /// # Arguments
 ///
-/// * `context`: The main analysis context, providing access to the docblock parser and error buffer.
+/// * `context`: The main analysis context, providing access to the docblock parser and error collector.
 /// * `block_context`: The current block context, which may influence the parsing of docblocks.
 /// * `artifacts`: The analysis artifacts, which may be used to store or retrieve additional information.
 ///
@@ -139,7 +154,7 @@ pub fn get_docblock_variables<'a>(
 ///
 /// # Arguments
 ///
-/// * `context`: The main analysis context, providing access to the docblock parser and error buffer.
+/// * `context`: The main analysis context, providing access to the docblock parser and error collector.
 /// * `variable_id`: The name of the variable (e.g., "$foo") for which to find a type hint.
 /// * `variable_span`: The span of the variable's usage, used for error reporting context.
 ///
@@ -176,18 +191,24 @@ pub fn get_type_from_var_docblock<'a>(
 ///
 /// # Arguments
 ///
-/// * `context`: The main analysis context, providing access to the error buffer and interner.
+/// * `context`: The main analysis context, providing access to the error collector and interner.
 /// * `block_context`: The current block context, which holds local variables and their types.
 /// * `variable_name`: The name of the variable as specified in the docblock.
 /// * `variable_type`: The type of the variable as a `TUnion`, parsed from the docblock.
 /// * `variable_type_span`: The span of the variable type in the source code, used for error reporting.
+/// * `override_existing`: A boolean indicating whether to override an existing variable type
 pub fn insert_variabel_from_docblock<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
     variable_name: String,
     variable_type: TUnion,
     variable_type_span: Span,
+    override_existing: bool,
 ) {
+    if !override_existing && block_context.locals.contains_key(&variable_name) {
+        return;
+    }
+
     if let Some(previous_type) = block_context.locals.remove(&variable_name)
         && !can_expression_types_be_identical(
             context.codebase,

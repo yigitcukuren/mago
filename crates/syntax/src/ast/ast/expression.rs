@@ -231,6 +231,15 @@ impl Expression {
     }
 
     #[inline]
+    pub fn is_assignment(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_assignment()
+        } else {
+            matches!(&self, Expression::Assignment(_))
+        }
+    }
+
+    #[inline]
     pub const fn is_variable(&self) -> bool {
         if let Expression::Parenthesized(expression) = self {
             expression.expression.is_variable()
