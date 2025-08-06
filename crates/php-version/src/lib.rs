@@ -292,8 +292,7 @@ impl PHPVersion {
             | Feature::SubstrReturnFalseInsteadOfEmptyString
             | Feature::CurlUrlOptionCheckingFileSchemeWithOpenBasedir
             | Feature::EmptyStringValidAliasForNoneInMbSubstituteCharacter
-            | Feature::NumericStringValidArgInMbSubstituteCharacter
-            | Feature::ShortOpenTag => self.0 < 0x08_00_00,
+            | Feature::NumericStringValidArgInMbSubstituteCharacter => self.0 < 0x08_00_00,
             Feature::InterfaceConstantImplicitlyFinal => self.0 < 0x08_01_00,
             Feature::PassNoneEncodings => self.0 < 0x07_03_00,
             _ => true,

@@ -38,11 +38,6 @@ impl Walker<Context<'_>> for CheckingWalker {
     }
 
     #[inline]
-    fn walk_opening_tag(&self, opening_tag: &OpeningTag, context: &mut Context<'_>) {
-        checker::statement::check_opening_tag(opening_tag, context);
-    }
-
-    #[inline]
     fn walk_in_declare(&self, declare: &Declare, context: &mut Context<'_>) {
         checker::statement::check_declare(declare, context);
     }
