@@ -55,6 +55,7 @@ impl Analyzable for Statement {
                 | Statement::Return(_)
                 | Statement::Echo(_)
                 | Statement::Unset(_)
+                | Statement::Noop(_)
         );
 
         if should_populate_docblock_variables {

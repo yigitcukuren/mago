@@ -249,4 +249,5 @@ impl Code {
     pub const UNREACHABLE_SWITCH_DEFAULT: &'static str = "unnecessary-switch-default";
     pub const INVALID_ISSET_EXPRESSION: &'static str = "invalid-isset-expression";
     pub const INVALID_TRAIT_USE: &'static str = "invalid-trait-use";
+    pub const PSALM_TRACE: &'static str = "psalm-trace";
 }

@@ -37,7 +37,7 @@ pub fn populate_docblock_variables<'a>(
     artifacts: &mut AnalysisArtifacts,
     override_existing: bool,
 ) {
-    for (name, variable_type, variable_type_span) in get_docblock_variables(context, block_context, artifacts) {
+    for (name, variable_type, variable_type_span) in get_docblock_variables(context, block_context, artifacts, true) {
         let Some(variable_name) = name else {
             continue;
         };
@@ -80,6 +80,7 @@ pub fn get_docblock_variables<'a>(
     context: &mut Context<'a>,
     block_context: &BlockContext<'a>,
     artifacts: &mut AnalysisArtifacts,
+    allow_tracing: bool,
 ) -> Vec<(Option<String>, TUnion, Span)> {
     context
         .get_parsed_docblock()
@@ -92,16 +93,57 @@ pub fn get_docblock_variables<'a>(
             _ => None,
         })
         .filter_map(|tag| {
+            if allow_tracing && let TagKind::PsalmTrace = tag.kind {
+                let variable_name = context.interner.lookup(&tag.description).trim();
+                match block_context.locals.get(variable_name) {
+                    Some(variable_type) => {
+                        let variable_type_str = variable_type.get_id(Some(context.interner));
+
+
+                        context.collector.report_with_code(
+                            Code::PSALM_TRACE,
+                            Issue::note(format!(
+                                "Trace: Type of `{variable_name}` is `{variable_type_str}`"
+                            ))
+                            .with_annotation(
+                                Annotation::primary(tag.description_span)
+                                    .with_message(format!("Type is: `{variable_type_str}`")),
+                            )
+                            .with_note(
+                                "Spotted a `@psalm-trace` tag! While this works for compatibility, Mago has a more powerful way to inspect types.",
+                            )
+                            .with_help(
+                                "For more flexible debugging, try using `Mago\\inspect()` directly in your code. It can inspect any expression, not just variables (e.g., `Mago\\inspect($foo->bar());`)."
+                            ),
+                        );
+                    }
+                    None => {
+                        context.collector.report_with_code(
+                            Code::INVALID_DOCBLOCK,
+                            Issue::error(format!(
+                                "Invalid `@psalm-trace`: Variable `{variable_name}` not found in this scope."
+                            ))
+                            .with_annotation(Annotation::primary(tag.description_span).with_message(
+                                "This variable is not defined or is out of scope here",
+                            ))
+                            .with_help(
+                                "Check for typos or ensure the variable is defined on a path that reaches this docblock.",
+                            ),
+                        );
+                    }
+                }
+
+                return None;
+            }
+
             if !matches!(tag.kind, TagKind::Var | TagKind::PsalmVar | TagKind::PhpstanVar) {
                 return None;
             }
 
             let tag_content = context.interner.lookup(&tag.description);
 
-            parse_var_tag(tag_content, tag.description_span)
-        })
-        .filter_map(|var_tag| {
-            let variable_name = var_tag.variable_name.clone();
+            let var_tag = parse_var_tag(tag_content, tag.description_span)?;
+            let variable_name = var_tag.variable_name;
             let type_string = var_tag.type_string;
 
             match get_type_from_string(
@@ -171,7 +213,7 @@ pub fn get_type_from_var_docblock<'a>(
 ) -> Option<(TUnion, Span)> {
     allow_unnamed = allow_unnamed && !block_context.inside_return && !block_context.inside_loop_expressions;
 
-    get_docblock_variables(context, block_context, artifacts)
+    get_docblock_variables(context, block_context, artifacts, false)
         .into_iter()
         .filter(|(var_name, _, _)| match var_name {
             None if allow_unnamed => true,
