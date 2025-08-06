@@ -122,3 +122,4 @@ test_case!(templated_trait_use);
 test_case!(template_parameter_sanity_check);
 test_case!(calling_trait_required_method);
 test_case!(useless_statements);
+test_case!(complex_template_constraint);

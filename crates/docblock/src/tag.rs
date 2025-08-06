@@ -193,17 +193,10 @@ pub fn parse_template_tag(
 
                 // 3. If modifier found, look for the type string part
                 let remaining_after_modifier = content.get(current_offset_rel..).unwrap_or("");
-                let whitespace_len2 = remaining_after_modifier.find(|c: char| !c.is_whitespace()).unwrap_or(0);
-                let type_start_offset_rel = current_offset_rel + whitespace_len2;
-                let type_part_str = remaining_after_modifier.split_whitespace().next();
-
-                if let Some(ts) = type_part_str
-                    && !ts.is_empty()
+                if let Some((type_string, _)) =
+                    split_tag_content(remaining_after_modifier, span.subspan(current_offset_rel, 0))
                 {
-                    let type_len = ts.len();
-                    let type_start_pos = span.start.forward(type_start_offset_rel);
-                    let type_span = Span::new(type_start_pos, type_start_pos.forward(type_len));
-                    type_string_opt = Some(TypeString { value: ts.to_string(), span: type_span });
+                    type_string_opt = Some(type_string);
                 }
             }
         }
