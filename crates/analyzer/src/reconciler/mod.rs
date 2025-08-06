@@ -99,7 +99,7 @@ pub fn reconcile_keyed_types(
         let mut has_isset = false;
         let mut has_inverted_isset = false;
         let mut has_inverted_key_exists = false;
-        let mut has_truthy_or_falsy = false;
+        let mut has_truthy_or_falsy_or_empty = false;
         let mut has_count_check = false;
         let mut has_empty = false;
         let is_real = old_new_types.get(key).unwrap_or(&Vec::new()).eq(new_type_parts);
@@ -112,14 +112,17 @@ pub fn reconcile_keyed_types(
                 }
 
                 has_isset = has_isset || assertion.has_isset();
-                has_truthy_or_falsy = has_truthy_or_falsy || matches!(assertion, Assertion::Truthy | Assertion::Falsy);
-                is_equality = is_equality || matches!(assertion, Assertion::IsIdentical(_));
+                has_truthy_or_falsy_or_empty = has_truthy_or_falsy_or_empty
+                    || matches!(
+                        assertion,
+                        Assertion::Truthy | Assertion::Falsy | Assertion::Empty | Assertion::NonEmpty
+                    );
+                is_equality = is_equality && matches!(assertion, Assertion::IsIdentical(_));
+                has_empty = has_empty || matches!(assertion, Assertion::Empty);
                 has_inverted_isset = has_inverted_isset || matches!(assertion, Assertion::IsNotIsset);
                 has_inverted_key_exists =
-                    has_inverted_key_exists || matches!(assertion, Assertion::DoesNotHaveArrayKey(_));
+                    has_inverted_key_exists || matches!(assertion, Assertion::ArrayKeyDoesNotExist);
                 has_count_check = has_count_check || matches!(assertion, Assertion::NonEmptyCountable(_));
-                has_empty = has_empty || matches!(assertion, Assertion::EmptyCountable);
-                // todo: this should probably be `Empty` not `EmptyCountable`
             }
         }
 
@@ -207,7 +210,7 @@ pub fn reconcile_keyed_types(
                     block_context.locals.remove(&new_key);
                 }
             }
-        } else if !has_negation && !has_truthy_or_falsy && !has_isset {
+        } else if !has_negation && !has_truthy_or_falsy_or_empty && !has_isset {
             changed_var_ids.insert(key.clone());
         }
 
