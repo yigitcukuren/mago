@@ -58,10 +58,7 @@ impl Analyzable for Statement {
         );
 
         if should_populate_docblock_variables {
-            let override_existing_variables = match self {
-                Statement::Expression(ExpressionStatement { expression, .. }) if expression.is_assignment() => false,
-                _ => true,
-            };
+            let override_existing_variables = !matches!(self, Statement::Expression(ExpressionStatement { expression, .. }) if expression.is_assignment());
 
             populate_docblock_variables(context, block_context, artifacts, override_existing_variables);
         }

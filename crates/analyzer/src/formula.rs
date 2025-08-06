@@ -100,7 +100,7 @@ pub fn get_formula(
                     }
 
                     for orred_types in anded_types {
-                        let has_equality = orred_types.first().map_or(false, |t| t.has_equality());
+                        let has_equality = orred_types.first().is_some_and(|t| t.has_equality());
                         let mapped_orred_types = orred_types
                             .into_iter()
                             .map(|orred_type| (orred_type.to_hash(), orred_type))
