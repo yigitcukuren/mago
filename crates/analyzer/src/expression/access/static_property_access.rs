@@ -30,9 +30,6 @@ impl Analyzable for StaticPropertyAccess {
             Some(context.codebase),
         );
 
-        let resolution_result =
-            resolve_static_properties(context, block_context, artifacts, &self.class, &self.property)?;
-
         if context.settings.memoize_properties
             && let Some(property_access_id) = &property_access_id
             && let Some(existing_type) = block_context.locals.get(property_access_id).cloned()
@@ -41,6 +38,9 @@ impl Analyzable for StaticPropertyAccess {
 
             return Ok(());
         }
+
+        let resolution_result =
+            resolve_static_properties(context, block_context, artifacts, &self.class, &self.property)?;
 
         let mut resulting_expression_type = None;
         if !resolution_result.has_error_path {

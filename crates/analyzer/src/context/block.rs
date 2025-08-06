@@ -9,7 +9,8 @@ use mago_algebra::clause::Clause;
 use mago_codex::assertion::Assertion;
 use mago_codex::context::ScopeContext;
 use mago_codex::metadata::CodebaseMetadata;
-use mago_codex::ttype::combine_union_types;
+use mago_codex::ttype::add_optional_union_type;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_collector::Collector;
 use mago_interner::StringIdentifier;
@@ -447,18 +448,39 @@ impl<'a> BlockContext<'a> {
             };
 
             let old_type = old_type.as_ref().clone();
-            let resulting_type = match new_type {
-                Some(new_type) => {
-                    let updated_type = subtract_union_types(context, existing_type, old_type);
 
-                    combine_union_types(&updated_type, new_type.as_ref(), context.codebase, context.interner, false)
-                }
-                None => subtract_union_types(context, existing_type, old_type),
+            let should_substitute = match &new_type {
+                Some(new_type) => !old_type.eq(new_type),
+                None => existing_type.types.len() > 1,
+            };
+
+            let resulting_type = if should_substitute {
+                updated_vars.insert(variable_id.clone());
+
+                substitute_types(context, existing_type, old_type, new_type.as_deref())
+            } else {
+                existing_type
             };
 
             self.locals.insert(variable_id.clone(), Rc::new(resulting_type));
         }
     }
+}
+
+fn substitute_types(
+    context: &mut Context<'_>,
+    existing_type: TUnion,
+    old_type: TUnion,
+    new_type: Option<&TUnion>,
+) -> TUnion {
+    if existing_type.is_mixed() || existing_type.is_never() {
+        return existing_type;
+    }
+
+    let updated_type =
+        if existing_type.eq(&old_type) { get_mixed() } else { subtract_union_types(context, existing_type, old_type) };
+
+    add_optional_union_type(updated_type, new_type, context.codebase, context.interner)
 }
 
 fn should_keep_clause(clause: &Rc<Clause>, remove_var_id: &str, new_type: Option<&TUnion>) -> bool {

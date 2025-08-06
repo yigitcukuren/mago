@@ -143,13 +143,19 @@ pub fn resolve_instance_properties<'a>(
                 result.encountered_mixed = true;
             }
 
-            report_access_on_non_object(context, object_atomic, property_selector, object_expression.span());
+            if !block_context.inside_isset || !object_atomic.is_mixed() {
+                report_access_on_non_object(context, object_atomic, property_selector, object_expression.span());
+            }
+
             continue;
         };
 
         let Some(classname) = object.get_name() else {
             result.has_ambiguous_path = true;
-            report_ambiguous_access(context, property_selector, object_expression.span());
+            if !block_context.inside_isset {
+                report_ambiguous_access(context, property_selector, object_expression.span());
+            }
+
             continue;
         };
 

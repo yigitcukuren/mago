@@ -86,6 +86,49 @@ pub fn get_formula(
     if let Expression::UnaryPrefix(unary_prefix) = expression
         && unary_prefix.operator.is_not()
     {
+        if let Expression::Construct(Construct::Isset(isset_construct)) = unary_prefix.operand.as_ref()
+            && isset_construct.values.len() > 1
+        {
+            let scraped_assertions = scrape_assertions(unary_prefix.operand.as_ref(), artifacts, assertion_context);
+
+            let mut clauses = Vec::new();
+
+            for assertions in scraped_assertions {
+                for (mut var, anded_types) in assertions {
+                    if var.starts_with('=') {
+                        var = var[1..].to_string();
+                    }
+
+                    for orred_types in anded_types {
+                        let has_equality = orred_types.first().map_or(false, |t| t.has_equality());
+                        let mapped_orred_types = orred_types
+                            .into_iter()
+                            .map(|orred_type| (orred_type.to_hash(), orred_type))
+                            .collect::<IndexMap<_, _>>();
+
+                        clauses.push(Clause::new(
+                            {
+                                let mut map = BTreeMap::new();
+                                map.insert(var.clone(), mapped_orred_types);
+                                map
+                            },
+                            conditional_object_id,
+                            creating_object_id,
+                            Some(false),
+                            Some(true),
+                            Some(has_equality),
+                        ));
+
+                        if clauses.len() > FORMULA_SIZE_THRESHOLD {
+                            return None;
+                        }
+                    }
+                }
+            }
+
+            return negate_formula(clauses);
+        }
+
         if let Expression::Binary(binary_expression) = unwrap_expression(&unary_prefix.operand) {
             if let BinaryOperator::Or(_) = binary_expression.operator {
                 return handle_binary_and_operation(

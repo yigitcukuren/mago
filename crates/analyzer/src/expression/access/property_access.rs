@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use mago_codex::ttype::add_optional_union_type;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
@@ -67,17 +68,6 @@ fn analyze_property_access<'a>(
     property_selector: &ClassLikeMemberSelector,
     is_null_safe: bool,
 ) -> Result<(), AnalysisError> {
-    let resolution_result = resolve_instance_properties(
-        context,
-        block_context,
-        artifacts,
-        object,
-        property_selector,
-        arrow_span,
-        is_null_safe,
-        false, // `for_assignment`
-    )?;
-
     let property_access_id = get_property_access_expression_id(
         object,
         property_selector,
@@ -97,6 +87,17 @@ fn analyze_property_access<'a>(
         return Ok(());
     }
 
+    let resolution_result = resolve_instance_properties(
+        context,
+        block_context,
+        artifacts,
+        object,
+        property_selector,
+        arrow_span,
+        is_null_safe,
+        false, // `for_assignment`
+    )?;
+
     let mut resulting_expression_type = None;
     if !resolution_result.has_error_path {
         for resolved_property in resolution_result.properties {
@@ -113,7 +114,7 @@ fn analyze_property_access<'a>(
             || resolution_result.has_possibly_defined_property
         {
             resulting_expression_type = Some(add_optional_union_type(
-                get_mixed_any(),
+                if block_context.inside_isset { get_mixed() } else { get_mixed_any() },
                 resulting_expression_type.as_ref(),
                 context.codebase,
                 context.interner,

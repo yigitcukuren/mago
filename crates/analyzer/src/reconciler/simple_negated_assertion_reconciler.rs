@@ -38,8 +38,9 @@ pub(crate) fn reconcile(
     let assertion_type = assertion.get_type();
 
     if let Some(assertion_type) = assertion_type {
-        // `mixed is not T` -> `mixed`, always
-        if existing_var_type.is_mixed() {
+        // `mixed is not T` -> `mixed`, unless `T` is null,
+        // in which case it becomes `nonnull`
+        if existing_var_type.is_mixed() && !assertion_type.is_null() {
             return Some(existing_var_type.clone());
         }
 

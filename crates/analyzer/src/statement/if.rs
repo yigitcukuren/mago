@@ -979,7 +979,9 @@ fn analyze_else_statements<'a>(
                     continue;
                 }
 
-                if is_derived_access_path(variable_id, changed_variable_id) {
+                if is_derived_access_path(variable_id, changed_variable_id)
+                    && !changed_variable_ids.contains(variable_id)
+                {
                     variables_to_remove.push(variable_id.clone());
                 }
             }
