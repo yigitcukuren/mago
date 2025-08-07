@@ -14,6 +14,7 @@ use crate::plugin::best_practices::rules::no_empty_loop::NoEmptyLoopRule;
 use crate::plugin::best_practices::rules::no_goto::NoGotoRule;
 use crate::plugin::best_practices::rules::no_hash_emoji::NoHashEmojiRule;
 use crate::plugin::best_practices::rules::no_multi_assignments::NoMultiAssignmentsRule;
+use crate::plugin::best_practices::rules::no_short_opening_tag::NoShortOpeningTag;
 use crate::plugin::best_practices::rules::no_sprintf_concatenation::NoSprintfConcatenationRule;
 use crate::plugin::best_practices::rules::no_unused_parameter::NoUnusedParameterRule;
 use crate::plugin::best_practices::rules::override_attribute::OverrideAttributeRule;
@@ -57,6 +58,7 @@ impl Plugin for BestPracticesPlugin {
             Box::new(NoEmptyLoopRule),
             Box::new(OverrideAttributeRule),
             Box::new(UseWhileInsteadOfForRule),
+            Box::new(NoShortOpeningTag),
         ]
     }
 }
