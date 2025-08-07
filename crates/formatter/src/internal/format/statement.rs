@@ -20,7 +20,7 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
     let mut use_statements: Vec<&'a Use> = Vec::new();
     let mut parts = vec![];
 
-    let last_non_noop_index = stmts.iter().rposition(|stmt| !matches!(stmt, Statement::Noop(_)));
+    let last_statement_index = if stmts.is_empty() { None } else { stmts.len().checked_sub(1) };
     let mut i = 0;
     while i < stmts.len() {
         let stmt = stmts[i];
@@ -40,7 +40,7 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
             }
         }
 
-        let mut formatted_statement = format_statement_with_spacing(f, i, stmt, stmts, last_non_noop_index, i == 0);
+        let mut formatted_statement = format_statement_with_spacing(f, i, stmt, stmts, last_statement_index, i == 0);
 
         if let Statement::OpeningTag(tag) = stmt {
             let offset = tag.span().start.offset;
@@ -96,7 +96,7 @@ fn format_statement_with_spacing<'a>(
     i: usize,
     stmt: &'a Statement,
     stmts: &[&'a Statement],
-    last_non_noop_index: Option<usize>,
+    last_statement_index: Option<usize>,
     is_first_statement: bool,
 ) -> Vec<Document<'a>> {
     let mut statement_parts = vec![];
@@ -105,12 +105,12 @@ fn format_statement_with_spacing<'a>(
 
     statement_parts.push(stmt.format(f));
     if should_add_space {
-        let is_last = if let Some(index) = last_non_noop_index { i == index } else { i == stmts.len() - 1 };
+        let is_last = if let Some(index) = last_statement_index { i == index } else { i == stmts.len() - 1 };
         if !is_last {
             statement_parts.push(Document::space());
         }
     } else if should_add_new_line
-        && let Some(index) = last_non_noop_index
+        && let Some(index) = last_statement_index
         && i != index
     {
         statement_parts.push(Document::Line(Line::hard()));
@@ -174,9 +174,7 @@ fn should_add_new_line_or_space_after_stmt<'a>(
     let mut should_add_space = false;
 
     let should_add_line = match stmt {
-        Statement::HaltCompiler(_) => false,
-        Statement::ClosingTag(_) => false,
-        Statement::Inline(_) => false,
+        Statement::HaltCompiler(_) | Statement::ClosingTag(_) | Statement::Inline(_) => false,
         Statement::Expression(ExpressionStatement { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Echo(Echo { terminator: Terminator::ClosingTag(_), .. }) => false,
         Statement::Global(Global { terminator: Terminator::ClosingTag(_), .. }) => false,

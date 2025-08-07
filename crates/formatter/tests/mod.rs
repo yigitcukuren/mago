@@ -11,9 +11,9 @@ macro_rules! test_case {
     ($name:ident, $version:expr) => {
         #[test]
         pub fn $name() {
-            let code = include_str!(concat!("./cases/", stringify!($name), "/before.php"));
-            let expected = include_str!(concat!("./cases/", stringify!($name), "/after.php"));
-            let settings = include!(concat!("./cases/", stringify!($name), "/settings.inc"));
+            let code = include_str!(concat!("cases/", stringify!($name), "/before.php"));
+            let expected = include_str!(concat!("cases/", stringify!($name), "/after.php"));
+            let settings = include!(concat!("cases/", stringify!($name), "/settings.inc"));
 
             let interner = ThreadedInterner::new();
             let formatter = Formatter::new(&interner, $version, settings);
@@ -177,3 +177,4 @@ test_case!(issue_223);
 test_case!(issue_241);
 test_case!(issue_246);
 test_case!(issue_225);
+test_case!(issue_263);
