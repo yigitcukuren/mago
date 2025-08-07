@@ -12,7 +12,7 @@ use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::template::TemplateBound;
 use mago_codex::ttype::template::TemplateResult;
@@ -160,7 +160,7 @@ fn resolve_atomic(
             return Either::Left(TAtomic::Object(this_type.clone()));
         }
 
-        return parameters.get(&variable).map_or(Either::Right(get_mixed_any()), |argument_type| {
+        return parameters.get(&variable).map_or(Either::Right(get_mixed()), |argument_type| {
             Either::Right(inferred_type_replacer::replace(
                 argument_type,
                 template_result,

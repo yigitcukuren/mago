@@ -1,6 +1,6 @@
 use ahash::HashMap;
 
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::template::TemplateResult;
 use mago_codex::ttype::union::TUnion;
 use mago_interner::StringIdentifier;
@@ -25,7 +25,7 @@ pub fn fetch_invocation_return_type<'a>(
     }
 
     let Some(return_type) = invocation.target.get_return_type().cloned() else {
-        return get_mixed_any();
+        return get_mixed();
     };
 
     resolve_invocation_type(context, invocation, template_result, parameters, return_type)

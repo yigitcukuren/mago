@@ -111,13 +111,6 @@ pub(crate) fn update_failed_result_from_nested(
             param_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false)
         });
 
-    atomic_comparison_result.type_coerced_from_nested_any =
-        Some(if let Some(val) = atomic_comparison_result.type_coerced_from_nested_any {
-            val
-        } else {
-            param_comparison_result.type_coerced_from_nested_any.unwrap_or(false)
-        });
-
     atomic_comparison_result.type_coerced_from_as_mixed =
         Some(if let Some(val) = atomic_comparison_result.type_coerced_from_as_mixed {
             val

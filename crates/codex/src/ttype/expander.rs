@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_source::SourceIdentifier;
@@ -97,10 +95,10 @@ pub fn expand_union(
             to_retain
         });
 
-        new_return_type_parts.extend(return_type.types.drain(..).collect_vec());
+        new_return_type_parts.append(&mut return_type.types);
 
         if new_return_type_parts.is_empty() {
-            new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+            new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
         }
 
         if new_return_type_parts.len() > 1 {
@@ -174,7 +172,7 @@ fn expand_atomic(
             match member_selector {
                 TReferenceMemberSelector::Wildcard => {
                     let Some(class_like) = get_class_like(codebase, interner, class_like_name) else {
-                        new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                        new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
 
                         return;
                     };
@@ -203,7 +201,7 @@ fn expand_atomic(
 
                             new_return_type_parts.extend(constant_type.types);
                         } else {
-                            new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                            new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
                     }
 
@@ -214,7 +212,7 @@ fn expand_atomic(
                 }
                 TReferenceMemberSelector::StartsWith(prefix) => {
                     let Some(class_like) = get_class_like(codebase, interner, class_like_name) else {
-                        new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                        new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
 
                         return;
                     };
@@ -251,7 +249,7 @@ fn expand_atomic(
 
                             new_return_type_parts.extend(constant_type.types);
                         } else {
-                            new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                            new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
                     }
 
@@ -268,7 +266,7 @@ fn expand_atomic(
                 }
                 TReferenceMemberSelector::EndsWith(suffix) => {
                     let Some(class_like) = get_class_like(codebase, interner, class_like_name) else {
-                        new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                        new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
 
                         return;
                     };
@@ -305,7 +303,7 @@ fn expand_atomic(
 
                             new_return_type_parts.extend(constant_type.types);
                         } else {
-                            new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                            new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
                     }
 
@@ -322,7 +320,7 @@ fn expand_atomic(
                 }
                 TReferenceMemberSelector::Identifier(member_name) => {
                     let Some(class_like) = get_class_like(codebase, interner, class_like_name) else {
-                        new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                        new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
 
                         return;
                     };
@@ -354,10 +352,10 @@ fn expand_atomic(
 
                             new_return_type_parts.extend(constant_type.types);
                         } else {
-                            new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                            new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
                     } else {
-                        new_return_type_parts.push(TAtomic::Mixed(TMixed::vanilla()));
+                        new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                     }
                 }
             }

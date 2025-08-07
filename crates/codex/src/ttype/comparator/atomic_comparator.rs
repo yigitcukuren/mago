@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use mago_interner::ThreadedInterner;
 
 use crate::is_instance_of;
@@ -100,7 +99,7 @@ pub fn is_contained_by(
         }
     }
 
-    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed(&mut false) {
+    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed() {
         if matches!(container_type_part, TAtomic::Mixed(mixed) if mixed.is_non_null())
             && (matches!(input_type_part, TAtomic::Null)
                 || matches!(input_type_part, TAtomic::Mixed(mixed) if !mixed.is_non_null()))
@@ -151,15 +150,9 @@ pub fn is_contained_by(
         };
     }
 
-    let mut input_type_has_any = false;
-    if input_type_part.is_mixed_with_any(&mut input_type_has_any)
-        || input_type_part.is_templated_as_mixed(&mut input_type_has_any)
-    {
+    if input_type_part.is_mixed() || input_type_part.is_templated_as_mixed() {
         atomic_comparison_result.type_coerced = Some(true);
         atomic_comparison_result.type_coerced_from_nested_mixed = Some(true);
-        if input_type_has_any {
-            atomic_comparison_result.type_coerced_from_nested_any = Some(true);
-        }
         return false;
     }
 
@@ -504,7 +497,7 @@ pub(crate) fn can_be_identical<'a>(
 
 pub fn expand_constant_value(v: &ClassLikeConstantMetadata) -> TAtomic {
     v.inferred_type.clone().unwrap_or(
-        v.type_metadata.as_ref().map(|t| t.type_union.get_single()).cloned().unwrap_or(TAtomic::Mixed(TMixed::any())),
+        v.type_metadata.as_ref().map(|t| t.type_union.get_single()).cloned().unwrap_or(TAtomic::Mixed(TMixed::new())),
     )
 }
 
@@ -540,7 +533,7 @@ fn keyed_arrays_can_be_identical(
 
     match (&first_array.known_items, &second_array.known_items) {
         (Some(first_known_items), Some(second_known_items)) => {
-            let mut all_keys = first_known_items.keys().collect_vec();
+            let mut all_keys = first_known_items.keys().collect::<Vec<_>>();
             all_keys.extend(second_known_items.keys());
 
             for key in all_keys {

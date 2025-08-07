@@ -34,7 +34,6 @@ use crate::ttype::expander::TypeExpansionOptions;
 use crate::ttype::get_iterable_parameters;
 use crate::ttype::get_iterable_value_parameter;
 use crate::ttype::get_mixed;
-use crate::ttype::get_mixed_any;
 use crate::ttype::get_mixed_maybe_from_loop;
 use crate::ttype::template::TemplateBound;
 use crate::ttype::template::TemplateResult;
@@ -102,7 +101,7 @@ pub fn replace(
 
         argument_type.types = vec![match argument_type.types[0] {
             TAtomic::Mixed(mixed) => TAtomic::Mixed(mixed.with_is_non_null(true)),
-            _ => TAtomic::Mixed(TMixed::any().with_is_non_null(true)),
+            _ => TAtomic::Mixed(TMixed::new().with_is_non_null(true)),
         }];
     }
 
@@ -406,7 +405,7 @@ fn replace_atomic(
                                 if mixed.is_isset_from_loop() {
                                     Some(get_mixed_maybe_from_loop(true))
                                 } else {
-                                    Some(get_mixed_any())
+                                    Some(get_mixed())
                                 }
                             }
                             _ => None,
@@ -895,7 +894,7 @@ fn handle_template_param_class_standin(
             let generic_param = if !valid_input_atomic_types.is_empty() {
                 Some(TUnion::new(valid_input_atomic_types))
             } else if was_single {
-                Some(get_mixed_any())
+                Some(get_mixed())
             } else {
                 None
             };
@@ -1142,11 +1141,11 @@ fn find_matching_atomic_types_for_template(
                 }
 
                 // todo we can probably do better here
-                matching_atomic_types.push(TAtomic::Mixed(TMixed::any()));
+                matching_atomic_types.push(TAtomic::Mixed(TMixed::new()));
             }
             (TAtomic::Variable { .. }, _) => {
                 // todo we can probably do better here
-                matching_atomic_types.push(TAtomic::Mixed(TMixed::any()));
+                matching_atomic_types.push(TAtomic::Mixed(TMixed::new()));
             }
             _ => {
                 let input_key = &if let TAtomic::Object(TObject::Named(o)) = atomic_input_type {
@@ -1242,7 +1241,7 @@ pub fn get_mapped_generic_type_parameters(
                     && defining_classes.iter().any(|(e, _)| parameter.defining_entity == *e)
                 {
                     let candidate_parameter_type_inner =
-                        input_type_parameters.get(old_parameters_offset).unwrap_or(&(None, get_mixed_any())).clone().1;
+                        input_type_parameters.get(old_parameters_offset).unwrap_or(&(None, get_mixed())).clone().1;
 
                     mapped_input_offset = Some(old_parameters_offset);
                     candidate_parameter_type = Some(candidate_parameter_type_inner);
@@ -1373,7 +1372,7 @@ pub fn get_most_specific_type_from_bounds(
     let relevant_bounds = get_relevant_bounds(lower_bounds);
 
     if relevant_bounds.is_empty() {
-        return get_mixed_any();
+        return get_mixed();
     }
 
     if relevant_bounds.len() == 1 {

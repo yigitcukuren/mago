@@ -8,7 +8,7 @@ use mago_algebra::saturate_clauses;
 use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_false;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_true;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -55,7 +55,7 @@ pub fn analyze_logical_and_operation<'a>(
 
             lhs_type
         }
-        None => Rc::new(get_mixed_any()),
+        None => Rc::new(get_mixed()),
     };
 
     let left_clauses = get_formula(
@@ -146,7 +146,7 @@ pub fn analyze_logical_and_operation<'a>(
                 check_logical_operand(context, &binary.rhs, &rhs_type, "Right", "&&")?;
                 rhs_type
             }
-            None => Rc::new(get_mixed_any()),
+            None => Rc::new(get_mixed()),
         };
 
         let left_is_truthy = lhs_type.is_always_truthy();
@@ -290,7 +290,7 @@ pub fn analyze_logical_or_operation<'a>(
 
             lhs_type
         }
-        None => Rc::new(get_mixed_any()),
+        None => Rc::new(get_mixed()),
     };
 
     let left_clauses = get_formula(
@@ -393,7 +393,7 @@ pub fn analyze_logical_or_operation<'a>(
 
                 rhs_type
             }
-            None => Rc::new(get_mixed_any()),
+            None => Rc::new(get_mixed()),
         };
 
         if lhs_type.is_always_falsy() {
@@ -532,7 +532,7 @@ pub fn analyze_logical_xor_operation<'a>(
     binary.lhs.analyze(context, block_context, artifacts)?;
     binary.rhs.analyze(context, block_context, artifacts)?;
 
-    let fallback_type = Rc::new(get_mixed_any());
+    let fallback_type = Rc::new(get_mixed());
     let lhs_type = artifacts.get_rc_expression_type(&binary.lhs).unwrap_or(&fallback_type);
     let rhs_type = artifacts.get_rc_expression_type(&binary.rhs).unwrap_or(&fallback_type);
 

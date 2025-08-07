@@ -10,33 +10,19 @@ pub mod truthiness;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct TMixed {
     is_isset_from_loop: bool,
-    is_any: bool,
     is_non_null: bool,
     is_empty: bool,
     truthiness: TMixedTruthiness,
 }
 
 impl TMixed {
-    /// Creates a `Mixed` type representing a vanilla `mixed` with no specific constraints known yet.
+    /// Creates a `Mixed` type representing a `mixed` with no specific constraints known yet.
     ///
     /// Equivalent to `Mixed::default()`.
     #[inline]
-    pub const fn vanilla() -> Self {
+    pub const fn new() -> Self {
         Self {
             is_isset_from_loop: false,
-            is_any: false,
-            is_non_null: false,
-            is_empty: false,
-            truthiness: TMixedTruthiness::Undetermined,
-        }
-    }
-
-    /// Creates a `Mixed` type explicitly marked as the "any" type (most general form).
-    #[inline]
-    pub const fn any() -> Self {
-        Self {
-            is_isset_from_loop: false,
-            is_any: true,
             is_non_null: false,
             is_empty: false,
             truthiness: TMixedTruthiness::Undetermined,
@@ -48,7 +34,6 @@ impl TMixed {
     pub const fn non_null() -> Self {
         Self {
             is_isset_from_loop: false,
-            is_any: false,
             is_non_null: true,
             is_empty: false,
             truthiness: TMixedTruthiness::Undetermined,
@@ -60,7 +45,6 @@ impl TMixed {
     pub const fn isset_from_loop() -> Self {
         Self {
             is_isset_from_loop: true, // Mark origin
-            is_any: false,
             is_non_null: false,
             is_empty: false,
             truthiness: TMixedTruthiness::Undetermined,
@@ -72,7 +56,6 @@ impl TMixed {
     pub const fn maybe_isset_from_loop(from_loop: bool) -> Self {
         Self {
             is_isset_from_loop: from_loop,
-            is_any: false,
             is_non_null: false,
             is_empty: false,
             truthiness: TMixedTruthiness::Undetermined,
@@ -82,31 +65,19 @@ impl TMixed {
     /// Creates a `Mixed` type constrained to be truthy. Automatically sets `is_non_null` to `true`.
     #[inline]
     pub const fn truthy() -> Self {
-        Self {
-            is_isset_from_loop: false,
-            is_any: false,
-            is_non_null: true,
-            is_empty: false,
-            truthiness: TMixedTruthiness::Truthy,
-        }
+        Self { is_isset_from_loop: false, is_non_null: true, is_empty: false, truthiness: TMixedTruthiness::Truthy }
     }
 
     /// Creates a `Mixed` type constrained to be falsy. May include null.
     #[inline]
     pub const fn falsy() -> Self {
-        Self {
-            is_isset_from_loop: false,
-            is_any: false,
-            is_non_null: false,
-            is_empty: false,
-            truthiness: TMixedTruthiness::Falsy,
-        }
+        Self { is_isset_from_loop: false, is_non_null: false, is_empty: false, truthiness: TMixedTruthiness::Falsy }
     }
 
     /// Checks if this `mixed` type could be truthy or non-null.
     #[inline]
     pub const fn could_be_truthy_or_non_null(&self) -> bool {
-        self.is_vanilla() || self.is_any() || self.is_non_null()
+        self.is_vanilla() || self.is_non_null()
     }
 
     /// Checks if this `mixed` originated from `isset()` in a loop.
@@ -118,13 +89,7 @@ impl TMixed {
     /// Checks if this `mixed` type is a vanilla `mixed` type.
     #[inline]
     pub const fn is_vanilla(&self) -> bool {
-        !self.is_any && !self.is_non_null && !self.is_empty && matches!(self.truthiness, TMixedTruthiness::Undetermined)
-    }
-
-    /// Checks if this represents the most general "any" mixed type.
-    #[inline]
-    pub const fn is_any(&self) -> bool {
-        self.is_any
+        !self.is_non_null && !self.is_empty && matches!(self.truthiness, TMixedTruthiness::Undetermined)
     }
 
     /// Checks if `null` is explicitly excluded from this `mixed` type.
@@ -161,13 +126,6 @@ impl TMixed {
     #[inline]
     pub const fn with_is_isset_from_loop(mut self, is_isset_from_loop: bool) -> Self {
         self.is_isset_from_loop = is_isset_from_loop;
-        self
-    }
-
-    /// Returns a new instance with the `is_any` flag set.
-    #[inline]
-    pub const fn with_is_any(mut self, is_any: bool) -> Self {
-        self.is_any = is_any;
         self
     }
 
@@ -209,20 +167,11 @@ impl TMixed {
 
 impl TType for TMixed {
     fn get_id(&self, _interner: Option<&mago_interner::ThreadedInterner>) -> String {
-        let id = if self.is_any {
-            match self.truthiness {
-                TMixedTruthiness::Truthy => "truthy-from-any",
-                TMixedTruthiness::Falsy => "falsy-from-any",
-                TMixedTruthiness::Undetermined if self.is_non_null => "nonnull-from-any",
-                TMixedTruthiness::Undetermined => "any",
-            }
-        } else {
-            match self.truthiness {
-                TMixedTruthiness::Truthy => "truthy-mixed",
-                TMixedTruthiness::Falsy => "falsy-mixed",
-                TMixedTruthiness::Undetermined if self.is_non_null => "nonnull",
-                TMixedTruthiness::Undetermined => "mixed",
-            }
+        let id = match self.truthiness {
+            TMixedTruthiness::Truthy => "truthy-mixed",
+            TMixedTruthiness::Falsy => "falsy-mixed",
+            TMixedTruthiness::Undetermined if self.is_non_null => "nonnull",
+            TMixedTruthiness::Undetermined => "mixed",
         };
 
         if self.is_empty { format!("empty-{id}") } else { id.to_string() }
@@ -233,7 +182,6 @@ impl Default for TMixed {
     fn default() -> Self {
         Self {
             is_isset_from_loop: false,
-            is_any: false,
             is_non_null: false,
             is_empty: false,
             truthiness: TMixedTruthiness::Undetermined,

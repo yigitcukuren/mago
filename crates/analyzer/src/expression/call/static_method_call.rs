@@ -274,7 +274,7 @@ mod tests {
         issues = [
             Code::STATIC_ACCESS_ON_INTERFACE,
             Code::STATIC_ACCESS_ON_INTERFACE,
-            Code::MIXED_ANY_ARGUMENT,
+            Code::MIXED_ARGUMENT,
         ]
     }
 }

@@ -530,13 +530,7 @@ fn report_access_on_non_object(
 ) {
     let type_str = atomic_type.get_id(Some(context.interner));
     context.collector.report_with_code(
-        if atomic_type.is_any() {
-            Code::MIXED_ANY_PROPERTY_ACCESS
-        } else if atomic_type.is_mixed() {
-            Code::MIXED_PROPERTY_ACCESS
-        } else {
-            Code::INVALID_PROPERTY_ACCESS
-        },
+        if atomic_type.is_mixed() { Code::MIXED_PROPERTY_ACCESS } else { Code::INVALID_PROPERTY_ACCESS },
         Issue::error(format!("Attempting to access a property on a non-object type (`{type_str}`)."))
             .with_annotation(Annotation::primary(selector.span()).with_message("Cannot access property here"))
             .with_annotation(

@@ -5,7 +5,6 @@ use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_int;
 use mago_codex::ttype::get_iterable_parameters;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -50,7 +49,7 @@ impl Analyzable for YieldValue {
             value.analyze(context, block_context, artifacts)?;
             block_context.inside_call = was_inside_call;
 
-            artifacts.get_expression_type(value).cloned().unwrap_or_else(get_mixed_any)
+            artifacts.get_expression_type(value).cloned().unwrap_or_else(get_mixed)
         } else {
             get_null()
         };
@@ -130,7 +129,7 @@ impl Analyzable for YieldPair {
             self.key.analyze(context, block_context, artifacts)?;
             block_context.inside_call = was_inside_call;
 
-            artifacts.get_expression_type(&self.key).cloned().unwrap_or_else(get_mixed_any)
+            artifacts.get_expression_type(&self.key).cloned().unwrap_or_else(get_mixed)
         };
 
         let value_type = {
@@ -139,7 +138,7 @@ impl Analyzable for YieldPair {
             self.value.analyze(context, block_context, artifacts)?;
             block_context.inside_call = was_inside_call;
 
-            artifacts.get_expression_type(&self.value).cloned().unwrap_or_else(get_mixed_any)
+            artifacts.get_expression_type(&self.value).cloned().unwrap_or_else(get_mixed)
         };
 
         let Some((k, v, s, _)) = get_current_generator_parameters(context, block_context, self.span()) else {

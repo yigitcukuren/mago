@@ -27,7 +27,7 @@ use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::get_iterable_value_parameter;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_maybe_from_loop;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
@@ -770,9 +770,9 @@ fn get_value_for_key(
                             return None;
                         }
 
-                        return Some(get_mixed_any());
+                        return Some(get_mixed());
                     } else {
-                        return Some(get_mixed_any());
+                        return Some(get_mixed());
                     }
 
                     let resulting_type = Rc::new(if let Some(new_base_type) = &new_base_type {
@@ -815,18 +815,18 @@ fn get_value_for_key(
                     } else if let TAtomic::Mixed(_) | TAtomic::GenericParameter(_) | TAtomic::Object(TObject::Any) =
                         existing_key_type_part
                     {
-                        class_property_type = get_mixed_any();
+                        class_property_type = get_mixed();
                     } else if let TAtomic::Object(TObject::Named(named_object)) = existing_key_type_part {
                         let fq_class_name = named_object.get_name_ref();
                         if context.interner.lookup(fq_class_name).eq_ignore_ascii_case("stdClass")
                             || !class_or_interface_exists(context.codebase, context.interner, fq_class_name)
                         {
-                            class_property_type = get_mixed_any();
+                            class_property_type = get_mixed();
                         } else {
                             class_property_type = get_property_type(context, fq_class_name, &property_name)?;
                         }
                     } else {
-                        class_property_type = get_mixed_any();
+                        class_property_type = get_mixed();
                     }
 
                     let resulting_type = Rc::new(add_optional_union_type(
@@ -878,7 +878,7 @@ fn get_property_type(
 
         property_type
     } else {
-        get_mixed_any()
+        get_mixed()
     };
 
     Some(property_type)

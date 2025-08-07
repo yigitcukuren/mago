@@ -26,7 +26,6 @@ use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_false;
 use mago_codex::ttype::get_float;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_mixed_iterable;
 use mago_codex::ttype::get_mixed_keyed_array;
 use mago_codex::ttype::get_mixed_list;
@@ -1737,7 +1736,7 @@ fn reconcile_in_array(
         );
     }
 
-    get_mixed_any()
+    get_mixed()
 }
 
 fn reconcile_has_array_key(

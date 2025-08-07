@@ -1676,7 +1676,6 @@ dependencies = [
  "bitflags",
  "derivative",
  "indexmap",
- "itertools 0.14.0",
  "mago-docblock",
  "mago-interner",
  "mago-names",

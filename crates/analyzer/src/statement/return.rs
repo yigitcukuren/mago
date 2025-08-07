@@ -9,7 +9,6 @@ use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::expander::expand_union;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_void;
 use mago_codex::ttype::union::TUnion;
@@ -82,7 +81,7 @@ impl Analyzable for Return {
                 }
                 (None, Some((docblock_type, _))) => docblock_type,
                 (Some(inferred_type), None) => inferred_type,
-                (None, None) => get_mixed_any(),
+                (None, None) => get_mixed(),
             }
         } else {
             get_void()
@@ -188,7 +187,7 @@ pub fn handle_return_value<'a>(
         } else {
             require_return_value = false;
 
-            get_mixed_any()
+            get_mixed()
         };
 
     let function_name = function_like_identifier.as_string(context.interner);
@@ -264,15 +263,9 @@ pub fn handle_return_value<'a>(
                 return Ok(());
             }
 
-            let mut mixed_with_any = false;
-
-            if inferred_return_type.is_mixed_with_any(&mut mixed_with_any) {
+            if inferred_return_type.is_mixed() {
                 context.collector.report_with_code(
-                    if mixed_with_any {
-                        Code::MIXED_ANY_RETURN_STATEMENT
-                    } else {
-                        Code::MIXED_RETURN_STATEMENT
-                    },
+                    Code::MIXED_RETURN_STATEMENT,
                     Issue::error(format!(
                         "Could not infer a precise return type for function `{}`. Saw type `{}`.",
                         function_name,
@@ -280,19 +273,10 @@ pub fn handle_return_value<'a>(
                     ))
                     .with_annotation(
                         Annotation::primary(return_value.span())
-                            .with_message(
-                                if mixed_with_any {
-                                    "Type inferred as `any` here."
-                                } else {
-                                    "Type inferred as `mixed` here."
-                                }
-                            )
+                            .with_message("Type inferred as `mixed` here.")
                     )
                     .with_note(
-                        format!(
-                            "The analysis could not determine a specific type for the value returned here, resulting in `{}`. This can happen with complex code paths or unannotated data.",
-                            if mixed_with_any { "any" } else { "mixed" }
-                        )
+                        "The analysis could not determine a specific type for the value returned here, resulting in `mixed`. This can happen with complex code paths or unannotated data.".to_string()
                     )
                     .with_help(
                         "Add specific type hints to variables, parameters, or properties involved in calculating the return value. Consider adding a specific return type declaration to the function signature to catch potential mismatches earlier."
@@ -320,26 +304,7 @@ pub fn handle_return_value<'a>(
                 let inferred_return_type_str = inferred_return_type.get_id(Some(context.interner));
 
                 if union_comparison_result.type_coerced.unwrap_or(false) {
-                    if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
-                        context.collector.report_with_code(
-                            Code::LESS_SPECIFIC_NESTED_ANY_RETURN_STATEMENT,
-                            Issue::error(format!(
-                                "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'any'."
-                            ))
-                            .with_annotation(
-                                Annotation::primary(return_value.span())
-                                    .with_message("Returned value's type is too general here.")
-                            )
-                            .with_note(
-                                "The analysis detected 'any' within the structure of the returned value, making the overall type less specific than what the function declared."
-                            )
-                            .with_help(
-                                format!(
-                                    "Ensure the structure returned by `{function_name}` strictly adheres to the types specified in the `{expected_return_type_str}` return type declaration."
-                                )
-                            ),
-                        );
-                    } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
+                    if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
                         if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
                             context.collector.report_with_code(
                                 Code::LESS_SPECIFIC_NESTED_RETURN_STATEMENT,

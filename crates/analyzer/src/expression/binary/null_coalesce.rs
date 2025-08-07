@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_union_types;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -47,7 +47,7 @@ pub fn analyze_null_coalesce_operation<'a>(
     let Some(lhs_type) = lhs_type_option else {
         binary.rhs.analyze(context, block_context, artifacts)?;
 
-        artifacts.set_expression_type(binary, get_mixed_any());
+        artifacts.set_expression_type(binary, get_mixed());
 
         return Ok(());
     };
@@ -68,7 +68,7 @@ pub fn analyze_null_coalesce_operation<'a>(
         );
 
         binary.rhs.analyze(context, block_context, artifacts)?;
-        result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed_any); // Fallback if RHS analysis fails
+        result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed); // Fallback if RHS analysis fails
     } else if !lhs_type.has_nullish() && !lhs_type.possibly_undefined && !lhs_type.possibly_undefined_from_try {
         context.collector.report_with_code(
             Code::REDUNDANT_NULL_COALESCE,
@@ -93,10 +93,8 @@ pub fn analyze_null_coalesce_operation<'a>(
     } else {
         let non_null_lhs_type = lhs_type.to_non_nullable();
         binary.rhs.analyze(context, block_context, artifacts)?;
-        let rhs_type = artifacts
-            .get_expression_type(&binary.rhs)
-            .map(Cow::Borrowed)
-            .unwrap_or_else(|| Cow::Owned(get_mixed_any()));
+        let rhs_type =
+            artifacts.get_expression_type(&binary.rhs).map(Cow::Borrowed).unwrap_or_else(|| Cow::Owned(get_mixed()));
 
         result_type = combine_union_types(&non_null_lhs_type, &rhs_type, context.codebase, context.interner, false);
     }

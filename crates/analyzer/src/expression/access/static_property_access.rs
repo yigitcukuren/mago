@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use mago_codex::ttype::add_optional_union_type;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
 use mago_syntax::ast::*;
@@ -64,7 +64,7 @@ impl Analyzable for StaticPropertyAccess {
                 || resolution_result.has_possibly_defined_property
             {
                 resulting_expression_type = Some(add_optional_union_type(
-                    get_mixed_any(),
+                    get_mixed(),
                     resulting_expression_type.as_ref(),
                     context.codebase,
                     context.interner,

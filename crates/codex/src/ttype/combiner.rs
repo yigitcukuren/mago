@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use ahash::HashSet;
-use itertools::Itertools;
 
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
@@ -60,20 +59,18 @@ pub fn combine(
     let is_truthy_mixed = combination.truthy_mixed.unwrap_or(false);
     let is_nonnull_mixed = combination.nonnull_mixed.unwrap_or(false);
 
-    if is_falsy_mixed || is_nonnull_mixed || combination.any_mixed || is_truthy_mixed {
-        return vec![TAtomic::Mixed(
-            TMixed::vanilla().with_is_any(combination.any_mixed).with_is_non_null(is_nonnull_mixed).with_truthiness(
-                if is_truthy_mixed && !is_falsy_mixed {
-                    TMixedTruthiness::Truthy
-                } else if is_falsy_mixed && !is_truthy_mixed {
-                    TMixedTruthiness::Falsy
-                } else {
-                    TMixedTruthiness::Undetermined
-                },
-            ),
-        )];
+    if is_falsy_mixed || is_nonnull_mixed || combination.generic_mixed || is_truthy_mixed {
+        return vec![TAtomic::Mixed(TMixed::new().with_is_non_null(is_nonnull_mixed).with_truthiness(
+            if is_truthy_mixed && !is_falsy_mixed {
+                TMixedTruthiness::Truthy
+            } else if is_falsy_mixed && !is_truthy_mixed {
+                TMixedTruthiness::Falsy
+            } else {
+                TMixedTruthiness::Undetermined
+            },
+        ))];
     } else if combination.has_mixed {
-        return vec![TAtomic::Mixed(TMixed::vanilla())];
+        return vec![TAtomic::Mixed(TMixed::new())];
     }
 
     if combination.is_simple() {
@@ -266,7 +263,7 @@ fn scrape_type_properties(
     if let TAtomic::Mixed(mixed) = atomic {
         if mixed.is_isset_from_loop() {
             // If we already have a broader mixed type, this specific one adds no info.
-            if combination.vanilla_mixed || combination.any_mixed {
+            if combination.generic_mixed {
                 return; // Exit early, existing state is sufficient or broader
             }
 
@@ -286,24 +283,20 @@ fn scrape_type_properties(
             combination.falsy_mixed = Some(false);
             combination.truthy_mixed = Some(false);
             combination.mixed_from_loop_isset = Some(false);
-            combination.vanilla_mixed = true;
+            combination.generic_mixed = true;
 
             return;
         }
 
-        if mixed.is_any() {
-            combination.any_mixed = true;
-        }
-
         if mixed.is_truthy() {
-            if combination.vanilla_mixed {
+            if combination.generic_mixed {
                 return;
             }
 
             combination.mixed_from_loop_isset = Some(false);
 
             if combination.falsy_mixed.unwrap_or(false) {
-                combination.vanilla_mixed = true;
+                combination.generic_mixed = true;
                 combination.falsy_mixed = Some(false);
                 return;
             }
@@ -314,7 +307,7 @@ fn scrape_type_properties(
 
             for existing_value_type in combination.value_types.values() {
                 if !existing_value_type.is_truthy() {
-                    combination.vanilla_mixed = true;
+                    combination.generic_mixed = true;
                     return;
                 }
             }
@@ -325,14 +318,14 @@ fn scrape_type_properties(
         }
 
         if mixed.is_falsy() {
-            if combination.vanilla_mixed {
+            if combination.generic_mixed {
                 return;
             }
 
             combination.mixed_from_loop_isset = Some(false);
 
             if combination.truthy_mixed.unwrap_or(false) {
-                combination.vanilla_mixed = true;
+                combination.generic_mixed = true;
                 combination.truthy_mixed = Some(false);
                 return;
             }
@@ -343,7 +336,7 @@ fn scrape_type_properties(
 
             for existing_value_type in combination.value_types.values() {
                 if !existing_value_type.is_falsy() {
-                    combination.vanilla_mixed = true;
+                    combination.generic_mixed = true;
                     return;
                 }
             }
@@ -354,20 +347,20 @@ fn scrape_type_properties(
         }
 
         if mixed.is_non_null() {
-            if combination.vanilla_mixed {
+            if combination.generic_mixed {
                 return;
             }
 
             combination.mixed_from_loop_isset = Some(false);
 
             if combination.value_types.contains_key("null") {
-                combination.vanilla_mixed = true;
+                combination.generic_mixed = true;
                 return;
             }
 
             if combination.falsy_mixed.unwrap_or(false) {
                 combination.falsy_mixed = Some(false);
-                combination.vanilla_mixed = true;
+                combination.generic_mixed = true;
                 return;
             }
 
@@ -387,21 +380,21 @@ fn scrape_type_properties(
     if combination.falsy_mixed.unwrap_or(false) {
         if !atomic.is_falsy() {
             combination.falsy_mixed = Some(false);
-            combination.vanilla_mixed = true;
+            combination.generic_mixed = true;
         }
 
         return;
     } else if combination.truthy_mixed.unwrap_or(false) {
         if !atomic.is_truthy() {
             combination.truthy_mixed = Some(false);
-            combination.vanilla_mixed = true;
+            combination.generic_mixed = true;
         }
 
         return;
     } else if combination.nonnull_mixed.unwrap_or(false) {
         if let TAtomic::Null = atomic {
             combination.nonnull_mixed = Some(false);
-            combination.vanilla_mixed = true;
+            combination.generic_mixed = true;
         }
 
         return;
@@ -957,6 +950,7 @@ fn get_combiner_key(
                 if let Some(Variance::Covariant) = covariants.get(&i) { "*".to_string() } else { tunion.get_id(None) }
             },
         )
+        .collect::<Vec<_>>()
         .join(", ")
         .as_str();
     str += ">";

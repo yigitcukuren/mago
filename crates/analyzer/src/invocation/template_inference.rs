@@ -60,7 +60,7 @@ fn infer_templates_from_input_and_container_types(
     options: InferenceOptions,
     violations: &mut Vec<TemplateInferenceViolation>,
 ) {
-    if input_type.is_mixed_with_any(&mut false) {
+    if input_type.is_mixed() {
         return;
     }
 

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -37,7 +37,7 @@ pub fn analyze_spaceship_operation<'a>(
     binary.lhs.analyze(context, block_context, artifacts)?;
     binary.rhs.analyze(context, block_context, artifacts)?;
 
-    let fallback_type = Rc::new(get_mixed_any());
+    let fallback_type = Rc::new(get_mixed());
     let lhs_type = artifacts.get_rc_expression_type(&binary.lhs).unwrap_or(&fallback_type);
     let rhs_type = artifacts.get_rc_expression_type(&binary.rhs).unwrap_or(&fallback_type);
 

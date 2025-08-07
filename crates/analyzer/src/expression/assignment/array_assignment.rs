@@ -12,7 +12,7 @@ use mago_codex::ttype::combiner;
 use mago_codex::ttype::get_arraykey;
 use mago_codex::ttype::get_int;
 use mago_codex::ttype::get_iterable_parameters;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
@@ -56,7 +56,7 @@ pub(crate) fn analyze<'a>(
     root_array_expression.analyze(context, block_context, artifacts)?;
     block_context.inside_general_use = was_inside_general_use;
 
-    let mut root_array_type = artifacts.get_expression_type(root_array_expression).cloned().unwrap_or(get_mixed_any());
+    let mut root_array_type = artifacts.get_expression_type(root_array_expression).cloned().unwrap_or_else(get_mixed);
 
     if root_array_type.is_mixed() {
         let was_inside_general_use = block_context.inside_general_use;
@@ -546,7 +546,7 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
     var_id_additions.pop();
 
     for (i, array_target) in array_target_expressions.iter().enumerate() {
-        let mut array_expr_type = artifacts.get_expression_type(array_target).cloned().unwrap_or_else(get_mixed_any);
+        let mut array_expr_type = artifacts.get_expression_type(array_target).cloned().unwrap_or_else(get_mixed);
 
         let index_type = if let Some(current_index) = last_array_expression_index {
             artifacts.get_rc_expression_type(current_index).cloned()
@@ -590,7 +590,7 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
             block_context.possibly_assigned_variable_ids.insert(array_expr_id.clone());
         }
 
-        let array_type = artifacts.get_expression_type(array_target.get_array()).cloned().unwrap_or(get_mixed_any());
+        let array_type = artifacts.get_expression_type(array_target.get_array()).cloned().unwrap_or_else(get_mixed);
 
         let is_first = i == array_target_expressions.len() - 1;
 

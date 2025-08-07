@@ -996,7 +996,7 @@ fn analyze_iterator<'a>(
                 )
         );
 
-        return Ok((false, get_mixed_any(), get_mixed_any()));
+        return Ok((false, get_mixed(), get_mixed()));
     };
 
     if iterator_type.is_never() {
@@ -1098,7 +1098,7 @@ fn analyze_iterator<'a>(
                                 .with_help("For predictable and type-safe iteration, ensure the object is an instance of a class implementing `Iterator` or `IteratorAggregate`.")
                         );
 
-                        (get_string(), get_mixed_any())
+                        (get_string(), get_mixed())
                     }
                     TObject::Named(atomic_object) => {
                         if let Some((k, v)) =
@@ -1123,7 +1123,7 @@ fn analyze_iterator<'a>(
                                     .with_help(format!("For controlled and type-safe iteration, implement the `Iterator` or `IteratorAggregate` interface on class `{class_name}`."))
                             );
 
-                            (get_string(), get_mixed_any())
+                            (get_string(), get_mixed())
                         }
                     }
                     TObject::Enum(enum_instance) => {

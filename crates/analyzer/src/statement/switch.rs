@@ -10,7 +10,7 @@ use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_optional_union_types;
 use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_interner::ThreadedInterner;
 use mago_reporting::Annotation;
@@ -124,7 +124,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 self.artifacts
                     .get_rc_expression_type(&switch.expression)
                     .cloned()
-                    .unwrap_or_else(|| Rc::new(get_mixed_any())),
+                    .unwrap_or_else(|| Rc::new(get_mixed())),
             );
 
             switch_var_id
@@ -301,16 +301,12 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         if condition_is_synthetic {
             self.artifacts.set_expression_type(
                 switch_condition,
-                if let Some(t) = self.block_context.locals.get(switch_var_id) {
-                    (**t).clone()
-                } else {
-                    get_mixed_any()
-                },
+                if let Some(t) = self.block_context.locals.get(switch_var_id) { (**t).clone() } else { get_mixed() },
             );
         }
 
         let switch_condition_type =
-            self.artifacts.get_rc_expression_type(switch_condition).cloned().unwrap_or(Rc::new(get_mixed_any()));
+            self.artifacts.get_rc_expression_type(switch_condition).cloned().unwrap_or(Rc::new(get_mixed()));
 
         if switch_condition_type.is_never() {
             result = Some(false);

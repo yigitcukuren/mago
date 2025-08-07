@@ -3,7 +3,6 @@ use std::hash::Hash;
 use std::hash::Hasher;
 
 use derivative::Derivative;
-use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -396,10 +395,6 @@ impl TUnion {
         self.types.len() == 1 && matches!(self.types[0], TAtomic::Mixed(mixed) if mixed.is_non_null())
     }
 
-    pub fn is_any(&self) -> bool {
-        self.types.len() == 1 && matches!(self.types[0], TAtomic::Mixed(mixed) if mixed.is_any())
-    }
-
     pub fn is_numeric(&self) -> bool {
         self.types.iter().all(|t| t.is_numeric()) && !self.types.is_empty()
     }
@@ -413,7 +408,7 @@ impl TUnion {
     }
 
     pub fn is_mixed_template(&self) -> bool {
-        self.types.iter().all(|t| t.is_templated_as_mixed(&mut false)) && !self.types.is_empty()
+        self.types.iter().all(|t| t.is_templated_as_mixed()) && !self.types.is_empty()
     }
 
     pub fn has_mixed(&self) -> bool {
@@ -421,7 +416,7 @@ impl TUnion {
     }
 
     pub fn has_mixed_template(&self) -> bool {
-        self.types.iter().any(|t| t.is_templated_as_mixed(&mut false)) && !self.types.is_empty()
+        self.types.iter().any(|t| t.is_templated_as_mixed()) && !self.types.is_empty()
     }
 
     pub fn has_nullable_mixed(&self) -> bool {
@@ -443,20 +438,6 @@ impl TUnion {
             TAtomic::GenericParameter(parameter) => parameter.constraint.has_nullish(),
             _ => false,
         }) && !self.types.is_empty()
-    }
-
-    pub fn is_mixed_with_any(&self, has_any: &mut bool) -> bool {
-        if self.types.len() != 1 {
-            return false;
-        }
-
-        match &self.types[0] {
-            &TAtomic::Mixed(mixed) => {
-                *has_any = mixed.is_any();
-                true
-            }
-            _ => false,
-        }
     }
 
     pub fn is_nullable_mixed(&self) -> bool {
@@ -1042,17 +1023,19 @@ impl TType for TUnion {
     }
 
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
-        let mut types = self.types.clone();
+        let types = self.types.clone();
         let len = types.len();
 
-        types.sort();
-        types
+        let mut atomic_ids = types
             .iter()
             .map(|atomic| {
                 let id = atomic.get_id(interner);
                 if atomic.has_intersection_types() && len > 1 { format!("({id})") } else { id }
             })
-            .join("|")
+            .collect::<Vec<_>>();
+
+        atomic_ids.sort_unstable();
+        atomic_ids.join("|")
     }
 }
 

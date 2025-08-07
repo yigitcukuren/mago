@@ -180,7 +180,7 @@ pub fn resolve_method_targets<'a>(
     } else {
         result.has_invalid_target = true;
         result.encountered_mixed = true;
-        report_call_on_non_object(context, &TAtomic::Mixed(TMixed::any()), object.span(), selector.span());
+        report_call_on_non_object(context, &TAtomic::Mixed(TMixed::new()), object.span(), selector.span());
     }
 
     Ok(result)
@@ -439,13 +439,7 @@ fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_s
     let type_str = atomic_type.get_id(Some(context.interner));
 
     context.collector.report_with_code(
-        if atomic_type.is_any() {
-            Code::MIXED_ANY_METHOD_ACCESS
-        } else if atomic_type.is_mixed() {
-            Code::MIXED_METHOD_ACCESS
-        } else {
-            Code::INVALID_METHOD_ACCESS
-        },
+        if atomic_type.is_mixed() { Code::MIXED_METHOD_ACCESS } else { Code::INVALID_METHOD_ACCESS },
         Issue::error(format!("Attempting to access a method on a non-object type (`{type_str}`)."))
             .with_annotation(Annotation::primary(selector_span).with_message("Cannot call method here"))
             .with_annotation(

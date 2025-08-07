@@ -13,7 +13,7 @@ use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::float::TFloat;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::comparator::union_comparator;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::intersect_union_types;
@@ -1253,7 +1253,7 @@ fn reconcile_not_in_array(
         );
     }
 
-    get_mixed_any()
+    get_mixed()
 }
 
 fn reconcile_no_array_key(

@@ -347,7 +347,7 @@ fn increment_operand<'a>(
     operation_span: Span,
 ) -> Result<TUnion, AnalysisError> {
     let Some(operand_type) = artifacts.get_expression_type(operand) else {
-        return Ok(get_mixed_any());
+        return Ok(get_mixed());
     };
 
     let mut possibilities = vec![];
@@ -484,7 +484,7 @@ fn increment_operand<'a>(
                             .with_note("Incrementing array callables or invokable objects without specific overload behavior leads to errors."),
                         );
 
-                    possibilities.push(TAtomic::Mixed(TMixed::vanilla()));
+                    possibilities.push(TAtomic::Mixed(TMixed::new()));
                 }
             }
             _ => {
@@ -505,13 +505,13 @@ fn increment_operand<'a>(
                         .with_help("Ensure the operand is a number or a string suitable for incrementing."),
                     );
 
-                possibilities.push(TAtomic::Mixed(TMixed::any()));
+                possibilities.push(TAtomic::Mixed(TMixed::new()));
             }
         }
     }
 
     let resulting_type_union = if possibilities.is_empty() {
-        get_mixed_any()
+        get_mixed()
     } else {
         TUnion::new(combine(possibilities, context.codebase, context.interner, false))
     };
@@ -576,7 +576,7 @@ fn decrement_operand<'a>(
 ) -> Result<TUnion, AnalysisError> {
     // Changed return to Result for consistency
     let Some(operand_type) = artifacts.get_expression_type(operand) else {
-        return Ok(get_mixed_any());
+        return Ok(get_mixed());
     };
 
     let mut possibilities = vec![];
@@ -719,7 +719,7 @@ fn decrement_operand<'a>(
                             .with_note("Decrementing array callables or invokable objects without specific overload behavior leads to errors."),
                     );
 
-                    possibilities.push(TAtomic::Mixed(TMixed::vanilla()));
+                    possibilities.push(TAtomic::Mixed(TMixed::new()));
                 }
             }
             _ => {
@@ -740,13 +740,13 @@ fn decrement_operand<'a>(
                             .with_help("Ensure the operand is a number or a string suitable for decrementing."),
                     );
 
-                possibilities.push(TAtomic::Mixed(TMixed::any()));
+                possibilities.push(TAtomic::Mixed(TMixed::new()));
             }
         }
     }
 
     let resulting_type_union = if possibilities.is_empty() {
-        get_mixed_any()
+        get_mixed()
     } else {
         TUnion::new(combine(possibilities, context.codebase, context.interner, false))
     };
@@ -886,7 +886,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                 // we can lookup the object and get the properties, and return
                 // a keyed array with the properties
                 let mut obj_array = TKeyedArray::new();
-                obj_array.parameters = Some((Box::new(get_string()), Box::new(get_mixed_any())));
+                obj_array.parameters = Some((Box::new(get_string()), Box::new(get_mixed())));
 
                 resulting_array_atomics.push(TAtomic::Array(TArray::Keyed(obj_array)));
             }
@@ -906,7 +906,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
 
                 resulting_array_atomics.push(TAtomic::Array(TArray::Keyed(TKeyedArray::new_with_parameters(
                     Box::new(get_arraykey()),
-                    Box::new(get_mixed_any()),
+                    Box::new(get_mixed()),
                 ))));
             }
             _ => {
@@ -928,7 +928,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
                 // Fallback to a generic array type if cast is ambiguous
                 resulting_array_atomics.push(TAtomic::Array(TArray::Keyed(TKeyedArray::new_with_parameters(
                     Box::new(get_arraykey()),
-                    Box::new(get_mixed_any()),
+                    Box::new(get_mixed()),
                 ))));
             }
         }

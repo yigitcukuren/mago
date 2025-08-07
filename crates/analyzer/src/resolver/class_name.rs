@@ -50,8 +50,6 @@ pub enum ResolutionOrigin {
     AnyObject,
     /// Resolved from a `mixed` type, which could potentially be a class name.
     Mixed,
-    /// Resolved from an `any` type.
-    Any,
 }
 
 /// Represents the result of resolving an expression that is expected to be a class name.
@@ -97,14 +95,14 @@ impl ResolvedClassname {
     /// actual value is not guaranteed to be a valid class name. It is also true if the
     /// resolution is known to be `Invalid`.
     pub const fn is_possibly_invalid(&self) -> bool {
-        matches!(self.origin, ResolutionOrigin::Mixed | ResolutionOrigin::Any | ResolutionOrigin::Invalid)
+        matches!(self.origin, ResolutionOrigin::Mixed | ResolutionOrigin::Invalid)
     }
 
     /// Checks if the class name is resolved from `mixed` or `any` type,
     /// which means it could potentially be any class name.
     #[inline]
     pub const fn is_from_mixed(&self) -> bool {
-        matches!(self.origin, ResolutionOrigin::Mixed | ResolutionOrigin::Any)
+        matches!(self.origin, ResolutionOrigin::Mixed)
     }
 
     /// Checks if the class name is resolved from the `static` keyword.
@@ -397,13 +395,7 @@ pub fn get_class_name_from_atomic(interner: &ThreadedInterner, atomic: &TAtomic)
                     return None; // This type cannot be interpreted as a class name.
                 }
             }
-            TAtomic::Mixed(mixed) => {
-                if mixed.is_any() {
-                    ResolvedClassname::new(None, ResolutionOrigin::Any)
-                } else {
-                    ResolvedClassname::new(None, ResolutionOrigin::Mixed)
-                }
-            }
+            TAtomic::Mixed(_) => ResolvedClassname::new(None, ResolutionOrigin::Mixed),
             _ => {
                 // This type cannot be interpreted as a class name.
                 return None;

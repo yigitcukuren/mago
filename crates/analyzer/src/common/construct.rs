@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -80,7 +80,7 @@ pub fn analyze_construct_inputs<'a>(
                 let input_type = artifacts
                     .get_expression_type(argument)
                     .map(Cow::Borrowed)
-                    .unwrap_or_else(|| Cow::Owned(get_mixed_any()));
+                    .unwrap_or_else(|| Cow::Owned(get_mixed()));
 
                 verify_construct_input_type(
                     context,
@@ -97,10 +97,8 @@ pub fn analyze_construct_inputs<'a>(
         ConstructInput::Expression(expression) => {
             expression.analyze(context, block_context, artifacts)?;
 
-            let input_type = artifacts
-                .get_expression_type(expression)
-                .map(Cow::Borrowed)
-                .unwrap_or_else(|| Cow::Owned(get_mixed_any()));
+            let input_type =
+                artifacts.get_expression_type(expression).map(Cow::Borrowed).unwrap_or_else(|| Cow::Owned(get_mixed()));
 
             verify_construct_input_type(
                 context,
@@ -140,7 +138,7 @@ pub fn analyze_construct_inputs<'a>(
                 let input_type = artifacts
                     .get_expression_type(expression)
                     .map(Cow::Borrowed)
-                    .unwrap_or_else(|| Cow::Owned(get_mixed_any()));
+                    .unwrap_or_else(|| Cow::Owned(get_mixed()));
 
                 verify_construct_input_type(
                     context,
@@ -266,8 +264,7 @@ fn verify_construct_input_type(
         return;
     }
 
-    let mut mixed_from_any = false;
-    if input_type.is_mixed_with_any(&mut mixed_from_any) {
+    if input_type.is_mixed() {
         return report_mixed_input(
             context,
             construct_kind,
@@ -275,7 +272,6 @@ fn verify_construct_input_type(
             argument_offset,
             &input_type_str,
             &parameter_type_str,
-            mixed_from_any,
             construct_keyword,
             is_argument,
         );
@@ -465,7 +461,6 @@ fn report_mixed_input(
     offset: usize,
     in_type: &str,
     param_type: &str,
-    from_any: bool,
     keyword: &Span,
     is_argument: bool,
 ) {
@@ -473,7 +468,7 @@ fn report_mixed_input(
     let position = get_ordinal(offset);
 
     context.collector.report_with_code(
-        if from_any { Code::MIXED_ANY_ARGUMENT } else { Code::MIXED_ARGUMENT },
+        Code::MIXED_ARGUMENT,
         Issue::error(format!("The {position} {term} for `{kind}` is too general."))
             .with_annotation(Annotation::primary(expr.span()).with_message(format!("Type `{in_type}` is too broad")))
             .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
@@ -495,9 +490,7 @@ fn report_less_specific_input(
 ) {
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
-    let (code, reason) = if comparison.type_coerced_from_nested_any.unwrap_or(false) {
-        (Code::LESS_SPECIFIC_NESTED_ANY_ARGUMENT_TYPE, "due to nested `any`")
-    } else if comparison.type_coerced_from_nested_mixed.unwrap_or(false) {
+    let (code, reason) = if comparison.type_coerced_from_nested_mixed.unwrap_or(false) {
         (Code::LESS_SPECIFIC_NESTED_ARGUMENT_TYPE, "due to nested `mixed`")
     } else {
         (Code::LESS_SPECIFIC_ARGUMENT, "it is a wider type")

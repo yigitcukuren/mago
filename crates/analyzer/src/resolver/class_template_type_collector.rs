@@ -10,7 +10,7 @@ use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::generic::TGenericParameter;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_interner::StringIdentifier;
@@ -61,17 +61,17 @@ pub(crate) fn collect(
                     parameters,
                 );
 
-                class_template_parameters.entry(*template_name).or_default().insert(
-                    GenericParent::ClassLike(class_metadata.name),
-                    output_type_extends.unwrap_or(get_mixed_any()),
-                );
+                class_template_parameters
+                    .entry(*template_name)
+                    .or_default()
+                    .insert(GenericParent::ClassLike(class_metadata.name), output_type_extends.unwrap_or(get_mixed()));
             }
 
             class_template_parameters
                 .entry(*template_name)
                 .or_default()
                 .entry(GenericParent::ClassLike(class_metadata.name))
-                .or_insert(get_mixed_any());
+                .or_insert(get_mixed());
         }
     }
 

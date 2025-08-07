@@ -8,7 +8,7 @@ use mago_algebra::disjoin_clauses;
 use mago_codex::assertion::Assertion;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::get_literal_int;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -153,10 +153,10 @@ pub fn analyze_assignment<'a>(
         if let Some(source_type) = artifacts.get_expression_type(&source_expression) {
             source_type.clone()
         } else {
-            get_mixed_any()
+            get_mixed()
         }
     } else {
-        get_mixed_any()
+        get_mixed()
     };
 
     if let (Some(target_variable_id), None) = (&target_variable_id, assignment_operator)
@@ -425,11 +425,7 @@ pub fn analyze_assignment_to_variable<'a>(
         }
 
         context.collector.report_with_code(
-            if assigned_type.is_any() {
-                Code::MIXED_ANY_ASSIGNMENT
-            } else {
-                Code::MIXED_ASSIGNMENT
-            },
+            Code::MIXED_ASSIGNMENT,
             issue.with_annotation(Annotation::primary(variable_span).with_message(format!("Assigning `{assigned_type_str}` type here.")))
                 .with_note(format!("Using `{assigned_type_str}` can lead to runtime errors if the variable is used in a way that assumes a specific type."))
                 .with_help("Consider using a more specific type to avoid potential issues."),
@@ -588,10 +584,8 @@ fn analyze_destructuring<'a>(
             ArrayElement::KeyValue(key_value_element) => {
                 key_value_element.key.analyze(context, block_context, artifacts)?;
 
-                let index_type = artifacts
-                    .get_expression_type(key_value_element.key.as_ref())
-                    .cloned()
-                    .unwrap_or_else(get_mixed_any);
+                let index_type =
+                    artifacts.get_expression_type(key_value_element.key.as_ref()).cloned().unwrap_or_else(get_mixed);
 
                 let access_type = if impossible {
                     get_never()

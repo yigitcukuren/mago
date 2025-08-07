@@ -23,7 +23,7 @@ use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::TypeExpansionOptions;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_maybe_from_loop;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
@@ -124,7 +124,7 @@ pub fn reconcile(
         return refined_type;
     }
 
-    get_mixed_any()
+    get_mixed()
 }
 
 pub(crate) fn refine_atomic_with_union(
@@ -559,17 +559,13 @@ fn get_missing_type(interner: &ThreadedInterner, assertion: &Assertion, inside_l
         return get_mixed_maybe_from_loop(inside_loop);
     }
 
-    if matches!(assertion, Assertion::ArrayKeyExists | Assertion::NonEmptyCountable(_) | Assertion::HasExactCount(_)) {
-        return get_mixed_any();
-    }
-
     if let Assertion::IsIdentical(atomic) | Assertion::IsType(atomic) = assertion {
         let mut atomic = atomic.clone();
         atomic.remove_placeholders(interner);
         return wrap_atomic(atomic.clone());
     }
 
-    get_mixed_any()
+    get_mixed()
 }
 
 fn handle_literal_equality(

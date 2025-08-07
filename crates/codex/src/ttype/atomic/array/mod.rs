@@ -248,13 +248,13 @@ impl TArray {
                     }
 
                     if let TAtomic::Placeholder = parameters.1.get_single() {
-                        parameters.1 = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::any())]));
+                        parameters.1 = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::new())]));
                     }
                 }
             }
             Self::List(list) => {
                 if let TAtomic::Placeholder = list.element_type.get_single() {
-                    list.element_type = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::any())]));
+                    list.element_type = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::new())]));
                 }
             }
         }

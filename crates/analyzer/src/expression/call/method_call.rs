@@ -317,20 +317,20 @@ mod tests {
     }
 
     test_analysis! {
-        name = method_call_on_mixed_any,
+        name = method_call_on_undefined_variable,
         code = indoc! {r#"
             <?php
 
             declare(strict_types=1);
 
-            function call_method_on_mixed_any(): void
+            function method_call_on_undefined_variable(): void
             {
-                $mixed_any->someMethod();
+                $mixed->someMethod();
             }
         "#},
         issues = [
             Code::UNDEFINED_VARIABLE,
-            Code::MIXED_ANY_METHOD_ACCESS
+            Code::MIXED_METHOD_ACCESS
         ]
     }
 

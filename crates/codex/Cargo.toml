@@ -25,7 +25,6 @@ ahash = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 derivative = { workspace = true }
-itertools = { workspace = true }
 strum = { workspace = true }
 indexmap = { workspace = true }
 ordered-float = { workspace = true }

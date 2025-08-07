@@ -13,7 +13,6 @@ use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::expander::get_signature_of_function_like_metadata;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -138,7 +137,7 @@ impl Analyzable for Closure {
 
                 let rc_type = Rc::new(match block_context.locals.remove(variable_str) {
                     Some(existing_type) => existing_type.as_ref().to_owned(),
-                    None => get_mixed_any(),
+                    None => get_mixed(),
                 });
 
                 block_context.locals.insert(variable_str.to_string(), rc_type.clone());

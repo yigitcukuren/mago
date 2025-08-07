@@ -12,7 +12,7 @@ use mago_codex::ttype::combiner;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_interner::StringIdentifier;
@@ -114,7 +114,7 @@ impl Analyzable for Match {
                         .with_help("Ensure that the match subject expression is well-formed and has a resolvable type."),
                 );
 
-                get_mixed_any()
+                get_mixed()
             }
         };
 

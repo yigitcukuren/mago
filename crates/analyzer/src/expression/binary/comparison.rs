@@ -3,7 +3,7 @@ use std::rc::Rc;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_false;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_true;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -47,7 +47,7 @@ pub fn analyze_comparison_operation<'a>(
     binary.rhs.analyze(context, block_context, artifacts)?;
     block_context.inside_general_use = was_inside_general_use;
 
-    let fallback_type = Rc::new(get_mixed_any());
+    let fallback_type = Rc::new(get_mixed());
     let lhs_type = artifacts.get_rc_expression_type(&binary.lhs).unwrap_or(&fallback_type);
     let rhs_type = artifacts.get_rc_expression_type(&binary.rhs).unwrap_or(&fallback_type);
 

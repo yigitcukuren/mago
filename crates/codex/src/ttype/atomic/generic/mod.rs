@@ -60,8 +60,8 @@ impl TGenericParameter {
         self.constraint.is_numeric()
     }
 
-    pub fn is_constrainted_as_mixed(&self, has_any: &mut bool) -> bool {
-        self.constraint.is_mixed_with_any(has_any)
+    pub fn is_constrainted_as_mixed(&self) -> bool {
+        self.constraint.is_mixed()
     }
 
     pub fn is_constrainted_as_objecty(&self) -> bool {

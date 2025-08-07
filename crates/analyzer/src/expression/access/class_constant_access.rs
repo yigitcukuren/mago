@@ -1,6 +1,5 @@
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_never;
 use mago_syntax::ast::*;
 
@@ -31,10 +30,10 @@ impl Analyzable for ClassConstantAccess {
             ));
         }
 
-        let resulting_type =
-            if resolution.has_invalid_path { get_never() } else { resulting_type.unwrap_or_else(get_mixed_any) };
-
-        artifacts.set_expression_type(self, resulting_type);
+        artifacts.set_expression_type(
+            self,
+            if resolution.has_invalid_path { get_never() } else { resulting_type.unwrap_or_else(get_mixed) },
+        );
 
         Ok(())
     }

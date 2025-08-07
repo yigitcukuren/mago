@@ -88,10 +88,6 @@ impl TAtomic {
         matches!(self, TAtomic::Mixed(_))
     }
 
-    pub const fn is_any(&self) -> bool {
-        matches!(self, TAtomic::Mixed(mixed) if mixed.is_any())
-    }
-
     pub const fn is_mixed_isset_from_loop(&self) -> bool {
         matches!(self, TAtomic::Mixed(mixed) if mixed.is_isset_from_loop())
     }
@@ -104,19 +100,8 @@ impl TAtomic {
         matches!(self, TAtomic::GenericParameter(parameter) if parameter.constraint.is_never())
     }
 
-    pub const fn is_mixed_with_any(&self, has_any: &mut bool) -> bool {
-        match self {
-            TAtomic::Mixed(mixed) => {
-                *has_any = mixed.is_any();
-
-                true
-            }
-            _ => false,
-        }
-    }
-
-    pub fn is_templated_as_mixed(&self, has_any: &mut bool) -> bool {
-        matches!(self, TAtomic::GenericParameter(parameter) if parameter.is_constrainted_as_mixed(has_any))
+    pub fn is_templated_as_mixed(&self) -> bool {
+        matches!(self, TAtomic::GenericParameter(parameter) if parameter.is_constrainted_as_mixed())
     }
 
     pub fn map_generic_parameter_constraint<F, T>(&self, f: F) -> Option<T>
@@ -343,7 +328,7 @@ impl TAtomic {
 
     #[inline]
     pub fn could_be_countable(&self, codebase: &CodebaseMetadata, interner: &ThreadedInterner) -> bool {
-        self.is_mixed() || self.is_any() || self.is_countable(codebase, interner)
+        self.is_mixed() || self.is_countable(codebase, interner)
     }
 
     #[inline]
@@ -365,7 +350,7 @@ impl TAtomic {
 
     #[inline]
     pub fn could_be_array_or_traversable(&self, codebase: &CodebaseMetadata, interner: &ThreadedInterner) -> bool {
-        self.is_mixed() || self.is_any() || self.is_array_or_traversable(codebase, interner)
+        self.is_mixed() || self.is_array_or_traversable(codebase, interner)
     }
 
     pub fn is_non_empty_array(&self) -> bool {
@@ -700,7 +685,7 @@ impl TAtomic {
                             *key_or_value_param = if has_kv_pair {
                                 TUnion::new(vec![TAtomic::Scalar(TScalar::ArrayKey)])
                             } else {
-                                TUnion::new(vec![TAtomic::Mixed(TMixed::any())])
+                                TUnion::new(vec![TAtomic::Mixed(TMixed::new())])
                             };
                         }
 
@@ -708,12 +693,12 @@ impl TAtomic {
                             && let Some(value_param) = type_parameters.get_mut(1)
                             && let TAtomic::Placeholder = value_param.get_single()
                         {
-                            *value_param = TUnion::new(vec![TAtomic::Mixed(TMixed::any())]);
+                            *value_param = TUnion::new(vec![TAtomic::Mixed(TMixed::new())]);
                         }
                     } else {
                         for type_param in type_parameters {
                             if let TAtomic::Placeholder = type_param.get_single() {
-                                *type_param = TUnion::new(vec![TAtomic::Mixed(TMixed::any())]);
+                                *type_param = TUnion::new(vec![TAtomic::Mixed(TMixed::new())]);
                             }
                         }
                     }

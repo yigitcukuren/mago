@@ -23,7 +23,6 @@ use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_reporting::Annotation;
@@ -126,7 +125,7 @@ pub fn analyze_function_like<'a, 'ast>(
                 block_context.inside_return = false;
                 block_context.conditionally_referenced_variable_ids = Default::default();
 
-                let value_type = artifacts.get_expression_type(value).cloned().unwrap_or_else(get_mixed_any);
+                let value_type = artifacts.get_expression_type(value).cloned().unwrap_or_else(get_mixed);
 
                 handle_return_value(
                     context,
@@ -216,7 +215,7 @@ fn add_parameter_types_to_context<'a>(
                 signature_union
             }
         } else {
-            get_mixed_any()
+            get_mixed()
         };
 
         let parameter_node = if let Some(parameter_node) = parameter_list.parameters.get(i) {

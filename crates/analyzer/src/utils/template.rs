@@ -10,7 +10,7 @@ use mago_codex::ttype::atomic::generic::TGenericParameter;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_interner::StringIdentifier;
@@ -99,7 +99,7 @@ pub fn get_template_types_for_class_member(
                                 ));
                             }
 
-                            resolved_union.unwrap_or_else(get_mixed_any)
+                            resolved_union.unwrap_or_else(get_mixed)
                         } else {
                             provided_type_arc.clone()
                         };
@@ -216,5 +216,5 @@ pub fn get_generic_parameter_for_offset(
         }
     }
 
-    get_mixed_any()
+    get_mixed()
 }

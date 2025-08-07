@@ -19,7 +19,6 @@ use mago_codex::ttype::comparator::union_comparator::is_contained_by;
 use mago_codex::ttype::get_arraykey;
 use mago_codex::ttype::get_int;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_mixed_maybe_from_loop;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_non_empty_string;
@@ -303,8 +302,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             "an expected type".to_string()
         };
 
-        let mut mixed_with_any = false;
-        if index_type.is_mixed_with_any(&mut mixed_with_any) {
+        if index_type.is_mixed() {
             let note_text = if expected_index_types_str.len() == 1 {
                 format!("The index for this type must be `{expected_types_list}`.")
             } else {
@@ -318,7 +316,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
             };
 
             context.collector.report_with_code(
-                if mixed_with_any { Code::MIXED_ANY_ARRAY_INDEX } else { Code::MIXED_ARRAY_INDEX },
+                Code::MIXED_ARRAY_INDEX,
                 Issue::error(format!(
                     "Invalid index type `{index_type_str}` used for array access on `{array_like_type_str}`."
                 ))
@@ -377,7 +375,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
         }
     }
 
-    value_type.unwrap_or_else(get_mixed_any)
+    value_type.unwrap_or_else(get_mixed)
 }
 
 pub(crate) fn handle_array_access_on_list(
@@ -958,25 +956,7 @@ pub(crate) fn handle_array_access_on_mixed(
 ) -> TUnion {
     if !block_context.inside_isset {
         if block_context.inside_assignment {
-            if mixed.is_any() {
-                context.collector.report_with_code(
-                    Code::MIXED_ANY_ARRAY_ASSIGNMENT,
-                    Issue::error(format!(
-                        "Unsafe array assignment on type `{}`.",
-                        mixed.get_id(Some(context.interner))
-                    ))
-                    .with_annotation(
-                        Annotation::primary(span)
-                            .with_message("Cannot safely assign to index because base type is `any`.")
-                    )
-                    .with_note(
-                        "The variable being assigned to might not be an array at runtime."
-                    )
-                    .with_help(
-                        "Ensure the variable holds an array before assigning to an index, potentially using type checks or assertions."
-                    ),
-                );
-            } else if let TAtomic::Never = mixed {
+            if let TAtomic::Never = mixed {
                 context.collector.report_with_code(
                     Code::IMPOSSIBLE_ARRAY_ASSIGNMENT,
                     Issue::error(
@@ -1012,24 +992,6 @@ pub(crate) fn handle_array_access_on_mixed(
                     ),
                 );
             }
-        } else if mixed.is_any() {
-            context.collector.report_with_code(
-                Code::MIXED_ANY_ARRAY_ACCESS,
-                Issue::error(format!(
-                    "Unsafe array access on type `{}`.",
-                    mixed.get_id(None)
-                ))
-                .with_annotation(
-                    Annotation::primary(span)
-                        .with_message("Cannot safely access index because base type is `any`.")
-                )
-                .with_note(
-                    "The variable being accessed might not be an array at runtime."
-                )
-                .with_help(
-                    "Ensure the variable holds an array before accessing an index, potentially using type checks or assertions."
-                ),
-            );
         } else {
             context.collector.report_with_code(
                 Code::MIXED_ARRAY_ACCESS,
@@ -1045,5 +1007,5 @@ pub(crate) fn handle_array_access_on_mixed(
         return get_mixed_maybe_from_loop(true);
     }
 
-    get_mixed_any()
+    get_mixed()
 }

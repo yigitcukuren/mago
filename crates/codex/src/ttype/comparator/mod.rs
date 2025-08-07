@@ -22,7 +22,6 @@ pub mod union_comparator;
 pub struct ComparisonResult {
     pub type_coerced: Option<bool>,
     pub type_coerced_from_nested_mixed: Option<bool>,
-    pub type_coerced_from_nested_any: Option<bool>,
     pub type_coerced_from_as_mixed: Option<bool>,
     pub type_coerced_to_literal: Option<bool>,
     pub replacement_union_type: Option<TUnion>,
@@ -42,7 +41,6 @@ impl ComparisonResult {
         Self {
             type_coerced: None,
             type_coerced_from_nested_mixed: None,
-            type_coerced_from_nested_any: None,
             type_coerced_from_as_mixed: None,
             type_coerced_to_literal: None,
             replacement_union_type: None,

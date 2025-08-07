@@ -138,7 +138,7 @@ impl Analyzable for Clone {
 
         let resulting_type = if !invalid_clone_atomics.is_empty() {
             Rc::new(if has_mixed_type {
-                TUnion::new(vec![TAtomic::Mixed(TMixed::vanilla()), TAtomic::Never])
+                TUnion::new(vec![TAtomic::Mixed(TMixed::new()), TAtomic::Never])
             } else if has_clonable_object {
                 combine_union_types(&object_type, &get_never(), context.codebase, context.interner, false)
             } else {

@@ -4,7 +4,7 @@ use mago_codex::ttype::TType;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -125,7 +125,7 @@ pub(crate) fn analyze<'a>(
         || property_resolution.has_possibly_defined_property
     {
         resulting_type =
-            Some(add_optional_union_type(get_mixed_any(), resulting_type.as_ref(), context.codebase, context.interner));
+            Some(add_optional_union_type(get_mixed(), resulting_type.as_ref(), context.codebase, context.interner));
     }
 
     if property_resolution.has_error_path

@@ -13,7 +13,7 @@ use mago_codex::ttype::combiner;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::get_arraykey;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -41,7 +41,7 @@ pub fn analyze_arithmetic_operation<'a>(
     binary.rhs.analyze(context, block_context, artifacts)?;
     block_context.inside_general_use = was_inside_general_use;
 
-    let fallback = Rc::new(get_mixed_any());
+    let fallback = Rc::new(get_mixed());
     let left_type = artifacts.get_rc_expression_type(&binary.lhs).cloned().unwrap_or_else(|| fallback.clone());
     let right_type = artifacts.get_rc_expression_type(&binary.rhs).cloned().unwrap_or_else(|| fallback.clone());
 
@@ -58,7 +58,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
         // In Psalm, null operand often leads to mixed result or halts analysis for this path.
         // Let's set result to mixed and return, similar to Psalm's behavior.
-        final_result_type = Some(get_mixed_any());
+        final_result_type = Some(get_mixed());
     } else if left_type.is_nullable() && !left_type.ignore_nullable_issues {
         context.collector.report_with_code(
             Code::POSSIBLY_NULL_OPERAND,
@@ -83,7 +83,7 @@ pub fn analyze_arithmetic_operation<'a>(
                 .with_help("Ensure the right operand is a number (int/float) or a type that can be cast to a number."),
         );
 
-        final_result_type = Some(get_mixed_any());
+        final_result_type = Some(get_mixed());
     } else if right_type.is_nullable() && !right_type.ignore_nullable_issues {
         context.collector.report_with_code(
             Code::POSSIBLY_NULL_OPERAND,
@@ -241,7 +241,7 @@ pub fn analyze_arithmetic_operation<'a>(
                     ),
                 );
 
-                pair_result_atomics.push(TAtomic::Mixed(TMixed::vanilla()));
+                pair_result_atomics.push(TAtomic::Mixed(TMixed::new()));
                 if !right_atomic.is_mixed() {
                     has_valid_right_operand = true;
                 }
@@ -266,7 +266,7 @@ pub fn analyze_arithmetic_operation<'a>(
                 );
 
                 if !pair_result_atomics.iter().any(|a| a.is_mixed()) {
-                    pair_result_atomics.push(TAtomic::Mixed(TMixed::vanilla()));
+                    pair_result_atomics.push(TAtomic::Mixed(TMixed::new()));
                 }
                 if !left_atomic.is_mixed() {
                     has_valid_left_operand = true;
@@ -302,7 +302,7 @@ pub fn analyze_arithmetic_operation<'a>(
                                 context.interner,
                                 false,
                             ),
-                            _ => get_mixed_any(),
+                            _ => get_mixed(),
                         };
 
                     let mut keyed_array = TKeyedArray::new();
@@ -463,7 +463,7 @@ pub fn analyze_arithmetic_operation<'a>(
         // Psalm often defaults to mixed here if operands were invalid.
         // If errors were due to null/false operands handled initially, use the type set there.
         // Otherwise, default to mixed.
-        get_mixed_any()
+        get_mixed()
     };
 
     assign_arithmetic_type(artifacts, final_type, binary);

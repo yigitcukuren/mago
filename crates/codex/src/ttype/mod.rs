@@ -263,12 +263,7 @@ pub fn get_literal_float(v: f64) -> TUnion {
 
 #[inline]
 pub fn get_mixed() -> TUnion {
-    wrap_atomic(TAtomic::Mixed(TMixed::vanilla()))
-}
-
-#[inline]
-pub fn get_mixed_any() -> TUnion {
-    wrap_atomic(TAtomic::Mixed(TMixed::any()))
+    wrap_atomic(TAtomic::Mixed(TMixed::new()))
 }
 
 pub fn get_mixed_maybe_from_loop(from_loop_isset: bool) -> TUnion {
@@ -470,7 +465,7 @@ pub fn combine_optional_union_types(
         (Some(type_1), Some(type_2)) => combine_union_types(type_1, type_2, codebase, interner, false),
         (Some(type_1), None) => type_1.clone(),
         (None, Some(type_2)) => type_2.clone(),
-        (None, None) => get_mixed_any(),
+        (None, None) => get_mixed(),
     }
 }
 

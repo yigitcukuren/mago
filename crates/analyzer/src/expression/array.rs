@@ -237,7 +237,7 @@ fn analyze_array_elements<'a>(
                     None => {
                         array_creation_info.can_create_objectlike = false;
                         array_creation_info.item_key_atomic_types.push(TAtomic::Scalar(TScalar::ArrayKey));
-                        array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::vanilla()));
+                        array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::new()));
                     }
                 };
 
@@ -314,7 +314,7 @@ fn analyze_array_elements<'a>(
                 } else {
                     array_creation_info.can_create_objectlike = false;
                     array_creation_info.item_key_atomic_types.extend(key_type.types);
-                    array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::vanilla()));
+                    array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::new()));
                 }
             }
         }
@@ -545,7 +545,7 @@ fn handle_variadic_array_element(
                 // ref: https://github.com/vimeo/psalm/blob/6.x/src/Psalm/Internal/Analyzer/Statements/Expression/ArrayAnalyzer.php#L564
                 array_creation_info.can_create_objectlike = false;
                 array_creation_info.item_key_atomic_types.push(TAtomic::Scalar(TScalar::ArrayKey));
-                array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::vanilla()));
+                array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::new()));
 
                 context.collector.report_with_code(
                     Code::INVALID_ARRAY_ELEMENT,

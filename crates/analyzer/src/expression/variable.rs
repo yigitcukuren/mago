@@ -13,7 +13,6 @@ use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_float;
 use mago_codex::ttype::get_int_range;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_non_empty_string;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_string;
@@ -81,10 +80,10 @@ impl Analyzable for IndirectVariable {
 
                         read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
-                    _ => get_mixed_any(),
+                    _ => get_mixed(),
                 }
             }
-            _ => get_mixed_any(),
+            _ => get_mixed(),
         };
 
         artifacts.set_expression_type(self, resulting_type);
@@ -110,10 +109,10 @@ impl Analyzable for NestedVariable {
 
                         read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
-                    _ => get_mixed_any(),
+                    _ => get_mixed(),
                 }
             }
-            _ => get_mixed_any(),
+            _ => get_mixed(),
         };
 
         artifacts.set_expression_type(self, resulting_type);
@@ -190,7 +189,7 @@ fn read_variable<'a>(
             } else if block_context.inside_unset {
                 get_null()
             } else if block_context.inside_isset {
-                get_mixed_any()
+                get_mixed()
             } else {
                 let mut issue = Issue::error(format!("Undefined variable: `{variable_name}`.")).with_annotation(
                     Annotation::primary(variable_span)
@@ -225,7 +224,7 @@ fn read_variable<'a>(
 
                 context.collector.report_with_code(Code::UNDEFINED_VARIABLE, issue.with_help(help_message));
 
-                get_mixed_any()
+                get_mixed()
             }
         }
     };
@@ -333,7 +332,7 @@ fn get_global_variable_type(variable_name: &str) -> Option<TUnion> {
                                         TAtomic::Scalar(TScalar::non_empty_string()),
                                         TAtomic::Scalar(TScalar::int()),
                                     ])),
-                                    Box::new(get_mixed_any()),
+                                    Box::new(get_mixed()),
                                 ))),
                             ])),
                         )

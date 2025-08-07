@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
 use mago_span::HasSpan;
@@ -114,7 +113,7 @@ fn analyze_property_access<'a>(
             || resolution_result.has_possibly_defined_property
         {
             resulting_expression_type = Some(add_optional_union_type(
-                if block_context.inside_isset { get_mixed() } else { get_mixed_any() },
+                get_mixed(),
                 resulting_expression_type.as_ref(),
                 context.codebase,
                 context.interner,
@@ -340,7 +339,7 @@ mod tests {
         "#},
         issues = [
             Code::MIXED_PROPERTY_ACCESS,
-            Code::MIXED_ANY_ARGUMENT,
+            Code::MIXED_ARGUMENT,
         ]
     }
 
@@ -375,7 +374,7 @@ mod tests {
         "#},
         issues = [
             Code::NON_EXISTENT_PROPERTY,
-            Code::MIXED_ANY_ARGUMENT,
+            Code::MIXED_ARGUMENT,
         ]
     }
 
@@ -436,7 +435,7 @@ mod tests {
         issues = [
             Code::UNDEFINED_VARIABLE,
             Code::INVALID_MEMBER_SELECTOR,
-            Code::MIXED_ANY_RETURN_STATEMENT,
+            Code::MIXED_RETURN_STATEMENT,
         ]
     }
 
@@ -510,7 +509,7 @@ mod tests {
         "#},
         issues = [
             Code::NON_EXISTENT_PROPERTY,
-            Code::MIXED_ANY_RETURN_STATEMENT,
+            Code::MIXED_RETURN_STATEMENT,
         ]
     }
 

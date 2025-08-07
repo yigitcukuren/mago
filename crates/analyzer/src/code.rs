@@ -37,19 +37,11 @@ impl Code {
     pub const INVALID_CALLABLE: &'static str = "invalid-callable";
     pub const UNKNOWN_NAMED_ARGUMENT: &'static str = "invalid-named-argument";
     pub const LESS_SPECIFIC_ARGUMENT: &'static str = "less-specific-argument";
-    pub const LESS_SPECIFIC_NESTED_ANY_ARGUMENT_TYPE: &'static str = "less-specific-nested-any-argument-type";
-    pub const LESS_SPECIFIC_NESTED_ANY_RETURN_STATEMENT: &'static str = "less-specific-nested-any-return-statement";
     pub const LESS_SPECIFIC_NESTED_ARGUMENT_TYPE: &'static str = "less-specific-nested-argument-type";
     pub const LESS_SPECIFIC_NESTED_RETURN_STATEMENT: &'static str = "less-specific-nested-return-statement";
     pub const LESS_SPECIFIC_RETURN_STATEMENT: &'static str = "less-specific-return-statement";
     pub const METHOD_ACCESS_ON_NULL: &'static str = "method-access-on-null";
-    pub const MIXED_ANY_ARGUMENT: &'static str = "mixed-any-argument";
-    pub const MIXED_ANY_ARRAY_ACCESS: &'static str = "mixed-any-array-access";
-    pub const MIXED_ANY_ARRAY_ASSIGNMENT: &'static str = "mixed-any-array-assignment";
-    pub const MIXED_ANY_ARRAY_INDEX: &'static str = "mixed-any-array-index";
-    pub const MIXED_ANY_METHOD_ACCESS: &'static str = "mixed-any-method-access";
     pub const MIXED_RETURN_STATEMENT: &'static str = "mixed-return-statement";
-    pub const MIXED_ANY_RETURN_STATEMENT: &'static str = "mixed-any-return-statement";
     pub const MIXED_ARGUMENT: &'static str = "mixed-argument";
     pub const MIXED_ARRAY_ACCESS: &'static str = "mixed-array-access";
     pub const MIXED_ARRAY_ASSIGNMENT: &'static str = "mixed-array-assignment";
@@ -196,7 +188,6 @@ impl Code {
     pub const TYPE_CONFIRMATION: &'static str = "type-confirmation";
     pub const NULL_PROPERTY_ACCESS: &'static str = "null-property-access";
     pub const POSSIBLY_NULL_PROPERTY_ACCESS: &'static str = "possibly-null-property-access";
-    pub const MIXED_ANY_PROPERTY_ACCESS: &'static str = "mixed-any-property-access";
     pub const MIXED_PROPERTY_ACCESS: &'static str = "mixed-property-access";
     pub const INVALID_PROPERTY_ACCESS: &'static str = "invalid-property-access";
     pub const AMBIGUOUS_OBJECT_PROPERTY_ACCESS: &'static str = "ambiguous-object-property-access";
@@ -237,7 +228,6 @@ impl Code {
     pub const EXPRESSION_IS_TOO_COMPLEX: &'static str = "expression-is-too-complex";
     pub const WHERE_CONSTRAINT_VIOLATION: &'static str = "where-constraint-violation";
     pub const EXTEND_FINAL_CLASS: &'static str = "extend-final-class";
-    pub const MIXED_ANY_ASSIGNMENT: &'static str = "mixed-any-assignment";
     pub const NON_EXISTENT_CLASS_CONSTANT: &'static str = "non-existent-class-constant";
     pub const POSSIBLY_FALSE_ARGUMENT: &'static str = "possibly-false-argument";
     pub const FALSE_ARGUMENT: &'static str = "false-argument";

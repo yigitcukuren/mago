@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use mago_codex::ttype::get_arraykey;
-use mago_codex::ttype::get_mixed_any;
+use mago_codex::ttype::get_mixed;
 use mago_span::HasSpan;
 use mago_syntax::ast::ArrayAccess;
 
@@ -86,7 +86,7 @@ impl Analyzable for ArrayAccess {
 
             artifacts.set_expression_type(self, access_type.clone());
         } else {
-            artifacts.set_expression_type(self, get_mixed_any());
+            artifacts.set_expression_type(self, get_mixed());
         }
 
         Ok(())

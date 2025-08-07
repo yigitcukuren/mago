@@ -253,7 +253,7 @@ pub fn analyze_invocation<'a>(
         let (argument_value_type, _) = analyzed_argument_types
             .get(argument_offset)
             .cloned()
-            .unwrap_or_else(|| (get_mixed_any(), argument_expression.span()));
+            .unwrap_or_else(|| (get_mixed(), argument_expression.span()));
 
         let parameter_ref = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
         if let Some((parameter_offset, parameter_ref)) = parameter_ref {
@@ -447,7 +447,7 @@ pub fn analyze_invocation<'a>(
                     }
 
                     let argument_value_type =
-                        artifacts.get_expression_type(argument_expression).cloned().unwrap_or_else(get_mixed_any); // Get type of the iterable
+                        artifacts.get_expression_type(argument_expression).cloned().unwrap_or_else(get_mixed); // Get type of the iterable
 
                     let mut sizes = vec![];
                     for argument_atomic in &argument_value_type.types {
@@ -716,7 +716,7 @@ fn analyze_and_store_argument_type<'a>(
     block_context.inside_call = was_inside_call;
     block_context.inside_variable_reference = was_inside_variable_reference;
 
-    let argument_type = artifacts.get_expression_type(argument_expression).cloned().unwrap_or_else(get_mixed_any);
+    let argument_type = artifacts.get_expression_type(argument_expression).cloned().unwrap_or_else(get_mixed);
 
     if argument_offset != usize::MAX {
         analyzed_argument_types.insert(argument_offset, (argument_type, argument_expression.span()));
@@ -920,10 +920,9 @@ fn verify_argument_type(
         return;
     }
 
-    let mut mixed_from_any = false;
-    if input_type.is_mixed_with_any(&mut mixed_from_any) {
+    if input_type.is_mixed() {
         context.collector.report_with_code(
-            if mixed_from_any { Code::MIXED_ANY_ARGUMENT } else { Code::MIXED_ARGUMENT },
+            Code::MIXED_ARGUMENT,
             Issue::error(format!(
                 "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
                 argument_offset + 1,
@@ -950,12 +949,7 @@ fn verify_argument_type(
         let annotation_msg;
         let note_msg;
 
-        if union_comparison_result.type_coerced_from_nested_any.unwrap_or(false) {
-            issue_kind = Code::LESS_SPECIFIC_NESTED_ANY_ARGUMENT_TYPE;
-            annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `any`.");
-            note_msg = "The structure contains `any`, making it incompatible with the specific structure expected."
-                .to_string();
-        } else if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
+        if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
             issue_kind = Code::LESS_SPECIFIC_NESTED_ARGUMENT_TYPE;
             annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `mixed`.");
             note_msg = "The structure contains `mixed`, making it incompatible.".to_string();
@@ -1164,25 +1158,6 @@ fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &T
         match atomic_type {
             TAtomic::Never => {
                 potential_element_types.push(get_never());
-            }
-            TAtomic::Mixed(mixed) if mixed.is_any() => {
-                if !reported_an_error {
-                    context.collector.report_with_code(
-                        Code::MIXED_ANY_ARGUMENT,
-                        Issue::error(format!(
-                            "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
-                            atomic_type.get_id(Some(context.interner))
-                        ))
-                        .with_annotation(Annotation::primary(span).with_message("Expected an `iterable` for unpacking"))
-                        .with_note("Argument unpacking `...` requires an `iterable` (e.g., `array` or `Traversable`).")
-                        .with_note("The type `any` provides no guarantee of iterability.")
-                        .with_help("Ensure the value is an `iterable` using type hints, checks, or assertions."),
-                    );
-
-                    reported_an_error = true;
-                }
-
-                potential_element_types.push(get_mixed_any());
             }
             TAtomic::Mixed(_) => {
                 if !reported_an_error {
