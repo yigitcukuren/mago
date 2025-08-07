@@ -1,16 +1,16 @@
-use mago_codex::constant_exists;
-use mago_codex::function_exists;
-use mago_names::ResolvedNames;
-use mago_reporting::IssueCollection;
-use mago_source::Source;
 use toml::value::Value;
 
+use mago_codex::constant_exists;
+use mago_codex::function_exists;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_database::file::File;
 use mago_fixer::FixPlan;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
+use mago_names::ResolvedNames;
 use mago_php_version::PHPVersion;
 use mago_reporting::Issue;
+use mago_reporting::IssueCollection;
 use mago_reporting::Level;
 use mago_span::HasPosition;
 use mago_span::HasSpan;
@@ -30,7 +30,7 @@ pub struct LintContext<'a> {
     pub rule: &'a ConfiguredRule,
     pub interner: &'a ThreadedInterner,
     pub codebase: &'a CodebaseMetadata,
-    pub source: &'a Source,
+    pub source_file: &'a File,
     pub resolved_names: &'a ResolvedNames,
     pub scope: ScopeStack,
     pub issues: IssueCollection,
@@ -42,7 +42,7 @@ impl<'a> LintContext<'a> {
         rule: &'a ConfiguredRule,
         interner: &'a ThreadedInterner,
         codebase: &'a CodebaseMetadata,
-        source: &'a Source,
+        source_file: &'a File,
         resolved_names: &'a ResolvedNames,
     ) -> LintContext<'a> {
         LintContext {
@@ -50,7 +50,7 @@ impl<'a> LintContext<'a> {
             rule,
             interner,
             codebase,
-            source,
+            source_file,
             resolved_names,
             issues: IssueCollection::new(),
             scope: ScopeStack::new(),
@@ -288,7 +288,7 @@ impl<'a> LintContext<'a> {
         let mut plan = FixPlan::new();
         f(&mut plan);
         if !plan.is_empty() {
-            issue = issue.with_suggestion(self.source.identifier, plan);
+            issue = issue.with_suggestion(self.source_file.id, plan);
         }
 
         self.report(issue)

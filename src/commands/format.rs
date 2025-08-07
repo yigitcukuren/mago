@@ -1,23 +1,27 @@
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use clap::Parser;
 
+use mago_database::Database;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::change::ChangeLog;
+use mago_database::error::DatabaseError;
+use mago_database::file::File;
+use mago_database::file::FileId;
+use mago_database::file::FileType;
 use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
-use mago_source::Source;
-use mago_source::SourceCategory;
-use mago_source::SourceIdentifier;
-use mago_source::SourceManager;
-use mago_source::error::SourceError;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 use crate::config::Configuration;
+use crate::database;
 use crate::error::Error;
-use crate::source;
 use crate::utils;
 use crate::utils::progress::ProgressBarTheme;
 use crate::utils::progress::create_progress_bar;
@@ -66,89 +70,90 @@ pub async fn execute(command: FormatCommand, mut configuration: Configuration) -
     configuration.source.excludes.extend(std::mem::take(&mut configuration.format.excludes));
 
     if command.stdin_input {
-        let source = create_source_from_stdin(&interner)?;
+        let file = create_file_from_stdin()?;
         let formatter = Formatter::new(&interner, configuration.php_version, configuration.format.settings);
 
-        return Ok(match formatter.format_source(&source) {
+        return Ok(match formatter.format_file(&file) {
             Ok(formatted) => {
                 print!("{formatted}");
 
                 ExitCode::SUCCESS
             }
             Err(error) => {
-                tracing::error!("Failed to format source: {}", error);
+                tracing::error!("Failed to format input: {}", error);
 
                 ExitCode::FAILURE
             }
         });
     }
 
-    // Load sources
-    let source_manager = if !command.path.is_empty() {
-        source::from_paths(&interner, &configuration.source, command.path, false).await?
+    let database = if !command.path.is_empty() {
+        database::from_paths(&configuration.source, command.path, false)?
     } else {
-        source::load(&interner, &configuration.source, false, false).await?
+        database::load(&configuration.source, false, false)?
     };
 
-    // Format all sources and get the count of changed files.
+    // Format all files and get the count of changed files.
     let changed =
-        format_all(interner, source_manager, configuration.php_version, configuration.format.settings, command.dry_run)
+        format_all(interner, database, configuration.php_version, configuration.format.settings, command.dry_run)
             .await?;
 
     // Provide feedback and return appropriate exit code.
     if changed == 0 {
-        tracing::info!("All source files are already formatted.");
+        tracing::info!("All files are already formatted.");
 
         return Ok(ExitCode::SUCCESS);
     }
 
     Ok(if command.dry_run {
-        tracing::info!("Found {} source files that need formatting.", changed);
+        tracing::info!("Found {} file(s) that need formatting.", changed);
 
         ExitCode::FAILURE
     } else {
-        tracing::info!("Formatted {} source files successfully.", changed);
+        tracing::info!("Formatted {} file(s) successfully.", changed);
 
         ExitCode::SUCCESS
     })
 }
 
-/// Formats all source files using the provided settings.
+/// Formats all files using the provided settings.
 ///
 /// # Arguments
 ///
-/// * `interner` - The interner to manage source identifiers.
-/// * `source_manager` - The manager responsible for handling source files.
+/// * `interner` - The interner to be used for identifier management.
+/// * `database` - The database containing files.
+/// * `php_version` - The PHP version to use for formatting.
 /// * `settings` - Formatting settings to apply.
 /// * `check` - A flag to determine whether to check or apply formatting.
 ///
 /// # Returns
 ///
-/// A result containing the number of changed files or a source error.
+/// A result containing the number of changed files or an error.
 #[inline]
 async fn format_all(
     interner: ThreadedInterner,
-    source_manager: SourceManager,
+    mut database: Database,
     php_version: PHPVersion,
     settings: FormatSettings,
     dry_run: bool,
 ) -> Result<usize, Error> {
-    // Collect all user-defined sources.
-    let sources: Vec<_> = source_manager.source_ids_for_category(SourceCategory::UserDefined);
+    let read_database = Arc::new(database.read_only());
+    let change_log = ChangeLog::new();
 
-    let length = sources.len();
+    let file_ids: Vec<_> = read_database.file_ids_with_type(FileType::Host).collect();
+    let length = file_ids.len();
     let progress_bar = create_progress_bar(length, "✨ Formatting", ProgressBarTheme::Green);
-    let mut handles = Vec::with_capacity(length);
 
-    // Spawn async tasks to format each source concurrently.
-    for source in sources.into_iter() {
+    let mut handles = Vec::with_capacity(length);
+    for file_id in file_ids.into_iter() {
         handles.push(tokio::spawn({
             let interner = interner.clone();
-            let manager = source_manager.clone();
+            let db = read_database.clone();
             let progress_bar = progress_bar.clone();
+            let change_log = change_log.clone();
 
             async move {
-                let result = format_source(&interner, &manager, &source, php_version, settings, dry_run);
+                let result = format_file(&interner, &db, &file_id, &change_log, php_version, settings, dry_run);
 
                 progress_bar.inc(1);
 
@@ -166,18 +171,22 @@ async fn format_all(
         }
     }
 
+    database.commit(change_log)?;
+
     remove_progress_bar(progress_bar);
 
     Ok(changed)
 }
 
-/// Formats a single source file.
+/// Formats a single file.
 ///
 /// # Arguments
 ///
-/// * `interner` - Reference to the interner for identifier management.
-/// * `manager` - Reference to the source manager.
-/// * `source` - Identifier of the source file to format.
+/// * `interner` - Reference to the interner to be used for parsing and formatting.
+/// * `database` - The read-only database containing the files.
+/// * `file_id` - The identifier of the file to format.
+/// * `change_log` - The change log to record changes made during formatting.
+/// * `php_version` - The PHP version to use for formatting.
 /// * `settings` - Formatting settings to apply.
 /// * `check` - A flag to determine whether to check or apply formatting.
 ///
@@ -185,52 +194,45 @@ async fn format_all(
 ///
 /// A result indicating whether the file was changed or an error occurred.
 #[inline]
-fn format_source(
+fn format_file(
     interner: &ThreadedInterner,
-    manager: &SourceManager,
-    source: &SourceIdentifier,
+    database: &ReadDatabase,
+    file_id: &FileId,
+    change_log: &ChangeLog,
     php_version: PHPVersion,
     settings: FormatSettings,
     dry_run: bool,
 ) -> Result<bool, Error> {
-    // Load the source file.
-    let source = manager.load(source)?;
+    let file = database.get_by_id(file_id)?;
 
-    // Parse the source file to generate an AST.
-    let (program, error) = parse_source(interner, &source);
+    let (program, error) = parse_file(interner, file);
 
     // Handle parsing errors and perform formatting.
     let changed = match error {
         Some(error) => {
-            let source_name = interner.lookup(&source.identifier.0);
-
-            tracing::error!("Skipping formatting for source '{}': {}.", source_name, error);
+            tracing::error!("Skipping formatting for file '{}': {}.", file.name, error);
 
             false
         }
         None => {
             let formatter = Formatter::new(interner, php_version, settings);
-            let formatted = formatter.format(&source, &program);
+            let formatted = formatter.format(file, &program);
 
-            utils::apply_changes(interner, manager, &source, formatted, dry_run)?
+            utils::apply_update(change_log, file, formatted, dry_run)?
         }
     };
 
     Ok(changed)
 }
 
-/// Creates a standalone source from standard input.
-///
-/// # Arguments
-///
-/// * `interner` - The interner to manage source identifiers.
+/// Creates an ephemeral file from standard input.
 ///
 /// # Returns
 ///
-/// A result containing the standalone source or an error.
-fn create_source_from_stdin(interner: &ThreadedInterner) -> Result<Source, Error> {
+/// A result containing the file or an error.
+fn create_file_from_stdin() -> Result<File, Error> {
     let mut content = String::new();
-    std::io::stdin().read_to_string(&mut content).map_err(|e| Error::Source(SourceError::IOError(e)))?;
+    std::io::stdin().read_to_string(&mut content).map_err(|e| Error::Database(DatabaseError::IOError(e)))?;
 
-    Ok(Source::standalone(interner, "<stdin>", &content))
+    Ok(File::ephemeral("<stdin>".to_owned(), content))
 }

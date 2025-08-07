@@ -1,9 +1,15 @@
+//! Provides a configurable, high-performance formatter for PHP code.
+//!
+//! This crate defines the main [`Formatter`] entry point, which orchestrates the process
+//! of parsing source code, converting it into an intermediate document model, and
+//! printing it as a well-formatted string according to customizable settings.
+
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
-use mago_source::Source;
 use mago_syntax::ast::Program;
 use mago_syntax::error::ParseError;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 use crate::document::Document;
 use crate::internal::FormatterState;
@@ -16,13 +22,12 @@ pub mod settings;
 
 mod internal;
 
-/// Formatter for PHP code.
+/// The main entry point for formatting PHP code.
 ///
-/// The `Formatter` is the main entry point for formatting PHP code. It allows for:
-///
-/// - Building an AST representation of the code
-/// - Converting that AST into a document model
-/// - Printing the document as a formatted string
+/// The `Formatter` orchestrates the entire formatting process, from parsing
+/// the source code into an Abstract Syntax Tree (AST) to printing a well-formatted
+/// string representation. It is configured with a specific PHP version, formatting
+/// settings, and a string interner.
 #[derive(Debug)]
 pub struct Formatter<'a> {
     interner: &'a ThreadedInterner,
@@ -31,113 +36,76 @@ pub struct Formatter<'a> {
 }
 
 impl<'a> Formatter<'a> {
-    /// Creates a new `Formatter` instance.
-    ///
-    /// # Arguments
-    ///
-    /// * `interner` - The interner to use for string interning.
-    /// * `php_version` - The PHP version to target when formatting.
-    /// * `settings` - The settings to use for formatting.
-    ///
-    /// # Returns
-    ///
-    /// A new `Formatter` instance configured with the given parameters.
+    /// Creates a new `Formatter` with the specified configuration.
     pub fn new(interner: &'a ThreadedInterner, php_version: PHPVersion, settings: FormatSettings) -> Self {
         Self { interner, php_version, settings }
     }
 
-    /// Formats PHP code provided as a string.
+    /// Formats a string of PHP code.
     ///
-    /// This method parses the provided code string into an AST and then formats it.
-    /// It's a convenient way to format code snippets without manually creating
-    /// a Source object.
+    /// This is a high-level convenience method that handles the creation of an ephemeral
+    /// [`File`] internally. It is ideal for formatting code snippets or sources that
+    /// do not exist on the filesystem.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// * `name` - A name for the code snippet (used for error reporting).
-    /// * `code` - The PHP code to format as a string.
-    ///
-    /// # Returns
-    ///
-    /// A Result containing either the formatted code as a string or a ParseError
-    /// if the code couldn't be parsed.
-    pub fn format_code(&self, name: &'a str, code: &'a str) -> Result<String, ParseError> {
-        let source = Source::standalone(self.interner, name, code);
-
-        self.format_source(&source)
+    /// Returns a [`ParseError`] if the input code contains syntax errors.
+    pub fn format_code(&self, name: impl Into<String>, code: impl Into<String>) -> Result<String, ParseError> {
+        let file = File::ephemeral(name.into(), code.into());
+        self.format_file(&file)
     }
 
-    /// Formats PHP code from a Source object.
+    /// Formats the contents of a [`File`].
     ///
-    /// This method parses the provided Source into an AST and then formats it.
-    /// This is useful when you already have a Source object but not a parsed AST.
+    /// This method will first parse the file's content into an AST and then format it.
+    /// It should be used when you already have a `File` instance, for example, from
+    /// a `mago_database::Database`.
     ///
-    /// # Arguments
+    /// # Errors
     ///
-    /// * `source` - The Source object containing the PHP code to format.
-    ///
-    /// # Returns
-    ///
-    /// A Result containing either the formatted code as a string or a ParseError
-    /// if the code couldn't be parsed.
-    pub fn format_source(&self, source: &'a Source) -> Result<String, ParseError> {
-        let (program, error) = parse_source(self.interner, source);
+    /// Returns a [`ParseError`] if the file's content contains syntax errors.
+    pub fn format_file(&self, file: &'a File) -> Result<String, ParseError> {
+        let (program, error) = parse_file(self.interner, file);
         if let Some(error) = error {
             return Err(error);
         }
-
-        Ok(self.format(source, &program))
+        Ok(self.format(file, &program))
     }
 
-    /// Formats a PHP program.
+    /// Formats a pre-parsed [`Program`] (AST).
     ///
-    /// This is a convenience method that combines `build` and `print` into a single operation.
-    ///
-    /// # Arguments
-    ///
-    /// * `source` - The source to use for the program.
-    /// * `program` - A `Program` struct representing the AST of the program to format.
-    ///
-    /// # Returns
-    ///
-    /// The formatted program as a string.
-    pub fn format(&self, source: &'a Source, program: &'a Program) -> String {
-        let document = self.build(source, program);
-
-        self.print(document, Some(source.size))
+    /// This is the lowest-level formatting method that operates directly on the AST.
+    /// It first builds an intermediate [`Document`] representation and then prints it.
+    /// This is useful if you have already parsed the code and want to avoid re-parsing.
+    pub fn format(&self, file: &'a File, program: &'a Program) -> String {
+        let document = self.build(file, program);
+        self.print(document, Some(file.size))
     }
 
-    /// Builds a document model from a program AST.
+    /// Converts a program's AST into a structured [`Document`] model.
     ///
-    /// This method converts the AST into a document model that represents
-    /// the logical structure of the formatted code.
-    ///
-    /// # Arguments
-    ///
-    /// * `source` - The source to use for the program.
-    /// * `program` - A `Program` struct representing the AST of the program to build.
-    ///
-    /// # Returns
-    ///
-    /// A `Document` representing the structured format of the program.
-    pub fn build(&self, source: &'a Source, program: &'a Program) -> Document<'a> {
-        program.format(&mut FormatterState::new(self.interner, source, self.php_version, self.settings))
+    /// The document model is an intermediate representation that describes the
+    /// layout of the code with elements like groups, indentation, and line breaks.
+    /// This is a separate step from printing, allowing for potential inspection or
+    /// manipulation of the layout before rendering.
+    pub fn build(&self, file: &'a File, program: &'a Program) -> Document<'a> {
+        program.format(&mut FormatterState::new(self.interner, file, self.php_version, self.settings))
     }
 
-    /// Prints a document model as a formatted string.
+    /// Renders a [`Document`] model into a formatted string.
     ///
-    /// This method takes a document model and renders it as formatted text
-    /// according to the formatter settings.
+    /// The printer traverses the document model and generates the final text output
+    /// according to the configured format settings.
     ///
     /// # Arguments
     ///
     /// * `document` - The document model to print.
-    /// * `capacity_hint` - An optional hint for pre-allocating the output buffer size.
-    ///   When available (e.g., from source code), this improves performance.
+    /// * `capacity_hint` - An optional hint for pre-allocating the output string's
+    ///   capacity, which can improve performance for large documents.
     ///
     /// # Returns
     ///
-    /// The formatted document as a string.
+    /// A formatted string representation of the document.
     pub fn print(&self, document: Document<'a>, capacity_hint: Option<usize>) -> String {
         Printer::new(document, capacity_hint.unwrap_or(0), self.settings).build()
     }

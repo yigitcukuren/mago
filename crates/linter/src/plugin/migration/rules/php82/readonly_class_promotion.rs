@@ -93,14 +93,16 @@ impl Rule for ReadonlyClassPromotionRule {
         };
 
         // If the class is readonly, extends another class or has children, we can't promote it.
-        if metadata.is_readonly
+        if metadata.flags.is_readonly()
             || !metadata.all_parent_classes.is_empty()
             || metadata.child_class_likes.as_ref().is_some_and(|children| !children.is_empty())
         {
             return LintDirective::default();
         }
 
-        if !metadata.is_final && context.option(FINAL_ONLY).and_then(|c| c.as_bool()).unwrap_or(FINAL_ONLY_DEFAULT) {
+        if !metadata.flags.is_final()
+            && context.option(FINAL_ONLY).and_then(|c| c.as_bool()).unwrap_or(FINAL_ONLY_DEFAULT)
+        {
             return LintDirective::default();
         }
 

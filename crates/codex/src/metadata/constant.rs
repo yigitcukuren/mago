@@ -7,6 +7,7 @@ use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::ttype::union::TUnion;
 
 /// Contains metadata associated with a global constant defined using `const`.
@@ -19,9 +20,7 @@ pub struct ConstantMetadata {
     pub name: StringIdentifier,
     pub span: Span,
     pub inferred_type: Option<TUnion>,
-    pub is_deprecated: bool,
-    pub is_internal: bool,
-    pub user_defined: bool,
+    pub flags: MetadataFlags,
     pub issues: Vec<Issue>,
 }
 
@@ -33,17 +32,8 @@ impl ConstantMetadata {
     /// * `name`: The identifier (name) of the constant.
     /// * `span`: The source code location of this specific constant's definition item (`NAME = value`).
     #[inline]
-    pub fn new(name: StringIdentifier, span: Span) -> Self {
-        Self {
-            attributes: Vec::new(),
-            name,
-            span,
-            inferred_type: None,
-            is_deprecated: false,
-            is_internal: false,
-            user_defined: span.start.source.category().is_user_defined(),
-            issues: Vec::new(),
-        }
+    pub fn new(name: StringIdentifier, span: Span, flags: MetadataFlags) -> Self {
+        Self { attributes: Vec::new(), name, span, flags, inferred_type: None, issues: Vec::new() }
     }
 
     /// Returns a mutable slice of docblock issues.

@@ -1,11 +1,16 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use clap::Parser;
 use colored::Colorize;
 
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::reference::SymbolReferences;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::file::FileId;
+use mago_database::file::FileType;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
 use mago_linter::settings::RuleSettings;
@@ -16,17 +21,14 @@ use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
 use mago_reporting::Level;
 use mago_semantics::SemanticsChecker;
-use mago_source::SourceCategory;
-use mago_source::SourceIdentifier;
-use mago_source::SourceManager;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 use crate::commands::args::reporting::ReportingArgs;
 use crate::config::Configuration;
 use crate::config::linter::LinterLevel;
+use crate::database;
 use crate::error::Error;
 use crate::metadata::compile_codebase_for_sources;
-use crate::source;
 use crate::utils::indent_multiline;
 use crate::utils::progress::ProgressBarTheme;
 use crate::utils::progress::create_progress_bar;
@@ -140,22 +142,23 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
         return list_rules(&interner, &configuration);
     }
 
-    // Load sources
-    let source_manager = if !command.path.is_empty() {
-        source::from_paths(&interner, &configuration.source, command.path, !command.semantics_only).await?
+    let database = if !command.path.is_empty() {
+        database::from_paths(&configuration.source, command.path, !command.semantics_only)?
     } else {
-        source::load(&interner, &configuration.source, !command.semantics_only, !command.semantics_only).await?
+        database::load(&configuration.source, !command.semantics_only, !command.semantics_only)?
     };
+
+    let read_database = Arc::new(database.read_only());
 
     let issues = if command.semantics_only {
-        get_semantics_issues_only(&interner, &source_manager, configuration.php_version).await?
+        get_semantics_issues_only(&interner, &read_database, configuration.php_version).await?
     } else if command.compilation {
-        get_compilation_and_semantic_issues(&interner, &source_manager, configuration.php_version).await?
+        get_compilation_and_semantic_issues(&interner, &read_database, configuration.php_version).await?
     } else {
-        lint_codebase(&interner, &source_manager, &configuration).await?
+        lint_codebase(&interner, &read_database, &configuration).await?
     };
 
-    command.reporting.process_issues(issues, configuration, interner, source_manager).await
+    command.reporting.process_issues(issues, configuration, interner, database).await
 }
 
 #[inline]
@@ -375,30 +378,29 @@ pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configurat
 #[inline]
 pub(super) async fn get_semantics_issues_only(
     interner: &ThreadedInterner,
-    manager: &SourceManager,
+    database: &Arc<ReadDatabase>,
     php_version: PHPVersion,
 ) -> Result<IssueCollection, Error> {
-    // Collect all user-defined sources.
-    let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined);
-    let length = sources.len();
+    let file_ids: Vec<_> = database.file_ids_with_type(FileType::Host).collect();
+    let length = file_ids.len();
 
     let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Magenta);
 
     let mut handles = Vec::with_capacity(length);
-    for source_id in sources {
+    for file_id in file_ids {
         handles.push(tokio::spawn({
             let interner = interner.clone();
-            let manager = manager.clone();
+            let database = database.clone();
             let progress_bar = progress_bar.clone();
 
             async move {
-                let source = manager.load(&source_id)?;
+                let file = database.get_by_id(&file_id)?;
                 let name_resolver = NameResolver::new(&interner);
                 let semantics_checker = SemanticsChecker::new(&php_version, &interner);
-                let (program, parse_error) = parse_source(&interner, &source);
+                let (program, parse_error) = parse_file(&interner, file);
                 let resolved_names = name_resolver.resolve(&program);
 
-                let mut semantic_issues = semantics_checker.check(&source, &program, &resolved_names);
+                let mut semantic_issues = semantics_checker.check(file, &program, &resolved_names);
                 if let Some(error) = &parse_error {
                     semantic_issues.push(Into::<Issue>::into(error));
                 }
@@ -426,14 +428,14 @@ pub(super) async fn get_semantics_issues_only(
 #[inline]
 pub(super) async fn get_compilation_and_semantic_issues(
     interner: &ThreadedInterner,
-    manager: &SourceManager,
+    database: &Arc<ReadDatabase>,
     php_version: PHPVersion,
 ) -> Result<IssueCollection, Error> {
     // Compile the codebase.
-    let mut codebase = compile_codebase_for_sources(manager, &mut SymbolReferences::new(), interner).await?;
+    let mut codebase = compile_codebase_for_sources(database, &mut SymbolReferences::new(), interner).await?;
 
     // Collect all semantics issues only.
-    let mut issues = get_semantics_issues_only(interner, manager, php_version).await?;
+    let mut issues = get_semantics_issues_only(interner, database, php_version).await?;
 
     // Add the compilation issues.
     issues.extend(codebase.take_issues(true));
@@ -444,28 +446,28 @@ pub(super) async fn get_compilation_and_semantic_issues(
 #[inline]
 pub(super) async fn lint_codebase(
     interner: &ThreadedInterner,
-    manager: &SourceManager,
+    database: &Arc<ReadDatabase>,
     configuration: &Configuration,
 ) -> Result<IssueCollection, Error> {
     let php_version = configuration.php_version;
-    let sources: Vec<_> = manager.source_ids_for_category(SourceCategory::UserDefined);
-    let length = sources.len();
+    let file_ids: Vec<_> = database.file_ids_with_type(FileType::Host).collect();
+    let length = file_ids.len();
 
-    let mut codebase = compile_codebase_for_sources(manager, &mut SymbolReferences::new(), interner).await?;
+    let mut codebase = compile_codebase_for_sources(database, &mut SymbolReferences::new(), interner).await?;
     let mut result = codebase.take_issues(true);
 
     let linter = create_linter(interner, configuration, codebase);
     let lint_progress = create_progress_bar(length, "🧹  Linting", ProgressBarTheme::Red);
     let mut handles = Vec::with_capacity(length);
-    for source_id in sources {
+    for file_id in file_ids {
         handles.push(tokio::spawn({
             let interner = interner.clone();
-            let manager = manager.clone();
+            let database = database.clone();
             let linter = linter.clone();
             let lint_progress = lint_progress.clone();
 
             async move {
-                let result = lint_single_source(&manager, &interner, &linter, &php_version, source_id);
+                let result = lint_single_source(&database, &interner, &linter, &php_version, file_id);
                 lint_progress.inc(1);
 
                 result
@@ -483,18 +485,18 @@ pub(super) async fn lint_codebase(
 }
 
 fn lint_single_source(
-    source_manager: &SourceManager,
+    database: &ReadDatabase,
     interner: &ThreadedInterner,
     linter: &Linter,
     php_version: &PHPVersion,
-    source_id: SourceIdentifier,
+    file_id: FileId,
 ) -> Result<Vec<Issue>, Error> {
-    let source = source_manager.load(&source_id)?;
+    let source = database.get_by_id(&file_id)?;
 
     let name_resolver = NameResolver::new(interner);
     let semantics_checker = SemanticsChecker::new(php_version, interner);
 
-    let (program, parsing_error) = parse_source(interner, &source);
+    let (program, parsing_error) = parse_file(interner, source);
     let resolved_names = name_resolver.resolve(&program);
 
     let mut issues = Vec::new();
@@ -502,8 +504,8 @@ fn lint_single_source(
         issues.push(Into::<Issue>::into(error));
     }
 
-    issues.extend(semantics_checker.check(&source, &program, &resolved_names));
-    issues.extend(linter.lint(&source, &program, &resolved_names));
+    issues.extend(semantics_checker.check(source, &program, &resolved_names));
+    issues.extend(linter.lint(source, &program, &resolved_names));
 
     Ok(issues)
 }

@@ -5,8 +5,7 @@ use termcolor::Color;
 use termcolor::ColorSpec;
 use termcolor::WriteColor;
 
-use mago_interner::ThreadedInterner;
-use mago_source::SourceManager;
+use mago_database::ReadDatabase;
 
 use crate::IssueCollection;
 use crate::Level;
@@ -14,8 +13,7 @@ use crate::error::ReportingError;
 
 pub fn count_format(
     writer: &mut dyn WriteColor,
-    _sources: &SourceManager,
-    _interner: &ThreadedInterner,
+    _database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     let highest_level = issues.get_highest_level();

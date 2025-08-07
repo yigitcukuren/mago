@@ -16,10 +16,10 @@ mod baseline;
 mod commands;
 mod config;
 mod consts;
+mod database;
 mod error;
 mod macros;
 mod metadata;
-mod source;
 mod utils;
 
 #[cfg(any(target_os = "macos", target_os = "windows", target_env = "musl"))]
@@ -29,8 +29,11 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 pub fn main() -> ExitCode {
     initialize_logger(if cfg!(debug_assertions) { LevelFilter::DEBUG } else { LevelFilter::INFO }, "MAGO_LOG");
 
-    run().unwrap_or_else(|error| {
+    let result = run();
+
+    result.unwrap_or_else(|error| {
         tracing::error!("{}", error);
+        tracing::trace!("Exiting with error code due to: {:#?}", error);
 
         ExitCode::FAILURE
     })
@@ -75,7 +78,7 @@ pub fn run() -> Result<ExitCode, Error> {
         MagoCommand::Init(cmd) => runtime.block_on(commands::init::execute(cmd, configuration)),
         MagoCommand::Lint(cmd) => runtime.block_on(commands::lint::execute(cmd, configuration)),
         MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
-        MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd)),
+        MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd, configuration)),
         MagoCommand::Analyze(cmd) => runtime.block_on(commands::analyze::execute(cmd, configuration)),
         MagoCommand::Find(cmd) => runtime.block_on(commands::find::execute(cmd, configuration)),
         MagoCommand::SelfUpdate(_) => {

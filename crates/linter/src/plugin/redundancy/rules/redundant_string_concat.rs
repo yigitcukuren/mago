@@ -47,7 +47,7 @@ impl Rule for RedundantStringConcatRule {
         };
 
         if left.kind == right.kind {
-            if context.source.line_number(left.offset()) != context.source.line_number(right.offset()) {
+            if context.source_file.line_number(left.offset()) != context.source_file.line_number(right.offset()) {
                 // strings are on different lines
                 return LintDirective::Prune;
             }

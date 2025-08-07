@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
-use mago_source::SourceCategory;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::error::DatabaseError;
+use mago_database::file::FileId;
+use mago_database::file::FileType;
 use serde::Deserialize;
 use serde::Serialize;
 
 use mago_fixer::FixPlan;
-use mago_interner::ThreadedInterner;
-use mago_source::SourceIdentifier;
-use mago_source::SourceManager;
-use mago_source::error::SourceError;
 use mago_span::Position;
 use mago_span::Span;
 
@@ -21,20 +21,20 @@ use crate::Level;
 pub mod emitter;
 pub mod writer;
 
-/// Expanded representation of a source identifier.
+/// Expanded representation of a file id.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-pub struct ExpandedSourceIdentifier {
-    pub identifier: String,
+pub struct ExpandedFileId {
+    pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<PathBuf>,
     pub size: usize,
-    pub category: SourceCategory,
+    pub file_type: FileType,
 }
 
-/// Expanded representation of a position within a source file.
+/// Expanded representation of a position within a file.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ExpandedPosition {
-    pub source: ExpandedSourceIdentifier,
+    pub file_id: ExpandedFileId,
     pub offset: usize,
     pub line: usize,
 }
@@ -71,7 +71,7 @@ pub struct ExpandedIssue {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub annotations: Vec<ExpandedAnnotation>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub suggestions: Vec<(ExpandedSourceIdentifier, FixPlan)>,
+    pub suggestions: Vec<(ExpandedFileId, FixPlan)>,
 }
 
 /// A collection of expanded issues.
@@ -81,64 +81,56 @@ pub struct ExpandedIssueCollection {
 }
 
 pub trait Expandable<T> {
-    fn expand(&self, manager: &SourceManager, interner: &ThreadedInterner) -> Result<T, SourceError>;
+    fn expand(&self, database: &ReadDatabase) -> Result<T, DatabaseError>;
 }
 
-impl Expandable<ExpandedSourceIdentifier> for SourceIdentifier {
-    fn expand(
-        &self,
-        manager: &SourceManager,
-        interner: &ThreadedInterner,
-    ) -> Result<ExpandedSourceIdentifier, SourceError> {
-        let source = manager.load(self)?;
+impl Expandable<ExpandedFileId> for FileId {
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedFileId, DatabaseError> {
+        let file = database.get_by_id(self)?;
 
-        Ok(ExpandedSourceIdentifier {
-            identifier: interner.lookup(&source.identifier.0).to_string(),
-            path: source.path.clone(),
-            size: source.size,
-            category: source.identifier.category(),
+        Ok(ExpandedFileId {
+            name: file.name.clone(),
+            path: file.path.clone(),
+            size: file.size,
+            file_type: file.file_type,
         })
     }
 }
 
 impl Expandable<ExpandedPosition> for Position {
-    fn expand(&self, manager: &SourceManager, interner: &ThreadedInterner) -> Result<ExpandedPosition, SourceError> {
-        let source = manager.load(&self.source)?;
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedPosition, DatabaseError> {
+        let file = database.get_by_id(&self.file_id)?;
 
         Ok(ExpandedPosition {
-            source: self.source.expand(manager, interner)?,
+            file_id: self.file_id.expand(database)?,
             offset: self.offset,
-            line: source.line_number(self.offset),
+            line: file.line_number(self.offset),
         })
     }
 }
 
 impl Expandable<ExpandedSpan> for Span {
-    fn expand(&self, manager: &SourceManager, interner: &ThreadedInterner) -> Result<ExpandedSpan, SourceError> {
-        Ok(ExpandedSpan { start: self.start.expand(manager, interner)?, end: self.end.expand(manager, interner)? })
+    fn expand(&self, manager: &ReadDatabase) -> Result<ExpandedSpan, DatabaseError> {
+        Ok(ExpandedSpan { start: self.start.expand(manager)?, end: self.end.expand(manager)? })
     }
 }
 
 impl Expandable<ExpandedAnnotation> for Annotation {
-    fn expand(&self, manager: &SourceManager, interner: &ThreadedInterner) -> Result<ExpandedAnnotation, SourceError> {
-        Ok(ExpandedAnnotation {
-            message: self.message.clone(),
-            kind: self.kind,
-            span: self.span.expand(manager, interner)?,
-        })
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedAnnotation, DatabaseError> {
+        Ok(ExpandedAnnotation { message: self.message.clone(), kind: self.kind, span: self.span.expand(database)? })
     }
 }
 
 impl Expandable<ExpandedIssue> for Issue {
-    fn expand(&self, manager: &SourceManager, interner: &ThreadedInterner) -> Result<ExpandedIssue, SourceError> {
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedIssue, DatabaseError> {
         let mut annotations = Vec::new();
         for annotation in &self.annotations {
-            annotations.push(annotation.expand(manager, interner)?);
+            annotations.push(annotation.expand(database)?);
         }
 
         let mut suggestions = Vec::new();
-        for (source, fix) in &self.suggestions {
-            suggestions.push((source.expand(manager, interner)?, fix.clone()));
+        for (file_id, fix) in &self.suggestions {
+            suggestions.push((file_id.expand(database)?, fix.clone()));
         }
 
         Ok(ExpandedIssue {
@@ -155,14 +147,10 @@ impl Expandable<ExpandedIssue> for Issue {
 }
 
 impl Expandable<ExpandedIssueCollection> for IssueCollection {
-    fn expand(
-        &self,
-        manager: &SourceManager,
-        interner: &ThreadedInterner,
-    ) -> Result<ExpandedIssueCollection, SourceError> {
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedIssueCollection, DatabaseError> {
         let mut expanded_issues = Vec::new();
         for issue in self.issues.iter() {
-            expanded_issues.push(issue.expand(manager, interner)?);
+            expanded_issues.push(issue.expand(database)?);
         }
 
         Ok(ExpandedIssueCollection { issues: expanded_issues })

@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use mago_span::Span;
 
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::ttype::TypeMetadata;
 use crate::misc::VariableIdentifier;
 use crate::visibility::Visibility;
@@ -59,52 +60,15 @@ pub struct PropertyMetadata {
     /// This can be used to compare against `type_signature` for consistency checks.
     pub default_type_metadata: Option<TypeMetadata>,
 
-    /// `true` if the property is declared with the `readonly` modifier.
-    pub is_readonly: bool,
-
-    /// `true` if the property is declared with a default value (e.g., `= null`, `= 10`).
-    pub has_default: bool,
-
-    /// `true` if this property originates from constructor property promotion.
-    pub is_promoted: bool,
-
-    /// `true` if the property is marked as internal, typically via a docblock tag like `@internal`.
-    ///
-    /// Indicates it's not intended for use outside the defining class or library.
-    pub is_internal: bool,
-
-    /// `true` if the property is declared with the `static` modifier.
-    pub is_static: bool,
-
-    /// `true` if this property represents an abstract property requirement.
-    pub is_abstract: bool,
-
-    /// `true` if the property is marked as deprecated, typically via `@deprecated` docblock tag.
-    pub is_deprecated: bool,
-
-    /// `true` if the property uses PHP's Property Hooks feature.
-    ///
-    /// Such properties have custom `get` and/or `set` logic instead of direct storage,
-    /// making them behave like "virtual" properties.
-    ///
-    /// Note: Properties with hooks cannot have asymmetric visibility (`is_asymmetric` must be `false`).
-    pub is_virtual: bool,
-
-    /// `true` if `read_visibility` and `write_visibility` are different,
-    ///
-    /// indicating that PHP's asymmetric visibility syntax (e.g., `public private(set)`) was used.
-    /// Must be `false` if `is_virtual` is `true`.
-    pub is_asymmetric: bool,
-
-    /// `true` if the property allows private mutation.
-    pub allow_private_mutation: bool,
+    /// Flags indicating various properties of the property.
+    pub flags: MetadataFlags,
 }
 
 impl PropertyMetadata {
     /// Creates new `PropertyMetadata` with basic defaults (public, non-static, non-readonly, etc.).
     /// Name is mandatory. Spans, types, and flags can be set using modifier methods.
     #[inline]
-    pub fn new(name: VariableIdentifier) -> Self {
+    pub fn new(name: VariableIdentifier, flags: MetadataFlags) -> Self {
         Self {
             name,
             name_span: None,
@@ -114,16 +78,7 @@ impl PropertyMetadata {
             type_declaration_metadata: None,
             type_metadata: None,
             default_type_metadata: None,
-            is_readonly: false,
-            has_default: false,
-            is_promoted: false,
-            is_internal: false,
-            is_static: false,
-            is_abstract: false,
-            is_deprecated: false,
-            is_virtual: false,
-            is_asymmetric: false, // read == write initially
-            allow_private_mutation: false,
+            flags,
         }
     }
 
@@ -152,18 +107,6 @@ impl PropertyMetadata {
         &self.name
     }
 
-    /// Checks if the property is declared with a default value.
-    #[inline]
-    pub fn has_default(&self) -> bool {
-        self.has_default
-    }
-
-    /// Checks if the property is declared `static`.
-    #[inline]
-    pub fn is_static(&self) -> bool {
-        self.is_static
-    }
-
     /// Checks if the property is effectively final (private read or write access).
     #[inline]
     pub fn is_final(&self) -> bool {
@@ -190,73 +133,34 @@ impl PropertyMetadata {
         self.update_asymmetric();
     }
 
-    /// Sets whether the property is `readonly`.
-    #[inline]
-    pub fn set_is_readonly(&mut self, is_readonly: bool) {
-        self.is_readonly = is_readonly;
-    }
-
-    /// Sets whether the property allows private mutation.
-    #[inline]
-    pub fn set_allow_private_mutation(&mut self, allow_private_mutation: bool) {
-        self.allow_private_mutation = allow_private_mutation;
-    }
-
-    /// Sets whether the property has a default value.
-    #[inline]
-    pub fn set_has_default(&mut self, has_default: bool) {
-        self.has_default = has_default;
-    }
-
-    /// Sets whether the property originates from constructor promotion.
-    #[inline]
-    pub fn set_is_promoted(&mut self, is_promoted: bool) {
-        self.is_promoted = is_promoted;
-    }
-
-    /// Sets whether the property is marked `@internal`.
-    #[inline]
-    pub fn set_is_internal(&mut self, is_internal: bool) {
-        self.is_internal = is_internal;
-    }
-
-    /// Sets whether the property is `static`.
-    #[inline]
-    pub fn set_is_static(&mut self, is_static: bool) {
-        self.is_static = is_static;
-    }
-
-    /// Sets whether the property represents an abstract requirement.
-    #[inline]
-    pub fn set_is_abstract(&mut self, is_abstract: bool) {
-        self.is_abstract = is_abstract;
-    }
-
-    /// Sets whether the property is marked `@deprecated`.
-    #[inline]
-    pub fn set_is_deprecated(&mut self, is_deprecated: bool) {
-        self.is_deprecated = is_deprecated;
-    }
-
     /// Sets whether the property uses property hooks. Updates `is_asymmetric`.
     #[inline]
     pub fn set_is_virtual(&mut self, is_virtual: bool) {
-        self.is_virtual = is_virtual;
+        if is_virtual {
+            self.flags |= MetadataFlags::VIRTUAL_PROPERTY;
+        } else {
+            self.flags &= !MetadataFlags::VIRTUAL_PROPERTY;
+        }
+
         self.update_asymmetric();
     }
 
     /// Also ensures virtual properties are not asymmetric.
     #[inline]
     fn update_asymmetric(&mut self) {
-        if self.is_virtual {
+        if self.flags.is_virtual_property() {
             if self.read_visibility != self.write_visibility {
                 // If virtual and somehow asymmetric, force symmetry (prefer read)
                 self.write_visibility = self.read_visibility;
             }
 
-            self.is_asymmetric = false;
+            self.flags &= !MetadataFlags::ASYMMETRIC_PROPERTY;
+        } else if self.read_visibility == self.write_visibility {
+            // If both visibilities are the same, ensure no asymmetric flag is set
+            self.flags &= !MetadataFlags::ASYMMETRIC_PROPERTY;
         } else {
-            self.is_asymmetric = self.read_visibility != self.write_visibility;
+            // Otherwise, set the asymmetric flag
+            self.flags |= MetadataFlags::ASYMMETRIC_PROPERTY;
         }
     }
 }

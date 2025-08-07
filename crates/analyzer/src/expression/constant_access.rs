@@ -52,7 +52,7 @@ impl Analyzable for ConstantAccess {
             return Ok(());
         };
 
-        if constant_metadata.is_deprecated {
+        if constant_metadata.flags.is_deprecated() {
             let constant_name = context.interner.lookup(name);
 
             context.collector.report_with_code(

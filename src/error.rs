@@ -1,17 +1,16 @@
 use dialoguer::Error as DialoguerError;
 
 use mago_analyzer::error::AnalysisError;
+use mago_database::error::DatabaseError;
 use mago_php_version::PHPVersion;
 use mago_php_version::error::ParsingError;
 use mago_reporting::error::ReportingError;
-use mago_source::error::SourceError;
 
 #[derive(Debug)]
 pub enum Error {
-    Source(SourceError),
+    Database(DatabaseError),
     Reporting(ReportingError),
     BuildingRuntime(std::io::Error),
-    Walking(async_walkdir::Error),
     BuildingConfiguration(config::ConfigError),
     DeserializingToml(toml::de::Error),
     SerializingToml(toml::ser::Error),
@@ -34,9 +33,8 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Source(error) => write!(f, "Failed to load source files: {error}"),
+            Self::Database(error) => write!(f, "Failed to load database: {error}"),
             Self::Reporting(error) => write!(f, "Failed to report results: {error}"),
-            Self::Walking(error) => write!(f, "Failed to walk the source tree: {error}"),
             Self::BuildingRuntime(error) => write!(f, "Failed to build the runtime: {error}"),
             Self::BuildingConfiguration(error) => write!(f, "Failed to build the configuration: {error}"),
             Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {error}"),
@@ -68,9 +66,8 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Source(error) => Some(error),
+            Self::Database(error) => Some(error),
             Self::Reporting(error) => Some(error),
-            Self::Walking(error) => Some(error),
             Self::BuildingConfiguration(error) => Some(error),
             Self::BuildingRuntime(error) => Some(error),
             Self::DeserializingToml(error) => Some(error),
@@ -89,21 +86,15 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<SourceError> for Error {
-    fn from(error: SourceError) -> Self {
-        Self::Source(error)
+impl From<DatabaseError> for Error {
+    fn from(error: DatabaseError) -> Self {
+        Self::Database(error)
     }
 }
 
 impl From<ReportingError> for Error {
     fn from(error: ReportingError) -> Self {
         Self::Reporting(error)
-    }
-}
-
-impl From<async_walkdir::Error> for Error {
-    fn from(error: async_walkdir::Error) -> Self {
-        Self::Walking(error)
     }
 }
 

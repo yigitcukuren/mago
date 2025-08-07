@@ -172,7 +172,6 @@ pub fn handle_return_value<'a>(
                     } else {
                         false
                     },
-                    file_path: Some(&context.source.identifier),
                     ..Default::default()
                 },
             );
@@ -192,7 +191,7 @@ pub fn handle_return_value<'a>(
 
     let function_name = function_like_identifier.as_string(context.interner);
 
-    if function_like_metadata.has_yield() {
+    if function_like_metadata.flags.has_yield() {
         match get_generator_return_type(context, &expected_return_type) {
             Some((return_type, is_from_generator)) => {
                 if !is_from_generator {
@@ -434,7 +433,7 @@ pub fn handle_return_value<'a>(
             }
         }
     } else if require_return_value
-        && !function_like_metadata.has_yield()
+        && !function_like_metadata.flags.has_yield()
         && !matches!(
             block_context.scope.get_function_like_identifier(),
             Some(FunctionLikeIdentifier::Method(_, name))

@@ -1,7 +1,13 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use clap::Parser;
+use mago_database::Database;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::change::ChangeLog;
+use mago_database::file::FileId;
 use tokio::task::JoinHandle;
 
 use mago_fixer::FixPlan;
@@ -13,8 +19,6 @@ use mago_reporting::Level;
 use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
-use mago_source::SourceIdentifier;
-use mago_source::SourceManager;
 
 use crate::baseline;
 use crate::config::Configuration;
@@ -100,35 +104,31 @@ pub struct ReportingArgs {
 }
 
 impl ReportingArgs {
-    /// Processes and reports issues, optionally applying fixes.
-    ///
-    /// This is the main entry point for handling issues collected by a command.
-    /// It will either report the issues or attempt to fix them based on the
-    /// provided arguments.
+    /// Orchestrates the entire issue processing pipeline.
     ///
     /// # Arguments
     ///
-    /// * `self` - The reporting arguments.
-    /// * `issues` - A collection of issues to process.
-    /// * `configuration` - The application's configuration.
-    /// * `interner` - A threaded interner for string interning.
-    /// * `source_manager` - Manages source file access.
+    /// * `self`: The configured reporting arguments from the command line.
+    /// * `issues`: The collection of issues detected by the preceding command.
+    /// * `configuration`: The application's global configuration.
+    /// * `interner`: The shared string interner.
+    /// * `database`: The mutable database containing all source files.
     ///
     /// # Returns
     ///
-    /// Returns a `Result` with an `ExitCode` indicating success or failure,
+    /// A `Result` containing an `ExitCode` to indicate success or failure to the shell,
     /// or an `Error` if an unrecoverable problem occurs.
     pub async fn process_issues(
         self,
         issues: IssueCollection,
         configuration: Configuration,
         interner: ThreadedInterner,
-        source_manager: SourceManager,
+        database: Database,
     ) -> Result<ExitCode, Error> {
         if self.fix {
-            self.handle_fix_mode(issues, configuration, interner, source_manager).await
+            self.handle_fix_mode(issues, configuration, interner, database).await
         } else {
-            self.handle_report_mode(issues, interner, source_manager).await
+            self.handle_report_mode(issues, database).await
         }
     }
 
@@ -138,10 +138,10 @@ impl ReportingArgs {
         issues: IssueCollection,
         configuration: Configuration,
         interner: ThreadedInterner,
-        source_manager: SourceManager,
+        database: Database,
     ) -> Result<ExitCode, Error> {
         let (applied_fixes, skipped_unsafe, skipped_potentially_unsafe) =
-            self.apply_fixes(issues, configuration, interner, source_manager).await?;
+            self.apply_fixes(issues, configuration, interner, database).await?;
 
         if skipped_unsafe > 0 {
             tracing::warn!("Skipped {} unsafe fixes. Use `--unsafe` to apply them.", skipped_unsafe);
@@ -171,12 +171,9 @@ impl ReportingArgs {
     }
 
     /// Handles the logic for reporting issues (when `--fix` is not enabled).
-    async fn handle_report_mode(
-        self,
-        mut issues: IssueCollection,
-        interner: ThreadedInterner,
-        source_manager: SourceManager,
-    ) -> Result<ExitCode, Error> {
+    async fn handle_report_mode(self, mut issues: IssueCollection, database: Database) -> Result<ExitCode, Error> {
+        let read_database = database.read_only();
+
         if self.sort {
             issues = issues.sorted();
         }
@@ -184,7 +181,7 @@ impl ReportingArgs {
         if let Some(baseline_path) = &self.baseline {
             if self.generate_baseline {
                 tracing::info!("Generating baseline file...");
-                let baseline = baseline::generate_baseline_from_issues(issues, &source_manager, &interner)?;
+                let baseline = baseline::generate_baseline_from_issues(issues, &read_database)?;
                 baseline::serialize_baseline(baseline_path, &baseline, self.backup_baseline)?;
                 tracing::info!("Baseline file successfully generated at `{}`.", baseline_path.display());
 
@@ -199,7 +196,7 @@ impl ReportingArgs {
             } else {
                 let baseline = baseline::unserialize_baseline(baseline_path)?;
                 let (filtered_issues, filtered_out_count, has_dead_issues) =
-                    baseline::filter_issues(&baseline, issues, &source_manager, &interner)?;
+                    baseline::filter_issues(&baseline, issues, &read_database)?;
 
                 if has_dead_issues {
                     tracing::warn!(
@@ -221,7 +218,7 @@ impl ReportingArgs {
 
         let has_issues_above_threshold = issues.has_minimum_level(self.minimum_fail_level);
 
-        let reporter = Reporter::new(interner.clone(), source_manager.clone(), self.reporting_target);
+        let reporter = Reporter::new(read_database, self.reporting_target);
 
         let issues_to_report = if self.fixable_only { issues.only_fixable().collect() } else { issues };
 
@@ -251,9 +248,12 @@ impl ReportingArgs {
         issues: IssueCollection,
         configuration: Configuration,
         interner: ThreadedInterner,
-        source_manager: SourceManager,
+        mut database: Database,
     ) -> Result<(usize, usize, usize), Error> {
-        let (fix_plans, skipped_unsafe, skipped_potentially_unsafe) = self.filter_fix_plans(&interner, issues);
+        let read_database = Arc::new(database.read_only());
+        let change_log = ChangeLog::new();
+
+        let (fix_plans, skipped_unsafe, skipped_potentially_unsafe) = self.filter_fix_plans(&read_database, issues);
 
         if fix_plans.is_empty() {
             return Ok((0, skipped_unsafe, skipped_potentially_unsafe));
@@ -263,40 +263,47 @@ impl ReportingArgs {
         let progress_bar = create_progress_bar(total_plans, "✨ Fixing", ProgressBarTheme::Cyan);
         let mut fix_tasks: Vec<JoinHandle<Result<bool, Error>>> = Vec::with_capacity(total_plans);
 
-        for (source_id, plan) in fix_plans {
-            let source_manager_clone = source_manager.clone();
+        for (file_id, plan) in fix_plans {
             let interner_clone = interner.clone();
             let progress_bar_clone = progress_bar.clone();
+            let read_database_clone = read_database.clone();
+            let change_log_clone = change_log.clone();
             let formatter_settings_clone = configuration.format.settings;
             let php_version = configuration.php_version;
             let should_format = self.format_after_fix;
             let dry_run = self.dry_run;
 
             fix_tasks.push(tokio::spawn(async move {
-                // Load source and original content
-                let source_file = source_manager_clone.load(&source_id)?;
-                let original_content = interner_clone.lookup(&source_file.content);
+                let file = read_database_clone.get_by_id(&file_id)?;
 
-                // Execute fix plan
-                let mut fixed_content = plan.execute(original_content).get_fixed();
+                let mut fixed_content = plan.execute(&file.contents).get_fixed();
 
-                // Optionally format
                 if should_format {
                     let formatter = Formatter::new(&interner_clone, php_version, formatter_settings_clone);
-                    match formatter.format_code(interner_clone.lookup(&source_file.identifier.0), &fixed_content) {
+                    match formatter.format_code(&file.name, &fixed_content) {
                         Ok(content) => fixed_content = content,
                         Err(e) => {
-                            tracing::error!("Failed to format {}: {}", interner_clone.lookup(&source_id.0), e);
+                            tracing::error!("Failed to format `{}`: {}", file.name, e);
                         }
                     }
                 }
 
-                let changed =
-                    utils::apply_changes(&interner_clone, &source_manager_clone, &source_file, fixed_content, dry_run)?;
-                progress_bar_clone.inc(1);
-                Ok(changed)
+                match utils::apply_update(&change_log_clone, file, fixed_content, dry_run) {
+                    Ok(changed) => {
+                        progress_bar_clone.inc(1);
+
+                        Ok(changed)
+                    }
+                    Err(e) => {
+                        progress_bar_clone.inc(1);
+
+                        Err(e)
+                    }
+                }
             }));
         }
+
+        database.commit(change_log)?;
 
         let mut applied_fix_count = 0;
         for task in fix_tasks {
@@ -315,20 +322,20 @@ impl ReportingArgs {
     /// # Returns
     ///
     /// A tuple containing:
-    /// * A vector of `(SourceIdentifier, FixPlan)` for applicable fixes.
+    /// * A vector of `(FileId, FixPlan)` for applicable fixes.
     /// * The count of fixes skipped due to being `Unsafe`.
     /// * The count of fixes skipped due to being `PotentiallyUnsafe`.
     #[inline]
     fn filter_fix_plans(
         &self,
-        interner: &ThreadedInterner,
+        database: &ReadDatabase,
         issues: IssueCollection,
-    ) -> (Vec<(SourceIdentifier, FixPlan)>, usize, usize) {
+    ) -> (Vec<(FileId, FixPlan)>, usize, usize) {
         let mut skipped_unsafe_count = 0;
         let mut skipped_potentially_unsafe_count = 0;
         let mut applicable_plans = Vec::new();
 
-        for (source_id, plan) in issues.to_fix_plans() {
+        for (file_id, plan) in issues.to_fix_plans() {
             if plan.is_empty() {
                 continue;
             }
@@ -344,7 +351,7 @@ impl ReportingArgs {
                             skipped_unsafe_count += 1;
                             tracing::debug!(
                                 "Skipping unsafe fix for `{}`. Use --unsafe to apply.",
-                                interner.lookup(&source_id.0)
+                                database.get_name(&file_id).unwrap_or("<unknown>"),
                             );
                         }
                     }
@@ -355,7 +362,7 @@ impl ReportingArgs {
                             skipped_potentially_unsafe_count += 1;
                             tracing::debug!(
                                 "Skipping potentially unsafe fix for `{}`. Use --potentially-unsafe or --unsafe to apply.",
-                                interner.lookup(&source_id.0)
+                                database.get_name(&file_id).unwrap_or("<unknown>"),
                             );
                         }
                     }
@@ -366,7 +373,7 @@ impl ReportingArgs {
             }
 
             if !filtered_operations.is_empty() {
-                applicable_plans.push((source_id, FixPlan::from_operations(filtered_operations)));
+                applicable_plans.push((file_id, FixPlan::from_operations(filtered_operations)));
             }
         }
 

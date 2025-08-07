@@ -156,7 +156,7 @@ fn find_static_property_in_class<'a>(
         return Ok(None);
     };
 
-    if !property_metadata.is_static {
+    if !property_metadata.flags.is_static() {
         let class_name_str = context.interner.lookup(&declaring_class_metadata.original_name);
         let prop_name_str = context.interner.lookup(prop_name);
 
@@ -195,7 +195,6 @@ fn find_static_property_in_class<'a>(
             self_class: Some(&declaring_class_id),
             static_class_type: StaticClassType::Name(*class_id),
             parent_class: declaring_class_metadata.direct_parent_class.as_ref(),
-            file_path: Some(&context.source.identifier),
             ..Default::default()
         },
     );

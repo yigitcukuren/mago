@@ -95,29 +95,6 @@ impl<'a, 'i> Lexer<'a, 'i> {
     /// - `Some(Err(SyntaxError))` if a syntax error occurred while parsing the next token.
     /// - `None` if the end of the input has been reached.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mago_interner::ThreadedInterner;
-    /// use mago_syntax::lexer::Lexer;
-    /// use mago_source::SourceIdentifier;
-    /// use mago_syntax_core::input::Input;
-    ///
-    /// let interner = ThreadedInterner::new();
-    ///
-    /// let source = SourceIdentifier::dummy();
-    /// let input = Input::new(source, b"<?php echo 'Hello, World!'; ?>");
-    ///
-    /// let mut lexer = Lexer::new(&interner, input);
-    ///
-    /// while let Some(result) = lexer.advance() {
-    ///     match result {
-    ///         Ok(token) => println!("Token: {:?}", token),
-    ///         Err(error) => eprintln!("Syntax error: {:?}", error),
-    ///     }
-    /// }
-    /// ```
-    ///
     /// # Notes
     ///
     /// - It efficiently handles tokenization by consuming input based on patterns specific to PHP syntax.

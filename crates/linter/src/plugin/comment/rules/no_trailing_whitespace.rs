@@ -1,9 +1,9 @@
 use indoc::indoc;
 
+use mago_database::file::*;
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_reporting::*;
-use mago_source::*;
 use mago_span::*;
 use mago_syntax::ast::*;
 
@@ -57,7 +57,7 @@ impl Rule for NoTrailingWhitespaceRule {
                             ])
                             .with_note("Trailing whitespaces can cause unnecessary diffs and formatting issues.")
                             .with_help("Remove the extra whitespace.")
-                            .with_suggestion(whitespace_span.source(), {
+                            .with_suggestion(whitespace_span.file_id(), {
                                 let mut plan = FixPlan::new();
 
                                 plan.delete(whitespace_span.to_range(), SafetyClassification::Safe);

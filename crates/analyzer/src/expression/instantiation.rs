@@ -224,7 +224,7 @@ fn analyze_class_instantiation<'a>(
     }
 
     let mut is_impossible = false;
-    if metadata.is_abstract && !classname.can_extend_static() {
+    if metadata.flags.is_abstract() && !classname.can_extend_static() {
         context.collector.report_with_code(
             Code::ABSTRACT_INSTANTIATION,
             Issue::error(format!("Cannot instantiate abstract class `{class_name_str}`."))
@@ -242,7 +242,7 @@ fn analyze_class_instantiation<'a>(
         is_impossible = true;
     }
 
-    if metadata.is_deprecated
+    if metadata.flags.is_deprecated()
         && block_context.scope.get_class_like_name().is_none_or(|self_id| *self_id != metadata.original_name)
     {
         context.collector.report_with_code(
@@ -265,7 +265,7 @@ fn analyze_class_instantiation<'a>(
 
     artifacts.symbol_references.add_reference_for_method_call(&block_context.scope, &constructor_id);
 
-    let mut has_inconsistent_constructor = !metadata.is_final && !metadata.has_consistent_constructor;
+    let mut has_inconsistent_constructor = !metadata.flags.is_final() && !metadata.flags.has_consistent_constructor();
     let mut constructor_span = None;
 
     let mut template_result = TemplateResult::new(
@@ -456,7 +456,7 @@ fn analyze_class_instantiation<'a>(
     let result_type = wrap_atomic(TAtomic::Object(TObject::Named(TNamedObject {
         name: metadata.original_name,
         type_parameters,
-        is_this: classname.is_static() || (classname.is_self() && metadata.is_final),
+        is_this: classname.is_static() || (classname.is_self() && metadata.flags.is_final()),
         intersection_types: None,
         remapped_parameters: false,
     })));

@@ -13,7 +13,7 @@ impl std::fmt::Display for AnalysisError {
             AnalysisError::InternalError(message, span) => write!(
                 f,
                 "Internal Error: {} at {}-{}:{}",
-                message, span.start.source.0, span.start.offset, span.end.offset
+                message, span.start.file_id, span.start.offset, span.end.offset
             ),
         }
     }

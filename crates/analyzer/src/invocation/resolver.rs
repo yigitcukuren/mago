@@ -136,7 +136,6 @@ fn resolve_union(
             static_class_type,
             parent_class,
             function_is_final,
-            file_path: Some(&context.source.identifier),
             ..Default::default()
         },
     );

@@ -200,7 +200,7 @@ impl MemberAccessChain<'_> {
             let base_end = self.base.span().end;
             let first_op_start = first_access.get_operator_span().start;
 
-            if misc::has_new_line_in_range(f.source_text, base_end.offset, first_op_start.offset) {
+            if misc::has_new_line_in_range(&f.file.contents, base_end.offset, first_op_start.offset) {
                 return true;
             }
         }
@@ -219,7 +219,7 @@ impl MemberAccessChain<'_> {
 
             let current_op_span = access.get_operator_span();
 
-            if misc::has_new_line_in_range(f.source_text, prev_selector_end.offset, current_op_span.start.offset) {
+            if misc::has_new_line_in_range(&f.file.contents, prev_selector_end.offset, current_op_span.start.offset) {
                 return true;
             }
         }

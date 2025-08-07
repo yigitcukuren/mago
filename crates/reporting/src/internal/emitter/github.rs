@@ -1,8 +1,8 @@
 use termcolor::WriteColor;
 
-use mago_interner::ThreadedInterner;
-use mago_source::HasSource;
-use mago_source::SourceManager;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::file::HasFileId;
 
 use crate::IssueCollection;
 use crate::Level;
@@ -11,8 +11,7 @@ use crate::internal::emitter::utils::long_message;
 
 pub fn github_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     let highest_level = issues.get_highest_level();
@@ -27,15 +26,14 @@ pub fn github_format(
 
         let properties = match issue.annotations.iter().find(|annotation| annotation.is_primary()) {
             Some(annotation) => {
-                let source = sources.load(&annotation.span.source())?;
-                let name = interner.lookup(&source.identifier.0);
-                let start_line = source.line_number(annotation.span.start.offset) + 1;
-                let end_line = source.line_number(annotation.span.end.offset) + 1;
+                let file = database.get_by_id(&annotation.span.file_id())?;
+                let start_line = file.line_number(annotation.span.start.offset) + 1;
+                let end_line = file.line_number(annotation.span.end.offset) + 1;
 
                 if let Some(code) = issue.code.as_ref() {
-                    format!("file={name},line={start_line},endLine={end_line},title={code}")
+                    format!("file={},line={start_line},endLine={end_line},title={code}", file.name)
                 } else {
-                    format!("file={name},line={start_line},endLine={end_line}")
+                    format!("file={},line={start_line},endLine={end_line}", file.name)
                 }
             }
             None => {

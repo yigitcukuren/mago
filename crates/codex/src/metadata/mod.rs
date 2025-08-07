@@ -29,6 +29,7 @@ pub mod class_like;
 pub mod class_like_constant;
 pub mod constant;
 pub mod enum_case;
+pub mod flags;
 pub mod function_like;
 pub mod parameter;
 pub mod property;
@@ -78,7 +79,7 @@ impl CodebaseMetadata {
         match self.symbols.get_kind(fq_class_name) {
             Some(SymbolKind::Class) => {
                 // Check if the class metadata exists and if it's NOT final
-                self.class_likes.get(fq_class_name).is_some_and(|meta| !meta.is_final)
+                self.class_likes.get(fq_class_name).is_some_and(|meta| !meta.flags.is_final())
             }
             Some(SymbolKind::Enum) => {
                 // Enums are final and cannot be part of intersections
@@ -238,16 +239,14 @@ impl CodebaseMetadata {
             let metadata_to_keep = match self.class_likes.entry(k) {
                 Entry::Occupied(entry) => {
                     let existing_metadata = entry.remove();
-                    let existing_category = existing_metadata.span.start.source.category();
-                    let new_category = v.span.start.source.category();
 
-                    if new_category.is_user_defined() {
+                    if v.flags.is_user_defined() {
                         v
-                    } else if existing_category.is_user_defined() {
+                    } else if existing_metadata.flags.is_user_defined() {
                         existing_metadata
-                    } else if new_category.is_built_in() {
+                    } else if v.flags.is_built_in() {
                         v
-                    } else if existing_category.is_built_in() {
+                    } else if existing_metadata.flags.is_built_in() {
                         existing_metadata
                     } else {
                         v
@@ -262,16 +261,14 @@ impl CodebaseMetadata {
             let metadata_to_keep = match self.function_likes.entry(k) {
                 Entry::Occupied(entry) => {
                     let existing_metadata = entry.remove();
-                    let existing_category = existing_metadata.span.start.source.category();
-                    let new_category = v.span.start.source.category();
 
-                    if new_category.is_user_defined() {
+                    if v.flags.is_user_defined() {
                         v
-                    } else if existing_category.is_user_defined() {
+                    } else if existing_metadata.flags.is_user_defined() {
                         existing_metadata
-                    } else if new_category.is_built_in() {
+                    } else if v.flags.is_built_in() {
                         v
-                    } else if existing_category.is_built_in() {
+                    } else if existing_metadata.flags.is_built_in() {
                         existing_metadata
                     } else {
                         v
@@ -286,16 +283,14 @@ impl CodebaseMetadata {
             let metadata_to_keep = match self.constants.entry(k) {
                 Entry::Occupied(entry) => {
                     let existing_metadata = entry.remove();
-                    let existing_category = existing_metadata.span.start.source.category();
-                    let new_category = v.span.start.source.category();
 
-                    if new_category.is_user_defined() {
+                    if v.flags.is_user_defined() {
                         v
-                    } else if existing_category.is_user_defined() {
+                    } else if existing_metadata.flags.is_user_defined() {
                         existing_metadata
-                    } else if new_category.is_built_in() {
+                    } else if v.flags.is_built_in() {
                         v
-                    } else if existing_category.is_built_in() {
+                    } else if existing_metadata.flags.is_built_in() {
                         existing_metadata
                     } else {
                         v
@@ -325,7 +320,7 @@ impl CodebaseMetadata {
         let mut issues = IssueCollection::new();
 
         for metadata in self.class_likes.values_mut() {
-            if user_defined && !metadata.is_user_defined() {
+            if user_defined && !metadata.flags.is_user_defined() {
                 continue;
             }
 
@@ -333,7 +328,7 @@ impl CodebaseMetadata {
         }
 
         for metadata in self.function_likes.values_mut() {
-            if user_defined && !metadata.user_defined {
+            if user_defined && !metadata.flags.is_user_defined() {
                 continue;
             }
 
@@ -341,7 +336,7 @@ impl CodebaseMetadata {
         }
 
         for metadata in self.constants.values_mut() {
-            if user_defined && !metadata.user_defined {
+            if user_defined && !metadata.flags.is_user_defined() {
                 continue;
             }
 

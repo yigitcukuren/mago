@@ -1,5 +1,4 @@
-use mago_interner::ThreadedInterner;
-use mago_source::Source;
+use mago_database::file::File;
 use mago_span::HasSpan;
 
 use crate::ast::Program;
@@ -15,8 +14,7 @@ use crate::ast::TriviaKind;
 /// # Arguments
 ///
 /// * `program` - The program containing the trivia.
-/// * `interner` - The interner used to look up source content.
-/// * `source` - The source from which the trivia is derived.
+/// * `file` - The file from which the trivia is derived.
 /// * `node` - The node for which to find the preceding docblock comment.
 ///
 /// # Returns
@@ -24,13 +22,8 @@ use crate::ast::TriviaKind;
 /// An `Option` containing a reference to the `Trivia` representing the docblock comment if found,
 /// or `None` if no suitable docblock comment exists before the node.
 #[inline]
-pub fn get_docblock_for_node<'a>(
-    program: &'a Program,
-    interner: &ThreadedInterner,
-    source: &Source,
-    node: impl HasSpan,
-) -> Option<&'a Trivia> {
-    get_docblock_before_position(interner, source, program.trivia.as_slice(), node.span().start.offset)
+pub fn get_docblock_for_node<'a>(program: &'a Program, file: &File, node: impl HasSpan) -> Option<&'a Trivia> {
+    get_docblock_before_position(file, program.trivia.as_slice(), node.span().start.offset)
 }
 
 /// Retrieves the docblock comment that appears before a specific position in the source code.
@@ -41,8 +34,7 @@ pub fn get_docblock_for_node<'a>(
 ///
 /// # Arguments
 ///
-/// * `interner` - The interner used to look up source content.
-/// * `source` - The source from which the trivia is derived.
+/// * `file` - The file from which the trivia is derived.
 /// * `trivias` - A slice of trivia associated with the source code.
 /// * `node_start_offset` - The start offset of the node for which to find the preceding docblock comment.
 ///
@@ -50,8 +42,7 @@ pub fn get_docblock_for_node<'a>(
 ///
 /// An `Option` containing a reference to the `Trivia` representing the docblock comment if found,
 pub fn get_docblock_before_position<'a>(
-    interner: &ThreadedInterner,
-    source: &Source,
+    file: &File,
     trivias: &'a [Trivia],
     node_start_offset: usize,
 ) -> Option<&'a Trivia> {
@@ -65,13 +56,11 @@ pub fn get_docblock_before_position<'a>(
 
         match trivia.kind {
             TriviaKind::DocBlockComment => {
-                let source_content_id = source.content;
-                let source_code = interner.lookup(&source_content_id);
                 let docblock_end_offset = trivia.span().end.offset;
 
                 // Get the slice between docblock end and class start
                 let code_between_slice =
-                    source_code.as_bytes().get(docblock_end_offset..node_start_offset).unwrap_or(&[]);
+                    file.contents.as_bytes().get(docblock_end_offset..node_start_offset).unwrap_or(&[]);
 
                 if code_between_slice.iter().all(|b| b.is_ascii_whitespace()) {
                     // It's the correct docblock!

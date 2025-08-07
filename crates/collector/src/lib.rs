@@ -1,9 +1,9 @@
+use mago_database::file::File;
 use mago_fixer::FixPlan;
 use mago_interner::ThreadedInterner;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
-use mago_source::Source;
 use mago_span::Span;
 use mago_syntax::ast::Program;
 
@@ -25,7 +25,7 @@ mod walk;
 #[derive(Debug)]
 pub struct Collector<'i> {
     /// The source file from which this collector was created.
-    source: &'i Source,
+    file: &'i File,
     /// All pragmas that have not yet been applied to a node.
     pragmas: Vec<Pragma<'i>>,
     /// The collection of issues that have been reported and not suppressed.
@@ -40,20 +40,15 @@ impl<'i> Collector<'i> {
     /// This is the primary constructor. It pre-parses the given trivia to find pragmas
     /// relevant to the specified category. This is useful when the full program AST is not
     /// needed or available.
-    pub fn new(
-        source: &'i Source,
-        program: &'i Program,
-        interner: &'i ThreadedInterner,
-        category: &'static str,
-    ) -> Self {
+    pub fn new(file: &'i File, program: &'i Program, interner: &'i ThreadedInterner, category: &'static str) -> Self {
         let mut collector = Self {
-            source,
-            pragmas: Pragma::extract(source, program.trivia.as_slice(), interner, Some(category)),
+            file,
+            pragmas: Pragma::extract(file, program.trivia.as_slice(), interner, Some(category)),
             issues: IssueCollection::new(),
             recordings: Vec::new(),
         };
 
-        attach_pragma_scopes(&mut collector, interner, program);
+        attach_pragma_scopes(&mut collector, program);
 
         collector
     }
@@ -67,7 +62,7 @@ impl<'i> Collector<'i> {
     /// current recording. Otherwise, it is added to the main issue collection.
     #[inline]
     pub fn force_report(&mut self, mut issue: Issue) {
-        issue.annotations.retain(|annotation| !annotation.span.start.source.0.is_empty());
+        issue.annotations.retain(|annotation| !annotation.span.start.file_id.is_zero());
 
         if let Some(recording) = self.recordings.last_mut() {
             recording.push(issue);
@@ -149,7 +144,7 @@ impl<'i> Collector<'i> {
         let mut plan = FixPlan::new();
         f(&mut plan);
         if !plan.is_empty() {
-            issue = issue.with_suggestion(self.source.identifier, plan);
+            issue = issue.with_suggestion(self.file.id, plan);
         }
 
         self.report(issue)
@@ -295,7 +290,7 @@ impl<'i> Collector<'i> {
         kind: PragmaKind,
         issue_code: &str,
     ) -> Option<&mut Pragma<'i>> {
-        let issue_start_line = self.source.line_number(issue_span.start.offset);
+        let issue_start_line = self.file.line_number(issue_span.start.offset);
 
         let mut best_match_index = None;
 
@@ -314,7 +309,7 @@ impl<'i> Collector<'i> {
             } else if pragma.own_line {
                 pragma.start_line < issue_start_line
             } else {
-                self.source.line_number(pragma.span.start.offset) == issue_start_line
+                self.file.line_number(pragma.span.start.offset) == issue_start_line
             };
 
             if !is_applicable {

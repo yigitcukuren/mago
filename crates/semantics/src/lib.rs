@@ -1,8 +1,8 @@
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
 use mago_php_version::PHPVersion;
 use mago_reporting::IssueCollection;
-use mago_source::Source;
 use mago_syntax::ast::Program;
 use mago_syntax::walker::Walker;
 
@@ -47,8 +47,8 @@ impl<'a> SemanticsChecker<'a> {
     /// # Returns
     ///
     /// An `IssueCollection` containing all semantic issues discovered during the check.
-    pub fn check(&self, source: &Source, program: &Program, names: &ResolvedNames) -> IssueCollection {
-        let mut context = Context::new(self.interner, self.version, program, names, source);
+    pub fn check(&self, file: &File, program: &Program, names: &ResolvedNames) -> IssueCollection {
+        let mut context = Context::new(self.interner, self.version, program, names, file);
 
         CheckingWalker.walk_program(program, &mut context);
 

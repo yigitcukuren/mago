@@ -8,6 +8,7 @@ use mago_syntax::ast::ClassLikeConstant;
 use crate::issue::ScanningIssueKind;
 use crate::metadata::class_like::ClassLikeMetadata;
 use crate::metadata::class_like_constant::ClassLikeConstantMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::scanner::Context;
 use crate::scanner::attribute::scan_attribute_lists;
 use crate::scanner::docblock::ConstantDocblockComment;
@@ -33,6 +34,13 @@ pub fn scan_class_like_constants(
     let type_declaration =
         constant.hint.as_ref().map(|h| get_type_metadata_from_hint(h, Some(&class_like_metadata.name), context));
 
+    let mut flags = if is_final { MetadataFlags::FINAL } else { MetadataFlags::empty() };
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
+
     let docblock = match ConstantDocblockComment::create(context, constant) {
         Ok(docblock) => docblock,
         Err(parse_error) => {
@@ -52,20 +60,27 @@ pub fn scan_class_like_constants(
         .items
         .iter()
         .map(|item| {
-            let mut meta = ClassLikeConstantMetadata::new(item.name.value, item.span(), visibility);
+            let mut meta = ClassLikeConstantMetadata::new(item.name.value, item.span(), visibility, flags);
             if let Some(type_declaration) = type_declaration.as_ref().cloned() {
                 meta.set_type_declaration(type_declaration);
             }
 
             meta.attributes = attributes.clone();
-            meta.is_final = is_final;
             meta.inferred_type =
                 infer(context.interner, context.resolved_names, &item.value).map(|u| u.get_single_owned());
 
             if let Some(ref docblock) = docblock {
-                meta.is_deprecated = docblock.is_deprecated;
-                meta.is_internal = docblock.is_internal;
-                meta.is_final = docblock.is_final;
+                if docblock.is_deprecated {
+                    meta.flags |= MetadataFlags::DEPRECATED;
+                }
+
+                if docblock.is_internal {
+                    meta.flags |= MetadataFlags::INTERNAL;
+                }
+
+                if docblock.is_final {
+                    meta.flags |= MetadataFlags::FINAL;
+                }
 
                 if let Some(type_string) = &docblock.type_string {
                     match get_type_metadata_from_type_string(type_string, classname, type_context, context, scope) {

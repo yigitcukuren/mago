@@ -1,8 +1,8 @@
+use mago_database::file::File;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
 use mago_names::scope::NamespaceScope;
-use mago_source::Source;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 use mago_syntax::comments::docblock::get_docblock_for_node;
@@ -14,6 +14,7 @@ use mago_syntax::walker::walk_interface_mut;
 use mago_syntax::walker::walk_trait_mut;
 
 use crate::metadata::CodebaseMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::function_like::FunctionLikeKind;
 use crate::metadata::function_like::FunctionLikeMetadata;
 use crate::misc::GenericParent;
@@ -39,11 +40,11 @@ mod ttype;
 #[inline]
 pub fn scan_program(
     interner: &ThreadedInterner,
-    source: &Source,
+    file: &File,
     program: &Program,
     resolved_names: &ResolvedNames,
 ) -> CodebaseMetadata {
-    let mut context = Context::new(interner, source, program, resolved_names);
+    let mut context = Context::new(interner, file, program, resolved_names);
     let mut scanner = Scanner::new();
 
     scanner.walk_program(program, &mut context);
@@ -53,7 +54,7 @@ pub fn scan_program(
 #[derive(Clone, Debug)]
 struct Context<'a> {
     pub interner: &'a ThreadedInterner,
-    pub source: &'a Source,
+    pub file: &'a File,
     pub program: &'a Program,
     pub resolved_names: &'a ResolvedNames,
 }
@@ -61,15 +62,15 @@ struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn new(
         interner: &'a ThreadedInterner,
-        source: &'a Source,
+        file: &'a File,
         program: &'a Program,
         resolved_names: &'a ResolvedNames,
     ) -> Self {
-        Self { interner, source, program, resolved_names }
+        Self { interner, file, program, resolved_names }
     }
 
     pub fn get_docblock(&self, node: impl HasSpan) -> Option<&'a Trivia> {
-        get_docblock_for_node(self.program, self.interner, self.source, node)
+        get_docblock_for_node(self.program, self.file, node)
     }
 }
 
@@ -152,8 +153,9 @@ impl MutWalker<Context<'_>> for Scanner {
     fn walk_in_closure(&mut self, closure: &Closure, context: &mut Context<'_>) {
         let span = closure.span();
 
+        let file_ref = context.interner.intern(span.start.file_id.to_string());
         let closure_ref = context.interner.intern(span.start.to_string());
-        let identifier = (span.start.source.0, closure_ref);
+        let identifier = (file_ref, closure_ref);
 
         let type_resolution_context = self.get_current_type_resolution_context();
         let metadata =
@@ -179,13 +181,15 @@ impl MutWalker<Context<'_>> for Scanner {
     #[inline]
     fn walk_in_arrow_function(&mut self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let span = arrow_function.span();
+
+        let file_ref = context.interner.intern(span.start.file_id.to_string());
         let closure_ref = context.interner.intern(span.start.to_string());
-        let identifer = (span.start.source.0, closure_ref);
+        let identifier = (file_ref, closure_ref);
 
         let type_resolution_context = self.get_current_type_resolution_context();
 
         let metadata = scan_arrow_function(
-            identifer,
+            identifier,
             arrow_function,
             self.stack.last(),
             context,
@@ -201,7 +205,7 @@ impl MutWalker<Context<'_>> for Scanner {
 
             constraints
         });
-        self.codebase.function_likes.insert(identifer, metadata);
+        self.codebase.function_likes.insert(identifier, metadata);
     }
 
     #[inline]
@@ -337,7 +341,7 @@ impl MutWalker<Context<'_>> for Scanner {
         }
 
         if method_metadata.is_final && is_constructor {
-            class_like_metadata.has_consistent_constructor = true;
+            class_like_metadata.flags |= MetadataFlags::CONSISTENT_CONSTRUCTOR;
         }
 
         self.template_constraints.push({
@@ -400,19 +404,24 @@ fn finalize_class_like(scanner: &mut Scanner, context: &mut Context<'_>) {
         return;
     };
 
-    if class_like_metadata.has_consistent_constructor {
+    if class_like_metadata.flags.has_consistent_constructor() {
         let constructor_name = context.interner.intern("__construct");
-
-        let mut function_like_metadata = FunctionLikeMetadata::new(FunctionLikeKind::Method, class_like_metadata.span);
-
-        function_like_metadata.is_mutation_free = true;
-        function_like_metadata.is_external_mutation_free = true;
 
         class_like_metadata.add_method(constructor_name);
         class_like_metadata.add_declaring_method_id(constructor_name, class_like_metadata.name);
         class_like_metadata.inheritable_method_ids.insert(constructor_name, class_like_metadata.name);
 
-        scanner.codebase.function_likes.insert((class_like_metadata.name, constructor_name), function_like_metadata);
+        let mut flags = MetadataFlags::MUTATION_FREE | MetadataFlags::EXTERNAL_MUTATION_FREE;
+        if context.file.file_type.is_host() {
+            flags |= MetadataFlags::USER_DEFINED;
+        } else if context.file.file_type.is_builtin() {
+            flags |= MetadataFlags::BUILTIN;
+        }
+
+        scanner.codebase.function_likes.insert(
+            (class_like_metadata.name, constructor_name),
+            FunctionLikeMetadata::new(FunctionLikeKind::Method, class_like_metadata.span, flags),
+        );
     }
 
     scanner.codebase.class_likes.insert(class_like_id, class_like_metadata);

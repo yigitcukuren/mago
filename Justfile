@@ -35,7 +35,7 @@ publish:
     cargo publish -p mago-php-version
     cargo publish -p mago-fixer
     cargo publish -p mago-interner
-    cargo publish -p mago-source
+    cargo publish -p mago-database
     cargo publish -p mago-span
     cargo publish -p mago-reporting
     cargo publish -p mago-syntax-core

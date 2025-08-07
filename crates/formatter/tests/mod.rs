@@ -18,7 +18,7 @@ macro_rules! test_case {
             let interner = ThreadedInterner::new();
             let formatter = Formatter::new(&interner, $version, settings);
 
-            let formatted_code = formatter.format_code("code.php", code.as_ref()).unwrap();
+            let formatted_code = formatter.format_code("code.php", code).unwrap();
 
             pretty_assertions::assert_eq!(expected, formatted_code, "Formatted code does not match expected");
 

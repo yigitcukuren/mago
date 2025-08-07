@@ -66,14 +66,14 @@ pub fn post_invocation_process<'a>(
             "closure",
             format!(
                 "defined at `{}:{}:{}`",
-                context.interner.lookup(&position.source.0),
-                context.source.line_number(position.offset),
-                context.source.column_number(position.offset)
+                context.source_file.name,
+                context.source_file.line_number(position.offset),
+                context.source_file.column_number(position.offset)
             ),
         ),
     };
 
-    if metadata.is_deprecated {
+    if metadata.flags.is_deprecated() {
         let issue_kind = match identifier {
             FunctionLikeIdentifier::Function(_) => Code::DEPRECATED_FUNCTION,
             FunctionLikeIdentifier::Method(_, _) => Code::DEPRECATED_METHOD,
@@ -96,7 +96,7 @@ pub fn post_invocation_process<'a>(
     }
 
     // Report if named arguments are used where not allowed
-    if !metadata.allows_named_arguments
+    if metadata.flags.forbids_named_arguments()
         && let InvocationArgumentsSource::ArgumentList(argument_list) = invoication.arguments_source
     {
         for argument in argument_list.arguments.iter() {

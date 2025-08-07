@@ -1434,7 +1434,7 @@ impl<'a> Format<'a> for AttributeList {
             let must_break = f.settings.preserve_breaking_attribute_list
                 && attributes_count >= 1
                 && misc::has_new_line_in_range(
-                    f.source_text,
+                    &f.file.contents,
                     self.hash_left_bracket.end.offset,
                     self.attributes.as_slice()[0].span().start.offset,
                 );

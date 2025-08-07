@@ -6,6 +6,7 @@ use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::ttype::TypeMetadata;
 use crate::ttype::atomic::TAtomic;
 use crate::visibility::Visibility;
@@ -19,13 +20,11 @@ pub struct ClassLikeConstantMetadata {
     pub type_declaration: Option<TypeMetadata>,
     pub type_metadata: Option<TypeMetadata>,
     pub inferred_type: Option<TAtomic>,
-    pub is_final: bool,
-    pub is_deprecated: bool,
-    pub is_internal: bool,
+    pub flags: MetadataFlags,
 }
 
 impl ClassLikeConstantMetadata {
-    pub fn new(name: StringIdentifier, span: Span, visibility: Visibility) -> Self {
+    pub fn new(name: StringIdentifier, span: Span, visibility: Visibility, flags: MetadataFlags) -> Self {
         Self {
             attributes: Vec::new(),
             name,
@@ -34,9 +33,7 @@ impl ClassLikeConstantMetadata {
             type_declaration: None,
             type_metadata: None,
             inferred_type: None,
-            is_final: false,
-            is_deprecated: false,
-            is_internal: false,
+            flags,
         }
     }
 

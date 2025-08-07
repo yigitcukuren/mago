@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use clap::Parser;
 use colored::Colorize;
+use mago_database::ReadDatabase;
 use tokio::task::JoinHandle;
 
 use mago_analyzer::Analyzer;
@@ -11,20 +12,20 @@ use mago_analyzer::analysis_result::AnalysisResult;
 use mago_analyzer::settings::Settings as AnalyzerSettings;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::reference::SymbolReferences;
+use mago_database::DatabaseReader;
+use mago_database::file::File;
+use mago_database::file::FileType;
 use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
 use mago_reporting::Issue;
 use mago_semantics::SemanticsChecker;
-use mago_source::Source;
-use mago_source::SourceCategory;
-use mago_source::SourceManager;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 use crate::commands::args::reporting::ReportingArgs;
 use crate::config::Configuration;
+use crate::database;
 use crate::error::Error;
 use crate::metadata::compile_codebase_for_sources;
-use crate::source;
 use crate::utils::progress::ProgressBarTheme;
 use crate::utils::progress::create_progress_bar;
 use crate::utils::progress::remove_progress_bar;
@@ -122,14 +123,14 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
 
     let interner = ThreadedInterner::new();
 
-    let source_manager = if !command.path.is_empty() {
-        source::from_paths(&interner, &configuration.source, command.path, !command.no_stubs).await?
+    let database = if !command.path.is_empty() {
+        database::from_paths(&configuration.source, command.path, !command.no_stubs)?
     } else {
-        source::load(&interner, &configuration.source, true, !command.no_stubs).await?
+        database::load(&configuration.source, true, !command.no_stubs)?
     };
 
-    if source_manager.is_empty() {
-        tracing::info!("No source files found to analyze.");
+    if database.is_empty() {
+        tracing::info!("No files found to analyze.");
 
         return Ok(ExitCode::SUCCESS);
     }
@@ -151,12 +152,13 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
         ..Default::default()
     };
 
-    tracing::debug!("Compiling codebase...");
-    let mut codebase = compile_codebase_for_sources(&source_manager, &mut symbol_references, &interner).await?;
+    let read_database = Arc::new(database.read_only());
 
-    tracing::debug!("Analyzing sources...");
-    let analysis_result = analyze_user_sources(
-        &source_manager,
+    tracing::debug!("Compiling codebase...");
+    let mut codebase = compile_codebase_for_sources(&read_database, &mut symbol_references, &interner).await?;
+    tracing::debug!("Analyzing files...");
+    let analysis_result = analyze_user_files(
+        &read_database,
         analyzer_settings,
         symbol_references,
         &codebase,
@@ -168,15 +170,15 @@ pub async fn execute(command: AnalyzeCommand, configuration: Configuration) -> R
     let mut issues = codebase.take_issues(true);
     issues.extend(analysis_result.issues);
 
-    command.reporting.process_issues(issues, configuration, interner, source_manager).await
+    command.reporting.process_issues(issues, configuration, interner, database).await
 }
 
-/// Analyzes user-defined source files concurrently with a progress bar.
+/// Analyzes user-defined files concurrently with a progress bar.
 ///
-/// Iterates over sources categorized as `UserDefined`, spawns a Tokio task for each,
+/// Iterates over files categorized as `UserDefined`, spawns a Tokio task for each,
 /// updates the progress bar, and aggregates the results.
-async fn analyze_user_sources(
-    manager: &SourceManager,
+async fn analyze_user_files(
+    database: &Arc<ReadDatabase>,
     settings: AnalyzerSettings,
     symbol_references: SymbolReferences,
     codebase: &CodebaseMetadata,
@@ -186,36 +188,36 @@ async fn analyze_user_sources(
     let codebase = Arc::new(codebase.clone());
 
     let mut aggregated_analysis_result = AnalysisResult::new(symbol_references);
-    let source_ids = manager.source_ids_for_category(SourceCategory::UserDefined);
+    let file_ids = database.file_ids_with_type(FileType::Host).collect::<Vec<_>>();
 
-    if source_ids.is_empty() {
-        tracing::debug!("No user-defined sources to analyze.");
+    if file_ids.is_empty() {
+        tracing::debug!("No host files to analyze.");
 
         return Ok(aggregated_analysis_result);
     }
 
-    let total_files = source_ids.len();
+    let total_files = file_ids.len();
     let progress_bar = create_progress_bar(total_files, " Analyzing sources", ProgressBarTheme::Blue);
 
     let mut analysis_tasks: Vec<JoinHandle<Result<AnalysisResult, Error>>> = Vec::with_capacity(total_files);
 
-    for source_id in source_ids {
+    for file_id in file_ids {
         if sequential {
-            let source_file = manager.load(&source_id)?;
-            let result = perform_single_source_analysis(source_file, settings, &codebase, interner)?;
+            let source_file = database.get_by_id(&file_id)?;
+            let result = perform_single_file_analysis(source_file, settings, &codebase, interner)?;
             aggregated_analysis_result.extend(result);
             progress_bar.inc(1);
             continue;
         }
 
         let interner_clone = interner.clone();
-        let manager_clone = manager.clone();
+        let database_clone = database.clone();
         let codebase_clone = codebase.clone();
         let progress_bar_clone = progress_bar.clone();
 
         analysis_tasks.push(tokio::spawn(async move {
-            let source_file = manager_clone.load(&source_id)?;
-            let result = perform_single_source_analysis(source_file, settings, &codebase_clone, &interner_clone);
+            let file = database_clone.get_by_id(&file_id)?;
+            let result = perform_single_file_analysis(file, settings, &codebase_clone, &interner_clone);
             progress_bar_clone.inc(1);
             result
         }));
@@ -249,20 +251,20 @@ async fn analyze_user_sources(
         }
     }
 
-    tracing::debug!("Analysis completed for {} sources.", total_files);
+    tracing::debug!("Analysis completed for {} file(s).", total_files);
 
     remove_progress_bar(progress_bar);
     Ok(aggregated_analysis_result)
 }
 
-/// Performs static analysis on a single parsed PHP source file.
-fn perform_single_source_analysis(
-    source: Source,
+/// Performs static analysis on a single parsed PHP file.
+fn perform_single_file_analysis(
+    file: &File,
     settings: AnalyzerSettings,
     codebase: &CodebaseMetadata,
     interner: &ThreadedInterner,
 ) -> Result<AnalysisResult, Error> {
-    let (program, parsing_error) = parse_source(interner, &source);
+    let (program, parsing_error) = parse_file(interner, file);
     let semantics_checker = SemanticsChecker::new(&settings.version, interner);
 
     let mut analysis_result = AnalysisResult::new(SymbolReferences::new());
@@ -272,16 +274,16 @@ fn perform_single_source_analysis(
 
     let resolver = NameResolver::new(interner);
     let resolved_names = resolver.resolve(&program);
-    let source_name = interner.lookup(&source.identifier.0);
 
-    tracing::trace!("Analyzing source `{source_name}`...");
+    tracing::trace!("Analyzing file `{}`...", file.name);
 
-    analysis_result.issues.extend(semantics_checker.check(&source, &program, &resolved_names));
+    analysis_result.issues.extend(semantics_checker.check(file, &program, &resolved_names));
 
-    Analyzer::new(source, &resolved_names, codebase, interner, settings).analyze(&program, &mut analysis_result)?;
+    Analyzer::new(file, &resolved_names, codebase, interner, settings).analyze(&program, &mut analysis_result)?;
 
     tracing::trace!(
-        "Analysis for source `{source_name}` completed in {} seconds, with {} issues found.",
+        "Analysis for file `{}` completed in {} seconds, with {} issues found.",
+        file.name,
         analysis_result.time_in_analysis.as_secs_f64(),
         analysis_result.issues.len()
     );

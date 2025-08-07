@@ -6,9 +6,9 @@ use std::path::Path;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_interner::ThreadedInterner;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
 use mago_reporting::IssueCollection;
-use mago_source::SourceManager;
 
 use crate::error::Error;
 
@@ -37,11 +37,7 @@ pub struct Baseline {
 /// This function processes a list of issues and groups them by source file,
 /// calculating a content hash for each file to ensure the baseline is only
 /// applied to unmodified files.
-pub fn generate_baseline_from_issues(
-    issues: IssueCollection,
-    source_manager: &SourceManager,
-    interner: &ThreadedInterner,
-) -> Result<Baseline, Error> {
+pub fn generate_baseline_from_issues(issues: IssueCollection, database: &ReadDatabase) -> Result<Baseline, Error> {
     let mut baseline = Baseline::default();
 
     for issue in issues {
@@ -50,21 +46,19 @@ pub fn generate_baseline_from_issues(
 
         let start = annotation.span.start;
         let end = annotation.span.end;
-        let source = source_manager.load(&start.source)?;
-        let source_name = interner.lookup(&source.identifier.0).to_string();
+        let source_file = database.get_by_id(&start.file_id)?;
 
-        let entry = baseline.entries.entry(source_name).or_insert_with(|| {
-            let content = interner.lookup(&source.content);
-            let content_hash = blake3::hash(content.as_bytes()).to_hex().to_string();
+        let entry = baseline.entries.entry(source_file.name.to_owned()).or_insert_with(|| {
+            let content_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
             BaselineEntry { hash: content_hash, issues: vec![] }
         });
 
         entry.issues.push(BaselineSourceIssue {
             code: code.to_string(),
-            start_line: source.line_number(start.offset),
-            start_column: source.column_number(start.offset),
-            end_line: source.line_number(end.offset),
-            end_column: source.column_number(end.offset),
+            start_line: source_file.line_number(start.offset),
+            start_column: source_file.column_number(start.offset),
+            end_line: source_file.line_number(end.offset),
+            end_column: source_file.column_number(end.offset),
         });
     }
 
@@ -113,8 +107,7 @@ pub fn unserialize_baseline(path: &Path) -> Result<Baseline, Error> {
 pub fn filter_issues(
     baseline: &Baseline,
     issues: IssueCollection,
-    source_manager: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
 ) -> Result<(IssueCollection, usize, bool), Error> {
     let baseline_sets: HashMap<String, (String, HashSet<BaselineSourceIssue>)> = baseline
         .entries
@@ -131,17 +124,16 @@ pub fn filter_issues(
             continue;
         };
 
-        let source = source_manager.load(&annotation.span.start.source)?;
-        let source_name = interner.lookup(&source.identifier.0);
+        let source_file = database.get_by_id(&annotation.span.start.file_id)?;
 
-        let Some((baseline_hash, baseline_issue_set)) = baseline_sets.get(source_name) else {
+        let Some((baseline_hash, baseline_issue_set)) = baseline_sets.get(&source_file.name) else {
             // File is not in the baseline, so the issue is new.
             filtered_issues.push(issue);
             continue;
         };
 
         // Check if the file has been modified.
-        let current_hash = blake3::hash(interner.lookup(&source.content).as_bytes()).to_hex().to_string();
+        let current_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
         if &current_hash != baseline_hash {
             // File has changed, so all issues are considered new.
             filtered_issues.push(issue);
@@ -155,15 +147,15 @@ pub fn filter_issues(
 
         let issue_to_check = BaselineSourceIssue {
             code: code.to_string(),
-            start_line: source.line_number(annotation.span.start.offset),
-            start_column: source.column_number(annotation.span.start.offset),
-            end_line: source.line_number(annotation.span.end.offset),
-            end_column: source.column_number(annotation.span.end.offset),
+            start_line: source_file.line_number(annotation.span.start.offset),
+            start_column: source_file.column_number(annotation.span.start.offset),
+            end_line: source_file.line_number(annotation.span.end.offset),
+            end_column: source_file.column_number(annotation.span.end.offset),
         };
 
         if baseline_issue_set.contains(&issue_to_check) {
             // Issue is in the baseline, so we ignore it and mark it as "seen".
-            seen_baseline_issues.entry(source_name.to_string()).or_default().insert(issue_to_check);
+            seen_baseline_issues.entry(source_file.name.to_string()).or_default().insert(issue_to_check);
         } else {
             // Issue is not in the baseline, so it's a new one.
             filtered_issues.push(issue);

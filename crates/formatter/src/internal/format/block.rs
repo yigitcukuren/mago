@@ -159,7 +159,7 @@ pub(super) fn print_block_body<'a>(f: &mut FormatterState<'a>, stmts: &'a Sequen
 }
 
 pub fn block_is_empty(f: &mut FormatterState<'_>, left_brace: &Span, right_brace: &Span) -> bool {
-    let content = &f.source_text[left_brace.end.offset..right_brace.start.offset];
+    let content = &f.file.contents[left_brace.end.offset..right_brace.start.offset];
 
     for c in content.chars() {
         if !c.is_whitespace() || matches!(c, ';') {

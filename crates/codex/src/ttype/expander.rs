@@ -1,6 +1,5 @@
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
-use mago_source::SourceIdentifier;
 
 use crate::get_class_like;
 use crate::get_closure;
@@ -41,7 +40,6 @@ pub struct TypeExpansionOptions<'a> {
     pub self_class: Option<&'a StringIdentifier>,
     pub static_class_type: StaticClassType,
     pub parent_class: Option<&'a StringIdentifier>,
-    pub file_path: Option<&'a SourceIdentifier>,
     pub evaluate_class_constants: bool,
     pub evaluate_conditional_types: bool,
     pub function_is_final: bool,
@@ -52,7 +50,6 @@ pub struct TypeExpansionOptions<'a> {
 impl Default for TypeExpansionOptions<'_> {
     fn default() -> Self {
         Self {
-            file_path: None,
             self_class: None,
             static_class_type: StaticClassType::default(),
             parent_class: None,
@@ -529,9 +526,9 @@ pub fn get_signature_of_function_like_metadata(
 
             TCallableParameter::new(
                 type_signature,
-                parameter_metadata.is_by_reference(),
-                parameter_metadata.is_variadic(),
-                parameter_metadata.has_default(),
+                parameter_metadata.flags.is_by_reference(),
+                parameter_metadata.flags.is_variadic(),
+                parameter_metadata.flags.has_default(),
             )
         })
         .collect();
@@ -544,7 +541,7 @@ pub fn get_signature_of_function_like_metadata(
         None
     };
 
-    let mut signature = TCallableSignature::new(function_like_metadata.is_pure, true)
+    let mut signature = TCallableSignature::new(function_like_metadata.flags.is_pure(), true)
         .with_parameters(parameters)
         .with_return_type(return_type)
         .with_source(Some(*function_like_identifier));

@@ -5,6 +5,7 @@ use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::ttype::TypeMetadata;
 use crate::misc::VariableIdentifier;
 
@@ -20,16 +21,10 @@ pub struct FunctionLikeParameterMetadata {
     /// The identifier (name) of the parameter, including the leading '$'.
     pub name: VariableIdentifier,
 
-    /// `true` if the parameter is declared to be passed by reference using `&`.
-    pub is_by_reference: bool,
-
     /// The explicit type declaration (type hint) or docblock type (`@param`).
     ///
     /// Can be `None` if no type is specified.
     pub type_metadata: Option<TypeMetadata>,
-
-    /// `true` if the parameter has a default value specified in the signature.
-    pub has_default: bool,
 
     /// The type specified by a `@param-out` docblock tag.
     ///
@@ -48,14 +43,8 @@ pub struct FunctionLikeParameterMetadata {
     /// The specific source code location (span) of the parameter's name identifier.
     pub name_span: Span,
 
-    /// `true` if the parameter is variadic, declared using `...`.
-    pub is_variadic: bool,
-
-    /// `true` if this parameter uses constructor property promotion (PHP 8.0+).
-    pub is_promoted_property: bool,
-
-    /// `true` if the parameter is marked as deprecated.
-    pub is_deprecated: bool,
+    /// Flags indicating various properties of the parameter.
+    pub flags: MetadataFlags,
 }
 
 /// Contains metadata associated with a single parameter within a function, method, or closure signature.
@@ -71,20 +60,16 @@ impl FunctionLikeParameterMetadata {
     /// * `name`: The identifier (name) of the parameter (e.g., `$userId`).
     /// * `span`: The source code location covering the entire parameter declaration.
     /// * `name_span`: The source code location of the parameter's name identifier (`$userId`).
-    pub fn new(name: VariableIdentifier, span: Span, name_span: Span) -> Self {
+    pub fn new(name: VariableIdentifier, span: Span, name_span: Span, flags: MetadataFlags) -> Self {
         Self {
             attributes: Vec::new(),
             name,
-            is_by_reference: false,
-            type_metadata: None,
-            has_default: false,
-            out_type: None,
-            default_type: None,
+            flags,
             span,
             name_span,
-            is_variadic: false,
-            is_promoted_property: false,
-            is_deprecated: false,
+            type_metadata: None,
+            out_type: None,
+            default_type: None,
         }
     }
 
@@ -118,24 +103,6 @@ impl FunctionLikeParameterMetadata {
         self.default_type.as_ref()
     }
 
-    /// Checks if the parameter is passed by reference (`&`).
-    #[inline]
-    pub const fn is_by_reference(&self) -> bool {
-        self.is_by_reference
-    }
-
-    /// Checks if the parameter has a default value specified in the signature.
-    #[inline]
-    pub const fn has_default(&self) -> bool {
-        self.has_default
-    }
-
-    /// Checks if the parameter is variadic (`...`).
-    #[inline]
-    pub const fn is_variadic(&self) -> bool {
-        self.is_variadic
-    }
-
     /// Sets the attributes, replacing any existing ones.
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = AttributeMetadata>) {
         self.attributes = attributes.into_iter().collect();
@@ -147,20 +114,6 @@ impl FunctionLikeParameterMetadata {
         self
     }
 
-    /// Sets whether the parameter is passed by reference (`&`). Clears `out_type` if set to `false`.
-    pub fn set_is_by_reference(&mut self, is_by_reference: bool) {
-        self.is_by_reference = is_by_reference;
-        if !is_by_reference {
-            self.out_type = None; // Invariant
-        }
-    }
-
-    /// Returns a new instance with the `is_by_reference` flag set. Clears `out_type` if set to `false`.
-    pub fn with_is_by_reference(mut self, is_by_reference: bool) -> Self {
-        self.set_is_by_reference(is_by_reference);
-        self
-    }
-
     /// Sets the explicit type signature (type hint or `@param` type).
     pub fn set_type_signature(&mut self, type_signature: Option<TypeMetadata>) {
         self.type_metadata = type_signature;
@@ -169,72 +122,6 @@ impl FunctionLikeParameterMetadata {
     /// Returns a new instance with the explicit type signature set.
     pub fn with_type_signature(mut self, type_signature: Option<TypeMetadata>) -> Self {
         self.set_type_signature(type_signature);
-        self
-    }
-
-    /// Sets whether the parameter has a default value. Use with caution if also setting `default_type`.
-    pub fn set_has_default(&mut self, has_default: bool) {
-        self.has_default = has_default;
-        // If setting to false, should default_type also be cleared? Let's assume yes for consistency.
-        if !has_default {
-            self.default_type = None;
-        }
-    }
-
-    /// Returns a new instance with the `has_default` flag set. Clears `default_type` if set to `false`.
-    pub fn with_has_default(mut self, has_default: bool) -> Self {
-        self.set_has_default(has_default);
-        self
-    }
-
-    /// Sets the `@param-out` type. Only effective if `is_by_reference` is true.
-    pub fn set_out_type(&mut self, out_type: Option<TypeMetadata>) {
-        if self.is_by_reference {
-            self.out_type = out_type;
-        } else {
-            // Setting an out_type on non-reference is ignored or cleared
-            self.out_type = None;
-        }
-    }
-
-    /// Sets the inferred type of the default value. Also sets `has_default` to `true` if `Some`.
-    pub fn set_default_type(&mut self, default_type: Option<TypeMetadata>) {
-        self.default_type = default_type;
-        // If we know the type, it must have a default. If type is None, maybe it still has a default?
-        // Let's only set has_default=true if default_type is Some.
-        // To clear has_default, use set_has_default(false).
-        if self.default_type.is_some() {
-            self.has_default = true;
-        }
-        // If default_type is None, we *don't* automatically set has_default to false,
-        // because the syntax might exist (`= value`) but inference failed.
-    }
-
-    /// Returns a new instance with the inferred type of the default value set. Also sets `has_default` to `true` if `Some`.
-    pub fn with_default_type(mut self, default_type: Option<TypeMetadata>) -> Self {
-        self.set_default_type(default_type);
-        self
-    }
-
-    /// Sets whether the parameter is variadic (`...`).
-    pub fn set_is_variadic(&mut self, is_variadic: bool) {
-        self.is_variadic = is_variadic;
-    }
-
-    /// Returns a new instance with the `is_variadic` flag set.
-    pub fn with_is_variadic(mut self, is_variadic: bool) -> Self {
-        self.set_is_variadic(is_variadic);
-        self
-    }
-
-    /// Sets whether the parameter is a promoted property.
-    pub fn set_is_promoted_property(&mut self, is_promoted: bool) {
-        self.is_promoted_property = is_promoted;
-    }
-
-    /// Returns a new instance with the `is_promoted_property` flag set.
-    pub fn with_is_promoted_property(mut self, is_promoted: bool) -> Self {
-        self.set_is_promoted_property(is_promoted);
         self
     }
 }

@@ -19,4 +19,4 @@ mago-syntax = { workspace = true }
 mago-php-version = { workspace = true }
 mago-span = { workspace = true }
 mago-names = { workspace = true }
-mago-source = { workspace = true }
+mago-database = { workspace = true }

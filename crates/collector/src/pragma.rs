@@ -1,5 +1,5 @@
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
-use mago_source::Source;
 use mago_span::Span;
 use mago_syntax::ast::Trivia;
 use mago_syntax::comments::comment_lines;
@@ -73,7 +73,7 @@ impl<'a> Pragma<'a> {
     ///
     /// # Parameters
     ///
-    /// - `source`: The source file being analyzed.
+    /// - `file`: The source file being analyzed.
     /// - `trivias`: The slice of trivia (comments and whitespace) to scan.
     /// - `interner`: The interner for string resolution.
     /// - `category`: The category of pragmas to collect (e.g., "lint", "analysis"), or
@@ -82,30 +82,29 @@ impl<'a> Pragma<'a> {
     /// # Returns
     ///
     /// A vector of `Pragma` structs, each containing a parsed pragma and its precise location.
-    pub fn extract<'s>(
-        source: &'s Source,
-        trivias: &'s [Trivia],
+    pub fn extract(
+        file: &File,
+        trivias: &[Trivia],
         interner: &'a ThreadedInterner,
         category: Option<&'static str>,
     ) -> Vec<Pragma<'a>> {
         trivias
             .iter()
             .filter(|trivia| trivia.kind.is_comment())
-            .flat_map(|trivia| parse_pragmas_in_trivia(source, trivia, interner, category))
+            .flat_map(|trivia| parse_pragmas_in_trivia(file, trivia, interner, category))
             .collect()
     }
 }
 
 /// Parses all pragmas within a single trivia (comment) node.
 fn parse_pragmas_in_trivia<'a>(
-    source: &Source,
+    file: &File,
     trivia: &Trivia,
     interner: &'a ThreadedInterner,
     category_filter: Option<&'static str>,
 ) -> Vec<Pragma<'a>> {
     let mut pragmas = Vec::new();
     let base_offset = trivia.span.start;
-    let source_code = interner.lookup(&source.content);
 
     for (line_offset_in_trivia, line) in comment_lines(trivia, interner) {
         let absolute_line_start = base_offset + line_offset_in_trivia;
@@ -155,10 +154,10 @@ fn parse_pragmas_in_trivia<'a>(
         let pragma_end_offset = pragma_start_offset + prefix.len() + content_with_leading_space.len();
         let span = Span::new(pragma_start_offset, pragma_end_offset);
 
-        let start_line = source.line_number(span.start.offset);
-        let end_line = source.line_number(span.end.offset);
-        let line_start_offset = source.get_line_start_offset(start_line).unwrap_or(0);
-        let prefix_text = &source_code[line_start_offset..span.start.offset];
+        let start_line = file.line_number(span.start.offset);
+        let end_line = file.line_number(span.end.offset);
+        let line_start_offset = file.get_line_start_offset(start_line).unwrap_or(0);
+        let prefix_text = &file.contents[line_start_offset..span.start.offset];
         let own_line = prefix_text.trim().is_empty();
 
         pragmas.push(Pragma {

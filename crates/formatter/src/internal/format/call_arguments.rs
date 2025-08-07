@@ -354,7 +354,7 @@ fn should_break_all_arguments(f: &FormatterState, argument_list: &ArgumentList, 
     if f.settings.preserve_breaking_argument_list
         && !argument_list.arguments.is_empty()
         && misc::has_new_line_in_range(
-            f.source_text,
+            &f.file.contents,
             argument_list.left_parenthesis.start.offset,
             argument_list.arguments.as_slice()[0].span().start.offset,
         )

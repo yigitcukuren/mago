@@ -6,6 +6,7 @@ use mago_syntax::ast::*;
 use crate::issue::ScanningIssueKind;
 use crate::lower_constant_name;
 use crate::metadata::constant::ConstantMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::scanner::Context;
 use crate::scanner::attribute::scan_attribute_lists;
 use crate::scanner::docblock::ConstantDocblockComment;
@@ -16,20 +17,32 @@ pub fn scan_constant(constant: &Constant, context: &mut Context<'_>) -> Vec<Cons
     let attributes = scan_attribute_lists(&constant.attribute_lists, context);
     let docblock = ConstantDocblockComment::create(context, constant);
 
+    let mut flags = MetadataFlags::empty();
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
+
     constant
         .items
         .iter()
         .map(|item| {
             let name = lower_constant_name(context.interner, context.resolved_names.get(&item.name));
 
-            let mut metadata = ConstantMetadata::new(name, item.span());
+            let mut metadata = ConstantMetadata::new(name, item.span(), flags);
             metadata.attributes = attributes.clone();
             metadata.inferred_type = infer(context.interner, context.resolved_names, &item.value);
 
             match &docblock {
                 Ok(Some(docblock)) => {
-                    metadata.is_deprecated = docblock.is_deprecated;
-                    metadata.is_internal = docblock.is_internal;
+                    if docblock.is_deprecated {
+                        metadata.flags |= MetadataFlags::DEPRECATED;
+                    }
+
+                    if docblock.is_internal {
+                        metadata.flags |= MetadataFlags::INTERNAL;
+                    }
                 }
                 Ok(None) => {
                     // No docblock comment found, continue without it
@@ -74,8 +87,14 @@ pub fn scan_defined_constant(define: &FunctionCall, context: &mut Context<'_>) -
 
     let name = context.interner.intern(name_string.value.as_deref()?);
     let name = lower_constant_name(context.interner, &name);
+    let mut flags = MetadataFlags::empty();
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
 
-    let mut metadata = ConstantMetadata::new(name, define.span());
+    let mut metadata = ConstantMetadata::new(name, define.span(), flags);
     metadata.inferred_type = infer(context.interner, context.resolved_names, arguments[1].value());
 
     Some(metadata)

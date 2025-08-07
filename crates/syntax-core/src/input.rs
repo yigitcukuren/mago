@@ -1,7 +1,8 @@
 use memchr::memchr;
 use memchr::memmem::find;
 
-use mago_source::SourceIdentifier;
+use mago_database::file::File;
+use mago_database::file::FileId;
 use mago_span::Position;
 
 /// A struct representing the input code being lexed.
@@ -21,15 +22,29 @@ impl<'a> Input<'a> {
     ///
     /// # Arguments
     ///
-    /// * `input` - A byte slice representing the input code to be processed.
+    /// * `file_id` - The unique identifier for the source file this input belongs to.
+    /// * `bytes` - A byte slice representing the input code to be lexed.
     ///
     /// # Returns
     ///
     /// A new `Input` instance initialized at the beginning of the input.
-    pub fn new(source: SourceIdentifier, bytes: &'a [u8]) -> Self {
+    pub fn new(file_id: FileId, bytes: &'a [u8]) -> Self {
         let length = bytes.len();
 
-        Self { bytes, length, offset: 0, starting_position: Position::start_of(source) }
+        Self { bytes, length, offset: 0, starting_position: Position::start_of(file_id) }
+    }
+
+    /// Creates a new `Input` instance from the contents of a `File`.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - A reference to the `File` containing the source code.
+    ///
+    /// # Returns
+    ///
+    /// A new `Input` instance initialized with the file's ID and contents.
+    pub fn from_file(file: &'a File) -> Self {
+        Self::new(file.id, file.contents.as_bytes())
     }
 
     /// Creates a new `Input` instance representing a byte slice that is
@@ -58,10 +73,10 @@ impl<'a> Input<'a> {
         Self { bytes, length, offset: 0, starting_position: anchor_position }
     }
 
-    /// Returns the source identifier of the input code.
+    /// Returns the source file identifier of the input code.
     #[inline]
-    pub const fn source_identifier(&self) -> SourceIdentifier {
-        self.starting_position.source
+    pub const fn file_id(&self) -> FileId {
+        self.starting_position.file_id
     }
 
     /// Returns the absolute current `Position` of the lexer within the original source file.
@@ -367,35 +382,6 @@ impl<'a> Input<'a> {
     /// * `Some(length)` - If the input matches `search` (ignoring whitespace within the sequence), returns the total length
     ///   of the input consumed to match `search`, including any skipped whitespace **within** the matched sequence.
     /// * `None` - If the input does not match `search`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use mago_syntax_core::input::Input;
-    /// use mago_source::SourceIdentifier;
-    ///
-    /// let source = SourceIdentifier::dummy();
-    ///
-    /// // Given input "( string ) x", starting at offset 0:
-    /// let input = Input::new(source.clone(), b"( string ) x");
-    /// assert_eq!(input.match_sequence_ignore_whitespace(b"(string)", true), Some(10)); // 10 bytes consumed up to ')'
-    ///
-    /// // Given input "(int)", with no whitespace:
-    /// let input = Input::new(source.clone(), b"(int)");
-    /// assert_eq!(input.match_sequence_ignore_whitespace(b"(int)", true), Some(5)); // 5 bytes consumed
-    ///
-    /// // Given input "(  InT   )abc", ignoring ASCII case:
-    /// let input = Input::new(source.clone(), b"(  InT   )abc");
-    /// assert_eq!(input.match_sequence_ignore_whitespace(b"(int)", true), Some(10)); // 10 bytes consumed up to ')'
-    ///
-    /// // Given input "(integer)", attempting to match "(int)":
-    /// let input = Input::new(source.clone(), b"(integer)");
-    /// assert_eq!(input.match_sequence_ignore_whitespace(b"(int)", false), None); // Does not match
-    ///
-    /// // Trailing whitespace after ')':
-    /// let input = Input::new(source.clone(), b"(int)   x");
-    /// assert_eq!(input.match_sequence_ignore_whitespace(b"(int)", true), Some(5)); // Length up to ')', excludes spaces after ')'
-    /// ```
     #[inline]
     pub const fn match_sequence_ignore_whitespace(&self, search: &[u8], ignore_ascii_case: bool) -> Option<usize> {
         let mut offset = self.offset;
@@ -495,9 +481,9 @@ mod tests {
     #[test]
     fn test_new() {
         let bytes = b"Hello, world!";
-        let input = Input::new(SourceIdentifier::dummy(), bytes);
+        let input = Input::new(FileId::zero(), bytes);
 
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 0));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
         assert_eq!(input.length, bytes.len());
         assert_eq!(input.bytes, bytes);
     }
@@ -505,12 +491,12 @@ mod tests {
     #[test]
     fn test_is_eof() {
         let bytes = b"";
-        let input = Input::new(SourceIdentifier::dummy(), bytes);
+        let input = Input::new(FileId::zero(), bytes);
 
         assert!(input.has_reached_eof());
 
         let bytes = b"data";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         assert!(!input.has_reached_eof());
 
@@ -522,49 +508,49 @@ mod tests {
     #[test]
     fn test_next() {
         let bytes = b"a\nb\r\nc\rd";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         // 'a'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 1));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 1));
 
         // '\n'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 2));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 2));
 
         // 'b'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 3));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 3));
 
         // '\r\n' should be treated as one newline
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 4));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 4));
 
         // 'c'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 5));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 5));
 
         // '\r'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 6));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 6));
 
         // 'd'
         input.next();
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 7));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 7));
     }
 
     #[test]
     fn test_consume() {
         let bytes = b"abcdef";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         let consumed = input.consume(3);
         assert_eq!(consumed, b"abc");
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 3));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 3));
 
         let consumed = input.consume(3);
         assert_eq!(consumed, b"def");
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 6));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 6));
 
         let consumed = input.consume(1); // Should return empty slice at EOF
         assert_eq!(consumed, b"");
@@ -574,7 +560,7 @@ mod tests {
     #[test]
     fn test_consume_remaining() {
         let bytes = b"abcdef";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         input.skip(2);
         let remaining = input.consume_remaining();
@@ -585,18 +571,18 @@ mod tests {
     #[test]
     fn test_read() {
         let bytes = b"abcdef";
-        let input = Input::new(SourceIdentifier::dummy(), bytes);
+        let input = Input::new(FileId::zero(), bytes);
 
         let read = input.read(3);
         assert_eq!(read, b"abc");
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 0));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
         // Position should not change
     }
 
     #[test]
     fn test_is_at() {
         let bytes = b"abcdef";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         assert!(input.is_at(b"abc", false));
         input.skip(2);
@@ -607,7 +593,7 @@ mod tests {
     #[test]
     fn test_is_at_ignore_ascii_case() {
         let bytes = b"AbCdEf";
-        let mut input = Input::new(SourceIdentifier::dummy(), bytes);
+        let mut input = Input::new(FileId::zero(), bytes);
 
         assert!(input.is_at(b"abc", true));
         input.skip(2);
@@ -618,18 +604,18 @@ mod tests {
     #[test]
     fn test_peek() {
         let bytes = b"abcdef";
-        let input = Input::new(SourceIdentifier::dummy(), bytes);
+        let input = Input::new(FileId::zero(), bytes);
 
         let peeked = input.peek(2, 3);
         assert_eq!(peeked, b"cde");
-        assert_eq!(input.current_position(), Position::new(SourceIdentifier::dummy(), 0));
+        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
         // Position should not change
     }
 
     #[test]
     fn test_to_bound() {
         let bytes = b"abcdef";
-        let input = Input::new(SourceIdentifier::dummy(), bytes);
+        let input = Input::new(FileId::zero(), bytes);
 
         let (from, until) = input.calculate_bound(3);
         assert_eq!((from, until), (0, 3));

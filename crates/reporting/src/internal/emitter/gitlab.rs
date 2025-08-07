@@ -1,15 +1,15 @@
-use mago_interner::ThreadedInterner;
-use mago_source::HasSource;
-use mago_source::SourceManager;
-
 use serde::Serialize;
 use termcolor::WriteColor;
+
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::file::HasFileId;
 
 use crate::IssueCollection;
 use crate::Level;
 use crate::error::ReportingError;
 
-use super::utils::long_message;
+use crate::internal::emitter::utils::long_message;
 
 #[derive(Serialize)]
 struct CodeQualityIssue<'a> {
@@ -33,8 +33,7 @@ struct Lines {
 
 pub fn gitlab_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     let highest_level = issues.get_highest_level();
@@ -50,12 +49,10 @@ pub fn gitlab_format(
 
             let (path, line) = match issue.annotations.iter().find(|annotation| annotation.is_primary()) {
                 Some(annotation) => {
-                    let source = sources.load(&annotation.span.source()).unwrap();
+                    let file = database.get_by_id(&annotation.span.file_id()).unwrap();
+                    let line = file.line_number(annotation.span.start.offset) + 1;
 
-                    let file_path = interner.lookup(&source.identifier.0).to_string();
-                    let line = source.line_number(annotation.span.start.offset) + 1;
-
-                    (file_path, line)
+                    (file.name.to_string(), line)
                 }
                 None => ("<unknown>".to_string(), 0),
             };

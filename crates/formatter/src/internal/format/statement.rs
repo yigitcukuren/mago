@@ -44,10 +44,10 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
 
         if let Statement::OpeningTag(tag) = stmt {
             let offset = tag.span().start.offset;
-            let line = f.source.line_number(offset);
+            let line = f.file.line_number(offset);
 
-            if let Some(line_start_offset) = f.source.get_line_start_offset(line) {
-                let c = &f.source_text[line_start_offset..offset];
+            if let Some(line_start_offset) = f.file.get_line_start_offset(line) {
+                let c = &f.file.contents[line_start_offset..offset];
                 let ws = c.chars().take_while(|c| c.is_whitespace()).collect::<String>();
                 if !ws.is_empty() {
                     let mut j = i + 1;

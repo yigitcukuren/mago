@@ -10,6 +10,7 @@ use crate::consts::MAX_ENUM_CASES_FOR_ANALYSIS;
 use crate::issue::ScanningIssueKind;
 use crate::metadata::CodebaseMetadata;
 use crate::metadata::class_like::ClassLikeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::property::PropertyMetadata;
 use crate::metadata::ttype::TypeMetadata;
 use crate::misc::GenericParent;
@@ -44,12 +45,9 @@ pub fn register_anonymous_class(
     scope: &mut NamespaceScope,
 ) -> Option<(StringIdentifier, TemplateConstraintList)> {
     let span = class.span();
-    let name = context.interner.intern(format!(
-        "class@anonymous:{}-{}:{}",
-        span.start.source.0.value(),
-        span.start.offset,
-        span.end.offset,
-    ));
+    let name = context
+        .interner
+        .intern(format!("class@anonymous:{}-{}:{}", span.start.file_id, span.start.offset, span.end.offset,));
 
     let class_like_metadata = scan_class_like(
         codebase,
@@ -246,7 +244,15 @@ fn scan_class_like(
         return None;
     }
 
-    let mut class_like_metadata = ClassLikeMetadata::new(name, original_name, span, name_span);
+    let mut flags = MetadataFlags::empty();
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
+
+    let mut class_like_metadata = ClassLikeMetadata::new(name, original_name, span, name_span, flags);
+
     class_like_metadata.attributes = scan_attribute_lists(attribute_lists, context);
     class_like_metadata.enum_type = match enum_type {
         Some(EnumBackingTypeHint { hint: Hint::String(_), .. }) => Some(TAtomic::Scalar(TScalar::string())),
@@ -262,9 +268,17 @@ fn scan_class_like(
 
     match kind {
         SymbolKind::Class => {
-            class_like_metadata.is_final = modifiers.is_some_and(|m| m.contains_final());
-            class_like_metadata.is_abstract = modifiers.is_some_and(|m| m.contains_abstract());
-            class_like_metadata.is_readonly = modifiers.is_some_and(|m| m.contains_readonly());
+            if modifiers.is_some_and(|m| m.contains_final()) {
+                class_like_metadata.flags |= MetadataFlags::FINAL;
+            }
+
+            if modifiers.is_some_and(|m| m.contains_abstract()) {
+                class_like_metadata.flags |= MetadataFlags::ABSTRACT;
+            }
+
+            if modifiers.is_some_and(|m| m.contains_readonly()) {
+                class_like_metadata.flags |= MetadataFlags::READONLY;
+            }
 
             codebase.symbols.add_class_name(name);
 
@@ -277,7 +291,7 @@ fn scan_class_like(
             }
         }
         SymbolKind::Enum => {
-            class_like_metadata.is_final = true;
+            class_like_metadata.flags |= MetadataFlags::FINAL;
 
             if enum_type.is_some() {
                 let backed_enum_interface = context.interner.intern("backedenum");
@@ -306,7 +320,7 @@ fn scan_class_like(
             codebase.symbols.add_trait_name(name);
         }
         SymbolKind::Interface => {
-            class_like_metadata.is_abstract = true;
+            class_like_metadata.flags |= MetadataFlags::ABSTRACT;
 
             codebase.symbols.add_interface_name(name);
 
@@ -349,18 +363,48 @@ fn scan_class_like(
     };
 
     if let Some(docblock) = docblock {
-        class_like_metadata.is_enum_interface = class_like_metadata.kind.is_interface() && docblock.is_enum_interface;
+        if class_like_metadata.kind.is_interface() && docblock.is_enum_interface {
+            class_like_metadata.flags |= MetadataFlags::ENUM_INTERFACE;
+        }
+
+        if docblock.is_final {
+            class_like_metadata.flags |= MetadataFlags::FINAL;
+        }
+
+        if docblock.is_deprecated {
+            class_like_metadata.flags |= MetadataFlags::DEPRECATED;
+        }
+
+        if docblock.is_immutable {
+            class_like_metadata.flags |= MetadataFlags::IMMUTABLE;
+        }
+
+        if docblock.is_internal {
+            class_like_metadata.flags |= MetadataFlags::INTERNAL;
+        }
+
+        if docblock.is_mutation_free {
+            class_like_metadata.flags |= MetadataFlags::MUTATION_FREE;
+        }
+
+        if docblock.is_external_mutation_free {
+            class_like_metadata.flags |= MetadataFlags::EXTERNAL_MUTATION_FREE;
+        }
+
+        if docblock.allows_private_mutation {
+            class_like_metadata.flags |= MetadataFlags::ALLOWS_PRIVATE_MUTATION;
+        }
+
+        if docblock.has_consistent_constructor {
+            class_like_metadata.flags |= MetadataFlags::CONSISTENT_CONSTRUCTOR;
+        }
+
+        if docblock.has_consistent_templates {
+            class_like_metadata.flags |= MetadataFlags::CONSISTENT_TEMPLATES;
+        }
+
         class_like_metadata.has_sealed_methods = docblock.has_sealed_methods;
         class_like_metadata.has_sealed_properties = docblock.has_sealed_properties;
-        class_like_metadata.is_final |= docblock.is_final;
-        class_like_metadata.is_deprecated |= docblock.is_deprecated;
-        class_like_metadata.is_immutable |= docblock.is_immutable;
-        class_like_metadata.is_internal |= docblock.is_internal;
-        class_like_metadata.is_mutation_free |= docblock.is_mutation_free;
-        class_like_metadata.is_external_mutation_free |= docblock.is_external_mutation_free;
-        class_like_metadata.allows_private_mutation |= docblock.allows_private_mutation;
-        class_like_metadata.has_consistent_constructor |= docblock.has_consistent_constructor;
-        class_like_metadata.has_consistent_templates |= docblock.has_consistent_templates;
 
         for (i, template) in docblock.templates.iter().enumerate() {
             let template_name = context.interner.intern(&template.name);
@@ -862,9 +906,8 @@ fn scan_class_like(
         }
 
         let name = context.interner.intern("$name");
-        let mut property_metadata = PropertyMetadata::new(VariableIdentifier(name));
-        property_metadata.is_readonly = true;
-        property_metadata.has_default = true;
+        let flags = MetadataFlags::READONLY | MetadataFlags::HAS_DEFAULT;
+        let mut property_metadata = PropertyMetadata::new(VariableIdentifier(name), flags);
         property_metadata.type_declaration_metadata = Some(TypeMetadata::new(get_string(), enum_name_span));
         property_metadata.type_metadata = Some(TypeMetadata::new(TUnion::new(name_types), enum_name_span));
 
@@ -873,9 +916,9 @@ fn scan_class_like(
         if let Some(enum_backing_type) = backing_type {
             let value = context.interner.intern("$value");
 
-            let mut property_metadata = PropertyMetadata::new(VariableIdentifier(value));
-            property_metadata.is_readonly = true;
-            property_metadata.has_default = true;
+            let flags = MetadataFlags::READONLY | MetadataFlags::HAS_DEFAULT;
+            let mut property_metadata = PropertyMetadata::new(VariableIdentifier(value), flags);
+
             property_metadata.set_type_declaration_metadata(Some(TypeMetadata::new(
                 TUnion::new(vec![enum_backing_type]),
                 enum_name_span,

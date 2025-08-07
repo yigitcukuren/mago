@@ -10,12 +10,11 @@ use codespan_reporting::files::Files;
 use codespan_reporting::term;
 use codespan_reporting::term::Config;
 use codespan_reporting::term::DisplayStyle;
+use mago_database::file::FileId;
 use termcolor::WriteColor;
 
-use mago_interner::ThreadedInterner;
-use mago_source::SourceIdentifier;
-use mago_source::SourceManager;
-use mago_source::error::SourceError;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
 
 use crate::Annotation;
 use crate::AnnotationKind;
@@ -26,14 +25,12 @@ use crate::error::ReportingError;
 
 pub fn rich_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     codespan_format_with_config(
         writer,
-        sources,
-        interner,
+        database,
         issues,
         Config { display_style: DisplayStyle::Rich, ..Default::default() },
     )
@@ -41,14 +38,12 @@ pub fn rich_format(
 
 pub fn medium_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     codespan_format_with_config(
         writer,
-        sources,
-        interner,
+        database,
         issues,
         Config { display_style: DisplayStyle::Medium, ..Default::default() },
     )
@@ -56,14 +51,12 @@ pub fn medium_format(
 
 pub fn short_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     codespan_format_with_config(
         writer,
-        sources,
-        interner,
+        database,
         issues,
         Config { display_style: DisplayStyle::Short, ..Default::default() },
     )
@@ -71,12 +64,11 @@ pub fn short_format(
 
 fn codespan_format_with_config(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
     config: Config,
 ) -> Result<Option<Level>, ReportingError> {
-    let files = SourceManagerFile(sources, interner);
+    let files = DatabaseFiles(database);
 
     let highest_level = issues.get_highest_level();
     let mut errors = 0;
@@ -105,7 +97,7 @@ fn codespan_format_with_config(
             suggestions += 1;
         }
 
-        let diagnostic: Diagnostic<SourceIdentifier> = issue.into();
+        let diagnostic: Diagnostic<FileId> = issue.into();
 
         term::emit(writer, &config, &files, &diagnostic)?;
     }
@@ -129,7 +121,7 @@ fn codespan_format_with_config(
             message_notes.push(format!("{help} help message(s)"));
         }
 
-        let mut diagnostic: Diagnostic<SourceIdentifier> = Diagnostic::new(highest_level.into()).with_message(format!(
+        let mut diagnostic: Diagnostic<FileId> = Diagnostic::new(highest_level.into()).with_message(format!(
             "found {} issues: {}",
             total_issues,
             message_notes.join(", ")
@@ -145,43 +137,31 @@ fn codespan_format_with_config(
     Ok(highest_level)
 }
 
-struct SourceManagerFile<'a>(&'a SourceManager, &'a ThreadedInterner);
+struct DatabaseFiles<'a>(&'a ReadDatabase);
 
-impl<'a> Files<'a> for SourceManagerFile<'_> {
-    type FileId = SourceIdentifier;
+impl<'a> Files<'a> for DatabaseFiles<'_> {
+    type FileId = FileId;
     type Name = &'a str;
     type Source = &'a str;
 
-    fn name(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.0.load(&file_id).map(|source| self.1.lookup(&source.identifier.value())).map_err(|e| match e {
-            SourceError::UnavailableSource(_) => Error::FileMissing,
-            SourceError::IOError(error) => Error::Io(error),
-        })
+    fn name(&'a self, file_id: FileId) -> Result<&'a str, Error> {
+        self.0.get_by_id(&file_id).map(|source| source.name.as_ref()).map_err(|_| Error::FileMissing)
     }
 
-    fn source(&'a self, file_id: SourceIdentifier) -> Result<&'a str, Error> {
-        self.0.load(&file_id).map(|source| self.1.lookup(&source.content)).map_err(|e| match e {
-            SourceError::UnavailableSource(_) => Error::FileMissing,
-            SourceError::IOError(error) => Error::Io(error),
-        })
+    fn source(&'a self, file_id: FileId) -> Result<&'a str, Error> {
+        self.0.get_by_id(&file_id).map(|source| source.contents.as_ref()).map_err(|_| Error::FileMissing)
     }
 
-    fn line_index(&self, file_id: SourceIdentifier, byte_index: usize) -> Result<usize, Error> {
-        let source = self.0.load(&file_id).map_err(|e| match e {
-            SourceError::UnavailableSource(_) => Error::FileMissing,
-            SourceError::IOError(error) => Error::Io(error),
-        })?;
+    fn line_index(&self, file_id: FileId, byte_index: usize) -> Result<usize, Error> {
+        let file = self.0.get_by_id(&file_id).map_err(|_| Error::FileMissing)?;
 
-        Ok(source.line_number(byte_index))
+        Ok(file.line_number(byte_index))
     }
 
-    fn line_range(&self, file_id: SourceIdentifier, line_index: usize) -> Result<Range<usize>, Error> {
-        let source = self.0.load(&file_id).map_err(|e| match e {
-            SourceError::UnavailableSource(_) => Error::FileMissing,
-            SourceError::IOError(error) => Error::Io(error),
-        })?;
+    fn line_range(&self, file_id: FileId, line_index: usize) -> Result<Range<usize>, Error> {
+        let file = self.0.get_by_id(&file_id).map_err(|_| Error::FileMissing)?;
 
-        codespan_line_range(&source.lines, source.size, line_index)
+        codespan_line_range(&file.lines, file.size, line_index)
     }
 }
 
@@ -209,9 +189,9 @@ impl From<AnnotationKind> for LabelStyle {
     }
 }
 
-impl From<Annotation> for Label<SourceIdentifier> {
-    fn from(annotation: Annotation) -> Label<SourceIdentifier> {
-        let mut label = Label::new(annotation.kind.into(), annotation.span.start.source, annotation.span);
+impl From<Annotation> for Label<FileId> {
+    fn from(annotation: Annotation) -> Label<FileId> {
+        let mut label = Label::new(annotation.kind.into(), annotation.span.start.file_id, annotation.span);
 
         if let Some(message) = annotation.message {
             label.message = message;
@@ -232,8 +212,8 @@ impl From<Level> for Severity {
     }
 }
 
-impl From<Issue> for Diagnostic<SourceIdentifier> {
-    fn from(issue: Issue) -> Diagnostic<SourceIdentifier> {
+impl From<Issue> for Diagnostic<FileId> {
+    fn from(issue: Issue) -> Diagnostic<FileId> {
         let mut diagnostic = Diagnostic::new(issue.level.into()).with_message(issue.message);
 
         if let Some(code) = issue.code {

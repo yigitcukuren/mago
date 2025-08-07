@@ -46,7 +46,7 @@ pub struct FunctionLikeDocblockComment {
     pub inherits_docs: bool,
     pub is_mutation_free: bool,
     pub is_external_mutation_free: bool,
-    pub allows_named_arguments: bool,
+    pub no_named_arguments: bool,
     pub return_type: Option<ReturnTypeTag>,
     pub parameters: Vec<ParameterTag>,
     pub parameters_out: Vec<ParameterOutTag>,
@@ -294,7 +294,7 @@ impl FunctionLikeDocblockComment {
         let mut inherits_docs = false;
         let mut is_mutation_free = false;
         let mut is_external_mutation_free = false;
-        let mut allows_named_arguments = true;
+        let mut no_named_arguments = false;
         let mut return_type: Option<ReturnTypeTag> = None;
         let mut parameters: Vec<ParameterTag> = Vec::new();
         let mut parameters_out: Vec<ParameterOutTag> = Vec::new();
@@ -335,7 +335,7 @@ impl FunctionLikeDocblockComment {
                     }
                 }
                 TagKind::NoNamedArguments => {
-                    allows_named_arguments = false;
+                    no_named_arguments = true;
                 }
                 TagKind::PhpstanTemplate
                 | TagKind::PsalmTemplate
@@ -463,7 +463,7 @@ impl FunctionLikeDocblockComment {
             inherits_docs,
             is_mutation_free,
             is_external_mutation_free,
-            allows_named_arguments,
+            no_named_arguments,
             return_type,
             parameters,
             parameters_out,

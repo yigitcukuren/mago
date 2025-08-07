@@ -176,9 +176,9 @@ impl Analyzable for Expression {
                 if !identifier.is_local() {
                     unreachable!(
                         "Parser should not produce a bare `Identifier` as a standalone expression in this context. \nIf you see this, it indicates a bug in the parser or the analysis logic. \nPlease report this issue with the following identifier: `{}` line `{}`, column `{}`.",
-                        context.interner.lookup(&context.source.identifier.0),
-                        context.source.line_number(self.offset()),
-                        context.source.column_number(self.offset()),
+                        context.source_file.name,
+                        context.source_file.line_number(self.offset()),
+                        context.source_file.column_number(self.offset()),
                     );
                 }
 

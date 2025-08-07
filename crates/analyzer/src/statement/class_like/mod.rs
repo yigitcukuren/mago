@@ -215,7 +215,7 @@ pub(crate) fn analyze_class_like<'a>(
         artifacts.symbol_references.add_symbol_reference_to_symbol(class_like_metadata.name, *trait_name, true);
     }
 
-    if class_like_metadata.unchecked {
+    if class_like_metadata.flags.is_unchecked() {
         return Ok(());
     }
 
@@ -235,7 +235,7 @@ pub(crate) fn analyze_class_like<'a>(
         return Ok(());
     }
 
-    if !class_like_metadata.kind.is_trait() && !class_like_metadata.is_abstract {
+    if !class_like_metadata.kind.is_trait() && !class_like_metadata.flags.is_abstract() {
         for (method_name, fqcn) in &class_like_metadata.declaring_method_ids {
             if class_like_metadata.kind.is_enum() {
                 let method_name_str = context.interner.lookup(method_name);
@@ -401,7 +401,7 @@ fn check_class_like_extends(
             if extended_class_metadata.kind.is_class() || extended_class_metadata.kind.is_trait() { "a" } else { "an" };
         let extended_class_span = extended_class_metadata.name_span.unwrap_or(extended_class_metadata.span);
 
-        if extended_class_metadata.is_deprecated {
+        if extended_class_metadata.flags.is_deprecated() {
             context.collector.report_with_code(
                 Code::DEPRECATED_CLASS,
                 Issue::warning(format!("Use of deprecated class `{extended_name_str}` in `extends` clause"))
@@ -428,7 +428,7 @@ fn check_class_like_extends(
                 continue;
             }
 
-            if extended_class_metadata.is_enum_interface && !class_like_metadata.is_enum_interface {
+            if extended_class_metadata.flags.is_enum_interface() && !class_like_metadata.flags.is_enum_interface() {
                 context.collector.report_with_code(
                     Code::INVALID_EXTEND,
                     Issue::error(format!("Interface `{using_name_str}` cannot extend enum-interface `{extended_name_str}`"))
@@ -460,7 +460,7 @@ fn check_class_like_extends(
                 continue;
             }
 
-            if extended_class_metadata.is_final {
+            if extended_class_metadata.flags.is_final() {
                 context.collector.report_with_code(
                     Code::EXTEND_FINAL_CLASS,
                     Issue::error(format!("Class `{using_name_str}` cannot extend final class `{extended_name_str}`"))
@@ -471,7 +471,7 @@ fn check_class_like_extends(
                 );
             }
 
-            if extended_class_metadata.is_readonly && !class_like_metadata.is_readonly {
+            if extended_class_metadata.flags.is_readonly() && !class_like_metadata.flags.is_readonly() {
                 context.collector.report_with_code(
                     Code::INVALID_EXTEND,
                     Issue::error(format!("Non-readonly class `{using_name_str}` cannot extend readonly class `{extended_name_str}`"))
@@ -482,7 +482,9 @@ fn check_class_like_extends(
                 );
             }
 
-            if extended_class_metadata.is_external_mutation_free && !class_like_metadata.is_external_mutation_free {
+            if extended_class_metadata.flags.is_external_mutation_free()
+                && !class_like_metadata.flags.is_external_mutation_free()
+            {
                 context.collector.report_with_code(
                     Code::INVALID_EXTEND,
                     Issue::error(format!("Mutable class `{using_name_str}` cannot extend `@external-mutation-free` class `{extended_name_str}`"))
@@ -493,7 +495,7 @@ fn check_class_like_extends(
                 );
             }
 
-            if extended_class_metadata.is_mutation_free && !class_like_metadata.is_mutation_free {
+            if extended_class_metadata.flags.is_mutation_free() && !class_like_metadata.flags.is_mutation_free() {
                 context.collector.report_with_code(
                     Code::INVALID_EXTEND,
                     Issue::error(format!("Mutable class `{using_name_str}` cannot extend `@mutation-free` class `{extended_name_str}`"))
@@ -504,7 +506,7 @@ fn check_class_like_extends(
                 );
             }
 
-            if !class_like_metadata.is_abstract {
+            if !class_like_metadata.flags.is_abstract() {
                 for required_interface in &extended_class_metadata.require_implements {
                     if !class_like_metadata.all_parent_interfaces.contains(required_interface) {
                         let required_iface_str = context.interner.lookup(required_interface);
@@ -520,7 +522,7 @@ fn check_class_like_extends(
                 }
             }
 
-            if !class_like_metadata.is_abstract
+            if !class_like_metadata.flags.is_abstract()
                 && let Some(permitted_inheritors) = &extended_class_metadata.permitted_inheritors
                 && !permitted_inheritors.contains(&class_like_metadata.name)
                 && !class_like_metadata
@@ -612,7 +614,7 @@ fn check_class_like_implements(
                     continue;
                 }
 
-                if implemented_metadata.is_enum_interface && !class_like_metadata.kind.is_enum() {
+                if implemented_metadata.flags.is_enum_interface() && !class_like_metadata.kind.is_enum() {
                     context.collector.report_with_code(
                         Code::INVALID_IMPLEMENT,
                         Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot implement enum-only interface `{implemented_name_str}`"))
@@ -624,7 +626,7 @@ fn check_class_like_implements(
                     );
                 }
 
-                if !class_like_metadata.is_abstract
+                if !class_like_metadata.flags.is_abstract()
                     && let Some(permitted_inheritors) = &implemented_metadata.permitted_inheritors
                     && !permitted_inheritors.contains(&class_like_metadata.name)
                     && !class_like_metadata
@@ -729,7 +731,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             continue;
         }
 
-        if used_trait_metadata.is_deprecated {
+        if used_trait_metadata.flags.is_deprecated() {
             context.collector.report_with_code(
                 Code::DEPRECATED_TRAIT,
                 Issue::error(format!("Use of deprecated trait `{used_name_str}` in `{using_name_str}`"))
@@ -740,7 +742,9 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             );
         }
 
-        if used_trait_metadata.is_external_mutation_free && !class_like_metadata.is_external_mutation_free {
+        if used_trait_metadata.flags.is_external_mutation_free()
+            && !class_like_metadata.flags.is_external_mutation_free()
+        {
             context.collector.report_with_code(
                 Code::INVALID_TRAIT_USE,
                 Issue::error(format!("Mutable {using_kind_str} `{using_name_str}` cannot use `@external-mutation-free` trait `{used_name_str}`"))
@@ -751,7 +755,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             );
         }
 
-        if used_trait_metadata.is_mutation_free && !class_like_metadata.is_mutation_free {
+        if used_trait_metadata.flags.is_mutation_free() && !class_like_metadata.flags.is_mutation_free() {
             context.collector.report_with_code(
                 Code::INVALID_TRAIT_USE,
                 Issue::error(format!("Mutable {using_kind_str} `{using_name_str}` cannot use `@mutation-free` trait `{used_name_str}`"))
@@ -762,7 +766,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             );
         }
 
-        if !class_like_metadata.is_abstract {
+        if !class_like_metadata.flags.is_abstract() {
             for required_interface in &used_trait_metadata.require_implements {
                 if !class_like_metadata.all_parent_interfaces.contains(required_interface) {
                     let required_iface_str = context.interner.lookup(required_interface);
@@ -792,7 +796,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             }
         }
 
-        if !class_like_metadata.is_abstract
+        if !class_like_metadata.flags.is_abstract()
             && let Some(permitted_inheritors) = &used_trait_metadata.permitted_inheritors
             && !permitted_inheritors.contains(&class_like_metadata.name)
             && !class_like_metadata
@@ -903,7 +907,7 @@ fn check_template_parameters(
     }
 
     let own_template_parameters_len = class_like_metadata.template_types.len();
-    if parent_metadata.has_consistent_templates && own_template_parameters_len != expected_parameters_count {
+    if parent_metadata.flags.has_consistent_templates() && own_template_parameters_len != expected_parameters_count {
         context.collector.report_with_code(
             Code::INCONSISTENT_TEMPLATE,
             Issue::error(format!(
@@ -969,7 +973,7 @@ fn check_template_parameters(
                 }
             }
 
-            if parent_metadata.has_consistent_templates {
+            if parent_metadata.flags.has_consistent_templates() {
                 for extended_type_atomic in &extended_type.types {
                     let extended_as_template = extended_type_atomic.get_generic_parameter_name();
                     if extended_as_template.is_none() {

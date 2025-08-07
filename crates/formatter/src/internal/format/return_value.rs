@@ -63,7 +63,7 @@ pub fn format_return_value<'a>(f: &mut FormatterState<'a>, value: &'a Expression
 fn return_argument_has_leading_comment<'a>(f: &mut FormatterState<'a>, argument: &'a Expression) -> bool {
     if f.has_leading_own_line_comment(argument.span())
         || f.has_comment_with_filter(argument.span(), CommentFlags::Leading, |comment| {
-            has_new_line_in_range(f.source_text, comment.start, comment.end)
+            has_new_line_in_range(&f.file.contents, comment.start, comment.end)
         })
     {
         return true;

@@ -95,11 +95,7 @@ fn get_union_from_hint<'ast>(
         Hint::Object(_) => get_object(),
         Hint::Mixed(_) => get_mixed(),
         Hint::Parent(k) => {
-            tracing::trace!(
-                "Unsupported parent hint in {} at {}",
-                context.interner.lookup(&context.source.identifier.0),
-                k.span.start,
-            );
+            tracing::trace!("Unsupported parent hint in {} at {}", context.file.id, k.span.start,);
 
             get_mixed()
         }

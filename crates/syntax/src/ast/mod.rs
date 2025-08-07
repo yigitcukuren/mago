@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_source::SourceIdentifier;
+use mago_database::file::FileId;
 use mago_span::HasSpan;
 use mago_span::Position;
 use mago_span::Span;
@@ -23,7 +23,7 @@ pub mod trivia;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct Program {
-    pub source: SourceIdentifier,
+    pub file_id: FileId,
     pub trivia: Sequence<Trivia>,
     pub statements: Sequence<Statement>,
 }
@@ -43,9 +43,10 @@ impl Program {
 impl HasSpan for Program {
     fn span(&self) -> Span {
         let start =
-            self.statements.first().map(|stmt| stmt.span().start).unwrap_or_else(|| Position::start_of(self.source));
+            self.statements.first().map(|stmt| stmt.span().start).unwrap_or_else(|| Position::start_of(self.file_id));
 
-        let end = self.statements.last().map(|stmt| stmt.span().end).unwrap_or_else(|| Position::start_of(self.source));
+        let end =
+            self.statements.last().map(|stmt| stmt.span().end).unwrap_or_else(|| Position::start_of(self.file_id));
 
         Span::new(start, end)
     }

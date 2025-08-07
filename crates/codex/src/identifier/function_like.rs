@@ -91,7 +91,7 @@ impl FunctionLikeIdentifier {
                 format!("{}::{}", interner.lookup(fq_classlike_name), interner.lookup(method_name))
             }
             FunctionLikeIdentifier::Closure(position) => {
-                format!("{}:{}", interner.lookup(&position.source.value()), position.offset)
+                format!("{}:{}", position.file_id, position.offset)
             }
         }
     }
@@ -109,7 +109,7 @@ impl FunctionLikeIdentifier {
                 format!("{fq_classlike_name}::{method_name}")
             }
             FunctionLikeIdentifier::Closure(position) => {
-                format!("{}::{}", position.source.value(), position.offset)
+                format!("{}::{}", position.file_id, position.offset)
             }
         }
     }

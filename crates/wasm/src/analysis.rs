@@ -12,9 +12,10 @@ use std::collections::HashSet;
 use mago_codex::populator::populate_codebase;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::scanner::scan_program;
+use mago_database::file::File;
 use mago_names::resolver::NameResolver;
 use mago_semantics::SemanticsChecker;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 use serde::Serialize;
 
 use mago_formatter::Formatter;
@@ -25,7 +26,6 @@ use mago_linter::Linter;
 use mago_linter::settings::Settings;
 use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
-use mago_source::Source;
 use mago_syntax::ast::Program;
 
 /// Represents the result of analyzing and formatting PHP code.
@@ -113,8 +113,8 @@ impl AnalysisResults {
     /// and formatted code (if no parse error).
     pub fn analyze(code: String, lint_settings: Settings, format_settings: FormatSettings) -> Self {
         let interner = ThreadedInterner::new();
-        let source = Source::standalone(&interner, "code.php", &code);
-        let (program, parse_error) = parse_source(&interner, &source);
+        let source = File::ephemeral("code.php".to_string(), code);
+        let (program, parse_error) = parse_file(&interner, &source);
         let resolved_names = NameResolver::new(&interner).resolve(&program);
         let semantic_issues =
             SemanticsChecker::new(&lint_settings.php_version, &interner).check(&source, &program, &resolved_names);

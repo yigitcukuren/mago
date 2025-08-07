@@ -159,7 +159,7 @@ pub fn get_docblock_variables<'a>(
                         &mut variable_type,
                         &context.codebase.symbols,
                         context.interner,
-                        block_context.scope.get_reference_source(&context.source.identifier).as_ref(),
+                        block_context.scope.get_reference_source().as_ref(),
                         &mut artifacts.symbol_references,
                         true,
                     );

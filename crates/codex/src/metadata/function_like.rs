@@ -10,6 +10,7 @@ use mago_span::Span;
 
 use crate::assertion::Assertion;
 use crate::metadata::attribute::AttributeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::parameter::FunctionLikeParameterMetadata;
 use crate::metadata::ttype::TypeMetadata;
 use crate::misc::GenericParent;
@@ -110,66 +111,9 @@ pub struct FunctionLikeMetadata {
     /// (e.g., `use` statements, current namespace, class context). Often populated during analysis.
     pub type_resolution_context: Option<TypeResolutionContext>,
 
-    /// `true` if this function/method is defined in user-controlled code (vs. internal stubs/PHP core).
-    /// Often determined from the source file info within the `span`.
-    pub(crate) user_defined: bool,
-
     /// A list of types that this function/method might throw, derived from `@throws` docblock tags
     /// or inferred from `throw` statements within the body.
     pub thrown_types: Vec<TypeMetadata>,
-
-    /// `true` if the function/method body contains a `yield` statement, indicating it's a generator.
-    pub has_yield: bool,
-
-    /// `true` if the function/method is marked with `@psalm-must-use`, `@phpstan-must-use`,
-    /// or `@must-use`, indicating its return value should not be ignored.
-    pub must_use: bool,
-
-    /// `true` if the function/method body contains a `throw` statement.
-    pub has_throw: bool,
-
-    pub specialize_call: bool,
-
-    /// Internal flag indicating whether this metadata structure has been fully populated
-    /// by all analysis stages. Used to control analysis flow. (User requested minimal documentation).
-    pub(crate) is_populated: bool,
-
-    /// `true` if the function/method is marked as deprecated via docblock tags
-    /// (`@deprecated`, `@psalm-deprecated`, `@phpstan-deprecated`).
-    pub is_deprecated: bool,
-
-    /// `true` if the function/method is marked as internal via docblock tags
-    /// (`@internal`, `@psalm-internal`, `@phpstan-internal`), indicating it's not part of the lic API.
-    pub is_internal: bool,
-
-    /// `true` if the function/method is marked as pure via docblock tags
-    /// (`@pure`, `@psalm-pure`, `@phpstan-pure`), indicating it has no side effects.
-    pub is_pure: bool,
-
-    /// `true` if marked with `@psalm-ignore-nullable-return` or equivalent, suppressing
-    /// issues related to returning `null` when the signature doesn't explicitly allow it.
-    pub ignore_nullable_return: bool,
-
-    /// `true` if marked with `@psalm-ignore-falsable-return` or equivalent, suppressing
-    /// issues related to returning `false` when the signature doesn't explicitly allow it.
-    pub ignore_falsable_return: bool,
-
-    /// `true` if the function/method's docblock includes `{@inheritdoc}` or implicitly inherits
-    /// documentation from a parent method.
-    pub inherits_docs: bool,
-
-    /// `true` if marked with `@psalm-mutation-free`, `@phpstan-mutation-free`, indicating the function
-    /// does not modify any state (including object properties or global state). Implies `@pure`.
-    pub is_mutation_free: bool,
-
-    /// `true` if marked with `@psalm-external-mutation-free`, `@phpstan-external-mutation-free`,
-    /// indicating the function does not modify *external* state but may modify its own arguments
-    /// or locally created objects.
-    pub is_external_mutation_free: bool,
-
-    /// `true` if the function/method accepts named arguments (PHP 8.0+ default).
-    /// Can be set to `false` if the `#[NoNamedArguments]` attribute is present (PHP 8.2+).
-    pub allows_named_arguments: bool,
 
     /// List of issues specifically related to parsing or interpreting this function's docblock.
     pub issues: Vec<Issue>,
@@ -187,8 +131,7 @@ pub struct FunctionLikeMetadata {
     /// function/method returns `false`. From `@psalm-assert-if-false`, etc.
     pub if_false_assertions: BTreeMap<StringIdentifier, Vec<Assertion>>,
 
-    /// A flag indicating if this function-like should be treated as unchecked.
-    pub unchecked: bool,
+    pub flags: MetadataFlags,
 }
 
 impl FunctionLikeKind {
@@ -218,20 +161,15 @@ impl FunctionLikeKind {
 }
 
 /// Contains comprehensive metadata for any function-like structure in PHP.
-/// Provides a flexible API with setters (`set_*`), consuming builders (`with_*`),
-/// adders (`add_*`), consuming adders (`with_added_*`), unsetters (`unset_*`),
-/// and consuming unsetters (`without_*`), along with clearly named getters
-/// (`get_*`, `is_*`, `has_*`, `allows_*`).
 impl FunctionLikeMetadata {
     /// Creates new `FunctionLikeMetadata` with basic information and default flags.
-    pub fn new(kind: FunctionLikeKind, span: Span) -> Self {
-        let user_defined = span.start.source.1.is_user_defined();
+    pub fn new(kind: FunctionLikeKind, span: Span, flags: MetadataFlags) -> Self {
         let method_metadata = if kind.is_method() { Some(MethodMetadata::default()) } else { None };
 
         Self {
             kind,
             span,
-            user_defined,
+            flags,
             name: None,
             name_span: None,
             parameters: vec![],
@@ -241,25 +179,10 @@ impl FunctionLikeMetadata {
             attributes: vec![],
             method_metadata,
             type_resolution_context: None,
-            has_throw: false,
             thrown_types: vec![],
-            is_pure: false,
-            must_use: false,
-            is_deprecated: false,
-            specialize_call: false,
-            is_populated: false,
-            has_yield: false,
-            is_internal: false,
-            ignore_nullable_return: false,
-            ignore_falsable_return: false,
-            inherits_docs: false,
-            is_mutation_free: false,
-            is_external_mutation_free: false,
-            allows_named_arguments: true,
             assertions: BTreeMap::new(),
             if_true_assertions: BTreeMap::new(),
             if_false_assertions: BTreeMap::new(),
-            unchecked: false,
             issues: vec![],
         }
     }
@@ -310,12 +233,6 @@ impl FunctionLikeMetadata {
     #[inline]
     pub fn take_issues(&mut self) -> Vec<Issue> {
         std::mem::take(&mut self.issues)
-    }
-
-    /// Checks if the function contains `yield`.
-    #[inline]
-    pub const fn has_yield(&self) -> bool {
-        self.has_yield
     }
 
     /// Sets the name and corresponding name span. Clears both if name is `None`. Updates constructor status.

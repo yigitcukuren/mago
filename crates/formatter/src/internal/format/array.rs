@@ -145,7 +145,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
 
     let must_break = (f.settings.preserve_breaking_array_like
         && misc::has_new_line_in_range(
-            f.source_text,
+            &f.file.contents,
             array_like.span().start.offset,
             array_like.elements()[0].span().start.offset,
         ))

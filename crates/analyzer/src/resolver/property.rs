@@ -213,7 +213,7 @@ fn find_property_in_class<'a>(
     let Some(property_metadata) = declaring_class_metadata.properties.get(prop_name) else {
         result.has_invalid_path = true;
 
-        if !declaring_class_metadata.is_final
+        if !declaring_class_metadata.flags.is_final()
             || declaring_class_metadata.kind.is_interface()
             || declaring_class_metadata.kind.is_trait()
         {
@@ -239,7 +239,6 @@ fn find_property_in_class<'a>(
             self_class: Some(&declaring_class_id),
             static_class_type: StaticClassType::Object(object.clone()),
             parent_class: declaring_class_metadata.direct_parent_class.as_ref(),
-            file_path: Some(&context.source.identifier),
             ..Default::default()
         },
     );
@@ -350,11 +349,7 @@ fn update_template_types(
                                 context.codebase,
                                 context.interner,
                                 &mut lhs_param_type,
-                                &TypeExpansionOptions {
-                                    parent_class: None,
-                                    file_path: Some(&context.source.identifier),
-                                    ..Default::default()
-                                },
+                                &TypeExpansionOptions { parent_class: None, ..Default::default() },
                             );
 
                             lhs_param_type
@@ -467,7 +462,7 @@ fn report_access_on_null(
                             )
                             .with_note("If this expression is `null` at runtime, PHP will raise a warning and the property access will result in `null`.")
                             .with_help("Use the nullsafe operator (`?->`) to safely access the property, or add a check to ensure the value is not `null` (e.g., `if ($obj !== null)`).")
-                            .with_suggestion(operator_span.start.source, {
+                            .with_suggestion(operator_span.start.file_id, {
                                 let mut plan = FixPlan::new();
                                 plan.replace(operator_span.to_range(), "?->", SafetyClassification::Safe);
 

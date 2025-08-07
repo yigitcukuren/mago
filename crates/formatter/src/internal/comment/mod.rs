@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use mago_source::Source;
+use mago_database::file::File;
 use mago_syntax::ast::Trivia;
 use mago_syntax::ast::TriviaKind;
 
@@ -34,12 +34,12 @@ impl Comment {
         Self { start, end, is_block, is_shell_comment, is_single_line, has_line_suffix: false }
     }
 
-    pub fn from_trivia(source: &Source, trivia: &Trivia) -> Self {
+    pub fn from_trivia(file: &File, trivia: &Trivia) -> Self {
         debug_assert!(trivia.kind.is_comment());
 
         let is_block = trivia.kind.is_block_comment();
         let is_single_line =
-            !is_block || (source.line_number(trivia.span.start.offset) == source.line_number(trivia.span.end.offset));
+            !is_block || (file.line_number(trivia.span.start.offset) == file.line_number(trivia.span.end.offset));
         let is_shell_comment = matches!(trivia.kind, TriviaKind::HashComment);
 
         Self::new(trivia.span.start.offset, trivia.span.end.offset, is_block, is_shell_comment, is_single_line)

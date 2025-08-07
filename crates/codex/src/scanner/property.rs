@@ -8,6 +8,7 @@ use mago_syntax::ast::*;
 
 use crate::issue::ScanningIssueKind;
 use crate::metadata::class_like::ClassLikeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::parameter::FunctionLikeParameterMetadata;
 use crate::metadata::property::PropertyMetadata;
 use crate::metadata::ttype::TypeMetadata;
@@ -31,7 +32,30 @@ pub fn scan_promoted_property(
 
     let name = parameter_metadata.get_name();
     let name_span = parameter_metadata.get_name_span();
-    let has_default = parameter_metadata.has_default();
+
+    let mut flags = MetadataFlags::PROMOTED_PROPERTY;
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
+
+    if parameter_metadata.flags.has_default() {
+        flags |= MetadataFlags::HAS_DEFAULT;
+    }
+
+    if parameter.modifiers.contains_readonly() {
+        flags |= MetadataFlags::READONLY;
+    }
+
+    if parameter.modifiers.contains_abstract() {
+        flags |= MetadataFlags::ABSTRACT;
+    }
+
+    if parameter.modifiers.contains_static() {
+        flags |= MetadataFlags::STATIC;
+    }
+
     let default_type_metadata = parameter_metadata.get_default_type().cloned();
 
     let read_visibility = match parameter.modifiers.get_first_read_visibility() {
@@ -44,15 +68,11 @@ pub fn scan_promoted_property(
         None => read_visibility,
     };
 
-    let mut property_metadata = PropertyMetadata::new(*name);
-    property_metadata.set_is_promoted(true);
+    let mut property_metadata = PropertyMetadata::new(*name, flags);
+
     property_metadata.set_default_type_metadata(default_type_metadata);
-    property_metadata.set_has_default(has_default);
     property_metadata.set_name_span(Some(name_span));
     property_metadata.set_span(Some(parameter.span()));
-    property_metadata.set_is_readonly(parameter.modifiers.contains_readonly());
-    property_metadata.set_is_abstract(parameter.modifiers.contains_abstract());
-    property_metadata.set_is_static(parameter.modifiers.contains_static());
     property_metadata.set_visibility(read_visibility, write_visibility);
     property_metadata.set_is_virtual(parameter.hooks.is_some());
     property_metadata.set_type_declaration_metadata(
@@ -92,6 +112,31 @@ pub fn scan_properties(
         }
     };
 
+    let mut flags = MetadataFlags::empty();
+    if context.file.file_type.is_host() {
+        flags |= MetadataFlags::USER_DEFINED;
+    } else if context.file.file_type.is_builtin() {
+        flags |= MetadataFlags::BUILTIN;
+    }
+
+    if let Some(docblock) = docblock.as_ref() {
+        if docblock.is_internal {
+            flags |= MetadataFlags::INTERNAL;
+        }
+
+        if docblock.is_deprecated {
+            flags |= MetadataFlags::DEPRECATED;
+        }
+
+        if docblock.allows_private_mutation {
+            flags |= MetadataFlags::ALLOWS_PRIVATE_MUTATION;
+        }
+
+        if docblock.is_readonly {
+            flags |= MetadataFlags::READONLY;
+        }
+    }
+
     match property {
         Property::Plain(plain_property) => plain_property
             .items
@@ -109,15 +154,29 @@ pub fn scan_properties(
                     None => read_visibility,
                 };
 
-                let mut metadata = PropertyMetadata::new(name);
+                let mut flags = flags;
+
+                if has_default {
+                    flags |= MetadataFlags::HAS_DEFAULT;
+                }
+
+                if plain_property.modifiers.contains_readonly() {
+                    flags |= MetadataFlags::READONLY;
+                }
+
+                if plain_property.modifiers.contains_abstract() {
+                    flags |= MetadataFlags::ABSTRACT;
+                }
+
+                if plain_property.modifiers.contains_static() {
+                    flags |= MetadataFlags::STATIC;
+                }
+
+                let mut metadata = PropertyMetadata::new(name, flags);
+
                 metadata.set_name_span(Some(name_span));
-                metadata.set_has_default(has_default);
                 metadata.set_default_type_metadata(default_type);
-                metadata.set_is_promoted(false);
                 metadata.set_visibility(read_visibility, write_visibility);
-                metadata.set_is_static(plain_property.modifiers.contains_static());
-                metadata.set_is_abstract(plain_property.modifiers.contains_abstract());
-                metadata.set_is_readonly(plain_property.modifiers.contains_readonly());
                 metadata.set_type_declaration_metadata(
                     plain_property
                         .hint
@@ -126,14 +185,6 @@ pub fn scan_properties(
                 );
 
                 if let Some(docblock) = docblock.as_ref() {
-                    metadata.set_is_internal(docblock.is_internal);
-                    metadata.set_is_deprecated(docblock.is_deprecated);
-                    metadata.set_allow_private_mutation(docblock.allows_private_mutation);
-
-                    if docblock.is_readonly {
-                        metadata.set_is_readonly(true);
-                    }
-
                     if let Some(type_string) = &docblock.type_string {
                         match get_type_metadata_from_type_string(type_string, classname, type_context, context, scope) {
                             Ok(property_type_metadata) => {
@@ -165,16 +216,20 @@ pub fn scan_properties(
                 None => Visibility::Public,
             };
 
-            let mut metadata = PropertyMetadata::new(name);
+            if has_default {
+                flags |= MetadataFlags::HAS_DEFAULT;
+            }
+
+            if hooked_property.modifiers.contains_abstract() {
+                flags |= MetadataFlags::ABSTRACT;
+            }
+
+            let mut metadata = PropertyMetadata::new(name, flags);
+
             metadata.set_name_span(Some(name_span));
-            metadata.set_has_default(has_default);
             metadata.set_default_type_metadata(default_type);
-            metadata.set_is_promoted(false); // Hooked properties are not promoted
-            metadata.set_is_static(false); // Hooked properties are never static
-            metadata.set_is_readonly(false);
             metadata.set_span(Some(hooked_property.span()));
             metadata.set_visibility(visibility, visibility);
-            metadata.set_is_abstract(hooked_property.modifiers.contains_abstract());
             metadata.set_type_declaration_metadata(
                 hooked_property
                     .hint
@@ -182,31 +237,23 @@ pub fn scan_properties(
                     .map(|hint| get_type_metadata_from_hint(hint, Some(&class_like_metadata.name), context)),
             );
 
-            if let Some(docblock) = docblock.as_ref() {
-                metadata.set_is_internal(docblock.is_internal);
-                metadata.set_is_deprecated(docblock.is_deprecated);
-                metadata.set_allow_private_mutation(docblock.allows_private_mutation);
-
-                if docblock.is_readonly {
-                    metadata.set_is_readonly(true);
-                }
-
-                if let Some(type_string) = &docblock.type_string {
-                    match get_type_metadata_from_type_string(type_string, classname, type_context, context, scope) {
-                        Ok(property_type) => {
-                            metadata.set_type_metadata(Some(property_type));
-                        }
-                        Err(typing_error) => {
-                            class_like_metadata.issues.push(
-                                Issue::error("Could not resolve the type for the @var tag.")
-                                    .with_code(ScanningIssueKind::InvalidVarTag)
-                                    .with_annotation(
-                                        Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
-                                    )
-                                    .with_note(typing_error.note())
-                                    .with_help(typing_error.help()),
-                            );
-                        }
+            if let Some(docblock) = docblock.as_ref()
+                && let Some(type_string) = &docblock.type_string
+            {
+                match get_type_metadata_from_type_string(type_string, classname, type_context, context, scope) {
+                    Ok(property_type) => {
+                        metadata.set_type_metadata(Some(property_type));
+                    }
+                    Err(typing_error) => {
+                        class_like_metadata.issues.push(
+                            Issue::error("Could not resolve the type for the @var tag.")
+                                .with_code(ScanningIssueKind::InvalidVarTag)
+                                .with_annotation(
+                                    Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
+                                )
+                                .with_note(typing_error.note())
+                                .with_help(typing_error.help()),
+                        );
                     }
                 }
             }

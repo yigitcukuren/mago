@@ -959,18 +959,22 @@ impl<'a> Format<'a> for Conditional {
         wrap!(f, self, Conditional, {
             let must_break = f.settings.preserve_breaking_conditional_expression && {
                 misc::has_new_line_in_range(
-                    f.source_text,
+                    &f.file.contents,
                     self.condition.span().end.offset,
                     self.question_mark.start.offset,
                 ) || self.then.as_ref().is_some_and(|t| {
-                    misc::has_new_line_in_range(f.source_text, self.question_mark.start.offset, t.span().start.offset)
+                    misc::has_new_line_in_range(
+                        &f.file.contents,
+                        self.question_mark.start.offset,
+                        t.span().start.offset,
+                    )
                 })
             };
 
             match &self.then {
                 Some(then) => {
                     let inline_colon = !misc::has_new_line_in_range(
-                        f.source_text,
+                        &f.file.contents,
                         then.span().end.offset,
                         self.r#else.span().start.offset,
                     ) && could_expand_value(f, then, false, false);

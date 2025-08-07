@@ -139,46 +139,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
-name = "async-channel"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "924ed96dd52d1b75e9c1a3e6275715fd320f5f9439fb5a4a11fa51f4221158d2"
-dependencies = [
- "concurrent-queue",
- "event-listener-strategy",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-fs"
-version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09f7e37c0ed80b2a977691c47dae8625cfb21e205827106c64f7c588766b2e50"
-dependencies = [
- "async-lock",
- "blocking",
- "futures-lite",
-]
-
-[[package]]
-name = "async-lock"
-version = "3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff6e472cdea888a4bd64f342f09b3f50e1886d32afe8df3d663c01140b811b18"
-dependencies = [
- "event-listener",
- "event-listener-strategy",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-task"
-version = "4.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
-
-[[package]]
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -187,17 +147,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.104",
-]
-
-[[package]]
-name = "async-walkdir"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37672978ae0febce7516ae0a85b53e6185159a9a28787391eb63fc44ec36037d"
-dependencies = [
- "async-fs",
- "futures-lite",
- "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -277,16 +226,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "blocking"
-version = "1.6.2"
+name = "bstr"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e83f8d02be6967315521be875afa792a316e28d57b5a2d401897e2a7921b7f21"
+checksum = "234113d19d0d7d613b40e86fb654acf958910802bcceab913a4f9e7cda03b1a4"
 dependencies = [
- "async-channel",
- "async-task",
- "futures-io",
- "futures-lite",
- "piper",
+ "memchr",
+ "serde",
 ]
 
 [[package]]
@@ -422,15 +368,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 dependencies = [
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "concurrent-queue"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
-dependencies = [
- "crossbeam-utils",
 ]
 
 [[package]]
@@ -840,27 +777,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "event-listener"
-version = "5.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3492acde4c3fc54c845eaab3eed8bd00c7a7d881f78bfc801e43a93dec1331ae"
-dependencies = [
- "concurrent-queue",
- "parking",
- "pin-project-lite",
-]
-
-[[package]]
-name = "event-listener-strategy"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
-dependencies = [
- "event-listener",
- "pin-project-lite",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -931,21 +847,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-executor",
- "futures-io",
- "futures-sink",
- "futures-task",
- "futures-util",
-]
-
-[[package]]
 name = "futures-channel"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -962,45 +863,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
 
 [[package]]
-name = "futures-executor"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e28d1d997f585e54aebc3f97d39e72338912123a67330d723fdbb564d646c9f"
-dependencies = [
- "futures-core",
- "futures-task",
- "futures-util",
-]
-
-[[package]]
 name = "futures-io"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
-
-[[package]]
-name = "futures-lite"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5edaec856126859abb19ed65f39e90fea3a9574b9707f13539acf4abf7eb532"
-dependencies = [
- "fastrand",
- "futures-core",
- "futures-io",
- "parking",
- "pin-project-lite",
-]
-
-[[package]]
-name = "futures-macro"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
 
 [[package]]
 name = "futures-sink"
@@ -1020,10 +886,8 @@ version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
- "futures-channel",
  "futures-core",
  "futures-io",
- "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",
@@ -1076,10 +940,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
-name = "glob-match"
-version = "0.2.1"
+name = "glob"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9985c9503b412198aa4197559e9a318524ebc4519c229bfa05a535828c950b9d"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
+
+[[package]]
+name = "globset"
+version = "0.4.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54a1028dfc5f5df5da8a56a73e6c153c9a9708ec57232470703592a3f18e49f5"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "log",
+ "regex-automata 0.4.9",
+ "regex-syntax 0.8.5",
+]
 
 [[package]]
 name = "h2"
@@ -1579,19 +1456,17 @@ name = "mago"
 version = "1.0.0-alpha.3"
 dependencies = [
  "ahash",
- "async-walkdir",
  "blake3",
  "clap",
  "colored",
  "config",
  "dialoguer",
  "diffy",
- "futures",
- "glob-match",
  "indicatif 0.18.0",
  "mago-analyzer",
  "mago-codex",
  "mago-composer",
+ "mago-database",
  "mago-fixer",
  "mago-formatter",
  "mago-interner",
@@ -1601,7 +1476,6 @@ dependencies = [
  "mago-reference",
  "mago-reporting",
  "mago-semantics",
- "mago-source",
  "mago-syntax",
  "mimalloc",
  "num_cpus",
@@ -1645,19 +1519,17 @@ dependencies = [
  "mago-algebra",
  "mago-codex",
  "mago-collector",
+ "mago-database",
  "mago-docblock",
  "mago-fixer",
  "mago-interner",
  "mago-names",
  "mago-php-version",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax",
  "regex",
- "serde",
  "strsim",
- "strum",
  "tracing",
 ]
 
@@ -1676,11 +1548,11 @@ dependencies = [
  "bitflags",
  "derivative",
  "indexmap",
+ "mago-database",
  "mago-docblock",
  "mago-interner",
  "mago-names",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax",
  "mago-type-syntax",
@@ -1694,10 +1566,10 @@ dependencies = [
 name = "mago-collector"
 version = "1.0.0-alpha.3"
 dependencies = [
+ "mago-database",
  "mago-fixer",
  "mago-interner",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax",
 ]
@@ -1712,11 +1584,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "mago-database"
+version = "1.0.0-alpha.3"
+dependencies = [
+ "glob",
+ "globset",
+ "memchr",
+ "serde",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "mago-docblock"
 version = "1.0.0-alpha.3"
 dependencies = [
+ "mago-database",
  "mago-interner",
- "mago-source",
  "mago-span",
  "mago-syntax",
  "serde",
@@ -1739,9 +1623,9 @@ dependencies = [
  "ahash",
  "bitflags",
  "indoc",
+ "mago-database",
  "mago-interner",
  "mago-php-version",
- "mago-source",
  "mago-span",
  "mago-syntax",
  "pretty_assertions",
@@ -1767,13 +1651,13 @@ dependencies = [
  "mago-casing",
  "mago-codex",
  "mago-collector",
+ "mago-database",
  "mago-docblock",
  "mago-fixer",
  "mago-interner",
  "mago-names",
  "mago-php-version",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax",
  "regex",
@@ -1821,9 +1705,8 @@ dependencies = [
  "ariadne",
  "blake3",
  "codespan-reporting",
+ "mago-database",
  "mago-fixer",
- "mago-interner",
- "mago-source",
  "mago-span",
  "serde",
  "serde_json",
@@ -1835,32 +1718,20 @@ dependencies = [
 name = "mago-semantics"
 version = "1.0.0-alpha.3"
 dependencies = [
+ "mago-database",
  "mago-interner",
  "mago-names",
  "mago-php-version",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax",
-]
-
-[[package]]
-name = "mago-source"
-version = "1.0.0-alpha.3"
-dependencies = [
- "ahash",
- "mago-interner",
- "memchr",
- "parking_lot",
- "serde",
- "tracing",
 ]
 
 [[package]]
 name = "mago-span"
 version = "1.0.0-alpha.3"
 dependencies = [
- "mago-source",
+ "mago-database",
  "serde",
 ]
 
@@ -1869,10 +1740,10 @@ name = "mago-syntax"
 version = "1.0.0-alpha.3"
 dependencies = [
  "either",
+ "mago-database",
  "mago-interner",
  "mago-php-version",
  "mago-reporting",
- "mago-source",
  "mago-span",
  "mago-syntax-core",
  "ordered-float",
@@ -1886,7 +1757,7 @@ dependencies = [
 name = "mago-syntax-core"
 version = "1.0.0-alpha.3"
 dependencies = [
- "mago-source",
+ "mago-database",
  "mago-span",
  "memchr",
 ]
@@ -1895,7 +1766,6 @@ dependencies = [
 name = "mago-type-syntax"
 version = "1.0.0-alpha.3"
 dependencies = [
- "mago-source",
  "mago-span",
  "mago-syntax-core",
  "ordered-float",
@@ -1908,6 +1778,7 @@ name = "mago-wasm"
 version = "1.0.0-alpha.3"
 dependencies = [
  "mago-codex",
+ "mago-database",
  "mago-formatter",
  "mago-interner",
  "mago-linter",
@@ -1915,7 +1786,6 @@ dependencies = [
  "mago-php-version",
  "mago-reporting",
  "mago-semantics",
- "mago-source",
  "mago-syntax",
  "serde",
  "serde-wasm-bindgen",
@@ -2142,12 +2012,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
-name = "parking"
-version = "2.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
-
-[[package]]
 name = "parking_lot"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2243,17 +2107,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "piper"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96c8c490f422ef9a4efd2cb5b42b76c8613d7e7dfc1caf667b8a3350a5acc066"
-dependencies = [
- "atomic-waker",
- "fastrand",
- "futures-io",
-]
 
 [[package]]
 name = "pkcs8"

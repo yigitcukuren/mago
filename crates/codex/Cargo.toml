@@ -20,7 +20,7 @@ mago-span = { workspace = true }
 mago-syntax = { workspace = true }
 mago-type-syntax = { workspace = true }
 mago-names = { workspace = true }
-mago-source = { workspace = true }
+mago-database = { workspace = true }
 ahash = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }

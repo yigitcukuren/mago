@@ -220,7 +220,7 @@ impl<'a> InvocationTarget<'a> {
     #[allow(dead_code)]
     pub const fn has_throw(&self) -> bool {
         match self {
-            InvocationTarget::FunctionLike { metadata, .. } => metadata.has_throw,
+            InvocationTarget::FunctionLike { metadata, .. } => metadata.flags.has_throw(),
             _ => false,
         }
     }
@@ -238,7 +238,7 @@ impl<'a> InvocationTarget<'a> {
     #[inline]
     pub const fn allows_named_arguments(&self) -> bool {
         match self {
-            InvocationTarget::FunctionLike { metadata, .. } => metadata.allows_named_arguments,
+            InvocationTarget::FunctionLike { metadata, .. } => !metadata.flags.forbids_named_arguments(),
             _ => false,
         }
     }
@@ -322,7 +322,7 @@ impl<'a> InvocationTargetParameter<'a> {
     #[allow(dead_code)]
     pub const fn is_by_reference(&self) -> bool {
         match self {
-            InvocationTargetParameter::FunctionLike(metadata) => metadata.is_by_reference(),
+            InvocationTargetParameter::FunctionLike(metadata) => metadata.flags.is_by_reference(),
             InvocationTargetParameter::Callable(parameter) => parameter.is_by_reference(),
         }
     }
@@ -331,7 +331,7 @@ impl<'a> InvocationTargetParameter<'a> {
     #[inline]
     pub const fn is_variadic(&self) -> bool {
         match self {
-            InvocationTargetParameter::FunctionLike(metadata) => metadata.is_variadic(),
+            InvocationTargetParameter::FunctionLike(metadata) => metadata.flags.is_variadic(),
             InvocationTargetParameter::Callable(parameter) => parameter.is_variadic(),
         }
     }
@@ -340,7 +340,7 @@ impl<'a> InvocationTargetParameter<'a> {
     #[inline]
     pub const fn has_default(&self) -> bool {
         match self {
-            InvocationTargetParameter::FunctionLike(metadata) => metadata.has_default(),
+            InvocationTargetParameter::FunctionLike(metadata) => metadata.flags.has_default(),
             InvocationTargetParameter::Callable(parameter) => parameter.has_default(),
         }
     }

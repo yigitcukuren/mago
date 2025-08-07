@@ -114,7 +114,7 @@ pub fn analyze_function_like<'a, 'ast>(
         add_properties_to_context(context, &mut block_context, class_like_metadata, function_like_metadata)?;
     }
 
-    if !function_like_metadata.unchecked {
+    if !function_like_metadata.flags.is_unchecked() {
         match body {
             FunctionLikeBody::Statements(statements) => {
                 analyze_statements(statements, context, &mut block_context, &mut artifacts)?;
@@ -188,7 +188,6 @@ fn add_parameter_types_to_context<'a>(
                         },
                         expand_generic: true,
                         expand_templates: true,
-                        file_path: Some(&context.source.identifier),
                         ..Default::default()
                     },
                 );
@@ -240,7 +239,7 @@ fn add_parameter_types_to_context<'a>(
             default_value.value.analyze(context, block_context, artifacts)?;
         }
 
-        if parameter_metadata.is_variadic() {
+        if parameter_metadata.flags.is_variadic() {
             parameter_type = wrap_atomic(TAtomic::Array(TArray::List(TList::new(Box::new(parameter_type)))));
         }
 
@@ -287,7 +286,7 @@ fn add_properties_to_context<'a>(
         let property_name = context.interner.lookup(property_name_id);
         let raw_property_name = property_name.strip_prefix("$").unwrap_or(property_name);
 
-        let expression_id = if property_metadata.is_static() {
+        let expression_id = if property_metadata.flags.is_static() {
             format!("{}::${raw_property_name}", context.interner.lookup(&class_like_metadata.name),)
         } else {
             let this_type = get_this_type(context, class_like_metadata, function_like_metadata);
@@ -316,7 +315,6 @@ fn add_properties_to_context<'a>(
                     false
                 },
                 expand_generic: true,
-                file_path: Some(&context.source.identifier),
                 ..Default::default()
             },
         );

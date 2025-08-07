@@ -5,8 +5,7 @@ use serde::Serialize;
 use strum::Display;
 use strum::VariantNames;
 
-use mago_interner::ThreadedInterner;
-use mago_source::SourceManager;
+use mago_database::ReadDatabase;
 
 use crate::Issue;
 use crate::IssueCollection;
@@ -47,15 +46,14 @@ pub enum ReportingFormat {
 
 #[derive(Clone)]
 pub struct Reporter {
-    interner: ThreadedInterner,
-    manager: SourceManager,
+    database: ReadDatabase,
     target: ReportingTarget,
     writer: ReportWriter,
 }
 
 impl Reporter {
-    pub fn new(interner: ThreadedInterner, manager: SourceManager, target: ReportingTarget) -> Self {
-        Self { interner, manager, target, writer: ReportWriter::new(target) }
+    pub fn new(manager: ReadDatabase, target: ReportingTarget) -> Self {
+        Self { database: manager, target, writer: ReportWriter::new(target) }
     }
 
     pub fn report(
@@ -63,7 +61,7 @@ impl Reporter {
         issues: impl IntoIterator<Item = Issue>,
         format: ReportingFormat,
     ) -> Result<Option<Level>, ReportingError> {
-        format.emit(&mut self.writer.lock(), &self.manager, &self.interner, IssueCollection::from(issues))
+        format.emit(&mut self.writer.lock(), &self.database, IssueCollection::from(issues))
     }
 }
 
@@ -73,8 +71,7 @@ unsafe impl Sync for Reporter {}
 impl std::fmt::Debug for Reporter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Reporter")
-            .field("interner", &self.interner)
-            .field("manager", &self.manager)
+            .field("manager", &self.database)
             .field("target", &self.target)
             .finish_non_exhaustive()
     }

@@ -1,7 +1,6 @@
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
-use mago_source::Source;
 
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::reference::ReferenceSource;
@@ -11,7 +10,6 @@ use crate::settings::Settings;
 
 #[derive(Clone, Copy, Debug)]
 pub struct AssertionContext<'a> {
-    pub file_source: &'a Source,
     pub resolved_names: &'a ResolvedNames,
     pub interner: &'a ThreadedInterner,
     pub codebase: &'a CodebaseMetadata,

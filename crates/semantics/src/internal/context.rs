@@ -1,10 +1,9 @@
-use mago_interner::StringIdentifier;
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
 use mago_php_version::PHPVersion;
 use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
-use mago_source::Source;
 use mago_span::HasSpan;
 use mago_span::Position;
 use mago_span::Span;
@@ -18,7 +17,7 @@ pub struct Context<'a> {
     pub version: &'a PHPVersion,
     pub program: &'a Program,
     pub names: &'a ResolvedNames,
-    pub source: &'a Source,
+    pub source_file: &'a File,
     pub ancestors: Vec<Span>,
     pub hint_depth: usize,
 
@@ -31,14 +30,14 @@ impl<'a> Context<'a> {
         version: &'a PHPVersion,
         program: &'a Program,
         names: &'a ResolvedNames,
-        source: &'a Source,
+        source_file: &'a File,
     ) -> Self {
         Self {
             interner,
             version,
             program,
             names,
-            source,
+            source_file,
             issues: IssueCollection::default(),
             ancestors: vec![],
             hint_depth: 0,
@@ -52,13 +51,9 @@ impl<'a> Context<'a> {
 
     #[inline]
     pub fn get_code_snippet(&self, span: impl HasSpan) -> &'a str {
-        fn get_code_snippet_of_span<'a>(i: &'a ThreadedInterner, c: &StringIdentifier, s: &Span) -> &'a str {
-            let source = i.lookup(c);
+        let s = span.span();
 
-            &source[s.start.offset..s.end.offset]
-        }
-
-        get_code_snippet_of_span(self.interner, &self.source.content, &span.span())
+        &self.source_file.contents[s.start.offset..s.end.offset]
     }
 
     /// Reports a semantic issue with the given `Issue`.

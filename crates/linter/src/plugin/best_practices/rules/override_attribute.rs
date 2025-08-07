@@ -265,14 +265,16 @@ impl Rule for OverrideAttributeRule {
             .with_help("Add `#[Override]` attribute to method declaration.");
 
             context.propose(issue, |plan| {
-                let code = context.interner.lookup(&context.source.content);
-
                 let offset = method.span().start.offset;
-                let line_start_offset =
-                    context.source.get_line_start_offset(context.source.line_number(offset)).unwrap_or(offset);
+                let line_start_offset = context
+                    .source_file
+                    .get_line_start_offset(context.source_file.line_number(offset))
+                    .unwrap_or(offset);
 
-                let indent =
-                    code[line_start_offset..offset].chars().take_while(|c| c.is_whitespace()).collect::<String>();
+                let indent = context.source_file.contents[line_start_offset..offset]
+                    .chars()
+                    .take_while(|c| c.is_whitespace())
+                    .collect::<String>();
 
                 plan.insert(method.span().start.offset, format!("#[\\Override]\n{indent}"), SafetyClassification::Safe);
             });

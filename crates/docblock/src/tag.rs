@@ -654,15 +654,13 @@ fn is_valid_identifier_start(mut identifier: &str, allow_qualified: bool) -> boo
 
 #[cfg(test)]
 mod tests {
-    use mago_source::SourceIdentifier;
     use mago_span::Position;
     use mago_span::Span;
 
     use super::*;
 
     fn test_span(input: &str, start_offset: usize) -> Span {
-        let source = SourceIdentifier::dummy();
-        let base_start = Position::new(source, start_offset);
+        let base_start = Position::dummy(start_offset);
         Span::new(base_start, base_start.forward(input.len()))
     }
 
@@ -671,8 +669,7 @@ mod tests {
     }
 
     fn make_span(start: usize, end: usize) -> Span {
-        let source = SourceIdentifier::dummy();
-        Span::new(Position::new(source, start), Position::new(source, end))
+        Span::new(Position::dummy(start), Position::dummy(end))
     }
 
     #[test]

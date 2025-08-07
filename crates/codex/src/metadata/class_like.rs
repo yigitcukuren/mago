@@ -13,6 +13,7 @@ use crate::flags::attribute::AttributeFlags;
 use crate::metadata::attribute::AttributeMetadata;
 use crate::metadata::class_like_constant::ClassLikeConstantMetadata;
 use crate::metadata::enum_case::EnumCaseMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::property::PropertyMetadata;
 use crate::misc::GenericParent;
 use crate::symbol::SymbolKind;
@@ -44,20 +45,6 @@ pub struct ClassLikeMetadata {
     pub trait_final_map: HashSet<StringIdentifier>,
     pub child_class_likes: Option<HashSet<StringIdentifier>>,
     pub name_span: Option<Span>,
-    pub is_abstract: bool,
-    pub is_final: bool,
-    pub is_immutable: bool,
-    pub is_readonly: bool,
-    pub is_deprecated: bool,
-    pub is_enum_interface: bool,
-    pub specialized_instance: bool,
-    pub is_populated: bool,
-    pub is_internal: bool,
-    pub is_mutation_free: bool,
-    pub is_external_mutation_free: bool,
-    pub allows_private_mutation: bool,
-    pub has_consistent_constructor: bool,
-    pub has_consistent_templates: bool,
     pub kind: SymbolKind,
     pub template_types: Vec<TemplateTuple>,
     pub template_readonly: HashSet<StringIdentifier>,
@@ -91,7 +78,7 @@ pub struct ClassLikeMetadata {
     pub permitted_inheritors: Option<HashSet<StringIdentifier>>,
     pub issues: Vec<Issue>,
     pub attribute_flags: Option<AttributeFlags>,
-    pub unchecked: bool,
+    pub flags: MetadataFlags,
 }
 
 impl ClassLikeMetadata {
@@ -100,24 +87,12 @@ impl ClassLikeMetadata {
         original_name: StringIdentifier,
         span: Span,
         name_span: Option<Span>,
+        flags: MetadataFlags,
     ) -> ClassLikeMetadata {
         ClassLikeMetadata {
             constants: IndexMap::with_hasher(RandomState::new()),
             enum_cases: IndexMap::with_hasher(RandomState::new()),
-            specialized_instance: false,
-            is_populated: false,
-            is_deprecated: false,
-            is_abstract: false,
-            is_final: false,
-            is_readonly: false,
-            is_immutable: false,
-            is_internal: false,
-            is_mutation_free: false,
-            is_external_mutation_free: false,
-            allows_private_mutation: false,
-            has_consistent_constructor: false,
-            has_consistent_templates: false,
-            is_enum_interface: false,
+            flags,
             kind: SymbolKind::Class,
             direct_parent_interfaces: vec![],
             all_parent_classes: vec![],
@@ -164,14 +139,7 @@ impl ClassLikeMetadata {
             permitted_inheritors: None,
             issues: vec![],
             attribute_flags: None,
-            unchecked: false,
         }
-    }
-
-    /// Checks if this class-like is user-defined.
-    #[inline]
-    pub fn is_user_defined(&self) -> bool {
-        self.span.start.source.category().is_user_defined()
     }
 
     /// Returns a reference to the map of trait method aliases.
@@ -472,7 +440,7 @@ impl ClassLikeMetadata {
         let class_name = self.name;
 
         self.add_declaring_property_id(name, class_name);
-        if property_metadata.has_default() {
+        if property_metadata.flags.has_default() {
             self.initialized_properties.push(name);
         }
 
@@ -505,7 +473,7 @@ impl ClassLikeMetadata {
 
     #[inline]
     pub fn mark_as_populated(&mut self) {
-        self.is_populated = true;
+        self.flags |= MetadataFlags::POPULATED;
         self.shrink_to_fit();
     }
 

@@ -3,9 +3,9 @@
 use mago_codex::context::ScopeContext;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_collector::Collector;
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
-use mago_source::Source;
 use mago_span::HasSpan;
 use mago_syntax::ast::Program;
 
@@ -40,7 +40,7 @@ const COLLECTOR_CATEGORY: &str = "analysis";
 
 #[derive(Clone, Debug)]
 pub struct Analyzer<'a> {
-    pub source: Source,
+    pub source_file: &'a File,
     pub resolved_names: &'a ResolvedNames,
     pub codebase: &'a CodebaseMetadata,
     pub interner: &'a ThreadedInterner,
@@ -49,13 +49,13 @@ pub struct Analyzer<'a> {
 
 impl<'a> Analyzer<'a> {
     pub fn new(
-        source: Source,
+        source_file: &'a File,
         resolved_names: &'a ResolvedNames,
         codebase: &'a CodebaseMetadata,
         interner: &'a ThreadedInterner,
         settings: Settings,
     ) -> Self {
-        Self { source, resolved_names, codebase, interner, settings }
+        Self { source_file, resolved_names, codebase, interner, settings }
     }
 
     pub fn analyze(&self, program: &Program, analysis_result: &mut AnalysisResult) -> Result<(), AnalysisError> {
@@ -69,12 +69,12 @@ impl<'a> Analyzer<'a> {
         let statements = program.statements.as_slice();
 
         let mut context = {
-            let collector = Collector::new(&self.source, program, self.interner, COLLECTOR_CATEGORY);
+            let collector = Collector::new(self.source_file, program, self.interner, COLLECTOR_CATEGORY);
 
             Context::new(
                 self.interner,
                 self.codebase,
-                &self.source,
+                self.source_file,
                 self.resolved_names,
                 &self.settings,
                 statements[0].span(),
@@ -106,10 +106,10 @@ mod tests {
     use mago_codex::populator::populate_codebase;
     use mago_codex::reference::SymbolReferences;
     use mago_codex::scanner::scan_program;
+    use mago_database::file::File;
     use mago_interner::ThreadedInterner;
     use mago_names::resolver::NameResolver;
-    use mago_source::Source;
-    use mago_syntax::parser::parse_source;
+    use mago_syntax::parser::parse_file;
 
     use crate::Analyzer;
     use crate::analysis_result::AnalysisResult;
@@ -155,22 +155,22 @@ mod tests {
 
     fn run_test_case_inner(config: TestCase) {
         let interner = ThreadedInterner::new();
-        let source = Source::standalone(&interner, config.name, config.content);
+        let source_file = File::ephemeral(config.name.to_owned(), config.content.to_owned());
 
-        let (program, parse_issues) = parse_source(&interner, &source);
+        let (program, parse_issues) = parse_file(&interner, &source_file);
         if parse_issues.is_some() {
             panic!("Test '{}' failed during parsing:\n{:#?}", config.name, parse_issues);
         }
 
         let resolver = NameResolver::new(&interner);
         let resolved_names = resolver.resolve(&program);
-        let mut codebase = scan_program(&interner, &source, &program, &resolved_names);
+        let mut codebase = scan_program(&interner, &source_file, &program, &resolved_names);
         let mut symbol_references = SymbolReferences::new();
 
         populate_codebase(&mut codebase, &interner, &mut symbol_references, HashSet::default(), HashSet::default());
 
         let mut analysis_result = AnalysisResult::new(symbol_references);
-        let analyzer = Analyzer::new(source, &resolved_names, &codebase, &interner, config.settings);
+        let analyzer = Analyzer::new(&source_file, &resolved_names, &codebase, &interner, config.settings);
 
         let analysis_run_result = analyzer.analyze(&program, &mut analysis_result);
 

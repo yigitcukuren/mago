@@ -9,6 +9,7 @@ use mago_interner::ThreadedInterner;
 use crate::is_method_abstract;
 use crate::metadata::CodebaseMetadata;
 use crate::metadata::class_like::ClassLikeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::metadata::function_like::FunctionLikeMetadata;
 use crate::misc::GenericParent;
 use crate::reference::ReferenceSource;
@@ -40,14 +41,14 @@ pub fn populate_codebase(
     let mut class_likes_to_repopulate = Vec::new();
     for (name, metadata) in codebase.class_likes.iter() {
         // Repopulate if not populated OR if user-defined and not marked safe.
-        if !metadata.is_populated || (metadata.is_user_defined() && !safe_symbols.contains(name)) {
+        if !metadata.flags.is_populated() || (metadata.flags.is_user_defined() && !safe_symbols.contains(name)) {
             class_likes_to_repopulate.push(*name);
         }
     }
 
     for class_like_name in &class_likes_to_repopulate {
         if let Some(classlike_info) = codebase.class_likes.get_mut(class_like_name) {
-            classlike_info.is_populated = false;
+            classlike_info.flags &= !MetadataFlags::POPULATED;
             classlike_info.declaring_property_ids.clear();
             classlike_info.appearing_property_ids.clear();
             classlike_info.declaring_method_ids.clear();
@@ -60,7 +61,7 @@ pub fn populate_codebase(
     }
 
     for (name, function_like_metadata) in codebase.function_likes.iter_mut() {
-        let force_repopulation = function_like_metadata.user_defined && !safe_symbols.contains(&name.0);
+        let force_repopulation = function_like_metadata.flags.is_user_defined() && !safe_symbols.contains(&name.0);
 
         let reference_source = if name.1.is_empty() || function_like_metadata.get_kind().is_closure() {
             // Top-level function or closure
@@ -81,7 +82,7 @@ pub fn populate_codebase(
     }
 
     for (name, metadata) in codebase.class_likes.iter_mut() {
-        let userland_force_repopulation = metadata.is_user_defined() && !safe_symbols.contains(name);
+        let userland_force_repopulation = metadata.flags.is_user_defined() && !safe_symbols.contains(name);
         let class_like_reference_source = ReferenceSource::Symbol(true, *name);
 
         for (property_name, property_metadata) in &mut metadata.properties {
@@ -287,7 +288,7 @@ fn populate_function_like_metadata(
     force_type_population: bool,
 ) {
     // Early exit if already populated and not forced
-    if metadata.is_populated && !force_type_population {
+    if metadata.flags.is_populated() && !force_type_population {
         return;
     }
 
@@ -470,7 +471,7 @@ fn populate_function_like_metadata(
         }
     }
 
-    metadata.is_populated = true;
+    metadata.flags |= MetadataFlags::POPULATED;
 }
 
 /// Populates the metadata for a single class-like (class, interface, trait).
@@ -486,7 +487,7 @@ fn populate_class_like_metadata(
     safe_symbols: &HashSet<StringIdentifier>,
 ) {
     if let Some(metadata) = codebase.class_likes.get(classlike_name)
-        && metadata.is_populated
+        && metadata.flags.is_populated()
     {
         return; // Already done, exit early
     }
@@ -551,10 +552,10 @@ fn populate_class_like_metadata(
     }
 
     // Apply immutability to properties if the class is immutable
-    if metadata.is_immutable {
+    if metadata.flags.is_immutable() {
         for property_metadata in metadata.properties.values_mut() {
-            if !property_metadata.is_static() {
-                property_metadata.set_is_readonly(true);
+            if !property_metadata.flags.is_static() {
+                property_metadata.flags |= MetadataFlags::READONLY;
             }
         }
     }
@@ -644,8 +645,8 @@ fn populate_metadata_from_parent_class_like(
         }
     }
 
-    if parent_metadata.has_consistent_templates {
-        metadata.has_consistent_templates = true;
+    if parent_metadata.flags.has_consistent_templates() {
+        metadata.flags |= MetadataFlags::CONSISTENT_TEMPLATES;
     }
 }
 
@@ -722,7 +723,7 @@ fn inherit_methods_from_parent(
 
     let constructor_id = interner.intern("__construct");
     for (method_name, declaring_class) in &parent_metadata.inheritable_method_ids {
-        if !method_name.eq(&constructor_id) || parent_metadata.has_consistent_constructor {
+        if !method_name.eq(&constructor_id) || parent_metadata.flags.has_consistent_constructor() {
             if !parent_metadata.kind.is_trait() || is_method_abstract(codebase, interner, declaring_class, method_name)
             {
                 metadata.add_overridden_method_parent(*method_name, *declaring_class);

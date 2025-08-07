@@ -1,5 +1,5 @@
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
-use mago_source::Source;
 use mago_syntax_core::input::Input;
 
 use crate::ast::Program;
@@ -12,9 +12,8 @@ use crate::parser::internal::token_stream::TokenStream;
 
 mod internal;
 
-pub fn parse_source(interner: &ThreadedInterner, source: &Source) -> (Program, Option<ParseError>) {
-    let content = interner.lookup(&source.content);
-    let lexer = Lexer::new(interner, Input::new(source.identifier, content.as_bytes()));
+pub fn parse_file(interner: &ThreadedInterner, file: &File) -> (Program, Option<ParseError>) {
+    let lexer = Lexer::new(interner, Input::from_file(file));
 
     construct(interner, lexer)
 }
@@ -60,7 +59,7 @@ fn construct<'i>(interner: &'i ThreadedInterner, lexer: Lexer<'_, 'i>) -> (Progr
 
     (
         Program {
-            source: stream.get_position().source,
+            file_id: stream.get_position().file_id,
             statements: Sequence::new(statements),
             trivia: stream.get_trivia(),
         },

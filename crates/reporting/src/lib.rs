@@ -9,8 +9,8 @@ use serde::Serialize;
 use strum::Display;
 use strum::VariantNames;
 
+use mago_database::file::FileId;
 use mago_fixer::FixPlan;
-use mago_source::SourceIdentifier;
 use mago_span::Span;
 
 mod internal;
@@ -84,7 +84,7 @@ pub struct Issue {
     /// Annotations associated with the issue, providing additional context or highlighting specific code spans.
     pub annotations: Vec<Annotation>,
     /// Modification suggestions that can be applied to fix the issue.
-    pub suggestions: Vec<(SourceIdentifier, FixPlan)>,
+    pub suggestions: Vec<(FileId, FixPlan)>,
 }
 
 /// A collection of issues.
@@ -397,15 +397,15 @@ impl Issue {
 
     /// Add a code modification suggestion to this issue.
     #[must_use]
-    pub fn with_suggestion(mut self, source: SourceIdentifier, plan: FixPlan) -> Self {
-        self.suggestions.push((source, plan));
+    pub fn with_suggestion(mut self, file_id: FileId, plan: FixPlan) -> Self {
+        self.suggestions.push((file_id, plan));
 
         self
     }
 
     /// Take the code modification suggestion from this issue.
     #[must_use]
-    pub fn take_suggestions(&mut self) -> Vec<(SourceIdentifier, FixPlan)> {
+    pub fn take_suggestions(&mut self) -> Vec<(FileId, FixPlan)> {
         self.suggestions.drain(..).collect()
     }
 }
@@ -477,7 +477,7 @@ impl IssueCollection {
         Self { issues: self.issues.into_iter().map(|issue| issue.with_code(&code)).collect() }
     }
 
-    pub fn take_suggestions(&mut self) -> impl Iterator<Item = (SourceIdentifier, FixPlan)> + '_ {
+    pub fn take_suggestions(&mut self) -> impl Iterator<Item = (FileId, FixPlan)> + '_ {
         self.issues.iter_mut().flat_map(|issue| issue.take_suggestions())
     }
 
@@ -528,8 +528,8 @@ impl IssueCollection {
         self.issues.iter()
     }
 
-    pub fn to_fix_plans(self) -> HashMap<SourceIdentifier, FixPlan> {
-        let mut plans: HashMap<SourceIdentifier, FixPlan> = HashMap::default();
+    pub fn to_fix_plans(self) -> HashMap<FileId, FixPlan> {
+        let mut plans: HashMap<FileId, FixPlan> = HashMap::default();
         for issue in self.issues.into_iter().filter(|issue| !issue.suggestions.is_empty()) {
             for suggestion in issue.suggestions.into_iter() {
                 match plans.entry(suggestion.0) {

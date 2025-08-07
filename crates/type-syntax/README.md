@@ -69,13 +69,13 @@ This crate does not yet support parsing the following syntax:
 
 1.  **Add Dependencies:**
 
-    Add `mago_type_syntax` to your `Cargo.toml`. You will also likely need `mago_span` and `mago_source` to create the necessary inputs.
+    Add `mago_type_syntax` to your `Cargo.toml`. You will also likely need `mago_span` and `mago_database` to create the necessary inputs.
 
     ```toml
     [dependencies]
     mago_type_syntax = "..."
     mago_span = "..."
-    mago_source = "..."
+    mago_database = "..."
     ```
 
 2.  **Parse a Type String:**
@@ -85,16 +85,16 @@ This crate does not yet support parsing the following syntax:
     use mago_type_syntax::{parse_str, ast::Type};
     use mago_span::{Position, Span};
     use mago_span::HasSpan;
-    use mago_source::SourceIdentifier;
+    use mago_database::file::FileId;
 
     fn main() {
         let type_string = "array<int, string>|null";
-        let source_id = SourceIdentifier::dummy(); // Use your actual source identifier
+        let file_id = FileId::zero(); // Use your actual source identifier
 
         // Calculate the span of the type string within its original file
         // Example: if it starts at byte 100 and ends at byte 124
-        let start_pos = Position::new(source_id, 100);
-        let end_pos = Position::new(source_id, 100 + type_string.len());
+        let start_pos = Position::new(file_id, 100);
+        let end_pos = Position::new(file_id, 100 + type_string.len());
         let type_span = Span::new(start_pos, end_pos);
 
         // Parse the string

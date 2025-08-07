@@ -40,8 +40,6 @@ pub fn parse_str(span: Span, input: &str) -> Result<Type<'_>, ParseError> {
 
 #[cfg(test)]
 mod tests {
-    use mago_source::SourceIdentifier;
-    use mago_span::Position;
     use mago_span::Span;
 
     use crate::ast::*;
@@ -49,9 +47,7 @@ mod tests {
     use super::*;
 
     fn do_parse(input: &str) -> Result<Type<'_>, ParseError> {
-        let source = SourceIdentifier::dummy();
-        let span = Span::new(Position::new(source, 0), Position::new(source, input.len()));
-        parse_str(span, input)
+        parse_str(Span::dummy(0, input.len()), input)
     }
 
     #[test]

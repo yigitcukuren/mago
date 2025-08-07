@@ -1,6 +1,7 @@
 use mago_codex::populator::populate_codebase;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::scanner::scan_program;
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
 use mago_linter::definition::RuleUsageExample;
@@ -10,8 +11,7 @@ use mago_linter::settings::Settings;
 use mago_names::resolver::NameResolver;
 use mago_php_version::PHPVersion;
 use mago_reporting::Level;
-use mago_source::Source;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 pub mod plugins;
 
@@ -41,7 +41,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     }
 
     let source_name = format!("{}.php", definition.get_slug());
-    let source = Source::standalone(&interner, &source_name, usage_example.snippet);
+    let source_file = File::ephemeral(source_name, usage_example.snippet.to_string());
 
     let mut php_version = PHPVersion::PHP84;
     if let Some(version) = rule.get_definition().maximum_supported_php_version {
@@ -53,11 +53,11 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
 
     let settings = Settings::new(php_version).with_rule(format!("test/{}", definition.get_slug()), rule_settings);
 
-    let (program, parse_error) = parse_source(&interner, &source);
+    let (program, parse_error) = parse_file(&interner, &source_file);
     assert!(parse_error.is_none(), "Failed to parse source: {parse_error:?}");
 
     let resolved_names = NameResolver::new(&interner).resolve(&program);
-    let mut codebase = scan_program(&interner, &source, &program, &resolved_names);
+    let mut codebase = scan_program(&interner, &source_file, &program, &resolved_names);
 
     populate_codebase(&mut codebase, &interner, &mut SymbolReferences::new(), Default::default(), Default::default());
 
@@ -65,7 +65,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
 
     linter.add_rule("test", rule);
 
-    let issues = linter.lint(&source, &program, &resolved_names);
+    let issues = linter.lint(&source_file, &program, &resolved_names);
 
     if usage_example.valid {
         assert!(

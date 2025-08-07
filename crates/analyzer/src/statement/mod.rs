@@ -294,17 +294,17 @@ fn detect_unused_statement_expressions(
             };
 
             // If the function has side effects, we don't report it as useless.
-            if !function.is_pure {
+            if !function.flags.is_pure() {
                 return;
             }
 
             // If the function does throw or has thrown types, we don't report it as useless.
-            if !function.thrown_types.is_empty() || function.has_throw {
+            if !function.thrown_types.is_empty() || function.flags.has_throw() {
                 return;
             }
 
             // If the function has parameters that are by reference, we don't report it as useless.
-            if function.parameters.iter().any(|param| param.is_by_reference) {
+            if function.parameters.iter().any(|param| param.flags.is_by_reference()) {
                 return;
             }
 
@@ -343,7 +343,7 @@ fn has_unused_must_use<'a>(
         FunctionLikeIdentifier::Function(function_id) => {
             let function_metadata = get_function(context.codebase, context.interner, &function_id)?;
 
-            let must_use = function_metadata.must_use
+            let must_use = function_metadata.flags.must_use()
                 || function_metadata
                     .attributes
                     .iter()
@@ -358,7 +358,7 @@ fn has_unused_must_use<'a>(
                 &MethodIdentifier::new(method_class, method_name),
             )?;
 
-            let must_use = method_metadata.must_use
+            let must_use = method_metadata.flags.must_use()
                 || method_metadata
                     .attributes
                     .iter()

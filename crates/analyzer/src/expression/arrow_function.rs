@@ -34,8 +34,7 @@ impl Analyzable for ArrowFunction {
             return Err(AnalysisError::InternalError(
                 format!(
                     "Metadata for arrow function defined in `{}` at offset {} not found.",
-                    context.interner.lookup(&span.start.source.0),
-                    span.start.offset
+                    context.source_file.name, span.start.offset
                 ),
                 span,
             ));

@@ -1,7 +1,6 @@
 use termcolor::WriteColor;
 
-use mago_interner::ThreadedInterner;
-use mago_source::SourceManager;
+use mago_database::ReadDatabase;
 
 use crate::IssueCollection;
 use crate::Level;
@@ -10,12 +9,11 @@ use crate::internal::Expandable;
 
 pub fn json_format(
     writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     let highest_level = issues.get_highest_level();
-    let issues = issues.expand(sources, interner)?;
+    let issues = issues.expand(database)?;
 
     serde_json::to_writer_pretty(writer, &issues)?;
 

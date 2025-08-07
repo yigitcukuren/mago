@@ -1,5 +1,4 @@
 use mago_interner::StringIdentifier;
-use mago_source::SourceIdentifier;
 
 use crate::identifier::function_like::FunctionLikeIdentifier;
 use crate::metadata::class_like::ClassLikeMetadata;
@@ -36,13 +35,13 @@ impl<'a> ScopeContext<'a> {
     #[inline]
     pub const fn is_mutation_free(&self) -> bool {
         if let Some(function_like) = self.function_like
-            && (function_like.is_pure || function_like.is_mutation_free)
+            && (function_like.flags.is_pure() || function_like.flags.is_mutation_free())
         {
             return true;
         }
 
         if let Some(class_like) = self.class_like
-            && class_like.is_mutation_free
+            && class_like.flags.is_mutation_free()
         {
             return true;
         }
@@ -54,13 +53,15 @@ impl<'a> ScopeContext<'a> {
     #[inline]
     pub const fn is_external_mutation_free(&self) -> bool {
         if let Some(function_like) = self.function_like
-            && (function_like.is_pure || function_like.is_mutation_free || function_like.is_external_mutation_free)
+            && (function_like.flags.is_pure()
+                || function_like.flags.is_mutation_free()
+                || function_like.flags.is_external_mutation_free())
         {
             return true;
         }
 
         if let Some(class_like) = self.class_like
-            && (class_like.is_mutation_free || class_like.is_external_mutation_free)
+            && (class_like.flags.is_mutation_free() || class_like.flags.is_external_mutation_free())
         {
             return true;
         }
@@ -110,7 +111,7 @@ impl<'a> ScopeContext<'a> {
     #[inline]
     pub const fn is_class_like_final(&self) -> bool {
         match self.class_like {
-            Some(class) => class.is_final,
+            Some(class) => class.flags.is_final(),
             None => false,
         }
     }
@@ -142,7 +143,7 @@ impl<'a> ScopeContext<'a> {
     /// Determines the `ReferenceSource` (symbol or member) based on the current function context.
     /// Used to identify the origin of a code reference for dependency tracking.
     #[inline]
-    pub fn get_reference_source(&self, source: &SourceIdentifier) -> Option<ReferenceSource> {
+    pub fn get_reference_source(&self) -> Option<ReferenceSource> {
         if let Some(calling_functionlike_id) = self.get_function_like_identifier() {
             match calling_functionlike_id {
                 FunctionLikeIdentifier::Function(name) => Some(ReferenceSource::Symbol(false, name)),
@@ -152,7 +153,7 @@ impl<'a> ScopeContext<'a> {
                 _ => None,
             }
         } else {
-            Some(ReferenceSource::Symbol(false, source.value()))
+            None
         }
     }
 }

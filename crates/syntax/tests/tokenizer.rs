@@ -1,7 +1,7 @@
+use mago_database::file::FileId;
 use pretty_assertions::assert_eq;
 
 use mago_interner::ThreadedInterner;
-use mago_source::SourceIdentifier;
 use mago_syntax_core::input::Input;
 
 use mago_syntax::error::SyntaxError;
@@ -1059,7 +1059,7 @@ fn test_use_fully_qualified() -> Result<(), SyntaxError> {
 
 fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxError> {
     let interner = ThreadedInterner::new();
-    let input = Input::new(SourceIdentifier::dummy(), code);
+    let input = Input::new(FileId::zero(), code);
     let mut lexer = Lexer::new(&interner, input);
 
     let mut tokens = Vec::new();

@@ -72,7 +72,7 @@ fn analyze_for_or_while_loop<'a>(
     loop_block_context.inside_loop = true;
     loop_block_context.break_types.push(BreakContext::Loop);
     let previous_loop_bounds = loop_block_context.loop_bounds;
-    loop_block_context.loop_bounds = span.to_tuple();
+    loop_block_context.loop_bounds = span.to_offset_tuple();
 
     let mut loop_scope = LoopScope::new(span, block_context.locals.clone(), None);
     loop_scope.variables_possibly_in_scope =

@@ -287,10 +287,10 @@ pub fn get_closure<'a>(
     interner: &ThreadedInterner,
     position: &Position,
 ) -> Option<&'a FunctionLikeMetadata> {
-    let source_id = position.source.value();
+    let file_id = interner.intern(position.file_id.to_string());
     let closure_id = interner.intern(position.to_string());
 
-    codebase.function_likes.get(&(source_id, closure_id))
+    codebase.function_likes.get(&(file_id, closure_id))
 }
 
 /// Retrieves the metadata for a global constant.
@@ -359,12 +359,7 @@ pub fn get_trait<'a>(
 }
 
 pub fn get_anonymous_class_name(interner: &ThreadedInterner, span: Span) -> StringIdentifier {
-    interner.intern(format!(
-        "class@anonymous:{}-{}:{}",
-        span.start.source.0.value(),
-        span.start.offset,
-        span.end.offset,
-    ))
+    interner.intern(format!("class@anonymous:{}-{}:{}", span.start.file_id, span.start.offset, span.end.offset,))
 }
 
 /// Retrieves the metadata for an anonymous class based on its span.
@@ -446,7 +441,7 @@ pub fn get_declaring_method_id(
         return MethodIdentifier::new(declaring_class_metadata.original_name, *method_id.get_method_name());
     };
 
-    if class_like_metadata.is_abstract {
+    if class_like_metadata.flags.is_abstract() {
         let overridden_method_ids = class_like_metadata.get_overridden_method_ids();
         if let Some(overridden_classes) = overridden_method_ids.get(&lowered_method_id)
             && let Some(first_class) = overridden_classes.iter().next()

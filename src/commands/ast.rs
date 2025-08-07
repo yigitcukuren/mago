@@ -1,6 +1,10 @@
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
+use mago_database::ReadDatabase;
+use mago_database::file::File;
+use mago_database::file::FileType;
 use mago_names::resolver::NameResolver;
 use serde_json::json;
 use termtree::Tree;
@@ -10,12 +14,11 @@ use mago_reporting::Issue;
 use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
-use mago_source::SourceCategory;
-use mago_source::SourceManager;
 use mago_syntax::ast::Node;
 use mago_syntax::ast::node::NodeKind;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
+use crate::config::Configuration;
 use crate::enum_variants;
 use crate::error::Error;
 
@@ -33,7 +36,7 @@ This command helps you understand the structure of your PHP code and debug parsi
 pub struct AstCommand {
     /// Path to the PHP file to be parsed.
     #[arg(long, short = 'f', help = "Specify the PHP file to parse", required = true)]
-    pub file: String,
+    pub file: PathBuf,
 
     /// Include resolved names in the output.
     #[arg(long, help = "Include resolved names in the output to show symbol resolution")]
@@ -77,32 +80,13 @@ pub struct AstCommand {
 /// # Errors
 ///
 /// An error is returned if the file does not exist or is not readable.
-pub async fn execute(command: AstCommand) -> Result<ExitCode, Error> {
-    let file_path = std::path::Path::new(&command.file).to_path_buf();
-
-    // Verify if the file exists and is readable.
-    if !file_path.exists() {
-        tracing::error!("File '{}' does not exist.", command.file);
-
-        return Ok(ExitCode::FAILURE);
-    }
-
-    if !file_path.is_file() {
-        tracing::error!("The path '{}' is not a file.", command.file);
-
-        return Ok(ExitCode::FAILURE);
-    }
-
+pub async fn execute(command: AstCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     // Initialize interner and source manager.
     let interner = ThreadedInterner::new();
-    let source_manager = SourceManager::new(interner.clone());
-
-    // Load the source file.
-    let source_id = source_manager.insert_path(command.file.clone(), file_path, SourceCategory::UserDefined);
-    let source = source_manager.load(&source_id)?;
+    let file = File::read(&configuration.source.workspace, &command.file, FileType::Host)?;
 
     // Parse the source file into an AST.
-    let (ast, error) = parse_source(&interner, &source);
+    let (ast, error) = parse_file(&interner, &file);
 
     let has_error = error.is_some();
     if command.json {
@@ -134,9 +118,9 @@ pub async fn execute(command: AstCommand) -> Result<ExitCode, Error> {
         // Report errors if any exist.
         if let Some(error) = &error {
             let issue = Into::<Issue>::into(error);
+            let database = ReadDatabase::single(file);
 
-            Reporter::new(interner.clone(), source_manager, command.reporting_target)
-                .report([issue], command.reporting_format)?;
+            Reporter::new(database, command.reporting_target).report([issue], command.reporting_format)?;
         }
     }
 

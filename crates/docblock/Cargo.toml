@@ -19,4 +19,4 @@ mago-interner = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
-mago-source = { workspace = true }
+mago-database = { workspace = true }

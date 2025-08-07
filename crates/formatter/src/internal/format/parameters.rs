@@ -35,7 +35,7 @@ pub(super) fn print_function_like_parameters<'a>(
 
         if f.settings.preserve_breaking_parameter_list
             && misc::has_new_line_in_range(
-                f.source_text,
+                &f.file.contents,
                 parameter_list.left_parenthesis.start.offset,
                 parameter_list.parameters.as_slice()[0].span().start.offset,
             )

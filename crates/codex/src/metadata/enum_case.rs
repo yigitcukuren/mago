@@ -6,6 +6,7 @@ use mago_span::HasSpan;
 use mago_span::Span;
 
 use crate::metadata::attribute::AttributeMetadata;
+use crate::metadata::flags::MetadataFlags;
 use crate::ttype::atomic::TAtomic;
 
 /// Contains metadata associated with a specific `case` within a PHP `enum`.
@@ -20,8 +21,7 @@ pub struct EnumCaseMetadata {
     pub name_span: Span,
     pub span: Span,
     pub value_type: Option<TAtomic>,
-    pub is_backed: bool,
-    pub is_deprecated: bool,
+    pub flags: MetadataFlags,
 }
 
 impl EnumCaseMetadata {
@@ -35,16 +35,8 @@ impl EnumCaseMetadata {
     /// * `name_span`: The source code location of the name identifier.
     /// * `span`: The source code location of the entire case declaration.
     #[inline]
-    pub fn new(name: StringIdentifier, name_span: Span, span: Span) -> Self {
-        Self {
-            attributes: Vec::new(),
-            name,
-            name_span,
-            span,
-            value_type: None,
-            is_backed: false, // Assume pure initially
-            is_deprecated: false,
-        }
+    pub fn new(name: StringIdentifier, name_span: Span, span: Span, flags: MetadataFlags) -> Self {
+        Self { attributes: Vec::new(), name, name_span, span, flags, value_type: None }
     }
 }
 

@@ -9,10 +9,10 @@ use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::populator::populate_codebase;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::scanner::scan_program;
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
-use mago_source::Source;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 #[derive(Debug, Clone)]
 pub struct TestCase<'a> {
@@ -32,23 +32,23 @@ impl<'a> TestCase<'a> {
 
 fn run_test_case_inner(config: TestCase) {
     let interner = ThreadedInterner::new();
-    let source = Source::standalone(&interner, config.name, config.content);
+    let source_file = File::ephemeral(config.name.to_string(), config.content.to_string());
 
-    let (program, parse_issues) = parse_source(&interner, &source);
+    let (program, parse_issues) = parse_file(&interner, &source_file);
     if parse_issues.is_some() {
         panic!("Test '{}' failed during parsing:\n{:#?}", config.name, parse_issues);
     }
 
     let resolver = NameResolver::new(&interner);
     let resolved_names = resolver.resolve(&program);
-    let mut codebase = scan_program(&interner, &source, &program, &resolved_names);
+    let mut codebase = scan_program(&interner, &source_file, &program, &resolved_names);
     let mut symbol_references = SymbolReferences::new();
 
     populate_codebase(&mut codebase, &interner, &mut symbol_references, HashSet::default(), HashSet::default());
 
     let mut analysis_result = AnalysisResult::new(symbol_references);
     let analyzer = Analyzer::new(
-        source,
+        &source_file,
         &resolved_names,
         &codebase,
         &interner,

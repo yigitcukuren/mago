@@ -48,7 +48,7 @@ impl<'a> FormatterState<'a> {
 
         while let Some(comment) = peekable_trivias.peek() {
             let mut should_break = true;
-            let comment = Comment::from_trivia(self.source, comment);
+            let comment = Comment::from_trivia(self.file, comment);
 
             if filter(&comment) {
                 if comment.end <= range.start.offset {
@@ -58,7 +58,7 @@ impl<'a> FormatterState<'a> {
 
                     should_break = false;
                 } else if range.end.offset < comment.start
-                    && self.source_text[range.end.offset..comment.start]
+                    && self.file.contents[range.end.offset..comment.start]
                         .chars()
                         .all(|c| c == ' ' || c == ';' || c == ',')
                 {
@@ -92,7 +92,7 @@ impl<'a> FormatterState<'a> {
         let peekable_trivias = self.comments.clone();
 
         for comment in peekable_trivias {
-            let comment = Comment::from_trivia(self.source, &comment);
+            let comment = Comment::from_trivia(self.file, &comment);
             if comment.start >= range.start.offset && comment.end <= range.end.offset {
                 return true;
             }
@@ -105,7 +105,7 @@ impl<'a> FormatterState<'a> {
     pub(crate) fn print_leading_comments(&mut self, range: Span) -> Option<Document<'a>> {
         let mut parts = vec![];
         while let Some(comment) = self.comments.peek() {
-            let comment = Comment::from_trivia(self.source, comment);
+            let comment = Comment::from_trivia(self.file, comment);
             // Comment before the span
             if comment.end <= range.start.offset {
                 self.comments.next();
@@ -174,10 +174,10 @@ impl<'a> FormatterState<'a> {
         let mut parts = vec![];
         let mut previous_comment: Option<Comment> = None;
         while let Some(comment) = self.comments.peek() {
-            let comment = Comment::from_trivia(self.source, comment);
+            let comment = Comment::from_trivia(self.file, comment);
             // Trailing comment if there is nothing in between.
             if range.end.offset < comment.start
-                && self.source_text[range.end.offset..comment.start].chars().all(|c| c == ' ' || c == ';' || c == ',')
+                && self.file.contents[range.end.offset..comment.start].chars().all(|c| c == ' ' || c == ';' || c == ',')
             {
                 self.comments.next();
                 let previous = self.print_trailing_comment(&mut parts, comment, previous_comment);
@@ -238,7 +238,7 @@ impl<'a> FormatterState<'a> {
         let mut must_break = false;
         while let Some(comment) = self.comments.peek() {
             let span = comment.span;
-            let comment = Comment::from_trivia(self.source, comment);
+            let comment = Comment::from_trivia(self.file, comment);
             // Comment within the span
             if comment.start >= range.start.offset && comment.end <= range.end.offset {
                 must_break = must_break || !comment.is_block;
@@ -285,7 +285,7 @@ impl<'a> FormatterState<'a> {
         let mut parts = vec![];
         while let Some(comment) = self.comments.peek() {
             let span = comment.span;
-            let comment = Comment::from_trivia(self.source, comment);
+            let comment = Comment::from_trivia(self.file, comment);
             // Comment within the span
             if comment.end <= range.end.offset {
                 if !indented && self.is_next_line_empty(span) {
@@ -318,7 +318,7 @@ impl<'a> FormatterState<'a> {
 
     #[must_use]
     fn print_comment(&self, comment: Comment) -> Document<'a> {
-        let mut content = &self.source_text[comment.start..comment.end];
+        let mut content = &self.file.contents[comment.start..comment.end];
 
         if comment.is_inline_comment() {
             if !comment.is_single_line {

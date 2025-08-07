@@ -27,7 +27,7 @@ impl Rule for NoUncategorizedPragmaRule {
     fn lint_node(&self, node: Node<'_>, context: &mut LintContext<'_>) -> LintDirective {
         let Node::Program(program) = node else { return LintDirective::Abort };
 
-        let pragmas = Pragma::extract(context.source, program.trivia.as_slice(), context.interner, None);
+        let pragmas = Pragma::extract(context.source_file, program.trivia.as_slice(), context.interner, None);
         for pragma in pragmas.iter() {
             if pragma.category.is_some() {
                 continue;

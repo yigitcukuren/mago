@@ -1,8 +1,12 @@
 use std::process::ExitCode;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use clap::Parser;
 
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::file::FileType;
 use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
 use mago_reference::Reference;
@@ -14,14 +18,12 @@ use mago_reporting::Issue;
 use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
-use mago_source::SourceCategory;
-use mago_source::SourceManager;
-use mago_syntax::parser::parse_source;
+use mago_syntax::parser::parse_file;
 
 use crate::config::Configuration;
+use crate::database;
 use crate::enum_variants;
 use crate::error::Error;
-use crate::source;
 use crate::utils::progress::ProgressBarTheme;
 use crate::utils::progress::create_progress_bar;
 use crate::utils::progress::remove_progress_bar;
@@ -106,19 +108,14 @@ pub async fn execute(command: FindCommand, configuration: Configuration) -> Resu
     };
 
     // Load the source files
-    let source_manager = source::load(
-        &interner,
-        &configuration.source,
-        command.include_external,
-        /* ??? disable built-ins? */ false,
-    )
-    .await?;
+    let database = database::load(&configuration.source, command.include_external, false)?;
+    let read_database = Arc::new(database.read_only());
 
     // Gather references
-    let references = find_references(&interner, &source_manager, query, command.include_external).await?;
+    let references = find_references(&interner, read_database.clone(), query, command.include_external).await?;
 
     // Convert references to issues, then report
-    Reporter::new(interner.clone(), source_manager, command.reporting_target).report(
+    Reporter::new(Arc::unwrap_or_clone(read_database), command.reporting_target).report(
         references.into_iter().map(|reference| reference_to_issue(&interner, reference)).collect::<Vec<_>>(),
         command.reporting_format,
     )?;
@@ -142,31 +139,31 @@ pub async fn execute(command: FindCommand, configuration: Configuration) -> Resu
 /// and run the [`ReferenceFinder`].
 pub async fn find_references(
     interner: &ThreadedInterner,
-    manager: &SourceManager,
+    database: Arc<ReadDatabase>,
     query: Query,
     include_externals: bool,
 ) -> Result<Vec<Reference>, Error> {
     // Choose which sources to analyze
-    let sources: Vec<_> = if include_externals {
-        manager.source_ids_for_category(SourceCategory::UserDefined)
+    let file_ids: Vec<_> = if include_externals {
+        database.file_ids_with_type(FileType::Host).collect()
     } else {
-        manager.source_ids_except_category(SourceCategory::BuiltIn)
+        database.file_ids_without_type(FileType::Builtin).collect()
     };
 
-    let length = sources.len();
+    let length = file_ids.len();
     let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Yellow);
 
     // Spawn tasks to find references in each source
     let mut handles = Vec::with_capacity(length);
-    for source_id in sources {
+    for file_id in file_ids {
         let interner = interner.clone();
-        let manager = manager.clone();
+        let database = database.clone();
         let progress_bar = progress_bar.clone();
         let query = query.clone();
 
         handles.push(tokio::spawn(async move {
-            let source = manager.load(&source_id)?;
-            let program = parse_source(&interner, &source).0;
+            let file = database.get_by_id(&file_id)?;
+            let program = parse_file(&interner, file).0;
             let resolved_names = NameResolver::new(&interner).resolve(&program);
             let references = ReferenceFinder::new(&interner).find(&program, &resolved_names, query);
 

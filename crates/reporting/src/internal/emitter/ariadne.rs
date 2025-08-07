@@ -2,9 +2,9 @@ use ariadne::sources as ariadne_sources;
 use ariadne::*;
 use termcolor::WriteColor;
 
-use mago_interner::ThreadedInterner;
-use mago_source::HasSource;
-use mago_source::SourceManager;
+use mago_database::DatabaseReader;
+use mago_database::ReadDatabase;
+use mago_database::file::HasFileId;
 
 use crate::IssueCollection;
 use crate::Level;
@@ -12,8 +12,7 @@ use crate::error::ReportingError;
 
 pub fn ariadne_format(
     mut writer: &mut dyn WriteColor,
-    sources: &SourceManager,
-    interner: &ThreadedInterner,
+    database: &ReadDatabase,
     issues: IssueCollection,
 ) -> Result<Option<Level>, ReportingError> {
     let highest_level = issues.get_highest_level();
@@ -33,14 +32,11 @@ pub fn ariadne_format(
 
         let (file_path, range) = match issue.annotations.iter().find(|annotation| annotation.is_primary()) {
             Some(annotation) => {
-                let source = sources.load(&annotation.span.source())?;
+                let file = database.get_by_id(&annotation.span.file_id())?;
 
-                (
-                    interner.lookup(&source.identifier.0).to_string(),
-                    annotation.span.start.offset..annotation.span.end.offset,
-                )
+                (file.name.clone(), annotation.span.start.offset..annotation.span.end.offset)
             }
-            None => ("<unknown>".to_string(), 0..0),
+            None => ("<unknown>".to_owned(), 0..0),
         };
 
         let mut report = Report::build(kind, (file_path, range)).with_message(issue.message);
@@ -64,11 +60,10 @@ pub fn ariadne_format(
 
         let mut relevant_sources = vec![];
         for annotation in issue.annotations {
-            let source = sources.load(&annotation.span.source())?;
-            let file_path = interner.lookup(&source.identifier.0).to_string();
+            let file = database.get_by_id(&annotation.span.file_id())?;
             let range = annotation.span.start.offset..annotation.span.end.offset;
 
-            let mut label = Label::new((file_path.clone(), range));
+            let mut label = Label::new((file.name.clone(), range));
             if annotation.is_primary() {
                 label = label.with_color(color).with_priority(1);
             }
@@ -79,7 +74,7 @@ pub fn ariadne_format(
                 report = report.with_label(label);
             }
 
-            relevant_sources.push((file_path, interner.lookup(&source.content)));
+            relevant_sources.push((file.name.clone(), &file.contents));
         }
 
         report.finish().write(ariadne_sources(relevant_sources), &mut writer).unwrap();

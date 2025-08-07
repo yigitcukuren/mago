@@ -4,11 +4,11 @@ use std::sync::RwLockReadGuard;
 
 use mago_codex::metadata::CodebaseMetadata;
 use mago_collector::Collector;
+use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
 use mago_reporting::IssueCollection;
 use mago_reporting::Level;
-use mago_source::Source;
 use mago_syntax::ast::Node;
 use mago_syntax::ast::Program;
 
@@ -164,14 +164,14 @@ impl Linter {
     /// 4. For each rule, creates a `LintContext` and runs the rule's logic.
     /// 5. Issues from each rule are passed to the main collector, which handles suppression logic.
     /// 6. Finally, finalizes the collector to report unused pragmas and returns the complete set of issues.
-    pub fn lint(&self, source: &Source, program: &Program, resolved_names: &ResolvedNames) -> IssueCollection {
+    pub fn lint(&self, source_file: &File, program: &Program, resolved_names: &ResolvedNames) -> IssueCollection {
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
         if configured_rules.is_empty() {
             tracing::warn!("Linting aborted - no rules configured.");
             return IssueCollection::new();
         }
 
-        let mut collector = Collector::new(source, program, &self.interner, COLLECTOR_CATEGORY);
+        let mut collector = Collector::new(source_file, program, &self.interner, COLLECTOR_CATEGORY);
         let node = PreComputedNode::from(Node::Program(program));
 
         for configured_rule in configured_rules.iter() {
@@ -180,7 +180,7 @@ impl Linter {
                 configured_rule,
                 &self.interner,
                 &self.codebase,
-                source,
+                source_file,
                 resolved_names,
             );
 

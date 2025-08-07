@@ -3,7 +3,7 @@ use ahash::HashSet;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_source::SourceIdentifier;
+use mago_database::file::FileId;
 
 use crate::symbol::SymbolIdentifier;
 
@@ -30,10 +30,10 @@ pub struct CodebaseDiff {
     /// Map from source file identifier to a vector of text diff hunks.
     /// Each tuple typically represents `(old_start, old_len, new_start, new_len)` line info for a change.
     /// (Exact tuple meaning depends on the diffing library used).
-    diff_map: HashMap<SourceIdentifier, Vec<(usize, usize, isize, isize)>>,
+    diff_map: HashMap<FileId, Vec<(usize, usize, isize, isize)>>,
 
     /// Map from source file identifier to a vector of deleted line ranges `(start_line, end_line)`.
-    deletion_ranges_map: HashMap<SourceIdentifier, Vec<(usize, usize)>>,
+    deletion_ranges_map: HashMap<FileId, Vec<(usize, usize)>>,
 }
 
 impl CodebaseDiff {
@@ -76,13 +76,13 @@ impl CodebaseDiff {
 
     /// Returns a reference to the map of source files to text diff hunks.
     #[inline]
-    pub fn get_diff_map(&self) -> &HashMap<SourceIdentifier, Vec<(usize, usize, isize, isize)>> {
+    pub fn get_diff_map(&self) -> &HashMap<FileId, Vec<(usize, usize, isize, isize)>> {
         &self.diff_map
     }
 
     /// Returns a reference to the map of source files to deletion ranges.
     #[inline]
-    pub fn get_deletion_ranges_map(&self) -> &HashMap<SourceIdentifier, Vec<(usize, usize)>> {
+    pub fn get_deletion_ranges_map(&self) -> &HashMap<FileId, Vec<(usize, usize)>> {
         &self.deletion_ranges_map
     }
 
@@ -250,13 +250,13 @@ impl CodebaseDiff {
 
     /// Sets the diff map, replacing the existing one.
     #[inline]
-    pub fn set_diff_map(&mut self, map: HashMap<SourceIdentifier, Vec<(usize, usize, isize, isize)>>) {
+    pub fn set_diff_map(&mut self, map: HashMap<FileId, Vec<(usize, usize, isize, isize)>>) {
         self.diff_map = map;
     }
 
     /// Returns a new instance with the diff map replaced.
     #[inline]
-    pub fn with_diff_map(mut self, map: HashMap<SourceIdentifier, Vec<(usize, usize, isize, isize)>>) -> Self {
+    pub fn with_diff_map(mut self, map: HashMap<FileId, Vec<(usize, usize, isize, isize)>>) -> Self {
         self.set_diff_map(map);
         self
     }
@@ -265,7 +265,7 @@ impl CodebaseDiff {
     #[inline]
     pub fn add_diff_map_entry(
         &mut self,
-        source: SourceIdentifier,
+        source: FileId,
         diffs: Vec<(usize, usize, isize, isize)>,
     ) -> Option<Vec<(usize, usize, isize, isize)>> {
         self.diff_map.insert(source, diffs)
@@ -273,11 +273,7 @@ impl CodebaseDiff {
 
     /// Returns a new instance with the diff hunks for the source file added or updated.
     #[inline]
-    pub fn with_added_diff_map_entry(
-        mut self,
-        source: SourceIdentifier,
-        diffs: Vec<(usize, usize, isize, isize)>,
-    ) -> Self {
+    pub fn with_added_diff_map_entry(mut self, source: FileId, diffs: Vec<(usize, usize, isize, isize)>) -> Self {
         self.add_diff_map_entry(source, diffs);
         self
     }
@@ -286,7 +282,7 @@ impl CodebaseDiff {
     #[inline]
     pub fn add_diffs_for_source(
         &mut self,
-        source: SourceIdentifier,
+        source: FileId,
         diffs: impl IntoIterator<Item = (usize, usize, isize, isize)>,
     ) {
         self.diff_map.entry(source).or_default().extend(diffs);
@@ -296,7 +292,7 @@ impl CodebaseDiff {
     #[inline]
     pub fn with_added_diffs_for_source(
         mut self,
-        source: SourceIdentifier,
+        source: FileId,
         diffs: impl IntoIterator<Item = (usize, usize, isize, isize)>,
     ) -> Self {
         self.add_diffs_for_source(source, diffs);
@@ -318,13 +314,13 @@ impl CodebaseDiff {
 
     /// Sets the deletion ranges map, replacing the existing one.
     #[inline]
-    pub fn set_deletion_ranges_map(&mut self, map: HashMap<SourceIdentifier, Vec<(usize, usize)>>) {
+    pub fn set_deletion_ranges_map(&mut self, map: HashMap<FileId, Vec<(usize, usize)>>) {
         self.deletion_ranges_map = map;
     }
 
     /// Returns a new instance with the deletion ranges map replaced.
     #[inline]
-    pub fn with_deletion_ranges_map(mut self, map: HashMap<SourceIdentifier, Vec<(usize, usize)>>) -> Self {
+    pub fn with_deletion_ranges_map(mut self, map: HashMap<FileId, Vec<(usize, usize)>>) -> Self {
         self.set_deletion_ranges_map(map);
         self
     }
@@ -333,7 +329,7 @@ impl CodebaseDiff {
     #[inline]
     pub fn add_deletion_ranges_entry(
         &mut self,
-        source: SourceIdentifier,
+        source: FileId,
         ranges: Vec<(usize, usize)>,
     ) -> Option<Vec<(usize, usize)>> {
         self.deletion_ranges_map.insert(source, ranges)
@@ -341,29 +337,25 @@ impl CodebaseDiff {
 
     /// Returns a new instance with the deletion ranges for the source file added or updated.
     #[inline]
-    pub fn with_added_deletion_ranges_entry(mut self, source: SourceIdentifier, ranges: Vec<(usize, usize)>) -> Self {
-        self.add_deletion_ranges_entry(source, ranges);
+    pub fn with_added_deletion_ranges_entry(mut self, file: FileId, ranges: Vec<(usize, usize)>) -> Self {
+        self.add_deletion_ranges_entry(file, ranges);
         self
     }
 
     /// Extends the deletion ranges for a specific source file.
     #[inline]
-    pub fn add_deletion_ranges_for_source(
-        &mut self,
-        source: SourceIdentifier,
-        ranges: impl IntoIterator<Item = (usize, usize)>,
-    ) {
-        self.deletion_ranges_map.entry(source).or_default().extend(ranges);
+    pub fn add_deletion_ranges_for_source(&mut self, file: FileId, ranges: impl IntoIterator<Item = (usize, usize)>) {
+        self.deletion_ranges_map.entry(file).or_default().extend(ranges);
     }
 
     /// Returns a new instance with the deletion ranges for the source file extended.
     #[inline]
     pub fn with_added_deletion_ranges_for_source(
         mut self,
-        source: SourceIdentifier,
+        file: FileId,
         ranges: impl IntoIterator<Item = (usize, usize)>,
     ) -> Self {
-        self.add_deletion_ranges_for_source(source, ranges);
+        self.add_deletion_ranges_for_source(file, ranges);
         self
     }
 
