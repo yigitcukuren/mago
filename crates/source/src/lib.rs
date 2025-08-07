@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -252,10 +253,9 @@ impl SourceManager {
         }
 
         let mut inner = self.inner.write();
-        // Double-check to avoid duplicate insertion.
-        if inner.sources.contains_key(&source_id) {
-            return source_id;
-        }
+
+        assert!(!inner.sources.contains_key(&source_id), "Source `{name_str}` already exists in the manager.");
+
         inner.sources.insert(source_id, SourceEntry { path: Some(path), content: None });
         inner.sources_by_name.insert(name_id, source_id);
         source_id
@@ -301,25 +301,42 @@ impl SourceManager {
         inner.sources.contains_key(source_id)
     }
 
-    /// Returns all source identifiers.
+    /// Returns all source identifiers in a deterministic, sorted order.
     #[inline]
     pub fn source_ids(&self) -> Vec<SourceIdentifier> {
         let inner = self.inner.read();
-        inner.sources.keys().cloned().collect()
+        let mut ids: Vec<_> = inner.sources.keys().cloned().collect();
+
+        ids.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
+            Ordering::Equal => self.interner.lookup(&a.0).cmp(self.interner.lookup(&b.0)).then_with(|| a.1.cmp(&b.1)),
+            other => other,
+        });
+        ids
     }
 
-    /// Returns source identifiers for the given category.
+    /// Returns source identifiers for the given category in a deterministic, sorted order.
     #[inline]
     pub fn source_ids_for_category(&self, category: SourceCategory) -> Vec<SourceIdentifier> {
         let inner = self.inner.read();
-        inner.sources.keys().filter(|id| id.category() == category).cloned().collect()
+        let mut ids: Vec<_> = inner.sources.keys().filter(|id| id.category() == category).cloned().collect();
+
+        ids.sort_unstable_by(|a, b| {
+            self.interner.lookup(&a.0).cmp(self.interner.lookup(&b.0)).then_with(|| a.1.cmp(&b.1))
+        });
+        ids
     }
 
-    /// Returns source identifiers for categories other than the given one.
+    /// Returns source identifiers for categories other than the given one in a deterministic, sorted order.
     #[inline]
     pub fn source_ids_except_category(&self, category: SourceCategory) -> Vec<SourceIdentifier> {
         let inner = self.inner.read();
-        inner.sources.keys().filter(|id| id.category() != category).cloned().collect()
+        let mut ids: Vec<_> = inner.sources.keys().filter(|id| id.category() != category).cloned().collect();
+
+        ids.sort_unstable_by(|a, b| match a.1.cmp(&b.1) {
+            Ordering::Equal => self.interner.lookup(&a.0).cmp(self.interner.lookup(&b.0)).then_with(|| a.1.cmp(&b.1)),
+            other => other,
+        });
+        ids
     }
 
     /// Loads the source for the given identifier.
