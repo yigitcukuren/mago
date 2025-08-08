@@ -85,14 +85,14 @@ impl Analyzable for Break {
                 block_context.get_redefined_locals(&loop_scope.parent_context_variables, false, &mut removed_var_ids);
 
             for (var_id, var_type) in redefined_vars {
-                loop_scope.possibly_redefined_loop_variables.insert(
+                loop_scope.possibly_redefined_loop_parent_variables.insert(
                     var_id.clone(),
-                    add_optional_union_type(
+                    Rc::new(add_optional_union_type(
                         var_type,
-                        loop_scope.possibly_redefined_loop_variables.get(&var_id),
+                        loop_scope.possibly_redefined_loop_parent_variables.get(&var_id).map(|rc| rc.as_ref()),
                         context.codebase,
                         context.interner,
-                    ),
+                    )),
                 );
             }
 

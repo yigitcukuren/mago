@@ -588,15 +588,12 @@ fn analyze<'a, 'b>(
 
     debug_assert!(pre_conditions_applied, "Pre-conditions should have been applied at least once.");
 
-    let cloned_loop_scope = loop_scope.clone();
-
-    let does_sometimes_break = cloned_loop_scope.final_actions.contains(&ControlAction::Break);
-    let does_always_break = does_sometimes_break && cloned_loop_scope.final_actions.len() == 1;
+    let does_sometimes_break = loop_scope.final_actions.contains(&ControlAction::Break);
+    let does_always_break = does_sometimes_break && loop_scope.final_actions.len() == 1;
 
     if does_sometimes_break {
         if let Some(mut inner_do_context_inner) = inner_do_context {
-            for (variable_id, possibly_redefined_variable_type) in
-                &cloned_loop_scope.possibly_redefined_loop_parent_variables
+            for (variable_id, possibly_redefined_variable_type) in &loop_scope.possibly_redefined_loop_parent_variables
             {
                 if let Some(do_context_type) = inner_do_context_inner.locals.get_mut(variable_id) {
                     *do_context_type = if do_context_type == possibly_redefined_variable_type {
@@ -617,7 +614,7 @@ fn analyze<'a, 'b>(
 
             inner_do_context = Some(inner_do_context_inner);
         } else {
-            for (variable_id, variable_type) in &cloned_loop_scope.possibly_redefined_loop_parent_variables {
+            for (variable_id, variable_type) in &loop_scope.possibly_redefined_loop_parent_variables {
                 if let Some(loop_parent_context_type) = loop_parent_context.locals.get_mut(variable_id) {
                     *loop_parent_context_type = Rc::new(combine_union_types(
                         variable_type,
@@ -760,8 +757,7 @@ fn analyze<'a, 'b>(
             // that the loop has finished executing, so the assertions at the end
             // the loop in the while conditional may not hold
             if does_sometimes_break || does_sometimes_continue {
-                if let Some(possibly_defined_type) =
-                    cloned_loop_scope.possibly_defined_loop_parent_variables.get(variable_id)
+                if let Some(possibly_defined_type) = loop_scope.possibly_defined_loop_parent_variables.get(variable_id)
                 {
                     loop_parent_context.locals.insert(
                         variable_id.clone(),
