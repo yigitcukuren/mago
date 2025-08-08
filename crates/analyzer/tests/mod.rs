@@ -127,3 +127,4 @@ test_case!(docblock_var_override);
 test_case!(isset_refinement_on_object_properties);
 test_case!(array_shape_reconciliation);
 test_case!(retain_possibly_undefined_in_array_access);
+test_case!(static_return_generic_override);

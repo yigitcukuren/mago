@@ -398,22 +398,20 @@ fn expand_named_object(
 ) {
     let name_str_lc = interner.lookup(&named_object.name).to_lowercase();
 
-    if named_object.is_this() || name_str_lc == "static" {
+    if named_object.is_this() || name_str_lc == "static" || name_str_lc == "$this" {
         match &options.static_class_type {
             StaticClassType::Object(TObject::Named(static_object)) => {
-                let mut new_object = static_object.clone();
-
-                if let Some(original_intersections) = &named_object.intersection_types {
-                    let new_intersections = new_object.intersection_types.get_or_insert_with(Vec::new);
-                    new_intersections.extend(original_intersections.iter().cloned());
+                if let Some(static_object_intersections) = &static_object.intersection_types {
+                    let intersections = named_object.intersection_types.get_or_insert_with(Vec::new);
+                    intersections.extend(static_object_intersections.iter().cloned());
                 }
 
-                if new_object.type_parameters.is_none() {
-                    new_object.type_parameters = named_object.type_parameters.clone();
+                if named_object.type_parameters.is_none() {
+                    named_object.type_parameters = static_object.type_parameters.clone();
                 }
 
-                *named_object = new_object;
-                named_object.is_this = false;
+                named_object.name = static_object.name;
+                named_object.is_this = true;
             }
             StaticClassType::Name(static_class_name) => {
                 named_object.name = *static_class_name;

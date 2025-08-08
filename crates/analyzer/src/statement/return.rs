@@ -237,200 +237,200 @@ pub fn handle_return_value<'a>(
     }
 
     if let Some(return_value) = return_value {
-        if !expected_return_type.is_mixed() {
-            if expected_return_type.is_void() {
-                context.collector.report_with_code(
-                    Code::INVALID_RETURN_STATEMENT,
-                    Issue::error(format!(
-                        "Function `{function_name}` is declared to return 'void' but returns a value."
-                    ))
-                    .with_annotation(
-                        Annotation::primary(return_value.span())
-                            .with_message("Value returned here.")
-                    )
-                    .with_note(
-                        "A 'void' return type means the function should not return any value."
-                    )
-                    .with_note(
-                        "Use 'return;' without a value, or omit the return statement if it's at the end of the function."
-                    )
-                    .with_help(
-                        "Remove the return value (e.g., change 'return $value;' to 'return;') or change the function's declared return type if it's intended to return a value."
-                    ),
-                );
+        if expected_return_type.is_mixed() {
+            return Ok(());
+        }
 
-                return Ok(());
-            }
-
-            if inferred_return_type.is_mixed() {
-                context.collector.report_with_code(
-                    Code::MIXED_RETURN_STATEMENT,
-                    Issue::error(format!(
-                        "Could not infer a precise return type for function `{}`. Saw type `{}`.",
-                        function_name,
-                        inferred_return_type.get_id(Some(context.interner))
-                    ))
-                    .with_annotation(
-                        Annotation::primary(return_value.span())
-                            .with_message("Type inferred as `mixed` here.")
-                    )
-                    .with_note(
-                        "The analysis could not determine a specific type for the value returned here, resulting in `mixed`. This can happen with complex code paths or unannotated data.".to_string()
-                    )
-                    .with_help(
-                        "Add specific type hints to variables, parameters, or properties involved in calculating the return value. Consider adding a specific return type declaration to the function signature to catch potential mismatches earlier."
-                    ),
-                );
-
-                return Ok(());
-            }
-
-            let mut union_comparison_result = ComparisonResult::new();
-
-            let is_contained_by = is_contained_by(
-                context.codebase,
-                context.interner,
-                &inferred_return_type,
-                &expected_return_type,
-                inferred_return_type.ignore_nullable_issues,
-                inferred_return_type.ignore_falsable_issues,
-                false,
-                &mut union_comparison_result,
+        if expected_return_type.is_void() {
+            context.collector.report_with_code(
+                Code::INVALID_RETURN_STATEMENT,
+                Issue::error(format!(
+                    "Function `{function_name}` is declared to return 'void' but returns a value."
+                ))
+                .with_annotation(
+                    Annotation::primary(return_value.span())
+                        .with_message("Value returned here.")
+                )
+                .with_note(
+                    "A 'void' return type means the function should not return any value."
+                )
+                .with_note(
+                    "Use 'return;' without a value, or omit the return statement if it's at the end of the function."
+                )
+                .with_help(
+                    "Remove the return value (e.g., change 'return $value;' to 'return;') or change the function's declared return type if it's intended to return a value."
+                ),
             );
 
-            if !is_contained_by {
-                let expected_return_type_str = expected_return_type.get_id(Some(context.interner));
-                let inferred_return_type_str = inferred_return_type.get_id(Some(context.interner));
+            return Ok(());
+        }
 
-                if union_comparison_result.type_coerced.unwrap_or(false) {
-                    if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
-                        if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
-                            context.collector.report_with_code(
-                                Code::LESS_SPECIFIC_NESTED_RETURN_STATEMENT,
-                                Issue::error(format!(
-                                    "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'mixed'."
-                                ))
-                                .with_annotation(
-                                    Annotation::primary(return_value.span())
-                                        .with_message("Returned value's type is too general here due to nested mixed")
-                                )
-                                .with_note(
-                                    "The analysis detected 'mixed' within the structure of the returned value, making the overall type less specific than what the function declared."
-                                )
-                                .with_help(
-                                    format!(
-                                        "Ensure the structure returned by `{function_name}` strictly adheres to the types specified in the `{expected_return_type_str}` return type declaration."
-                                    )
-                                ),
-                            );
-                        }
-                    } else if !union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
-                        context.collector.report_with_code(
-                            Code::LESS_SPECIFIC_RETURN_STATEMENT,
-                            Issue::error(format!(
-                                "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}`."
-                            ))
-                            .with_annotation(
-                                Annotation::primary(return_value.span())
-                                    .with_message("Returned type is too general.")
-                            )
-                            .with_note(
-                                format!(
-                                    "The inferred type `{inferred_return_type_str}` could be assigned to the declared type `{expected_return_type_str}`, but is wider (less specific)."
-                                )
-                            )
-                            .with_help(
-                                format!(
-                                    "Consider returning a value that more precisely matches the declared `{expected_return_type_str}` type, or adjust the function's return type declaration if the broader type is intended."
-                                )
-                           ),
-                        );
-                    }
-                } else {
-                    context.collector.report_with_code(
-                        Code::INVALID_RETURN_STATEMENT,
-                        Issue::error(format!(
-                            "Invalid return type for function `{function_name}`: expected `{expected_return_type_str}`, but found `{inferred_return_type_str}`."
-                        ))
-                        .with_annotation(
-                            Annotation::primary(return_value.span())
-                                .with_message(format!("This has type `{inferred_return_type_str}`"))
-                        )
-                        .with_note(
-                            format!(
-                                "The type `{inferred_return_type_str}` returned here is not compatible with the declared return type `{expected_return_type_str}`."
-                            )
-                        )
-                        .with_help(
-                            format!(
-                                "Change the return value to match `{expected_return_type_str}`, or update the function's return type declaration."
-                            )
-                        ),
-                    );
-                }
+        if inferred_return_type.is_mixed() {
+            context.collector.report_with_code(
+                Code::MIXED_RETURN_STATEMENT,
+                Issue::error(format!(
+                    "Could not infer a precise return type for function `{}`. Saw type `{}`.",
+                    function_name,
+                    inferred_return_type.get_id(Some(context.interner))
+                ))
+                .with_annotation(
+                    Annotation::primary(return_value.span())
+                        .with_message("Type inferred as `mixed` here.")
+                )
+                .with_note(
+                    "The analysis could not determine a specific type for the value returned here, resulting in `mixed`. This can happen with complex code paths or unannotated data.".to_string()
+                )
+                .with_help(
+                    "Add specific type hints to variables, parameters, or properties involved in calculating the return value. Consider adding a specific return type declaration to the function signature to catch potential mismatches earlier."
+                ),
+            );
+
+            return Ok(());
+        }
+
+        let mut union_comparison_result = ComparisonResult::new();
+
+        let is_contained_by = is_contained_by(
+            context.codebase,
+            context.interner,
+            &inferred_return_type,
+            &expected_return_type,
+            inferred_return_type.ignore_nullable_issues,
+            inferred_return_type.ignore_falsable_issues,
+            false,
+            &mut union_comparison_result,
+        );
+
+        if is_contained_by {
+            return Ok(());
+        }
+
+        let expected_return_type_str = expected_return_type.get_id(Some(context.interner));
+        let inferred_return_type_str = inferred_return_type.get_id(Some(context.interner));
+
+        if inferred_return_type.is_nullable()
+            && !inferred_return_type.ignore_nullable_issues
+            && !expected_return_type.is_nullable()
+            && !expected_return_type.has_template()
+        {
+            context.collector.report_with_code(
+                Code::NULLABLE_RETURN_STATEMENT,
+                Issue::error(format!(
+                    "Function `{function_name}` is declared to return `{expected_return_type_str}` but possibly returns a nullable value (inferred as `{inferred_return_type_str}`).",
+                ))
+                .with_annotation(
+                    Annotation::primary(return_value.span()).with_message("Nullable value returned here.")
+                )
+                .with_annotation(
+                    Annotation::secondary(function_like_metadata.span)
+                        .with_message(format!("Return type declared as non-nullable `{expected_return_type_str}` here."))
+                )
+                .with_note(
+                    "The declared return type does not permit null, but the analysis indicates that 'null' or a nullable type could be returned from this path.".to_string()
+                )
+                .with_help(
+                    format!(
+                        "You can either change the return type declaration of `{function_name}` to be nullable (e.g., '?{expected_return_type_str}'), or ensure that this function path always returns a non-null value."
+                    )
+                ),
+            );
+        }
+
+        if inferred_return_type.is_falsable()
+            && !inferred_return_type.ignore_falsable_issues
+            && !expected_return_type.is_falsable()
+            && !expected_return_type.has_template()
+        {
+            context.collector.report_with_code(
+                Code::FALSABLE_RETURN_STATEMENT,
+                Issue::error(format!(
+                    "Function `{function_name}` is declared to return `{expected_return_type_str}` but possibly returns 'false' (inferred as `{inferred_return_type_str}`).",
+                ))
+                .with_annotation(
+                    Annotation::primary(return_value.span())
+                        .with_message("Potentially 'false' returned here.")
+                )
+                .with_annotation(
+                    Annotation::secondary(function_like_metadata.span)
+                        .with_message(format!("Return type declared as non-falsable `{expected_return_type_str}` here")))
+                .with_note(
+                    "The declared return type does not permit 'false', but the analysis indicates that 'false' or a falsable type could be returned from this path."
+                )
+                .with_help(
+                    format!(
+                        "You can either change the return type declaration of `{function_name}` to include 'false' (e.g., '{expected_return_type_str}|false'), or ensure that this function path never returns 'false'.",
+                    )
+                ),
+            );
+        }
+
+        if union_comparison_result.type_coerced.unwrap_or(false) {
+            if union_comparison_result.type_coerced_from_as_mixed.unwrap_or(false) {
+                return Ok(());
             }
 
-            if inferred_return_type.is_nullable()
-                && !inferred_return_type.ignore_nullable_issues
-                && !expected_return_type.is_nullable()
-                && !expected_return_type.has_template()
-            {
-                let expected_type_str = expected_return_type.get_id(Some(context.interner));
-                let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
-
+            if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
                 context.collector.report_with_code(
-                    Code::NULLABLE_RETURN_STATEMENT,
+                    Code::LESS_SPECIFIC_NESTED_RETURN_STATEMENT,
                     Issue::error(format!(
-                        "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns a nullable value (inferred as `{inferred_type_str}`).",
-                    ))
-                    .with_annotation(
-                        Annotation::primary(return_value.span()).with_message("Nullable value returned here.")
-                    )
-                    .with_annotation(
-                        Annotation::secondary(function_like_metadata.span)
-                            .with_message(format!("Return type declared as non-nullable `{expected_type_str}` here."))
-                    )
-                    .with_note(
-                        "The declared return type does not permit null, but the analysis indicates that 'null' or a nullable type could be returned from this path.".to_string()
-                    )
-                    .with_help(
-                        format!(
-                            "You can either change the return type declaration of `{function_name}` to be nullable (e.g., '?{expected_type_str}'), or ensure that this function path always returns a non-null value."
-                        )
-                    ),
-                );
-            }
-
-            if inferred_return_type.is_falsable()
-                && !inferred_return_type.ignore_falsable_issues
-                && !expected_return_type.is_falsable()
-                && !expected_return_type.has_template()
-            {
-                let expected_type_str = expected_return_type.get_id(Some(context.interner));
-                let inferred_type_str = inferred_return_type.get_id(Some(context.interner));
-
-                context.collector.report_with_code(
-                    Code::FALSABLE_RETURN_STATEMENT,
-                    Issue::error(format!(
-                        "Function `{function_name}` is declared to return `{expected_type_str}` but possibly returns 'false' (inferred as `{inferred_type_str}`).",
+                        "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'mixed'."
                     ))
                     .with_annotation(
                         Annotation::primary(return_value.span())
-                            .with_message("Potentially 'false' returned here.")
+                            .with_message("Returned value's type is too general here due to nested mixed")
                     )
-                    .with_annotation(
-                        Annotation::secondary(function_like_metadata.span)
-                            .with_message(format!("Return type declared as non-falsable `{expected_type_str}` here")))
                     .with_note(
-                        "The declared return type does not permit 'false', but the analysis indicates that 'false' or a falsable type could be returned from this path."
+                        "The analysis detected 'mixed' within the structure of the returned value, making the overall type less specific than what the function declared."
                     )
                     .with_help(
                         format!(
-                            "You can either change the return type declaration of `{function_name}` to include 'false' (e.g., '{expected_type_str}|false'), or ensure that this function path never returns 'false'.",
+                            "Ensure the structure returned by `{function_name}` strictly adheres to the types specified in the `{expected_return_type_str}` return type declaration."
                         )
                     ),
                 );
+            } else {
+                context.collector.report_with_code(
+                    Code::LESS_SPECIFIC_RETURN_STATEMENT,
+                    Issue::error(format!(
+                        "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}`."
+                    ))
+                    .with_annotation(
+                        Annotation::primary(return_value.span())
+                            .with_message("Returned type is too general.")
+                    )
+                    .with_note(
+                        format!(
+                            "The inferred type `{inferred_return_type_str}` could be assigned to the declared type `{expected_return_type_str}`, but is wider (less specific)."
+                        )
+                    )
+                    .with_help(
+                        format!(
+                            "Consider returning a value that more precisely matches the declared `{expected_return_type_str}` type, or adjust the function's return type declaration if the broader type is intended."
+                        )
+                   ),
+                );
             }
+        } else {
+            context.collector.report_with_code(
+                Code::INVALID_RETURN_STATEMENT,
+                Issue::error(format!(
+                    "Invalid return type for function `{function_name}`: expected `{expected_return_type_str}`, but found `{inferred_return_type_str}`."
+                ))
+                .with_annotation(
+                    Annotation::primary(return_value.span())
+                        .with_message(format!("This has type `{inferred_return_type_str}`"))
+                )
+                .with_note(
+                    format!(
+                        "The type `{inferred_return_type_str}` returned here is not compatible with the declared return type `{expected_return_type_str}`."
+                    )
+                )
+                .with_help(
+                    format!(
+                        "Change the return value to match `{expected_return_type_str}`, or update the function's return type declaration."
+                    )
+                ),
+            );
         }
     } else if require_return_value
         && !function_like_metadata.flags.has_yield()
@@ -440,17 +440,17 @@ pub fn handle_return_value<'a>(
             if context.interner.lookup(&name).eq_ignore_ascii_case("__construct")
         )
     {
-        let expected_type_str = expected_return_type.get_id(Some(context.interner));
+        let expected_return_type_str = expected_return_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
             Code::INVALID_RETURN_STATEMENT,
             Issue::error(format!(
-                "Function `{function_name}` is declared to return `{expected_type_str}` but no return value was specified.",
+                "Function `{function_name}` is declared to return `{expected_return_type_str}` but no return value was specified.",
             ))
             .with_annotation(Annotation::primary(return_span).with_message("No return value specified here."))
             .with_annotation(
                 Annotation::secondary(function_like_metadata.span)
-                    .with_message(format!("Return type declared as `{expected_type_str}` here."))
+                    .with_message(format!("Return type declared as `{expected_return_type_str}` here."))
             )
             .with_note(
                 "The declared return type does not permit 'void', but the analysis indicates that this function path does not return a value.".to_string()

@@ -714,42 +714,61 @@ fn get_reference_from_ast<'i>(
 ) -> Result<TAtomic, TypeError> {
     let reference_name = reference_identifier.value;
 
-    if reference_name == "this" || reference_name == "static" || reference_name == "self" {
-        let class_name = if let Some(classname) = classname { *classname } else { interner.intern("$this") };
+    let mut is_this = false;
+    let mut is_named_object = false;
+    let fq_reference_name_id = if reference_name == "this" || reference_name == "static" || reference_name == "self" {
+        is_named_object = true;
+        is_this = reference_name != "self";
 
-        return Ok(TAtomic::Object(TObject::Named(
-            TNamedObject::new(class_name).with_is_this(reference_name != "self"),
-        )));
-    }
+        if let Some(classname) = classname { *classname } else { interner.intern("static") }
+    } else {
+        if let Some(defining_entities) = type_context.get_template_definition(reference_name)
+            && generics.is_none()
+        {
+            return Ok(get_template_atomic(defining_entities, interner.intern(reference_name)));
+        }
 
-    // `Closure` -> `Closure(mixed...): mixed`
-    if reference_name.eq_ignore_ascii_case("Closure") {
-        return Ok(TAtomic::Callable(TCallable::Signature(
-            TCallableSignature::new(false, true)
-                .with_parameters(vec![TCallableParameter::new(Some(Box::new(get_mixed())), false, true, false)])
-                .with_return_type(Some(Box::new(get_mixed()))),
-        )));
-    }
+        let (fq_reference_name, _) = scope.resolve(NameKind::Default, reference_name);
 
-    let mut type_parameters = vec![];
+        // `Closure` -> `Closure(mixed...): mixed`
+        if fq_reference_name.eq_ignore_ascii_case("Closure") && generics.is_none() {
+            return Ok(TAtomic::Callable(TCallable::Signature(
+                TCallableSignature::new(false, true)
+                    .with_parameters(vec![TCallableParameter::new(Some(Box::new(get_mixed())), false, true, false)])
+                    .with_return_type(Some(Box::new(get_mixed()))),
+            )));
+        }
+
+        interner.intern(&fq_reference_name)
+    };
+
+    let mut type_parameters = None;
     if let Some(generics) = generics {
+        let mut parameters = vec![];
         for generic in &generics.entries {
             let generic_type = get_union_from_type_ast(&generic.inner, scope, type_context, classname, interner)?;
 
-            type_parameters.push(generic_type);
+            parameters.push(generic_type);
         }
-    } else if let Some(defining_entities) = type_context.get_template_definition(reference_name) {
-        return Ok(get_template_atomic(defining_entities, interner.intern(reference_name)));
+
+        type_parameters = Some(parameters);
     }
 
-    let (fq_reference_name, _) = scope.resolve(NameKind::Default, reference_name);
-    let fq_reference_name_id = interner.intern(&fq_reference_name);
-
-    Ok(TAtomic::Reference(TReference::Symbol {
-        name: fq_reference_name_id,
-        parameters: if type_parameters.is_empty() { None } else { Some(type_parameters) },
-        intersection_types: None,
-    }))
+    if is_named_object {
+        Ok(TAtomic::Object(TObject::Named(TNamedObject {
+            name: fq_reference_name_id,
+            type_parameters,
+            intersection_types: None,
+            is_this,
+            remapped_parameters: false,
+        })))
+    } else {
+        Ok(TAtomic::Reference(TReference::Symbol {
+            name: fq_reference_name_id,
+            parameters: type_parameters,
+            intersection_types: None,
+        }))
+    }
 }
 
 #[inline]
