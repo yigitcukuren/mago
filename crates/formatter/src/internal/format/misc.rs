@@ -102,16 +102,7 @@ pub(super) fn should_hug_expression<'a>(
     }
 
     let Expression::Instantiation(instantiation) = expression else {
-        return matches!(
-            expression,
-            Expression::Array(_)
-                | Expression::LegacyArray(_)
-                | Expression::List(_)
-                | Expression::Closure(_)
-                | Expression::ClosureCreation(_)
-                | Expression::AnonymousClass(_)
-                | Expression::Match(_)
-        );
+        return is_breaking_expression(expression);
     };
 
     // Hug instantiations if it is a simple class instantiation
@@ -150,7 +141,28 @@ pub(super) fn should_hug_expression<'a>(
     }
 }
 
-pub fn is_simple_expression(node: &Expression) -> bool {
+pub const fn is_breaking_expression(node: &Expression) -> bool {
+    if let Expression::Parenthesized(inner) = node {
+        return is_breaking_expression(&inner.expression);
+    }
+
+    if let Expression::UnaryPrefix(operation) = node {
+        return is_breaking_expression(&operation.operand);
+    }
+
+    matches!(
+        node,
+        Expression::Array(_)
+            | Expression::LegacyArray(_)
+            | Expression::List(_)
+            | Expression::Closure(_)
+            | Expression::ClosureCreation(_)
+            | Expression::AnonymousClass(_)
+            | Expression::Match(_)
+    )
+}
+
+pub const fn is_simple_expression(node: &Expression) -> bool {
     if let Expression::Parenthesized(inner) = node {
         return is_simple_expression(&inner.expression);
     }

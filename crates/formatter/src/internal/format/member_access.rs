@@ -10,6 +10,8 @@ use crate::internal::FormatterState;
 use crate::internal::format::Format;
 use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::format::misc;
+use crate::internal::format::misc::is_breaking_expression;
+use crate::internal::format::misc::is_string_word_type;
 use crate::internal::parens::instantiation_needs_parens;
 use crate::internal::utils::string_width;
 use crate::internal::utils::unwrap_parenthesized;
@@ -80,10 +82,35 @@ impl<'a> MemberAccess<'a> {
 impl MemberAccessChain<'_> {
     #[inline]
     fn get_eligibility_score(&self, f: &FormatterState) -> usize {
-        let mut score: usize = 0;
+        let mut score: i32 = 0;
         let mut account_for_simple_calls = true;
+        let mut always_account_for_simple_calls = false;
+
+        match self.base {
+            Expression::Instantiation(_) => {
+                score += 2; // Instantiation adds extra score
+            }
+            Expression::Call(Call::Function(FunctionCall { argument_list, .. }))
+                if argument_list.arguments.len() == 1 =>
+            {
+                let (is_breaking_argument, is_string_word_type) = match argument_list.arguments.first() {
+                    Some(argument) => (is_breaking_expression(argument.value()), is_string_word_type(argument.value())),
+                    None => (false, false),
+                };
+
+                if is_string_word_type {
+                    always_account_for_simple_calls = true;
+                } else if is_breaking_argument {
+                    score -= 1;
+                }
+            }
+            _ => {
+                // For other base expressions, we don't add extra score
+            }
+        }
+
         for member_access in &self.accesses {
-            let arguments_list = match member_access {
+            let argument_list = match member_access {
                 MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => {
                     score += 1;
 
@@ -94,21 +121,16 @@ impl MemberAccessChain<'_> {
                 | MemberAccess::StaticMethodCall(StaticMethodCall { argument_list, .. }) => argument_list,
             };
 
-            if account_for_simple_calls
-                && arguments_list.arguments.len() == 1
-                && arguments_list.arguments.first().map(|argument| argument.value()).is_some_and(|argument_value| {
-                    matches!(
-                        argument_value,
-                        Expression::Array(_)
-                            | Expression::LegacyArray(_)
-                            | Expression::List(_)
-                            | Expression::Closure(_)
-                            | Expression::ClosureCreation(_)
-                            | Expression::AnonymousClass(_)
-                            | Expression::Match(_)
-                    )
-                })
-            {
+            let breaking_arguments = if argument_list.arguments.len() == 1 {
+                argument_list.arguments.first().map(|argument| argument.value()).is_some_and(is_breaking_expression)
+            } else if argument_list.arguments.len() > 1 {
+                argument_list.arguments.iter().all(|arg| !arg.is_positional())
+                    && argument_list.arguments.iter().any(|arg| is_breaking_expression(arg.value()))
+            } else {
+                false
+            };
+
+            if (account_for_simple_calls || always_account_for_simple_calls) && breaking_arguments {
                 score += 1;
             } else {
                 score += 2;
@@ -116,16 +138,12 @@ impl MemberAccessChain<'_> {
             }
         }
 
-        if let Expression::Instantiation(_) = self.base {
-            score += 2; // Instantiation adds extra score
-        }
-
         if f.in_condition {
             // In conditions, we lower the score to avoid breaking chains too eagerly
-            score = score.saturating_sub(3);
+            score -= 3;
         }
 
-        score
+        score.max(0) as usize
     }
 
     #[inline]

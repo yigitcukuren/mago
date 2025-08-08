@@ -179,3 +179,4 @@ test_case!(issue_246);
 test_case!(issue_225);
 test_case!(issue_263);
 test_case!(issue_272);
+test_case!(issue_236);
