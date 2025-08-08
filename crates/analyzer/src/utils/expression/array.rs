@@ -124,19 +124,19 @@ pub(crate) fn get_array_target_type_given_index<'a>(
 
     if index_type.is_nullable() && !block_context.inside_isset && !index_type.ignore_nullable_issues {
         context.collector.report_with_code(
-                Code::POSSIBLY_NULL_ARRAY_INDEX,
-                Issue::warning(format!(
-                    "Possibly using `null` as an array index to access element{}.",
-                    match extended_var_id {
-                        Some(var) => "of variable ".to_string() + var,
-                        None => "".to_string(),
-                    }
-                ))
-                .with_annotation(Annotation::primary(access_index_span).with_message("Index might be `null` here."))
-                .with_note("Using `null` as an array key is equivalent to using an empty string `''`.")
-                .with_note("The analysis indicates this index could be `null` at runtime.")
-                .with_help("Ensure the index is always an integer or a string, potentially using checks or assertions before access."),
-            );
+            Code::POSSIBLY_NULL_ARRAY_INDEX,
+            Issue::warning(format!(
+                "Possibly using `null` as an array index to access element{}.",
+                match extended_var_id {
+                    Some(var) => "of variable ".to_string() + var,
+                    None => "".to_string(),
+                }
+            ))
+            .with_annotation(Annotation::primary(access_index_span).with_message("Index might be `null` here."))
+            .with_note("Using `null` as an array key is equivalent to using an empty string `''`.")
+            .with_note("The analysis indicates this index could be `null` at runtime.")
+            .with_help("Ensure the index is always an integer or a string, potentially using checks or assertions before access."),
+        );
     }
 
     let mut array_atomic_types = array_like_type.types.iter().collect::<Vec<_>>();
@@ -375,7 +375,17 @@ pub(crate) fn get_array_target_type_given_index<'a>(
         }
     }
 
-    value_type.unwrap_or_else(get_mixed)
+    match value_type {
+        Some(mut value_type) => {
+            value_type.possibly_undefined |= array_like_type.possibly_undefined;
+            value_type.possibly_undefined_from_try |= array_like_type.possibly_undefined_from_try;
+            value_type.ignore_falsable_issues |= array_like_type.ignore_falsable_issues;
+            value_type.ignore_falsable_issues |= array_like_type.ignore_falsable_issues;
+
+            value_type
+        }
+        None => get_mixed(),
+    }
 }
 
 pub(crate) fn handle_array_access_on_list(

@@ -81,7 +81,7 @@ This crate does not yet support parsing the following syntax:
 2.  **Parse a Type String:**
     Use the main entry point `mago_type_syntax::parse_str`. You need the type string itself and the `Span` indicating its position within the original source file.
 
-    ```rust
+    ```rust,ignore
     use mago_type_syntax::{parse_str, ast::Type};
     use mago_span::{Position, Span};
     use mago_span::HasSpan;
