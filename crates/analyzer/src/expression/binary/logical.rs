@@ -74,7 +74,7 @@ pub fn analyze_logical_and_operation<'a>(
     }
 
     let mut left_referenced_var_ids = left_block_context.conditionally_referenced_variable_ids.clone();
-    let mut context_clauses = left_block_context.clauses.iter().map(|v| (&**v)).collect::<Vec<_>>();
+    let mut context_clauses = left_block_context.clauses.iter().map(|v| &**v).collect::<Vec<_>>();
     block_context.conditionally_referenced_variable_ids.extend(pre_referenced_var_ids);
     block_context.assigned_variable_ids.extend(pre_assigned_var_ids);
     context_clauses.extend(left_clauses.iter());
