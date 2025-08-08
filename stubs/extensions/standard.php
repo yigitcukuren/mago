@@ -5168,7 +5168,7 @@ function shuffle(array &$array): true
 }
 
 /**
- * @return int<0, max>
+ * @return ($value is non-empty-array|non-empty-list ? int<1, max> : int<0, max>)
  *
  * @pure
  */
