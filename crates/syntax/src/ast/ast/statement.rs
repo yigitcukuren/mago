@@ -94,6 +94,12 @@ pub enum Statement {
 impl Statement {
     #[inline]
     #[must_use]
+    pub const fn is_closing_tag(&self) -> bool {
+        matches!(self, Statement::ClosingTag(_))
+    }
+
+    #[inline]
+    #[must_use]
     pub fn terminates_scripting(&self) -> bool {
         match self {
             Statement::ClosingTag(_) => true,

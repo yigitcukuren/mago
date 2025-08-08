@@ -171,8 +171,11 @@ fn should_add_new_line_or_space_after_stmt<'a>(
     i: usize,
     stmt: &'a Statement,
 ) -> (bool, bool) {
-    let mut should_add_space = false;
+    if stmt.terminates_scripting() {
+        return (false, false);
+    }
 
+    let mut should_add_space = false;
     let should_add_line = match stmt {
         Statement::HaltCompiler(_) | Statement::ClosingTag(_) | Statement::Inline(_) => false,
         Statement::Expression(ExpressionStatement { terminator: Terminator::ClosingTag(_), .. }) => false,
