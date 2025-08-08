@@ -885,6 +885,11 @@ impl TUnion {
     }
 
     #[inline]
+    pub fn is_callable(&self) -> bool {
+        self.types.iter().all(|t| matches!(t, TAtomic::Callable(_)))
+    }
+
+    #[inline]
     pub fn has_object_type(&self) -> bool {
         self.types.iter().any(|t| matches!(t, TAtomic::Object(_)))
     }

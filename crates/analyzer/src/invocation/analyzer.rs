@@ -44,8 +44,9 @@ use crate::invocation::InvocationArgumentsSource;
 use crate::invocation::InvocationTarget;
 use crate::invocation::InvocationTargetParameter;
 use crate::invocation::MethodTargetContext;
+use crate::invocation::template_inference::infer_parameter_templates_from_argument;
+use crate::invocation::template_inference::infer_parameter_templates_from_default;
 use crate::invocation::template_inference::infer_templates_for_method_call;
-use crate::invocation::template_inference::infer_templates_from_argument_and_parameter_types;
 use crate::utils::misc::unique_vec;
 use crate::utils::template::get_template_types_for_class_member;
 
@@ -167,7 +168,7 @@ pub fn analyze_invocation<'a>(
             );
 
             if parameter_type.has_template_types() {
-                infer_templates_from_argument_and_parameter_types(
+                infer_parameter_templates_from_argument(
                     context,
                     &parameter_type,
                     &argument_type.0,
@@ -213,7 +214,7 @@ pub fn analyze_invocation<'a>(
                     context.interner,
                 );
 
-                infer_templates_from_argument_and_parameter_types(
+                infer_parameter_templates_from_argument(
                     context,
                     &resolved_parameter_type,
                     &argument_type.0,
@@ -394,6 +395,23 @@ pub fn analyze_invocation<'a>(
                 break;
             };
 
+            if !unused_parameter.has_default() {
+                continue;
+            }
+
+            let parameter_type = get_parameter_type(
+                context,
+                Some(unused_parameter),
+                base_class_metadata,
+                calling_class_like_metadata,
+                calling_class_like.and_then(|(_, atomic)| atomic),
+            );
+
+            let default_type =
+                unused_parameter.get_default_type().map(Cow::Borrowed).unwrap_or_else(|| Cow::Owned(get_mixed()));
+
+            infer_parameter_templates_from_default(context, &parameter_type, &default_type, template_result);
+
             let Some(parameter_name) = unused_parameter.get_name() else {
                 continue;
             };
@@ -402,11 +420,7 @@ pub fn analyze_invocation<'a>(
                 continue;
             }
 
-            let Some(default_type) = unused_parameter.get_default_type() else {
-                break;
-            };
-
-            parameter_types.insert(parameter_name.0, default_type.clone());
+            parameter_types.insert(parameter_name.0, default_type.into_owned());
         }
     }
 

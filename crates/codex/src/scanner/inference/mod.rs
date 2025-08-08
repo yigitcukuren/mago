@@ -2,13 +2,16 @@ use std::collections::BTreeMap;
 
 use mago_interner::ThreadedInterner;
 use mago_names::ResolvedNames;
+use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::flags::attribute::AttributeFlags;
+use crate::identifier::function_like::FunctionLikeIdentifier;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::array::TArray;
 use crate::ttype::atomic::array::keyed::TKeyedArray;
 use crate::ttype::atomic::array::list::TList;
+use crate::ttype::atomic::callable::TCallable;
 use crate::ttype::atomic::reference::TReference;
 use crate::ttype::atomic::reference::TReferenceMemberSelector;
 use crate::ttype::atomic::scalar::TScalar;
@@ -266,6 +269,12 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
 
             Some(TUnion::new(vec![TAtomic::Array(TArray::Keyed(keyed_array))]))
         }
+        Expression::Closure(closure) => Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(
+            FunctionLikeIdentifier::Closure(closure.start_position()),
+        )))),
+        Expression::ArrowFunction(arrow_func) => Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(
+            FunctionLikeIdentifier::Closure(arrow_func.start_position()),
+        )))),
         _ => None,
     }
 }

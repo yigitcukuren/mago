@@ -103,6 +103,12 @@ impl TCallableSignature {
         self.is_closure
     }
 
+    /// Checks if the callable has a source, indicating it is an alias or reference to another function-like construct.
+    #[inline]
+    pub const fn has_source(&self) -> bool {
+        self.source.is_some()
+    }
+
     /// Returns the source of the callable, if it is an alias or reference to another function-like construct.
     #[inline]
     pub fn get_source(&self) -> Option<FunctionLikeIdentifier> {

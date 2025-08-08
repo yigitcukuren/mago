@@ -53,7 +53,7 @@ pub struct TemplateInferenceViolation {
 }
 
 fn infer_templates_from_input_and_container_types(
-    context: &mut Context<'_>,
+    context: &Context<'_>,
     container_type: &TUnion,
     input_type: &TUnion,
     template_result: &mut TemplateResult,
@@ -103,58 +103,8 @@ fn infer_templates_from_input_and_container_types(
     // A map to hold potential violations, to be processed only if no other valid inference is found.
     let mut potential_template_violations = HashMap::default();
 
-    for container_atomic_part in generic_container_parts {
+    for container_atomic_part in &generic_container_parts {
         match container_atomic_part {
-            TAtomic::GenericParameter(container_generic) => {
-                let template_parameter_name = &container_generic.parameter_name;
-
-                let should_add_bound = !options.infer_only_if_new
-                    || template_result
-                        .lower_bounds
-                        .get(template_parameter_name)
-                        .and_then(|map| map.get(&container_generic.defining_entity))
-                        .is_none_or(|bounds| bounds.is_empty());
-
-                if should_add_bound {
-                    let mut has_violation = false;
-
-                    if let Some(template_types) = template_result.template_types.get_mut(template_parameter_name) {
-                        for (_, template_type) in template_types {
-                            if !union_comparator::is_contained_by(
-                                context.codebase,
-                                context.interner,
-                                &residual_input_type,
-                                template_type,
-                                false,
-                                false,
-                                false,
-                                &mut ComparisonResult::default(),
-                            ) {
-                                potential_template_violations
-                                    .entry((*template_parameter_name, container_generic.defining_entity))
-                                    .or_insert_with(|| {
-                                        (residual_input_type.clone(), template_type.clone(), container_generic.clone())
-                                    });
-
-                                has_violation = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if !has_violation {
-                        insert_bound_type(
-                            template_result,
-                            *template_parameter_name,
-                            &container_generic.defining_entity,
-                            residual_input_type.clone(),
-                            StandinOptions { appearance_depth: 1, ..Default::default() },
-                            options.argument_offset,
-                            options.source_span,
-                        );
-                    }
-                }
-            }
             TAtomic::Array(container_array) => {
                 for input_atomic in &residual_input_type.types {
                     if let TAtomic::Array(input_array) = input_atomic {
@@ -460,7 +410,7 @@ fn infer_templates_from_input_and_container_types(
                         container_return,
                         input_return,
                         template_result,
-                        InferenceOptions { infer_only_if_new: true, ..options },
+                        InferenceOptions { infer_only_if_new: false, ..options },
                         violations,
                     );
                 }
@@ -604,6 +554,61 @@ fn infer_templates_from_input_and_container_types(
         }
     }
 
+    for container_atomic_part in generic_container_parts {
+        let TAtomic::GenericParameter(container_generic) = container_atomic_part else {
+            continue;
+        };
+
+        let template_parameter_name = &container_generic.parameter_name;
+
+        let should_add_bound = !options.infer_only_if_new
+            || template_result
+                .lower_bounds
+                .get(template_parameter_name)
+                .and_then(|map| map.get(&container_generic.defining_entity))
+                .is_none_or(|bounds| bounds.is_empty());
+
+        if should_add_bound {
+            let mut has_violation = false;
+
+            if let Some(template_types) = template_result.template_types.get_mut(template_parameter_name) {
+                for (_, template_type) in template_types {
+                    if !union_comparator::is_contained_by(
+                        context.codebase,
+                        context.interner,
+                        &residual_input_type,
+                        template_type,
+                        false,
+                        false,
+                        false,
+                        &mut ComparisonResult::default(),
+                    ) {
+                        potential_template_violations
+                            .entry((*template_parameter_name, container_generic.defining_entity))
+                            .or_insert_with(|| {
+                                (residual_input_type.clone(), template_type.clone(), container_generic.clone())
+                            });
+
+                        has_violation = true;
+                        break;
+                    }
+                }
+            }
+
+            if !has_violation {
+                insert_bound_type(
+                    template_result,
+                    *template_parameter_name,
+                    &container_generic.defining_entity,
+                    residual_input_type.clone(),
+                    StandinOptions { appearance_depth: 1, ..Default::default() },
+                    options.argument_offset,
+                    options.source_span,
+                );
+            }
+        }
+    }
+
     for ((template_parameter_name, defining_entity), (inferred_type, constraint, _)) in potential_template_violations {
         let is_unresolved = template_result
             .lower_bounds
@@ -696,7 +701,26 @@ pub fn infer_templates_for_method_call(
     }
 }
 
-pub fn infer_templates_from_argument_and_parameter_types(
+/// Infers template types for a parameter based on a **passed argument**.
+///
+/// This function is the primary mechanism for generic type inference. It compares a
+/// parameter's declared type with the type of the actual argument passed to it to
+/// determine what the template types should be for the function call.
+///
+/// It also validates that the inferred argument type satisfies any template
+/// constraints (e.g., `<T as SomeInterface>`), reporting an error if it does not.
+///
+/// # Arguments
+///
+/// * `context`: The analysis context.
+/// * `parameter_type`: The declared type of the parameter (the "container").
+/// * `argument_type`: The type of the argument that was passed (the "input").
+/// * `template_result`: The map where inferred template types are stored.
+/// * `argument_offset`: The numerical position of the argument in the call.
+/// * `argument_span`: The source code location of the argument, for error reporting.
+/// * `is_callable_argument`: A flag indicating if the argument is a callable, which
+///   can influence inference strategy.
+pub fn infer_parameter_templates_from_argument(
     context: &mut Context<'_>,
     parameter_type: &TUnion,
     argument_type: &TUnion,
@@ -705,19 +729,17 @@ pub fn infer_templates_from_argument_and_parameter_types(
     argument_span: Span,
     is_callable_argument: bool,
 ) {
-    let options = InferenceOptions {
-        infer_only_if_new: is_callable_argument,
-        argument_offset: Some(argument_offset),
-        source_span: Some(argument_span),
-    };
-
     let mut violations = vec![];
     infer_templates_from_input_and_container_types(
         context,
         parameter_type,
         argument_type,
         template_result,
-        options,
+        InferenceOptions {
+            infer_only_if_new: is_callable_argument,
+            argument_offset: Some(argument_offset),
+            source_span: Some(argument_span),
+        },
         &mut violations,
     );
 
@@ -741,4 +763,36 @@ pub fn infer_templates_from_argument_and_parameter_types(
             .with_help("Ensure the argument's type satisfies the template constraint."),
         );
     }
+}
+
+/// Infers template types for a parameter based on its **default value**.
+///
+/// This function is used when an argument for a generic parameter is omitted in a
+/// function call. It reconciles the parameter's declared type (which contains
+/// templates) with the known type of its default value to determine what the
+/// templates should resolve to.
+///
+/// For example, if a function `add<A, B>(A $a, B $b = 1): A|B` is called as `add(2)`,
+/// this function would be used on parameter `$b` to infer that `T` is `int`.
+///
+/// # Arguments
+///
+/// * `context`: The analysis context.
+/// * `parameter_type`: The declared type of the parameter (the "container").
+/// * `default_type`: The type of the parameter's default value (the "input").
+/// * `template_result`: The map where inferred template types are stored.
+pub fn infer_parameter_templates_from_default(
+    context: &mut Context<'_>,
+    parameter_type: &TUnion,
+    default_type: &TUnion,
+    template_result: &mut TemplateResult,
+) {
+    infer_templates_from_input_and_container_types(
+        context,
+        parameter_type,
+        default_type,
+        template_result,
+        InferenceOptions { infer_only_if_new: default_type.is_callable(), argument_offset: None, source_span: None },
+        &mut Vec::new(),
+    );
 }
