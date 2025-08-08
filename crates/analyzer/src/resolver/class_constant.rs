@@ -5,6 +5,7 @@ use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::r#enum::TEnum;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeString;
+use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeStringKind;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
@@ -29,12 +30,7 @@ use crate::resolver::selector::resolve_constant_selector;
 
 /// Represents a successfully resolved class constant or enum case.
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct ResolvedConstant {
-    /// The fully-qualified name of the class where the constant is defined.
-    pub fq_class_id: StringIdentifier,
-    /// The name of the constant or enum case.
-    pub const_name: StringIdentifier,
     /// The type of the constant's value or the enum case itself.
     pub const_type: TUnion,
 }
@@ -69,7 +65,7 @@ pub fn resolve_class_constants<'a>(
     let selectors = resolve_constant_selector(context, block_context, artifacts, constant_selector)?;
 
     // 3. Iterate through each combination of class and constant to find valid constants.
-    for class_resolution in &classnames {
+    'resolved_classes: for class_resolution in &classnames {
         if class_resolution.is_possibly_invalid() {
             result.has_ambiguous_path = true;
             if class_resolution.origin == ResolutionOrigin::Invalid {
@@ -79,26 +75,10 @@ pub fn resolve_class_constants<'a>(
             continue;
         }
 
-        let Some(fq_class_id) = class_resolution.fq_class_id else {
-            result.has_ambiguous_path = true;
-            report_ambiguous_constant_access(context, class_expr);
-            continue;
-        };
-
         for selector_resolution in &selectors {
-            if selector_resolution.is_dynamic() {
-                result.has_ambiguous_path = true;
-                continue;
-            }
-
-            let Some(const_name) = selector_resolution.name() else {
-                result.has_invalid_path = true;
-                continue;
-            };
-
             // Handle `::class` magic constant
-            if matches!(selector_resolution, ResolvedSelector::Identifier(_))
-                && context.interner.lookup(&const_name).eq_ignore_ascii_case("class")
+            if let ResolvedSelector::Identifier(const_name) = selector_resolution
+                && context.interner.lookup(const_name).eq_ignore_ascii_case("class")
             {
                 if let Some(const_type) = handle_class_magic_constant(
                     context,
@@ -108,13 +88,29 @@ pub fn resolve_class_constants<'a>(
                     class_expr,
                     constant_selector,
                 ) {
-                    result.constants.push(ResolvedConstant { fq_class_id, const_name, const_type });
+                    result.constants.push(ResolvedConstant { const_type });
                 } else {
                     result.has_invalid_path = true;
                 }
 
                 continue;
             }
+
+            let Some(fq_class_id) = class_resolution.fq_class_id else {
+                result.has_ambiguous_path = true;
+                report_ambiguous_constant_access(context, class_expr);
+                continue 'resolved_classes;
+            };
+
+            if selector_resolution.is_dynamic() {
+                result.has_ambiguous_path = true;
+                continue;
+            }
+
+            let Some(const_name) = selector_resolution.name() else {
+                result.has_invalid_path = true;
+                continue;
+            };
 
             // Handle regular constants and enum cases
             let Some(metadata) = get_class_like(context.codebase, context.interner, &fq_class_id) else {
@@ -165,13 +161,23 @@ fn handle_class_magic_constant(
         return None;
     }
 
-    let fq_class_id = class_resolution.fq_class_id?;
+    let class_string = match class_resolution.fq_class_id {
+        Some(fq_class_id) => {
+            artifacts.symbol_references.add_reference_to_symbol(&block_context.scope, fq_class_id, false);
 
-    artifacts.symbol_references.add_reference_to_symbol(&block_context.scope, fq_class_id, false);
+            if class_resolution.is_named() {
+                TScalar::ClassLikeString(TClassLikeString::literal(fq_class_id))
+            } else {
+                TScalar::ClassLikeString(TClassLikeString::of_type(
+                    TClassLikeStringKind::Class,
+                    class_resolution.get_object_type(context.codebase, context.interner),
+                ))
+            }
+        }
+        None => TScalar::ClassLikeString(TClassLikeString::Any { kind: TClassLikeStringKind::Class }),
+    };
 
-    let class_string_type = TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(fq_class_id)));
-
-    Some(TUnion::new(vec![class_string_type]))
+    Some(TUnion::new(vec![TAtomic::Scalar(class_string)]))
 }
 
 /// Finds a constant or enum case by name within a class.
@@ -191,7 +197,7 @@ fn find_constant_in_class(
             .or_else(|| constant_metadata.type_metadata.clone().map(|s| s.type_union))
             .unwrap_or_else(get_mixed);
 
-        return Some(ResolvedConstant { fq_class_id: metadata.name, const_name, const_type });
+        return Some(ResolvedConstant { const_type });
     }
 
     // Check for an enum case
@@ -199,7 +205,7 @@ fn find_constant_in_class(
         let const_type =
             TUnion::new(vec![TAtomic::Object(TObject::Enum(TEnum::new_case(metadata.original_name, const_name)))]);
 
-        return Some(ResolvedConstant { fq_class_id: metadata.name, const_name, const_type });
+        return Some(ResolvedConstant { const_type });
     }
 
     // Not found, report error.

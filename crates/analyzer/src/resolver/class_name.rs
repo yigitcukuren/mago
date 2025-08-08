@@ -142,6 +142,12 @@ impl ResolvedClassname {
         matches!(self.origin, ResolutionOrigin::Object { .. })
     }
 
+    /// Checks if the resolution is from an identifier or `self`, or `parent` keyword.
+    #[inline]
+    pub const fn is_named(&self) -> bool {
+        matches!(self.origin, ResolutionOrigin::Named { .. })
+    }
+
     /// Checks if the resolution is from a `self`, `static`, or `parent` keyword.
     #[inline]
     pub const fn is_relative(&self) -> bool {
