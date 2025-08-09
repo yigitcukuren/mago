@@ -1,6 +1,8 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::change::Change;
 use crate::change::ChangeLog;
@@ -27,9 +29,9 @@ pub mod loader;
 #[derive(Debug, Default)]
 pub struct Database {
     /// Maps a file's logical name to its `File` object for fast name-based access.
-    files: HashMap<String, File>,
+    files: HashMap<Cow<'static, str>, Arc<File>>,
     /// Maps a file's stable ID back to its logical name for fast ID-based mutations.
-    id_to_name: HashMap<FileId, String>,
+    id_to_name: HashMap<FileId, Cow<'static, str>>,
 }
 
 /// An immutable, read-optimized snapshot of a file database.
@@ -39,14 +41,14 @@ pub struct Database {
 /// to provide $O(1)$ average-time access to files by their ID, name, or path.
 ///
 /// A `ReadDatabase` is created via [`Database::read_only`].
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ReadDatabase {
     /// A contiguous list of all files, sorted by `FileId` for deterministic iteration.
-    files: Vec<File>,
+    files: Vec<Arc<File>>,
     /// Maps a file's stable ID to its index in the `files` vector.
     id_to_index: HashMap<FileId, usize>,
     /// Maps a file's logical name to its index in the `files` vector.
-    name_to_index: HashMap<String, usize>,
+    name_to_index: HashMap<Cow<'static, str>, usize>,
     /// Maps a file's absolute path to its index in the `files` vector.
     path_to_index: HashMap<PathBuf, usize>,
 }
@@ -62,7 +64,7 @@ impl Database {
         let name = file.name.clone();
         let id = file.id;
 
-        if let Some(old_file) = self.files.insert(name.clone(), file) {
+        if let Some(old_file) = self.files.insert(name.clone(), Arc::new(file)) {
             self.id_to_name.remove(&old_file.id);
         }
         self.id_to_name.insert(id, name);
@@ -72,13 +74,14 @@ impl Database {
     ///
     /// This recalculates derived data like file size, line endings, and `FileRevision`.
     /// Returns `true` if a file with the given ID was found and updated.
-    pub fn update(&mut self, id: FileId, new_contents: String) -> bool {
+    pub fn update(&mut self, id: FileId, new_contents: Cow<'static, str>) -> bool {
         if let Some(name) = self.id_to_name.get(&id)
             && let Some(file) = self.files.get_mut(name)
+            && let Some(file) = Arc::get_mut(file)
         {
             file.contents = new_contents;
             file.size = file.contents.len();
-            file.lines = line_starts(&file.contents).collect();
+            file.lines = line_starts(file.contents.as_ref()).collect();
             return true;
         }
         false
@@ -126,7 +129,7 @@ impl Database {
     /// guarantees a deterministic iteration order. The original `Database` is not
     /// consumed and can continue to be used.
     pub fn read_only(&self) -> ReadDatabase {
-        let mut files_vec: Vec<File> = self.files.values().cloned().collect();
+        let mut files_vec: Vec<Arc<File>> = self.files.values().cloned().collect();
         files_vec.sort_unstable_by_key(|f| f.id);
 
         let mut id_to_index = HashMap::with_capacity(files_vec.len());
@@ -167,7 +170,7 @@ impl ReadDatabase {
             path_to_index.insert(path.clone(), 0);
         }
 
-        Self { files: vec![file], id_to_index, name_to_index, path_to_index }
+        Self { files: vec![Arc::new(file)], id_to_index, name_to_index, path_to_index }
     }
 }
 
@@ -181,7 +184,7 @@ pub trait DatabaseReader {
     fn get_id(&self, name: &str) -> Option<FileId>;
 
     fn get_name(&self, id: &FileId) -> Option<&str> {
-        self.get_by_id(id).map(|file| file.name.as_str()).ok()
+        self.get_by_id(id).map(|file| file.name.as_ref()).ok()
     }
 
     /// Retrieves a reference to a file using its stable `FileId`.
@@ -251,19 +254,26 @@ impl DatabaseReader for Database {
     }
 
     fn get_by_id(&self, id: &FileId) -> Result<&File, DatabaseError> {
-        self.id_to_name.get(id).and_then(|name| self.files.get(name)).ok_or(DatabaseError::FileNotFound)
+        let name = self.id_to_name.get(id).ok_or(DatabaseError::FileNotFound)?;
+        let file = self.files.get(name).ok_or(DatabaseError::FileNotFound)?;
+
+        Ok(file.as_ref())
     }
 
     fn get_by_name(&self, name: &str) -> Result<&File, DatabaseError> {
-        self.files.get(name).ok_or(DatabaseError::FileNotFound)
+        self.files.get(name).map(|file| file.as_ref()).ok_or(DatabaseError::FileNotFound)
     }
 
     fn get_by_path(&self, path: &Path) -> Result<&File, DatabaseError> {
-        self.files.values().find(|file| file.path.as_deref() == Some(path)).ok_or(DatabaseError::FileNotFound)
+        self.files
+            .values()
+            .find(|file| file.path.as_deref() == Some(path))
+            .map(|file| file.as_ref())
+            .ok_or(DatabaseError::FileNotFound)
     }
 
     fn files(&self) -> impl Iterator<Item = &File> {
-        self.files.values()
+        self.files.values().map(|file| file.as_ref())
     }
 
     fn len(&self) -> usize {
@@ -277,19 +287,29 @@ impl DatabaseReader for ReadDatabase {
     }
 
     fn get_by_id(&self, id: &FileId) -> Result<&File, DatabaseError> {
-        self.id_to_index.get(id).and_then(|&i| self.files.get(i)).ok_or(DatabaseError::FileNotFound)
+        let index = self.id_to_index.get(id).ok_or(DatabaseError::FileNotFound)?;
+
+        self.files.get(*index).map(|file| file.as_ref()).ok_or(DatabaseError::FileNotFound)
     }
 
     fn get_by_name(&self, name: &str) -> Result<&File, DatabaseError> {
-        self.name_to_index.get(name).and_then(|&i| self.files.get(i)).ok_or(DatabaseError::FileNotFound)
+        self.name_to_index
+            .get(name)
+            .and_then(|&i| self.files.get(i))
+            .map(|file| file.as_ref())
+            .ok_or(DatabaseError::FileNotFound)
     }
 
     fn get_by_path(&self, path: &Path) -> Result<&File, DatabaseError> {
-        self.path_to_index.get(path).and_then(|&i| self.files.get(i)).ok_or(DatabaseError::FileNotFound)
+        self.path_to_index
+            .get(path)
+            .and_then(|&i| self.files.get(i))
+            .map(|file| file.as_ref())
+            .ok_or(DatabaseError::FileNotFound)
     }
 
     fn files(&self) -> impl Iterator<Item = &File> {
-        self.files.iter()
+        self.files.iter().map(|file| file.as_ref())
     }
 
     fn len(&self) -> usize {

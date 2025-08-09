@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -41,14 +42,14 @@ pub enum FileType {
 ///
 /// This struct encapsulates all the necessary information about a file, including its content,
 /// location, and metadata for change detection.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct File {
     /// A stable, unique identifier for the file, generated from its logical name.
     /// This ID persists across application runs and content modifications.
     pub id: FileId,
 
     /// The logical name of the file, typically the path relative to the root of the project.
-    pub name: String,
+    pub name: Cow<'static, str>,
 
     /// The absolute path of the file on the host's filesystem, if it exists there.
     /// This will be `None` for vendored files that don't have a physical counterpart.
@@ -58,7 +59,7 @@ pub struct File {
     pub file_type: FileType,
 
     /// The contents of the file, if available.
-    pub contents: String,
+    pub contents: Cow<'static, str>,
 
     /// The size of the file's contents in bytes.
     pub size: usize,
@@ -78,10 +79,15 @@ impl File {
     /// Creates a new `File` instance from its name, type, path, and contents.
     ///
     /// It automatically calculates the size, and line start offsets.
-    pub fn new(name: String, file_type: FileType, path: Option<PathBuf>, contents: String) -> Self {
+    pub fn new(
+        name: Cow<'static, str>,
+        file_type: FileType,
+        path: Option<PathBuf>,
+        contents: Cow<'static, str>,
+    ) -> Self {
         let id = FileId::new(&name);
         let size = contents.len();
-        let lines = line_starts(&contents).collect::<Vec<_>>();
+        let lines = line_starts(contents.as_ref()).collect::<Vec<_>>();
 
         Self { id, name, path, file_type, contents, size, lines }
     }
@@ -110,7 +116,7 @@ impl File {
     /// This is a convenience method for situations like testing or formatting where
     /// a full file context (e.g., a real path) is not required. It defaults to
     /// `FileType::Host` and a `path` of `None`.
-    pub fn ephemeral(name: String, contents: String) -> Self {
+    pub fn ephemeral(name: Cow<'static, str>, contents: Cow<'static, str>) -> Self {
         Self::new(name, FileType::Host, None, contents)
     }
 
@@ -192,21 +198,13 @@ impl FileType {
     }
 }
 
-impl HasFileId for File {
-    fn file_id(&self) -> FileId {
-        self.id
-    }
-}
-
 impl FileId {
     pub fn new(logical_name: &str) -> Self {
         let mut hasher = DefaultHasher::new();
         logical_name.hash(&mut hasher);
         Self(hasher.finish())
     }
-}
 
-impl FileId {
     pub const fn zero() -> Self {
         Self(0)
     }
@@ -218,6 +216,12 @@ impl FileId {
     #[must_use]
     pub fn as_u64(self) -> u64 {
         self.0
+    }
+}
+
+impl HasFileId for File {
+    fn file_id(&self) -> FileId {
+        self.id
     }
 }
 

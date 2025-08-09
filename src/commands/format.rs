@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -234,5 +235,5 @@ fn create_file_from_stdin() -> Result<File, Error> {
     let mut content = String::new();
     std::io::stdin().read_to_string(&mut content).map_err(|e| Error::Database(DatabaseError::IOError(e)))?;
 
-    Ok(File::ephemeral("<stdin>".to_owned(), content))
+    Ok(File::ephemeral(Cow::Borrowed("<stdin>"), Cow::Owned(content)))
 }

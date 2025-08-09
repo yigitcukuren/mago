@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::path::Path;
 
 use crate::error::DatabaseError;
@@ -47,5 +48,5 @@ pub(crate) fn read_file(workspace: &Path, path: &Path, file_type: FileType) -> R
         }
     };
 
-    Ok(File::new(logical_name, file_type, Some(path.to_path_buf()), contents))
+    Ok(File::new(Cow::Owned(logical_name), file_type, Some(path.to_path_buf()), Cow::Owned(contents)))
 }

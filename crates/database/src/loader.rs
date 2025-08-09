@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::path::Path;
@@ -16,16 +17,17 @@ use crate::file::FileType;
 use crate::utils::read_file;
 
 /// Configures and builds a `Database` by scanning the filesystem and memory.
-pub struct DatabaseLoader<'a> {
+pub struct DatabaseLoader {
+    database: Option<Database>,
     workspace: PathBuf,
     paths: Vec<PathBuf>,
     includes: Vec<PathBuf>,
     excludes: Vec<Exclusion>,
-    memory_sources: Vec<(&'a str, &'a str, FileType)>,
+    memory_sources: Vec<(&'static str, &'static str, FileType)>,
     extensions: Vec<String>,
 }
 
-impl<'a> DatabaseLoader<'a> {
+impl DatabaseLoader {
     /// Creates a new loader with the given configuration.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -35,7 +37,7 @@ impl<'a> DatabaseLoader<'a> {
         excludes: Vec<Exclusion>,
         extensions: Vec<String>,
     ) -> Self {
-        Self { workspace, paths, includes, excludes, memory_sources: vec![], extensions }
+        Self { workspace, paths, includes, excludes, memory_sources: vec![], extensions, database: None }
     }
 
     /// Adds a memory source to the loader.
@@ -47,7 +49,7 @@ impl<'a> DatabaseLoader<'a> {
     /// * `name` - The logical name of the file, typically its path relative to the workspace.
     /// * `contents` - The contents of the file as a string.
     /// * `file_type` - The type of the file, indicating whether it's a host file or a vendored file.
-    pub fn add_memory_source(&mut self, name: &'a str, contents: &'a str, file_type: FileType) {
+    pub fn add_memory_source(&mut self, name: &'static str, contents: &'static str, file_type: FileType) {
         self.memory_sources.push((name, contents, file_type));
     }
 
@@ -55,8 +57,8 @@ impl<'a> DatabaseLoader<'a> {
     ///
     /// This is the main entry point that orchestrates the entire loading process.
     /// It returns a `Result` as some pre-processing, like compiling globs, can fail.
-    pub fn load(&self) -> Result<Database, DatabaseError> {
-        let mut db = Database::new();
+    pub fn load(mut self) -> Result<Database, DatabaseError> {
+        let mut db = if let Some(existing_db) = self.database.take() { existing_db } else { Database::new() };
 
         let extensions_set: HashSet<OsString> = self.extensions.iter().map(OsString::from).collect();
 
@@ -71,8 +73,8 @@ impl<'a> DatabaseLoader<'a> {
         self.load_paths(&mut db, &self.paths, FileType::Host, &extensions_set, &glob_excludes)?;
         self.load_paths(&mut db, &self.includes, FileType::Vendored, &extensions_set, &glob_excludes)?;
 
-        for (name, contents, file_type) in &self.memory_sources {
-            let file = File::new(name.to_string(), *file_type, None, contents.to_string());
+        for (name, contents, file_type) in self.memory_sources {
+            let file = File::new(Cow::Borrowed(name), file_type, None, Cow::Borrowed(contents));
 
             db.add(file);
         }

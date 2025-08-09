@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use mago_codex::populator::populate_codebase;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::scanner::scan_program;
@@ -41,7 +43,7 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
     }
 
     let source_name = format!("{}.php", definition.get_slug());
-    let source_file = File::ephemeral(source_name, usage_example.snippet.to_string());
+    let source_file = File::ephemeral(Cow::Owned(source_name), Cow::Borrowed(usage_example.snippet));
 
     let mut php_version = PHPVersion::PHP84;
     if let Some(version) = rule.get_definition().maximum_supported_php_version {

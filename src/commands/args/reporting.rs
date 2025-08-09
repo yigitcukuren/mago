@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -280,7 +281,7 @@ impl ReportingArgs {
 
                 if should_format {
                     let formatter = Formatter::new(&interner_clone, php_version, formatter_settings_clone);
-                    match formatter.format_code(&file.name, &fixed_content) {
+                    match formatter.format_code(file.name.clone(), Cow::Owned(fixed_content.clone())) {
                         Ok(content) => fixed_content = content,
                         Err(e) => {
                             tracing::error!("Failed to format `{}`: {}", file.name, e);

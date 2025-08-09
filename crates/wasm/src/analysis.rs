@@ -7,6 +7,7 @@
 //! and returns detailed information about the analyzed code, including parse
 //! and semantic issues, linter results, and a formatted output.
 
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use mago_codex::populator::populate_codebase;
@@ -113,7 +114,7 @@ impl AnalysisResults {
     /// and formatted code (if no parse error).
     pub fn analyze(code: String, lint_settings: Settings, format_settings: FormatSettings) -> Self {
         let interner = ThreadedInterner::new();
-        let source = File::ephemeral("code.php".to_string(), code);
+        let source = File::ephemeral(Cow::Borrowed("code.php"), Cow::Owned(code));
         let (program, parse_error) = parse_file(&interner, &source);
         let resolved_names = NameResolver::new(&interner).resolve(&program);
         let semantic_issues =

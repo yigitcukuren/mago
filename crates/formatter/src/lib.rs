@@ -4,6 +4,8 @@
 //! of parsing source code, converting it into an intermediate document model, and
 //! printing it as a well-formatted string according to customizable settings.
 
+use std::borrow::Cow;
+
 use mago_database::file::File;
 use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
@@ -50,8 +52,9 @@ impl<'a> Formatter<'a> {
     /// # Errors
     ///
     /// Returns a [`ParseError`] if the input code contains syntax errors.
-    pub fn format_code(&self, name: impl Into<String>, code: impl Into<String>) -> Result<String, ParseError> {
-        let file = File::ephemeral(name.into(), code.into());
+    pub fn format_code(&self, name: Cow<'static, str>, code: Cow<'static, str>) -> Result<String, ParseError> {
+        let file = File::ephemeral(name, code);
+
         self.format_file(&file)
     }
 

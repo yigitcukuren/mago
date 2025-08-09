@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::path::PathBuf;
 
 use mago_database::DatabaseReader;
@@ -24,7 +25,7 @@ pub mod writer;
 /// Expanded representation of a file id.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ExpandedFileId {
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<PathBuf>,
     pub size: usize,

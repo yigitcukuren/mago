@@ -44,7 +44,6 @@ pub enum ReportingFormat {
     Emacs,
 }
 
-#[derive(Clone)]
 pub struct Reporter {
     database: ReadDatabase,
     target: ReportingTarget,

@@ -16,6 +16,8 @@
 //! See each function’s documentation below for details on usage and
 //! return values.
 
+use std::borrow::Cow;
+
 use mago_formatter::Formatter;
 use wasm_bindgen::prelude::*;
 
@@ -172,7 +174,7 @@ pub fn mago_format(code: String, format_settings: JsValue) -> Result<JsValue, Js
     let formatter = Formatter::new(&interner, PHPVersion::PHP84, settings);
     // Format the parsed program
     formatter
-        .format_code("code.php", &code)
+        .format_code(Cow::Borrowed("code.php"), Cow::Owned(code))
         .map(|s| JsValue::from_str(&s))
         .map_err(|err| JsValue::from_str(&err.to_string()))
 }

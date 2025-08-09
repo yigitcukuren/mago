@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
 use mago_interner::ThreadedInterner;
@@ -18,11 +20,12 @@ macro_rules! test_case {
             let interner = ThreadedInterner::new();
             let formatter = Formatter::new(&interner, $version, settings);
 
-            let formatted_code = formatter.format_code("code.php", code).unwrap();
+            let formatted_code = formatter.format_code(Cow::Borrowed("code.php"), Cow::Borrowed(code)).unwrap();
 
             pretty_assertions::assert_eq!(expected, formatted_code, "Formatted code does not match expected");
 
-            let reformatted_code = formatter.format_code("formatted_code.php", &formatted_code).unwrap();
+            let reformatted_code =
+                formatter.format_code(Cow::Borrowed("formatted_code.php"), Cow::Owned(formatted_code)).unwrap();
             pretty_assertions::assert_eq!(expected, reformatted_code, "Reformatted code does not match expected");
         }
     };

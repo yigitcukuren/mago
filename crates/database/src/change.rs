@@ -1,8 +1,10 @@
+use std::borrow::Cow;
+use std::sync::Arc;
+use std::sync::Mutex;
+
 use crate::error::DatabaseError;
 use crate::file::File;
 use crate::file::FileId;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 /// Represents a single, deferred database operation.
 ///
@@ -12,7 +14,7 @@ pub enum Change {
     /// An instruction to add a new file.
     Add(File),
     /// An instruction to update an existing file, identified by its `FileId`.
-    Update(FileId, String),
+    Update(FileId, Cow<'static, str>),
     /// An instruction to delete an existing file, identified by its `FileId`.
     Delete(FileId),
 }
@@ -57,7 +59,7 @@ impl ChangeLog {
     ///
     /// Returns a `DatabaseError::PoisonedLogMutex` if another thread panicked
     /// while holding the lock, leaving the change log in an unusable state.
-    pub fn update(&self, id: FileId, new_contents: String) -> Result<(), DatabaseError> {
+    pub fn update(&self, id: FileId, new_contents: Cow<'static, str>) -> Result<(), DatabaseError> {
         self.changes.lock().map_err(|_| DatabaseError::PoisonedLogMutex)?.push(Change::Update(id, new_contents));
         Ok(())
     }

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
@@ -29,7 +30,7 @@ pub struct BaselineEntry {
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Baseline {
-    entries: HashMap<String, BaselineEntry>,
+    entries: HashMap<Cow<'static, str>, BaselineEntry>,
 }
 
 /// Generates a `Baseline` from a collection of issues.
@@ -48,7 +49,7 @@ pub fn generate_baseline_from_issues(issues: IssueCollection, database: &ReadDat
         let end = annotation.span.end;
         let source_file = database.get_by_id(&start.file_id)?;
 
-        let entry = baseline.entries.entry(source_file.name.to_owned()).or_insert_with(|| {
+        let entry = baseline.entries.entry(source_file.name.clone()).or_insert_with(|| {
             let content_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
             BaselineEntry { hash: content_hash, issues: vec![] }
         });
@@ -109,14 +110,14 @@ pub fn filter_issues(
     issues: IssueCollection,
     database: &ReadDatabase,
 ) -> Result<(IssueCollection, usize, bool), Error> {
-    let baseline_sets: HashMap<String, (String, HashSet<BaselineSourceIssue>)> = baseline
+    let baseline_sets: HashMap<Cow<'static, str>, (String, HashSet<BaselineSourceIssue>)> = baseline
         .entries
         .iter()
         .map(|(path, entry)| (path.clone(), (entry.hash.clone(), entry.issues.iter().cloned().collect())))
         .collect();
 
     let mut filtered_issues = IssueCollection::new();
-    let mut seen_baseline_issues: HashMap<String, HashSet<BaselineSourceIssue>> = HashMap::new();
+    let mut seen_baseline_issues: HashMap<Cow<'static, str>, HashSet<BaselineSourceIssue>> = HashMap::new();
 
     for issue in issues {
         let Some(annotation) = issue.annotations.iter().find(|a| a.is_primary()) else {
@@ -155,7 +156,7 @@ pub fn filter_issues(
 
         if baseline_issue_set.contains(&issue_to_check) {
             // Issue is in the baseline, so we ignore it and mark it as "seen".
-            seen_baseline_issues.entry(source_file.name.to_string()).or_default().insert(issue_to_check);
+            seen_baseline_issues.entry(source_file.name.clone()).or_default().insert(issue_to_check);
         } else {
             // Issue is not in the baseline, so it's a new one.
             filtered_issues.push(issue);

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use diffy::PatchFormatter;
 
 use mago_database::change::ChangeLog;
@@ -46,7 +48,7 @@ pub fn apply_update(
             println!("{}", formatter.fmt_patch(&patch));
         });
     } else {
-        change_log.update(file.id, modified_contents)?;
+        change_log.update(file.id, Cow::Owned(modified_contents))?;
     }
 
     Ok(true)

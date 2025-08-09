@@ -98,6 +98,7 @@ impl<'a> Analyzer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
     use std::collections::BTreeMap;
 
     use ahash::HashSet;
@@ -116,15 +117,15 @@ mod tests {
     use crate::settings::Settings;
 
     #[derive(Debug, Clone)]
-    pub struct TestCase<'a> {
-        name: &'a str,
-        content: &'a str,
+    pub struct TestCase {
+        name: &'static str,
+        content: &'static str,
         settings: Settings,
         expected_issues: Vec<&'static str>,
     }
 
-    impl<'a> TestCase<'a> {
-        pub fn new(name: &'a str, content: &'a str) -> Self {
+    impl TestCase {
+        pub fn new(name: &'static str, content: &'static str) -> Self {
             Self {
                 name,
                 content,
@@ -155,7 +156,7 @@ mod tests {
 
     fn run_test_case_inner(config: TestCase) {
         let interner = ThreadedInterner::new();
-        let source_file = File::ephemeral(config.name.to_owned(), config.content.to_owned());
+        let source_file = File::ephemeral(Cow::Borrowed(config.name), Cow::Borrowed(config.content));
 
         let (program, parse_issues) = parse_file(&interner, &source_file);
         if parse_issues.is_some() {

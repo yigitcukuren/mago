@@ -109,13 +109,13 @@ pub async fn execute(command: FindCommand, configuration: Configuration) -> Resu
 
     // Load the source files
     let database = database::load(&configuration.source, command.include_external, false)?;
-    let read_database = Arc::new(database.read_only());
 
     // Gather references
-    let references = find_references(&interner, read_database.clone(), query, command.include_external).await?;
+    let references =
+        find_references(&interner, Arc::new(database.read_only()), query, command.include_external).await?;
 
     // Convert references to issues, then report
-    Reporter::new(Arc::unwrap_or_clone(read_database), command.reporting_target).report(
+    Reporter::new(database.read_only(), command.reporting_target).report(
         references.into_iter().map(|reference| reference_to_issue(&interner, reference)).collect::<Vec<_>>(),
         command.reporting_format,
     )?;

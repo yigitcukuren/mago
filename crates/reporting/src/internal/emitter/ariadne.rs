@@ -34,7 +34,7 @@ pub fn ariadne_format(
             Some(annotation) => {
                 let file = database.get_by_id(&annotation.span.file_id())?;
 
-                (file.name.clone(), annotation.span.start.offset..annotation.span.end.offset)
+                (file.name.clone().into_owned(), annotation.span.start.offset..annotation.span.end.offset)
             }
             None => ("<unknown>".to_owned(), 0..0),
         };
@@ -63,7 +63,7 @@ pub fn ariadne_format(
             let file = database.get_by_id(&annotation.span.file_id())?;
             let range = annotation.span.start.offset..annotation.span.end.offset;
 
-            let mut label = Label::new((file.name.clone(), range));
+            let mut label = Label::new((file.name.clone().into_owned(), range));
             if annotation.is_primary() {
                 label = label.with_color(color).with_priority(1);
             }
@@ -74,7 +74,7 @@ pub fn ariadne_format(
                 report = report.with_label(label);
             }
 
-            relevant_sources.push((file.name.clone(), &file.contents));
+            relevant_sources.push((file.name.clone().into_owned(), &file.contents));
         }
 
         report.finish().write(ariadne_sources(relevant_sources), &mut writer).unwrap();

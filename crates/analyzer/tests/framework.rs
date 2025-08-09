@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ahash::HashSet;
@@ -32,7 +33,7 @@ impl<'a> TestCase<'a> {
 
 fn run_test_case_inner(config: TestCase) {
     let interner = ThreadedInterner::new();
-    let source_file = File::ephemeral(config.name.to_string(), config.content.to_string());
+    let source_file = File::ephemeral(Cow::Owned(config.name.to_string()), Cow::Owned(config.content.to_string()));
 
     let (program, parse_issues) = parse_file(&interner, &source_file);
     if parse_issues.is_some() {
