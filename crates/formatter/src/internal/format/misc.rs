@@ -102,7 +102,7 @@ pub(super) fn should_hug_expression<'a>(
     }
 
     let Expression::Instantiation(instantiation) = expression else {
-        return is_breaking_expression(expression);
+        return is_breaking_expression(expression, arrow_function_recursion);
     };
 
     // Hug instantiations if it is a simple class instantiation
@@ -141,13 +141,17 @@ pub(super) fn should_hug_expression<'a>(
     }
 }
 
-pub const fn is_breaking_expression(node: &Expression) -> bool {
+pub const fn is_breaking_expression(node: &Expression, arrow_function_recursion: bool) -> bool {
     if let Expression::Parenthesized(inner) = node {
-        return is_breaking_expression(&inner.expression);
+        return is_breaking_expression(&inner.expression, arrow_function_recursion);
     }
 
     if let Expression::UnaryPrefix(operation) = node {
-        return is_breaking_expression(&operation.operand);
+        return is_breaking_expression(&operation.operand, arrow_function_recursion);
+    }
+
+    if let Expression::ArrowFunction(arrow_function) = node {
+        return !arrow_function_recursion && is_breaking_expression(&arrow_function.expression, true);
     }
 
     matches!(

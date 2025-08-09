@@ -7,6 +7,7 @@ use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::call_node::CallLikeNode;
 use crate::internal::format::misc;
+use crate::internal::format::misc::is_breaking_expression;
 use crate::internal::format::misc::is_simple_expression;
 use crate::internal::format::misc::is_string_word_type;
 use crate::internal::format::misc::should_hug_expression;
@@ -105,7 +106,7 @@ pub(super) fn print_argument_list<'a>(
 
     // First, run all the decision functions with unformatted arguments
     let should_break_all = should_break_all_arguments(f, argument_list, for_attribute);
-    let should_inline = should_inline_single_breaking_argument(f, argument_list);
+    let should_inline = should_inline_breaking_arguments(f, argument_list);
     let should_expand_first = should_expand_first_arg(f, argument_list, false);
     let should_expand_last = should_expand_last_arg(f, argument_list, false);
     let is_single_late_breaking_argument = is_single_late_breaking_argument(f, argument_list);
@@ -225,14 +226,9 @@ pub(super) fn print_argument_list<'a>(
     }
 
     if should_inline {
-        // we have a single argument that we can hug
-        // this means we can avoid any spacing and just print the argument
-        // between the parentheses
-        let single_argument = formatted_arguments.remove(0);
-
         return Document::Group(Group::new(vec![
             left_parenthesis,
-            Document::Group(Group::new(vec![single_argument])),
+            Document::Group(Group::new(Document::join(formatted_arguments, Separator::CommaSpace))),
             get_right_parenthesis(f, true),
         ]));
     }
@@ -393,15 +389,19 @@ fn is_single_late_breaking_argument<'a>(f: &FormatterState<'a>, argument_list: &
 }
 
 #[inline]
-fn should_inline_single_breaking_argument<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
+fn should_inline_breaking_arguments<'a>(f: &FormatterState<'a>, argument_list: &'a ArgumentList) -> bool {
     let arguments = argument_list.arguments.as_slice();
-    if arguments.len() != 1 {
-        return false;
+
+    match arguments.len() {
+        1 => {
+            !argument_has_surrounding_comments(f, &arguments[0])
+                && should_hug_expression(f, arguments[0].value(), false)
+        }
+        2 => arguments.iter().all(|argument| {
+            !argument_has_surrounding_comments(f, argument) && is_breaking_expression(argument.value(), false)
+        }),
+        _ => false,
     }
-
-    let argument = &arguments[0];
-
-    !argument_has_surrounding_comments(f, argument) && should_hug_expression(f, argument.value(), false)
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/3.3.3/src/language-js/print/call-arguments.js#L247-L272>
@@ -420,9 +420,9 @@ pub fn should_expand_first_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Ar
         return false;
     }
 
-    could_expand_value(f, first_argument.value(), false, nested_args)
-        && (is_hopefully_short_call_argument(second_argument.value())
-            && !could_expand_value(f, second_argument.value(), false, nested_args))
+    could_expand_value(f, first_argument.value(), nested_args)
+        && is_hopefully_short_call_argument(second_argument.value())
+        && !could_expand_value(f, second_argument.value(), nested_args)
 }
 
 /// * Reference <https://github.com/prettier/prettier/blob/52829385bcc4d785e58ae2602c0b098a643523c9/src/language-js/print/call-arguments.js#L234-L258>
@@ -443,7 +443,7 @@ pub fn should_expand_last_arg<'a>(f: &FormatterState<'a>, argument_list: &'a Arg
         .map(|a| f.has_comment(a.span(), CommentFlags::Leading | CommentFlags::Trailing))
         .unwrap_or(false);
 
-    could_expand_value(f, last_argument_value, false, nested_args)
+    could_expand_value(f, last_argument_value, nested_args)
         // If the last two arguments are of the same type,
         // disable last element expansion.
         && (penultimate_argument.is_none()

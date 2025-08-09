@@ -94,7 +94,9 @@ impl MemberAccessChain<'_> {
                 if argument_list.arguments.len() == 1 =>
             {
                 let (is_breaking_argument, is_string_word_type) = match argument_list.arguments.first() {
-                    Some(argument) => (is_breaking_expression(argument.value()), is_string_word_type(argument.value())),
+                    Some(argument) => {
+                        (is_breaking_expression(argument.value(), true), is_string_word_type(argument.value()))
+                    }
                     None => (false, false),
                 };
 
@@ -122,10 +124,14 @@ impl MemberAccessChain<'_> {
             };
 
             let breaking_arguments = if argument_list.arguments.len() == 1 {
-                argument_list.arguments.first().map(|argument| argument.value()).is_some_and(is_breaking_expression)
+                argument_list
+                    .arguments
+                    .first()
+                    .map(|argument| argument.value())
+                    .is_some_and(|e| is_breaking_expression(e, true))
             } else if argument_list.arguments.len() > 1 {
                 argument_list.arguments.iter().all(|arg| !arg.is_positional())
-                    && argument_list.arguments.iter().any(|arg| is_breaking_expression(arg.value()))
+                    && argument_list.arguments.iter().any(|arg| is_breaking_expression(arg.value(), false))
             } else {
                 false
             };

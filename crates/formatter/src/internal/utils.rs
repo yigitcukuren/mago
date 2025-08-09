@@ -7,6 +7,7 @@ use crate::document::Document;
 use crate::document::IndentIfBreak;
 use crate::document::Separator;
 use crate::internal::FormatterState;
+use crate::internal::format::misc::is_breaking_expression;
 
 use super::format::call_arguments::should_expand_first_arg;
 use super::format::call_arguments::should_expand_last_arg;
@@ -150,12 +151,7 @@ pub fn replace_end_of_line(document: Document<'_>, replacement: Separator, halte
 }
 
 #[inline]
-pub fn could_expand_value(
-    f: &FormatterState<'_>,
-    value: &Expression,
-    arrow_chain_recursion: bool,
-    nested_args: bool,
-) -> bool {
+pub fn could_expand_value(f: &FormatterState<'_>, value: &Expression, nested_args: bool) -> bool {
     match value {
         Expression::Array(expr) => !expr.elements.is_empty(),
         Expression::LegacyArray(expr) => !expr.elements.is_empty(),
@@ -163,14 +159,10 @@ pub fn could_expand_value(
         Expression::AnonymousClass(_) => true,
         Expression::Closure(_) => true,
         Expression::Match(m) => !m.arms.is_empty(),
-        Expression::Binary(operation) => could_expand_value(f, &operation.lhs, arrow_chain_recursion, nested_args),
-        Expression::ArrowFunction(arrow_function) if !arrow_chain_recursion => match arrow_function.expression.as_ref()
-        {
-            Expression::Array(_) | Expression::List(_) | Expression::AnonymousClass(_) | Expression::LegacyArray(_) => {
-                could_expand_value(f, &arrow_function.expression, true, nested_args)
-            }
+        Expression::Binary(operation) => could_expand_value(f, &operation.lhs, nested_args),
+        Expression::ArrowFunction(arrow_function) => match arrow_function.expression.as_ref() {
             Expression::Call(_) | Expression::Conditional(_) => true,
-            _ => false,
+            other => is_breaking_expression(other, true),
         },
         Expression::Instantiation(instantiation) => {
             let Expression::Identifier(_) = instantiation.class.as_ref() else {

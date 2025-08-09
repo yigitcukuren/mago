@@ -94,7 +94,8 @@ pub enum Separator {
     SoftLine,
     HardLine,
     LiteralLine,
-    CommaLine, // [",", line]
+    CommaLine,  // [",", line]
+    CommaSpace, // [",", " "]
     Space,
 }
 
@@ -227,6 +228,7 @@ impl<'a> Document<'a> {
                     Separator::Space => Document::String(" "),
                     Separator::SoftLine => Document::Line(Line::soft()),
                     Separator::HardLine => Document::Line(Line::hard()),
+                    Separator::CommaSpace => Document::String(", "),
                     Separator::LiteralLine => {
                         Document::Array(vec![Document::Line(Line::literal()), Document::BreakParent])
                     }

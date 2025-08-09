@@ -977,7 +977,7 @@ impl<'a> Format<'a> for Conditional {
                         &f.file.contents,
                         then.span().end.offset,
                         self.r#else.span().start.offset,
-                    ) && could_expand_value(f, then, false, false);
+                    ) && could_expand_value(f, then, false);
 
                     let conditional_id = f.next_id();
                     let then_id = f.next_id();
