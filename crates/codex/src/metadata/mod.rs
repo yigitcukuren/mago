@@ -135,7 +135,7 @@ impl CodebaseMetadata {
     /// Relies on `ClassLikeMetadata::has_method`.
     #[inline]
     pub fn method_exists(&self, classlike_name: &StringIdentifier, method_name: &StringIdentifier) -> bool {
-        self.class_likes.get(classlike_name).is_some_and(|metadata| metadata.has_method(method_name))
+        self.class_likes.get(classlike_name).is_some_and(|metadata| metadata.methods.contains(method_name))
     }
 
     /// Checks if a method with the given name exists (is declared or inherited) within the class-like structure.
@@ -148,7 +148,7 @@ impl CodebaseMetadata {
     /// Checks specifically if a method is *declared* directly within the given class-like (not just inherited).
     #[inline]
     pub fn declaring_method_exists(&self, classlike_name: &StringIdentifier, method_name: &StringIdentifier) -> bool {
-        self.class_likes.get(classlike_name).and_then(|metadata| metadata.get_declaring_method_ids().get(method_name))
+        self.class_likes.get(classlike_name).and_then(|metadata| metadata.declaring_method_ids.get(method_name))
             == Some(classlike_name) // Check if declaring class is this class
     }
 
@@ -205,8 +205,8 @@ impl CodebaseMetadata {
     #[inline]
     pub fn get_appearing_method_id(&self, method_id: &MethodIdentifier) -> MethodIdentifier {
         self.class_likes
-            .get(method_id.get_class_name()) // Use direct getter
-            .and_then(|metadata| metadata.get_appearing_method_ids().get(method_id.get_method_name()))
+            .get(method_id.get_class_name())
+            .and_then(|metadata| metadata.appearing_method_ids.get(method_id.get_method_name()))
             .map_or(*method_id, |appearing_fqcn| MethodIdentifier::new(*appearing_fqcn, *method_id.get_method_name()))
     }
 

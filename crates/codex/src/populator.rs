@@ -506,8 +506,9 @@ fn populate_class_like_metadata(
         metadata.add_declaring_property_id(property_name, *classlike_name);
     }
 
-    for method_name in metadata.get_methods().to_vec() {
-        metadata.add_declaring_method_id(method_name, *classlike_name);
+    for method_name in &metadata.methods {
+        metadata.appearing_method_ids.insert(*method_name, *classlike_name);
+        metadata.declaring_method_ids.insert(*method_name, *classlike_name);
     }
 
     let force_repopulation = !safe_symbols.contains(classlike_name);
@@ -539,7 +540,7 @@ fn populate_class_like_metadata(
         );
     }
 
-    let direct_parent_interfaces = metadata.direct_parent_interfaces.to_vec();
+    let direct_parent_interfaces = metadata.direct_parent_interfaces.clone();
     for direct_parent_interface in direct_parent_interfaces {
         populate_interface_metadata_from_parent_interface(
             &mut metadata,
@@ -580,7 +581,7 @@ fn populate_interface_metadata_from_parent_interface(
     let parent_interface_metadata = if let Some(parent_meta) = codebase.class_likes.get(&parent_interface) {
         parent_meta
     } else {
-        metadata.invalid_dependencies.push(parent_interface);
+        metadata.invalid_dependencies.insert(parent_interface);
         return;
     };
 
@@ -621,7 +622,7 @@ fn populate_metadata_from_parent_class_like(
     let parent_metadata = if let Some(parent_meta) = codebase.class_likes.get(&parent_class) {
         parent_meta
     } else {
-        metadata.invalid_dependencies.push(parent_class);
+        metadata.invalid_dependencies.insert(parent_class);
         return;
     };
 
@@ -664,7 +665,7 @@ fn populate_metadata_from_trait(
     symbol_references.add_symbol_reference_to_symbol(metadata.name, trait_name, true);
 
     let Some(trait_metadata) = codebase.class_likes.get(&trait_name) else {
-        metadata.invalid_dependencies.push(trait_name);
+        metadata.invalid_dependencies.insert(trait_name);
         return;
     };
 
@@ -700,7 +701,7 @@ fn inherit_methods_from_parent(
     let class_like_name = metadata.name;
     let is_trait = metadata.kind.is_trait();
 
-    for (method_name, appearing_class_like) in parent_metadata.get_appearing_method_ids() {
+    for (method_name, appearing_class_like) in &parent_metadata.appearing_method_ids {
         if metadata.has_appearing_method(method_name) {
             continue;
         }
@@ -729,8 +730,8 @@ fn inherit_methods_from_parent(
                 metadata.add_overridden_method_parent(*method_name, *declaring_class);
             }
 
-            if let Some(map) = metadata.get_overridden_method_id_mut(method_name)
-                && let Some(overridden_method_ids) = parent_metadata.get_overridden_method_id(method_name)
+            if let Some(map) = metadata.overridden_method_ids.get_mut(method_name)
+                && let Some(overridden_method_ids) = parent_metadata.overridden_method_ids.get(method_name)
             {
                 map.extend(overridden_method_ids.iter().copied());
             }
@@ -805,7 +806,7 @@ fn inherit_properties_from_parent(metadata: &mut ClassLikeMetadata, parent_metad
             }
 
             if is_overridable {
-                metadata.overridden_property_ids.entry(*property_name).or_default().push(*inheritable_classlike);
+                metadata.overridden_property_ids.entry(*property_name).or_default().insert(*inheritable_classlike);
             }
         }
 

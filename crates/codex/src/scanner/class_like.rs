@@ -287,7 +287,7 @@ fn scan_class_like(
                 let parent_name = context.interner.lowered(parent_name);
 
                 class_like_metadata.direct_parent_class = Some(parent_name);
-                class_like_metadata.all_parent_classes.push(parent_name);
+                class_like_metadata.all_parent_classes.insert(parent_name);
             }
         }
         SymbolKind::Enum => {
@@ -298,8 +298,8 @@ fn scan_class_like(
                 let from_method = context.interner.intern("from");
                 let try_from_method = context.interner.intern("tryfrom");
 
-                class_like_metadata.all_parent_interfaces.push(backed_enum_interface);
-                class_like_metadata.direct_parent_interfaces.push(backed_enum_interface);
+                class_like_metadata.all_parent_interfaces.insert(backed_enum_interface);
+                class_like_metadata.direct_parent_interfaces.insert(backed_enum_interface);
                 class_like_metadata.appearing_method_ids.insert(from_method, backed_enum_interface);
                 class_like_metadata.declaring_method_ids.insert(from_method, backed_enum_interface);
                 class_like_metadata.appearing_method_ids.insert(try_from_method, backed_enum_interface);
@@ -309,8 +309,8 @@ fn scan_class_like(
             let unit_enum_interface = context.interner.intern("unitenum");
             let cases_method = context.interner.intern("cases");
 
-            class_like_metadata.all_parent_interfaces.push(unit_enum_interface);
-            class_like_metadata.direct_parent_interfaces.push(unit_enum_interface);
+            class_like_metadata.all_parent_interfaces.insert(unit_enum_interface);
+            class_like_metadata.direct_parent_interfaces.insert(unit_enum_interface);
             class_like_metadata.appearing_method_ids.insert(cases_method, unit_enum_interface);
             class_like_metadata.declaring_method_ids.insert(cases_method, unit_enum_interface);
 
@@ -450,7 +450,7 @@ fn scan_class_like(
             };
 
             if variance.is_readonly() {
-                class_like_metadata.add_template_readonly(template_name);
+                class_like_metadata.template_readonly.insert(template_name);
             }
 
             class_like_metadata.add_template_variance_parameter(i, variance);
@@ -705,7 +705,7 @@ fn scan_class_like(
                 }
             };
 
-            class_like_metadata.add_require_extend(context.interner.lowered(&required_name));
+            class_like_metadata.require_extends.insert(context.interner.lowered(&required_name));
             if let Some(required_params) = required_params {
                 class_like_metadata.add_template_extended_offset(required_name, required_params);
             }
@@ -786,7 +786,7 @@ fn scan_class_like(
                 }
             };
 
-            class_like_metadata.add_require_implement(context.interner.lowered(&required_name));
+            class_like_metadata.require_implements.insert(context.interner.lowered(&required_name));
             if let Some(required_parameters) = required_parameters {
                 class_like_metadata.add_template_extended_offset(required_name, required_parameters);
             }
@@ -965,7 +965,7 @@ fn scan_class_like(
                                         Modifier::Protected(_) => Visibility::Protected,
                                         Modifier::Private(_) => Visibility::Private,
                                         Modifier::Final(_) => {
-                                            class_like_metadata.add_trait_final(*method_name);
+                                            class_like_metadata.trait_final_map.insert(*method_name);
 
                                             continue;
                                         }

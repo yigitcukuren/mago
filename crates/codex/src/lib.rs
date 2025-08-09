@@ -434,21 +434,18 @@ pub fn get_declaring_method_id(
         return *method_id;
     };
 
-    let declaring_method_ids = class_like_metadata.get_declaring_method_ids();
-    if let Some(declaring_fqcn) = declaring_method_ids.get(&lowered_method_id)
+    if let Some(declaring_fqcn) = class_like_metadata.declaring_method_ids.get(&lowered_method_id)
         && let Some(declaring_class_metadata) = codebase.class_likes.get(declaring_fqcn)
     {
         return MethodIdentifier::new(declaring_class_metadata.original_name, *method_id.get_method_name());
     };
 
-    if class_like_metadata.flags.is_abstract() {
-        let overridden_method_ids = class_like_metadata.get_overridden_method_ids();
-        if let Some(overridden_classes) = overridden_method_ids.get(&lowered_method_id)
-            && let Some(first_class) = overridden_classes.iter().next()
-            && let Some(first_class_metadata) = codebase.class_likes.get(first_class)
-        {
-            return MethodIdentifier::new(first_class_metadata.original_name, *method_id.get_method_name());
-        }
+    if class_like_metadata.flags.is_abstract()
+        && let Some(overridden_classes) = class_like_metadata.overridden_method_ids.get(&lowered_method_id)
+        && let Some(first_class) = overridden_classes.iter().next()
+        && let Some(first_class_metadata) = codebase.class_likes.get(first_class)
+    {
+        return MethodIdentifier::new(first_class_metadata.original_name, *method_id.get_method_name());
     }
 
     // If the method isn't declared in this class, return the method ID as is

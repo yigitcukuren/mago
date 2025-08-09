@@ -294,7 +294,7 @@ impl MutWalker<Context<'_>> for Scanner {
             self.codebase.class_likes.remove(current_class).expect("Expected class-like metadata to be present");
 
         let name = context.interner.lowered(&method.name.value);
-        if class_like_metadata.has_method(&name) {
+        if class_like_metadata.methods.contains(&name) {
             self.codebase.class_likes.insert(*current_class, class_like_metadata);
             self.template_constraints.push(vec![]);
 
@@ -333,7 +333,7 @@ impl MutWalker<Context<'_>> for Scanner {
             is_clone = name == context.interner.intern("__clone");
         }
 
-        class_like_metadata.add_method(name);
+        class_like_metadata.methods.insert(name);
         class_like_metadata.add_declaring_method_id(name, class_like_metadata.name);
         if !method_metadata.visibility.is_private() || is_constructor || is_clone || class_like_metadata.kind.is_trait()
         {
@@ -407,7 +407,7 @@ fn finalize_class_like(scanner: &mut Scanner, context: &mut Context<'_>) {
     if class_like_metadata.flags.has_consistent_constructor() {
         let constructor_name = context.interner.intern("__construct");
 
-        class_like_metadata.add_method(constructor_name);
+        class_like_metadata.methods.insert(constructor_name);
         class_like_metadata.add_declaring_method_id(constructor_name, class_like_metadata.name);
         class_like_metadata.inheritable_method_ids.insert(constructor_name, class_like_metadata.name);
 

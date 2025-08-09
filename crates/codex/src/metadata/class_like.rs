@@ -33,12 +33,12 @@ pub struct ClassLikeMetadata {
     pub name: StringIdentifier,
     pub original_name: StringIdentifier,
     pub span: Span,
-    pub direct_parent_interfaces: Vec<StringIdentifier>,
-    pub all_parent_interfaces: Vec<StringIdentifier>,
+    pub direct_parent_interfaces: HashSet<StringIdentifier>,
+    pub all_parent_interfaces: HashSet<StringIdentifier>,
     pub direct_parent_class: Option<StringIdentifier>,
-    pub require_extends: Vec<StringIdentifier>,
-    pub require_implements: Vec<StringIdentifier>,
-    pub all_parent_classes: Vec<StringIdentifier>,
+    pub require_extends: HashSet<StringIdentifier>,
+    pub require_implements: HashSet<StringIdentifier>,
+    pub all_parent_classes: HashSet<StringIdentifier>,
     pub used_traits: HashSet<StringIdentifier>,
     pub trait_alias_map: HashMap<StringIdentifier, StringIdentifier>,
     pub trait_visibility_map: HashMap<StringIdentifier, Visibility>,
@@ -54,9 +54,9 @@ pub struct ClassLikeMetadata {
     pub template_type_extends_count: HashMap<StringIdentifier, usize>,
     pub template_type_implements_count: HashMap<StringIdentifier, usize>,
     pub template_type_uses_count: HashMap<StringIdentifier, usize>,
-    pub methods: Vec<StringIdentifier>,
-    pub pseudo_methods: Vec<StringIdentifier>,
-    pub static_pseudo_methods: Vec<StringIdentifier>,
+    pub methods: HashSet<StringIdentifier>,
+    pub pseudo_methods: HashSet<StringIdentifier>,
+    pub static_pseudo_methods: HashSet<StringIdentifier>,
     pub declaring_method_ids: HashMap<StringIdentifier, StringIdentifier>,
     pub appearing_method_ids: HashMap<StringIdentifier, StringIdentifier>,
     pub overridden_method_ids: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
@@ -66,11 +66,11 @@ pub struct ClassLikeMetadata {
     pub appearing_property_ids: HashMap<StringIdentifier, StringIdentifier>,
     pub declaring_property_ids: HashMap<StringIdentifier, StringIdentifier>,
     pub inheritable_property_ids: HashMap<StringIdentifier, StringIdentifier>,
-    pub overridden_property_ids: HashMap<StringIdentifier, Vec<StringIdentifier>>,
-    pub initialized_properties: Vec<StringIdentifier>,
+    pub overridden_property_ids: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
+    pub initialized_properties: HashSet<StringIdentifier>,
     pub constants: IndexMap<StringIdentifier, ClassLikeConstantMetadata, RandomState>,
     pub enum_cases: IndexMap<StringIdentifier, EnumCaseMetadata, RandomState>,
-    pub invalid_dependencies: Vec<StringIdentifier>,
+    pub invalid_dependencies: HashSet<StringIdentifier>,
     pub attributes: Vec<AttributeMetadata>,
     pub enum_type: Option<TAtomic>,
     pub has_sealed_methods: Option<bool>,
@@ -94,27 +94,27 @@ impl ClassLikeMetadata {
             enum_cases: IndexMap::with_hasher(RandomState::new()),
             flags,
             kind: SymbolKind::Class,
-            direct_parent_interfaces: vec![],
-            all_parent_classes: vec![],
+            direct_parent_interfaces: HashSet::default(),
+            all_parent_classes: HashSet::default(),
             appearing_method_ids: HashMap::default(),
             attributes: Vec::new(),
-            all_parent_interfaces: vec![],
+            all_parent_interfaces: HashSet::default(),
             declaring_method_ids: HashMap::default(),
             appearing_property_ids: HashMap::default(),
             declaring_property_ids: HashMap::default(),
             direct_parent_class: None,
-            require_extends: vec![],
-            require_implements: vec![],
+            require_extends: HashSet::default(),
+            require_implements: HashSet::default(),
             inheritable_method_ids: HashMap::default(),
             enum_type: None,
             inheritable_property_ids: HashMap::default(),
-            initialized_properties: vec![],
-            invalid_dependencies: Vec::new(),
+            initialized_properties: HashSet::default(),
+            invalid_dependencies: HashSet::default(),
             span,
             name_span,
-            methods: vec![],
-            pseudo_methods: vec![],
-            static_pseudo_methods: vec![],
+            methods: HashSet::default(),
+            pseudo_methods: HashSet::default(),
+            static_pseudo_methods: HashSet::default(),
             overridden_method_ids: HashMap::default(),
             overridden_property_ids: HashMap::default(),
             potential_declaring_method_ids: HashMap::default(),
@@ -125,7 +125,7 @@ impl ClassLikeMetadata {
             template_extended_offsets: HashMap::default(),
             template_type_implements_count: HashMap::default(),
             template_type_uses_count: HashMap::default(),
-            template_types: vec![],
+            template_types: Vec::default(),
             used_traits: HashSet::default(),
             trait_alias_map: HashMap::default(),
             trait_visibility_map: HashMap::default(),
@@ -196,55 +196,10 @@ impl ClassLikeMetadata {
         self.template_extended_parameters.contains_key(parent)
     }
 
-    /// Returns a slice of methods defined directly in this class-like.
-    #[inline]
-    pub fn get_methods(&self) -> &[StringIdentifier] {
-        &self.methods
-    }
-
-    /// Checks if a specific method is defined in this class-like.
-    #[inline]
-    pub fn has_method(&self, method: &StringIdentifier) -> bool {
-        self.methods.contains(method)
-    }
-
-    /// Returns a reference to the map of method name to its declaring class/trait FQCN.
-    #[inline]
-    pub fn get_declaring_method_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.declaring_method_ids
-    }
-
-    /// Returns a reference to the map of method name to its appearing class/trait FQCN in this context.
-    #[inline]
-    pub fn get_appearing_method_ids(&self) -> &HashMap<StringIdentifier, StringIdentifier> {
-        &self.appearing_method_ids
-    }
-
     /// Checks if a specific method appears in this class-like.
     #[inline]
     pub fn has_appearing_method(&self, method: &StringIdentifier) -> bool {
         self.appearing_method_ids.contains_key(method)
-    }
-
-    /// Returns a reference to the map of overridden method name to the set of parent FQCNs.
-    #[inline]
-    pub fn get_overridden_method_ids(&self) -> &HashMap<StringIdentifier, HashSet<StringIdentifier>> {
-        &self.overridden_method_ids
-    }
-
-    /// Returns a reference to a specific method's overridden parent FQCNs.
-    #[inline]
-    pub fn get_overridden_method_id(&self, method: &StringIdentifier) -> Option<&HashSet<StringIdentifier>> {
-        self.overridden_method_ids.get(method)
-    }
-
-    /// Returns a mutable reference to a specific method's overridden parent FQCNs.
-    #[inline]
-    pub fn get_overridden_method_id_mut(
-        &mut self,
-        method: &StringIdentifier,
-    ) -> Option<&mut HashSet<StringIdentifier>> {
-        self.overridden_method_ids.get_mut(method)
     }
 
     /// Returns a reference to a specific method's potential declaring classes/traits.
@@ -255,7 +210,7 @@ impl ClassLikeMetadata {
 
     /// Returns a vector of property names.
     #[inline]
-    pub fn get_property_names(&self) -> Vec<StringIdentifier> {
+    pub fn get_property_names(&self) -> HashSet<StringIdentifier> {
         self.properties.keys().copied().collect()
     }
 
@@ -280,32 +235,20 @@ impl ClassLikeMetadata {
     /// Adds a single direct parent interface.
     #[inline]
     pub fn add_direct_parent_interface(&mut self, interface: StringIdentifier) {
-        self.direct_parent_interfaces.push(interface);
-        self.all_parent_interfaces.push(interface);
+        self.direct_parent_interfaces.insert(interface);
+        self.all_parent_interfaces.insert(interface);
     }
 
     /// Adds a single interface to the list of all parent interfaces. Use with caution, normally derived.
     #[inline]
     pub fn add_all_parent_interface(&mut self, interface: StringIdentifier) {
-        self.all_parent_interfaces.push(interface);
+        self.all_parent_interfaces.insert(interface);
     }
 
     /// Adds multiple interfaces to the list of all parent interfaces. Use with caution.
     #[inline]
     pub fn add_all_parent_interfaces(&mut self, interfaces: impl IntoIterator<Item = StringIdentifier>) {
         self.all_parent_interfaces.extend(interfaces);
-    }
-
-    /// Adds a single required extend entry.
-    #[inline]
-    pub fn add_require_extend(&mut self, require: StringIdentifier) {
-        self.require_extends.push(require);
-    }
-
-    /// Adds a single required implement entry.
-    #[inline]
-    pub fn add_require_implement(&mut self, require: StringIdentifier) {
-        self.require_implements.push(require);
     }
 
     /// Adds multiple ancestor classes. Use with caution.
@@ -338,21 +281,10 @@ impl ClassLikeMetadata {
         self.trait_visibility_map.insert(method, visibility)
     }
 
-    /// Adds a single final trait method. Returns `true` if the method was not already present.
-    #[inline]
-    pub fn add_trait_final(&mut self, method: StringIdentifier) -> bool {
-        self.trait_final_map.insert(method)
-    }
-
     /// Adds a single template type definition.
     #[inline]
     pub fn add_template_type(&mut self, template: TemplateTuple) {
         self.template_types.push(template);
-    }
-    /// Adds a single readonly template parameter. Returns `true` if the parameter was not already present.
-    #[inline]
-    pub fn add_template_readonly(&mut self, template_name: StringIdentifier) -> bool {
-        self.template_readonly.insert(template_name)
     }
 
     /// Adds or updates the variance for a specific parameter index. Returns the previous variance if one existed.
@@ -385,12 +317,6 @@ impl ClassLikeMetadata {
         parameter_type: TUnion,
     ) -> Option<TUnion> {
         self.template_extended_parameters.entry(parent_fqcn).or_default().insert(parameter_name, parameter_type)
-    }
-
-    /// Adds a single method name.
-    #[inline]
-    pub fn add_method(&mut self, method: StringIdentifier) {
-        self.methods.push(method);
     }
 
     /// Adds or updates the declaring class FQCN for a method name.
@@ -441,7 +367,7 @@ impl ClassLikeMetadata {
 
         self.add_declaring_property_id(name, class_name);
         if property_metadata.flags.has_default() {
-            self.initialized_properties.push(name);
+            self.initialized_properties.insert(name);
         }
 
         if !property_metadata.is_final() {
@@ -467,7 +393,6 @@ impl ClassLikeMetadata {
         declaring_fqcn: StringIdentifier,
     ) -> Option<StringIdentifier> {
         self.appearing_property_ids.insert(prop, declaring_fqcn);
-
         self.declaring_property_ids.insert(prop, declaring_fqcn)
     }
 
