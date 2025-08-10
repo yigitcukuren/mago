@@ -19,3 +19,4 @@ tracing = { workspace = true }
 walkdir = { workspace = true }
 globset = { workspace = true }
 serde = { workspace = true }
+rayon = { workspace = true }

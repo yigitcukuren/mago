@@ -1,12 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::ffi::OsString;
-use std::path::Path;
 use std::path::PathBuf;
 
 use globset::Glob;
 use globset::GlobSet;
 use globset::GlobSetBuilder;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use walkdir::WalkDir;
 
 use crate::Database;
@@ -68,10 +69,14 @@ impl DatabaseLoader {
                 glob_builder.add(Glob::new(pat)?);
             }
         }
-        let glob_excludes = glob_builder.build()?;
 
-        self.load_paths(&mut db, &self.paths, FileType::Host, &extensions_set, &glob_excludes)?;
-        self.load_paths(&mut db, &self.includes, FileType::Vendored, &extensions_set, &glob_excludes)?;
+        let glob_excludes = glob_builder.build()?;
+        let host_files = self.load_paths(&self.paths, FileType::Host, &extensions_set, &glob_excludes)?;
+        let vendored_files = self.load_paths(&self.includes, FileType::Vendored, &extensions_set, &glob_excludes)?;
+
+        for file in host_files.into_iter().chain(vendored_files.into_iter()) {
+            db.add(file);
+        }
 
         for (name, contents, file_type) in self.memory_sources {
             let file = File::new(Cow::Borrowed(name), file_type, None, Cow::Borrowed(contents));
@@ -82,14 +87,15 @@ impl DatabaseLoader {
         Ok(db)
     }
 
+    /// Discovers and reads all files from a set of root paths in parallel.
     fn load_paths(
         &self,
-        db: &mut Database,
         roots: &[PathBuf],
         file_type: FileType,
         extensions: &HashSet<OsString>,
         glob_excludes: &GlobSet,
-    ) -> Result<(), DatabaseError> {
+    ) -> Result<Vec<File>, DatabaseError> {
+        // 2. Discover all file paths first. This part is still synchronous and fast.
         let path_excludes: HashSet<_> = self
             .excludes
             .iter()
@@ -99,54 +105,45 @@ impl DatabaseLoader {
             })
             .collect();
 
+        let mut paths_to_process = Vec::new();
         for root in roots {
             for entry in WalkDir::new(root).into_iter().filter_map(Result::ok) {
                 if entry.file_type().is_file() {
-                    self.process_path(db, entry.path(), file_type, extensions, glob_excludes, &path_excludes)?;
+                    paths_to_process.push(entry.into_path());
                 }
             }
         }
 
-        Ok(())
-    }
+        // 3. Use a parallel iterator to process all discovered paths.
+        let files: Vec<File> = paths_to_process
+            .into_par_iter() // This is the magic from rayon!
+            .filter_map(|path| {
+                // Apply filters in parallel
+                if glob_excludes.is_match(&path) {
+                    return None;
+                }
+                if let Ok(p) = path.canonicalize() {
+                    if path_excludes.contains(&p) {
+                        return None;
+                    }
+                }
+                if let Some(ext) = path.extension() {
+                    if !extensions.contains(ext) {
+                        return None;
+                    }
+                } else {
+                    return None;
+                }
 
-    /// The "File Processor" part: applies all filters to a single path.
-    fn process_path(
-        &self,
-        db: &mut Database,
-        path: &Path,
-        file_type: FileType,
-        extensions: &HashSet<OsString>,
-        glob_excludes: &GlobSet,
-        path_excludes: &HashSet<PathBuf>,
-    ) -> Result<(), DatabaseError> {
-        // Filter 1: Check against pre-compiled glob patterns.
-        if glob_excludes.is_match(path) {
-            return Ok(());
-        }
+                // Read the file. `read_file` is a blocking operation, but since it's
+                // running in a limited number of threads, it's efficient.
+                match read_file(&self.workspace, &path, file_type) {
+                    Ok(file) => Some(Ok(file)),
+                    Err(e) => Some(Err(e)),
+                }
+            })
+            .collect::<Result<Vec<File>, _>>()?; // Collect results, propagating any errors.
 
-        // Filter 2: Check against specific paths.
-        if let Ok(canonical_path) = path.canonicalize()
-            && path_excludes.contains(&canonical_path)
-        {
-            return Ok(());
-        }
-
-        // Filter 3: Check file extension.
-        let extension = path.extension();
-
-        if let Some(ext) = extension
-            && !extensions.contains(ext)
-        {
-            return Ok(());
-        } else if extension.is_none() {
-            return Ok(()); // No extension, so we skip it.
-        }
-
-        let file = read_file(&self.workspace, path, file_type)?;
-
-        db.add(file);
-
-        Ok(())
+        Ok(files)
     }
 }
