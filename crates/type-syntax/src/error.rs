@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use mago_span::HasPosition;
+use mago_database::file::FileId;
 use mago_span::HasSpan;
 use mago_span::Position;
 use mago_span::Span;
@@ -9,15 +9,15 @@ use crate::token::TypeTokenKind;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
 pub enum SyntaxError {
-    UnexpectedToken(u8, Position),
-    UnrecognizedToken(u8, Position),
-    UnexpectedEndOfFile(Position),
+    UnexpectedToken(FileId, u8, Position),
+    UnrecognizedToken(FileId, u8, Position),
+    UnexpectedEndOfFile(FileId, Position),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub enum ParseError {
     SyntaxError(SyntaxError),
-    UnexpectedEndOfFile(Vec<TypeTokenKind>, Position),
+    UnexpectedEndOfFile(FileId, Vec<TypeTokenKind>, Position),
     UnexpectedToken(Vec<TypeTokenKind>, TypeTokenKind, Span),
     UnclosedLiteralString(Span),
 }
@@ -26,13 +26,13 @@ impl ParseError {
     /// Provides a detailed, user-friendly note explaining the context of the parse error.
     pub fn note(&self) -> String {
         match self {
-            ParseError::SyntaxError(SyntaxError::UnrecognizedToken(_, _)) => {
+            ParseError::SyntaxError(SyntaxError::UnrecognizedToken(_, _, _)) => {
                 "An invalid character was found that is not part of any valid type syntax.".to_string()
             }
             ParseError::SyntaxError(_) => {
                 "A low-level syntax error occurred while parsing the type string.".to_string()
             }
-            ParseError::UnexpectedEndOfFile(expected, _) => {
+            ParseError::UnexpectedEndOfFile(_, expected, _) => {
                 if expected.is_empty() {
                     "The type declaration ended prematurely.".to_string()
                 } else {
@@ -57,11 +57,11 @@ impl ParseError {
     /// Provides a concise, actionable help message suggesting a fix for the error.
     pub fn help(&self) -> String {
         match self {
-            ParseError::SyntaxError(SyntaxError::UnrecognizedToken(_, _)) => {
+            ParseError::SyntaxError(SyntaxError::UnrecognizedToken(_, _, _)) => {
                 "Remove or replace the invalid character.".to_string()
             }
             ParseError::SyntaxError(_) => "Review the syntax of the type declaration for errors.".to_string(),
-            ParseError::UnexpectedEndOfFile(_, _) => {
+            ParseError::UnexpectedEndOfFile(_, _, _) => {
                 "Complete the type declaration. Check for unclosed parentheses `()`, angle brackets `<>`, or curly braces `{}`.".to_string()
             }
             ParseError::UnexpectedToken(_, _, _) => {
@@ -74,24 +74,23 @@ impl ParseError {
     }
 }
 
-impl HasPosition for SyntaxError {
-    fn position(&self) -> Position {
-        match self {
-            SyntaxError::UnexpectedToken(_, position)
-            | SyntaxError::UnrecognizedToken(_, position)
-            | SyntaxError::UnexpectedEndOfFile(position) => *position,
-        }
+impl HasSpan for SyntaxError {
+    fn span(&self) -> Span {
+        let (file_id, position) = match self {
+            SyntaxError::UnexpectedToken(file_id, _, position) => (*file_id, *position),
+            SyntaxError::UnrecognizedToken(file_id, _, position) => (*file_id, *position),
+            SyntaxError::UnexpectedEndOfFile(file_id, position) => (*file_id, *position),
+        };
+
+        Span::new(file_id, position, position)
     }
 }
 
 impl HasSpan for ParseError {
     fn span(&self) -> Span {
         match self {
-            ParseError::SyntaxError(error) => {
-                let position = error.position();
-                Span::new(position, position)
-            }
-            ParseError::UnexpectedEndOfFile(_, position) => Span::new(*position, *position),
+            ParseError::SyntaxError(error) => error.span(),
+            ParseError::UnexpectedEndOfFile(file_id, _, position) => Span::new(*file_id, *position, *position),
             ParseError::UnexpectedToken(_, _, span) => *span,
             ParseError::UnclosedLiteralString(span) => *span,
         }
@@ -101,13 +100,13 @@ impl HasSpan for ParseError {
 impl std::fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SyntaxError::UnexpectedToken(token, _) => {
+            SyntaxError::UnexpectedToken(_, token, _) => {
                 write!(f, "Unexpected character '{}'", *token as char)
             }
-            SyntaxError::UnrecognizedToken(token, _) => {
+            SyntaxError::UnrecognizedToken(_, token, _) => {
                 write!(f, "Unrecognized character '{}'", *token as char)
             }
-            SyntaxError::UnexpectedEndOfFile(_) => {
+            SyntaxError::UnexpectedEndOfFile(_, _) => {
                 write!(f, "Unexpected end of input")
             }
         }
@@ -118,7 +117,7 @@ impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ParseError::SyntaxError(err) => write!(f, "{err}"),
-            ParseError::UnexpectedEndOfFile(_, _) => {
+            ParseError::UnexpectedEndOfFile(_, _, _) => {
                 write!(f, "Unexpected end of type declaration")
             }
             ParseError::UnexpectedToken(_, token, _) => {

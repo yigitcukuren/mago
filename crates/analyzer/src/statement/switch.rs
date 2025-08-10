@@ -68,7 +68,7 @@ struct SwitchAnalyzer<'a, 'b> {
     leftover_statements: Vec<Statement>,
     leftover_case_equality_expression: Option<Expression>,
     negated_clauses: Vec<Clause>,
-    new_assigned_variable_ids: HashMap<String, usize>,
+    new_assigned_variable_ids: HashMap<String, u32>,
     last_case_exit_type: ControlAction,
     case_exit_types: HashMap<usize, ControlAction>,
     case_actions: HashMap<usize, HashSet<ControlAction>>,

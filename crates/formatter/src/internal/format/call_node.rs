@@ -96,9 +96,10 @@ fn print_access_call_node<'a>(f: &mut FormatterState<'a>, node: &'a Call) -> Doc
         _ => unreachable!(),
     };
 
-    let should_break = f.has_inner_comment(Span::new(base.span().end, operator.start))
+    let base_span = base.span();
+    let should_break = f.has_inner_comment(Span::new(base_span.file_id, base_span.end, operator.start))
         || (f.settings.preserve_breaking_member_access_chain
-            && misc::has_new_line_in_range(&f.file.contents, base.span().end.offset, operator.start.offset));
+            && misc::has_new_line_in_range(&f.file.contents, base_span.end.offset, operator.start.offset));
 
     if should_break {
         Document::Group(Group::new(vec![

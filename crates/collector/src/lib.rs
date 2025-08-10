@@ -62,7 +62,7 @@ impl<'i> Collector<'i> {
     /// current recording. Otherwise, it is added to the main issue collection.
     #[inline]
     pub fn force_report(&mut self, mut issue: Issue) {
-        issue.annotations.retain(|annotation| !annotation.span.start.file_id.is_zero());
+        issue.annotations.retain(|annotation| !annotation.span.file_id.is_zero());
 
         if let Some(recording) = self.recordings.last_mut() {
             recording.push(issue);

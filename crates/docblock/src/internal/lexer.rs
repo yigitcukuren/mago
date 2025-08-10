@@ -9,10 +9,10 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
         return Err(ParseError::InvalidComment(span));
     }
 
-    let mut content_start = 3;
-    let mut content_end = comment.len() - 2;
+    let mut content_start = 3u32;
+    let mut content_end = (comment.len() - 2) as u32;
 
-    let content = &comment[content_start..content_end];
+    let content = &comment[3..(comment.len() - 2)];
 
     if !content.contains('\n') {
         if content.is_empty() {
@@ -42,10 +42,10 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
         let lines: Vec<&'a str> = content.lines().collect();
 
         let mut lines_with_positions = Vec::new();
-        let mut pos_in_content = 0;
+        let mut pos_in_content = 0u32;
 
         for line in lines {
-            let line_len = line.len();
+            let line_len = line.len() as u32;
             lines_with_positions.push((line, pos_in_content));
             pos_in_content += line_len + 1;
         }
@@ -62,7 +62,7 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
             let line_indent_length = trimmed_line.find(|c: char| !c.is_whitespace()).unwrap_or(trimmed_line.len());
             let line_content_after_indent = &trimmed_line[line_indent_length..];
 
-            let mut content_start_in_line = line_indent_length;
+            let mut content_start_in_line = line_indent_length as u32;
             let line_after_asterisk = if let Some(line_after_asterisk) = line_content_after_indent.strip_prefix("*") {
                 content_start_in_line += 1; // Skip the asterisk
 
@@ -73,15 +73,15 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
 
             if let Some(first_char) = line_after_asterisk.chars().next() {
                 if first_char.is_whitespace() {
-                    content_start_in_line += first_char.len_utf8();
+                    content_start_in_line += first_char.len_utf8() as u32;
                 }
 
-                let content_end_in_line = trimmed_line.len();
+                let content_end_in_line = trimmed_line.len() as u32;
 
                 let content_start_in_comment = content_start + line_start_in_content + content_start_in_line;
                 let content_end_in_comment = content_start + line_start_in_content + content_end_in_line;
 
-                let content_str = &comment[content_start_in_comment..content_end_in_comment];
+                let content_str = &comment[content_start_in_comment as usize..content_end_in_comment as usize];
                 let content_span = span.subspan(content_start_in_comment, content_end_in_comment);
 
                 comment_lines.push(Token::Line { content: content_str, span: content_span });
@@ -102,12 +102,13 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
 mod tests {
     use super::*;
 
+    use mago_database::file::FileId;
     use mago_span::Position;
 
     #[test]
     fn test_lex_empty_single_line_comment() {
         let comment = "/***/";
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -122,7 +123,7 @@ mod tests {
     #[test]
     fn test_lex_empty_multiline_line_comment() {
         let comment = "/**\n*/";
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -137,7 +138,7 @@ mod tests {
     #[test]
     fn test_lex_single_line_comment() {
         let comment = "/** This is a single-line comment */";
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -148,7 +149,7 @@ mod tests {
                 };
 
                 assert_eq!(*content, "This is a single-line comment");
-                assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
             }
             Err(e) => {
                 panic!("Error parsing comment: {e:?}");
@@ -159,7 +160,7 @@ mod tests {
     #[test]
     fn test_lex_single_line_comment_missing_whitespace_front() {
         let comment = "/**This is a single-line comment */";
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -170,7 +171,7 @@ mod tests {
                 };
 
                 assert_eq!(*content, "This is a single-line comment");
-                assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
             }
             Err(e) => {
                 panic!("Error parsing comment: {e:?}");
@@ -181,7 +182,7 @@ mod tests {
     #[test]
     fn test_lex_single_line_comment_missing_whitespace_back() {
         let comment = "/** This is a single-line comment*/";
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -192,7 +193,7 @@ mod tests {
                 };
 
                 assert_eq!(*content, "This is a single-line comment");
-                assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
             }
             Err(e) => {
                 panic!("Error parsing comment: {e:?}");
@@ -208,7 +209,7 @@ mod tests {
                 * Each line starts with an asterisk.
                 */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -223,7 +224,7 @@ mod tests {
                     };
 
                     assert_eq!(*content, expected_contents[i]);
-                    assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                    assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
                 }
             }
             Err(e) => {
@@ -243,7 +244,7 @@ mod tests {
                 *     $bar = "baz";
                 */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -263,7 +264,7 @@ mod tests {
                     if expected_content.is_empty() {
                         match line {
                             Token::EmptyLine { span } => {
-                                assert_eq!(&comment[span.start.offset..span.end.offset], "");
+                                assert_eq!(&comment[span.start.offset as usize..span.end.offset as usize], "");
                             }
                             _ => {
                                 panic!("Expected an empty line, but got something else");
@@ -275,7 +276,7 @@ mod tests {
                         };
 
                         assert_eq!(*content, expected_content);
-                        assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                        assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
                     }
                 }
             }
@@ -293,7 +294,7 @@ mod tests {
         * Each line starts with an asterisk.
         */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -308,7 +309,7 @@ mod tests {
                     };
 
                     assert_eq!(*content, expected_contents[i]);
-                    assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                    assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
                 }
             }
             Err(e) => {
@@ -325,7 +326,7 @@ mod tests {
         * Each line starts with an asterisk.
         */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -340,7 +341,7 @@ mod tests {
                     };
 
                     assert_eq!(*content, expected_contents[i]);
-                    assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                    assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
                 }
             }
             Err(e) => {
@@ -357,7 +358,7 @@ mod tests {
         * Each line starts with an asterisk.
         */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(comment.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
 
         match tokenize(comment, span) {
             Ok(tokens) => {
@@ -372,7 +373,7 @@ mod tests {
                     };
 
                     assert_eq!(*content, expected_contents[i]);
-                    assert!(comment[span.start.offset..span.end.offset].eq(*content));
+                    assert!(comment[span.start.offset as usize..span.end.offset as usize].eq(*content));
                 }
             }
             Err(e) => {

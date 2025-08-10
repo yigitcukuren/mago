@@ -194,7 +194,7 @@ pub fn parse_template_tag(
                 // 3. If modifier found, look for the type string part
                 let remaining_after_modifier = content.get(current_offset_rel..).unwrap_or("");
                 if let Some((type_string, _)) =
-                    split_tag_content(remaining_after_modifier, span.subspan(current_offset_rel, 0))
+                    split_tag_content(remaining_after_modifier, span.subspan(current_offset_rel as u32, 0))
                 {
                     type_string_opt = Some(type_string);
                 }
@@ -235,8 +235,8 @@ pub fn parse_where_tag(content: &str, span: Span) -> Option<WhereTag> {
     };
 
     let consumed_len = content.len() - rest.len();
-    let type_part_start_pos = span.start.forward(consumed_len);
-    let type_part_span = Span::new(type_part_start_pos, span.end);
+    let type_part_start_pos = span.start.forward(consumed_len as u32);
+    let type_part_span = Span::new(span.file_id, type_part_start_pos, span.end);
 
     let (type_string, _rest) = split_tag_content(rest, type_part_span)?;
 
@@ -463,7 +463,7 @@ pub fn parse_type_tag(content: &str, span: Span) -> Option<TypeTag> {
         return None;
     }
 
-    let (type_string, _) = split_tag_content(&rest[1..], span.subspan(equals_index, 0))?;
+    let (type_string, _) = split_tag_content(&rest[1..], span.subspan(equals_index as u32, 0))?;
 
     if type_string.value.is_empty()
         || type_string.value.starts_with('{')
@@ -527,7 +527,7 @@ pub fn split_tag_content(content: &str, input_span: Span) -> Option<(TypeString,
     // Find start byte offset of trimmed content relative to original `content` slice
     let trim_start_offset = content.find(|c: char| !c.is_whitespace()).unwrap_or(0);
     // Calculate the absolute start position of the trimmed content
-    let trimmed_start_pos = input_span.start.forward(trim_start_offset);
+    let trimmed_start_pos = input_span.start.forward(trim_start_offset as u32);
 
     // Get the trimmed slice reference to iterate over
     let trimmed_content = content.trim();
@@ -622,13 +622,23 @@ pub fn split_tag_content(content: &str, input_span: Span) -> Option<(TypeString,
             let rest_part_slice = trimmed_content[split_idx_rel..].trim_start();
 
             // Calculate span relative to the *start* of the trimmed content
-            let type_span = Span::new(trimmed_start_pos, trimmed_start_pos.forward(type_part_slice.len()));
+            let type_span = Span::new(
+                input_span.file_id,
+                trimmed_start_pos,
+                trimmed_start_pos.forward(type_part_slice.len() as u32),
+            );
+
             Some((TypeString { value: type_part_slice.to_owned(), span: type_span }, rest_part_slice))
         }
         None => {
             // No split, entire trimmed content is the type
             let type_part_slice = trimmed_content;
-            let type_span = Span::new(trimmed_start_pos, trimmed_start_pos.forward(type_part_slice.len()));
+            let type_span = Span::new(
+                input_span.file_id,
+                trimmed_start_pos,
+                trimmed_start_pos.forward(type_part_slice.len() as u32),
+            );
+
             Some((TypeString { value: type_part_slice.to_owned(), span: type_span }, ""))
         }
     }
@@ -654,22 +664,23 @@ fn is_valid_identifier_start(mut identifier: &str, allow_qualified: bool) -> boo
 
 #[cfg(test)]
 mod tests {
+    use mago_database::file::FileId;
     use mago_span::Position;
     use mago_span::Span;
 
     use super::*;
 
-    fn test_span(input: &str, start_offset: usize) -> Span {
-        let base_start = Position::dummy(start_offset);
-        Span::new(base_start, base_start.forward(input.len()))
+    fn test_span(input: &str, start_offset: u32) -> Span {
+        let base_start = Position::new(start_offset);
+        Span::new(FileId::zero(), base_start, base_start.forward(input.len() as u32))
     }
 
     fn test_span_for(s: &str) -> Span {
         test_span(s, 0)
     }
 
-    fn make_span(start: usize, end: usize) -> Span {
-        Span::new(Position::dummy(start), Position::dummy(end))
+    fn make_span(start: u32, end: u32) -> Span {
+        Span::new(FileId::zero(), Position::new(start), Position::new(end))
     }
 
     #[test]
@@ -678,14 +689,14 @@ mod tests {
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "array<int, (string|bool)>");
-        assert_eq!(ts.span, make_span(0, "array<int, (string|bool)>".len()));
+        assert_eq!(ts.span, make_span(0, "array<int, (string|bool)>".len() as u32));
         assert_eq!(rest, "desc");
 
         let input = "array<int, string> desc";
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "array<int, string>");
-        assert_eq!(ts.span, make_span(0, "array<int, string>".len()));
+        assert_eq!(ts.span, make_span(0, "array<int, string>".len() as u32));
         assert_eq!(rest, "desc");
 
         assert!(split_tag_content("array<int", test_span_for("array<int")).is_none()); // Unclosed
@@ -700,14 +711,14 @@ mod tests {
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "'inside quote'");
-        assert_eq!(ts.span, make_span(1, "'inside quote'".len() + 1));
+        assert_eq!(ts.span, make_span(1, "'inside quote'".len() as u32 + 1));
         assert_eq!(rest, "outside");
 
         let input = r#""string \" with escape" $var"#;
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, r#""string \" with escape""#);
-        assert_eq!(ts.span, make_span(0, r#""string \" with escape""#.len()));
+        assert_eq!(ts.span, make_span(0, r#""string \" with escape""#.len() as u32));
         assert_eq!(rest, "$var");
 
         assert!(split_tag_content("\"unterminated", test_span_for("\"unterminated")).is_none());
@@ -719,21 +730,21 @@ mod tests {
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "(string // comment \n | int)");
-        assert_eq!(ts.span, make_span(0, "(string // comment \n | int)".len()));
+        assert_eq!(ts.span, make_span(0, "(string // comment \n | int)".len() as u32));
         assert_eq!(rest, "$var");
 
         let input = "string // comment goes to end";
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "string");
-        assert_eq!(ts.span, make_span(0, "string".len()));
+        assert_eq!(ts.span, make_span(0, "string".len() as u32));
         assert_eq!(rest, "// comment goes to end");
 
         let input = "array<string // comment\n> $var";
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "array<string // comment\n>");
-        assert_eq!(ts.span, make_span(0, "array<string // comment\n>".len()));
+        assert_eq!(ts.span, make_span(0, "array<string // comment\n>".len() as u32));
         assert_eq!(rest, "$var");
     }
 
@@ -743,7 +754,7 @@ mod tests {
         let span = test_span_for(input);
         let (ts, rest) = split_tag_content(input, span).unwrap();
         assert_eq!(ts.value, "array<int, string>");
-        assert_eq!(ts.span, make_span(1, "array<int, string>".len() + 1));
+        assert_eq!(ts.span, make_span(1, "array<int, string>".len() as u32 + 1));
         assert_eq!(rest, ""); // No rest part
     }
 
@@ -756,7 +767,7 @@ mod tests {
 
         assert_eq!(result.type_string.value, "string|int"); // Check owned string value
         assert_eq!(result.type_string.span.start.offset, offset + 1); // Span of type part
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "string|int".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "string|int".len() as u32);
         assert_eq!(result.name, "$myVar");
         assert_eq!(result.description, "Description here");
         assert_eq!(result.span, span); // Check overall span
@@ -770,7 +781,7 @@ mod tests {
         let result = parse_param_tag(content, span).unwrap();
         assert_eq!(result.type_string.value, "array<int, string>"); // Check owned string
         assert_eq!(result.type_string.span.start.offset, offset + 1);
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, string>".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, string>".len() as u32);
         assert_eq!(result.name, "$param");
         assert_eq!(result.description, "");
     }
@@ -783,7 +794,7 @@ mod tests {
         let result = parse_param_tag(content, span).unwrap();
         assert_eq!(result.type_string.value, "(string // comment \n | int)");
         assert_eq!(result.type_string.span.start.offset, offset + 1);
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "(string // comment \n | int)".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "(string // comment \n | int)".len() as u32);
         assert_eq!(result.name, "$var");
         assert_eq!(result.description, "desc");
     }
@@ -797,13 +808,13 @@ mod tests {
 
     #[test]
     fn test_return_basic() {
-        let offset = 10;
+        let offset = 10u32;
         let content = " string Description here ";
         let span = test_span(content, offset);
         let result = parse_return_tag(content, span).unwrap();
         assert_eq!(result.type_string.value, "string");
         assert_eq!(result.type_string.span.start.offset, offset + 1);
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "string".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "string".len() as u32);
         assert_eq!(result.description, "Description here");
         assert_eq!(result.span, span);
     }
@@ -816,7 +827,7 @@ mod tests {
         let result = parse_return_tag(content, span).unwrap();
         assert_eq!(result.type_string.value, "array<int, (string|null)>");
         assert_eq!(result.type_string.span.start.offset, offset + 1);
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, (string|null)>".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, (string|null)>".len() as u32);
         assert_eq!(result.description, "Description");
     }
 
@@ -828,7 +839,7 @@ mod tests {
         let result = parse_return_tag(content, span).unwrap();
         assert_eq!(result.type_string.value, "array<int, (string|null)>");
         assert_eq!(result.type_string.span.start.offset, offset + 1);
-        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, (string|null)>".len());
+        assert_eq!(result.type_string.span.end.offset, offset + 1 + "array<int, (string|null)>".len() as u32);
         assert_eq!(result.description, "");
     }
 
@@ -854,7 +865,7 @@ mod tests {
         assert_eq!(result.name, "MyType");
         assert_eq!(result.type_string.value, "string");
         assert_eq!(result.type_string.span.start.offset, 8);
-        assert_eq!(result.type_string.span.end.offset, 8 + "string".len());
+        assert_eq!(result.type_string.span.end.offset, 8 + "string".len() as u32);
         assert_eq!(result.span, span);
     }
 

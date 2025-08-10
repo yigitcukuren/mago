@@ -60,7 +60,7 @@ pub enum FixOperation {
     /// Inserts new text at a specified position within the content.
     Insert {
         /// The position (in bytes) where the new text will be inserted.
-        offset: usize,
+        offset: u32,
         /// The text to be inserted.
         text: String,
         /// The safety classification of this operation. It indicates how safe it is to apply the insertion.
@@ -70,7 +70,7 @@ pub enum FixOperation {
     /// Replaces text in the specified range with new content.
     Replace {
         /// The range of text to be replaced, specified by start and end byte indices.
-        range: Range<usize>,
+        range: Range<u32>,
         /// The new text that will replace the text within the given range.
         text: String,
         /// The safety classification of this operation.
@@ -80,7 +80,7 @@ pub enum FixOperation {
     /// Deletes text within a specified range.
     Delete {
         /// The range of text to be deleted, specified by start and end byte indices.
-        range: Range<usize>,
+        range: Range<u32>,
         /// The safety classification of this operation.
         safety_classification: SafetyClassification,
     },
@@ -300,7 +300,7 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn insert(&mut self, offset: usize, text: impl Into<String>, safety: SafetyClassification) {
+    pub fn insert(&mut self, offset: u32, text: impl Into<String>, safety: SafetyClassification) {
         self.operation(FixOperation::Insert { offset, text: text.into(), safety_classification: safety })
     }
 
@@ -318,7 +318,7 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn replace(&mut self, range: Range<usize>, text: impl Into<String>, safety: SafetyClassification) {
+    pub fn replace(&mut self, range: Range<u32>, text: impl Into<String>, safety: SafetyClassification) {
         self.operation(FixOperation::Replace { range, text: text.into(), safety_classification: safety })
     }
 
@@ -335,7 +335,7 @@ impl FixPlan {
     /// # Returns
     ///
     /// The updated `FixPlan` instance.
-    pub fn delete(&mut self, range: Range<usize>, safety: SafetyClassification) {
+    pub fn delete(&mut self, range: Range<u32>, safety: SafetyClassification) {
         self.operation(FixOperation::Delete { range, safety_classification: safety })
     }
 
@@ -430,7 +430,7 @@ impl FixPlan {
 
         fix_overlapping_operations(&mut operations);
 
-        let content_len = content.len();
+        let content_len = content.len() as u32;
 
         // Adjust out-of-bounds operations
         operations = operations
@@ -496,7 +496,9 @@ impl FixPlan {
                             // Consume unchanged content up to the insert position
                             let end = offset.min(&content_len);
                             if current_position < *end {
-                                changes.push(Change::Unchanged(content[current_position..*end].to_string()));
+                                changes.push(Change::Unchanged(
+                                    content[current_position as usize..*end as usize].to_string(),
+                                ));
                                 current_position = *end;
                             }
                         }
@@ -506,7 +508,9 @@ impl FixPlan {
                             // Replace at the current position
                             let delete_len = range.end - current_position;
                             if delete_len > 0 {
-                                changes.push(Change::Deleted(content[current_position..range.end].to_string()));
+                                changes.push(Change::Deleted(
+                                    content[current_position as usize..range.end as usize].to_string(),
+                                ));
                             }
                             changes.push(Change::Inserted(text.clone()));
                             current_position = range.end;
@@ -515,7 +519,9 @@ impl FixPlan {
                             // Consume unchanged content up to the replace position
                             let end = range.start.min(content_len);
                             if current_position < end {
-                                changes.push(Change::Unchanged(content[current_position..end].to_string()));
+                                changes.push(Change::Unchanged(
+                                    content[current_position as usize..end as usize].to_string(),
+                                ));
                                 current_position = end;
                             }
                         }
@@ -525,7 +531,9 @@ impl FixPlan {
                             // Delete at the current position
                             let delete_len = range.end - current_position;
                             if delete_len > 0 {
-                                changes.push(Change::Deleted(content[current_position..range.end].to_string()));
+                                changes.push(Change::Deleted(
+                                    content[current_position as usize..range.end as usize].to_string(),
+                                ));
                             }
                             current_position = range.end;
                             op_iter.next();
@@ -533,7 +541,9 @@ impl FixPlan {
                             // Consume unchanged content up to the delete position
                             let end = range.start.min(content_len);
                             if current_position < end {
-                                changes.push(Change::Unchanged(content[current_position..end].to_string()));
+                                changes.push(Change::Unchanged(
+                                    content[current_position as usize..end as usize].to_string(),
+                                ));
                                 current_position = end;
                             }
                         }
@@ -542,7 +552,7 @@ impl FixPlan {
             } else {
                 // No more operations, consume remaining content
                 if current_position < content_len {
-                    changes.push(Change::Unchanged(content[current_position..].to_string()));
+                    changes.push(Change::Unchanged(content[current_position as usize..].to_string()));
                     current_position = content_len;
                 }
             }

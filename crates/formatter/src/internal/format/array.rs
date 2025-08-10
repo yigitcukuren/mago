@@ -221,10 +221,7 @@ pub(super) fn print_array_like<'a>(f: &mut FormatterState<'a>, array_like: Array
 #[inline]
 fn has_floating_comments<'a>(f: &mut FormatterState<'a>, array_like: &ArrayLike<'a>) -> bool {
     let has_comments = |prev: &ArrayElement, next: &ArrayElement| {
-        let start = prev.span().end;
-        let end = next.span().start;
-
-        f.has_inner_comment(Span::new(start, end))
+        f.has_inner_comment(Span::new(prev.span().file_id, prev.end_position(), next.start_position()))
     };
 
     for element in array_like.elements().windows(2) {

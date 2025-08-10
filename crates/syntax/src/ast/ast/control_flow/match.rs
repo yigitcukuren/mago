@@ -83,7 +83,7 @@ impl HasSpan for MatchArm {
 
 impl HasSpan for MatchExpressionArm {
     fn span(&self) -> Span {
-        Span::between(self.conditions.span(self.arrow.start), self.expression.span())
+        Span::between(self.conditions.span(self.arrow.file_id, self.arrow.start), self.expression.span())
     }
 }
 

@@ -1,3 +1,4 @@
+use mago_database::file::HasFileId;
 use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
@@ -259,7 +260,7 @@ impl MemberAccessChain<'_> {
             let first_op_start = first_access.get_operator_span().start;
 
             // Check for comments between base and first operator
-            if f.has_inner_comment(Span::new(base_end, first_op_start)) {
+            if f.has_inner_comment(Span::new(f.file_id(), base_end, first_op_start)) {
                 return true;
             }
         }
@@ -272,23 +273,24 @@ impl MemberAccessChain<'_> {
 
             let prev_access = &self.accesses[i - 1];
             let prev_selector = prev_access.get_selector();
-            let prev_end = match prev_access.get_arguments_list() {
-                Some(args) => args.span().end,
-                None => prev_selector.span().end,
+            let prev_span = match prev_access.get_arguments_list() {
+                Some(args) => args.span(),
+                None => prev_selector.span(),
             };
 
             let current_op_start = access.get_operator_span().start;
 
             // Check for comments between previous selector/args and current operator
-            if f.has_inner_comment(Span::new(prev_end, current_op_start)) {
+            if f.has_inner_comment(Span::new(prev_span.file_id, prev_span.end, current_op_start)) {
                 return true;
             }
 
             // Check for comments between operator and selector
-            let op_end = access.get_operator_span().end;
-            let selector_start = access.get_selector().span().start;
-
-            if f.has_inner_comment(Span::new(op_end, selector_start)) {
+            if f.has_inner_comment(Span::new(
+                access.get_operator_span().file_id,
+                access.get_operator_span().end_position(),
+                access.get_selector().span().start_position(),
+            )) {
                 return true;
             }
         }
@@ -486,7 +488,7 @@ pub(super) fn print_member_access_chain<'a>(
             should_reset = false;
             true
         } else {
-            f.has_inner_comment(Span::new(last_element_end, chain_link.get_operator_span().start))
+            f.has_inner_comment(Span::new(f.file_id(), last_element_end, chain_link.get_operator_span().start))
         };
 
         let mut contents = if must_have_new_line {

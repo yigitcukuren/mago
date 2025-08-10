@@ -27,9 +27,9 @@ impl Rule for NoMultiAssignmentsRule {
             return LintDirective::default();
         };
 
-        let a = &context.source_file.contents[assignment.lhs.span().to_range()];
-        let b = &context.source_file.contents[other_assignment.lhs.span().to_range()];
-        let c = &context.source_file.contents[other_assignment.rhs.span().to_range()];
+        let a = &context.source_file.contents[assignment.lhs.span().to_range_usize()];
+        let b = &context.source_file.contents[other_assignment.lhs.span().to_range_usize()];
+        let c = &context.source_file.contents[other_assignment.rhs.span().to_range_usize()];
 
         context.report(
             Issue::new(context.level(), "Avoid using multiple assignments in a single statement.")

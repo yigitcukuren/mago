@@ -1,3 +1,4 @@
+use mago_database::file::HasFileId;
 use mago_span::Span;
 
 use crate::ast::ast::*;
@@ -120,6 +121,6 @@ pub fn unexpected(stream: &mut TokenStream<'_, '_>, token: Option<Token>, one_of
     if let Some(token) = token {
         ParseError::UnexpectedToken(one_of.to_vec(), token.kind, token.span)
     } else {
-        ParseError::UnexpectedEndOfFile(one_of.to_vec(), stream.get_position())
+        ParseError::UnexpectedEndOfFile(one_of.to_vec(), stream.file_id(), stream.get_position())
     }
 }

@@ -1,3 +1,4 @@
+use mago_database::file::HasFileId;
 use memchr::memchr;
 use memchr::memmem::find;
 
@@ -15,6 +16,7 @@ pub struct Input<'a> {
     pub(crate) length: usize,
     pub(crate) offset: usize,
     pub(crate) starting_position: Position,
+    pub(crate) file_id: FileId,
 }
 
 impl<'a> Input<'a> {
@@ -31,7 +33,7 @@ impl<'a> Input<'a> {
     pub fn new(file_id: FileId, bytes: &'a [u8]) -> Self {
         let length = bytes.len();
 
-        Self { bytes, length, offset: 0, starting_position: Position::start_of(file_id) }
+        Self { bytes, length, offset: 0, file_id, starting_position: Position::new(0) }
     }
 
     /// Creates a new `Input` instance from the contents of a `File`.
@@ -59,24 +61,24 @@ impl<'a> Input<'a> {
     ///
     /// # Arguments
     ///
+    /// * `file_id` - The unique identifier for the source file this input belongs to.
     /// * `bytes` - A byte slice representing the input code subset to be lexed.
-    /// * `anchor_position` - The absolute `Position` in the original source file where
-    ///   the provided `bytes` slice begins.
+    /// * `anchor_position` - The absolute `Position` in the original source file where the provided `bytes` slice begins.
     ///
     /// # Returns
     ///
     /// A new `Input` instance ready to lex the `bytes`, maintaining positions
     /// relative to `anchor_position`.
-    pub fn anchored_at(bytes: &'a [u8], anchor_position: Position) -> Self {
+    pub fn anchored_at(file_id: FileId, bytes: &'a [u8], anchor_position: Position) -> Self {
         let length = bytes.len();
 
-        Self { bytes, length, offset: 0, starting_position: anchor_position }
+        Self { bytes, length, offset: 0, file_id, starting_position: anchor_position }
     }
 
     /// Returns the source file identifier of the input code.
     #[inline]
     pub const fn file_id(&self) -> FileId {
-        self.starting_position.file_id
+        self.file_id
     }
 
     /// Returns the absolute current `Position` of the lexer within the original source file.
@@ -86,7 +88,7 @@ impl<'a> Input<'a> {
     #[inline]
     pub const fn current_position(&self) -> Position {
         // Calculate absolute position by adding internal offset to the starting base
-        self.starting_position.forward(self.offset)
+        self.starting_position.forward(self.offset as u32)
     }
 
     /// Returns the current internal byte offset relative to the start of the input slice.
@@ -142,13 +144,13 @@ impl<'a> Input<'a> {
     ///
     /// A byte slice `&[u8]` corresponding to the requested range.
     #[inline]
-    pub fn slice_in_range(&self, from: usize, to: usize) -> &'a [u8] {
+    pub fn slice_in_range(&self, from: u32, to: u32) -> &'a [u8] {
         let base_offset = self.starting_position.offset;
 
         // Calculate the start and end positions relative to the local `bytes` slice.
         // `saturating_sub` prevents underflow if `from`/`to` are smaller than `base_offset`.
-        let local_from = from.saturating_sub(base_offset);
-        let local_to = to.saturating_sub(base_offset);
+        let local_from = from.saturating_sub(base_offset) as usize;
+        let local_to = to.saturating_sub(base_offset) as usize;
 
         // Clamp the local indices to the actual length of the `bytes` slice to prevent panics.
         let start = local_from.min(self.length);
@@ -472,6 +474,12 @@ impl<'a> Input<'a> {
     }
 }
 
+impl HasFileId for Input<'_> {
+    fn file_id(&self) -> FileId {
+        self.file_id
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use mago_span::Position;
@@ -483,7 +491,7 @@ mod tests {
         let bytes = b"Hello, world!";
         let input = Input::new(FileId::zero(), bytes);
 
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
+        assert_eq!(input.current_position(), Position::new(0));
         assert_eq!(input.length, bytes.len());
         assert_eq!(input.bytes, bytes);
     }
@@ -512,31 +520,31 @@ mod tests {
 
         // 'a'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 1));
+        assert_eq!(input.current_position(), Position::new(1));
 
         // '\n'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 2));
+        assert_eq!(input.current_position(), Position::new(2));
 
         // 'b'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 3));
+        assert_eq!(input.current_position(), Position::new(3));
 
         // '\r\n' should be treated as one newline
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 4));
+        assert_eq!(input.current_position(), Position::new(4));
 
         // 'c'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 5));
+        assert_eq!(input.current_position(), Position::new(5));
 
         // '\r'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 6));
+        assert_eq!(input.current_position(), Position::new(6));
 
         // 'd'
         input.next();
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 7));
+        assert_eq!(input.current_position(), Position::new(7));
     }
 
     #[test]
@@ -546,11 +554,11 @@ mod tests {
 
         let consumed = input.consume(3);
         assert_eq!(consumed, b"abc");
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 3));
+        assert_eq!(input.current_position(), Position::new(3));
 
         let consumed = input.consume(3);
         assert_eq!(consumed, b"def");
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 6));
+        assert_eq!(input.current_position(), Position::new(6));
 
         let consumed = input.consume(1); // Should return empty slice at EOF
         assert_eq!(consumed, b"");
@@ -575,7 +583,7 @@ mod tests {
 
         let read = input.read(3);
         assert_eq!(read, b"abc");
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
+        assert_eq!(input.current_position(), Position::new(0));
         // Position should not change
     }
 
@@ -608,7 +616,7 @@ mod tests {
 
         let peeked = input.peek(2, 3);
         assert_eq!(peeked, b"cde");
-        assert_eq!(input.current_position(), Position::new(FileId::zero(), 0));
+        assert_eq!(input.current_position(), Position::new(0));
         // Position should not change
     }
 

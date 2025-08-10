@@ -21,8 +21,8 @@ bitflags! {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Comment {
-    pub start: usize,
-    pub end: usize,
+    pub start: u32,
+    pub end: u32,
     pub is_block: bool,
     pub is_shell_comment: bool,
     pub is_single_line: bool,
@@ -30,7 +30,7 @@ pub struct Comment {
 }
 
 impl Comment {
-    pub fn new(start: usize, end: usize, is_block: bool, is_shell_comment: bool, is_single_line: bool) -> Self {
+    pub fn new(start: u32, end: u32, is_block: bool, is_shell_comment: bool, is_single_line: bool) -> Self {
         Self { start, end, is_block, is_shell_comment, is_single_line, has_line_suffix: false }
     }
 

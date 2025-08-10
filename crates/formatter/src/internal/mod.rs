@@ -2,6 +2,8 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 
 use mago_database::file::File;
+use mago_database::file::FileId;
+use mago_database::file::HasFileId;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
@@ -122,14 +124,15 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn nth_parent_kind(&self, n: usize) -> Option<Node<'a>> {
+    fn nth_parent_kind(&self, n: u32) -> Option<Node<'a>> {
+        let n = n as usize;
         let len = self.stack.len();
 
         (len > n).then(|| self.stack[len - n - 1])
     }
 
     #[inline]
-    fn is_previous_line_empty(&self, start_index: usize) -> bool {
+    fn is_previous_line_empty(&self, start_index: u32) -> bool {
         let idx = start_index - 1;
         let idx = self.skip_spaces(Some(idx), true);
         let idx = self.skip_newline(idx, true);
@@ -144,7 +147,7 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn is_next_line_empty_after_index(&self, start_index: usize) -> bool {
+    fn is_next_line_empty_after_index(&self, start_index: u32) -> bool {
         let mut old_idx = None;
         let mut idx = Some(start_index);
         while idx != old_idx {
@@ -159,28 +162,29 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn skip_inline_comments(&self, start_index: Option<usize>) -> Option<usize> {
+    fn skip_inline_comments(&self, start_index: Option<u32>) -> Option<u32> {
         let start_index = start_index?;
-        if start_index + 1 >= self.file.contents.len() {
+        let start_index_usize = start_index as usize;
+        if start_index_usize + 1 >= self.file.contents.len() {
             return Some(start_index); // Not enough characters to check for comment
         }
 
-        if self.file.contents[start_index..].starts_with("//")
-            || (self.file.contents[start_index..].starts_with("#")
-                && !self.file.contents[start_index + 1..].starts_with("["))
+        if self.file.contents[start_index_usize..].starts_with("//")
+            || (self.file.contents[start_index_usize..].starts_with("#")
+                && !self.file.contents[start_index_usize + 1..].starts_with("["))
         {
             return self.skip_everything_but_new_line(Some(start_index), false);
         }
 
-        if self.file.contents[start_index..].starts_with("/*") {
+        if self.file.contents[start_index_usize..].starts_with("/*") {
             // Find the closing */
-            if let Some(end_pos) = self.file.contents[start_index + 2..].find("*/") {
-                let end_index = start_index + 2 + end_pos + 2; // +2 for the "*/" itself
+            if let Some(end_pos) = self.file.contents[start_index_usize + 2..].find("*/") {
+                let end_index = start_index_usize + 2 + end_pos + 2; // +2 for the "*/" itself
 
                 // Check if there's a newline between /* and */
-                let comment_text = &self.file.contents[start_index..end_index];
+                let comment_text = &self.file.contents[start_index_usize..end_index];
                 if !comment_text.contains('\n') && !comment_text.contains('\r') {
-                    return Some(end_index);
+                    return Some(end_index as u32);
                 }
 
                 // If there's a newline, we don't consider it an inline comment
@@ -192,38 +196,38 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn skip_to_line_end(&self, start_index: Option<usize>) -> Option<usize> {
+    fn skip_to_line_end(&self, start_index: Option<u32>) -> Option<u32> {
         let mut index = self.skip(start_index, false, |c| matches!(c, b' ' | b'\t' | b',' | b';'));
         index = self.skip_inline_comments(index);
         index
     }
 
     #[inline]
-    fn skip_spaces(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
+    fn skip_spaces(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
         self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t'))
     }
 
     #[inline]
-    fn skip_spaces_and_new_lines(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
+    fn skip_spaces_and_new_lines(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
         self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t' | b'\r' | b'\n'))
     }
 
     #[inline]
-    fn skip_everything_but_new_line(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
+    fn skip_everything_but_new_line(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
         self.skip(start_index, backwards, |c| !matches!(c, b'\r' | b'\n'))
     }
 
     #[inline]
-    fn skip<F>(&self, start_index: Option<usize>, backwards: bool, f: F) -> Option<usize>
+    fn skip<F>(&self, start_index: Option<u32>, backwards: bool, f: F) -> Option<u32>
     where
         F: Fn(u8) -> bool,
     {
-        let start_index = start_index?;
+        let start_index = start_index? as usize;
         let mut index = start_index;
         if backwards {
             for c in self.file.contents[..=start_index].bytes().rev() {
                 if !f(c) {
-                    return Some(index);
+                    return Some(index as u32);
                 }
                 index -= 1;
             }
@@ -231,9 +235,10 @@ impl<'a> FormatterState<'a> {
             let source_bytes = self.file.contents.as_bytes();
             let text_len = source_bytes.len();
             while index < text_len {
-                if !f(source_bytes[index]) {
-                    return Some(index);
+                if !f(source_bytes[index as usize]) {
+                    return Some(index as u32);
                 }
+
                 index += 1;
             }
         }
@@ -242,12 +247,13 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn skip_newline(&self, start_index: Option<usize>, backwards: bool) -> Option<usize> {
+    fn skip_newline(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
         let start_index = start_index?;
+        let start_index_usize = start_index as usize;
         let c = if backwards {
-            self.file.contents[..=start_index].bytes().next_back()
+            self.file.contents[..=start_index_usize].bytes().next_back()
         } else {
-            self.file.contents[start_index..].bytes().next()
+            self.file.contents[start_index_usize..].bytes().next()
         }?;
 
         if matches!(c, b'\n') {
@@ -255,7 +261,7 @@ impl<'a> FormatterState<'a> {
         }
 
         if matches!(c, b'\r') {
-            let next_index = if backwards { start_index - 1 } else { start_index + 1 };
+            let next_index = if backwards { start_index_usize - 1 } else { start_index_usize + 1 };
             let next_c = if backwards {
                 self.file.contents[..=next_index].bytes().next_back()
             } else {
@@ -271,8 +277,8 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn has_newline(&self, start_index: usize, backwards: bool) -> bool {
-        if (backwards && start_index == 0) || (!backwards && start_index == self.file.contents.len()) {
+    fn has_newline(&self, start_index: u32, backwards: bool) -> bool {
+        if (backwards && start_index == 0) || (!backwards && (start_index as usize) == self.file.contents.len()) {
             return false;
         }
         let start_index = if backwards { start_index - 1 } else { start_index };
@@ -318,5 +324,11 @@ impl<'a> FormatterState<'a> {
         }
 
         &s[position..]
+    }
+}
+
+impl HasFileId for FormatterState<'_> {
+    fn file_id(&self) -> FileId {
+        self.file.id
     }
 }

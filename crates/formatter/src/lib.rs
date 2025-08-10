@@ -82,7 +82,7 @@ impl<'a> Formatter<'a> {
     /// This is useful if you have already parsed the code and want to avoid re-parsing.
     pub fn format(&self, file: &'a File, program: &'a Program) -> String {
         let document = self.build(file, program);
-        self.print(document, Some(file.size))
+        self.print(document, Some(file.size as usize))
     }
 
     /// Converts a program's AST into a structured [`Document`] model.

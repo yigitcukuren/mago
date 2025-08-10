@@ -74,8 +74,10 @@ impl Rule for NoHashEmojiRule {
             }
 
             context.propose(issue, |plan| {
+                let trivia_span = trivia.span();
+
                 plan.replace(
-                    trivia.span().start.offset..(trivia.span().start.offset + "#️⃣".len()),
+                    trivia_span.start.offset..(trivia_span.start.offset + "#️⃣".len() as u32),
                     "#".to_string(),
                     SafetyClassification::Safe,
                 );

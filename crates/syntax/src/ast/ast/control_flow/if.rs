@@ -187,7 +187,9 @@ impl HasSpan for IfStatementBody {
 
         Span::between(
             span,
-            self.else_clause.as_ref().map_or_else(|| self.else_if_clauses.span(span.end), |r#else| r#else.span()),
+            self.else_clause
+                .as_ref()
+                .map_or_else(|| self.else_if_clauses.span(span.file_id, span.end), |r#else| r#else.span()),
         )
     }
 }
@@ -212,12 +214,12 @@ impl HasSpan for IfColonDelimitedBody {
 
 impl HasSpan for IfColonDelimitedBodyElseIfClause {
     fn span(&self) -> Span {
-        Span::between(self.elseif.span(), self.statements.span(self.colon.end))
+        Span::between(self.elseif.span(), self.statements.span(self.colon.file_id, self.colon.end))
     }
 }
 
 impl HasSpan for IfColonDelimitedBodyElseClause {
     fn span(&self) -> Span {
-        Span::between(self.r#else.span(), self.statements.span(self.colon.end))
+        Span::between(self.r#else.span(), self.statements.span(self.colon.file_id, self.colon.end))
     }
 }

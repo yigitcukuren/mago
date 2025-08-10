@@ -462,7 +462,7 @@ fn report_access_on_null(
                             )
                             .with_note("If this expression is `null` at runtime, PHP will raise a warning and the property access will result in `null`.")
                             .with_help("Use the nullsafe operator (`?->`) to safely access the property, or add a check to ensure the value is not `null` (e.g., `if ($obj !== null)`).")
-                            .with_suggestion(operator_span.start.file_id, {
+                            .with_suggestion(operator_span.file_id, {
                                 let mut plan = FixPlan::new();
                                 plan.replace(operator_span.to_range(), "?->", SafetyClassification::Safe);
 

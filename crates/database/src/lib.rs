@@ -80,7 +80,7 @@ impl Database {
             && let Some(file) = Arc::get_mut(file)
         {
             file.contents = new_contents;
-            file.size = file.contents.len();
+            file.size = file.contents.len() as u32;
             file.lines = line_starts(file.contents.as_ref()).collect();
             return true;
         }

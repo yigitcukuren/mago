@@ -22,7 +22,7 @@ pub enum HaltStage {
 #[serde(tag = "type", content = "value")]
 pub enum Interpolation {
     None,
-    Until(usize),
+    Until(u32),
 }
 
 /// Represents the different modes the lexer can be in while tokenizing PHP code.

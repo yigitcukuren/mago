@@ -277,7 +277,7 @@ pub fn get_index_id(
 pub fn get_function_like_id_from_call(
     call: &Call,
     resolved_names: &ResolvedNames,
-    expression_types: &HashMap<(usize, usize), Rc<TUnion>>,
+    expression_types: &HashMap<(u32, u32), Rc<TUnion>>,
 ) -> Option<FunctionLikeIdentifier> {
     get_static_functionlike_id_from_call(call, resolved_names)
         .or_else(|| get_method_id_from_call(call, expression_types))
@@ -311,7 +311,7 @@ pub fn get_static_functionlike_id_from_call(
 
 pub fn get_method_id_from_call(
     call: &Call,
-    expression_types: &HashMap<(usize, usize), Rc<TUnion>>,
+    expression_types: &HashMap<(u32, u32), Rc<TUnion>>,
 ) -> Option<FunctionLikeIdentifier> {
     match call {
         Call::Method(MethodCall { object, method: ClassLikeMemberSelector::Identifier(method), .. })

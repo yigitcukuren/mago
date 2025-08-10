@@ -1,6 +1,7 @@
 use std::slice::Iter;
 use std::vec::IntoIter;
 
+use mago_database::file::FileId;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -85,8 +86,8 @@ impl<T: HasSpan> Sequence<T> {
 
     #[inline]
     #[must_use]
-    pub fn span(&self, from: Position) -> Span {
-        self.last_span().map_or(Span::new(from, from), |span| Span::new(from, span.end))
+    pub fn span(&self, file_id: FileId, from: Position) -> Span {
+        self.last_span().map_or(Span::new(file_id, from, from), |span| Span::new(file_id, from, span.end))
     }
 
     #[inline]
@@ -172,10 +173,10 @@ impl<T: HasSpan> TokenSeparatedSequence<T> {
     }
 
     #[inline]
-    pub fn span(&self, from: Position) -> Span {
+    pub fn span(&self, file_id: FileId, from: Position) -> Span {
         match (self.first_span(), self.last_span()) {
-            (Some(first), Some(last)) => Span::new(first.start, last.end),
-            _ => Span::new(from, from),
+            (Some(first), Some(last)) => Span::new(file_id, first.start, last.end),
+            _ => Span::new(file_id, from, from),
         }
     }
 

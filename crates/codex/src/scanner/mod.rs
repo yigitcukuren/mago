@@ -153,7 +153,7 @@ impl MutWalker<Context<'_>> for Scanner {
     fn walk_in_closure(&mut self, closure: &Closure, context: &mut Context<'_>) {
         let span = closure.span();
 
-        let file_ref = context.interner.intern(span.start.file_id.to_string());
+        let file_ref = context.interner.intern(span.file_id.to_string());
         let closure_ref = context.interner.intern(span.start.to_string());
         let identifier = (file_ref, closure_ref);
 
@@ -182,7 +182,7 @@ impl MutWalker<Context<'_>> for Scanner {
     fn walk_in_arrow_function(&mut self, arrow_function: &ArrowFunction, context: &mut Context<'_>) {
         let span = arrow_function.span();
 
-        let file_ref = context.interner.intern(span.start.file_id.to_string());
+        let file_ref = context.interner.intern(span.file_id.to_string());
         let closure_ref = context.interner.intern(span.start.to_string());
         let identifier = (file_ref, closure_ref);
 

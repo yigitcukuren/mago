@@ -48,7 +48,7 @@ impl HasSpan for Implements {
     fn span(&self) -> Span {
         let span = self.implements.span();
 
-        Span::between(span, self.types.span(span.end))
+        Span::between(span, self.types.span(span.file_id, span.end))
     }
 }
 
@@ -56,6 +56,6 @@ impl HasSpan for Extends {
     fn span(&self) -> Span {
         let span = self.extends.span();
 
-        Span::between(span, self.types.span(span.end))
+        Span::between(span, self.types.span(span.file_id, span.end))
     }
 }

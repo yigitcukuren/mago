@@ -70,7 +70,7 @@ pub struct AnalysisResults {
     /// - `byte_offset` indicates where in the source the name is used,
     /// - `identifier` is the [`StringIdentifier`] for the interned name,
     /// - `imported` indicates whether this name was imported or locally declared.
-    pub names: HashSet<(usize, (StringIdentifier, bool))>,
+    pub names: HashSet<(u32, (StringIdentifier, bool))>,
 
     /// The formatted version of the source code, if there were no parse errors.
     ///

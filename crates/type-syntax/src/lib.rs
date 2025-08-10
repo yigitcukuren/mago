@@ -31,7 +31,7 @@ pub mod token;
 /// * `Err(ParseError)` if any lexing or parsing error occurs.
 pub fn parse_str(span: Span, input: &str) -> Result<Type<'_>, ParseError> {
     // Create an Input anchored at the type string's original starting position.
-    let input = Input::anchored_at(input.as_bytes(), span.start);
+    let input = Input::anchored_at(span.file_id, input.as_bytes(), span.start);
     // Create the type-specific lexer.
     let lexer = TypeLexer::new(input);
     // Construct the type AST using the lexer.
@@ -40,6 +40,8 @@ pub fn parse_str(span: Span, input: &str) -> Result<Type<'_>, ParseError> {
 
 #[cfg(test)]
 mod tests {
+    use mago_database::file::FileId;
+    use mago_span::Position;
     use mago_span::Span;
 
     use crate::ast::*;
@@ -47,7 +49,7 @@ mod tests {
     use super::*;
 
     fn do_parse(input: &str) -> Result<Type<'_>, ParseError> {
-        parse_str(Span::dummy(0, input.len()), input)
+        parse_str(Span::new(FileId::zero(), Position::new(0), Position::new(input.len() as u32)), input)
     }
 
     #[test]

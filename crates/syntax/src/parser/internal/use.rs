@@ -1,3 +1,5 @@
+use mago_database::file::HasFileId;
+
 use crate::T;
 use crate::ast::ast::*;
 use crate::ast::sequence::TokenSeparatedSequence;
@@ -47,7 +49,7 @@ pub fn parse_use_item_sequence(stream: &mut TokenStream<'_, '_>) -> Result<UseIt
         }
     }
 
-    Ok(UseItemSequence { start, items: TokenSeparatedSequence::new(items, commas) })
+    Ok(UseItemSequence { file_id: stream.file_id(), start, items: TokenSeparatedSequence::new(items, commas) })
 }
 
 pub fn parse_typed_use_item_sequence(stream: &mut TokenStream<'_, '_>) -> Result<TypedUseItemSequence, ParseError> {

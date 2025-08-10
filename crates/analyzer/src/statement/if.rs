@@ -678,7 +678,7 @@ fn analyze_else_if_clause<'a>(
             .reconciled_expression_clauses
             .iter()
             .map(|clause| clause.hash)
-            .collect::<HashSet<usize>>();
+            .collect::<HashSet<u32>>();
 
         else_if_block_context.clauses.retain(|clause| !reconciled_expression_clauses.contains(&clause.hash));
     }
@@ -1104,7 +1104,7 @@ fn add_conditionally_assigned_variables_to_context<'a>(
     post_leaving_if_block_context: &mut BlockContext<'a>,
     post_if_block_context: &mut BlockContext<'a>,
     condition: &Expression,
-    assigned_in_conditional_variable_ids: &HashMap<String, usize>,
+    assigned_in_conditional_variable_ids: &HashMap<String, u32>,
 ) -> Result<(), AnalysisError> {
     let negated_expression = Expression::UnaryPrefix(UnaryPrefix {
         operator: UnaryPrefixOperator::Not(condition.span()),
@@ -1127,7 +1127,7 @@ fn update_if_scope<'a>(
     if_scope: &mut IfScope,
     if_block_context: &mut BlockContext<'a>,
     outer_block_context: &mut BlockContext<'a>,
-    new_assigned_variable_ids: HashMap<String, usize>,
+    new_assigned_variable_ids: HashMap<String, u32>,
     new_possibly_assigned_variable_ids: HashSet<String>,
     newly_reconciled_variable_ids: HashSet<String>,
     update_new_variables: bool,

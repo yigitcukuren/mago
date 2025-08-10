@@ -1,16 +1,15 @@
 use std::borrow::Cow;
 use std::path::PathBuf;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use mago_database::DatabaseReader;
 use mago_database::ReadDatabase;
 use mago_database::error::DatabaseError;
 use mago_database::file::FileId;
 use mago_database::file::FileType;
-use serde::Deserialize;
-use serde::Serialize;
-
 use mago_fixer::FixPlan;
-use mago_span::Position;
 use mago_span::Span;
 
 use crate::Annotation;
@@ -28,21 +27,21 @@ pub struct ExpandedFileId {
     pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<PathBuf>,
-    pub size: usize,
+    pub size: u32,
     pub file_type: FileType,
 }
 
 /// Expanded representation of a position within a file.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ExpandedPosition {
-    pub file_id: ExpandedFileId,
-    pub offset: usize,
-    pub line: usize,
+    pub offset: u32,
+    pub line: u32,
 }
 
 /// Expanded representation of a span, including start and end positions.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct ExpandedSpan {
+    pub file_id: ExpandedFileId,
     pub start: ExpandedPosition,
     pub end: ExpandedPosition,
 }
@@ -98,21 +97,15 @@ impl Expandable<ExpandedFileId> for FileId {
     }
 }
 
-impl Expandable<ExpandedPosition> for Position {
-    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedPosition, DatabaseError> {
+impl Expandable<ExpandedSpan> for Span {
+    fn expand(&self, database: &ReadDatabase) -> Result<ExpandedSpan, DatabaseError> {
         let file = database.get_by_id(&self.file_id)?;
 
-        Ok(ExpandedPosition {
+        Ok(ExpandedSpan {
             file_id: self.file_id.expand(database)?,
-            offset: self.offset,
-            line: file.line_number(self.offset),
+            start: ExpandedPosition { offset: self.start.offset, line: file.line_number(self.start.offset) },
+            end: ExpandedPosition { offset: self.end.offset, line: file.line_number(self.end.offset) },
         })
-    }
-}
-
-impl Expandable<ExpandedSpan> for Span {
-    fn expand(&self, manager: &ReadDatabase) -> Result<ExpandedSpan, DatabaseError> {
-        Ok(ExpandedSpan { start: self.start.expand(manager)?, end: self.end.expand(manager)? })
     }
 }
 

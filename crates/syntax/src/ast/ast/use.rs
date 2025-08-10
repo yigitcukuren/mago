@@ -1,3 +1,4 @@
+use mago_database::file::FileId;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
@@ -39,6 +40,7 @@ pub enum UseType {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct UseItemSequence {
+    pub file_id: FileId,
     pub start: Position,
     pub items: TokenSeparatedSequence<UseItem>,
 }
@@ -126,13 +128,15 @@ impl HasSpan for UseType {
 
 impl HasSpan for UseItemSequence {
     fn span(&self) -> Span {
-        self.items.span(self.start)
+        self.items.span(self.file_id, self.start)
     }
 }
 
 impl HasSpan for TypedUseItemSequence {
     fn span(&self) -> Span {
-        self.r#type.span().join(self.items.span(self.r#type.span().end))
+        let types_span = self.r#type.span();
+
+        types_span.join(self.items.span(types_span.file_id, types_span.end))
     }
 }
 

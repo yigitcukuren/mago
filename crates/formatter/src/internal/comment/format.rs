@@ -58,7 +58,7 @@ impl<'a> FormatterState<'a> {
 
                     should_break = false;
                 } else if range.end.offset < comment.start
-                    && self.file.contents[range.end.offset..comment.start]
+                    && self.file.contents[range.end.offset as usize..comment.start as usize]
                         .chars()
                         .all(|c| c == ' ' || c == ';' || c == ',')
                 {
@@ -173,11 +173,15 @@ impl<'a> FormatterState<'a> {
     pub(crate) fn print_trailing_comments(&mut self, range: Span) -> Option<Document<'a>> {
         let mut parts = vec![];
         let mut previous_comment: Option<Comment> = None;
+
+        let end_index = range.end.offset as usize;
         while let Some(comment) = self.comments.peek() {
             let comment = Comment::from_trivia(self.file, comment);
             // Trailing comment if there is nothing in between.
             if range.end.offset < comment.start
-                && self.file.contents[range.end.offset..comment.start].chars().all(|c| c == ' ' || c == ';' || c == ',')
+                && self.file.contents[end_index..comment.start as usize]
+                    .chars()
+                    .all(|c| c == ' ' || c == ';' || c == ',')
             {
                 self.comments.next();
                 let previous = self.print_trailing_comment(&mut parts, comment, previous_comment);
@@ -318,7 +322,7 @@ impl<'a> FormatterState<'a> {
 
     #[must_use]
     fn print_comment(&self, comment: Comment) -> Document<'a> {
-        let mut content = &self.file.contents[comment.start..comment.end];
+        let mut content = &self.file.contents[comment.start as usize..comment.end as usize];
 
         if comment.is_inline_comment() {
             if !comment.is_single_line {

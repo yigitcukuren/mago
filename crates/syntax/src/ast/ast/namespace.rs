@@ -83,6 +83,8 @@ impl HasSpan for NamespaceBody {
 
 impl HasSpan for NamespaceImplicitBody {
     fn span(&self) -> Span {
-        self.terminator.span().join(self.statements.span(self.terminator.span().end))
+        let terminator_span = self.terminator.span();
+
+        terminator_span.join(self.statements.span(terminator_span.file_id, terminator_span.end))
     }
 }

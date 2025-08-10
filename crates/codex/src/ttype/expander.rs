@@ -464,8 +464,8 @@ pub fn get_signature_of_function_like_identifier(
                 &TypeExpansionOptions::default(),
             )
         }
-        FunctionLikeIdentifier::Closure(position) => {
-            let function_like_metadata = get_closure(codebase, interner, position)?;
+        FunctionLikeIdentifier::Closure(file_id, position) => {
+            let function_like_metadata = get_closure(codebase, interner, file_id, position)?;
 
             get_signature_of_function_like_metadata(
                 function_like_identifier,
@@ -544,8 +544,8 @@ pub fn get_signature_of_function_like_metadata(
         .with_return_type(return_type)
         .with_source(Some(*function_like_identifier));
 
-    if let FunctionLikeIdentifier::Closure(closure_position) = function_like_identifier {
-        signature = signature.with_closure_position(Some(*closure_position));
+    if let FunctionLikeIdentifier::Closure(file_id, closure_position) = function_like_identifier {
+        signature = signature.with_closure_location(Some((*file_id, *closure_position)));
     }
 
     signature

@@ -15,7 +15,7 @@ use mago_span::Span;
 pub struct Clause {
     pub condition_span: Span,
     pub span: Span,
-    pub hash: usize,
+    pub hash: u32,
     pub possibilities: IndexMap<String, IndexMap<u64, Assertion>>,
     pub wedge: bool,
     pub reconcilable: bool,
@@ -174,7 +174,7 @@ fn get_hash(
     clause_span: Span,
     wedge: bool,
     reconcilable: bool,
-) -> usize {
+) -> u32 {
     if wedge || !reconcilable {
         (Wrapping(clause_span.start.offset)
             + Wrapping(clause_span.end.offset)
@@ -192,6 +192,6 @@ fn get_hash(
             }
         }
 
-        hasher.finish() as usize
+        hasher.finish() as u32
     }
 }

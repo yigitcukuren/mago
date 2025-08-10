@@ -22,9 +22,8 @@ pub fn check_for_paradox(
     formula_2: &[Clause],
     span: Span,
 ) {
-    let formula_1_hashes: HashMap<usize, Span> =
-        HashMap::from_iter(formula_1.iter().map(|c| (c.hash, c.condition_span)));
-    let mut formula_2_hashes: HashMap<usize, Span> = HashMap::default();
+    let formula_1_hashes: HashMap<u32, Span> = HashMap::from_iter(formula_1.iter().map(|c| (c.hash, c.condition_span)));
+    let mut formula_2_hashes: HashMap<u32, Span> = HashMap::default();
 
     for formula_2_clause in formula_2 {
         if !formula_2_clause.generated

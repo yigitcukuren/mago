@@ -16,10 +16,10 @@ use crate::error::Error;
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct BaselineSourceIssue {
     pub code: String,
-    pub start_line: usize,
-    pub start_column: usize,
-    pub end_line: usize,
-    pub end_column: usize,
+    pub start_line: u32,
+    pub start_column: u32,
+    pub end_line: u32,
+    pub end_column: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -47,7 +47,7 @@ pub fn generate_baseline_from_issues(issues: IssueCollection, database: &ReadDat
 
         let start = annotation.span.start;
         let end = annotation.span.end;
-        let source_file = database.get_by_id(&start.file_id)?;
+        let source_file = database.get_by_id(&annotation.span.file_id)?;
 
         let entry = baseline.entries.entry(source_file.name.clone()).or_insert_with(|| {
             let content_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
@@ -125,7 +125,7 @@ pub fn filter_issues(
             continue;
         };
 
-        let source_file = database.get_by_id(&annotation.span.start.file_id)?;
+        let source_file = database.get_by_id(&annotation.span.file_id)?;
 
         let Some((baseline_hash, baseline_issue_set)) = baseline_sets.get(&source_file.name) else {
             // File is not in the baseline, so the issue is new.

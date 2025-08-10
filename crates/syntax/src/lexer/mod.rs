@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+use mago_database::file::FileId;
+use mago_database::file::HasFileId;
 use mago_interner::ThreadedInterner;
 use mago_span::Position;
 use mago_span::Span;
@@ -280,7 +282,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
                         if !terminated {
                             self.input.consume(length);
 
-                            return Some(Err(SyntaxError::UnexpectedEndOfFile(self.input.current_position())));
+                            return Some(Err(SyntaxError::UnexpectedEndOfFile(
+                                self.file_id(),
+                                self.input.current_position(),
+                            )));
                         }
 
                         if !is_multiline && asterisk == &b'*' {
@@ -557,7 +562,11 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     }
                     [b'.', ..] => (TokenKind::Dot, 1),
                     [unknown_byte, ..] => {
-                        return Some(Err(SyntaxError::UnrecognizedToken(*unknown_byte, self.input.current_position())));
+                        return Some(Err(SyntaxError::UnrecognizedToken(
+                            self.file_id(),
+                            *unknown_byte,
+                            self.input.current_position(),
+                        )));
                     }
                     [] => {
                         // we check for EOF before entering scripting section,
@@ -883,6 +892,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                             self.token(TokenKind::LeftParenthesis, buffer, start, end)
                         } else {
                             Some(Err(SyntaxError::UnexpectedToken(
+                                self.file_id(),
                                 self.input.read(1)[0],
                                 self.input.current_position(),
                             )))
@@ -898,6 +908,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                             self.token(TokenKind::RightParenthesis, buffer, start, end)
                         } else {
                             Some(Err(SyntaxError::UnexpectedToken(
+                                self.file_id(),
                                 self.input.read(1)[0],
                                 self.input.current_position(),
                             )))
@@ -920,6 +931,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
                             self.token(TokenKind::CloseTag, buffer, start, end)
                         } else {
                             Some(Err(SyntaxError::UnexpectedToken(
+                                self.file_id(),
                                 self.input.read(1)[0],
                                 self.input.current_position(),
                             )))
@@ -933,13 +945,17 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
     #[inline]
     fn token(&mut self, kind: TokenKind, v: &[u8], from: Position, to: Position) -> Option<Result<Token, SyntaxError>> {
-        Some(Ok(Token { kind, value: self.interner.intern(String::from_utf8_lossy(v)), span: Span::new(from, to) }))
+        Some(Ok(Token {
+            kind,
+            value: self.interner.intern(String::from_utf8_lossy(v)),
+            span: Span::new(self.file_id(), from, to),
+        }))
     }
 
     #[inline]
     fn interpolation(
         &mut self,
-        end_offset: usize,
+        end_offset: u32,
         post_interpolation_mode: LexerMode<'a>,
     ) -> Option<Result<Token, SyntaxError>> {
         self.mode = LexerMode::Script;
@@ -962,6 +978,13 @@ impl<'a, 'i> Lexer<'a, 'i> {
         self.interpolating = was_interpolating;
 
         self.advance()
+    }
+}
+
+impl HasFileId for Lexer<'_, '_> {
+    #[inline]
+    fn file_id(&self) -> FileId {
+        self.input.file_id()
     }
 }
 
@@ -1280,7 +1303,7 @@ fn read_literal_string(input: &Input, quote: &u8) -> (TokenKind, usize) {
 }
 
 #[inline]
-fn read_until_end_of_variable_interpolation(input: &Input, from: usize) -> usize {
+fn read_until_end_of_variable_interpolation(input: &Input, from: usize) -> u32 {
     let total = input.len();
     let base = input.current_offset();
     // `offset` is relative to the current position.
@@ -1362,11 +1385,11 @@ fn read_until_end_of_variable_interpolation(input: &Input, from: usize) -> usize
         break;
     }
 
-    offset
+    offset as u32
 }
 
 #[inline]
-fn read_until_end_of_brace_interpolation(input: &Input, from: usize) -> usize {
+fn read_until_end_of_brace_interpolation(input: &Input, from: usize) -> u32 {
     let total = input.len();
     let base = input.current_offset();
     let mut offset = from;
@@ -1396,5 +1419,5 @@ fn read_until_end_of_brace_interpolation(input: &Input, from: usize) -> usize {
         }
     }
 
-    offset
+    offset as u32
 }

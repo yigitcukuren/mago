@@ -45,8 +45,9 @@ impl Rule for NoTrailingWhitespaceRule {
                     let whitespace_start = offset + trimmed_length;
 
                     let whitespace_span = Span::new(
-                        comment_span.start.forward(whitespace_start),
-                        comment_span.start.forward(whitespace_start + trailing_whitespace_length),
+                        comment_span.file_id,
+                        comment_span.start.forward(whitespace_start as u32),
+                        comment_span.start.forward(whitespace_start as u32 + trailing_whitespace_length as u32),
                     );
 
                     issues.push(

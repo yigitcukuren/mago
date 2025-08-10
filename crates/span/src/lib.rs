@@ -14,15 +14,10 @@ use mago_database::file::FileId;
 use mago_database::file::HasFileId;
 
 /// Represents a specific byte offset within a single source file.
-///
-/// This struct combines a [`FileId`] with a zero-based `offset` to create a
-/// precise, unique location pointer.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct Position {
-    /// The unique identifier of the file this position belongs to.
-    pub file_id: FileId,
-    /// The zero-based byte offset from the beginning of the file.
-    pub offset: usize,
+    pub offset: u32,
 }
 
 /// Represents a contiguous range of source code within a single file.
@@ -31,9 +26,11 @@ pub struct Position {
 /// (inclusive) and end (exclusive) of a source code segment.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct Span {
-    /// The starting position of the span (inclusive).
+    /// The unique identifier of the file this span belongs to.
+    pub file_id: FileId,
+    /// The start position is inclusive, meaning it includes the byte at this position.
     pub start: Position,
-    /// The ending position of the span (exclusive).
+    /// The end position is exclusive, meaning it does not include the byte at this position.
     pub end: Position,
 }
 
@@ -44,7 +41,7 @@ pub trait HasPosition {
 
     /// A convenience method to get the byte offset of the position.
     #[inline]
-    fn offset(&self) -> usize {
+    fn offset(&self) -> u32 {
         self.position().offset
     }
 }
@@ -66,39 +63,37 @@ pub trait HasSpan {
 }
 
 impl Position {
-    /// Creates a new `Position` from a file ID and a byte offset.
-    pub fn new(file_id: FileId, offset: usize) -> Self {
-        Self { file_id, offset }
+    /// Creates a new `Position` from a byte offset.
+    pub const fn new(offset: u32) -> Self {
+        Self { offset }
     }
 
-    /// Creates a "dummy" position with a null file ID.
-    ///
-    /// This is useful for generated code or locations that don't map to a real file.
-    pub fn dummy(offset: usize) -> Self {
-        Self::new(FileId::zero(), offset)
+    /// Creates a new `Position` with an offset of zero.
+    pub const fn zero() -> Self {
+        Self { offset: 0 }
     }
 
-    /// Creates a position at the very beginning of a file.
-    pub fn start_of(file_id: FileId) -> Self {
-        Self::new(file_id, 0)
+    /// Checks if this position is at the start of a file.
+    pub const fn is_zero(&self) -> bool {
+        self.offset == 0
     }
 
     /// Returns a new position moved forward by the given offset.
     ///
     /// Uses saturating arithmetic to prevent overflow.
-    pub const fn forward(&self, offset: usize) -> Self {
-        Self { file_id: self.file_id, offset: self.offset.saturating_add(offset) }
+    pub const fn forward(&self, offset: u32) -> Self {
+        Self { offset: self.offset.saturating_add(offset) }
     }
 
     /// Returns a new position moved backward by the given offset.
     ///
     /// Uses saturating arithmetic to prevent underflow.
-    pub fn backward(&self, offset: usize) -> Self {
-        Self { file_id: self.file_id, offset: self.offset.saturating_sub(offset) }
+    pub const fn backward(&self, offset: u32) -> Self {
+        Self { offset: self.offset.saturating_sub(offset) }
     }
 
-    /// Creates a `Range<usize>` starting at this position's offset with a given length.
-    pub fn range_for(&self, length: usize) -> Range<usize> {
+    /// Creates a `Range<u32>` starting at this position's offset with a given length.
+    pub const fn range_for(&self, length: u32) -> Range<u32> {
         self.offset..self.offset.saturating_add(length)
     }
 }
@@ -110,17 +105,13 @@ impl Span {
     ///
     /// In debug builds, this will panic if the start and end positions are not
     /// from the same file (unless one is a dummy position).
-    pub fn new(start: Position, end: Position) -> Self {
-        debug_assert!(
-            start.file_id.is_zero() || end.file_id.is_zero() || start.file_id == end.file_id,
-            "span start and end must be in the same file",
-        );
-        Self { start, end }
+    pub fn new(file_id: FileId, start: Position, end: Position) -> Self {
+        Self { file_id, start, end }
     }
 
     /// Creates a "dummy" span with a null file ID.
-    pub fn dummy(start_offset: usize, end_offset: usize) -> Self {
-        Self::new(Position::dummy(start_offset), Position::dummy(end_offset))
+    pub fn dummy(start_offset: u32, end_offset: u32) -> Self {
+        Self::new(FileId::zero(), Position::new(start_offset), Position::new(end_offset))
     }
 
     /// Creates a new span that starts at the beginning of the first span
@@ -132,25 +123,25 @@ impl Span {
     /// Creates a new span that encompasses both `self` and `other`.
     /// The new span starts at `self.start` and ends at `other.end`.
     pub fn join(self, other: Span) -> Span {
-        Span::new(self.start, other.end)
+        Span::new(self.file_id, self.start, other.end)
     }
 
     /// Creates a new span that starts at the beginning of this span
     /// and ends at the specified position.
     pub fn to_end(&self, end: Position) -> Span {
-        Span::new(self.start, end)
+        Span::new(self.file_id, self.start, end)
     }
 
     /// Creates a new span that starts at the specified position
     /// and ends at the end of this span.
     pub fn from_start(&self, start: Position) -> Span {
-        Span::new(start, self.end)
+        Span::new(self.file_id, start, self.end)
     }
 
     /// Creates a new span that is a subspan of this span, defined by the given byte offsets.
     /// The `start` and `end` parameters are relative to the start of this span.
-    pub fn subspan(&self, start: usize, end: usize) -> Span {
-        Span::new(self.start.forward(start), self.start.forward(end))
+    pub fn subspan(&self, start: u32, end: u32) -> Span {
+        Span::new(self.file_id, self.start.forward(start), self.start.forward(end))
     }
 
     /// Checks if a position is contained within this span's byte offsets.
@@ -159,22 +150,30 @@ impl Span {
     }
 
     /// Checks if a raw byte offset is contained within this span.
-    pub fn has_offset(&self, offset: usize) -> bool {
+    pub fn has_offset(&self, offset: u32) -> bool {
         self.start.offset <= offset && offset <= self.end.offset
     }
 
-    /// Converts the span to a `Range<usize>` of its byte offsets.
-    pub fn to_range(&self) -> Range<usize> {
+    /// Converts the span to a `Range<u32>` of its byte offsets.
+    pub fn to_range(&self) -> Range<u32> {
         self.start.offset..self.end.offset
     }
 
+    /// Converts the span to a `Range<usize>` of its byte offsets.
+    pub fn to_range_usize(&self) -> Range<usize> {
+        let start = self.start.offset as usize;
+        let end = self.end.offset as usize;
+
+        start..end
+    }
+
     /// Converts the span to a tuple of byte offsets.
-    pub fn to_offset_tuple(&self) -> (usize, usize) {
+    pub fn to_offset_tuple(&self) -> (u32, u32) {
         (self.start.offset, self.end.offset)
     }
 
     /// Returns the length of the span in bytes.
-    pub fn length(&self) -> usize {
+    pub fn length(&self) -> u32 {
         self.end.offset.saturating_sub(self.start.offset)
     }
 
@@ -207,15 +206,9 @@ impl<T: HasSpan> HasPosition for T {
     }
 }
 
-impl HasFileId for Position {
-    fn file_id(&self) -> FileId {
-        self.file_id
-    }
-}
-
 impl HasFileId for Span {
     fn file_id(&self) -> FileId {
-        self.start.file_id
+        self.file_id
     }
 }
 
@@ -233,55 +226,79 @@ impl<T: HasSpan> HasSpan for Box<T> {
     }
 }
 
+impl From<Span> for Range<u32> {
+    fn from(span: Span) -> Range<u32> {
+        span.to_range()
+    }
+}
+
+impl From<&Span> for Range<u32> {
+    fn from(span: &Span) -> Range<u32> {
+        span.to_range()
+    }
+}
+
 impl From<Span> for Range<usize> {
     fn from(span: Span) -> Range<usize> {
-        span.to_range()
+        let start = span.start.offset as usize;
+        let end = span.end.offset as usize;
+
+        start..end
     }
 }
 
 impl From<&Span> for Range<usize> {
     fn from(span: &Span) -> Range<usize> {
-        span.to_range()
+        let start = span.start.offset as usize;
+        let end = span.end.offset as usize;
+
+        start..end
     }
 }
 
-impl From<Position> for usize {
-    fn from(position: Position) -> usize {
+impl From<Position> for u32 {
+    fn from(position: Position) -> u32 {
         position.offset
     }
 }
 
-impl From<&Position> for usize {
-    fn from(position: &Position) -> usize {
+impl From<&Position> for u32 {
+    fn from(position: &Position) -> u32 {
         position.offset
     }
 }
 
-impl std::ops::Add<usize> for Position {
+impl From<u32> for Position {
+    fn from(offset: u32) -> Self {
+        Position { offset }
+    }
+}
+
+impl std::ops::Add<u32> for Position {
     type Output = Position;
 
-    fn add(self, rhs: usize) -> Self::Output {
+    fn add(self, rhs: u32) -> Self::Output {
         self.forward(rhs)
     }
 }
 
-impl std::ops::Sub<usize> for Position {
+impl std::ops::Sub<u32> for Position {
     type Output = Position;
 
-    fn sub(self, rhs: usize) -> Self::Output {
+    fn sub(self, rhs: u32) -> Self::Output {
         self.backward(rhs)
     }
 }
 
-impl std::ops::AddAssign<usize> for Position {
-    fn add_assign(&mut self, rhs: usize) {
+impl std::ops::AddAssign<u32> for Position {
+    fn add_assign(&mut self, rhs: u32) {
         self.offset = self.offset.saturating_add(rhs);
     }
 }
 
-impl std::ops::SubAssign<usize> for Position {
+impl std::ops::SubAssign<u32> for Position {
     /// Moves the position backward in-place.
-    fn sub_assign(&mut self, rhs: usize) {
+    fn sub_assign(&mut self, rhs: u32) {
         self.offset = self.offset.saturating_sub(rhs);
     }
 }

@@ -79,15 +79,15 @@ fn parse_tag(
     if let Some(position) = next_whitespace {
         tag_name_str = &content[1..position + 1];
         description_part = &content[position + 2..];
-        description_start = span.start.forward(2 + position); // 1 for '@' and 1 for whitespace
+        description_start = span.start.forward(2 + position as u32); // 1 for '@' and 1 for whitespace
     } else {
         tag_name_str = &content[1..];
         description_part = "";
-        description_start = span.start.forward(1 + tag_name_str.len());
+        description_start = span.start.forward(1 + tag_name_str.len() as u32);
     }
 
     if tag_name_str.is_empty() || !tag_name_str.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ':') {
-        return Err(ParseError::InvalidTagName(span.subspan(0, tag_name_str.len() + 1)));
+        return Err(ParseError::InvalidTagName(span.subspan(0, tag_name_str.len() as u32 + 1)));
     }
 
     let mut description = String::from(description_part);
@@ -121,14 +121,14 @@ fn parse_tag(
 
     let kind = tag_name_str.into();
 
-    let tag_span = Span::new(span.start, end_span.end);
+    let tag_span = Span::new(span.file_id, span.start, end_span.end);
 
     let tag = Tag {
         span: tag_span,
         name: tag_name,
         kind,
         description: description_id,
-        description_span: Span::new(description_start, end_span.end),
+        description_span: Span::new(span.file_id, description_start, end_span.end),
     };
 
     Ok((tag, i))
@@ -180,7 +180,7 @@ fn parse_code_block(
         }
     }
 
-    let code_span = Span::new(span.start, end_span.end);
+    let code_span = Span::new(span.file_id, span.start, end_span.end);
     if !found_closing {
         return Err(ParseError::UnclosedCodeBlock(code_span));
     }
@@ -234,7 +234,7 @@ fn parse_indented_code(
         }
     }
 
-    let code_span = Span::new(span.start, end_span.end);
+    let code_span = Span::new(span.file_id, span.start, end_span.end);
     let content_id = interner.intern(&code_content);
 
     let code = Code { span: code_span, directives: Vec::new(), content: content_id };
@@ -279,7 +279,7 @@ fn parse_text(
     }
 
     // Now parse text_content into TextSegments
-    let text_span = Span::new(start_span.start, end_span.end);
+    let text_span = Span::new(start_span.file_id, start_span.start, end_span.end);
     let segments = parse_text_segments(&text_content, text_span, interner)?;
 
     let text = Text { span: text_span, segments };
@@ -336,14 +336,16 @@ fn parse_text_segments(
 
                 if let Some(code_end_pos) = code_end_pos {
                     let code_content = &text_content[code_start_pos..code_end_pos];
-                    let code_span = base_span.subspan(start_pos, code_end_pos + backtick_count);
+                    let code_span = base_span.subspan(start_pos as u32, code_end_pos as u32 + backtick_count as u32);
                     let content_id = interner.intern(code_content);
 
                     let code = Code { span: code_span, directives: Vec::new(), content: content_id };
 
                     segments.push(TextSegment::InlineCode(code));
                 } else {
-                    return Err(ParseError::UnclosedInlineCode(base_span.subspan(start_pos, base_span.length())));
+                    return Err(ParseError::UnclosedInlineCode(
+                        base_span.subspan(start_pos as u32, base_span.length()),
+                    ));
                 }
                 continue;
             }
@@ -373,12 +375,12 @@ fn parse_text_segments(
 
                 if let Some(tag_end_pos) = tag_end_pos {
                     let tag_content = &text_content[tag_content_start..tag_end_pos];
-                    let tag_span = base_span.subspan(tag_start_pos, tag_end_pos + 1);
+                    let tag_span = base_span.subspan(tag_start_pos as u32, tag_end_pos as u32 + 1);
                     let tag = parse_inline_tag(tag_content, tag_span, interner)?;
                     segments.push(TextSegment::InlineTag(tag));
                 } else {
                     // Unclosed inline tag
-                    return Err(ParseError::UnclosedInlineTag(base_span.subspan(start_pos, base_span.length())));
+                    return Err(ParseError::UnclosedInlineTag(base_span.subspan(start_pos as u32, base_span.length())));
                 }
                 continue;
             }
@@ -441,7 +443,7 @@ fn parse_inline_tag(tag_content: &str, span: Span, interner: &ThreadedInterner) 
         name,
         kind,
         description,
-        description_span: Span::new(span.start.forward(tag_name_str.len() + 1), span.end),
+        description_span: Span::new(span.file_id, span.start.forward(tag_name_str.len() as u32 + 1), span.end),
     })
 }
 
@@ -496,7 +498,7 @@ fn parse_annotation(
         }
 
         if open_parens != 0 {
-            return Err(ParseError::UnclosedAnnotationArguments(Span::new(span.start, end_span.end)));
+            return Err(ParseError::UnclosedAnnotationArguments(Span::new(span.file_id, span.start, end_span.end)));
         }
 
         arguments = Some(interner.intern(&args));
@@ -504,7 +506,7 @@ fn parse_annotation(
         i += 1;
     }
 
-    let annotation_span = Span::new(span.start, end_span.end);
+    let annotation_span = Span::new(span.file_id, span.start, end_span.end);
 
     let annotation = Annotation { span: annotation_span, name, arguments };
 

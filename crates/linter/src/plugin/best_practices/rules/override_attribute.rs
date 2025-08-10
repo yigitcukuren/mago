@@ -271,7 +271,7 @@ impl Rule for OverrideAttributeRule {
                     .get_line_start_offset(context.source_file.line_number(offset))
                     .unwrap_or(offset);
 
-                let indent = context.source_file.contents[line_start_offset..offset]
+                let indent = context.source_file.contents[line_start_offset as usize..offset as usize]
                     .chars()
                     .take_while(|c| c.is_whitespace())
                     .collect::<String>();

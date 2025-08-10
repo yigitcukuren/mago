@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_database::file::FileId;
 use mago_interner::ThreadedInterner;
 use mago_span::Position;
 
@@ -31,7 +32,7 @@ pub struct TCallableSignature {
     pub return_type: Option<Box<TUnion>>, // Keep Box<TUnion> as in original
     /// The source code starting position if this signature originated from a specific closure definition.
     /// `None` if it represents a general callable type not tied to a specific closure literal.
-    pub closure_position: Option<Position>,
+    pub closure_location: Option<(FileId, Position)>,
     /// The source of the callable, if it is an alias or reference to another function-like construct.
     pub source: Option<FunctionLikeIdentifier>,
 }
@@ -52,7 +53,7 @@ impl TCallableSignature {
     /// Creates a new `CallableSignature` with the specified purity and closure status.
     #[inline]
     pub fn new(is_pure: bool, is_closure: bool) -> Self {
-        Self { is_pure, is_closure, parameters: Vec::new(), return_type: None, closure_position: None, source: None }
+        Self { is_pure, is_closure, parameters: Vec::new(), return_type: None, closure_location: None, source: None }
     }
 
     pub fn mixed(is_closure: bool) -> Self {
@@ -87,8 +88,8 @@ impl TCallableSignature {
 
     /// Returns the closure's starting position, if this signature represents a specific closure literal.
     #[inline]
-    pub fn get_closure_position(&self) -> Option<Position> {
-        self.closure_position
+    pub fn get_closure_position(&self) -> Option<(FileId, Position)> {
+        self.closure_location
     }
 
     /// Checks if the callable is marked as pure.
@@ -123,7 +124,7 @@ impl TCallableSignature {
             is_closure: true,
             parameters: self.parameters.clone(),
             return_type: self.return_type.clone(),
-            closure_position: self.closure_position,
+            closure_location: self.closure_location,
             source: self.source,
         }
     }
@@ -151,8 +152,8 @@ impl TCallableSignature {
 
     /// Returns a new instance with the closure position set.
     #[inline]
-    pub fn with_closure_position(mut self, closure_position: Option<Position>) -> Self {
-        self.closure_position = closure_position;
+    pub fn with_closure_location(mut self, closure_position: Option<(FileId, Position)>) -> Self {
+        self.closure_location = closure_position;
         self
     }
 

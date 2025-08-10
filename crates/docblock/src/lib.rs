@@ -32,6 +32,7 @@ pub fn parse_phpdoc_with_span(interner: &ThreadedInterner, content: &str, span: 
 mod tests {
     use super::*;
 
+    use mago_database::file::FileId;
     use mago_interner::ThreadedInterner;
     use mago_span::Position;
     use mago_span::Span;
@@ -63,7 +64,7 @@ mod tests {
             * @return void
             */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
         let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
         assert_eq!(document.elements.len(), 12);
 
@@ -79,7 +80,7 @@ mod tests {
 
         let content = interner.lookup(content);
         assert_eq!(content, "This is a simple description.");
-        assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This is a simple description.");
+        assert_eq!(&phpdoc[span.start.offset as usize..span.end.offset as usize], "This is a simple description.");
 
         let Element::Line(_) = &document.elements[1] else {
             panic!("Expected Element::Line, got {:?}", document.elements[1]);
@@ -104,7 +105,10 @@ mod tests {
 
         let content = interner.lookup(&code.content);
         assert_eq!(content, "echo \"Hello, World!\";");
-        assert_eq!(&phpdoc[code.span.start.offset..code.span.end.offset], "`echo \"Hello, World!\";`");
+        assert_eq!(
+            &phpdoc[code.span.start.offset as usize..code.span.end.offset as usize],
+            "`echo \"Hello, World!\";`"
+        );
 
         let TextSegment::Paragraph { content, .. } = &text.segments[2] else {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[2]);
@@ -139,7 +143,7 @@ mod tests {
         assert_eq!(name, "see");
         assert_eq!(description, "\\Some\\Class");
         assert_eq!(tag.kind, TagKind::See);
-        assert_eq!(&phpdoc[tag.span.start.offset..tag.span.end.offset], "{@see \\Some\\Class}");
+        assert_eq!(&phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize], "{@see \\Some\\Class}");
 
         let TextSegment::Paragraph { content, .. } = &text.segments[2] else {
             panic!("Expected TextSegment::Paragraph, got {:?}", text.segments[2]);
@@ -161,7 +165,7 @@ mod tests {
         assert_eq!(directives, &["php"]);
         assert_eq!(content, "echo \"Hello, World!\";");
         assert_eq!(
-            &phpdoc[code.span.start.offset..code.span.end.offset],
+            &phpdoc[code.span.start.offset as usize..code.span.end.offset as usize],
             "```php\n            * echo \"Hello, World!\";\n            * ```"
         );
 
@@ -177,7 +181,7 @@ mod tests {
         assert!(code.directives.is_empty());
         assert_eq!(content, "$foo = \"bar\";\necho \"Hello, World!\";\n");
         assert_eq!(
-            &phpdoc[code.span.start.offset..code.span.end.offset],
+            &phpdoc[code.span.start.offset as usize..code.span.end.offset as usize],
             "    $foo = \"bar\";\n            *     echo \"Hello, World!\";\n"
         );
 
@@ -190,7 +194,7 @@ mod tests {
         assert_eq!(name, "param");
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "string $foo");
-        assert_eq!(&phpdoc[tag.span.start.offset..tag.span.end.offset], "@param string $foo");
+        assert_eq!(&phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize], "@param string $foo");
 
         let Element::Tag(tag) = &document.elements[10] else {
             panic!("Expected Element::Tag, got {:?}", document.elements[10]);
@@ -202,7 +206,7 @@ mod tests {
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "array{\n  bar: string,\n  baz: int\n} $bar");
         assert_eq!(
-            &phpdoc[tag.span.start.offset..tag.span.end.offset],
+            &phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize],
             "@param array{\n            *   bar: string,\n            *   baz: int\n            * } $bar"
         );
 
@@ -215,7 +219,7 @@ mod tests {
         assert_eq!(name, "return");
         assert_eq!(tag.kind, TagKind::Return);
         assert_eq!(description, "void");
-        assert_eq!(&phpdoc[tag.span.start.offset..tag.span.end.offset], "@return void");
+        assert_eq!(&phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize], "@return void");
     }
 
     #[test]
@@ -223,14 +227,14 @@ mod tests {
         // Test case for ParseError::UnclosedInlineTag
         let interner = ThreadedInterner::new();
         let phpdoc = "/** This is a doc block with an unclosed inline tag {@see Class */";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
         match result {
             Err(ParseError::UnclosedInlineTag(error_span)) => {
                 let expected_start = phpdoc.find("{@see").unwrap();
-                let expected_span = span.subspan(expected_start, phpdoc.len() - 3);
+                let expected_span = span.subspan(expected_start as u32, phpdoc.len() as u32 - 3);
                 assert_eq!(error_span, expected_span);
             }
             _ => {
@@ -244,14 +248,14 @@ mod tests {
         // Test case for ParseError::UnclosedInlineCode
         let interner = ThreadedInterner::new();
         let phpdoc = "/** This is a doc block with unclosed inline code `code sample */";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
         match result {
             Err(ParseError::UnclosedInlineCode(error_span)) => {
                 let expected_start = phpdoc.find('`').unwrap();
-                let expected_span = span.subspan(expected_start, phpdoc.len() - 3);
+                let expected_span = span.subspan(expected_start as u32, phpdoc.len() as u32 - 3);
                 assert_eq!(error_span, expected_span);
             }
             _ => {
@@ -268,14 +272,14 @@ mod tests {
             * ```
             * Some code here
             */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
         match result {
             Err(ParseError::UnclosedCodeBlock(error_span)) => {
                 let code_block_start = phpdoc.find("```").unwrap();
-                let expected_span = span.subspan(code_block_start, 109);
+                let expected_span = span.subspan(code_block_start as u32, 109);
                 assert_eq!(error_span, expected_span);
             }
             _ => {
@@ -289,7 +293,7 @@ mod tests {
         // Test case for ParseError::InvalidTagName
         let interner = ThreadedInterner::new();
         let phpdoc = "/** @invalid_tag_name Description */";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -297,7 +301,7 @@ mod tests {
             Err(ParseError::InvalidTagName(error_span)) => {
                 let tag_start = phpdoc.find("@invalid_tag_name").unwrap();
                 let tag_end = tag_start + "@invalid_tag_name".len();
-                let expected_span = span.subspan(tag_start, tag_end);
+                let expected_span = span.subspan(tag_start as u32, tag_end as u32);
                 assert_eq!(error_span, expected_span);
             }
             _ => {
@@ -314,7 +318,7 @@ mod tests {
             * Some code here
             * Incorrect closing
             */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -324,7 +328,7 @@ mod tests {
             }
             Err(ParseError::UnclosedCodeBlock(error_span)) => {
                 let code_block_start = phpdoc.find("```").unwrap();
-                let expected_span = span.subspan(code_block_start, 82);
+                let expected_span = span.subspan(code_block_start as u32, 82);
                 assert_eq!(error_span, expected_span);
             }
             _ => {
@@ -338,7 +342,7 @@ mod tests {
         // Test case for ParseError::InvalidComment
         let interner = ThreadedInterner::new();
         let phpdoc = "/* Not a valid doc block */";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -360,7 +364,7 @@ mod tests {
     * This is a doc block
       * With inconsistent indentation
     */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -379,7 +383,7 @@ mod tests {
                 let content_str = interner.lookup(content);
                 assert_eq!(content_str, "This is a doc block\nWith inconsistent indentation");
                 assert_eq!(
-                    &phpdoc[span.start.offset..span.end.offset],
+                    &phpdoc[span.start.offset as usize..span.end.offset as usize],
                     "This is a doc block\n      * With inconsistent indentation"
                 );
             }
@@ -396,7 +400,7 @@ mod tests {
      This line is missing an asterisk
      * This line is fine
      */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -416,7 +420,7 @@ mod tests {
                 let content_str = interner.lookup(content);
                 assert_eq!(content_str, "This line is missing an asterisk\nThis line is fine");
                 assert_eq!(
-                    &phpdoc[span.start.offset..span.end.offset],
+                    &phpdoc[span.start.offset as usize..span.end.offset as usize],
                     "This line is missing an asterisk\n     * This line is fine"
                 );
             }
@@ -432,7 +436,7 @@ mod tests {
         let phpdoc = r#"/**
      *This line is missing a space after asterisk
      */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -450,7 +454,10 @@ mod tests {
 
                 let content_str = interner.lookup(content);
                 assert_eq!(content_str, "This line is missing a space after asterisk");
-                assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This line is missing a space after asterisk");
+                assert_eq!(
+                    &phpdoc[span.start.offset as usize..span.end.offset as usize],
+                    "This line is missing a space after asterisk"
+                );
             }
             _ => {
                 panic!("Expected ParseError::MissingWhitespaceAfterAsterisk");
@@ -462,7 +469,7 @@ mod tests {
     fn test_missing_whitespace_after_opening_asterisk() {
         let interner = ThreadedInterner::new();
         let phpdoc = "/**This is a doc block without space after /** */";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -480,7 +487,10 @@ mod tests {
 
                 let content_str = interner.lookup(content);
                 assert_eq!(content_str, "This is a doc block without space after /**");
-                assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This is a doc block without space after /**");
+                assert_eq!(
+                    &phpdoc[span.start.offset as usize..span.end.offset as usize],
+                    "This is a doc block without space after /**"
+                );
             }
             _ => {
                 panic!("Expected ParseError::MissingWhitespaceAfterOpeningAsterisk");
@@ -492,7 +502,7 @@ mod tests {
     fn test_missing_whitespace_before_closing_asterisk() {
         let interner = ThreadedInterner::new();
         let phpdoc = "/** This is a doc block without space before */*/";
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
         let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 
@@ -510,7 +520,10 @@ mod tests {
 
                 let content_str = interner.lookup(content);
                 assert_eq!(content_str, "This is a doc block without space before */");
-                assert_eq!(&phpdoc[span.start.offset..span.end.offset], "This is a doc block without space before */");
+                assert_eq!(
+                    &phpdoc[span.start.offset as usize..span.end.offset as usize],
+                    "This is a doc block without space before */"
+                );
             }
             _ => {
                 panic!("Expected ParseError::MissingWhitespaceBeforeClosingAsterisk");
@@ -539,7 +552,7 @@ mod tests {
     * @return int 返回值是整数类型。
     */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
         let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
 
         // Verify the number of elements parsed
@@ -563,7 +576,7 @@ mod tests {
         );
 
         assert_eq!(
-            &phpdoc[span.start.offset..span.end.offset],
+            &phpdoc[span.start.offset as usize..span.end.offset as usize],
             "هذا نص باللغة العربية.\n    * 这是一段中文。\n    * Here are some mathematical symbols: ∑, ∆, π, θ."
         );
 
@@ -581,7 +594,7 @@ mod tests {
         let expected_code = "// Arabic comment\necho \"مرحبا بالعالم\";\n// Chinese comment\necho \"你好，世界\";\n// Math symbols in code\n$sum = $a + $b; // ∑";
         assert_eq!(content_str, expected_code);
         assert_eq!(
-            &phpdoc[code.span.start.offset..code.span.end.offset],
+            &phpdoc[code.span.start.offset as usize..code.span.end.offset as usize],
             "```php\n    * // Arabic comment\n    * echo \"مرحبا بالعالم\";\n    * // Chinese comment\n    * echo \"你好，世界\";\n    * // Math symbols in code\n    * $sum = $a + $b; // ∑\n    * ```"
         );
 
@@ -601,7 +614,7 @@ mod tests {
         assert_eq!(tag.kind, TagKind::Param);
         assert_eq!(description, "string $مثال A parameter with an Arabic variable name.");
         assert_eq!(
-            &phpdoc[tag.span.start.offset..tag.span.end.offset],
+            &phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize],
             "@param string $مثال A parameter with an Arabic variable name."
         );
 
@@ -615,7 +628,10 @@ mod tests {
         assert_eq!(name, "return");
         assert_eq!(tag.kind, TagKind::Return);
         assert_eq!(description, "int 返回值是整数类型。");
-        assert_eq!(&phpdoc[tag.span.start.offset..tag.span.end.offset], "@return int 返回值是整数类型。");
+        assert_eq!(
+            &phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize],
+            "@return int 返回值是整数类型。"
+        );
     }
 
     #[test]
@@ -629,7 +645,7 @@ mod tests {
          * })
          * @SimpleAnnotation
          */"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
         let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
 
         // Verify that the document has the expected number of elements
@@ -672,7 +688,7 @@ mod tests {
         let phpdoc = r#"/** @var string[] this is a really long description
             that spans multiple lines, and demonstrates how the parser handles
             docblocks with multiple descriptions, and missing astricks*/"#;
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
         let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
 
         assert_eq!(document.elements.len(), 1);
@@ -689,7 +705,7 @@ mod tests {
             "string[] this is a really long description\nthat spans multiple lines, and demonstrates how the parser handles\ndocblocks with multiple descriptions, and missing astricks"
         );
         assert_eq!(
-            &phpdoc[tag.span.start.offset..tag.span.end.offset],
+            &phpdoc[tag.span.start.offset as usize..tag.span.end.offset as usize],
             "@var string[] this is a really long description\n            that spans multiple lines, and demonstrates how the parser handles\n            docblocks with multiple descriptions, and missing astricks"
         );
     }
@@ -703,7 +719,7 @@ mod tests {
         *    └─ comment 3
         */"#;
 
-        let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
         let document = parse_phpdoc_with_span(&interner, phpdoc, span).expect("Failed to parse PHPDoc");
 
         assert_eq!(document.elements.len(), 1);
@@ -715,7 +731,7 @@ mod tests {
         let content_str = interner.lookup(&code.content);
         assert_eq!(content_str, " └─ comment 2\n\u{a0}\u{a0} └─ comment 4\n └─ comment 3");
         assert_eq!(
-            &phpdoc[code.span.start.offset..code.span.end.offset],
+            &phpdoc[code.span.start.offset as usize..code.span.end.offset as usize],
             " \u{a0} └─ comment 2\n        *    \u{a0}\u{a0} └─ comment 4\n        *  \u{a0} └─ comment 3"
         );
     }

@@ -18,7 +18,7 @@ pub struct IfScope<'a> {
     pub new_variables_possibly_in_scope: HashSet<String>,
     pub redefined_variables: Option<HashMap<String, TUnion>>,
     pub removed_variable_ids: HashSet<String>,
-    pub assigned_variable_ids: Option<HashMap<String, usize>>,
+    pub assigned_variable_ids: Option<HashMap<String, u32>>,
     pub possibly_assigned_variable_ids: HashSet<String>,
     pub possibly_redefined_variables: HashMap<String, TUnion>,
     pub updated_variables: HashSet<String>,

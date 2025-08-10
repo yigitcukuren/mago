@@ -42,12 +42,9 @@ impl Program {
 
 impl HasSpan for Program {
     fn span(&self) -> Span {
-        let start =
-            self.statements.first().map(|stmt| stmt.span().start).unwrap_or_else(|| Position::start_of(self.file_id));
+        let start = self.statements.first().map(|stmt| stmt.span().start).unwrap_or_else(Position::zero);
+        let end = self.statements.last().map(|stmt| stmt.span().end).unwrap_or_else(Position::zero);
 
-        let end =
-            self.statements.last().map(|stmt| stmt.span().end).unwrap_or_else(|| Position::start_of(self.file_id));
-
-        Span::new(start, end)
+        Span::new(self.file_id, start, end)
     }
 }

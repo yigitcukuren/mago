@@ -93,7 +93,7 @@ impl<'a> ScopeContext<'a> {
         let function_like = self.function_like?;
 
         let Some(function_name) = function_like.name else {
-            return Some(FunctionLikeIdentifier::Closure(function_like.span.start));
+            return Some(FunctionLikeIdentifier::Closure(function_like.span.file_id, function_like.span.start));
         };
 
         Some(if function_like.get_kind().is_method() {

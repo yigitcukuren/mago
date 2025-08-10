@@ -13,14 +13,14 @@ use crate::context::scope::loop_scope::LoopScope;
 
 #[derive(Debug, Clone)]
 pub struct AnalysisArtifacts {
-    pub expression_types: HashMap<(usize, usize), Rc<TUnion>>,
-    pub if_true_assertions: HashMap<(usize, usize), HashMap<String, Vec<Assertion>>>,
-    pub if_false_assertions: HashMap<(usize, usize), HashMap<String, Vec<Assertion>>>,
+    pub expression_types: HashMap<(u32, u32), Rc<TUnion>>,
+    pub if_true_assertions: HashMap<(u32, u32), HashMap<String, Vec<Assertion>>>,
+    pub if_false_assertions: HashMap<(u32, u32), HashMap<String, Vec<Assertion>>>,
     pub inferred_return_types: Vec<TUnion>,
     pub symbol_references: SymbolReferences,
     pub loop_scope: Option<LoopScope>,
     pub case_scopes: Vec<CaseScope>,
-    pub fully_matched_switch_offsets: HashSet<usize>,
+    pub fully_matched_switch_offsets: HashSet<u32>,
 }
 
 impl AnalysisArtifacts {
@@ -92,7 +92,7 @@ impl AnalysisArtifacts {
 }
 
 #[inline]
-pub fn get_expression_range<T: HasSpan>(expression: &T) -> (usize, usize) {
+pub fn get_expression_range<T: HasSpan>(expression: &T) -> (u32, u32) {
     let span = expression.span();
 
     (span.start.offset, span.end.offset)

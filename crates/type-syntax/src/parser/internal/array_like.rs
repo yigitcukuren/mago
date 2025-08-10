@@ -1,3 +1,4 @@
+use mago_database::file::HasFileId;
 use mago_span::Span;
 
 use crate::ast::*;
@@ -239,7 +240,7 @@ pub fn parse_shape_field_key<'input>(stream: &mut TypeTokenStream<'input>) -> Re
 
     Ok(Type::Reference(ReferenceType {
         identifier: Identifier {
-            span: Span::new(start, end),
+            span: Span::new(stream.file_id(), start, end),
             value: stream.lexer.slice_in_range(start.offset, end.offset),
         },
         parameters: None,

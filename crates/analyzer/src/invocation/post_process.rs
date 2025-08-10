@@ -63,11 +63,15 @@ pub fn post_invocation_process<'a>(
             "method",
             format!("`{}::{}`", context.interner.lookup(class_name_id), context.interner.lookup(method_name_id)),
         ),
-        FunctionLikeIdentifier::Closure(position) => (
+        FunctionLikeIdentifier::Closure(file_id, position) => (
             "closure",
             format!(
                 "defined at `{}:{}:{}`",
-                context.source_file.name,
+                if *file_id == context.source_file.id {
+                    context.source_file.name.to_string()
+                } else {
+                    format!("<file:{file_id}>")
+                },
                 context.source_file.line_number(position.offset),
                 context.source_file.column_number(position.offset)
             ),
@@ -78,7 +82,7 @@ pub fn post_invocation_process<'a>(
         let issue_kind = match identifier {
             FunctionLikeIdentifier::Function(_) => Code::DEPRECATED_FUNCTION,
             FunctionLikeIdentifier::Method(_, _) => Code::DEPRECATED_METHOD,
-            FunctionLikeIdentifier::Closure(_) => Code::DEPRECATED_CLOSURE,
+            FunctionLikeIdentifier::Closure(_, _) => Code::DEPRECATED_CLOSURE,
         };
 
         context.collector.report_with_code(

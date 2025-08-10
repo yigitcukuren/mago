@@ -155,7 +155,9 @@ impl<'a> Files<'a> for DatabaseFiles<'_> {
     fn line_index(&self, file_id: FileId, byte_index: usize) -> Result<usize, Error> {
         let file = self.0.get_by_id(&file_id).map_err(|_| Error::FileMissing)?;
 
-        Ok(file.line_number(byte_index))
+        Ok(file.line_number(
+            byte_index.try_into().map_err(|_| Error::IndexTooLarge { given: byte_index, max: u32::MAX as usize })?,
+        ) as usize)
     }
 
     fn line_range(&self, file_id: FileId, line_index: usize) -> Result<Range<usize>, Error> {
@@ -165,15 +167,15 @@ impl<'a> Files<'a> for DatabaseFiles<'_> {
     }
 }
 
-fn codespan_line_start(lines: &[usize], size: usize, line_index: usize) -> Result<usize, Error> {
+fn codespan_line_start(lines: &[u32], size: u32, line_index: usize) -> Result<usize, Error> {
     match line_index.cmp(&lines.len()) {
-        Ordering::Less => Ok(lines.get(line_index).cloned().expect("failed despite previous check")),
-        Ordering::Equal => Ok(size),
+        Ordering::Less => Ok(lines.get(line_index).cloned().expect("failed despite previous check") as usize),
+        Ordering::Equal => Ok(size as usize),
         Ordering::Greater => Err(Error::LineTooLarge { given: line_index, max: lines.len() - 1 }),
     }
 }
 
-fn codespan_line_range(lines: &[usize], size: usize, line_index: usize) -> Result<Range<usize>, Error> {
+fn codespan_line_range(lines: &[u32], size: u32, line_index: usize) -> Result<Range<usize>, Error> {
     let line_start = codespan_line_start(lines, size, line_index)?;
     let next_line_start = codespan_line_start(lines, size, line_index + 1)?;
 
@@ -191,7 +193,7 @@ impl From<AnnotationKind> for LabelStyle {
 
 impl From<Annotation> for Label<FileId> {
     fn from(annotation: Annotation) -> Label<FileId> {
-        let mut label = Label::new(annotation.kind.into(), annotation.span.start.file_id, annotation.span);
+        let mut label = Label::new(annotation.kind.into(), annotation.span.file_id, annotation.span);
 
         if let Some(message) = annotation.message {
             label.message = message;

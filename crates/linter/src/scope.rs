@@ -8,6 +8,7 @@ use mago_codex::get_method;
 use mago_codex::get_trait;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::metadata::function_like::FunctionLikeMetadata;
+use mago_database::file::FileId;
 use mago_interner::StringIdentifier;
 use mago_span::Position;
 use mago_span::Span;
@@ -41,7 +42,7 @@ pub enum FunctionLikeScope {
     /// A method identified by its name.
     Method(StringIdentifier),
     /// A closure or an arrow function identified by its source code span.
-    Closure(Position),
+    Closure(FileId, Position),
 }
 
 /// Represents an entry in the scope stack. It can be either class-like or function-like.
@@ -265,7 +266,9 @@ impl ScopeStack {
     pub fn get_function_like_metadata<'a>(&self, context: &'a LintContext) -> Option<&'a FunctionLikeMetadata> {
         self.get_function_like_scope().and_then(|function_like| match function_like {
             FunctionLikeScope::Function(name) => get_function(context.codebase, context.interner, name),
-            FunctionLikeScope::Closure(position) => get_closure(context.codebase, context.interner, position),
+            FunctionLikeScope::Closure(file_id, position) => {
+                get_closure(context.codebase, context.interner, file_id, position)
+            }
             FunctionLikeScope::Method(name) => {
                 let class_like = self.get_class_like_metadata(context)?;
 
@@ -311,8 +314,8 @@ impl ScopeStack {
     /// - `None` if no closure scope is present.
     pub fn get_closure_metadata<'a>(&self, context: &'a LintContext) -> Option<&'a FunctionLikeMetadata> {
         self.stack.iter().rev().find_map(|scope| match scope {
-            Scope::FunctionLike(FunctionLikeScope::Closure(position)) => {
-                get_closure(context.codebase, context.interner, position)
+            Scope::FunctionLike(FunctionLikeScope::Closure(file_id, position)) => {
+                get_closure(context.codebase, context.interner, file_id, position)
             }
             _ => None,
         })

@@ -1,9 +1,10 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_database::file::FileId;
+use mago_database::file::HasFileId;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
-use mago_span::HasPosition;
 use mago_span::HasSpan;
 use mago_span::Position;
 use mago_span::Span;
@@ -16,48 +17,71 @@ const PARSE_ERROR_CODE: &str = "parse";
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SyntaxError {
-    UnexpectedToken(u8, Position),
-    UnrecognizedToken(u8, Position),
-    UnexpectedEndOfFile(Position),
+    UnexpectedToken(FileId, u8, Position),
+    UnrecognizedToken(FileId, u8, Position),
+    UnexpectedEndOfFile(FileId, Position),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ParseError {
     SyntaxError(SyntaxError),
-    UnexpectedEndOfFile(Vec<TokenKind>, Position),
+    UnexpectedEndOfFile(Vec<TokenKind>, FileId, Position),
     UnexpectedToken(Vec<TokenKind>, TokenKind, Span),
     UnclosedLiteralString(LiteralStringKind, Span),
 }
 
-impl HasSpan for ParseError {
-    fn span(&self) -> Span {
-        match &self {
-            ParseError::SyntaxError(syntax_error) => syntax_error.span(),
-            ParseError::UnexpectedEndOfFile(_, position) => Span::new(*position, *position),
-            ParseError::UnexpectedToken(_, _, span) => *span,
-            ParseError::UnclosedLiteralString(_, span) => *span,
+impl HasFileId for SyntaxError {
+    fn file_id(&self) -> FileId {
+        match self {
+            Self::UnexpectedToken(file_id, _, _) => *file_id,
+            Self::UnrecognizedToken(file_id, _, _) => *file_id,
+            Self::UnexpectedEndOfFile(file_id, _) => *file_id,
+        }
+    }
+}
+
+impl HasFileId for ParseError {
+    fn file_id(&self) -> FileId {
+        match self {
+            ParseError::SyntaxError(syntax_error) => syntax_error.file_id(),
+            ParseError::UnexpectedEndOfFile(_, file_id, _) => *file_id,
+            ParseError::UnexpectedToken(_, _, span) => span.file_id,
+            ParseError::UnclosedLiteralString(_, span) => span.file_id,
         }
     }
 }
 
 impl HasSpan for SyntaxError {
     fn span(&self) -> Span {
-        let position = match self {
-            Self::UnexpectedToken(_, p) => *p,
-            Self::UnrecognizedToken(_, p) => *p,
-            Self::UnexpectedEndOfFile(p) => *p,
+        let (file_id, position) = match self {
+            Self::UnexpectedToken(file_id, _, p) => (file_id, p),
+            Self::UnrecognizedToken(file_id, _, p) => (file_id, p),
+            Self::UnexpectedEndOfFile(file_id, p) => (file_id, p),
         };
 
-        Span::new(position, Position { offset: position.offset + 1, ..position })
+        Span::new(*file_id, *position, position.forward(1))
+    }
+}
+
+impl HasSpan for ParseError {
+    fn span(&self) -> Span {
+        match &self {
+            ParseError::SyntaxError(syntax_error) => syntax_error.span(),
+            ParseError::UnexpectedEndOfFile(_, file_id, position) => Span::new(*file_id, *position, *position),
+            ParseError::UnexpectedToken(_, _, span) => *span,
+            ParseError::UnclosedLiteralString(_, span) => *span,
+        }
     }
 }
 
 impl std::fmt::Display for SyntaxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let message = match self {
-            Self::UnexpectedToken(token, _) => &format!("Unexpected token `{}` (0x{:02X})", *token as char, token),
-            Self::UnrecognizedToken(token, _) => &format!("Unrecognised token `{}` (0x{:02X})", *token as char, token),
-            Self::UnexpectedEndOfFile(_) => "Unexpected end of file",
+            Self::UnexpectedToken(_, token, _) => &format!("Unexpected token `{}` (0x{:02X})", *token as char, token),
+            Self::UnrecognizedToken(_, token, _) => {
+                &format!("Unrecognised token `{}` (0x{:02X})", *token as char, token)
+            }
+            Self::UnexpectedEndOfFile(_, _) => "Unexpected end of file",
         };
 
         write!(f, "{message}")
@@ -70,7 +94,7 @@ impl std::fmt::Display for ParseError {
             ParseError::SyntaxError(e) => {
                 return write!(f, "{e}");
             }
-            ParseError::UnexpectedEndOfFile(expected, _) => {
+            ParseError::UnexpectedEndOfFile(expected, _, _) => {
                 let expected = expected.iter().map(|kind| kind.to_string()).collect::<Vec<_>>().join("`, `");
 
                 if expected.is_empty() {
@@ -116,8 +140,7 @@ impl std::error::Error for ParseError {
 }
 impl From<&SyntaxError> for Issue {
     fn from(error: &SyntaxError) -> Issue {
-        let position = error.position();
-        let span = Span::new(position, Position { offset: position.offset + 1, ..position });
+        let span = error.span();
 
         Issue::error("Syntax error encountered during lexing")
             .with_code(SYNTAX_ERROR_CODE)

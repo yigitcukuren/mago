@@ -26,7 +26,7 @@ mod internal;
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct ResolvedNames {
     /// Internal map storing: position (byte offset) -> (Resolved Name ID, Was Imported Flag)
-    names: HashMap<usize, (StringIdentifier, bool)>,
+    names: HashMap<u32, (StringIdentifier, bool)>,
 }
 
 impl ResolvedNames {
@@ -101,7 +101,7 @@ impl ResolvedNames {
     ///
     /// Each element in the set is a reference to a tuple: `(&usize, &(StringIdentifier, bool))`,
     /// representing `(&position, &(resolved_name_id, was_imported_flag))`.
-    pub fn all(&self) -> HashSet<(&usize, &(StringIdentifier, bool))> {
+    pub fn all(&self) -> HashSet<(&u32, &(StringIdentifier, bool))> {
         HashSet::from_iter(self.names.iter())
     }
 }

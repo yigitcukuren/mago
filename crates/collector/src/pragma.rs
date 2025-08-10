@@ -26,9 +26,9 @@ pub struct Pragma<'a> {
     /// The scope span where the pragma applies, if applicable.
     pub scope_span: Option<Span>,
     /// The starting line number of the comment.
-    pub start_line: usize,
+    pub start_line: u32,
     /// The ending line number of the comment.
-    pub end_line: usize,
+    pub end_line: u32,
     /// Indicates whether the comment appears on its own line (i.e., only whitespace precedes it).
     pub own_line: bool,
     /// The category of the pragma, e.g., "lint" or "analysis".
@@ -110,7 +110,7 @@ fn parse_pragmas_in_trivia<'a>(
         let absolute_line_start = base_offset + line_offset_in_trivia;
         let trimmed = line.trim_start();
         let leading_whitespace = line.len() - trimmed.len();
-        let pragma_start_offset = absolute_line_start + leading_whitespace;
+        let pragma_start_offset = absolute_line_start + leading_whitespace as u32;
 
         let (kind, prefix) = if trimmed.starts_with("@mago-ignore") {
             (PragmaKind::Ignore, "@mago-ignore")
@@ -148,16 +148,16 @@ fn parse_pragmas_in_trivia<'a>(
         let description = parts.next().unwrap_or("").trim();
 
         // Calculate the precise span for the code part of the pragma.
-        let code_start_offset = absolute_line_start + (code.as_ptr() as usize) - (line.as_ptr() as usize);
-        let code_span = Span::new(code_start_offset, code_start_offset + code.len());
+        let code_start_offset = absolute_line_start + (code.as_ptr() as u32) - (line.as_ptr() as u32);
+        let code_span = Span::new(file.id, code_start_offset, code_start_offset + code.len() as u32);
 
-        let pragma_end_offset = pragma_start_offset + prefix.len() + content_with_leading_space.len();
-        let span = Span::new(pragma_start_offset, pragma_end_offset);
+        let pragma_end_offset = pragma_start_offset + prefix.len() as u32 + content_with_leading_space.len() as u32;
+        let span = Span::new(file.id, pragma_start_offset, pragma_end_offset);
 
         let start_line = file.line_number(span.start.offset);
         let end_line = file.line_number(span.end.offset);
         let line_start_offset = file.get_line_start_offset(start_line).unwrap_or(0);
-        let prefix_text = &file.contents[line_start_offset..span.start.offset];
+        let prefix_text = &file.contents[line_start_offset as usize..span.start.offset as usize];
         let own_line = prefix_text.trim().is_empty();
 
         pragmas.push(Pragma {

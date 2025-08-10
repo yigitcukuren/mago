@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+use mago_database::file::HasFileId;
 use mago_interner::ThreadedInterner;
 use mago_span::Position;
 
@@ -155,5 +156,11 @@ impl<'a, 'i> TokenStream<'a, 'i> {
         }
 
         Ok(Some(n))
+    }
+}
+
+impl HasFileId for TokenStream<'_, '_> {
+    fn file_id(&self) -> mago_database::file::FileId {
+        self.lexer.file_id()
     }
 }

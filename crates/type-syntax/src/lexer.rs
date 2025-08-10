@@ -1,3 +1,5 @@
+use mago_database::file::FileId;
+use mago_database::file::HasFileId;
 use mago_span::Position;
 use mago_span::Span;
 use mago_syntax_core::float_exponent;
@@ -46,7 +48,7 @@ impl<'input> TypeLexer<'input> {
     /// * `from` - The absolute starting byte offset.
     /// * `to` - The absolute ending byte offset (exclusive).
     #[inline]
-    pub fn slice_in_range(&self, from: usize, to: usize) -> &'input str {
+    pub fn slice_in_range(&self, from: u32, to: u32) -> &'input str {
         let bytes_slice = self.input.slice_in_range(from, to);
 
         // Reuse the same safe UTF-8 conversion logic as the `token` method.
@@ -292,7 +294,11 @@ impl<'input> TypeLexer<'input> {
             [b'+', ..] => (TypeTokenKind::Plus, 1),
             [b'-', ..] => (TypeTokenKind::Minus, 1),
             [unknown_byte, ..] => {
-                return Some(Err(SyntaxError::UnrecognizedToken(*unknown_byte, self.input.current_position())));
+                return Some(Err(SyntaxError::UnrecognizedToken(
+                    self.file_id(),
+                    *unknown_byte,
+                    self.input.current_position(),
+                )));
             }
             [] => {
                 unreachable!()
@@ -583,6 +589,12 @@ impl<'input> TypeLexer<'input> {
             ""
         };
 
-        Some(Ok(TypeToken { kind, value: value_str, span: Span::new(from, to) }))
+        Some(Ok(TypeToken { kind, value: value_str, span: Span::new(self.file_id(), from, to) }))
+    }
+}
+
+impl HasFileId for TypeLexer<'_> {
+    fn file_id(&self) -> FileId {
+        self.input.file_id()
     }
 }

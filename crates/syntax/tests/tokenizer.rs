@@ -302,7 +302,7 @@ fn test_unterminated_multiple_comment() {
 
     match test_lexer(code, expected) {
         Ok(_) => panic!("expected error"),
-        Err(SyntaxError::UnexpectedEndOfFile(position)) => {
+        Err(SyntaxError::UnexpectedEndOfFile(_, position)) => {
             assert_eq!(position.offset, 14);
         }
         Err(err) => panic!("unexpected error: {err}"),
@@ -316,7 +316,7 @@ fn test_unterminated_docblock_comment() {
 
     match test_lexer(code, expected) {
         Ok(_) => panic!("expected error"),
-        Err(SyntaxError::UnexpectedEndOfFile(position)) => {
+        Err(SyntaxError::UnexpectedEndOfFile(_, position)) => {
             assert_eq!(position.offset, 15);
         }
         Err(err) => panic!("unexpected error: {err}"),

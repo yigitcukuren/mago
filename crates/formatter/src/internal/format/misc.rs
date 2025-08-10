@@ -16,8 +16,8 @@ use crate::settings::BraceStyle;
 
 use super::block::block_is_empty;
 
-pub(super) fn has_new_line_in_range(text: &str, start: usize, end: usize) -> bool {
-    text[start..end].contains('\n')
+pub(super) fn has_new_line_in_range(text: &str, start: u32, end: u32) -> bool {
+    text[start as usize..end as usize].contains('\n')
 }
 
 /// Determines whether an expression can be "hugged" within brackets without line breaks.

@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use ahash::HashSet;
 
+use mago_database::file::FileId;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 use mago_span::Position;
@@ -285,9 +286,10 @@ pub fn get_function<'a>(
 pub fn get_closure<'a>(
     codebase: &'a CodebaseMetadata,
     interner: &ThreadedInterner,
+    file_id: &FileId,
     position: &Position,
 ) -> Option<&'a FunctionLikeMetadata> {
-    let file_id = interner.intern(position.file_id.to_string());
+    let file_id = interner.intern(file_id.to_string());
     let closure_id = interner.intern(position.to_string());
 
     codebase.function_likes.get(&(file_id, closure_id))
@@ -359,7 +361,7 @@ pub fn get_trait<'a>(
 }
 
 pub fn get_anonymous_class_name(interner: &ThreadedInterner, span: Span) -> StringIdentifier {
-    interner.intern(format!("class@anonymous:{}-{}:{}", span.start.file_id, span.start.offset, span.end.offset,))
+    interner.intern(format!("class@anonymous:{}-{}:{}", span.file_id, span.start.offset, span.end.offset,))
 }
 
 /// Retrieves the metadata for an anonymous class based on its span.

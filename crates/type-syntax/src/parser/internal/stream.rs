@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+use mago_database::file::FileId;
+use mago_database::file::HasFileId;
 use mago_span::Position;
 
 use crate::error::ParseError;
@@ -120,7 +122,7 @@ impl<'input> TypeTokenStream<'input> {
     pub fn peek(&mut self) -> Result<TypeToken<'input>, ParseError> {
         match self.lookahead(0)? {
             Some(token) => Ok(token),
-            None => Err(ParseError::UnexpectedEndOfFile(vec![], self.current_position())),
+            None => Err(ParseError::UnexpectedEndOfFile(self.file_id(), vec![], self.current_position())),
         }
     }
 
@@ -153,7 +155,7 @@ impl<'input> TypeTokenStream<'input> {
             ParseError::UnexpectedToken(expected_one_of.to_vec(), token.kind, token.span)
         } else {
             // Reached EOF when expecting specific kinds
-            ParseError::UnexpectedEndOfFile(expected_one_of.to_vec(), self.current_position())
+            ParseError::UnexpectedEndOfFile(self.file_id(), expected_one_of.to_vec(), self.current_position())
         }
     }
 
@@ -175,5 +177,11 @@ impl<'input> TypeTokenStream<'input> {
             }
         }
         Ok(true) // Buffer filled successfully
+    }
+}
+
+impl HasFileId for TypeTokenStream<'_> {
+    fn file_id(&self) -> FileId {
+        self.lexer.file_id()
     }
 }

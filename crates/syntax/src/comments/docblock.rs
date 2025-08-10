@@ -44,7 +44,7 @@ pub fn get_docblock_for_node<'a>(program: &'a Program, file: &File, node: impl H
 pub fn get_docblock_before_position<'a>(
     file: &File,
     trivias: &'a [Trivia],
-    node_start_offset: usize,
+    node_start_offset: u32,
 ) -> Option<&'a Trivia> {
     let candidate_partition_idx = trivias.partition_point(|trivia| trivia.span.start.offset < node_start_offset);
     if candidate_partition_idx == 0 {
@@ -59,8 +59,11 @@ pub fn get_docblock_before_position<'a>(
                 let docblock_end_offset = trivia.span().end.offset;
 
                 // Get the slice between docblock end and class start
-                let code_between_slice =
-                    file.contents.as_bytes().get(docblock_end_offset..node_start_offset).unwrap_or(&[]);
+                let code_between_slice = file
+                    .contents
+                    .as_bytes()
+                    .get(docblock_end_offset as usize..node_start_offset as usize)
+                    .unwrap_or(&[]);
 
                 if code_between_slice.iter().all(|b| b.is_ascii_whitespace()) {
                     // It's the correct docblock!

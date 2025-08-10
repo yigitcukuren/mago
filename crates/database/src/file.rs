@@ -62,12 +62,12 @@ pub struct File {
     pub contents: Cow<'static, str>,
 
     /// The size of the file's contents in bytes.
-    pub size: usize,
+    pub size: u32,
 
     /// A vector containing the starting byte offsets of each line in `contents`.
     /// The first line always starts at offset 0. This is useful for quickly
     /// navigating to a specific line number without scanning the whole file.
-    pub lines: Vec<usize>,
+    pub lines: Vec<u32>,
 }
 
 pub trait HasFileId {
@@ -86,7 +86,7 @@ impl File {
         contents: Cow<'static, str>,
     ) -> Self {
         let id = FileId::new(&name);
-        let size = contents.len();
+        let size = contents.len() as u32;
         let lines = line_starts(contents.as_ref()).collect::<Vec<_>>();
 
         Self { id, name, path, file_type, contents, size, lines }
@@ -130,8 +130,8 @@ impl File {
     ///
     /// The line number for the given byte offset (0-based index).
     #[inline]
-    pub fn line_number(&self, offset: usize) -> usize {
-        self.lines.binary_search(&offset).unwrap_or_else(|next_line| next_line - 1)
+    pub fn line_number(&self, offset: u32) -> u32 {
+        self.lines.binary_search(&offset).unwrap_or_else(|next_line| next_line - 1) as u32
     }
 
     /// Retrieve the byte offset for the start of the given line.
@@ -143,8 +143,8 @@ impl File {
     /// # Returns
     ///
     /// The byte offset for the start of the given line (0-based index).
-    pub fn get_line_start_offset(&self, line: usize) -> Option<usize> {
-        self.lines.get(line).copied()
+    pub fn get_line_start_offset(&self, line: u32) -> Option<u32> {
+        self.lines.get(line as usize).copied()
     }
 
     /// Retrieve the byte offset for the end of the given line.
@@ -156,10 +156,10 @@ impl File {
     /// # Returns
     ///
     /// The byte offset for the end of the given line (0-based index).
-    pub fn get_line_end_offset(&self, line: usize) -> Option<usize> {
-        match self.lines.get(line + 1) {
+    pub fn get_line_end_offset(&self, line: u32) -> Option<u32> {
+        match self.lines.get(line as usize + 1) {
             Some(&end) => Some(end - 1),
-            None if line == self.lines.len() - 1 => Some(self.size),
+            None if line as usize == self.lines.len() - 1 => Some(self.size),
             _ => None,
         }
     }
@@ -174,10 +174,11 @@ impl File {
     ///
     /// The column number for the given byte offset (0-based index).
     #[inline]
-    pub fn column_number(&self, offset: usize) -> usize {
-        let line_start = self.lines.binary_search(&offset).unwrap_or_else(|next_line| self.lines[next_line - 1]);
+    pub fn column_number(&self, offset: u32) -> u32 {
+        let line_start =
+            self.lines.binary_search(&offset).unwrap_or_else(|next_line| self.lines[next_line - 1] as usize);
 
-        offset - line_start
+        offset - line_start as u32
     }
 }
 
@@ -233,9 +234,10 @@ impl std::fmt::Display for FileId {
 
 /// Returns an iterator over the starting byte offsets of each line in `source`.
 #[inline]
-pub(crate) fn line_starts(source: &str) -> impl Iterator<Item = usize> + '_ {
+pub(crate) fn line_starts(source: &str) -> impl Iterator<Item = u32> + '_ {
     let bytes = source.as_bytes();
 
     std::iter::once(0)
         .chain(memchr::memchr_iter(b'\n', bytes).map(|i| if i > 0 && bytes[i - 1] == b'\r' { i } else { i + 1 }))
+        .map(|i| i as u32)
 }

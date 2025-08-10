@@ -7,6 +7,7 @@ use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::consts::MAX_ENUM_CASES_FOR_ANALYSIS;
+use crate::get_anonymous_class_name;
 use crate::issue::ScanningIssueKind;
 use crate::metadata::CodebaseMetadata;
 use crate::metadata::class_like::ClassLikeMetadata;
@@ -45,9 +46,7 @@ pub fn register_anonymous_class(
     scope: &mut NamespaceScope,
 ) -> Option<(StringIdentifier, TemplateConstraintList)> {
     let span = class.span();
-    let name = context
-        .interner
-        .intern(format!("class@anonymous:{}-{}:{}", span.start.file_id, span.start.offset, span.end.offset,));
+    let name = get_anonymous_class_name(context.interner, span);
 
     let class_like_metadata = scan_class_like(
         codebase,

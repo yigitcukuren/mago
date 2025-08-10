@@ -35,15 +35,15 @@ impl Analyzable for Closure {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        let span = self.span();
+        let s = self.span();
 
-        let Some(function_metadata) = get_closure(context.codebase, context.interner, &span.start) else {
+        let Some(function_metadata) = get_closure(context.codebase, context.interner, &s.file_id, &s.start) else {
             return Err(AnalysisError::InternalError(
                 format!(
                     "Metadata for closure defined in `{}` at offset {} not found.",
-                    context.source_file.name, span.start.offset
+                    context.source_file.name, s.start.offset
                 ),
-                span,
+                s,
             ));
         };
 
@@ -177,7 +177,7 @@ impl Analyzable for Closure {
             block_context.locals.insert(variable_str.to_string(), Rc::new(combined_type));
         }
 
-        let function_identifier = FunctionLikeIdentifier::Closure(span.start);
+        let function_identifier = FunctionLikeIdentifier::Closure(s.file_id, s.start);
 
         let resulting_closure = if function_metadata.template_types.is_empty() {
             let mut signature = get_signature_of_function_like_metadata(

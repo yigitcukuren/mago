@@ -366,6 +366,6 @@ fn has_unused_must_use<'a>(
 
             if must_use { Some((Code::UNUSED_METHOD_CALL, method_name)) } else { None }
         }
-        FunctionLikeIdentifier::Closure(_) => None,
+        FunctionLikeIdentifier::Closure(_, _) => None,
     }
 }

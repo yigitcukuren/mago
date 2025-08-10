@@ -310,8 +310,16 @@ impl<'a> LintContext<'a> {
                 Some(Scope::FunctionLike(FunctionLikeScope::Function(*self.resolved_names.get(&func.name))))
             }
             Node::Method(method) => Some(Scope::FunctionLike(FunctionLikeScope::Method(method.name.value))),
-            Node::Closure(closure) => Some(Scope::FunctionLike(FunctionLikeScope::Closure(closure.span().start))),
-            Node::ArrowFunction(func) => Some(Scope::FunctionLike(FunctionLikeScope::Closure(func.span().start))),
+            Node::Closure(closure) => {
+                let closure_span = closure.span();
+
+                Some(Scope::FunctionLike(FunctionLikeScope::Closure(closure_span.file_id, closure_span.start)))
+            }
+            Node::ArrowFunction(func) => {
+                let arrow_func_span = func.span();
+
+                Some(Scope::FunctionLike(FunctionLikeScope::Closure(arrow_func_span.file_id, arrow_func_span.start)))
+            }
             _ => None,
         } {
             self.scope.push(scope);

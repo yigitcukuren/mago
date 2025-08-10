@@ -28,7 +28,7 @@ struct Location {
 
 #[derive(Serialize)]
 struct Lines {
-    begin: usize,
+    begin: u32,
 }
 
 pub fn gitlab_format(

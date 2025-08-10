@@ -222,7 +222,7 @@ impl CodebaseMetadata {
             FunctionLikeIdentifier::Method(fq_classlike_name, method_name) => {
                 get_method(self, interner, fq_classlike_name, method_name)
             }
-            FunctionLikeIdentifier::Closure(position) => get_closure(self, interner, position),
+            FunctionLikeIdentifier::Closure(file_id, position) => get_closure(self, interner, file_id, position),
         }
     }
 

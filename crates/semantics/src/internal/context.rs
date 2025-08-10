@@ -53,7 +53,7 @@ impl<'a> Context<'a> {
     pub fn get_code_snippet(&self, span: impl HasSpan) -> &'a str {
         let s = span.span();
 
-        &self.source_file.contents[s.start.offset..s.end.offset]
+        &self.source_file.contents[s.start.offset as usize..s.end.offset as usize]
     }
 
     /// Reports a semantic issue with the given `Issue`.

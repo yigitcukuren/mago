@@ -1,3 +1,4 @@
+use mago_database::file::FileId;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -21,8 +22,10 @@ pub enum FunctionLikeIdentifier {
     /// * `StringIdentifier` - The name of the method.
     Method(StringIdentifier, StringIdentifier),
     /// A closure (anonymous function `function() {}` or arrow function `fn() => expr`).
-    /// * `Position` - The starting position (source file and offset) of the closure definition.
-    Closure(Position),
+    ///
+    /// * `FileId` - The identifier of the file where the closure is defined.
+    /// * `Position` - The starting position of the closure definition.
+    Closure(FileId, Position),
 }
 
 impl FunctionLikeIdentifier {
@@ -41,7 +44,7 @@ impl FunctionLikeIdentifier {
     /// Checks if this identifier represents a `Closure`.
     #[inline]
     pub const fn is_closure(&self) -> bool {
-        matches!(self, FunctionLikeIdentifier::Closure(_))
+        matches!(self, FunctionLikeIdentifier::Closure(_, _))
     }
 
     /// If this identifier represents a method, returns it as a `MethodIdentifier`.
@@ -62,7 +65,7 @@ impl FunctionLikeIdentifier {
         match self {
             FunctionLikeIdentifier::Function(_) => "Function",
             FunctionLikeIdentifier::Method(_, _) => "Method",
-            FunctionLikeIdentifier::Closure(_) => "Closure",
+            FunctionLikeIdentifier::Closure(_, _) => "Closure",
         }
     }
 
@@ -72,7 +75,7 @@ impl FunctionLikeIdentifier {
         match self {
             FunctionLikeIdentifier::Function(_) => "function",
             FunctionLikeIdentifier::Method(_, _) => "method",
-            FunctionLikeIdentifier::Closure(_) => "closure",
+            FunctionLikeIdentifier::Closure(_, _) => "closure",
         }
     }
 
@@ -90,8 +93,8 @@ impl FunctionLikeIdentifier {
             FunctionLikeIdentifier::Method(fq_classlike_name, method_name) => {
                 format!("{}::{}", interner.lookup(fq_classlike_name), interner.lookup(method_name))
             }
-            FunctionLikeIdentifier::Closure(position) => {
-                format!("{}:{}", position.file_id, position.offset)
+            FunctionLikeIdentifier::Closure(file_id, position) => {
+                format!("{}:{}", file_id, position.offset)
             }
         }
     }
@@ -108,8 +111,8 @@ impl FunctionLikeIdentifier {
             FunctionLikeIdentifier::Method(fq_classlike_name, method_name) => {
                 format!("{fq_classlike_name}::{method_name}")
             }
-            FunctionLikeIdentifier::Closure(position) => {
-                format!("{}::{}", position.file_id, position.offset)
+            FunctionLikeIdentifier::Closure(file_id, position) => {
+                format!("{}::{}", file_id, position.offset)
             }
         }
     }

@@ -1,4 +1,5 @@
 use mago_database::file::File;
+use mago_database::file::HasFileId;
 use mago_interner::ThreadedInterner;
 use mago_syntax_core::input::Input;
 
@@ -57,12 +58,5 @@ fn construct<'i>(interner: &'i ThreadedInterner, lexer: Lexer<'_, 'i>) -> (Progr
         statements
     };
 
-    (
-        Program {
-            file_id: stream.get_position().file_id,
-            statements: Sequence::new(statements),
-            trivia: stream.get_trivia(),
-        },
-        error,
-    )
+    (Program { file_id: stream.file_id(), statements: Sequence::new(statements), trivia: stream.get_trivia() }, error)
 }

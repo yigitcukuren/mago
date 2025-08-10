@@ -269,12 +269,22 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
 
             Some(TUnion::new(vec![TAtomic::Array(TArray::Keyed(keyed_array))]))
         }
-        Expression::Closure(closure) => Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(
-            FunctionLikeIdentifier::Closure(closure.start_position()),
-        )))),
-        Expression::ArrowFunction(arrow_func) => Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(
-            FunctionLikeIdentifier::Closure(arrow_func.start_position()),
-        )))),
+        Expression::Closure(closure) => {
+            let span = closure.span();
+
+            Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(FunctionLikeIdentifier::Closure(
+                span.file_id,
+                span.start,
+            )))))
+        }
+        Expression::ArrowFunction(arrow_func) => {
+            let span = arrow_func.span();
+
+            Some(wrap_atomic(TAtomic::Callable(TCallable::Alias(FunctionLikeIdentifier::Closure(
+                span.file_id,
+                span.start,
+            )))))
+        }
         _ => None,
     }
 }
