@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use ahash::HashMap;
 
+use ahash::HashSet;
 use mago_codex::get_class_like;
 use mago_codex::is_instance_of;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
@@ -12,6 +13,7 @@ use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
+use mago_codex::ttype::atomic::array::key::ArrayKey;
 use mago_codex::ttype::atomic::callable::TCallable;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
@@ -100,7 +102,6 @@ fn infer_templates_from_input_and_container_types(
         TUnion::new(residual_input_types)
     };
 
-    // A map to hold potential violations, to be processed only if no other valid inference is found.
     let mut potential_template_violations = HashMap::default();
 
     for container_atomic_part in &generic_container_parts {
@@ -264,44 +265,192 @@ fn infer_templates_from_input_and_container_types(
                                     }
                                 }
                             }
-                            (TArray::List(_), TArray::Keyed(_)) => {
-                                let container_value =
-                                    get_array_value_parameter(container_array, context.codebase, context.interner);
-                                let input_value =
-                                    get_array_value_parameter(input_array, context.codebase, context.interner);
+                            (TArray::List(container_list), TArray::Keyed(input_keyed_array)) => {
+                                let mut matched_input_keys: HashSet<ArrayKey> = HashSet::default();
 
-                                infer_templates_from_input_and_container_types(
-                                    context,
-                                    &container_value,
-                                    &input_value,
-                                    template_result,
-                                    options,
-                                    violations,
-                                );
+                                if let Some(container_elements) = &container_list.known_elements {
+                                    for (container_index, (_, container_element)) in container_elements.iter() {
+                                        if let Some(known_items) = &input_keyed_array.known_items {
+                                            let key = ArrayKey::Integer(*container_index as i64);
+                                            if let Some((_, input_element)) = known_items.get(&key) {
+                                                matched_input_keys.insert(key);
+
+                                                infer_templates_from_input_and_container_types(
+                                                    context,
+                                                    container_element,
+                                                    input_element,
+                                                    template_result,
+                                                    options,
+                                                    violations,
+                                                );
+
+                                                continue;
+                                            }
+                                        }
+
+                                        let input_element = input_keyed_array
+                                            .parameters
+                                            .as_ref()
+                                            .map(|params| params.1.as_ref())
+                                            .map(Cow::Borrowed)
+                                            .unwrap_or_else(|| {
+                                                Cow::Owned(get_array_value_parameter(
+                                                    input_array,
+                                                    context.codebase,
+                                                    context.interner,
+                                                ))
+                                            });
+
+                                        infer_templates_from_input_and_container_types(
+                                            context,
+                                            container_element,
+                                            &input_element,
+                                            template_result,
+                                            options,
+                                            violations,
+                                        );
+                                    }
+                                }
+
+                                if !container_list.element_type.is_never() {
+                                    let mut input_value_type =
+                                        if let Some(params) = input_keyed_array.parameters.as_ref() {
+                                            Cow::Borrowed(params.1.as_ref())
+                                        } else {
+                                            Cow::Owned(get_array_value_parameter(
+                                                input_array,
+                                                context.codebase,
+                                                context.interner,
+                                            ))
+                                        };
+
+                                    if let Some(known_input_items) = &input_keyed_array.known_items {
+                                        for (input_key, (_, input_item)) in known_input_items.iter() {
+                                            if !matched_input_keys.contains(input_key) {
+                                                input_value_type = Cow::Owned(add_union_type(
+                                                    input_item.clone(),
+                                                    input_value_type.as_ref(),
+                                                    context.codebase,
+                                                    context.interner,
+                                                    false,
+                                                ));
+                                            }
+                                        }
+                                    }
+
+                                    infer_templates_from_input_and_container_types(
+                                        context,
+                                        &container_list.element_type,
+                                        &input_value_type,
+                                        template_result,
+                                        options,
+                                        violations,
+                                    );
+                                }
                             }
-                            (TArray::Keyed(_), TArray::List(_)) => {
-                                let container_params =
-                                    get_array_parameters(container_array, context.codebase, context.interner);
-                                let input_params =
-                                    get_array_parameters(input_array, context.codebase, context.interner);
+                            (TArray::Keyed(container_array), TArray::List(input_list)) => {
+                                let mut matched_input_indices: HashSet<usize> = HashSet::default();
 
-                                infer_templates_from_input_and_container_types(
-                                    context,
-                                    &container_params.0,
-                                    &input_params.0,
-                                    template_result,
-                                    options,
-                                    violations,
-                                );
+                                if let Some(known_items) = &container_array.known_items {
+                                    for (container_key, (_, container_item)) in known_items.iter() {
+                                        match container_key {
+                                            ArrayKey::Integer(i) if *i >= 0 => {
+                                                let idx = *i as usize;
+                                                if let Some(known_elems) = &input_list.known_elements
+                                                    && let Some((_, input_elem)) = known_elems.get(&idx)
+                                                {
+                                                    matched_input_indices.insert(idx);
 
-                                infer_templates_from_input_and_container_types(
-                                    context,
-                                    &container_params.1,
-                                    &input_params.1,
-                                    template_result,
-                                    options,
-                                    violations,
-                                );
+                                                    infer_templates_from_input_and_container_types(
+                                                        context,
+                                                        container_item,
+                                                        input_elem,
+                                                        template_result,
+                                                        options,
+                                                        violations,
+                                                    );
+
+                                                    continue;
+                                                }
+
+                                                // no exact element at that index -> fall back to list element_type
+                                                if !input_list.element_type.is_never() {
+                                                    infer_templates_from_input_and_container_types(
+                                                        context,
+                                                        container_item,
+                                                        input_list.element_type.as_ref(),
+                                                        template_result,
+                                                        options,
+                                                        violations,
+                                                    );
+                                                }
+                                            }
+                                            _ => {
+                                                if !input_list.element_type.is_never() {
+                                                    infer_templates_from_input_and_container_types(
+                                                        context,
+                                                        container_item,
+                                                        input_list.element_type.as_ref(),
+                                                        template_result,
+                                                        options,
+                                                        violations,
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if let Some(container_parameter) = container_array.parameters.as_ref() {
+                                    let input_params =
+                                        get_array_parameters(input_array, context.codebase, context.interner);
+                                    let mut input_key_type = Some(Cow::Owned(input_params.0));
+                                    let mut input_value_type = Some(Cow::Borrowed(&input_params.1));
+
+                                    if let Some(known_input_elements) = &input_list.known_elements {
+                                        for (input_index, (_, input_element)) in known_input_elements.iter() {
+                                            if !matched_input_indices.contains(input_index) {
+                                                let int_key = ArrayKey::Integer(*input_index as i64);
+
+                                                input_key_type = Some(Cow::Owned(add_optional_union_type(
+                                                    int_key.to_union(),
+                                                    input_key_type.as_deref(),
+                                                    context.codebase,
+                                                    context.interner,
+                                                )));
+
+                                                input_value_type = Some(Cow::Owned(add_optional_union_type(
+                                                    input_element.clone(),
+                                                    input_value_type.as_deref(),
+                                                    context.codebase,
+                                                    context.interner,
+                                                )));
+                                            }
+                                        }
+                                    }
+
+                                    if let Some(input_key_type) = input_key_type {
+                                        infer_templates_from_input_and_container_types(
+                                            context,
+                                            &container_parameter.0,
+                                            &input_key_type,
+                                            template_result,
+                                            options,
+                                            violations,
+                                        );
+                                    }
+
+                                    if let Some(input_value_type) = input_value_type {
+                                        infer_templates_from_input_and_container_types(
+                                            context,
+                                            &container_parameter.1,
+                                            &input_value_type,
+                                            template_result,
+                                            options,
+                                            violations,
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
@@ -510,45 +659,43 @@ fn infer_templates_from_input_and_container_types(
                     input_objects.push(class_string.get_object_type(context.codebase, context.interner));
                 }
 
-                if input_objects.is_empty() {
+                if input_objects.is_empty() || !should_add_bound {
                     continue;
                 }
 
                 let mut lower_bound_type = TUnion::new(input_objects);
-                if should_add_bound {
-                    if let Some(template_types) = template_result.template_types.get_mut(parameter_name) {
-                        for (_, template_type) in template_types {
-                            if !union_comparator::is_contained_by(
-                                context.codebase,
-                                context.interner,
-                                &lower_bound_type,
-                                template_type,
-                                false,
-                                false,
-                                false,
-                                &mut ComparisonResult::default(),
-                            ) {
-                                lower_bound_type = template_type.clone();
+                if let Some(template_types) = template_result.template_types.get_mut(parameter_name) {
+                    for (_, template_type) in template_types {
+                        if !union_comparator::is_contained_by(
+                            context.codebase,
+                            context.interner,
+                            &lower_bound_type,
+                            template_type,
+                            false,
+                            false,
+                            false,
+                            &mut ComparisonResult::default(),
+                        ) {
+                            lower_bound_type = template_type.clone();
 
-                                violations.push(TemplateInferenceViolation {
-                                    template_name: *parameter_name,
-                                    inferred_bound: lower_bound_type.clone(),
-                                    constraint: template_type.clone(),
-                                });
-                            }
+                            violations.push(TemplateInferenceViolation {
+                                template_name: *parameter_name,
+                                inferred_bound: lower_bound_type.clone(),
+                                constraint: template_type.clone(),
+                            });
                         }
                     }
-
-                    insert_bound_type(
-                        template_result,
-                        *parameter_name,
-                        defining_entity,
-                        lower_bound_type,
-                        StandinOptions { appearance_depth: 1, ..Default::default() },
-                        options.argument_offset,
-                        options.source_span,
-                    );
                 }
+
+                insert_bound_type(
+                    template_result,
+                    *parameter_name,
+                    defining_entity,
+                    lower_bound_type,
+                    StandinOptions { appearance_depth: 1, ..Default::default() },
+                    options.argument_offset,
+                    options.source_span,
+                );
             }
             _ => {}
         }
@@ -568,45 +715,49 @@ fn infer_templates_from_input_and_container_types(
                 .and_then(|map| map.get(&container_generic.defining_entity))
                 .is_none_or(|bounds| bounds.is_empty());
 
-        if should_add_bound {
-            let mut has_violation = false;
+        if !should_add_bound {
+            continue;
+        }
 
-            if let Some(template_types) = template_result.template_types.get_mut(template_parameter_name) {
-                for (_, template_type) in template_types {
-                    if !union_comparator::is_contained_by(
-                        context.codebase,
-                        context.interner,
-                        &residual_input_type,
-                        template_type,
-                        false,
-                        false,
-                        false,
-                        &mut ComparisonResult::default(),
-                    ) {
-                        potential_template_violations
-                            .entry((*template_parameter_name, container_generic.defining_entity))
-                            .or_insert_with(|| {
-                                (residual_input_type.clone(), template_type.clone(), container_generic.clone())
-                            });
+        let mut has_violation = false;
 
-                        has_violation = true;
-                        break;
-                    }
+        if let Some(template_types) = template_result.template_types.get_mut(template_parameter_name) {
+            for (_, template_type) in template_types {
+                if !union_comparator::is_contained_by(
+                    context.codebase,
+                    context.interner,
+                    &residual_input_type,
+                    template_type,
+                    false,
+                    false,
+                    false,
+                    &mut ComparisonResult::default(),
+                ) {
+                    potential_template_violations
+                        .entry((*template_parameter_name, container_generic.defining_entity))
+                        .or_insert_with(|| {
+                            (residual_input_type.clone(), template_type.clone(), container_generic.clone())
+                        });
+
+                    has_violation = true;
+                    break;
                 }
             }
-
-            if !has_violation {
-                insert_bound_type(
-                    template_result,
-                    *template_parameter_name,
-                    &container_generic.defining_entity,
-                    residual_input_type.clone(),
-                    StandinOptions { appearance_depth: 1, ..Default::default() },
-                    options.argument_offset,
-                    options.source_span,
-                );
-            }
         }
+
+        if has_violation {
+            continue;
+        }
+
+        insert_bound_type(
+            template_result,
+            *template_parameter_name,
+            &container_generic.defining_entity,
+            residual_input_type.clone(),
+            StandinOptions { appearance_depth: 1, ..Default::default() },
+            options.argument_offset,
+            options.source_span,
+        );
     }
 
     for ((template_parameter_name, defining_entity), (inferred_type, constraint, _)) in potential_template_violations {

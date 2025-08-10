@@ -122,10 +122,10 @@ impl DatabaseLoader {
                 if glob_excludes.is_match(&path) {
                     return None;
                 }
-                if let Ok(p) = path.canonicalize() {
-                    if path_excludes.contains(&p) {
-                        return None;
-                    }
+                if let Ok(p) = path.canonicalize()
+                    && path_excludes.contains(&p)
+                {
+                    return None;
                 }
                 if let Some(ext) = path.extension() {
                     if !extensions.contains(ext) {
