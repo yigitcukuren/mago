@@ -17,11 +17,7 @@ use mago_database::file::HasFileId;
 ///
 /// This struct combines a [`FileId`] with a zero-based `offset` to create a
 /// precise, unique location pointer.
-///
-/// The memory layout is specified as `#[repr(C)]` to ensure stability for
-/// potential foreign function interfaces (FFI).
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Position {
     /// The unique identifier of the file this position belongs to.
     pub file_id: FileId,
@@ -33,10 +29,7 @@ pub struct Position {
 ///
 /// A `Span` is defined by a `start` and `end` [`Position`], marking the beginning
 /// (inclusive) and end (exclusive) of a source code segment.
-///
-/// The memory layout is specified as `#[repr(C)]` for stability.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Span {
     /// The starting position of the span (inclusive).
     pub start: Position,

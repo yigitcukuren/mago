@@ -27,7 +27,6 @@ pub mod r#while;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Continue {
     pub r#continue: Keyword,
     pub level: Option<Expression>,
@@ -48,7 +47,6 @@ pub struct Continue {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Break {
     pub r#break: Keyword,
     pub level: Option<Expression>,

@@ -6,7 +6,6 @@ use mago_span::Span;
 use crate::ast::Type;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ParenthesizedType<'input> {
     pub left_parenthesis: Span,
     pub inner: Box<Type<'input>>,
@@ -14,7 +13,6 @@ pub struct ParenthesizedType<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct UnionType<'input> {
     pub left: Box<Type<'input>>,
     pub pipe: Span,
@@ -22,7 +20,6 @@ pub struct UnionType<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IntersectionType<'input> {
     pub left: Box<Type<'input>>,
     pub ampersand: Span,
@@ -30,7 +27,6 @@ pub struct IntersectionType<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NullableType<'input> {
     pub question_mark: Span,
     pub inner: Box<Type<'input>>,

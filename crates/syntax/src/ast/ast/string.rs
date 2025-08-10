@@ -19,7 +19,6 @@ pub enum CompositeString {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ShellExecuteString {
     pub left_backtick: Span,
     pub parts: Sequence<StringPart>,
@@ -27,7 +26,6 @@ pub struct ShellExecuteString {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct InterpolatedString {
     pub left_double_quote: Span,
     pub parts: Sequence<StringPart>,
@@ -36,7 +34,6 @@ pub struct InterpolatedString {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
-#[repr(C)]
 pub enum DocumentKind {
     Heredoc,
     Nowdoc,
@@ -53,7 +50,6 @@ pub enum DocumentIndentation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct DocumentString {
     pub open: Span,
     pub kind: DocumentKind,
@@ -73,14 +69,12 @@ pub enum StringPart {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralStringPart {
     pub span: Span,
     pub value: StringIdentifier,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct BracedExpressionStringPart {
     pub left_brace: Span,
     pub expression: Box<Expression>,

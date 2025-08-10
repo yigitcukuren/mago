@@ -7,7 +7,6 @@ use crate::token::TypeToken;
 use crate::token::TypeTokenKind;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct VariableType<'input> {
     pub span: Span,
     pub value: &'input str,

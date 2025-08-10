@@ -6,14 +6,12 @@ use mago_span::Span;
 use crate::ast::Type;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NegatedType<'input> {
     pub minus: Span,
     pub inner: Box<Type<'input>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PositedType<'input> {
     pub plus: Span,
     pub inner: Box<Type<'input>>,

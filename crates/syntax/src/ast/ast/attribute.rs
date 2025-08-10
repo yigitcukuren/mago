@@ -12,7 +12,6 @@ use crate::ast::sequence::TokenSeparatedSequence;
 ///
 /// Example: `#[Foo, Bar(1)]` in `#[Foo, Bar(1)] class Foo {}`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct AttributeList {
     pub hash_left_bracket: Span,
     pub attributes: TokenSeparatedSequence<Attribute>,
@@ -23,7 +22,6 @@ pub struct AttributeList {
 ///
 /// Example: `Foo` in `#[Foo]`, `Bar(1)` in `#[Bar(1)]`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Attribute {
     pub name: Identifier,
     pub argument_list: Option<ArgumentList>,

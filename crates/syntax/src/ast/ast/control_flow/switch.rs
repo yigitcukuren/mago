@@ -13,7 +13,6 @@ use crate::ast::sequence::Sequence;
 
 /// Represents a `switch` statement in PHP.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Switch {
     pub switch: Keyword,
     pub left_parenthesis: Span,
@@ -33,7 +32,6 @@ pub enum SwitchBody {
 
 /// Represents a brace-delimited body of a switch statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct SwitchBraceDelimitedBody {
     pub left_brace: Span,
     pub optional_terminator: Option<Terminator>,
@@ -43,7 +41,6 @@ pub struct SwitchBraceDelimitedBody {
 
 /// Represents a colon-delimited body of a switch statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct SwitchColonDelimitedBody {
     pub colon: Span,
     pub optional_terminator: Option<Terminator>,
@@ -65,7 +62,6 @@ pub enum SwitchCase {
 ///
 /// Example: `case 1: echo "One";`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct SwitchExpressionCase {
     pub case: Keyword,
     pub expression: Box<Expression>,
@@ -77,7 +73,6 @@ pub struct SwitchExpressionCase {
 ///
 /// Example: `default: echo "Default";`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct SwitchDefaultCase {
     pub default: Keyword,
     pub separator: SwitchCaseSeparator,

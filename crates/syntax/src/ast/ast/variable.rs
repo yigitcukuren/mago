@@ -36,7 +36,6 @@ pub enum Variable {
 /// $foo
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct DirectVariable {
     pub span: Span,
     pub name: StringIdentifier,
@@ -54,7 +53,6 @@ pub struct DirectVariable {
 /// ${foo}
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IndirectVariable {
     pub dollar_left_brace: Span,
     pub expression: Box<Expression>,
@@ -73,7 +71,6 @@ pub struct IndirectVariable {
 /// $$$foo
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NestedVariable {
     pub dollar: Span,
     pub variable: Box<Variable>,

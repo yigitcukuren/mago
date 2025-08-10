@@ -7,7 +7,6 @@ use crate::ast::Type;
 use crate::ast::keyword::Keyword;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ConditionalType<'input> {
     pub subject: Box<Type<'input>>,
     pub is: Keyword<'input>,

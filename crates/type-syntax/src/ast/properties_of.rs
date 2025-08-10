@@ -9,7 +9,6 @@ use crate::ast::keyword::Keyword;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
-#[repr(C)]
 pub enum PropertiesOfFilter {
     All,
     Public,
@@ -18,7 +17,6 @@ pub enum PropertiesOfFilter {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertiesOfType<'input> {
     pub filter: PropertiesOfFilter,
     pub keyword: Keyword<'input>,

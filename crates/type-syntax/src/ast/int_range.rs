@@ -8,7 +8,6 @@ use crate::ast::literal::LiteralIntType;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
 #[serde(tag = "type", content = "value")]
-#[repr(C)]
 pub enum IntOrKeyword<'input> {
     NegativeInt { minus: Span, int: LiteralIntType<'input> },
     Int(LiteralIntType<'input>),
@@ -16,7 +15,6 @@ pub enum IntOrKeyword<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IntRangeType<'input> {
     pub keyword: Keyword<'input>,
     pub less_than: Span,

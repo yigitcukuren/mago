@@ -25,7 +25,6 @@ use crate::ast::sequence::Sequence;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct While {
     pub r#while: Keyword,
     pub left_parenthesis: Span,
@@ -57,7 +56,6 @@ pub enum WhileBody {
 /// endwhile;
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct WhileColonDelimitedBody {
     pub colon: Span,
     pub statements: Sequence<Statement>,

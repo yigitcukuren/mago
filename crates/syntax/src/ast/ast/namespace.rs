@@ -25,7 +25,6 @@ use crate::ast::sequence::Sequence;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Namespace {
     pub namespace: Keyword,
     pub name: Option<Identifier>,
@@ -53,7 +52,6 @@ pub enum NamespaceBody {
 /// // ...
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NamespaceImplicitBody {
     pub terminator: Terminator,
     pub statements: Sequence<Statement>,

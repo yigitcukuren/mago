@@ -23,7 +23,6 @@ use crate::ast::sequence::Sequence;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Foreach {
     pub foreach: Keyword,
     pub left_parenthesis: Span,
@@ -55,7 +54,6 @@ pub enum ForeachTarget {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ForeachValueTarget {
     pub value: Box<Expression>,
 }
@@ -72,7 +70,6 @@ pub struct ForeachValueTarget {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ForeachKeyValueTarget {
     pub key: Box<Expression>,
     pub double_arrow: Span,
@@ -102,7 +99,6 @@ pub enum ForeachBody {
 /// endforeach;
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ForeachColonDelimitedBody {
     pub colon: Span,
     pub statements: Sequence<Statement>,

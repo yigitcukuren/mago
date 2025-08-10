@@ -11,7 +11,6 @@ use crate::ast::ast::variable::DirectVariable;
 use crate::ast::sequence::Sequence;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Try {
     pub r#try: Keyword,
     pub block: Block,
@@ -20,7 +19,6 @@ pub struct Try {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TryCatchClause {
     pub r#catch: Keyword,
     pub left_parenthesis: Span,
@@ -31,7 +29,6 @@ pub struct TryCatchClause {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TryFinallyClause {
     pub r#finally: Keyword,
     pub block: Block,

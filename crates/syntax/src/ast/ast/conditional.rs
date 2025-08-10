@@ -7,7 +7,6 @@ use mago_span::Span;
 use crate::ast::ast::expression::Expression;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Conditional {
     pub condition: Box<Expression>,
     pub question_mark: Span,

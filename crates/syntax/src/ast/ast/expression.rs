@@ -49,7 +49,6 @@ use crate::ast::ast::r#yield::Yield;
 use crate::ast::node::NodeKind;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Parenthesized {
     pub left_parenthesis: Span,
     pub expression: Box<Expression>,

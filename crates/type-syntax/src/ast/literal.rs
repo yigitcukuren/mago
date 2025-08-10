@@ -5,7 +5,6 @@ use mago_span::HasSpan;
 use mago_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralIntType<'input> {
     pub span: Span,
     pub value: u64,
@@ -13,7 +12,6 @@ pub struct LiteralIntType<'input> {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralFloatType<'input> {
     pub span: Span,
     pub value: OrderedFloat<f64>,
@@ -21,7 +19,6 @@ pub struct LiteralFloatType<'input> {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralStringType<'input> {
     pub span: Span,
     pub value: &'input str, // unquoted

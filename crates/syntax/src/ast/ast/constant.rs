@@ -16,7 +16,6 @@ use crate::ast::sequence::TokenSeparatedSequence;
 ///
 /// Example: `const FOO = 1;` or `const BAR = 2, QUX = 3, BAZ = 4;`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Constant {
     pub attribute_lists: Sequence<AttributeList>,
     pub r#const: Keyword,
@@ -26,7 +25,6 @@ pub struct Constant {
 
 /// Represents a single name-value pair within a constant statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ConstantItem {
     pub name: LocalIdentifier,
     pub equals: Span,

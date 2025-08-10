@@ -28,7 +28,6 @@ use crate::ast::ast::terminator::Terminator;
 /// ?>
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Goto {
     pub goto: Keyword,
     pub label: LocalIdentifier,
@@ -45,7 +44,6 @@ pub struct Goto {
 /// foo:
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Label {
     pub name: LocalIdentifier,
     pub colon: Span,

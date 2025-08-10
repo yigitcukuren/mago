@@ -44,7 +44,6 @@ pub enum ClassLikeConstantSelector {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ClassLikeMemberExpressionSelector {
     pub left_brace: Span,
     pub expression: Box<Expression>,

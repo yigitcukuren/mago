@@ -13,7 +13,6 @@ use crate::ast::sequence::TokenSeparatedSequence;
 ///
 /// Example: `($bar, 42)` in `foo($bar, 42)`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ArgumentList {
     pub left_parenthesis: Span,
     pub arguments: TokenSeparatedSequence<Argument>,
@@ -33,7 +32,6 @@ pub enum Argument {
 ///
 /// Example: `$foo` in `foo($foo)`, `...$bar` in `foo(...$bar)`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PositionalArgument {
     pub ellipsis: Option<Span>,
     pub value: Expression,
@@ -43,7 +41,6 @@ pub struct PositionalArgument {
 ///
 /// Example: `foo: 42` in `foo(foo: 42)`, `bar: ...$bar` in `foo(bar: ...$bar)`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NamedArgument {
     pub name: LocalIdentifier,
     pub colon: Span,

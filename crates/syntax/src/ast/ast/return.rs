@@ -20,7 +20,6 @@ use crate::ast::ast::terminator::Terminator;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Return {
     pub r#return: Keyword,
     pub value: Option<Expression>,

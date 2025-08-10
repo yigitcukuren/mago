@@ -15,7 +15,6 @@ use crate::ast::sequence::TokenSeparatedSequence;
 
 /// Represents a parameter list in PHP.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct FunctionLikeParameterList {
     pub left_parenthesis: Span,
     pub parameters: TokenSeparatedSequence<FunctionLikeParameter>,
@@ -26,7 +25,6 @@ pub struct FunctionLikeParameterList {
 ///
 /// Example: `int $foo`, `string &$bar`, `bool ...$baz`, `mixed $qux = null`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct FunctionLikeParameter {
     pub attribute_lists: Sequence<AttributeList>,
     pub modifiers: Sequence<Modifier>,
@@ -40,7 +38,6 @@ pub struct FunctionLikeParameter {
 
 /// Represents the default value of a function-like parameter.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct FunctionLikeParameterDefaultValue {
     pub equals: Span,
     pub value: Expression,

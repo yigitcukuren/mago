@@ -25,7 +25,6 @@ use crate::ast::sequence::Sequence;
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct If {
     pub r#if: Keyword,
     pub left_parenthesis: Span,
@@ -47,7 +46,6 @@ pub enum IfBody {
 
 /// Represents the body of an `if` statement when it is a statement body.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfStatementBody {
     pub statement: Box<Statement>,
     pub else_if_clauses: Sequence<IfStatementBodyElseIfClause>,
@@ -56,7 +54,6 @@ pub struct IfStatementBody {
 
 /// Represents an `elseif` clause in a statement body of an `if` statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfStatementBodyElseIfClause {
     pub elseif: Keyword,
     pub left_parenthesis: Span,
@@ -67,7 +64,6 @@ pub struct IfStatementBodyElseIfClause {
 
 /// Represents an `else` clause in a statement body of an `if` statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfStatementBodyElseClause {
     pub r#else: Keyword,
     pub statement: Box<Statement>,
@@ -75,7 +71,6 @@ pub struct IfStatementBodyElseClause {
 
 /// Represents a colon-delimited body of an `if` statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfColonDelimitedBody {
     pub colon: Span,
     pub statements: Sequence<Statement>,
@@ -87,7 +82,6 @@ pub struct IfColonDelimitedBody {
 
 /// Represents an `elseif` clause in a colon-delimited body of an `if` statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfColonDelimitedBodyElseIfClause {
     pub elseif: Keyword,
     pub left_parenthesis: Span,
@@ -99,7 +93,6 @@ pub struct IfColonDelimitedBodyElseIfClause {
 
 /// Represents an `else` clause in a colon-delimited body of an `if` statement.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IfColonDelimitedBodyElseClause {
     pub r#else: Keyword,
     pub colon: Span,

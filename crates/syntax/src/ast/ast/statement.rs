@@ -46,7 +46,6 @@ use super::NamespaceBody;
 use super::WhileBody;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ExpressionStatement {
     pub expression: Box<Expression>,
     pub terminator: Terminator,

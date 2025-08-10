@@ -40,7 +40,6 @@ pub enum Property {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PlainProperty {
     pub attribute_lists: Sequence<AttributeList>,
     pub modifiers: Sequence<Modifier>,
@@ -71,7 +70,6 @@ pub struct PlainProperty {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct HookedProperty {
     pub attribute_lists: Sequence<AttributeList>,
     pub modifiers: Sequence<Modifier>,
@@ -102,7 +100,6 @@ pub enum PropertyItem {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyAbstractItem {
     pub variable: DirectVariable,
 }
@@ -119,7 +116,6 @@ pub struct PropertyAbstractItem {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyConcreteItem {
     pub variable: DirectVariable,
     pub equals: Span,
@@ -145,7 +141,6 @@ pub struct PropertyConcreteItem {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyHookList {
     pub left_brace: Span,
     pub hooks: Sequence<PropertyHook>,
@@ -168,7 +163,6 @@ pub struct PropertyHookList {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyHook {
     pub attribute_lists: Sequence<AttributeList>,
     pub modifiers: Sequence<Modifier>,
@@ -189,7 +183,6 @@ pub enum PropertyHookBody {
 
 /// Represents an abstract body of a property hook in a class-like property declaration in PHP.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyHookAbstractBody {
     pub semicolon: Span,
 }
@@ -205,7 +198,6 @@ pub enum PropertyHookConcreteBody {
 
 /// Represents an expression body of a property hook in a class-like property declaration in PHP.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyHookConcreteExpressionBody {
     pub arrow: Span,
     pub expression: Expression,

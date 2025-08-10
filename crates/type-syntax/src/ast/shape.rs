@@ -10,7 +10,6 @@ use crate::ast::keyword::Keyword;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
-#[repr(C)]
 pub enum ShapeTypeKind {
     Array,
     NonEmptyArray,
@@ -20,7 +19,6 @@ pub enum ShapeTypeKind {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ShapeType<'input> {
     pub kind: ShapeTypeKind,
     pub keyword: Keyword<'input>,
@@ -31,7 +29,6 @@ pub struct ShapeType<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ShapeFieldKey<'input> {
     pub name: Box<Type<'input>>,
     pub question_mark: Option<Span>,
@@ -39,7 +36,6 @@ pub struct ShapeFieldKey<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ShapeField<'input> {
     pub key: Option<ShapeFieldKey<'input>>,
     pub value: Box<Type<'input>>,
@@ -47,7 +43,6 @@ pub struct ShapeField<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ShapeAdditionalFields<'input> {
     pub ellipsis: Span,
     pub parameters: Option<GenericParameters<'input>>,

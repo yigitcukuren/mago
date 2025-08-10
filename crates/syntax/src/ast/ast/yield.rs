@@ -42,7 +42,6 @@ pub enum Yield {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct YieldValue {
     pub r#yield: Keyword,
     pub value: Option<Box<Expression>>,
@@ -60,7 +59,6 @@ pub struct YieldValue {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct YieldPair {
     pub r#yield: Keyword,
     pub key: Box<Expression>,
@@ -80,7 +78,6 @@ pub struct YieldPair {
 /// }
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct YieldFrom {
     pub r#yield: Keyword,
     pub from: Keyword,

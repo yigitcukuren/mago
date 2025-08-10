@@ -52,7 +52,6 @@ pub enum BinaryOperator {
 ///
 /// A binary operation is an operation that takes two operands, a left-hand side and a right-hand side.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Binary {
     pub lhs: Box<Expression>,
     pub operator: BinaryOperator,

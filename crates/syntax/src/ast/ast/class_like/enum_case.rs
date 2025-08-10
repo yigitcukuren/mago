@@ -13,7 +13,6 @@ use crate::ast::ast::terminator::Terminator;
 use crate::ast::sequence::Sequence;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct EnumCase {
     pub attribute_lists: Sequence<AttributeList>,
     pub case: Keyword,
@@ -30,13 +29,11 @@ pub enum EnumCaseItem {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct EnumCaseUnitItem {
     pub name: LocalIdentifier,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct EnumCaseBackedItem {
     pub name: LocalIdentifier,
     pub equals: Span,

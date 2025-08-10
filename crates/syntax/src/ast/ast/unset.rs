@@ -10,7 +10,6 @@ use crate::ast::ast::terminator::Terminator;
 use crate::ast::sequence::TokenSeparatedSequence;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Unset {
     pub unset: Keyword,
     pub left_parenthesis: Span,

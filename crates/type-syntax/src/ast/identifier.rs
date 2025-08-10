@@ -6,7 +6,6 @@ use mago_span::Span;
 use crate::token::TypeToken;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Identifier<'input> {
     pub span: Span,
     pub value: &'input str,

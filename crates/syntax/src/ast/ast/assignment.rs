@@ -30,7 +30,6 @@ pub enum AssignmentOperator {
 
 /// Represents a PHP assignment operation
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Assignment {
     pub lhs: Box<Expression>,
     pub operator: AssignmentOperator,

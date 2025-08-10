@@ -23,7 +23,6 @@ use crate::ast::sequence::TokenSeparatedSequence;
 /// declare(strict_types=1);
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct Declare {
     pub declare: Keyword,
     pub left_parenthesis: Span,
@@ -36,7 +35,6 @@ pub struct Declare {
 ///
 /// Example: `strict_types=1`
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct DeclareItem {
     pub name: LocalIdentifier,
     pub equal: Span,
@@ -63,7 +61,6 @@ pub enum DeclareBody {
 /// enddeclare;
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct DeclareColonDelimitedBody {
     pub colon: Span,
     pub statements: Sequence<Statement>,

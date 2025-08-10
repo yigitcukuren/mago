@@ -14,7 +14,6 @@ use crate::ast::sequence::Sequence;
 use crate::ast::sequence::TokenSeparatedSequence;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUse {
     pub r#use: Keyword,
     pub trait_names: TokenSeparatedSequence<Identifier>,
@@ -30,11 +29,9 @@ pub enum TraitUseSpecification {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUseAbstractSpecification(pub Terminator);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUseConcreteSpecification {
     pub left_brace: Span,
     pub adaptations: Sequence<TraitUseAdaptation>,
@@ -50,7 +47,6 @@ pub enum TraitUseAdaptation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUsePrecedenceAdaptation {
     pub method_reference: TraitUseAbsoluteMethodReference,
     pub insteadof: Keyword,
@@ -59,7 +55,6 @@ pub struct TraitUsePrecedenceAdaptation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUseAliasAdaptation {
     pub method_reference: TraitUseMethodReference,
     pub r#as: Keyword,
@@ -77,7 +72,6 @@ pub enum TraitUseMethodReference {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TraitUseAbsoluteMethodReference {
     pub trait_name: Identifier,
     pub double_colon: Span,

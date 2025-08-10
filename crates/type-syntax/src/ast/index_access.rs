@@ -6,7 +6,6 @@ use mago_span::Span;
 use crate::ast::Type;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IndexAccessType<'input> {
     pub target: Box<Type<'input>>,
     pub left_bracket: Span,

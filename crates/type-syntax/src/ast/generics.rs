@@ -6,14 +6,12 @@ use mago_span::Span;
 use crate::ast::Type;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct GenericParameterEntry<'input> {
     pub inner: Type<'input>,
     pub comma: Option<Span>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct GenericParameters<'input> {
     pub less_than: Span,
     pub entries: Vec<GenericParameterEntry<'input>>,
@@ -21,7 +19,6 @@ pub struct GenericParameters<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct SingleGenericParameter<'input> {
     pub less_than: Span,
     pub entry: Box<GenericParameterEntry<'input>>,

@@ -18,7 +18,6 @@ pub enum CallableTypeKind {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct CallableType<'input> {
     pub kind: CallableTypeKind,
     pub keyword: Keyword<'input>,
@@ -26,14 +25,12 @@ pub struct CallableType<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct CallableTypeSpecification<'input> {
     pub parameters: CallableTypeParameters<'input>,
     pub return_type: Option<CallableTypeReturnType<'input>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct CallableTypeParameters<'input> {
     pub left_parenthesis: Span,
     pub entries: Vec<CallableTypeParameter<'input>>,
@@ -41,7 +38,6 @@ pub struct CallableTypeParameters<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct CallableTypeParameter<'input> {
     pub parameter_type: Option<Type<'input>>,
     pub equals: Option<Span>,
@@ -51,7 +47,6 @@ pub struct CallableTypeParameter<'input> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct CallableTypeReturnType<'input> {
     pub colon: Span,
     pub return_type: Box<Type<'input>>,

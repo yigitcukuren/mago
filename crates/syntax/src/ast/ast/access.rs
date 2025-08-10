@@ -12,7 +12,6 @@ use crate::ast::ast::identifier::Identifier;
 use crate::ast::ast::variable::Variable;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ConstantAccess {
     pub name: Identifier,
 }
@@ -28,7 +27,6 @@ pub enum Access {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PropertyAccess {
     pub object: Box<Expression>,
     pub arrow: Span,
@@ -36,7 +34,6 @@ pub struct PropertyAccess {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct NullSafePropertyAccess {
     pub object: Box<Expression>,
     pub question_mark_arrow: Span,
@@ -44,7 +41,6 @@ pub struct NullSafePropertyAccess {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct StaticPropertyAccess {
     pub class: Box<Expression>,
     pub double_colon: Span,
@@ -52,7 +48,6 @@ pub struct StaticPropertyAccess {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ClassConstantAccess {
     pub class: Box<Expression>,
     pub double_colon: Span,

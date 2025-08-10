@@ -27,7 +27,6 @@ pub enum Construct {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IssetConstruct {
     pub isset: Keyword,
     pub left_parenthesis: Span,
@@ -36,7 +35,6 @@ pub struct IssetConstruct {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct EmptyConstruct {
     pub empty: Keyword,
     pub left_parenthesis: Span,
@@ -45,7 +43,6 @@ pub struct EmptyConstruct {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct EvalConstruct {
     pub eval: Keyword,
     pub left_parenthesis: Span,
@@ -54,49 +51,42 @@ pub struct EvalConstruct {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IncludeConstruct {
     pub include: Keyword,
     pub value: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IncludeOnceConstruct {
     pub include_once: Keyword,
     pub value: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct RequireConstruct {
     pub require: Keyword,
     pub value: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct RequireOnceConstruct {
     pub require_once: Keyword,
     pub value: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct PrintConstruct {
     pub print: Keyword,
     pub value: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ExitConstruct {
     pub exit: Keyword,
     pub arguments: Option<ArgumentList>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct DieConstruct {
     pub die: Keyword,
     pub arguments: Option<ArgumentList>,

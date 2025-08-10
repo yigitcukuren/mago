@@ -23,14 +23,12 @@ pub enum Literal {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
-#[repr(C)]
 pub enum LiteralStringKind {
     SingleQuoted,
     DoubleQuoted,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralString {
     pub kind: Option<LiteralStringKind>,
     pub span: Span,
@@ -39,7 +37,6 @@ pub struct LiteralString {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralInteger {
     pub span: Span,
     pub raw: StringIdentifier,
@@ -47,7 +44,6 @@ pub struct LiteralInteger {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct LiteralFloat {
     pub span: Span,
     pub raw: StringIdentifier,

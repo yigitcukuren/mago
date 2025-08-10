@@ -5,7 +5,6 @@ use strum::Display;
 use mago_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
-#[repr(C)]
 pub enum TypeTokenKind {
     Int,
     Integer,
@@ -102,7 +101,6 @@ pub enum TypeTokenKind {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct TypeToken<'input> {
     pub kind: TypeTokenKind,
     pub value: &'input str,

@@ -47,14 +47,12 @@ pub enum UnaryPostfixOperator {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct UnaryPrefix {
     pub operator: UnaryPrefixOperator,
     pub operand: Box<Expression>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct UnaryPostfix {
     pub operand: Box<Expression>,
     pub operator: UnaryPostfixOperator,

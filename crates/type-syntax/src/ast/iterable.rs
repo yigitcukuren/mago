@@ -7,7 +7,6 @@ use crate::ast::generics::GenericParameters;
 use crate::ast::keyword::Keyword;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
-#[repr(C)]
 pub struct IterableType<'input> {
     pub keyword: Keyword<'input>,
     pub parameters: Option<GenericParameters<'input>>,
