@@ -205,7 +205,8 @@ Each error includes:
 
 To use the parser, include the crate in your project and utilize the public API provided.
 
-```rust
+```rust,ignore
+use mago_database::File::FileId;
 use mago_interner::ThreadedInterner;
 use mago_span::Span;
 use mago_docblock::parse_phpdoc_with_span;
@@ -221,7 +222,7 @@ const PHPDOC: &str = r#"/**
 pub fn main() {
     let interner = ThreadedInterner::new();
 
-    let span = Span::new(Position::dummy(0), Position::dummy(phpdoc.len()));
+    let span = Span::new(FileId::zero(), Position::new(0), Position::new(phpdoc.len() as u32));
 
     let result = parse_phpdoc_with_span(&interner, phpdoc, span);
 

@@ -114,12 +114,14 @@ impl Annotation {
     ///
     /// ```
     /// use mago_reporting::{Annotation, AnnotationKind};
+    /// use mago_database::file::FileId;
     /// use mago_span::Span;
     /// use mago_span::Position;
     ///
-    /// let start = Position::dummy(0);
-    /// let end = Position::dummy(5);
-    /// let span = Span::new(start, end);
+    /// let file = FileId::zero();
+    /// let start = Position::new(0);
+    /// let end = Position::new(5);
+    /// let span = Span::new(file, start, end);
     /// let annotation = Annotation::new(AnnotationKind::Primary, span);
     /// ```
     pub fn new(kind: AnnotationKind, span: Span) -> Self {
@@ -132,12 +134,14 @@ impl Annotation {
     ///
     /// ```
     /// use mago_reporting::{Annotation, AnnotationKind};
+    /// use mago_database::file::FileId;
     /// use mago_span::Span;
     /// use mago_span::Position;
     ///
-    /// let start = Position::dummy(0);
-    /// let end = Position::dummy(5);
-    /// let span = Span::new(start, end);
+    /// let file = FileId::zero();
+    /// let start = Position::new(0);
+    /// let end = Position::new(5);
+    /// let span = Span::new(file, start, end);
     /// let annotation = Annotation::primary(span);
     /// ```
     pub fn primary(span: Span) -> Self {
@@ -150,12 +154,14 @@ impl Annotation {
     ///
     /// ```
     /// use mago_reporting::{Annotation, AnnotationKind};
+    /// use mago_database::file::FileId;
     /// use mago_span::Span;
     /// use mago_span::Position;
     ///
-    /// let start = Position::dummy(0);
-    /// let end = Position::dummy(5);
-    /// let span = Span::new(start, end);
+    /// let file = FileId::zero();
+    /// let start = Position::new(0);
+    /// let end = Position::new(5);
+    /// let span = Span::new(file, start, end);
     /// let annotation = Annotation::secondary(span);
     /// ```
     pub fn secondary(span: Span) -> Self {
@@ -168,12 +174,14 @@ impl Annotation {
     ///
     /// ```
     /// use mago_reporting::{Annotation, AnnotationKind};
+    /// use mago_database::file::FileId;
     /// use mago_span::Span;
     /// use mago_span::Position;
     ///
-    /// let start = Position::dummy(0);
-    /// let end = Position::dummy(5);
-    /// let span = Span::new(start, end);
+    /// let file = FileId::zero();
+    /// let start = Position::new(0);
+    /// let end = Position::new(5);
+    /// let span = Span::new(file, start, end);
     /// let annotation = Annotation::primary(span).with_message("This is a primary annotation");
     /// ```
     #[must_use]
@@ -322,12 +330,14 @@ impl Issue {
     ///
     /// ```
     /// use mago_reporting::{Issue, Annotation, AnnotationKind};
+    /// use mago_database::file::FileId;
     /// use mago_span::Span;
     /// use mago_span::Position;
     ///
-    /// let start = Position::dummy(0);
-    /// let end = Position::dummy(5);
-    /// let span = Span::new(start, end);
+    /// let file = FileId::zero();
+    /// let start = Position::new(0);
+    /// let end = Position::new(5);
+    /// let span = Span::new(file, start, end);
     ///
     /// let issue = Issue::error("This is an error").with_annotation(Annotation::primary(span));
     /// ```
