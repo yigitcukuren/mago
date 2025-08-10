@@ -235,7 +235,7 @@ impl<'a> FormatterState<'a> {
             let source_bytes = self.file.contents.as_bytes();
             let text_len = source_bytes.len();
             while index < text_len {
-                if !f(source_bytes[index as usize]) {
+                if !f(source_bytes[index]) {
                     return Some(index as u32);
                 }
 
