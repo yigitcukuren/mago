@@ -1504,7 +1504,6 @@ dependencies = [
  "mago-codex",
  "mago-interner",
  "mago-span",
- "rand 0.9.2",
 ]
 
 [[package]]

@@ -1,22 +1,19 @@
-use std::collections::BTreeMap;
 use std::hash::Hash;
 
 use ahash::HashSet;
 use ahash::HashSetExt;
 use indexmap::IndexMap;
 use itertools::Itertools;
-use rand::Rng;
 
 use mago_codex::assertion::Assertion;
-use mago_span::Position;
 use mago_span::Span;
 
 use crate::clause::Clause;
 
 pub mod clause;
 
-pub type SatisfyingAssignments = BTreeMap<String, Vec<Vec<Assertion>>>;
-pub type ActiveTruths = BTreeMap<String, HashSet<usize>>;
+pub type SatisfyingAssignments = IndexMap<String, Vec<Vec<Assertion>>>;
+pub type ActiveTruths = IndexMap<String, HashSet<usize>>;
 
 /// Reduces a set of CNF clauses by exhaustively applying logical simplification rules.
 ///
@@ -51,8 +48,8 @@ pub fn saturate_clauses<'a>(clauses: impl IntoIterator<Item = &'a Clause>) -> Ve
 
     fn saturate_clauses_inner(unique_clauses: Vec<&Clause>) -> Vec<Clause> {
         let unique_clauses_len = unique_clauses.len();
-        if unique_clauses_len > COMPLEXITY_THRESHOLD {
-            // If the complexity is too high, bail out early
+        if unique_clauses_len == 0 || unique_clauses_len > COMPLEXITY_THRESHOLD {
+            // If the complexity is too high, or there are no clauses, return an empty set.
             return vec![];
         }
 
@@ -239,7 +236,7 @@ pub fn saturate_clauses<'a>(clauses: impl IntoIterator<Item = &'a Clause>) -> Ve
                     }
 
                     if !common_negated_keys.is_empty() {
-                        let mut new_possibilities: BTreeMap<String, IndexMap<u64, Assertion>> = BTreeMap::default();
+                        let mut new_possibilities: IndexMap<String, IndexMap<u64, Assertion>> = IndexMap::default();
 
                         for (var_id, possibilities) in &clause_a.possibilities {
                             if !common_negated_keys.contains(var_id) {
@@ -306,8 +303,8 @@ pub fn find_satisfying_assignments(
     creating_conditional_id: Option<Span>,
     conditionally_referenced_var_ids: &mut HashSet<String>,
 ) -> (SatisfyingAssignments, ActiveTruths) {
-    let mut truths: BTreeMap<String, Vec<Vec<Assertion>>> = BTreeMap::default();
-    let mut active_truths: BTreeMap<String, HashSet<usize>> = BTreeMap::default();
+    let mut truths: IndexMap<String, Vec<Vec<Assertion>>> = IndexMap::default();
+    let mut active_truths: IndexMap<String, HashSet<usize>> = IndexMap::default();
 
     for clause in clauses {
         // Populate referenced variables from all non-generated clauses.
@@ -502,50 +499,15 @@ pub fn negate_formula(mut clauses: Vec<Clause>) -> Option<Vec<Clause>> {
     clauses.retain(|clause| clause.reconcilable);
 
     if clauses.is_empty() {
-        let mut rng = rand::rng();
-
-        let n2: u32 = rng.random();
-
-        return Some(vec![Clause::new(
-            BTreeMap::new(),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Some(true),
-            None,
-            None,
-        )]);
+        return Some(vec![]);
     }
 
     let impossible_clauses = group_impossibilities(clauses)?;
     if impossible_clauses.is_empty() {
-        let mut rng = rand::rng();
-
-        let n2: u32 = rng.random();
-        return Some(vec![Clause::new(
-            BTreeMap::new(),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Some(true),
-            None,
-            None,
-        )]);
+        return Some(vec![]);
     }
 
     let negated = saturate_clauses(impossible_clauses.iter().as_slice());
-
-    if negated.is_empty() {
-        let mut rng = rand::rng();
-
-        let n2: u32 = rng.random();
-        return Some(vec![Clause::new(
-            BTreeMap::new(),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Span::new(Position::dummy(n2 as usize), Position::dummy(n2 as usize)),
-            Some(true),
-            None,
-            None,
-        )]);
-    }
 
     Some(negated)
 }
@@ -566,7 +528,7 @@ fn group_impossibilities(mut clauses: Vec<Clause>) -> Option<Vec<Clause>> {
 
         for (var, impossible_types) in impossibilities.iter() {
             for impossible_type in impossible_types.iter() {
-                let mut seed_clause_possibilities = BTreeMap::new();
+                let mut seed_clause_possibilities = IndexMap::new();
                 seed_clause_possibilities
                     .insert(var.clone(), IndexMap::from([(impossible_type.to_hash(), impossible_type.clone())]));
 

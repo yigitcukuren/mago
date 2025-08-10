@@ -509,7 +509,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                     &mut self.context.collector,
                 ),
                 &reconcilable_if_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut case_block_context,
                 &mut changed_var_ids,
                 &if !switch_case.is_default() {

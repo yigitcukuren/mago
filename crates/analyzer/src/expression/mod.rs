@@ -1,6 +1,5 @@
-use std::collections::BTreeMap;
-
 use ahash::HashSet;
+use indexmap::IndexMap;
 
 use mago_algebra::clause::Clause;
 use mago_algebra::find_satisfying_assignments;
@@ -270,7 +269,7 @@ pub fn find_expression_logic_issues<'a>(
                 for mixed_var_id in &mixed_var_ids {
                     if var_has_root(key, mixed_var_id) {
                         return Clause::new(
-                            BTreeMap::new(),
+                            IndexMap::default(),
                             expression.span(),
                             expression.span(),
                             Some(true),

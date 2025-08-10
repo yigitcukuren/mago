@@ -1,9 +1,10 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use ahash::HashMap;
 use ahash::HashSet;
+use indexmap::IndexMap;
+
 use mago_codex::ttype::TType;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -49,7 +50,7 @@ pub(crate) fn analyze<'a>(
             reconcile_keyed_types(
                 &mut reconciliation_context,
                 &if_scope.negated_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut tmp_context,
                 &mut changed_var_ids,
                 &HashSet::default(),

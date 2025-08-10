@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
@@ -759,7 +758,7 @@ fn handle_assignment_with_boolean_logic(
         None,
     );
 
-    let mut possibilities = BTreeMap::new();
+    let mut possibilities = IndexMap::default();
     possibilities.insert(variable_id.to_owned(), IndexMap::from([(Assertion::Falsy.to_hash(), Assertion::Falsy)]));
 
     block_context.clauses.extend(

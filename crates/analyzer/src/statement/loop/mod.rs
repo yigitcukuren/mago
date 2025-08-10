@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use ahash::HashSet;
+use indexmap::IndexMap;
 
 use mago_algebra::clause::Clause;
 use mago_algebra::find_satisfying_assignments;
@@ -718,7 +719,7 @@ fn analyze<'a, 'b>(
             reconcile_keyed_types(
                 &mut reconciliation_context,
                 &negated_pre_condition_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut continue_context,
                 &mut changed_variable_ids,
                 &HashSet::default(),

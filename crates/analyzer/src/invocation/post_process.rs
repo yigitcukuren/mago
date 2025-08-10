@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use ahash::HashMap;
 use ahash::HashSet;
+use indexmap::IndexMap;
 
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
@@ -203,7 +204,7 @@ fn apply_assertion_to_call_context<'a>(
 
     let referenced_variable_ids: HashSet<String> = type_assertions.keys().cloned().collect();
     let mut changed_variable_ids: HashSet<String> = HashSet::default();
-    let mut active_type_assertions = BTreeMap::new();
+    let mut active_type_assertions = IndexMap::new();
     for (variable, type_assertion) in &type_assertions {
         active_type_assertions.insert(variable.clone(), (1..type_assertion.len()).collect());
     }
@@ -262,8 +263,8 @@ fn resolve_invocation_assertion<'a>(
     assertions: &BTreeMap<StringIdentifier, Vec<Assertion>>,
     template_result: &TemplateResult,
     parameters: &HashMap<StringIdentifier, TUnion>,
-) -> BTreeMap<String, Vec<Vec<Assertion>>> {
-    let mut type_assertions: BTreeMap<String, Vec<Vec<Assertion>>> = BTreeMap::new();
+) -> IndexMap<String, Vec<Vec<Assertion>>> {
+    let mut type_assertions: IndexMap<String, Vec<Vec<Assertion>>> = IndexMap::new();
     if assertions.is_empty() {
         return type_assertions; // No assertions to resolve
     }

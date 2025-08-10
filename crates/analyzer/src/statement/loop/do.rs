@@ -1,6 +1,5 @@
-use std::collections::BTreeMap;
-
 use ahash::HashSet;
+use indexmap::IndexMap;
 
 use mago_algebra::clause::Clause;
 use mago_algebra::find_satisfying_assignments;
@@ -81,7 +80,7 @@ impl Analyzable for DoWhile {
         while_clauses = remove_clauses_with_mixed_variables(while_clauses, mixed_variable_ids, self.condition.span());
         if while_clauses.is_empty() {
             while_clauses.push(Clause::new(
-                BTreeMap::new(),
+                IndexMap::new(),
                 self.condition.span(),
                 self.condition.span(),
                 Some(true),
@@ -128,7 +127,7 @@ impl Analyzable for DoWhile {
             reconcile_keyed_types(
                 &mut reconciliation_context,
                 &negated_while_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut inner_loop_block_context,
                 &mut HashSet::default(),
                 &HashSet::default(),

@@ -4,6 +4,7 @@ use std::rc::Rc;
 use ahash::HashMap;
 use ahash::HashSet;
 
+use indexmap::IndexMap;
 use mago_algebra::clause::Clause;
 use mago_codex::assertion::Assertion;
 use mago_codex::ttype::union::TUnion;
@@ -21,7 +22,7 @@ pub struct IfScope<'a> {
     pub possibly_assigned_variable_ids: HashSet<String>,
     pub possibly_redefined_variables: HashMap<String, TUnion>,
     pub updated_variables: HashSet<String>,
-    pub negated_types: BTreeMap<String, Vec<Vec<Assertion>>>,
+    pub negated_types: IndexMap<String, Vec<Vec<Assertion>>>,
     pub conditionally_changed_variable_ids: HashSet<String>,
     pub negated_clauses: Vec<Clause>,
     pub reasonable_clauses: Vec<Rc<Clause>>,
@@ -41,7 +42,7 @@ impl<'a> IfScope<'a> {
             possibly_assigned_variable_ids: HashSet::default(),
             possibly_redefined_variables: HashMap::default(),
             updated_variables: HashSet::default(),
-            negated_types: BTreeMap::default(),
+            negated_types: IndexMap::default(),
             conditionally_changed_variable_ids: HashSet::default(),
             negated_clauses: Vec::default(),
             reasonable_clauses: Vec::default(),

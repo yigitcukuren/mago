@@ -16,7 +16,7 @@ pub struct Clause {
     pub condition_span: Span,
     pub span: Span,
     pub hash: usize,
-    pub possibilities: BTreeMap<String, IndexMap<u64, Assertion>>,
+    pub possibilities: IndexMap<String, IndexMap<u64, Assertion>>,
     pub wedge: bool,
     pub reconcilable: bool,
     pub generated: bool,
@@ -36,7 +36,7 @@ impl Hash for Clause {
 
 impl Clause {
     pub fn new(
-        possibilities: BTreeMap<String, IndexMap<u64, Assertion>>,
+        possibilities: IndexMap<String, IndexMap<u64, Assertion>>,
         condition_span: Span,
         span: Span,
         wedge: Option<bool>,
@@ -57,21 +57,20 @@ impl Clause {
     pub fn remove_possibilities(&self, var_id: &String) -> Option<Clause> {
         let mut possibilities = self.possibilities.clone();
 
-        possibilities.remove(var_id);
+        possibilities.shift_remove(var_id);
 
         if possibilities.is_empty() {
             return None;
         }
 
-        Some(Clause {
-            hash: get_hash(&possibilities, self.span, self.wedge, self.reconcilable),
+        Some(Clause::new(
             possibilities,
-            condition_span: self.condition_span,
-            span: self.span,
-            wedge: self.wedge,
-            reconcilable: self.reconcilable,
-            generated: self.generated,
-        })
+            self.condition_span,
+            self.span,
+            Some(self.wedge),
+            Some(self.reconcilable),
+            Some(self.generated),
+        ))
     }
 
     pub fn add_possibility(&self, var_id: String, new_possibility: IndexMap<u64, Assertion>) -> Clause {
@@ -79,15 +78,14 @@ impl Clause {
 
         possibilities.insert(var_id, new_possibility);
 
-        Clause {
-            hash: get_hash(&possibilities, self.span, self.wedge, self.reconcilable),
+        Clause::new(
             possibilities,
-            condition_span: self.condition_span,
-            span: self.span,
-            wedge: self.wedge,
-            reconcilable: self.reconcilable,
-            generated: self.generated,
-        }
+            self.condition_span,
+            self.span,
+            Some(self.wedge),
+            Some(self.reconcilable),
+            Some(self.generated),
+        )
     }
 
     pub fn contains(&self, other_clause: &Self) -> bool {
@@ -104,30 +102,14 @@ impl Clause {
     }
 
     pub fn get_impossibilities(&self) -> BTreeMap<String, Vec<Assertion>> {
-        let mut impossibilities = BTreeMap::new();
+        self.possibilities
+            .iter()
+            .filter_map(|(variable, possibility)| {
+                let negations: Vec<Assertion> = possibility.values().map(Assertion::get_negation).collect();
 
-        for (variable, possibility) in &self.possibilities {
-            let mut negations = vec![];
-
-            for (_, assertion) in possibility {
-                match assertion {
-                    Assertion::IsIdentical(atomic) | Assertion::IsNotIdentical(atomic) => {
-                        if atomic.is_literal() {
-                            negations.push(assertion.get_negation());
-                        }
-                    }
-                    _ => {
-                        negations.push(assertion.get_negation());
-                    }
-                }
-            }
-
-            if !negations.is_empty() {
-                impossibilities.insert(variable.clone(), negations);
-            }
-        }
-
-        impossibilities
+                if !negations.is_empty() { Some((variable.clone(), negations)) } else { None }
+            })
+            .collect()
     }
 
     pub fn to_string(&self, interner: &ThreadedInterner) -> String {
@@ -188,7 +170,7 @@ impl Clause {
 
 #[inline]
 fn get_hash(
-    possibilities: &BTreeMap<String, IndexMap<u64, Assertion>>,
+    possibilities: &IndexMap<String, IndexMap<u64, Assertion>>,
     clause_span: Span,
     wedge: bool,
     reconcilable: bool,

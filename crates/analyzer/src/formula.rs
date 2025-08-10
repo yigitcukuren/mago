@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use ahash::HashMap;
 use indexmap::IndexMap;
 
@@ -108,7 +106,7 @@ pub fn get_formula(
 
                         clauses.push(Clause::new(
                             {
-                                let mut map = BTreeMap::new();
+                                let mut map = IndexMap::new();
                                 map.insert(var.clone(), mapped_orred_types);
                                 map
                             },
@@ -254,7 +252,7 @@ fn get_formula_from_assertions(
                 let has_equality = first_type.has_equality();
                 clauses.push(Clause::new(
                     {
-                        let mut map = BTreeMap::new();
+                        let mut map = IndexMap::new();
                         map.insert(
                             var_id.clone(),
                             orred_types.into_iter().map(|a| (a.to_hash(), a)).collect::<IndexMap<_, _>>(),
@@ -283,7 +281,7 @@ fn get_formula_from_assertions(
 
     Some(vec![Clause::new(
         {
-            let mut map = BTreeMap::new();
+            let mut map = IndexMap::new();
             map.insert(conditional_ref, IndexMap::from([(Assertion::Truthy.to_hash(), Assertion::Truthy)]));
             map
         },
@@ -317,7 +315,7 @@ pub fn negate_or_synthesize(
             None => {
                 // If we cannot negate the formula, we return an empty vector
                 // This is a fallback, and it should not happen in normal cases
-                vec![Clause::new(BTreeMap::new(), conditional.span(), conditional.span(), Some(true), None, None)]
+                vec![Clause::new(IndexMap::new(), conditional.span(), conditional.span(), Some(true), None, None)]
             }
         },
     }
@@ -373,7 +371,7 @@ pub fn remove_clauses_with_mixed_variables(
             for key in keys {
                 for mixed_var_id in &mixed_var_ids {
                     if var_has_root(key, mixed_var_id) {
-                        return Clause::new(BTreeMap::new(), cond_object_id, cond_object_id, Some(true), None, None);
+                        return Clause::new(IndexMap::new(), cond_object_id, cond_object_id, Some(true), None, None);
                     }
                 }
             }

@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
 use ahash::HashMap;
 use ahash::HashSet;
+use indexmap::IndexMap;
 use itertools::Itertools;
 
 use mago_algebra::clause::Clause;
@@ -181,7 +181,7 @@ impl Analyzable for If {
             reconcile_keyed_types(
                 &mut reconciliation_context,
                 &if_scope.negated_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut temporary_else_context,
                 &mut changed_variable_ids,
                 &HashSet::default(),
@@ -720,7 +720,7 @@ fn analyze_else_if_clause<'a>(
 
     for negated_variable_id in all_negated_variables {
         if let Some(negated_variable_type_assertions) = negated_else_if_types.get(&negated_variable_id) {
-            if let Some(negated_elseif_type_assertions) = if_scope.negated_types.remove(&negated_variable_id) {
+            if let Some(negated_elseif_type_assertions) = if_scope.negated_types.swap_remove(&negated_variable_id) {
                 if_scope.negated_types.insert(
                     negated_variable_id.clone(),
                     negated_variable_type_assertions
@@ -858,7 +858,7 @@ fn analyze_else_if_clause<'a>(
             reconcile_keyed_types(
                 &mut ReconciliationContext::new(context.interner, context.codebase, &mut context.collector),
                 &negated_else_if_types,
-                BTreeMap::new(),
+                IndexMap::new(),
                 &mut implied_outer_context,
                 &mut HashSet::default(),
                 &HashSet::default(),
@@ -954,7 +954,7 @@ fn analyze_else_statements<'a>(
         reconcile_keyed_types(
             &mut reconciliation_context,
             &else_types,
-            BTreeMap::new(),
+            IndexMap::new(),
             else_block_context,
             &mut changed_variable_ids,
             &HashSet::default(),

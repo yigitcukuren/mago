@@ -59,7 +59,6 @@ pub enum ResolutionOrigin {
 /// It carries the resolved fully-qualified class name (if known) and metadata about how the
 /// resolution was performed via `ResolutionOrigin`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[repr(C)]
 pub struct ResolvedClassname {
     /// The fully qualified class name (`StringIdentifier`) if a specific class could be identified.
     /// This is `None` for ambiguous or generic types like `object`, `class-string`, or `mixed`.

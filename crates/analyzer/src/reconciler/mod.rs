@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 
 use ahash::HashSet;
+use indexmap::IndexMap;
 use regex::Regex;
 
 use mago_codex::assertion::Assertion;
@@ -71,8 +72,8 @@ impl<'a, 's> ReconciliationContext<'a, 's> {
 
 pub fn reconcile_keyed_types(
     context: &mut ReconciliationContext<'_, '_>,
-    new_types: &BTreeMap<String, Vec<Vec<Assertion>>>,
-    mut active_new_types: BTreeMap<String, HashSet<usize>>,
+    new_types: &IndexMap<String, Vec<Vec<Assertion>>>,
+    mut active_new_types: IndexMap<String, HashSet<usize>>,
     block_context: &mut BlockContext<'_>,
     changed_var_ids: &mut HashSet<String>,
     referenced_var_ids: &HashSet<String>,
@@ -333,8 +334,8 @@ static INTEGER_REGEX: LazyLock<Regex> = LazyLock::new(|| unsafe {
 });
 
 fn add_nested_assertions(
-    new_types: &mut BTreeMap<String, Vec<Vec<Assertion>>>,
-    active_new_types: &mut BTreeMap<String, HashSet<usize>>,
+    new_types: &mut IndexMap<String, Vec<Vec<Assertion>>>,
+    active_new_types: &mut IndexMap<String, HashSet<usize>>,
     context: &BlockContext<'_>,
 ) {
     let mut keys_to_remove = vec![];
@@ -406,7 +407,7 @@ fn add_nested_assertions(
                         if key_parts.is_empty() {
                             keys_to_remove.push(nk.clone());
 
-                            if nesting == 0 && base_key_set && active_new_types.remove(&nk).is_some() {
+                            if nesting == 0 && base_key_set && active_new_types.swap_remove(&nk).is_some() {
                                 active_new_types.entry(base_key.clone()).or_default().insert(entry.len() - 1);
                             }
 
@@ -551,7 +552,7 @@ fn get_value_for_key(
     context: &mut ReconciliationContext<'_, '_>,
     key: String,
     block_context: &mut BlockContext<'_>,
-    new_assertions: &BTreeMap<String, Vec<Vec<Assertion>>>,
+    new_assertions: &IndexMap<String, Vec<Vec<Assertion>>>,
     has_isset: bool,
     has_inverted_isset: bool,
     has_inverted_key_exists: bool,
