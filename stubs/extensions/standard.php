@@ -3037,6 +3037,8 @@ function fread($stream, int $length): string|false
  * @param resource|null $context
  *
  * @return open-resource|false
+ *
+ * @ignore-falsable-return
  */
 function fopen(string $filename, string $mode, bool $use_include_path = false, $context = null)
 {
