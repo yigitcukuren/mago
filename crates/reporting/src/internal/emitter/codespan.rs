@@ -145,15 +145,15 @@ impl<'a> Files<'a> for DatabaseFiles<'_> {
     type Source = &'a str;
 
     fn name(&'a self, file_id: FileId) -> Result<&'a str, Error> {
-        self.0.get_by_id(&file_id).map(|source| source.name.as_ref()).map_err(|_| Error::FileMissing)
+        self.0.get_ref(&file_id).map(|source| source.name.as_ref()).map_err(|_| Error::FileMissing)
     }
 
     fn source(&'a self, file_id: FileId) -> Result<&'a str, Error> {
-        self.0.get_by_id(&file_id).map(|source| source.contents.as_ref()).map_err(|_| Error::FileMissing)
+        self.0.get_ref(&file_id).map(|source| source.contents.as_ref()).map_err(|_| Error::FileMissing)
     }
 
     fn line_index(&self, file_id: FileId, byte_index: usize) -> Result<usize, Error> {
-        let file = self.0.get_by_id(&file_id).map_err(|_| Error::FileMissing)?;
+        let file = self.0.get_ref(&file_id).map_err(|_| Error::FileMissing)?;
 
         Ok(file.line_number(
             byte_index.try_into().map_err(|_| Error::IndexTooLarge { given: byte_index, max: u32::MAX as usize })?,
@@ -161,7 +161,7 @@ impl<'a> Files<'a> for DatabaseFiles<'_> {
     }
 
     fn line_range(&self, file_id: FileId, line_index: usize) -> Result<Range<usize>, Error> {
-        let file = self.0.get_by_id(&file_id).map_err(|_| Error::FileMissing)?;
+        let file = self.0.get(&file_id).map_err(|_| Error::FileMissing)?;
 
         codespan_line_range(&file.lines, file.size, line_index)
     }

@@ -138,8 +138,8 @@ impl AnalysisResults {
             formatted = Some(formatter.format(&source, &program));
         }
 
-        let linter = Linter::with_all_plugins(lint_settings, interner.clone(), codebase);
-        let linter_issues = linter.lint(&source, &program, &resolved_names);
+        let linter = Linter::with_all_plugins(lint_settings, interner.clone());
+        let linter_issues = linter.lint(&source, &program, &resolved_names, &codebase);
 
         Self {
             strings: interner.all().into_iter().map(|(id, value)| (id, value.to_string())).collect(),

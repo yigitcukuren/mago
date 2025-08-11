@@ -47,7 +47,7 @@ pub fn generate_baseline_from_issues(issues: IssueCollection, database: &ReadDat
 
         let start = annotation.span.start;
         let end = annotation.span.end;
-        let source_file = database.get_by_id(&annotation.span.file_id)?;
+        let source_file = database.get(&annotation.span.file_id)?;
 
         let entry = baseline.entries.entry(source_file.name.clone()).or_insert_with(|| {
             let content_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
@@ -125,7 +125,7 @@ pub fn filter_issues(
             continue;
         };
 
-        let source_file = database.get_by_id(&annotation.span.file_id)?;
+        let source_file = database.get(&annotation.span.file_id)?;
 
         let Some((baseline_hash, baseline_issue_set)) = baseline_sets.get(&source_file.name) else {
             // File is not in the baseline, so the issue is new.

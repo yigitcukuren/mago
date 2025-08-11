@@ -4,13 +4,14 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 use clap::Parser;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
+
 use mago_database::Database;
 use mago_database::DatabaseReader;
 use mago_database::ReadDatabase;
 use mago_database::change::ChangeLog;
 use mago_database::file::FileId;
-use tokio::task::JoinHandle;
-
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_formatter::Formatter;
@@ -119,7 +120,7 @@ impl ReportingArgs {
     ///
     /// A `Result` containing an `ExitCode` to indicate success or failure to the shell,
     /// or an `Error` if an unrecoverable problem occurs.
-    pub async fn process_issues(
+    pub fn process_issues(
         self,
         issues: IssueCollection,
         configuration: Configuration,
@@ -127,22 +128,22 @@ impl ReportingArgs {
         database: Database,
     ) -> Result<ExitCode, Error> {
         if self.fix {
-            self.handle_fix_mode(issues, configuration, interner, database).await
+            self.handle_fix_mode(issues, configuration, interner, database)
         } else {
-            self.handle_report_mode(issues, database).await
+            self.handle_report_mode(issues, database)
         }
     }
 
     /// Handles the logic for when the `--fix` flag is enabled.
-    async fn handle_fix_mode(
+    fn handle_fix_mode(
         self,
         issues: IssueCollection,
         configuration: Configuration,
         interner: ThreadedInterner,
-        database: Database,
+        mut database: Database,
     ) -> Result<ExitCode, Error> {
         let (applied_fixes, skipped_unsafe, skipped_potentially_unsafe) =
-            self.apply_fixes(issues, configuration, interner, database).await?;
+            self.apply_fixes(issues, &configuration, &interner, &mut database)?;
 
         if skipped_unsafe > 0 {
             tracing::warn!("Skipped {} unsafe fixes. Use `--unsafe` to apply them.", skipped_unsafe);
@@ -172,7 +173,7 @@ impl ReportingArgs {
     }
 
     /// Handles the logic for reporting issues (when `--fix` is not enabled).
-    async fn handle_report_mode(self, mut issues: IssueCollection, database: Database) -> Result<ExitCode, Error> {
+    fn handle_report_mode(self, mut issues: IssueCollection, database: Database) -> Result<ExitCode, Error> {
         let read_database = database.read_only();
 
         if self.sort {
@@ -236,20 +237,20 @@ impl ReportingArgs {
         Ok(if has_issues_above_threshold { ExitCode::FAILURE } else { ExitCode::SUCCESS })
     }
 
-    /// Applies fixes to the issues provided.
+    /// Applies fixes to the issues provided using a parallel pipeline.
     ///
-    /// This function filters fix plans based on safety settings,
-    /// then applies the fixes concurrently.
+    /// This function filters fix plans based on safety settings, then applies the
+    /// fixes concurrently using a rayon thread pool.
     ///
     /// # Returns
     ///
     /// A tuple: `(applied_fix_count, skipped_unsafe_count, skipped_potentially_unsafe_count)`.
-    async fn apply_fixes(
+    fn apply_fixes(
         &self,
         issues: IssueCollection,
-        configuration: Configuration,
-        interner: ThreadedInterner,
-        mut database: Database,
+        configuration: &Configuration,
+        interner: &ThreadedInterner,
+        database: &mut Database,
     ) -> Result<(usize, usize, usize), Error> {
         let read_database = Arc::new(database.read_only());
         let change_log = ChangeLog::new();
@@ -260,64 +261,37 @@ impl ReportingArgs {
             return Ok((0, skipped_unsafe, skipped_potentially_unsafe));
         }
 
-        let total_plans = fix_plans.len();
-        let progress_bar = create_progress_bar(total_plans, "✨ Fixing", ProgressBarTheme::Cyan);
-        let mut fix_tasks: Vec<JoinHandle<Result<bool, Error>>> = Vec::with_capacity(total_plans);
+        let progress_bar = create_progress_bar(fix_plans.len(), "✨ Fixing", ProgressBarTheme::Cyan);
 
-        for (file_id, plan) in fix_plans {
-            let interner_clone = interner.clone();
-            let progress_bar_clone = progress_bar.clone();
-            let read_database_clone = read_database.clone();
-            let change_log_clone = change_log.clone();
-            let formatter_settings_clone = configuration.format.settings;
-            let php_version = configuration.php_version;
-            let should_format = self.format_after_fix;
-            let dry_run = self.dry_run;
-
-            fix_tasks.push(tokio::spawn(async move {
-                let file = read_database_clone.get_by_id(&file_id)?;
-
+        let changed_results: Vec<bool> = fix_plans
+            .into_par_iter()
+            .map(|(file_id, plan)| {
+                let file = read_database.get_ref(&file_id)?;
                 let mut fixed_content = plan.execute(&file.contents).get_fixed();
 
-                if should_format {
-                    let formatter = Formatter::new(&interner_clone, php_version, formatter_settings_clone);
-                    match formatter.format_code(file.name.clone(), Cow::Owned(fixed_content.clone())) {
-                        Ok(content) => fixed_content = content,
-                        Err(e) => {
-                            tracing::error!("Failed to format `{}`: {}", file.name, e);
-                        }
+                if self.format_after_fix {
+                    let formatter = Formatter::new(interner, configuration.php_version, configuration.format.settings);
+                    if let Ok(content) = formatter.format_code(file.name.clone(), Cow::Owned(fixed_content.clone())) {
+                        fixed_content = content;
                     }
                 }
 
-                match utils::apply_update(&change_log_clone, file, fixed_content, dry_run) {
-                    Ok(changed) => {
-                        progress_bar_clone.inc(1);
-
-                        Ok(changed)
-                    }
-                    Err(e) => {
-                        progress_bar_clone.inc(1);
-
-                        Err(e)
-                    }
-                }
-            }));
-        }
-
-        database.commit(change_log)?;
-
-        let mut applied_fix_count = 0;
-        for task in fix_tasks {
-            if task.await?? {
-                applied_fix_count += 1;
-            }
-        }
+                let changed = utils::apply_update(&change_log, file, fixed_content, self.dry_run)?;
+                progress_bar.inc(1);
+                Ok(changed)
+            })
+            .collect::<Result<Vec<bool>, Error>>()?;
 
         remove_progress_bar(progress_bar);
 
+        if !self.dry_run {
+            database.commit(change_log, true)?;
+        }
+
+        let applied_fix_count = changed_results.into_iter().filter(|&c| c).count();
+
         Ok((applied_fix_count, skipped_unsafe, skipped_potentially_unsafe))
     }
-
     /// Filters fix operations from issues based on safety settings.
     ///
     /// # Returns
@@ -352,7 +326,7 @@ impl ReportingArgs {
                             skipped_unsafe_count += 1;
                             tracing::debug!(
                                 "Skipping unsafe fix for `{}`. Use --unsafe to apply.",
-                                database.get_name(&file_id).unwrap_or("<unknown>"),
+                                database.get_ref(&file_id).map(|f| f.name.as_ref()).unwrap_or("<unknown>"),
                             );
                         }
                     }
@@ -363,7 +337,7 @@ impl ReportingArgs {
                             skipped_potentially_unsafe_count += 1;
                             tracing::debug!(
                                 "Skipping potentially unsafe fix for `{}`. Use --potentially-unsafe or --unsafe to apply.",
-                                database.get_name(&file_id).unwrap_or("<unknown>"),
+                                database.get_ref(&file_id).map(|f| f.name.as_ref()).unwrap_or("<unknown>"),
                             );
                         }
                     }

@@ -41,7 +41,6 @@ const COLLECTOR_CATEGORY: &str = "lint";
 pub struct Linter {
     settings: Settings,
     interner: ThreadedInterner,
-    codebase: Arc<CodebaseMetadata>,
     rules: Arc<RwLock<Vec<ConfiguredRule>>>,
 }
 
@@ -53,16 +52,16 @@ impl Linter {
     /// - `settings`: The settings to use for the linter.
     /// - `interner`: The interner to use, typically shared with the parser.
     /// - `codebase`: The codebase metadata for project-wide analysis.
-    pub fn new(settings: Settings, interner: ThreadedInterner, codebase: CodebaseMetadata) -> Self {
-        Self { settings, interner, codebase: Arc::new(codebase), rules: Arc::new(RwLock::new(Vec::new())) }
+    pub fn new(settings: Settings, interner: ThreadedInterner) -> Self {
+        Self { settings, interner, rules: Arc::new(RwLock::new(Vec::new())) }
     }
 
     /// Creates a new linter and enables all available default plugins.
     ///
     /// This is a convenience constructor for quickly setting up a linter with a
     /// comprehensive set of rules.
-    pub fn with_all_plugins(settings: Settings, interner: ThreadedInterner, codebase: CodebaseMetadata) -> Self {
-        let mut linter = Self::new(settings, interner, codebase);
+    pub fn with_all_plugins(settings: Settings, interner: ThreadedInterner) -> Self {
+        let mut linter = Self::new(settings, interner);
         crate::foreach_plugin!(|plugin| linter.add_plugin(plugin));
         linter
     }
@@ -72,21 +71,16 @@ impl Linter {
         let plugin_definition = plugin.get_definition();
         let plugin_slug = plugin_definition.get_slug();
 
-        tracing::debug!("Loading plugin: {plugin_slug}");
-
         let is_explicitly_enabled = self.settings.plugins.iter().any(|p| p.eq_ignore_ascii_case(&plugin_slug));
         let is_default_enabled = self.settings.default_plugins && plugin_definition.enabled_by_default;
 
         if !is_explicitly_enabled && !is_default_enabled {
-            tracing::debug!("Plugin '{plugin_slug}' skipped as it is not enabled.");
             return;
         }
 
-        tracing::debug!("Enabling plugin: {plugin_slug}");
         for rule in plugin.get_rules() {
             self.add_rule(&plugin_slug, rule);
         }
-        tracing::debug!("Plugin '{plugin_slug}' loaded successfully.");
     }
 
     /// Registers a single rule from a plugin if it is supported and enabled.
@@ -164,7 +158,13 @@ impl Linter {
     /// 4. For each rule, creates a `LintContext` and runs the rule's logic.
     /// 5. Issues from each rule are passed to the main collector, which handles suppression logic.
     /// 6. Finally, finalizes the collector to report unused pragmas and returns the complete set of issues.
-    pub fn lint(&self, source_file: &File, program: &Program, resolved_names: &ResolvedNames) -> IssueCollection {
+    pub fn lint(
+        &self,
+        source_file: &File,
+        program: &Program,
+        resolved_names: &ResolvedNames,
+        codebase: &CodebaseMetadata,
+    ) -> IssueCollection {
         let configured_rules = self.rules.read().expect("Unable to read rules: poisoned lock");
         if configured_rules.is_empty() {
             tracing::warn!("Linting aborted - no rules configured.");
@@ -179,7 +179,7 @@ impl Linter {
                 self.settings.php_version,
                 configured_rule,
                 &self.interner,
-                &self.codebase,
+                codebase,
                 source_file,
                 resolved_names,
             );

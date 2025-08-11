@@ -1,7 +1,6 @@
 use std::process::ExitCode;
 
 use clap::Parser;
-use tokio::runtime::Builder;
 use tracing::level_filters::LevelFilter;
 
 use crate::commands::CliArguments;
@@ -19,7 +18,7 @@ mod consts;
 mod database;
 mod error;
 mod macros;
-mod metadata;
+mod pipeline;
 mod utils;
 
 #[cfg(any(target_os = "macos", target_os = "windows", target_env = "musl"))]
@@ -62,25 +61,18 @@ pub fn run() -> Result<ExitCode, Error> {
         }
     }
 
-    // Create the runtime.
-    let runtime = if configuration.threads <= 1 {
-        Builder::new_current_thread().enable_all().build().map_err(Error::BuildingRuntime)?
-    } else {
-        Builder::new_multi_thread()
-            .worker_threads(configuration.threads)
-            .thread_stack_size(configuration.stack_size)
-            .enable_all()
-            .build()
-            .map_err(Error::BuildingRuntime)?
-    };
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(configuration.threads)
+        .stack_size(configuration.stack_size)
+        .build_global()?;
 
     match command {
-        MagoCommand::Init(cmd) => runtime.block_on(commands::init::execute(cmd, configuration)),
-        MagoCommand::Lint(cmd) => runtime.block_on(commands::lint::execute(cmd, configuration)),
-        MagoCommand::Format(cmd) => runtime.block_on(commands::format::execute(cmd, configuration)),
-        MagoCommand::Ast(cmd) => runtime.block_on(commands::ast::execute(cmd, configuration)),
-        MagoCommand::Analyze(cmd) => runtime.block_on(commands::analyze::execute(cmd, configuration)),
-        MagoCommand::Find(cmd) => runtime.block_on(commands::find::execute(cmd, configuration)),
+        MagoCommand::Init(cmd) => commands::init::execute(cmd, configuration),
+        MagoCommand::Lint(cmd) => commands::lint::execute(cmd, configuration),
+        MagoCommand::Format(cmd) => commands::format::execute(cmd, configuration),
+        MagoCommand::Ast(cmd) => commands::ast::execute(cmd, configuration),
+        MagoCommand::Analyze(cmd) => commands::analyze::execute(cmd, configuration),
+        MagoCommand::Find(cmd) => commands::find::execute(cmd, configuration),
         MagoCommand::SelfUpdate(_) => {
             unreachable!("The self-update command should have been handled before this point.")
         }

@@ -54,7 +54,6 @@ tracing = { version = "0.1.40" }
 ahash = { version = "0.8", default-features = false, features = ["compile-time-rng", "std"] }
 serde_json = { version = "1.0.138" }
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.44.2", features = ["rt", "time"] }
 strum = { version = "0.27", features = ["derive"] }
 ordered-float = { version = "5.0", default-features = false, features = ["serde"] }
 pretty_assertions = { version = "1.4.1" }
@@ -66,7 +65,7 @@ toml = "0.9.2"
 num_cpus = "1.16.0"
 regex = "1.11.0"
 cruet = "0.15.0"
-indicatif = { version = "0.18.0", features = ["tokio"] }
+indicatif = { version = "0.18.0" }
 paste = "1.0.15"
 criterion = "0.7.0"
 lasso = { version = "0.7.3", features = ["multi-threaded", "ahasher", "inline-more"] }
@@ -114,7 +113,6 @@ mago-semantics = { workspace = true }
 mago-codex = { workspace = true }
 mago-analyzer = { workspace = true }
 serde = { workspace = true }
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time"] }
 clap = { workspace = true }
 ahash = { workspace = true }
 termtree = { workspace = true }
@@ -132,6 +130,7 @@ indicatif = { workspace = true }
 colored = { workspace = true }
 dialoguer = { workspace = true }
 blake3 = { workspace = true }
+rayon = { workspace = true }
 
 [dev-dependencies]
 temp-env = "0.3.6"

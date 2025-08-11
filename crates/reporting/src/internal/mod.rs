@@ -86,7 +86,7 @@ pub trait Expandable<T> {
 
 impl Expandable<ExpandedFileId> for FileId {
     fn expand(&self, database: &ReadDatabase) -> Result<ExpandedFileId, DatabaseError> {
-        let file = database.get_by_id(self)?;
+        let file = database.get(self)?;
 
         Ok(ExpandedFileId {
             name: file.name.clone(),
@@ -99,7 +99,7 @@ impl Expandable<ExpandedFileId> for FileId {
 
 impl Expandable<ExpandedSpan> for Span {
     fn expand(&self, database: &ReadDatabase) -> Result<ExpandedSpan, DatabaseError> {
-        let file = database.get_by_id(&self.file_id)?;
+        let file = database.get(&self.file_id)?;
 
         Ok(ExpandedSpan {
             file_id: self.file_id.expand(database)?,

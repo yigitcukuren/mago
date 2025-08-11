@@ -18,7 +18,7 @@ pub fn emacs_format(
     for issue in issues.iter() {
         let (file_path, line, column) = match issue.annotations.iter().find(|annotation| annotation.is_primary()) {
             Some(annotation) => {
-                let file = database.get_by_id(&annotation.span.file_id())?;
+                let file = database.get(&annotation.span.file_id())?;
                 let line = file.line_number(annotation.span.start.offset) + 1;
                 let column = file.column_number(annotation.span.start.offset) + 1;
 

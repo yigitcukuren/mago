@@ -63,11 +63,11 @@ pub fn test_rule_usage_example(rule: Box<dyn Rule>, usage_example: &RuleUsageExa
 
     populate_codebase(&mut codebase, &interner, &mut SymbolReferences::new(), Default::default(), Default::default());
 
-    let mut linter = Linter::new(settings, interner.clone(), codebase);
+    let mut linter = Linter::new(settings, interner.clone());
 
     linter.add_rule("test", rule);
 
-    let issues = linter.lint(&source_file, &program, &resolved_names);
+    let issues = linter.lint(&source_file, &program, &resolved_names, &codebase);
 
     if usage_example.valid {
         assert!(

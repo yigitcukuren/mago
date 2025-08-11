@@ -80,7 +80,7 @@ pub struct AstCommand {
 /// # Errors
 ///
 /// An error is returned if the file does not exist or is not readable.
-pub async fn execute(command: AstCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+pub fn execute(command: AstCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     // Initialize interner and source manager.
     let interner = ThreadedInterner::new();
     let file = File::read(&configuration.source.workspace, &command.file, FileType::Host)?;

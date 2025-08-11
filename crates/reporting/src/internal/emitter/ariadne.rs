@@ -32,7 +32,7 @@ pub fn ariadne_format(
 
         let (file_path, range) = match issue.annotations.iter().find(|annotation| annotation.is_primary()) {
             Some(annotation) => {
-                let file = database.get_by_id(&annotation.span.file_id())?;
+                let file = database.get(&annotation.span.file_id())?;
 
                 (
                     file.name.clone().into_owned(),
@@ -63,7 +63,7 @@ pub fn ariadne_format(
 
         let mut relevant_sources = vec![];
         for annotation in issue.annotations {
-            let file = database.get_by_id(&annotation.span.file_id())?;
+            let file = database.get(&annotation.span.file_id())?;
             let range = annotation.span.start.offset as usize..annotation.span.end.offset as usize;
 
             let mut label = Label::new((file.name.clone().into_owned(), range));
@@ -77,7 +77,7 @@ pub fn ariadne_format(
                 report = report.with_label(label);
             }
 
-            relevant_sources.push((file.name.clone().into_owned(), &file.contents));
+            relevant_sources.push((file.name.clone().into_owned(), file.contents.to_string()));
         }
 
         report.finish().write(ariadne_sources(relevant_sources), &mut writer).unwrap();

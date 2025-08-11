@@ -4,6 +4,9 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
+
 use crate::change::Change;
 use crate::change::ChangeLog;
 use crate::error::DatabaseError;
@@ -11,6 +14,7 @@ use crate::file::File;
 use crate::file::FileId;
 use crate::file::FileType;
 use crate::file::line_starts;
+use crate::operation::FilesystemOperation;
 
 mod utils;
 
@@ -19,6 +23,8 @@ pub mod error;
 pub mod exclusion;
 pub mod file;
 pub mod loader;
+
+mod operation;
 
 /// A mutable database for managing a collection of project files.
 ///
@@ -94,32 +100,61 @@ impl Database {
         if let Some(name) = self.id_to_name.remove(&id) { self.files.remove(&name).is_some() } else { false }
     }
 
-    /// Commits a [`ChangeLog`], applying all its recorded operations to the database.
+    /// Commits a [`ChangeLog`], applying all its recorded operations to the database
+    /// and optionally writing them to the filesystem.
     ///
-    /// This method consumes the log and applies each `Change` sequentially.
-    /// It will fail if other references to the `ChangeLog` still exist.
+    /// # Arguments
+    ///
+    /// * `change_log`: The log of changes to apply.
+    /// * `write_to_disk`: If `true`, changes for files that have a filesystem
+    ///   path will be written to disk in parallel.
     ///
     /// # Errors
     ///
-    /// Returns a [`DatabaseError`] if the log cannot be consumed.
-    pub fn commit(&mut self, change_log: ChangeLog) -> Result<(), DatabaseError> {
-        for change in change_log.into_inner()? {
-            self.apply(change);
-        }
-        Ok(())
-    }
+    /// Returns a [`DatabaseError`] if the log cannot be consumed or if any
+    /// filesystem operation fails.
+    pub fn commit(&mut self, change_log: ChangeLog, write_to_disk: bool) -> Result<(), DatabaseError> {
+        let changes = change_log.into_inner()?;
+        let mut fs_operations = if write_to_disk { Vec::new() } else { Vec::with_capacity(0) };
 
-    /// Applies a single `Change` operation to the database.
-    fn apply(&mut self, change: Change) {
-        match change {
-            Change::Add(file) => self.add(file),
-            Change::Update(id, contents) => {
-                self.update(id, contents);
-            }
-            Change::Delete(id) => {
-                self.delete(id);
+        for change in changes {
+            match change {
+                Change::Add(file) => {
+                    if write_to_disk && let Some(path) = &file.path {
+                        fs_operations.push(FilesystemOperation::Write(path.clone(), file.contents.clone()));
+                    }
+
+                    self.add(file);
+                }
+                Change::Update(id, contents) => {
+                    if write_to_disk
+                        && let Ok(file) = self.get(&id)
+                        && let Some(path) = &file.path
+                    {
+                        fs_operations.push(FilesystemOperation::Write(path.clone(), contents.clone()));
+                    }
+
+                    self.update(id, contents);
+                }
+                Change::Delete(id) => {
+                    if write_to_disk
+                        && let Ok(file) = self.get(&id)
+                        && let Some(path) = &file.path
+                    {
+                        fs_operations.push(FilesystemOperation::Delete(path.clone()));
+                    }
+
+                    self.delete(id);
+                }
             }
         }
+
+        // If requested, perform all collected filesystem operations in parallel.
+        if write_to_disk {
+            fs_operations.into_par_iter().try_for_each(|op| -> Result<(), DatabaseError> { op.execute() })?;
+        }
+
+        Ok(())
     }
 
     /// Creates an independent, immutable snapshot of the database.
@@ -183,44 +218,47 @@ pub trait DatabaseReader {
     /// Retrieves a file's stable ID using its logical name.
     fn get_id(&self, name: &str) -> Option<FileId>;
 
-    fn get_name(&self, id: &FileId) -> Option<&str> {
-        self.get_by_id(id).map(|file| file.name.as_ref()).ok()
-    }
+    /// Retrieves a reference to a file using its stable `FileId`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DatabaseError::FileNotFound` if no file with the given ID exists.
+    fn get(&self, id: &FileId) -> Result<Arc<File>, DatabaseError>;
 
     /// Retrieves a reference to a file using its stable `FileId`.
     ///
     /// # Errors
     ///
     /// Returns `DatabaseError::FileNotFound` if no file with the given ID exists.
-    fn get_by_id(&self, id: &FileId) -> Result<&File, DatabaseError>;
+    fn get_ref(&self, id: &FileId) -> Result<&File, DatabaseError>;
 
     /// Retrieves a reference to a file using its logical name.
     ///
     /// # Errors
     ///
     /// Returns `DatabaseError::FileNotFound` if no file with the given name exists.
-    fn get_by_name(&self, name: &str) -> Result<&File, DatabaseError>;
+    fn get_by_name(&self, name: &str) -> Result<Arc<File>, DatabaseError>;
 
     /// Retrieves a reference to a file by its absolute filesystem path.
     ///
     /// # Errors
     ///
     /// Returns `DatabaseError::FileNotFound` if no file with the given path exists.
-    fn get_by_path(&self, path: &Path) -> Result<&File, DatabaseError>;
+    fn get_by_path(&self, path: &Path) -> Result<Arc<File>, DatabaseError>;
 
     /// Returns an iterator over all files in the database.
     ///
     /// The order is not guaranteed for `Database`, but is sorted by `FileId`
     /// for `ReadDatabase`, providing deterministic iteration.
-    fn files(&self) -> impl Iterator<Item = &File>;
+    fn files(&self) -> impl Iterator<Item = Arc<File>>;
 
     /// Returns an iterator over all files of a specific `FileType`.
-    fn files_with_type(&self, file_type: FileType) -> impl Iterator<Item = &File> {
+    fn files_with_type(&self, file_type: FileType) -> impl Iterator<Item = Arc<File>> {
         self.files().filter(move |file| file.file_type == file_type)
     }
 
     /// Returns an iterator over all files that do not match a specific `FileType`.
-    fn files_without_type(&self, file_type: FileType) -> impl Iterator<Item = &File> {
+    fn files_without_type(&self, file_type: FileType) -> impl Iterator<Item = Arc<File>> {
         self.files().filter(move |file| file.file_type != file_type)
     }
 
@@ -253,27 +291,28 @@ impl DatabaseReader for Database {
         self.files.get(name).map(|f| f.id)
     }
 
-    fn get_by_id(&self, id: &FileId) -> Result<&File, DatabaseError> {
+    fn get(&self, id: &FileId) -> Result<Arc<File>, DatabaseError> {
         let name = self.id_to_name.get(id).ok_or(DatabaseError::FileNotFound)?;
         let file = self.files.get(name).ok_or(DatabaseError::FileNotFound)?;
 
-        Ok(file.as_ref())
+        Ok(file.clone())
     }
 
-    fn get_by_name(&self, name: &str) -> Result<&File, DatabaseError> {
+    fn get_ref(&self, id: &FileId) -> Result<&File, DatabaseError> {
+        let name = self.id_to_name.get(id).ok_or(DatabaseError::FileNotFound)?;
         self.files.get(name).map(|file| file.as_ref()).ok_or(DatabaseError::FileNotFound)
     }
 
-    fn get_by_path(&self, path: &Path) -> Result<&File, DatabaseError> {
-        self.files
-            .values()
-            .find(|file| file.path.as_deref() == Some(path))
-            .map(|file| file.as_ref())
-            .ok_or(DatabaseError::FileNotFound)
+    fn get_by_name(&self, name: &str) -> Result<Arc<File>, DatabaseError> {
+        self.files.get(name).cloned().ok_or(DatabaseError::FileNotFound)
     }
 
-    fn files(&self) -> impl Iterator<Item = &File> {
-        self.files.values().map(|file| file.as_ref())
+    fn get_by_path(&self, path: &Path) -> Result<Arc<File>, DatabaseError> {
+        self.files.values().find(|file| file.path.as_deref() == Some(path)).cloned().ok_or(DatabaseError::FileNotFound)
+    }
+
+    fn files(&self) -> impl Iterator<Item = Arc<File>> {
+        self.files.values().cloned()
     }
 
     fn len(&self) -> usize {
@@ -286,30 +325,28 @@ impl DatabaseReader for ReadDatabase {
         self.name_to_index.get(name).and_then(|&i| self.files.get(i)).map(|f| f.id)
     }
 
-    fn get_by_id(&self, id: &FileId) -> Result<&File, DatabaseError> {
+    fn get(&self, id: &FileId) -> Result<Arc<File>, DatabaseError> {
+        let index = self.id_to_index.get(id).ok_or(DatabaseError::FileNotFound)?;
+
+        self.files.get(*index).cloned().ok_or(DatabaseError::FileNotFound)
+    }
+
+    fn get_ref(&self, id: &FileId) -> Result<&File, DatabaseError> {
         let index = self.id_to_index.get(id).ok_or(DatabaseError::FileNotFound)?;
 
         self.files.get(*index).map(|file| file.as_ref()).ok_or(DatabaseError::FileNotFound)
     }
 
-    fn get_by_name(&self, name: &str) -> Result<&File, DatabaseError> {
-        self.name_to_index
-            .get(name)
-            .and_then(|&i| self.files.get(i))
-            .map(|file| file.as_ref())
-            .ok_or(DatabaseError::FileNotFound)
+    fn get_by_name(&self, name: &str) -> Result<Arc<File>, DatabaseError> {
+        self.name_to_index.get(name).and_then(|&i| self.files.get(i)).cloned().ok_or(DatabaseError::FileNotFound)
     }
 
-    fn get_by_path(&self, path: &Path) -> Result<&File, DatabaseError> {
-        self.path_to_index
-            .get(path)
-            .and_then(|&i| self.files.get(i))
-            .map(|file| file.as_ref())
-            .ok_or(DatabaseError::FileNotFound)
+    fn get_by_path(&self, path: &Path) -> Result<Arc<File>, DatabaseError> {
+        self.path_to_index.get(path).and_then(|&i| self.files.get(i)).cloned().ok_or(DatabaseError::FileNotFound)
     }
 
-    fn files(&self) -> impl Iterator<Item = &File> {
-        self.files.iter().map(|file| file.as_ref())
+    fn files(&self) -> impl Iterator<Item = Arc<File>> {
+        self.files.iter().cloned()
     }
 
     fn len(&self) -> usize {

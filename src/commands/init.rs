@@ -87,7 +87,7 @@ pub struct InitCommand;
 /// # Returns
 ///
 /// A result containing the exit code or an error
-pub async fn execute(_command: InitCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+pub fn execute(_command: InitCommand, configuration: Configuration) -> Result<ExitCode, Error> {
     let theme = ColorfulTheme::default();
 
     // Check if configuration file already exists

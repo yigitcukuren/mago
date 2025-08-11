@@ -19,6 +19,8 @@ use mago_reporting::reporter::Reporter;
 use mago_reporting::reporter::ReportingFormat;
 use mago_reporting::reporter::ReportingTarget;
 use mago_syntax::parser::parse_file;
+use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
 
 use crate::config::Configuration;
 use crate::database;
@@ -93,7 +95,11 @@ pub struct FindCommand {
 /// 4. Reports the discovered references using [`Reporter`].
 ///
 /// If the query string is invalid, returns `ExitCode::FAILURE`.
-pub async fn execute(command: FindCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+pub fn execute(command: FindCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+    tracing::warn!(
+        "The `find` command is deprecated and will be removed in a future release. No alternative is currently available."
+    );
+
     let interner = ThreadedInterner::new();
 
     // Attempt to parse the query from user input
@@ -111,8 +117,7 @@ pub async fn execute(command: FindCommand, configuration: Configuration) -> Resu
     let database = database::load(&configuration.source, command.include_external, false)?;
 
     // Gather references
-    let references =
-        find_references(&interner, Arc::new(database.read_only()), query, command.include_external).await?;
+    let references = find_references(&interner, Arc::new(database.read_only()), query, command.include_external)?;
 
     // Convert references to issues, then report
     Reporter::new(database.read_only(), command.reporting_target).report(
@@ -137,7 +142,7 @@ pub async fn execute(command: FindCommand, configuration: Configuration) -> Resu
 ///
 /// This function spawns parallel tasks (one per source file) to build a [`Program`]
 /// and run the [`ReferenceFinder`].
-pub async fn find_references(
+pub fn find_references(
     interner: &ThreadedInterner,
     database: Arc<ReadDatabase>,
     query: Query,
@@ -153,31 +158,22 @@ pub async fn find_references(
     let length = file_ids.len();
     let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Yellow);
 
-    // Spawn tasks to find references in each source
-    let mut handles = Vec::with_capacity(length);
-    for file_id in file_ids {
-        let interner = interner.clone();
-        let database = database.clone();
-        let progress_bar = progress_bar.clone();
-        let query = query.clone();
-
-        handles.push(tokio::spawn(async move {
-            let file = database.get_by_id(&file_id)?;
-            let program = parse_file(&interner, file).0;
-            let resolved_names = NameResolver::new(&interner).resolve(&program);
-            let references = ReferenceFinder::new(&interner).find(&program, &resolved_names, query);
+    let all_references = file_ids
+        .par_iter()
+        .map(|file_id| {
+            let file = database.get_ref(file_id)?;
+            let program = parse_file(interner, file).0;
+            let resolved_names = NameResolver::new(interner).resolve(&program);
+            let references = ReferenceFinder::new(interner).find(&program, &resolved_names, query.clone());
 
             progress_bar.inc(1);
 
             Result::<_, Error>::Ok(references)
-        }));
-    }
-
-    // Collect all results
-    let mut all_references = Vec::with_capacity(length);
-    for handle in handles {
-        all_references.extend(handle.await??);
-    }
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
 
     remove_progress_bar(progress_bar);
 

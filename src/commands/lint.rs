@@ -1,38 +1,25 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::sync::Arc;
 
 use clap::Parser;
 use colored::Colorize;
 
-use mago_codex::metadata::CodebaseMetadata;
-use mago_codex::reference::SymbolReferences;
 use mago_database::DatabaseReader;
-use mago_database::ReadDatabase;
-use mago_database::file::FileId;
-use mago_database::file::FileType;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
 use mago_linter::settings::RuleSettings;
 use mago_linter::settings::Settings;
-use mago_names::resolver::NameResolver;
-use mago_php_version::PHPVersion;
-use mago_reporting::Issue;
-use mago_reporting::IssueCollection;
 use mago_reporting::Level;
-use mago_semantics::SemanticsChecker;
-use mago_syntax::parser::parse_file;
 
 use crate::commands::args::reporting::ReportingArgs;
 use crate::config::Configuration;
 use crate::config::linter::LinterLevel;
 use crate::database;
 use crate::error::Error;
-use crate::metadata::compile_codebase_for_sources;
+use crate::pipeline::lint::LintContext;
+use crate::pipeline::lint::LintMode;
+use crate::pipeline::lint::run_lint_pipeline;
 use crate::utils::indent_multiline;
-use crate::utils::progress::ProgressBarTheme;
-use crate::utils::progress::create_progress_bar;
-use crate::utils::progress::remove_progress_bar;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -123,7 +110,7 @@ pub struct LintCommand {
     pub reporting: ReportingArgs,
 }
 
-pub async fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
 
     if command.no_default_plugins {
@@ -141,32 +128,36 @@ pub async fn execute(command: LintCommand, mut configuration: Configuration) -> 
     if command.list_rules {
         return list_rules(&interner, &configuration);
     }
-
     let database = if !command.path.is_empty() {
         database::from_paths(&configuration.source, command.path, !command.semantics_only)?
     } else {
         database::load(&configuration.source, !command.semantics_only, !command.semantics_only)?
     };
 
-    let read_database = Arc::new(database.read_only());
+    if database.is_empty() {
+        tracing::info!("No files found to lint.");
+        return Ok(ExitCode::SUCCESS);
+    }
 
-    let issues = if command.semantics_only {
-        get_semantics_issues_only(&interner, &read_database, configuration.php_version).await?
+    // 1. Determine the linting mode and create the shared context.
+    let mode = if command.semantics_only {
+        LintMode::SemanticsOnly
     } else if command.compilation {
-        get_compilation_and_semantic_issues(&interner, &read_database, configuration.php_version).await?
+        LintMode::Compilation
     } else {
-        lint_codebase(&interner, &read_database, &configuration).await?
+        LintMode::Full
     };
 
-    command.reporting.process_issues(issues, configuration, interner, database).await
+    let linter_settings = create_linter(&interner, &configuration);
+
+    let shared_context = LintContext { linter: linter_settings, php_version: configuration.php_version, mode };
+    let issues = run_lint_pipeline(&interner, database.read_only(), shared_context)?;
+
+    command.reporting.process_issues(issues, configuration, interner, database)
 }
 
 #[inline]
-pub(super) fn create_linter(
-    interner: &ThreadedInterner,
-    configuration: &Configuration,
-    codebase: CodebaseMetadata,
-) -> Linter {
+pub(super) fn create_linter(interner: &ThreadedInterner, configuration: &Configuration) -> Linter {
     let mut settings = Settings::new(configuration.php_version);
 
     if let Some(default_plugins) = configuration.linter.default_plugins {
@@ -190,13 +181,7 @@ pub(super) fn create_linter(
         settings = settings.with_rule(rule.name.clone(), rule_settings.with_options(rule.options.clone()));
     }
 
-    let mut linter = Linter::new(settings, interner.clone(), codebase);
-
-    mago_linter::foreach_plugin!(|plugin| {
-        linter.add_plugin(plugin);
-    });
-
-    linter
+    Linter::new(settings, interner.clone())
 }
 
 /// Displays detailed information about a single lint rule, including its name,
@@ -210,7 +195,7 @@ pub(super) fn explain_rule(
     rule: &str,
     configuration: &Configuration,
 ) -> Result<ExitCode, Error> {
-    let linter = create_linter(interner, configuration, CodebaseMetadata::new());
+    let linter = create_linter(interner, configuration);
     let configured_rules = linter.get_configured_rules();
 
     // Attempt to locate the rule
@@ -336,7 +321,7 @@ pub(super) fn explain_rule(
 
 #[inline]
 pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configuration) -> Result<ExitCode, Error> {
-    let linter = create_linter(interner, configuration, CodebaseMetadata::new());
+    let linter = create_linter(interner, configuration);
     let configured_rules = linter.get_configured_rules();
     if configured_rules.is_empty() {
         println!("{}", "No rules are currently configured or enabled.".bright_red());
@@ -373,139 +358,4 @@ pub(super) fn list_rules(interner: &ThreadedInterner, configuration: &Configurat
     }
 
     Ok(ExitCode::SUCCESS)
-}
-
-#[inline]
-pub(super) async fn get_semantics_issues_only(
-    interner: &ThreadedInterner,
-    database: &Arc<ReadDatabase>,
-    php_version: PHPVersion,
-) -> Result<IssueCollection, Error> {
-    let file_ids: Vec<_> = database.file_ids_with_type(FileType::Host).collect();
-    let length = file_ids.len();
-
-    let progress_bar = create_progress_bar(length, "🔎  Scanning", ProgressBarTheme::Magenta);
-
-    let mut handles = Vec::with_capacity(length);
-    for file_id in file_ids {
-        handles.push(tokio::spawn({
-            let interner = interner.clone();
-            let database = database.clone();
-            let progress_bar = progress_bar.clone();
-
-            async move {
-                let file = database.get_by_id(&file_id)?;
-                let name_resolver = NameResolver::new(&interner);
-                let semantics_checker = SemanticsChecker::new(&php_version, &interner);
-                let (program, parse_error) = parse_file(&interner, file);
-                let resolved_names = name_resolver.resolve(&program);
-
-                let mut semantic_issues = semantics_checker.check(file, &program, &resolved_names);
-                if let Some(error) = &parse_error {
-                    semantic_issues.push(Into::<Issue>::into(error));
-                }
-
-                progress_bar.inc(1);
-
-                Result::<_, Error>::Ok(semantic_issues)
-            }
-        }));
-    }
-
-    let mut results = Vec::with_capacity(length);
-
-    for handle in handles {
-        let issue_collection = handle.await??;
-
-        results.extend(issue_collection);
-    }
-
-    remove_progress_bar(progress_bar);
-
-    Ok(IssueCollection::from(results.into_iter()))
-}
-
-#[inline]
-pub(super) async fn get_compilation_and_semantic_issues(
-    interner: &ThreadedInterner,
-    database: &Arc<ReadDatabase>,
-    php_version: PHPVersion,
-) -> Result<IssueCollection, Error> {
-    // Compile the codebase.
-    let mut codebase = compile_codebase_for_sources(database, &mut SymbolReferences::new(), interner).await?;
-
-    // Collect all semantics issues only.
-    let mut issues = get_semantics_issues_only(interner, database, php_version).await?;
-
-    // Add the compilation issues.
-    issues.extend(codebase.take_issues(true));
-
-    Ok(issues)
-}
-
-#[inline]
-pub(super) async fn lint_codebase(
-    interner: &ThreadedInterner,
-    database: &Arc<ReadDatabase>,
-    configuration: &Configuration,
-) -> Result<IssueCollection, Error> {
-    let php_version = configuration.php_version;
-    let file_ids: Vec<_> = database.file_ids_with_type(FileType::Host).collect();
-    let length = file_ids.len();
-
-    let mut codebase = compile_codebase_for_sources(database, &mut SymbolReferences::new(), interner).await?;
-    let mut result = codebase.take_issues(true);
-
-    let linter = create_linter(interner, configuration, codebase);
-    let lint_progress = create_progress_bar(length, "🧹  Linting", ProgressBarTheme::Red);
-    let mut handles = Vec::with_capacity(length);
-    for file_id in file_ids {
-        handles.push(tokio::spawn({
-            let interner = interner.clone();
-            let database = database.clone();
-            let linter = linter.clone();
-            let lint_progress = lint_progress.clone();
-
-            async move {
-                let result = lint_single_source(&database, &interner, &linter, &php_version, file_id);
-                lint_progress.inc(1);
-
-                result
-            }
-        }));
-    }
-
-    for handle in handles {
-        result.extend(handle.await??);
-    }
-
-    remove_progress_bar(lint_progress);
-
-    Ok(result)
-}
-
-fn lint_single_source(
-    database: &ReadDatabase,
-    interner: &ThreadedInterner,
-    linter: &Linter,
-    php_version: &PHPVersion,
-    file_id: FileId,
-) -> Result<Vec<Issue>, Error> {
-    let source = database.get_by_id(&file_id)?;
-
-    let name_resolver = NameResolver::new(interner);
-    let semantics_checker = SemanticsChecker::new(php_version, interner);
-
-    let (program, parsing_error) = parse_file(interner, source);
-    let resolved_names = name_resolver.resolve(&program);
-
-    let mut issues = Vec::new();
-    if let Some(error) = &parsing_error {
-        issues.push(Into::<Issue>::into(error));
-    }
-
-    issues.extend(semantics_checker.check(source, &program, &resolved_names));
-    issues.extend(linter.lint(source, &program, &resolved_names));
-
-    Ok(issues)
 }

@@ -5,6 +5,7 @@ use mago_database::error::DatabaseError;
 use mago_php_version::PHPVersion;
 use mago_php_version::error::ParsingError;
 use mago_reporting::error::ReportingError;
+use rayon::ThreadPoolBuildError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -15,7 +16,6 @@ pub enum Error {
     DeserializingToml(toml::de::Error),
     SerializingToml(toml::ser::Error),
     CanonicalizingPath(std::path::PathBuf, std::io::Error),
-    Join(tokio::task::JoinError),
     Json(serde_json::Error),
     SelfUpdate(self_update::errors::Error),
     PHPVersionIsTooOld(PHPVersion, PHPVersion),
@@ -27,6 +27,7 @@ pub enum Error {
     ReadingBaselineFile(std::io::Error),
     CreatingBaselineFile(std::io::Error),
     ParsingComposerJson(serde_json::Error),
+    ThreadPoolBuildError(ThreadPoolBuildError),
     Analysis(AnalysisError),
 }
 
@@ -40,7 +41,6 @@ impl std::fmt::Display for Error {
             Self::DeserializingToml(error) => write!(f, "Failed to deserialize TOML: {error}"),
             Self::SerializingToml(error) => write!(f, "Failed to serialize TOML: {error}"),
             Self::CanonicalizingPath(path, error) => write!(f, "Failed to canonicalize path `{path:?}`: {error}"),
-            Self::Join(error) => write!(f, "Failed to join tasks: {error}"),
             Self::Json(error) => write!(f, "Failed to parse JSON: {error}"),
             Self::SelfUpdate(error) => write!(f, "Failed to self update: {error}"),
             Self::PHPVersionIsTooOld(minimum, actual) => {
@@ -59,6 +59,9 @@ impl std::fmt::Display for Error {
             Self::ReadingBaselineFile(error) => write!(f, "Failed to read the baseline file: {error}"),
             Self::CreatingBaselineFile(error) => write!(f, "Failed to create the baseline file: {error}"),
             Self::Analysis(error) => write!(f, "Failed to analyze the source code: {error}"),
+            Self::ThreadPoolBuildError(error) => {
+                write!(f, "Failed to build the thread pool: {error}")
+            }
         }
     }
 }
@@ -73,7 +76,6 @@ impl std::error::Error for Error {
             Self::DeserializingToml(error) => Some(error),
             Self::SerializingToml(error) => Some(error),
             Self::CanonicalizingPath(_, error) => Some(error),
-            Self::Join(error) => Some(error),
             Self::Json(error) => Some(error),
             Self::SelfUpdate(error) => Some(error),
             Self::InvalidPHPVersion(_, error) => Some(error),
@@ -116,12 +118,6 @@ impl From<toml::ser::Error> for Error {
     }
 }
 
-impl From<tokio::task::JoinError> for Error {
-    fn from(error: tokio::task::JoinError) -> Self {
-        Self::Join(error)
-    }
-}
-
 impl From<serde_json::Error> for Error {
     fn from(error: serde_json::Error) -> Self {
         Self::Json(error)
@@ -143,5 +139,11 @@ impl From<DialoguerError> for Error {
 impl From<AnalysisError> for Error {
     fn from(error: AnalysisError) -> Self {
         Self::Analysis(error)
+    }
+}
+
+impl From<ThreadPoolBuildError> for Error {
+    fn from(error: ThreadPoolBuildError) -> Self {
+        Self::ThreadPoolBuildError(error)
     }
 }
