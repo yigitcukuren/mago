@@ -552,6 +552,28 @@ fn populate_class_like_metadata(
         );
     }
 
+    for required_class in metadata.require_extends.iter().copied().collect::<Vec<_>>() {
+        populate_metadata_from_required_class_like(
+            &mut metadata,
+            codebase,
+            interner,
+            required_class,
+            symbol_references,
+            safe_symbols,
+        );
+    }
+
+    for required_interface in metadata.require_implements.iter().copied().collect::<Vec<_>>() {
+        populate_interface_metadata_from_parent_interface(
+            &mut metadata,
+            codebase,
+            interner,
+            required_interface,
+            symbol_references,
+            safe_symbols,
+        );
+    }
+
     // Apply immutability to properties if the class is immutable
     if metadata.flags.is_immutable() {
         for property_metadata in metadata.properties.values_mut() {
@@ -649,6 +671,30 @@ fn populate_metadata_from_parent_class_like(
     if parent_metadata.flags.has_consistent_templates() {
         metadata.flags |= MetadataFlags::CONSISTENT_TEMPLATES;
     }
+}
+
+/// Populates class-like data inherited from a parent class or trait.
+fn populate_metadata_from_required_class_like(
+    metadata: &mut ClassLikeMetadata,
+    codebase: &mut CodebaseMetadata,
+    interner: &ThreadedInterner,
+    parent_class: StringIdentifier,
+    symbol_references: &mut SymbolReferences,
+    safe_symbols: &HashSet<StringIdentifier>,
+) {
+    populate_class_like_metadata(&parent_class, codebase, interner, symbol_references, safe_symbols);
+
+    symbol_references.add_symbol_reference_to_symbol(metadata.name, parent_class, true);
+
+    let parent_metadata = if let Some(parent_meta) = codebase.class_likes.get(&parent_class) {
+        parent_meta
+    } else {
+        metadata.invalid_dependencies.insert(parent_class);
+        return;
+    };
+
+    metadata.require_extends.extend(parent_metadata.all_parent_classes.iter().copied());
+    metadata.require_implements.extend(parent_metadata.all_parent_interfaces.iter().copied());
 }
 
 /// Populates class-like data inherited from a used trait.

@@ -396,6 +396,62 @@ impl ClassLikeMetadata {
         self.declaring_property_ids.insert(prop, declaring_fqcn)
     }
 
+    pub fn get_missing_required_interface<'a>(&self, other: &'a ClassLikeMetadata) -> Option<&'a StringIdentifier> {
+        for required_interface in &other.require_implements {
+            if self.all_parent_interfaces.contains(required_interface) {
+                continue;
+            }
+
+            if (self.flags.is_abstract() || self.kind.is_trait())
+                && self.require_implements.contains(required_interface)
+            {
+                continue; // Abstract classes and traits can require interfaces they implement
+            }
+
+            return Some(required_interface);
+        }
+
+        None
+    }
+
+    pub fn get_missing_required_extends<'a>(&self, other: &'a ClassLikeMetadata) -> Option<&'a StringIdentifier> {
+        for required_extend in &other.require_extends {
+            if self.all_parent_classes.contains(required_extend) {
+                continue;
+            }
+
+            if self.kind.is_interface() && self.all_parent_interfaces.contains(required_extend) {
+                continue;
+            }
+
+            if (self.flags.is_abstract() || self.kind.is_trait()) && self.require_extends.contains(required_extend) {
+                continue; // Abstract classes and traits can require classes they extend
+            }
+
+            return Some(required_extend);
+        }
+
+        None
+    }
+
+    pub fn is_permitted_to_inherit(&self, other: &ClassLikeMetadata) -> bool {
+        if self.kind.is_trait() || self.flags.is_abstract() {
+            return true; // Traits and abstract classes can always inherit
+        }
+
+        let Some(permitted_inheritors) = &other.permitted_inheritors else {
+            return true; // No restrictions, inheriting is allowed
+        };
+
+        if permitted_inheritors.contains(&self.name) {
+            return true; // This class-like is explicitly permitted to inherit
+        }
+
+        self.all_parent_interfaces.iter().any(|parent_interface| permitted_inheritors.contains(parent_interface))
+            || self.all_parent_classes.iter().any(|parent_class| permitted_inheritors.contains(parent_class))
+            || self.used_traits.iter().any(|used_trait| permitted_inheritors.contains(used_trait))
+    }
+
     #[inline]
     pub fn mark_as_populated(&mut self) {
         self.flags |= MetadataFlags::POPULATED;

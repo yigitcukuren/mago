@@ -149,7 +149,9 @@ fn resolve_method_from_classname<'a>(
                 return (true, None);
             }
 
-            if method.is_static
+            if !from_instance
+                && !is_relative
+                && method.is_static
                 && defining_class_metadata.kind.is_trait()
                 && context.settings.version.is_deprecated(Feature::CallStaticMethodOnTrait)
             {
@@ -390,6 +392,7 @@ fn report_static_call_on_interface(
 
 fn report_deprecated_static_access_on_trait(context: &mut Context, name: &StringIdentifier, span: Span) {
     let name_str = context.interner.lookup(name);
+
     context.collector.report_with_code(
         Code::DEPRECATED_FEATURE,
         Issue::warning(format!("Calling static methods directly on traits (`{name_str}`) is deprecated."))

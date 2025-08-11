@@ -506,34 +506,21 @@ fn check_class_like_extends(
                 );
             }
 
-            if !class_like_metadata.flags.is_abstract() {
-                for required_interface in &extended_class_metadata.require_implements {
-                    if !class_like_metadata.all_parent_interfaces.contains(required_interface) {
-                        let required_iface_str = context.interner.lookup(required_interface);
-                        context.collector.report_with_code(
-                              Code::MISSING_REQUIRED_INTERFACE,
-                              Issue::error(format!("Class `{using_name_str}` must implement required interface `{required_iface_str}`"))
-                                  .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because its parent `{extended_name_str}` requires it")))
-                                  .with_annotation(Annotation::secondary(extended_class_span).with_message("Requirement declared here (likely via `@require-implements`)"))
-                                  .with_note("When a class uses `@require-implements`, all of its concrete child classes must implement the specified interface.")
-                                  .with_help(format!("Add `implements {required_iface_str}` to the `{using_name_str}` definition, or declare `{using_name_str}` as `abstract`.")),
-                          );
-                    }
-                }
+            if let Some(required_interface) =
+                class_like_metadata.get_missing_required_interface(extended_class_metadata)
+            {
+                let required_iface_str = context.interner.lookup(required_interface);
+                context.collector.report_with_code(
+                    Code::MISSING_REQUIRED_INTERFACE,
+                    Issue::error(format!("Class `{using_name_str}` must implement required interface `{required_iface_str}`"))
+                        .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because its parent `{extended_name_str}` requires it")))
+                        .with_annotation(Annotation::secondary(extended_class_span).with_message("Requirement declared here (likely via `@require-implements`)"))
+                        .with_note("When a class uses `@require-implements`, all of its concrete child classes must implement the specified interface.")
+                        .with_help(format!("Add `implements {required_iface_str}` to the `{using_name_str}` definition, or declare `{using_name_str}` as `abstract`.")),
+                );
             }
 
-            if !class_like_metadata.flags.is_abstract()
-                && let Some(permitted_inheritors) = &extended_class_metadata.permitted_inheritors
-                && !permitted_inheritors.contains(&class_like_metadata.name)
-                && !class_like_metadata
-                    .all_parent_interfaces
-                    .iter()
-                    .any(|parent_interface| permitted_inheritors.contains(parent_interface))
-                && !class_like_metadata
-                    .all_parent_classes
-                    .iter()
-                    .any(|parent_class| permitted_inheritors.contains(parent_class))
-            {
+            if !class_like_metadata.is_permitted_to_inherit(extended_class_metadata) {
                 context.collector.report_with_code(
                     Code::INVALID_EXTEND,
                     Issue::error(format!("Class `{using_name_str}` is not permitted to extend `{extended_name_str}`"))
@@ -626,18 +613,7 @@ fn check_class_like_implements(
                     );
                 }
 
-                if !class_like_metadata.flags.is_abstract()
-                    && let Some(permitted_inheritors) = &implemented_metadata.permitted_inheritors
-                    && !permitted_inheritors.contains(&class_like_metadata.name)
-                    && !class_like_metadata
-                        .all_parent_interfaces
-                        .iter()
-                        .any(|parent_interface| permitted_inheritors.contains(parent_interface))
-                    && !class_like_metadata
-                        .all_parent_classes
-                        .iter()
-                        .any(|parent_class| permitted_inheritors.contains(parent_class))
-                {
+                if !class_like_metadata.is_permitted_to_inherit(implemented_metadata) {
                     context.collector.report_with_code(
                         Code::INVALID_IMPLEMENT,
                         Issue::error(format!("{using_kind_capitalized} `{using_name_str}` is not permitted to implement `{implemented_name_str}`"))
@@ -766,48 +742,33 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             );
         }
 
-        if !class_like_metadata.flags.is_abstract() {
-            for required_interface in &used_trait_metadata.require_implements {
-                if !class_like_metadata.all_parent_interfaces.contains(required_interface) {
-                    let required_iface_str = context.interner.lookup(required_interface);
-                    context.collector.report_with_code(
-                        Code::MISSING_REQUIRED_INTERFACE,
-                        Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must implement required interface `{required_iface_str}`"))
-                            .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
-                            .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
-                            .with_note("When a trait uses `@require-implements`, any concrete class using that trait must implement the specified interface.")
-                            .with_help(format!("Add `implements {required_iface_str}` to the `{using_name_str}` definition, or declare it as `abstract`.")),
-                    );
-                }
-            }
+        if let Some(required_interface) = class_like_metadata.get_missing_required_interface(used_trait_metadata) {
+            let required_iface_str = context.interner.lookup(required_interface);
 
-            for required_class in &used_trait_metadata.require_extends {
-                if !class_like_metadata.all_parent_classes.contains(required_class) {
-                    let required_class_str = context.interner.lookup(required_class);
-                    context.collector.report_with_code(
-                        Code::MISSING_REQUIRED_PARENT,
-                        Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must extend required class `{required_class_str}`"))
-                            .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
-                            .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
-                            .with_note("When a trait uses `@require-extends`, any class using that trait must extend the specified class.")
-                            .with_help(format!("Add `extends {required_class_str}` to the `{using_name_str}` definition, or ensure it is a parent class.")),
-                    );
-                }
-            }
+            context.collector.report_with_code(
+                Code::MISSING_REQUIRED_INTERFACE,
+                Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must implement required interface `{required_iface_str}`"))
+                    .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
+                    .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
+                    .with_note("When a trait uses `@require-implements`, any concrete class using that trait must implement the specified interface.")
+                    .with_help(format!("Add `implements {required_iface_str}` to the `{using_name_str}` definition, or declare it as `abstract`.")),
+            );
         }
 
-        if !class_like_metadata.flags.is_abstract()
-            && let Some(permitted_inheritors) = &used_trait_metadata.permitted_inheritors
-            && !permitted_inheritors.contains(&class_like_metadata.name)
-            && !class_like_metadata
-                .all_parent_interfaces
-                .iter()
-                .any(|parent_interface| permitted_inheritors.contains(parent_interface))
-            && !class_like_metadata
-                .all_parent_classes
-                .iter()
-                .any(|parent_class| permitted_inheritors.contains(parent_class))
-        {
+        if let Some(required_class) = class_like_metadata.get_missing_required_extends(used_trait_metadata) {
+            let required_class_str = context.interner.lookup(required_class);
+
+            context.collector.report_with_code(
+                Code::MISSING_REQUIRED_PARENT,
+                Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must extend required class `{required_class_str}`"))
+                    .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
+                    .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
+                    .with_note("When a trait uses `@require-extends`, any class using that trait must extend the specified class.")
+                    .with_help(format!("Add `extends {required_class_str}` to the `{using_name_str}` definition, or ensure it is a parent class.")),
+            );
+        }
+
+        if !class_like_metadata.is_permitted_to_inherit(used_trait_metadata) {
             context.collector.report_with_code(
                 Code::INVALID_TRAIT_USE,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` is not permitted to use trait `{used_name_str}`"))
