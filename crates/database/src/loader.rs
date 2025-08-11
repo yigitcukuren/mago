@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::ffi::OsString;
+use std::path::Path;
 use std::path::PathBuf;
 
 use globset::Glob;
 use globset::GlobSet;
 use globset::GlobSetBuilder;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
+use rayon::prelude::*;
 use walkdir::WalkDir;
 
 use crate::Database;
@@ -30,6 +30,9 @@ pub struct DatabaseLoader {
 
 impl DatabaseLoader {
     /// Creates a new loader with the given configuration.
+    ///
+    /// All provided exclusion paths are canonicalized relative to the workspace
+    /// upon creation to ensure they are matched correctly.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         workspace: PathBuf,
@@ -38,6 +41,26 @@ impl DatabaseLoader {
         excludes: Vec<Exclusion>,
         extensions: Vec<String>,
     ) -> Self {
+        let paths = canonicalize_paths(&workspace, paths);
+        let includes = canonicalize_paths(&workspace, includes);
+
+        let excludes = excludes
+            .into_iter()
+            .filter_map(|exclusion| match exclusion {
+                Exclusion::Path(p) => {
+                    let absolute_path = if p.is_absolute() { p } else { workspace.join(p) };
+                    match absolute_path.canonicalize() {
+                        Ok(canonical_p) => Some(Exclusion::Path(canonical_p)),
+                        Err(_) => {
+                            tracing::warn!("Ignoring invalid exclusion path: {}", absolute_path.display());
+                            None
+                        }
+                    }
+                }
+                Exclusion::Pattern(pat) => Some(Exclusion::Pattern(pat)),
+            })
+            .collect();
+
         Self { workspace, paths, includes, excludes, memory_sources: vec![], extensions, database: None }
     }
 
@@ -55,12 +78,8 @@ impl DatabaseLoader {
     }
 
     /// Scans sources according to the configuration and builds a `Database`.
-    ///
-    /// This is the main entry point that orchestrates the entire loading process.
-    /// It returns a `Result` as some pre-processing, like compiling globs, can fail.
     pub fn load(mut self) -> Result<Database, DatabaseError> {
-        let mut db = if let Some(existing_db) = self.database.take() { existing_db } else { Database::new() };
-
+        let mut db = self.database.take().unwrap_or_default();
         let extensions_set: HashSet<OsString> = self.extensions.iter().map(OsString::from).collect();
 
         let mut glob_builder = GlobSetBuilder::new();
@@ -71,8 +90,20 @@ impl DatabaseLoader {
         }
 
         let glob_excludes = glob_builder.build()?;
-        let host_files = self.load_paths(&self.paths, FileType::Host, &extensions_set, &glob_excludes)?;
-        let vendored_files = self.load_paths(&self.includes, FileType::Vendored, &extensions_set, &glob_excludes)?;
+
+        let path_excludes: HashSet<_> = self
+            .excludes
+            .iter()
+            .filter_map(|ex| match ex {
+                Exclusion::Path(p) => Some(p),
+                _ => None,
+            })
+            .collect();
+
+        let host_files =
+            self.load_paths(&self.paths, FileType::Host, &extensions_set, &glob_excludes, &path_excludes)?;
+        let vendored_files =
+            self.load_paths(&self.includes, FileType::Vendored, &extensions_set, &glob_excludes, &path_excludes)?;
 
         for file in host_files.into_iter().chain(vendored_files.into_iter()) {
             db.add(file);
@@ -94,17 +125,8 @@ impl DatabaseLoader {
         file_type: FileType,
         extensions: &HashSet<OsString>,
         glob_excludes: &GlobSet,
+        path_excludes: &HashSet<&PathBuf>,
     ) -> Result<Vec<File>, DatabaseError> {
-        // 2. Discover all file paths first. This part is still synchronous and fast.
-        let path_excludes: HashSet<_> = self
-            .excludes
-            .iter()
-            .filter_map(|ex| match ex {
-                Exclusion::Path(p) => p.canonicalize().ok(),
-                _ => None,
-            })
-            .collect();
-
         let mut paths_to_process = Vec::new();
         for root in roots {
             for entry in WalkDir::new(root).into_iter().filter_map(Result::ok) {
@@ -114,19 +136,19 @@ impl DatabaseLoader {
             }
         }
 
-        // 3. Use a parallel iterator to process all discovered paths.
         let files: Vec<File> = paths_to_process
-            .into_par_iter() // This is the magic from rayon!
+            .into_par_iter()
             .filter_map(|path| {
-                // Apply filters in parallel
                 if glob_excludes.is_match(&path) {
                     return None;
                 }
-                if let Ok(p) = path.canonicalize()
-                    && path_excludes.contains(&p)
+
+                if let Ok(canonical_path) = path.canonicalize()
+                    && path_excludes.iter().any(|excluded| canonical_path.starts_with(excluded))
                 {
                     return None;
                 }
+
                 if let Some(ext) = path.extension() {
                     if !extensions.contains(ext) {
                         return None;
@@ -135,15 +157,34 @@ impl DatabaseLoader {
                     return None;
                 }
 
-                // Read the file. `read_file` is a blocking operation, but since it's
-                // running in a limited number of threads, it's efficient.
                 match read_file(&self.workspace, &path, file_type) {
                     Ok(file) => Some(Ok(file)),
                     Err(e) => Some(Err(e)),
                 }
             })
-            .collect::<Result<Vec<File>, _>>()?; // Collect results, propagating any errors.
+            .collect::<Result<Vec<File>, _>>()?;
 
         Ok(files)
     }
+}
+
+/// A helper function to canonicalize a vector of paths relative to a workspace.
+///
+/// It handles both absolute and relative paths and logs a warning for any
+/// path that cannot be resolved, filtering it out from the final result.
+fn canonicalize_paths(workspace: &Path, paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    paths
+        .into_iter()
+        .filter_map(|p| {
+            let absolute_path = if p.is_absolute() { p } else { workspace.join(p) };
+
+            match absolute_path.canonicalize() {
+                Ok(canonical_p) => Some(canonical_p),
+                Err(_) => {
+                    tracing::warn!("Ignoring invalid or non-existent path: {}", absolute_path.display());
+                    None
+                }
+            }
+        })
+        .collect()
 }

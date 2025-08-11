@@ -82,28 +82,6 @@ impl ConfigurationEntry for SourceConfiguration {
 
         self.workspace = workspace.canonicalize().map_err(|e| Error::CanonicalizingPath(workspace, e))?;
 
-        // Normalize source paths
-        self.paths = self
-            .paths
-            .iter()
-            .filter_map(|p| {
-                let path = if p.is_absolute() { p.clone() } else { self.workspace.join(p) };
-
-                path.canonicalize().ok()
-            })
-            .collect::<Vec<PathBuf>>();
-
-        // Normalize include paths
-        self.includes = self
-            .includes
-            .iter()
-            .filter_map(|p| {
-                let path = if p.is_absolute() { p.clone() } else { self.workspace.join(p) };
-
-                path.canonicalize().ok()
-            })
-            .collect::<Vec<PathBuf>>();
-
         Ok(())
     }
 }

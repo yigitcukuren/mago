@@ -5,6 +5,9 @@ use crate::error::DatabaseError;
 use crate::file::File;
 use crate::file::FileType;
 
+// The maximum file size we can technically support is 4 GiB, but we limit it to 1 GiB
+const MAXIMUM_FILE_SIZE: usize = 1024 * 1024 * 1024;
+
 /// Reads a file from disk and constructs a `File` object.
 ///
 /// This function handles determining the file's logical name relative to the workspace,
@@ -29,6 +32,9 @@ pub(crate) fn read_file(workspace: &Path, path: &Path, file_type: FileType) -> R
         .to_string();
 
     let bytes = std::fs::read(path)?;
+    if bytes.len() > MAXIMUM_FILE_SIZE {
+        return Err(DatabaseError::FileTooLarge(path.to_path_buf(), bytes.len(), MAXIMUM_FILE_SIZE));
+    }
 
     let contents = match str::from_utf8(&bytes) {
         Ok(s) => s.to_string(),

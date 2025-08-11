@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use globset::Error as GlobSetError;
 
 /// The primary error type for all database loading and mutation operations.
@@ -12,6 +14,8 @@ pub enum DatabaseError {
     IOError(std::io::Error),
     /// The set of user-provided glob patterns could not be compiled into a `GlobSet`.
     InvalidGlobSet(GlobSetError),
+    /// The file being loaded into the database is too large to be processed.
+    FileTooLarge(PathBuf, usize, usize),
     /// An attempt was made to commit or consume a `ChangeLog` while other
     /// references to it still exist, indicating that other threads may not have
     /// finished their work.
@@ -29,6 +33,15 @@ impl std::fmt::Display for DatabaseError {
             Self::FileNotFound => write!(f, "file not found in database"),
             Self::IOError(err) => write!(f, "I/O error: {err}"),
             Self::InvalidGlobSet(err) => write!(f, "failed to build exclusion filter from patterns: {err}"),
+            Self::FileTooLarge(path, size, max_size) => {
+                write!(
+                    f,
+                    "file at {} is too large to be processed: {} bytes (maximum is {} bytes)",
+                    path.display(),
+                    size,
+                    max_size
+                )
+            }
             Self::ChangeLogInUse => {
                 write!(f, "cannot commit changelog because it is still in use by another thread")
             }
