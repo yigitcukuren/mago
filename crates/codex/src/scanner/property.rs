@@ -65,7 +65,13 @@ pub fn scan_promoted_property(
 
     let write_visibility = match parameter.modifiers.get_first_write_visibility() {
         Some(visibility) => Visibility::try_from(visibility).unwrap_or(Visibility::Public),
-        None => read_visibility,
+        None => {
+            if parameter.modifiers.contains_readonly() {
+                Visibility::Protected
+            } else {
+                read_visibility
+            }
+        }
     };
 
     let mut property_metadata = PropertyMetadata::new(*name, flags);
@@ -144,16 +150,6 @@ pub fn scan_properties(
             .map(|item| {
                 let (name, name_span, has_default, default_type) = scan_property_item(item, context);
 
-                let read_visibility = match plain_property.modifiers.get_first_read_visibility() {
-                    Some(visibility) => Visibility::try_from(visibility).unwrap_or(Visibility::Public),
-                    None => Visibility::Public,
-                };
-
-                let write_visibility = match plain_property.modifiers.get_first_write_visibility() {
-                    Some(visibility) => Visibility::try_from(visibility).unwrap_or(Visibility::Public),
-                    None => read_visibility,
-                };
-
                 let mut flags = flags;
 
                 if has_default {
@@ -171,6 +167,22 @@ pub fn scan_properties(
                 if plain_property.modifiers.contains_static() {
                     flags |= MetadataFlags::STATIC;
                 }
+
+                let read_visibility = match plain_property.modifiers.get_first_read_visibility() {
+                    Some(visibility) => Visibility::try_from(visibility).unwrap_or(Visibility::Public),
+                    None => Visibility::Public,
+                };
+
+                let write_visibility = match plain_property.modifiers.get_first_write_visibility() {
+                    Some(visibility) => Visibility::try_from(visibility).unwrap_or(Visibility::Public),
+                    None => {
+                        if plain_property.modifiers.contains_readonly() {
+                            Visibility::Protected
+                        } else {
+                            read_visibility
+                        }
+                    }
+                };
 
                 let mut metadata = PropertyMetadata::new(name, flags);
 

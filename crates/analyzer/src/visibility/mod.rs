@@ -3,6 +3,7 @@ use mago_codex::get_declaring_method_id;
 use mago_codex::get_method_by_id;
 use mago_codex::identifier::method::MethodIdentifier;
 use mago_codex::inherits_class;
+use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::method_id_exists;
 use mago_codex::uses_trait;
 use mago_codex::visibility::Visibility;
@@ -67,7 +68,10 @@ pub fn check_method_visibility<'a>(
 
     if !is_visible {
         let method_name_str = context.interner.lookup(method_name_id);
-        let declaring_class_name_str = context.interner.lookup(declaring_class_id);
+        let declaring_class_name_str = get_class_like(context.codebase, context.interner, declaring_class_id)
+            .map(|metadata| context.interner.lookup(&metadata.original_name))
+            .unwrap_or_else(|| context.interner.lookup(declaring_class_id));
+
         let issue_title = format!(
             "Cannot access {} method `{}::{}`.",
             visibility.as_str(),
@@ -126,7 +130,7 @@ pub fn check_property_read_visibility<'a>(
 
     if !is_visible {
         let property_name_str = context.interner.lookup(property_id);
-        let declaring_class_name_str = context.interner.lookup(declaring_class_id);
+        let declaring_class_name_str = context.interner.lookup(&declaring_class_metadata.original_name);
 
         let issue_title = format!(
             "Cannot read {} property `{}` from class `{}`.",
@@ -185,7 +189,7 @@ pub fn check_property_write_visibility<'a>(
 
     if !is_visible {
         let property_name_str = context.interner.lookup(property_id);
-        let declaring_class_name_str = context.interner.lookup(declaring_class_id);
+        let declaring_class_name_str = context.interner.lookup(&declaring_class_metadata.original_name);
         let issue_title = format!(
             "Cannot write to {} property `{}` on class `{}`.",
             visibility.as_str(),
@@ -207,6 +211,22 @@ pub fn check_property_write_visibility<'a>(
             member_span,
             property_metadata.span.or(property_metadata.name_span),
             help_text,
+        );
+    } else if property_metadata.flags.is_readonly()
+        && !can_initialize_readonly_property(
+            context,
+            declaring_class_id,
+            block_context.scope.get_class_like_name(),
+            block_context.scope.get_function_like(),
+        )
+    {
+        report_readonly_issue(
+            context,
+            block_context,
+            Code::INVALID_PROPERTY_WRITE,
+            access_span,
+            member_span,
+            property_metadata.span.or(property_metadata.name_span),
         );
     }
 
@@ -242,6 +262,22 @@ fn is_visible_from_scope(
             }
         }
     }
+}
+
+fn can_initialize_readonly_property(
+    context: &Context<'_>,
+    declaring_class_id: &StringIdentifier,
+    current_class_id_opt: Option<&StringIdentifier>,
+    current_function_opt: Option<&FunctionLikeMetadata>,
+) -> bool {
+    current_function_opt.and_then(|func| func.method_metadata.as_ref()).is_some_and(|method| method.is_constructor)
+        && current_class_id_opt.is_some_and(|current_class_id| {
+            context.interner.lowered(current_class_id) == context.interner.lowered(declaring_class_id)
+                || inherits_class(context.codebase, context.interner, current_class_id, declaring_class_id)
+                || inherits_class(context.codebase, context.interner, declaring_class_id, current_class_id)
+                || uses_trait(context.codebase, context.interner, current_class_id, declaring_class_id)
+                || uses_trait(context.codebase, context.interner, declaring_class_id, current_class_id)
+        })
 }
 
 fn report_visibility_issue(
@@ -282,6 +318,46 @@ fn report_visibility_issue(
     }
 
     issue = issue.with_help(help_text);
+
+    context.collector.report_with_code(kind, issue);
+}
+
+fn report_readonly_issue(
+    context: &mut Context<'_>,
+    block_context: &BlockContext<'_>,
+    kind: &'static str,
+    access_span: Span,
+    member_span: Option<Span>,
+    definition_span: Option<Span>,
+) {
+    let current_scope_str = if let Some(current_class_id) = block_context.scope.get_class_like_name() {
+        format!("from within `{}`", context.interner.lookup(current_class_id))
+    } else {
+        "from the global scope".to_string()
+    };
+
+    let primary_annotation_span = member_span.unwrap_or(access_span);
+
+    let mut issue = Issue::error("Cannot modify a readonly property after initialization.")
+        .with_annotation(
+            Annotation::primary(primary_annotation_span)
+                .with_message("Illegal write to readonly property"),
+        )
+        .with_annotation(
+            Annotation::secondary(access_span).with_message(format!("Write attempt occurs here, {current_scope_str}")),
+        )
+        .with_note(
+            "Readonly properties can only be initialized once, and this must occur within the scope of the class that declares them (i.e., in its `__construct` method or a child's `__construct`)."
+        )
+        .with_help(
+            "While PHP may permit this write if the property is uninitialized, it will cause a fatal `Error` if the property already has a value. To ensure correctness, move this initialization to the constructor."
+        );
+
+    if let Some(definition_span) = definition_span {
+        issue = issue.with_annotation(
+            Annotation::secondary(definition_span).with_message("Property is defined as `readonly` here"),
+        );
+    }
 
     context.collector.report_with_code(kind, issue);
 }

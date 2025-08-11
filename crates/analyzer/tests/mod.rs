@@ -133,3 +133,4 @@ test_case!(infer_class_string_on_generic_object);
 test_case!(redefined_loop_variables);
 test_case!(keyed_array_list_inference);
 test_case!(require_implements_inherited);
+test_case!(readonly_proptected_set);
