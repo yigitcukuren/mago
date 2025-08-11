@@ -112,7 +112,6 @@ where
     where
         F: Fn(T, ThreadedInterner, Arc<File>, Arc<CodebaseMetadata>) -> Result<I, Error> + Send + Sync,
     {
-        // --- Phase 1: Compile Codebase ---
         let all_files = self.database.files().collect::<Vec<_>>();
         if all_files.is_empty() {
             return self.reducer.reduce(CodebaseMetadata::new(), SymbolReferences::new(), Vec::new());
@@ -120,7 +119,6 @@ where
 
         let compiling_bar = create_progress_bar(all_files.len(), "Compiling", ProgressBarTheme::Magenta);
 
-        // Parallel Map: Scan all files to produce partial metadata.
         let partial_codebases: Vec<CodebaseMetadata> = all_files
             .into_par_iter()
             .map(|file| {
@@ -131,13 +129,11 @@ where
             })
             .collect();
 
-        // Reduce: Merge partial metadata into a single codebase.
         let mut merged_codex = CodebaseMetadata::new();
         for partial in partial_codebases {
             merged_codex.extend(partial);
         }
 
-        // Sequential Step: Populate the merged codebase.
         let mut symbol_references = SymbolReferences::new();
         populate_codebase(
             &mut merged_codex,
@@ -148,23 +144,22 @@ where
         );
 
         remove_progress_bar(compiling_bar);
-        let final_codebase = Arc::new(merged_codex);
 
-        // --- Phase 2: Analyze Host Files ---
-        let host_files: Vec<Arc<File>> = self
+        let host_files = self
             .database
             .files()
             .filter(|f| f.file_type == FileType::Host)
-            .map(|f| self.database.get(&f.id).unwrap())
-            .collect();
+            .map(|f| self.database.get(&f.id))
+            .collect::<Result<Vec<_>, _>>()?;
 
         if host_files.is_empty() {
-            return self.reducer.reduce(Arc::try_unwrap(final_codebase).unwrap(), symbol_references, Vec::new());
+            return self.reducer.reduce(merged_codex, symbol_references, Vec::new());
         }
+
+        let final_codebase = Arc::new(merged_codex);
 
         let main_task_bar = create_progress_bar(host_files.len(), self.task_name, ProgressBarTheme::Blue);
 
-        // Parallel Map: Run the user's analysis function on each host file.
         let results: Vec<I> = host_files
             .into_par_iter()
             .map(|file| {
@@ -179,8 +174,7 @@ where
 
         remove_progress_bar(main_task_bar);
 
-        // --- Phase 3: Final Aggregation ---
-        let final_codebase = Arc::try_unwrap(final_codebase).unwrap();
+        let final_codebase = Arc::unwrap_or_clone(final_codebase);
         self.reducer.reduce(final_codebase, symbol_references, results)
     }
 }
@@ -220,12 +214,12 @@ where
     where
         F: Fn(T, ThreadedInterner, Arc<File>) -> Result<I, Error> + Send + Sync,
     {
-        let host_files: Vec<Arc<File>> = self
+        let host_files = self
             .database
             .files()
             .filter(|f| f.file_type == FileType::Host)
-            .map(|f| self.database.get(&f.id).unwrap())
-            .collect();
+            .map(|f| self.database.get(&f.id))
+            .collect::<Result<Vec<_>, _>>()?;
 
         if host_files.is_empty() {
             return self.reducer.reduce(Vec::new());
@@ -233,7 +227,6 @@ where
 
         let progress_bar = create_progress_bar(host_files.len(), self.task_name, ProgressBarTheme::Yellow);
 
-        // Parallel Map: Run the user's function on each host file.
         let results: Vec<I> = host_files
             .into_par_iter()
             .map(|file| {
@@ -247,7 +240,6 @@ where
 
         remove_progress_bar(progress_bar);
 
-        // Reduce: Aggregate the final results.
         self.reducer.reduce(results)
     }
 }
