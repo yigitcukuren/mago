@@ -62,8 +62,8 @@ pub fn saturate_clauses<'a>(clauses: impl IntoIterator<Item = &'a Clause>) -> Ve
                 continue;
             }
 
-            let is_clause_a_simple =
-                clause_a.possibilities.len() == 1 && clause_a.possibilities.values().next().unwrap().len() == 1;
+            let is_clause_a_simple = clause_a.possibilities.len() == 1
+                && clause_a.possibilities.values().next().is_some_and(|p| p.len() == 1);
 
             if !is_clause_a_simple {
                 'inner: for clause_b in &unique_clauses {
@@ -85,11 +85,9 @@ pub fn saturate_clauses<'a>(clauses: impl IntoIterator<Item = &'a Clause>) -> Ve
 
                                     if a_possibilities.len() == 1
                                         && b_possibilities.len() == 1
-                                        && a_possibilities
-                                            .values()
-                                            .next()
-                                            .unwrap()
-                                            .is_negation_of(b_possibilities.values().next().unwrap())
+                                        && a_possibilities.values().next().is_some_and(|a| {
+                                            b_possibilities.values().next().is_some_and(|b| a.is_negation_of(b))
+                                        })
                                     {
                                         if opposing_key.is_some() {
                                             mismatch = true;
@@ -223,13 +221,12 @@ pub fn saturate_clauses<'a>(clauses: impl IntoIterator<Item = &'a Clause>) -> Ve
                     for common_key in common_keys {
                         let clause_a_possibilities = &clause_a.possibilities[common_key];
                         let clause_b_possibilities = &clause_b.possibilities[common_key];
+
                         if clause_a_possibilities.len() == 1
                             && clause_b_possibilities.len() == 1
-                            && clause_a_possibilities
-                                .values()
-                                .next()
-                                .unwrap()
-                                .is_negation_of(clause_b_possibilities.values().next().unwrap())
+                            && clause_a_possibilities.values().next().is_some_and(|a| {
+                                clause_b_possibilities.values().next().is_some_and(|b| a.is_negation_of(b))
+                            })
                         {
                             common_negated_keys.insert(common_key);
                         }
