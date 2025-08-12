@@ -274,11 +274,8 @@ fn get_formula_from_assertions(
         return if clauses.len() > FORMULA_SIZE_THRESHOLD { None } else { Some(clauses) };
     }
 
-    let mut conditional_ref = String::new();
-    conditional_ref += "*";
-    conditional_ref += conditional.span().start.offset.to_string().as_str();
-    conditional_ref += "-";
-    conditional_ref += conditional.span().end.offset.to_string().as_str();
+    let conditional_span = conditional.span();
+    let conditional_ref = format!("*{}-{}", conditional_span.start.offset, conditional_span.end.offset);
 
     Some(vec![Clause::new(
         {

@@ -5,8 +5,9 @@ use ahash::HashMap;
 use ahash::HashSet;
 use indexmap::IndexMap;
 
-use mago_algebra::assertion_set::And;
 use mago_algebra::assertion_set::AssertionSet;
+use mago_algebra::assertion_set::Conjunction;
+use mago_algebra::assertion_set::Disjunction;
 use mago_algebra::assertion_set::add_and_assertion;
 use mago_algebra::assertion_set::add_and_clause;
 use mago_algebra::find_satisfying_assignments;
@@ -179,7 +180,7 @@ fn apply_assertion_to_call_context<'a>(
     artifacts: &mut AnalysisArtifacts,
     invocation: &Invocation,
     this_variable: &Option<String>,
-    assertions: &BTreeMap<StringIdentifier, Vec<Assertion>>,
+    assertions: &BTreeMap<StringIdentifier, Conjunction<Assertion>>,
     template_result: &TemplateResult,
     parameters: &HashMap<StringIdentifier, TUnion>,
 ) {
@@ -256,13 +257,13 @@ fn resolve_invocation_assertion<'a>(
     artifacts: &mut AnalysisArtifacts,
     invocation: &Invocation,
     this_variable: &Option<String>,
-    assertions: &BTreeMap<StringIdentifier, And<Assertion>>,
+    assertions: &BTreeMap<StringIdentifier, Disjunction<Assertion>>,
     template_result: &TemplateResult,
     parameters: &HashMap<StringIdentifier, TUnion>,
 ) -> IndexMap<String, AssertionSet> {
     let mut type_assertions: IndexMap<String, AssertionSet> = IndexMap::new();
     if assertions.is_empty() {
-        return type_assertions; // No assertions to resolve
+        return type_assertions;
     }
 
     for (parameter_id, variable_assertions) in assertions {
@@ -272,6 +273,7 @@ fn resolve_invocation_assertion<'a>(
         match assertion_variable {
             Some(assertion_variable) => {
                 let mut new_variable_possibilities: AssertionSet = vec![];
+                let mut resolved_or_clause: Disjunction<Assertion> = Vec::new();
 
                 for variable_assertion in variable_assertions {
                     let Some(assertion_atomic) = variable_assertion.get_type() else {
@@ -289,15 +291,9 @@ fn resolve_invocation_assertion<'a>(
                     );
 
                     if !resolved_assertion_type.is_never() {
-                        let type_assertion = resolved_assertion_type
-                            .types
-                            .into_iter()
-                            .map(|resolved_assertion_type_atomic| {
-                                variable_assertion.with_type(resolved_assertion_type_atomic)
-                            })
-                            .collect::<Vec<_>>();
-
-                        add_and_clause(&mut new_variable_possibilities, type_assertion.as_slice());
+                        for resolved_atomic in resolved_assertion_type.types {
+                            resolved_or_clause.push(variable_assertion.with_type(resolved_atomic));
+                        }
                     } else if let Some(asserted_type) = block_context.locals.get(&assertion_variable) {
                         match variable_assertion {
                             Assertion::IsType(_) => {
@@ -347,6 +343,10 @@ fn resolve_invocation_assertion<'a>(
                             }
                         }
                     }
+                }
+
+                if !resolved_or_clause.is_empty() {
+                    add_and_clause(&mut new_variable_possibilities, &resolved_or_clause);
                 }
 
                 if !new_variable_possibilities.is_empty() {
