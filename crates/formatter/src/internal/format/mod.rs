@@ -1,5 +1,6 @@
 use block::block_is_empty;
 use mago_span::HasSpan;
+use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::document::*;
@@ -1927,4 +1928,11 @@ impl<'a> Format<'a> for HaltCompiler {
             ]))
         })
     }
+}
+
+fn format_operator<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
+    let leading = f.print_leading_comments(span);
+    let trailing = f.print_trailing_comments(span);
+
+    f.print_comments(leading, Document::String(operator), trailing)
 }

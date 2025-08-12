@@ -21,6 +21,7 @@ use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::format::call_node::CallLikeNode;
 use crate::internal::format::call_node::print_call_like_node;
 use crate::internal::format::class_like::print_class_like_body;
+use crate::internal::format::format_operator;
 use crate::internal::format::member_access::collect_member_access_chain;
 use crate::internal::format::member_access::print_member_access_chain;
 use crate::internal::format::misc;
@@ -865,7 +866,7 @@ impl<'a> Format<'a> for MatchDefaultArm {
         wrap!(f, self, MatchDefaultArm, {
             Document::Group(Group::new(vec![
                 self.default.format(f),
-                Document::String(" => "),
+                format_operator(f, self.arrow, " => "),
                 self.expression.format(f),
             ]))
         })
@@ -882,14 +883,14 @@ impl<'a> Format<'a> for MatchExpressionArm {
                 if i != (len - 1) {
                     contents.push(Document::String(","));
                     contents.push(Document::Line(Line::default()));
-                } else if f.settings.trailing_comma {
+                } else if f.settings.trailing_comma && i > 0 {
                     contents.push(Document::IfBreak(IfBreak::then(Document::String(","))));
                 }
             }
 
             contents.push(Document::IndentIfBreak(IndentIfBreak::new(vec![
                 Document::Line(Line::default()),
-                Document::String("=> "),
+                format_operator(f, self.arrow, "=> "),
             ])));
 
             Document::Array(vec![
@@ -990,7 +991,7 @@ impl<'a> Format<'a> for Conditional {
                             self.condition.format(f),
                             Document::Indent(vec![
                                 Document::Line(if must_break { Line::hard() } else { Line::default() }),
-                                Document::String("? "),
+                                format_operator(f, self.question_mark, "? "),
                                 Document::Group(Group::new(vec![then.format(f)]).with_id(then_id)),
                                 {
                                     if inline_colon {
@@ -1011,7 +1012,7 @@ impl<'a> Format<'a> for Conditional {
                                         Document::Line(if must_break { Line::hard() } else { Line::default() })
                                     }
                                 },
-                                Document::String(": "),
+                                format_operator(f, self.colon, ": "),
                                 self.r#else.format(f),
                             ]),
                         ])
@@ -1023,7 +1024,11 @@ impl<'a> Format<'a> for Conditional {
                     self.condition.format(f),
                     Document::Indent(vec![
                         Document::Line(if must_break { Line::hard() } else { Line::default() }),
-                        Document::Group(Group::new(vec![Document::String("?: "), self.r#else.format(f)])),
+                        Document::Group(Group::new(vec![
+                            format_operator(f, self.question_mark, "?"),
+                            format_operator(f, self.colon, ": "),
+                            self.r#else.format(f),
+                        ])),
                     ]),
                 ])),
             }
