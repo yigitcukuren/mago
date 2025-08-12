@@ -239,7 +239,7 @@ impl Rule for OverrideAttributeRule {
                 continue;
             };
 
-            if override_attribute.is_some() {
+            if override_attribute.is_some() || metadata.kind.is_trait() {
                 continue;
             }
 

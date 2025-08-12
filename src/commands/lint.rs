@@ -181,7 +181,13 @@ pub(super) fn create_linter(interner: &ThreadedInterner, configuration: &Configu
         settings = settings.with_rule(rule.name.clone(), rule_settings.with_options(rule.options.clone()));
     }
 
-    Linter::new(settings, interner.clone())
+    let mut linter = Linter::new(settings, interner.clone());
+
+    mago_linter::foreach_plugin!(|plugin| {
+        linter.add_plugin(plugin);
+    });
+
+    linter
 }
 
 /// Displays detailed information about a single lint rule, including its name,
