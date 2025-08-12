@@ -11,6 +11,7 @@ use mago_codex::metadata::function_like::FunctionLikeMetadata;
 use mago_codex::misc::GenericParent;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
+use mago_codex::ttype::atomic::callable::TCallable;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
@@ -50,21 +51,7 @@ use crate::invocation::template_inference::infer_templates_for_method_call;
 use crate::utils::misc::unique_vec;
 use crate::utils::template::get_template_types_for_class_member;
 
-/// Analyzes and verifies arguments passed to a function, method, callable, or language construct.
-///
-/// Performs a multi-pass analysis:
-///
-/// 1. Separates arguments into positional (non-callable), callable, and unpacked categories.
-/// 2. **Pass 1:** Analyzes non-callable arguments and infers initial template bounds into `template_result`.
-/// 3. **Pass 2:** Analyzes callable arguments. It resolves the expected parameter signature using bounds
-///    inferred in Pass 1, verifies the provided callable against the resolved signature (respecting variance),
-///    and infers any remaining template bounds (e.g., for return types) *without* overriding bounds
-///    set in Pass 1.
-/// 4. **Refinement:** Applies class/function template definitions to the `template_result`.
-/// 5. **Pass 3:** Verifies all positional arguments (non-callable and callable) against their
-///    parameter types, which are now fully resolved using the final `template_result`.
-/// 6. Verifies unpacked arguments against the (resolved) variadic parameter type.
-/// 7. Performs a final consistency check on the inferred template bounds in `template_result`.
+/// Analyzes and verifies arguments passed to a function, method, or callable.
 ///
 /// # Arguments
 ///
@@ -120,19 +107,16 @@ pub fn analyze_invocation<'a>(
     let parameter_refs = invocation.target.get_parameters();
     let mut analyzed_argument_types: HashMap<usize, (TUnion, Span)> = HashMap::default();
 
-    let mut non_callable_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
-    let mut callable_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
+    let mut non_closure_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
+    let mut closure_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
     let mut unpacked_arguments: Vec<InvocationArgument<'_>> = Vec::new();
     for (offset, argument) in invocation.arguments_source.get_arguments().into_iter().enumerate() {
         if argument.is_unpacked() {
             unpacked_arguments.push(argument);
-        } else if matches!(
-            argument.value(),
-            Expression::Closure(_) | Expression::ArrowFunction(_) | Expression::ClosureCreation(_)
-        ) {
-            callable_arguments.push((offset, argument));
+        } else if matches!(argument.value(), Expression::Closure(_) | Expression::ArrowFunction(_)) {
+            closure_arguments.push((offset, argument));
         } else {
-            non_callable_arguments.push((offset, argument));
+            non_closure_arguments.push((offset, argument));
         }
     }
 
@@ -142,7 +126,7 @@ pub fn analyze_invocation<'a>(
         invocation.target.get_method_context().map(|ctx| ctx.class_like_metadata).or(calling_class_like_metadata);
     let method_call_context = invocation.target.get_method_context();
 
-    for (argument_offset, argument) in &non_callable_arguments {
+    for (argument_offset, argument) in &non_closure_arguments {
         let argument_expression = argument.value();
         let parameter = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
 
@@ -154,6 +138,7 @@ pub fn analyze_invocation<'a>(
             *argument_offset,
             &mut analyzed_argument_types,
             parameter.is_some_and(|p| p.1.is_by_reference()),
+            None,
         )?;
 
         if let Some(argument_type) = analyzed_argument_types.get(argument_offset)
@@ -181,23 +166,11 @@ pub fn analyze_invocation<'a>(
         }
     }
 
-    for (argument_offset, argument) in &callable_arguments {
+    for (argument_offset, argument) in &closure_arguments {
         let argument_expression = argument.value();
         let parameter = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
-
-        analyze_and_store_argument_type(
-            context,
-            block_context,
-            artifacts,
-            argument_expression,
-            *argument_offset,
-            &mut analyzed_argument_types,
-            parameter.is_some_and(|p| p.1.is_by_reference()),
-        )?;
-
-        if let Some(argument_type) = analyzed_argument_types.get(argument_offset)
-            && let Some((_, parameter_ref)) = parameter
-        {
+        let mut parameter_type_had_template_types = false;
+        let parameter_type = if let Some((_, parameter_ref)) = parameter {
             let base_parameter_type = get_parameter_type(
                 context,
                 Some(parameter_ref),
@@ -207,23 +180,45 @@ pub fn analyze_invocation<'a>(
             );
 
             if base_parameter_type.has_template_types() {
-                let resolved_parameter_type = inferred_type_replacer::replace(
+                parameter_type_had_template_types = true;
+
+                Some(inferred_type_replacer::replace(
                     &base_parameter_type,
                     template_result,
                     context.codebase,
                     context.interner,
-                );
-
-                infer_parameter_templates_from_argument(
-                    context,
-                    &resolved_parameter_type,
-                    &argument_type.0,
-                    template_result,
-                    *argument_offset,
-                    argument_type.1,
-                    true,
-                );
+                ))
+            } else {
+                Some(base_parameter_type)
             }
+        } else {
+            None
+        };
+
+        analyze_and_store_argument_type(
+            context,
+            block_context,
+            artifacts,
+            argument_expression,
+            *argument_offset,
+            &mut analyzed_argument_types,
+            parameter.is_some_and(|p| p.1.is_by_reference()),
+            parameter_type.as_ref(),
+        )?;
+
+        if parameter_type_had_template_types
+            && let Some(argument_type) = analyzed_argument_types.get(argument_offset)
+            && let Some(parameter_type) = parameter_type
+        {
+            infer_parameter_templates_from_argument(
+                context,
+                &parameter_type,
+                &argument_type.0,
+                template_result,
+                *argument_offset,
+                argument_type.1,
+                true,
+            );
         }
     }
 
@@ -248,7 +243,7 @@ pub fn analyze_invocation<'a>(
     let mut has_too_many_arguments = false;
     let mut last_argument_offset: isize = -1;
     for (argument_offset, argument) in
-        non_callable_arguments.iter().chain(callable_arguments.iter()).sorted_by(|(a, _), (b, _)| a.cmp(b))
+        non_closure_arguments.iter().chain(closure_arguments.iter()).sorted_by(|(a, _), (b, _)| a.cmp(b))
     {
         let argument_expression = argument.value();
         let (argument_value_type, _) = analyzed_argument_types
@@ -426,7 +421,7 @@ pub fn analyze_invocation<'a>(
 
     let max_params = parameter_refs.len();
     let number_of_required_parameters = parameter_refs.iter().filter(|p| !p.has_default() && !p.is_variadic()).count();
-    let mut number_of_provided_parameters = non_callable_arguments.len() + callable_arguments.len();
+    let mut number_of_provided_parameters = non_closure_arguments.len() + closure_arguments.len();
 
     if !unpacked_arguments.is_empty() {
         if let Some(last_parameter_ref) = parameter_refs.last().copied() {
@@ -457,6 +452,7 @@ pub fn analyze_invocation<'a>(
                             usize::MAX,
                             &mut analyzed_argument_types,
                             last_parameter_ref.is_by_reference(),
+                            None,
                         )?;
                     }
 
@@ -711,11 +707,37 @@ fn analyze_and_store_argument_type<'a>(
     argument_offset: usize,
     analyzed_argument_types: &mut HashMap<usize, (TUnion, Span)>,
     referenced_parameter: bool,
+    closure_parameter_type: Option<&TUnion>,
 ) -> Result<(), AnalysisError> {
     if argument_offset != usize::MAX && analyzed_argument_types.contains_key(&argument_offset) {
         return Ok(());
     }
 
+    let mut inferred_parameter_types: Option<HashMap<usize, TUnion>> = None;
+    if let Some(closure_parameter_type) = closure_parameter_type {
+        let mut inferred_parameters = HashMap::default();
+        for closure_parameter_atomic in &closure_parameter_type.types {
+            let TAtomic::Callable(TCallable::Signature(callable)) = closure_parameter_atomic else {
+                continue;
+            };
+
+            for (parameter_index, parameter) in callable.parameters.iter().enumerate() {
+                let Some(parameter_type) = parameter.get_type_signature() else {
+                    continue;
+                };
+
+                if !parameter_type.is_array() && !parameter_type.has_object() {
+                    continue;
+                }
+
+                inferred_parameters.insert(parameter_index, parameter_type.clone());
+            }
+        }
+
+        inferred_parameter_types = Some(inferred_parameters);
+    }
+
+    let inferred_parameter_types = std::mem::replace(&mut artifacts.inferred_parameter_types, inferred_parameter_types);
     let was_inside_general_use = block_context.inside_general_use;
     let was_inside_call = block_context.inside_call;
     let was_inside_variable_reference = block_context.inside_variable_reference;
@@ -726,6 +748,7 @@ fn analyze_and_store_argument_type<'a>(
 
     argument_expression.analyze(context, block_context, artifacts)?;
 
+    artifacts.inferred_parameter_types = inferred_parameter_types;
     block_context.inside_general_use = was_inside_general_use;
     block_context.inside_call = was_inside_call;
     block_context.inside_variable_reference = was_inside_variable_reference;

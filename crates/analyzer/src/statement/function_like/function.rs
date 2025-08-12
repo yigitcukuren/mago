@@ -55,6 +55,7 @@ impl Analyzable for Function {
             &self.parameter_list,
             FunctionLikeBody::Statements(self.body.statements.as_slice()),
             HashMap::default(),
+            None,
         )?;
 
         Ok(())

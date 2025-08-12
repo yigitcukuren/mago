@@ -59,6 +59,7 @@ pub fn analyze_function_like<'a, 'ast>(
     parameter_list: &'ast FunctionLikeParameterList,
     body: FunctionLikeBody<'ast>,
     import_variables: HashMap<String, Rc<TUnion>>,
+    inferred_parameter_types: Option<HashMap<usize, TUnion>>,
 ) -> Result<(BlockContext<'a>, AnalysisArtifacts), AnalysisError> {
     let mut previous_type_resolution_context = std::mem::replace(
         &mut context.type_resolution_context,
@@ -74,6 +75,7 @@ pub fn analyze_function_like<'a, 'ast>(
         &mut artifacts,
         function_like_metadata,
         parameter_list,
+        inferred_parameter_types,
     )?;
 
     for (variable_name, variable_type) in import_variables {
@@ -153,9 +155,10 @@ fn add_parameter_types_to_context<'a>(
     artifacts: &mut AnalysisArtifacts,
     function_like_metadata: &FunctionLikeMetadata,
     parameter_list: &FunctionLikeParameterList,
+    mut inferred_parameter_types: Option<HashMap<usize, TUnion>>,
 ) -> Result<(), AnalysisError> {
     for (i, parameter_metadata) in function_like_metadata.parameters.iter().enumerate() {
-        let mut parameter_type = if let Some(type_signature) = parameter_metadata.get_type_metadata() {
+        let declared_parameter_type = if let Some(type_signature) = parameter_metadata.get_type_metadata() {
             add_symbol_references(
                 &type_signature.type_union,
                 block_context.scope.get_function_like_identifier().as_ref(),
@@ -217,6 +220,15 @@ fn add_parameter_types_to_context<'a>(
             get_mixed()
         };
 
+        // Now, decide which type to use: the inferred one or the declared one.
+        let final_parameter_type = if let Some(inferred_map) = inferred_parameter_types.as_mut() {
+            // If an inferred type exists for this parameter index, take it.
+            // Otherwise, fall back to the type we derived from the signature.
+            inferred_map.remove(&i).unwrap_or(declared_parameter_type)
+        } else {
+            declared_parameter_type
+        };
+
         let parameter_node = if let Some(parameter_node) = parameter_list.parameters.get(i) {
             parameter_node
         } else {
@@ -239,13 +251,16 @@ fn add_parameter_types_to_context<'a>(
             default_value.value.analyze(context, block_context, artifacts)?;
         }
 
-        if parameter_metadata.flags.is_variadic() {
-            parameter_type = wrap_atomic(TAtomic::Array(TArray::List(TList::new(Box::new(parameter_type)))));
-        }
+        let final_parameter_type = if parameter_metadata.flags.is_variadic() {
+            wrap_atomic(TAtomic::Array(TArray::List(TList::new(Box::new(final_parameter_type)))))
+        } else {
+            final_parameter_type
+        };
 
-        block_context
-            .locals
-            .insert(context.interner.lookup(&parameter_metadata.get_name().0).to_string(), Rc::new(parameter_type));
+        block_context.locals.insert(
+            context.interner.lookup(&parameter_metadata.get_name().0).to_string(),
+            Rc::new(final_parameter_type),
+        );
     }
 
     Ok(())

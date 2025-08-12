@@ -144,6 +144,7 @@ impl Analyzable for Closure {
             }
         }
 
+        let inferred_parameter_types = artifacts.inferred_parameter_types.take();
         let (inner_block_context, inner_artifacts) = analyze_function_like(
             context,
             artifacts,
@@ -152,6 +153,7 @@ impl Analyzable for Closure {
             &self.parameter_list,
             FunctionLikeBody::Statements(self.body.statements.as_slice()),
             imported_variables,
+            inferred_parameter_types,
         )?;
 
         for referenced_variable in referenced_variables {

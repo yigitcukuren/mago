@@ -136,3 +136,4 @@ test_case!(require_implements_inherited);
 test_case!(readonly_proptected_set);
 test_case!(value_of_enum_resolution);
 test_case!(assert_or_type);
+test_case!(infere_closure_parameter_type);

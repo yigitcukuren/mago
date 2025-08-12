@@ -21,6 +21,7 @@ pub struct AnalysisArtifacts {
     pub loop_scope: Option<LoopScope>,
     pub case_scopes: Vec<CaseScope>,
     pub fully_matched_switch_offsets: HashSet<u32>,
+    pub inferred_parameter_types: Option<HashMap<usize, TUnion>>,
 }
 
 impl AnalysisArtifacts {
@@ -34,6 +35,7 @@ impl AnalysisArtifacts {
             case_scopes: Vec::new(),
             loop_scope: None,
             fully_matched_switch_offsets: HashSet::default(),
+            inferred_parameter_types: None,
         }
     }
 

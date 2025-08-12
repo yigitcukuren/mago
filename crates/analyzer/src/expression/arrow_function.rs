@@ -65,6 +65,7 @@ impl Analyzable for ArrowFunction {
             }
         }
 
+        let inferred_parameter_types = artifacts.inferred_parameter_types.take();
         let (_, inner_artifacts) = analyze_function_like(
             context,
             artifacts,
@@ -73,6 +74,7 @@ impl Analyzable for ArrowFunction {
             &self.parameter_list,
             FunctionLikeBody::Expression(&self.expression),
             imported_variables,
+            inferred_parameter_types,
         )?;
 
         let function_identifier = FunctionLikeIdentifier::Closure(s.file_id, s.start);
