@@ -3,7 +3,7 @@ use std::rc::Rc;
 use ahash::HashMap;
 use ahash::HashSet;
 
-use mago_codex::assertion::Assertion;
+use mago_algebra::assertion_set::AssertionSet;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::ttype::union::TUnion;
 use mago_span::HasSpan;
@@ -14,8 +14,8 @@ use crate::context::scope::loop_scope::LoopScope;
 #[derive(Debug, Clone)]
 pub struct AnalysisArtifacts {
     pub expression_types: HashMap<(u32, u32), Rc<TUnion>>,
-    pub if_true_assertions: HashMap<(u32, u32), HashMap<String, Vec<Assertion>>>,
-    pub if_false_assertions: HashMap<(u32, u32), HashMap<String, Vec<Assertion>>>,
+    pub if_true_assertions: HashMap<(u32, u32), HashMap<String, AssertionSet>>,
+    pub if_false_assertions: HashMap<(u32, u32), HashMap<String, AssertionSet>>,
     pub inferred_return_types: Vec<TUnion>,
     pub symbol_references: SymbolReferences,
     pub loop_scope: Option<LoopScope>,

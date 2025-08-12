@@ -5,6 +5,7 @@ use std::sync::LazyLock;
 
 use ahash::HashSet;
 use indexmap::IndexMap;
+use mago_algebra::assertion_set::AssertionSet;
 use regex::Regex;
 
 use mago_codex::assertion::Assertion;
@@ -72,7 +73,7 @@ impl<'a, 's> ReconciliationContext<'a, 's> {
 
 pub fn reconcile_keyed_types(
     context: &mut ReconciliationContext<'_, '_>,
-    new_types: &IndexMap<String, Vec<Vec<Assertion>>>,
+    new_types: &IndexMap<String, AssertionSet>,
     mut active_new_types: IndexMap<String, HashSet<usize>>,
     block_context: &mut BlockContext<'_>,
     changed_var_ids: &mut HashSet<String>,
@@ -334,7 +335,7 @@ static INTEGER_REGEX: LazyLock<Regex> = LazyLock::new(|| unsafe {
 });
 
 fn add_nested_assertions(
-    new_types: &mut IndexMap<String, Vec<Vec<Assertion>>>,
+    new_types: &mut IndexMap<String, AssertionSet>,
     active_new_types: &mut IndexMap<String, HashSet<usize>>,
     context: &BlockContext<'_>,
 ) {
@@ -552,7 +553,7 @@ fn get_value_for_key(
     context: &mut ReconciliationContext<'_, '_>,
     key: String,
     block_context: &mut BlockContext<'_>,
-    new_assertions: &IndexMap<String, Vec<Vec<Assertion>>>,
+    new_assertions: &IndexMap<String, AssertionSet>,
     has_isset: bool,
     has_inverted_isset: bool,
     has_inverted_key_exists: bool,

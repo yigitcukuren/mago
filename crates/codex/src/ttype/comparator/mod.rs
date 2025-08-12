@@ -7,6 +7,7 @@ use crate::ttype::union::TUnion;
 mod array_comparator;
 mod callable_comparator;
 mod class_string_comparator;
+mod derived_comparator;
 mod generic_comparator;
 mod integer_comparator;
 mod iterable_comparator;

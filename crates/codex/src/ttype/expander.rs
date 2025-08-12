@@ -106,7 +106,7 @@ pub fn expand_union(
     }
 }
 
-fn expand_atomic(
+pub(crate) fn expand_atomic(
     return_type_part: &mut TAtomic,
     codebase: &CodebaseMetadata,
     interner: &ThreadedInterner,
@@ -568,7 +568,7 @@ fn expand_key_of(
         type_atomics.push(target_type);
     }
 
-    let Some(new_return_types) = TKeyOf::get_key_of_targets(type_atomics, codebase, interner, false) else {
+    let Some(new_return_types) = TKeyOf::get_key_of_targets(&type_atomics, codebase, interner, false) else {
         return vec![TAtomic::Derived(TDerived::KeyOf(return_type_key_of.clone()))];
     };
 
@@ -592,7 +592,7 @@ fn expand_value_of(
         type_atomics.push(target_type);
     }
 
-    let Some(new_return_types) = TValueOf::get_value_of_targets(type_atomics, codebase, interner, false) else {
+    let Some(new_return_types) = TValueOf::get_value_of_targets(&type_atomics, codebase, interner, false) else {
         return vec![TAtomic::Derived(TDerived::ValueOf(return_type_value_of.clone()))];
     };
 

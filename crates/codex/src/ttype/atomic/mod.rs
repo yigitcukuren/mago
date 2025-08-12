@@ -631,6 +631,10 @@ impl TAtomic {
         matches!(self, TAtomic::Array(_))
     }
 
+    pub fn is_derived(&self) -> bool {
+        matches!(self, TAtomic::Derived(_))
+    }
+
     #[inline]
     pub fn needs_population(&self) -> bool {
         matches!(

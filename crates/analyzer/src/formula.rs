@@ -1,6 +1,7 @@
 use ahash::HashMap;
 use indexmap::IndexMap;
 
+use mago_algebra::assertion_set::AssertionSet;
 use mago_algebra::clause::Clause;
 use mago_algebra::disjoin_clauses;
 use mago_algebra::negate_formula;
@@ -239,7 +240,7 @@ fn get_formula_from_assertions(
     conditional_object_id: Span,
     creating_object_id: Span,
     conditional: &Expression,
-    anded_assertions: Vec<HashMap<String, Vec<Vec<Assertion>>>>,
+    anded_assertions: Vec<HashMap<String, AssertionSet>>,
 ) -> Option<Vec<Clause>> {
     let mut clauses = Vec::new();
     for assertions in anded_assertions {

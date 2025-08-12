@@ -5,8 +5,8 @@ use ahash::HashMap;
 use ahash::HashSet;
 
 use indexmap::IndexMap;
+use mago_algebra::assertion_set::AssertionSet;
 use mago_algebra::clause::Clause;
-use mago_codex::assertion::Assertion;
 use mago_codex::ttype::union::TUnion;
 
 use crate::context::block::BlockContext;
@@ -22,7 +22,7 @@ pub struct IfScope<'a> {
     pub possibly_assigned_variable_ids: HashSet<String>,
     pub possibly_redefined_variables: HashMap<String, TUnion>,
     pub updated_variables: HashSet<String>,
-    pub negated_types: IndexMap<String, Vec<Vec<Assertion>>>,
+    pub negated_types: IndexMap<String, AssertionSet>,
     pub conditionally_changed_variable_ids: HashSet<String>,
     pub negated_clauses: Vec<Clause>,
     pub reasonable_clauses: Vec<Rc<Clause>>,

@@ -229,7 +229,7 @@ fn read_variable<'a>(
         }
     };
 
-    if variable_type.possibly_undefined_from_try {
+    if variable_type.possibly_undefined_from_try && !block_context.inside_isset && !block_context.inside_coalescing {
         context.collector.report_with_code(
             Code::POSSIBLY_UNDEFINED_VARIABLE,
             Issue::warning(format!(

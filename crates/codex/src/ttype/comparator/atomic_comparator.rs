@@ -17,6 +17,7 @@ use crate::ttype::atomic::scalar::TScalar;
 use crate::ttype::comparator::ComparisonResult;
 use crate::ttype::comparator::array_comparator;
 use crate::ttype::comparator::callable_comparator;
+use crate::ttype::comparator::derived_comparator;
 use crate::ttype::comparator::generic_comparator;
 use crate::ttype::comparator::object_comparator;
 use crate::ttype::comparator::resource_comparator;
@@ -80,6 +81,17 @@ pub fn is_contained_by(
                 return true;
             }
         }
+    }
+
+    if input_type_part.is_derived() || container_type_part.is_derived() {
+        return derived_comparator::is_contained_by(
+            codebase,
+            interner,
+            input_type_part,
+            container_type_part,
+            inside_assertion,
+            &mut ComparisonResult::new(),
+        );
     }
 
     if input_type_part.is_some_scalar() {
@@ -260,6 +272,21 @@ pub fn is_contained_by(
         return false;
     }
 
+    if let TAtomic::GenericParameter(TGenericParameter { constraint: container_constraint, .. }) = container_type_part
+        && let TAtomic::GenericParameter(TGenericParameter { constraint: input_constraint, .. }) = input_type_part
+    {
+        return union_comparator::is_contained_by(
+            codebase,
+            interner,
+            input_constraint,
+            container_constraint,
+            false,
+            input_constraint.ignore_falsable_issues,
+            inside_assertion,
+            atomic_comparison_result,
+        );
+    }
+
     if (matches!(input_type_part, TAtomic::Object(TObject::Named(_) | TObject::Enum(_)))
         || input_type_part.is_templated_as_object())
         && (matches!(container_type_part, TAtomic::Object(TObject::Named(_) | TObject::Enum(_)))
@@ -299,19 +326,6 @@ pub fn is_contained_by(
     }
 
     if let TAtomic::GenericParameter(TGenericParameter { constraint: container_constraint, .. }) = container_type_part {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint: input_constraint, .. }) = input_type_part {
-            return union_comparator::is_contained_by(
-                codebase,
-                interner,
-                input_constraint,
-                container_constraint,
-                false,
-                input_constraint.ignore_falsable_issues,
-                inside_assertion,
-                atomic_comparison_result,
-            );
-        }
-
         for container_extends_type_part in container_constraint.types.iter() {
             if inside_assertion
                 && is_contained_by(

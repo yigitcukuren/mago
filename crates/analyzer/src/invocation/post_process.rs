@@ -5,6 +5,10 @@ use ahash::HashMap;
 use ahash::HashSet;
 use indexmap::IndexMap;
 
+use mago_algebra::assertion_set::And;
+use mago_algebra::assertion_set::AssertionSet;
+use mago_algebra::assertion_set::add_and_assertion;
+use mago_algebra::assertion_set::add_and_clause;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
 use mago_codex::assertion::Assertion;
@@ -139,13 +143,7 @@ pub fn post_invocation_process<'a>(
     );
 
     for (variable, assertions) in resolved_if_true_assertions {
-        artifacts
-            .if_true_assertions
-            .entry(range)
-            .or_default()
-            .entry(variable)
-            .or_default()
-            .extend(assertions.into_iter().flatten());
+        artifacts.if_true_assertions.entry(range).or_default().entry(variable).or_default().extend(assertions);
     }
 
     let resolved_if_false_assertions = resolve_invocation_assertion(
@@ -160,13 +158,7 @@ pub fn post_invocation_process<'a>(
     );
 
     for (variable, assertions) in resolved_if_false_assertions {
-        artifacts
-            .if_false_assertions
-            .entry(range)
-            .or_default()
-            .entry(variable)
-            .or_default()
-            .extend(assertions.into_iter().flatten());
+        artifacts.if_false_assertions.entry(range).or_default().entry(variable).or_default().extend(assertions);
     }
 
     apply_assertion_to_call_context(
@@ -264,11 +256,11 @@ fn resolve_invocation_assertion<'a>(
     artifacts: &mut AnalysisArtifacts,
     invocation: &Invocation,
     this_variable: &Option<String>,
-    assertions: &BTreeMap<StringIdentifier, Vec<Assertion>>,
+    assertions: &BTreeMap<StringIdentifier, And<Assertion>>,
     template_result: &TemplateResult,
     parameters: &HashMap<StringIdentifier, TUnion>,
-) -> IndexMap<String, Vec<Vec<Assertion>>> {
-    let mut type_assertions: IndexMap<String, Vec<Vec<Assertion>>> = IndexMap::new();
+) -> IndexMap<String, AssertionSet> {
+    let mut type_assertions: IndexMap<String, AssertionSet> = IndexMap::new();
     if assertions.is_empty() {
         return type_assertions; // No assertions to resolve
     }
@@ -279,11 +271,11 @@ fn resolve_invocation_assertion<'a>(
 
         match assertion_variable {
             Some(assertion_variable) => {
-                let mut resolved_variable_assertions: Vec<Assertion> = Vec::new();
+                let mut new_variable_possibilities: AssertionSet = vec![];
 
                 for variable_assertion in variable_assertions {
                     let Some(assertion_atomic) = variable_assertion.get_type() else {
-                        resolved_variable_assertions.push(variable_assertion.clone());
+                        add_and_assertion(&mut new_variable_possibilities, variable_assertion.clone());
 
                         continue;
                     };
@@ -296,10 +288,16 @@ fn resolve_invocation_assertion<'a>(
                         TUnion::new(vec![assertion_atomic.clone()]),
                     );
 
-                    if resolved_assertion_type.is_single() {
-                        let resolved_assertion_type_atomic = resolved_assertion_type.get_single_owned();
+                    if !resolved_assertion_type.is_never() {
+                        let type_assertion = resolved_assertion_type
+                            .types
+                            .into_iter()
+                            .map(|resolved_assertion_type_atomic| {
+                                variable_assertion.with_type(resolved_assertion_type_atomic)
+                            })
+                            .collect::<Vec<_>>();
 
-                        resolved_variable_assertions.push(variable_assertion.with_type(resolved_assertion_type_atomic));
+                        add_and_clause(&mut new_variable_possibilities, type_assertion.as_slice());
                     } else if let Some(asserted_type) = block_context.locals.get(&assertion_variable) {
                         match variable_assertion {
                             Assertion::IsType(_) => {
@@ -338,7 +336,10 @@ fn resolve_invocation_assertion<'a>(
                                 };
 
                                 for intersection_atomic in intersection.types {
-                                    resolved_variable_assertions.push(Assertion::IsIdentical(intersection_atomic));
+                                    add_and_assertion(
+                                        &mut new_variable_possibilities,
+                                        Assertion::IsIdentical(intersection_atomic),
+                                    );
                                 }
                             }
                             _ => {
@@ -348,8 +349,8 @@ fn resolve_invocation_assertion<'a>(
                     }
                 }
 
-                if !resolved_variable_assertions.is_empty() {
-                    type_assertions.entry(assertion_variable).or_default().push(resolved_variable_assertions);
+                if !new_variable_possibilities.is_empty() {
+                    type_assertions.entry(assertion_variable).or_default().extend(new_variable_possibilities);
                 }
             }
             None => {

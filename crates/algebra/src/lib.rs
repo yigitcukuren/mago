@@ -8,11 +8,13 @@ use itertools::Itertools;
 use mago_codex::assertion::Assertion;
 use mago_span::Span;
 
+use crate::assertion_set::AssertionSet;
 use crate::clause::Clause;
 
+pub mod assertion_set;
 pub mod clause;
 
-pub type SatisfyingAssignments = IndexMap<String, Vec<Vec<Assertion>>>;
+pub type SatisfyingAssignments = IndexMap<String, AssertionSet>;
 pub type ActiveTruths = IndexMap<String, HashSet<usize>>;
 
 /// Reduces a set of CNF clauses by exhaustively applying logical simplification rules.
@@ -300,7 +302,7 @@ pub fn find_satisfying_assignments(
     creating_conditional_id: Option<Span>,
     conditionally_referenced_var_ids: &mut HashSet<String>,
 ) -> (SatisfyingAssignments, ActiveTruths) {
-    let mut truths: IndexMap<String, Vec<Vec<Assertion>>> = IndexMap::default();
+    let mut truths: IndexMap<String, AssertionSet> = IndexMap::default();
     let mut active_truths: IndexMap<String, HashSet<usize>> = IndexMap::default();
 
     for clause in clauses {

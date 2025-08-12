@@ -29,7 +29,7 @@ impl TKeyOf {
     }
 
     pub fn get_key_of_targets(
-        target_types: Vec<TAtomic>,
+        target_types: &[TAtomic],
         codebase: &CodebaseMetadata,
         interner: &ThreadedInterner,
         retain_generics: bool,
@@ -39,7 +39,7 @@ impl TKeyOf {
         for target in target_types {
             match target {
                 TAtomic::Array(array) => {
-                    let (array_key_type, _) = get_array_parameters(&array, codebase, interner);
+                    let (array_key_type, _) = get_array_parameters(array, codebase, interner);
 
                     key_types.extend(array_key_type.types.iter().cloned());
                 }
@@ -50,7 +50,7 @@ impl TKeyOf {
                     if retain_generics {
                         key_types.push(TAtomic::GenericParameter(parameter.clone()));
                     } else if let Some(generic_key_types) = Self::get_key_of_targets(
-                        parameter.get_constraint().clone().types,
+                        parameter.get_constraint().types.as_slice(),
                         codebase,
                         interner,
                         retain_generics,

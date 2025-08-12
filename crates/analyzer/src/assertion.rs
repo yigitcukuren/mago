@@ -1,5 +1,7 @@
 use ahash::HashMap;
 
+use mago_algebra::assertion_set::AssertionSet;
+use mago_algebra::assertion_set::negate_assertion_set;
 use mago_codex::assertion::Assertion;
 use mago_codex::get_class_like;
 use mago_codex::ttype::atomic::TAtomic;
@@ -28,7 +30,7 @@ pub fn scrape_assertions(
     expression: &Expression,
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
 
     if let Some(var_name) = get_expression_id(
@@ -213,7 +215,7 @@ pub fn scrape_assertions(
 fn process_custom_assertions(
     expression_span: Span,
     artifacts: &mut AnalysisArtifacts,
-) -> HashMap<String, Vec<Vec<Assertion>>> {
+) -> HashMap<String, AssertionSet> {
     let mut if_true_assertions = artifacts
         .if_true_assertions
         .get(&(expression_span.start.offset, expression_span.end.offset))
@@ -234,16 +236,16 @@ fn process_custom_assertions(
         if_true_assertions
             .entry(if_false_assertion.0)
             .or_insert_with(Vec::new)
-            .extend(if_false_assertion.1.into_iter().map(|a| a.get_negation()).collect::<Vec<_>>());
+            .extend(negate_assertion_set(if_false_assertion.1));
     }
 
-    if_true_assertions.into_iter().map(|(k, v)| (k, v.into_iter().map(|v| vec![v]).collect())).collect()
+    if_true_assertions
 }
 
 fn scrape_special_function_call_assertions(
     assertion_context: AssertionContext<'_>,
     function_call: &FunctionCall,
-) -> HashMap<String, Vec<Vec<Assertion>>> {
+) -> HashMap<String, AssertionSet> {
     let mut if_types = HashMap::default();
 
     let Expression::Identifier(function_identifier) = function_call.function.as_ref() else {
@@ -296,7 +298,7 @@ pub(super) fn scrape_equality_assertions(
     right: &Expression,
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts, assertion_context) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -369,7 +371,7 @@ fn scrape_inequality_assertions(
     right: &Expression,
     artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts, assertion_context) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -448,7 +450,7 @@ fn get_empty_array_equality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     null_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match null_position {
         OtherValuePosition::Left => right,
@@ -480,7 +482,7 @@ fn get_empty_array_inequality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     null_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match null_position {
         OtherValuePosition::Left => right,
@@ -512,7 +514,7 @@ fn get_enum_case_equality_assertions(
     assertion_context: AssertionContext<'_>,
     artifacts: &AnalysisArtifacts,
     enum_case_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let (variable_expression, Some(enum_case_type)) = (match enum_case_position {
         OtherValuePosition::Left => (right, artifacts.get_expression_type(left)),
         OtherValuePosition::Right => (left, artifacts.get_expression_type(right)),
@@ -543,7 +545,7 @@ fn get_enum_case_inequality_assertions(
     assertion_context: AssertionContext<'_>,
     artifacts: &AnalysisArtifacts,
     enum_case_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let (variable_expression, Some(enum_case_type)) = (match enum_case_position {
         OtherValuePosition::Left => (right, artifacts.get_expression_type(left)),
         OtherValuePosition::Right => (left, artifacts.get_expression_type(right)),
@@ -573,7 +575,7 @@ fn get_null_equality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     null_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match null_position {
         OtherValuePosition::Left => right,
@@ -600,7 +602,7 @@ fn get_null_inequality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     null_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match null_position {
         OtherValuePosition::Left => right,
@@ -627,7 +629,7 @@ fn get_false_inquality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     false_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match false_position {
         OtherValuePosition::Left => right,
@@ -654,7 +656,7 @@ fn get_true_inquality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     true_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match true_position {
         OtherValuePosition::Left => right,
@@ -682,7 +684,7 @@ fn scrape_lesser_than_assertions(
     right: &Expression,
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts, assertion_context) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -838,7 +840,7 @@ fn scrape_greater_than_assertions(
     right: &Expression,
     artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts, assertion_context) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -993,7 +995,7 @@ fn scrape_instanceof_assertions(
     right: &Expression,
     artifacts: &mut AnalysisArtifacts,
     context: AssertionContext<'_>,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
 
     let variable_id = get_expression_id(
@@ -1142,7 +1144,7 @@ fn get_true_equality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     true_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match true_position {
         OtherValuePosition::Left => right,
@@ -1216,7 +1218,7 @@ fn get_false_equality_assertions(
     right: &Expression,
     assertion_context: AssertionContext<'_>,
     false_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
     let base_conditional = match false_position {
         OtherValuePosition::Left => right,
@@ -1251,7 +1253,7 @@ fn get_typed_value_equality_assertions(
     artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
     typed_value_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
 
     let var_name;
@@ -1343,7 +1345,7 @@ fn get_typed_value_inequality_assertions(
     artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
     typed_value_position: OtherValuePosition,
-) -> Vec<HashMap<String, Vec<Vec<Assertion>>>> {
+) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
 
     let var_name;

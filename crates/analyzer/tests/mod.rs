@@ -134,3 +134,4 @@ test_case!(redefined_loop_variables);
 test_case!(keyed_array_list_inference);
 test_case!(require_implements_inherited);
 test_case!(readonly_proptected_set);
+test_case!(value_of_enum_resolution);

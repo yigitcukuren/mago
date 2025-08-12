@@ -372,7 +372,7 @@ impl TUnion {
     }
 
     pub fn is_never(&self) -> bool {
-        self.types.iter().all(|t| t.is_never()) && !self.types.is_empty()
+        self.types.iter().all(|t| t.is_never()) || self.types.is_empty()
     }
 
     pub fn is_never_template(&self) -> bool {
