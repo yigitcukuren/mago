@@ -59,7 +59,7 @@ pub struct CodebaseMetadata {
     pub all_class_like_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
     /// Map from class/interface FQCN to the set of its direct descendants (children).
     pub direct_classlike_descendants: HashMap<StringIdentifier, HashSet<StringIdentifier>>,
-    /// Set of symbols (FQCNs) considered "safe" or trusted (e.g., immutable, well-defined).
+    /// Set of symbols (FQCNs) considered "safe".
     pub safe_symbols: HashSet<StringIdentifier>,
     /// Set of specific members `(SymbolFQCN, MemberName)` considered "safe" or trusted.
     pub safe_symbol_members: HashSet<(StringIdentifier, StringIdentifier)>,

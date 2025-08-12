@@ -130,14 +130,6 @@ impl<'a> BlockContext<'a> {
         self.scope.is_global()
     }
 
-    pub fn is_mutation_free(&self) -> bool {
-        self.scope.is_mutation_free()
-    }
-
-    pub fn is_external_mutation_free(&self) -> bool {
-        self.scope.is_external_mutation_free()
-    }
-
     pub fn get_redefined_locals(
         &self,
         new_locals: &BTreeMap<String, Rc<TUnion>>,

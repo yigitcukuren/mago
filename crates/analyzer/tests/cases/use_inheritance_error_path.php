@@ -14,16 +14,6 @@ namespace Fixture {
     {
     }
 
-    /** @mutation-free */
-    trait MutationFreeTrait
-    {
-    }
-
-    /** @external-mutation-free */
-    trait ExternalMutationFreeTrait
-    {
-    }
-
     interface RequiredInterface
     {
     }
@@ -101,30 +91,6 @@ namespace UsesDeprecated {
     class UsesDeprecated
     {
         use DeprecatedTrait;
-    }
-}
-
-/**
- * @mago-expect analysis:invalid-trait-use
- */
-namespace UsesMutationFree {
-    use Fixture\MutationFreeTrait;
-
-    class UsesMutationFree
-    {
-        use MutationFreeTrait;
-    }
-}
-
-/**
- * @mago-expect analysis:invalid-trait-use
- */
-namespace UsesExternalMutationFree {
-    use Fixture\ExternalMutationFreeTrait;
-
-    class UsesExternalMutationFree
-    {
-        use ExternalMutationFreeTrait;
     }
 }
 

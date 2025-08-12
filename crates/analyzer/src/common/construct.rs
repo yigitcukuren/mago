@@ -43,7 +43,7 @@ pub fn analyze_construct_inputs<'a>(
     has_default: bool,
     has_side_effects: bool,
 ) -> Result<(), AnalysisError> {
-    if has_side_effects && block_context.scope.is_mutation_free() {
+    if has_side_effects && block_context.scope.is_pure() {
         context.collector.report_with_code(
             Code::IMPURE_CONSTRUCT,
             Issue::error(format!(

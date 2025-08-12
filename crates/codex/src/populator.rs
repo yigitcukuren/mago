@@ -574,8 +574,8 @@ fn populate_class_like_metadata(
         );
     }
 
-    // Apply immutability to properties if the class is immutable
-    if metadata.flags.is_immutable() {
+    // Apply readonly to properties if the class is readonly
+    if metadata.flags.is_readonly() {
         for property_metadata in metadata.properties.values_mut() {
             if !property_metadata.flags.is_static() {
                 property_metadata.flags |= MetadataFlags::READONLY;

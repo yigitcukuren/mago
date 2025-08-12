@@ -280,14 +280,6 @@ fn scan_function_like_docblock(
         metadata.flags |= MetadataFlags::PURE;
     }
 
-    if docblock.is_mutation_free {
-        metadata.flags |= MetadataFlags::MUTATION_FREE;
-    }
-
-    if docblock.is_external_mutation_free {
-        metadata.flags |= MetadataFlags::EXTERNAL_MUTATION_FREE;
-    }
-
     if docblock.ignore_falsable_return {
         metadata.flags |= MetadataFlags::IGNORE_FALSABLE_RETURN;
     }

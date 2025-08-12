@@ -22,20 +22,20 @@ impl Analyzable for Static {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        if block_context.is_mutation_free() {
+        if block_context.scope.is_pure() {
             context.collector.report_with_code(
                 Code::IMPURE_STATIC_VARIABLE,
                 Issue::error(
-                    "Cannot declare `static` variables inside a mutation-free function or method."
+                    "Cannot declare `static` variables inside a pure function or method."
                 )
                 .with_annotation(
                     Annotation::primary(self.span()).with_message("`static` variable declared here.")
                 )
                 .with_note(
-                    "Static variables maintain state across function calls, which violates the mutation-free guarantee."
+                    "Static variables maintain state across function calls, which violates the pure guarantee."
                 )
                 .with_help(
-                    "Remove the `static` declaration or remove the mutation-free annotation from the enclosing function/method."
+                    "Remove the `static` declaration or remove the `@pure` annotation from the enclosing function/method."
                 ),
             );
         }

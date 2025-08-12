@@ -134,10 +134,6 @@ pub fn scan_properties(
             flags |= MetadataFlags::DEPRECATED;
         }
 
-        if docblock.allows_private_mutation {
-            flags |= MetadataFlags::ALLOWS_PRIVATE_MUTATION;
-        }
-
         if docblock.is_readonly {
             flags |= MetadataFlags::READONLY;
         }

@@ -26,16 +26,6 @@ namespace Fixture {
     {
     }
 
-    /** @mutation-free */
-    class MutationFreeClass
-    {
-    }
-
-    /** @external-mutation-free */
-    class ExternalMutationFreeClass
-    {
-    }
-
     interface RequiredInterface
     {
     }
@@ -147,28 +137,6 @@ namespace ExtendingDeprecatedClass {
     use Fixture\DeprecatedBaseClass;
 
     class ExtendsDeprecated extends DeprecatedBaseClass
-    {
-    }
-}
-
-/**
- * @mago-expect analysis:invalid-extend
- */
-namespace MutableExtendsMutationFree {
-    use Fixture\MutationFreeClass;
-
-    class ExtendsMutationFree extends MutationFreeClass
-    {
-    }
-}
-
-/**
- * @mago-expect analysis:invalid-extend
- */
-namespace MutableExtendsExternalMutationFree {
-    use Fixture\ExternalMutationFreeClass;
-
-    class ExtendsExternalMutationFree extends ExternalMutationFreeClass
     {
     }
 }

@@ -6,15 +6,11 @@ bitflags::bitflags! {
     pub struct MetadataFlags: u64 {
         const ABSTRACT                  = 1 << 0;
         const FINAL                     = 1 << 1;
-        const IMMUTABLE                 = 1 << 2;
         const READONLY                  = 1 << 3;
         const DEPRECATED                = 1 << 4;
         const ENUM_INTERFACE            = 1 << 5;
         const POPULATED                 = 1 << 6;
         const INTERNAL                  = 1 << 7;
-        const MUTATION_FREE             = 1 << 8;
-        const EXTERNAL_MUTATION_FREE    = 1 << 9;
-        const ALLOWS_PRIVATE_MUTATION   = 1 << 10;
         const CONSISTENT_CONSTRUCTOR    = 1 << 11;
         const CONSISTENT_TEMPLATES      = 1 << 12;
         const UNCHECKED                 = 1 << 13;
@@ -73,21 +69,6 @@ impl MetadataFlags {
     }
 
     #[inline]
-    pub const fn is_mutation_free(self) -> bool {
-        self.contains(Self::MUTATION_FREE)
-    }
-
-    #[inline]
-    pub const fn is_external_mutation_free(self) -> bool {
-        self.contains(Self::EXTERNAL_MUTATION_FREE)
-    }
-
-    #[inline]
-    pub const fn allows_private_mutation(self) -> bool {
-        self.contains(Self::ALLOWS_PRIVATE_MUTATION)
-    }
-
-    #[inline]
     pub const fn has_consistent_constructor(self) -> bool {
         self.contains(Self::CONSISTENT_CONSTRUCTOR)
     }
@@ -120,11 +101,6 @@ impl MetadataFlags {
     #[inline]
     pub const fn is_readonly(self) -> bool {
         self.contains(Self::READONLY)
-    }
-
-    #[inline]
-    pub const fn is_immutable(self) -> bool {
-        self.contains(Self::IMMUTABLE)
     }
 
     #[inline]

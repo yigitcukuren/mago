@@ -374,24 +374,8 @@ fn scan_class_like(
             class_like_metadata.flags |= MetadataFlags::DEPRECATED;
         }
 
-        if docblock.is_immutable {
-            class_like_metadata.flags |= MetadataFlags::IMMUTABLE;
-        }
-
         if docblock.is_internal {
             class_like_metadata.flags |= MetadataFlags::INTERNAL;
-        }
-
-        if docblock.is_mutation_free {
-            class_like_metadata.flags |= MetadataFlags::MUTATION_FREE;
-        }
-
-        if docblock.is_external_mutation_free {
-            class_like_metadata.flags |= MetadataFlags::EXTERNAL_MUTATION_FREE;
-        }
-
-        if docblock.allows_private_mutation {
-            class_like_metadata.flags |= MetadataFlags::ALLOWS_PRIVATE_MUTATION;
         }
 
         if docblock.has_consistent_constructor {

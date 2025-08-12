@@ -16,12 +16,8 @@ pub struct ClassLikeDocblockComment {
     pub span: Span,
     pub is_deprecated: bool,
     pub is_final: bool,
-    pub is_immutable: bool,
     pub is_internal: bool,
-    pub is_mutation_free: bool,
-    pub is_external_mutation_free: bool,
     pub is_enum_interface: bool,
-    pub allows_private_mutation: bool,
     pub has_consistent_constructor: bool,
     pub has_consistent_templates: bool,
     pub has_sealed_properties: Option<bool>,
@@ -44,8 +40,6 @@ pub struct FunctionLikeDocblockComment {
     pub ignore_nullable_return: bool,
     pub ignore_falsable_return: bool,
     pub inherits_docs: bool,
-    pub is_mutation_free: bool,
-    pub is_external_mutation_free: bool,
     pub no_named_arguments: bool,
     pub return_type: Option<ReturnTypeTag>,
     pub parameters: Vec<ParameterTag>,
@@ -67,7 +61,6 @@ pub struct PropertyDocblockComment {
     pub is_deprecated: bool,
     pub is_internal: bool,
     pub is_readonly: bool,
-    pub allows_private_mutation: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
@@ -97,12 +90,8 @@ impl ClassLikeDocblockComment {
         };
 
         let mut is_final = false;
-        let mut is_immutable = false;
         let mut is_deprecated = false;
         let mut is_internal = false;
-        let mut is_mutation_free = false;
-        let mut is_external_mutation_free = false;
-        let mut allows_private_mutation = false;
         let mut has_consistent_constructor = false;
         let mut has_consistent_templates = false;
         let mut has_sealed_properties = None;
@@ -215,23 +204,11 @@ impl ClassLikeDocblockComment {
                         template_implements.push(implemented_type);
                     }
                 }
-                TagKind::PhpstanImmutable | TagKind::PsalmImmutable | TagKind::Immutable => {
-                    is_immutable = true;
-                }
                 TagKind::ConsistentConstructor | TagKind::PsalmConsistentConstructor => {
                     has_consistent_constructor = true;
                 }
                 TagKind::PsalmConsistentTemplates => {
                     has_consistent_templates = true;
-                }
-                TagKind::PsalmMutationFree | TagKind::MutationFree => {
-                    is_mutation_free = true;
-                }
-                TagKind::PsalmExternalMutationFree | TagKind::ExternalMutationFree => {
-                    is_external_mutation_free = true;
-                }
-                TagKind::PsalmAllowPrivateMutation => {
-                    allows_private_mutation = true;
                 }
                 TagKind::RequireExtends | TagKind::PhpstanRequireExtends | TagKind::PsalmRequireExtends => {
                     require_extends.push(TypeString {
@@ -255,12 +232,8 @@ impl ClassLikeDocblockComment {
             span: docblock.span,
             is_deprecated,
             is_final,
-            is_immutable,
             is_internal,
-            is_mutation_free,
-            is_external_mutation_free,
             is_enum_interface,
-            allows_private_mutation,
             has_sealed_properties,
             has_sealed_methods,
             has_consistent_constructor,
@@ -292,8 +265,6 @@ impl FunctionLikeDocblockComment {
         let mut ignore_nullable_return = false;
         let mut ignore_falsable_return = false;
         let mut inherits_docs = false;
-        let mut is_mutation_free = false;
-        let mut is_external_mutation_free = false;
         let mut no_named_arguments = false;
         let mut return_type: Option<ReturnTypeTag> = None;
         let mut parameters: Vec<ParameterTag> = Vec::new();
@@ -438,12 +409,6 @@ impl FunctionLikeDocblockComment {
                 TagKind::IgnoreFalsableReturn | TagKind::PsalmIgnoreFalsableReturn => {
                     ignore_falsable_return = true;
                 }
-                TagKind::PsalmMutationFree | TagKind::MutationFree => {
-                    is_mutation_free = true;
-                }
-                TagKind::PsalmExternalMutationFree | TagKind::ExternalMutationFree => {
-                    is_external_mutation_free = true;
-                }
                 TagKind::InheritDoc => {
                     inherits_docs = true;
                 }
@@ -461,8 +426,6 @@ impl FunctionLikeDocblockComment {
             ignore_nullable_return,
             ignore_falsable_return,
             inherits_docs,
-            is_mutation_free,
-            is_external_mutation_free,
             no_named_arguments,
             return_type,
             parameters,
@@ -492,7 +455,6 @@ impl PropertyDocblockComment {
         let mut is_internal = false;
         let mut is_readonly = false;
         let mut type_string: Option<TypeString> = None;
-        let mut allows_private_mutation = false;
 
         let parsed_docblock = parse_trivia(context.interner, docblock)?;
 
@@ -525,25 +487,11 @@ impl PropertyDocblockComment {
                         type_string = Some(type_string_tag.0);
                     }
                 }
-                TagKind::PsalmAllowPrivateMutation => {
-                    allows_private_mutation = true;
-                }
-                TagKind::PsalmReadOnlyAllowPrivateMutation => {
-                    is_readonly = true;
-                    allows_private_mutation = true;
-                }
                 _ => {}
             }
         }
 
-        Ok(Some(PropertyDocblockComment {
-            span: docblock.span,
-            type_string,
-            is_deprecated,
-            is_internal,
-            is_readonly,
-            allows_private_mutation,
-        }))
+        Ok(Some(PropertyDocblockComment { span: docblock.span, type_string, is_deprecated, is_internal, is_readonly }))
     }
 }
 

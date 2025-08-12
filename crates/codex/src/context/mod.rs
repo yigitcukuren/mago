@@ -31,37 +31,11 @@ impl<'a> ScopeContext<'a> {
         self.function_like.is_none() && self.class_like.is_none()
     }
 
-    /// Returns whether the current scope is mutation-free.
+    /// Returns whether the current scope is pure.
     #[inline]
-    pub const fn is_mutation_free(&self) -> bool {
+    pub const fn is_pure(&self) -> bool {
         if let Some(function_like) = self.function_like
-            && (function_like.flags.is_pure() || function_like.flags.is_mutation_free())
-        {
-            return true;
-        }
-
-        if let Some(class_like) = self.class_like
-            && class_like.flags.is_mutation_free()
-        {
-            return true;
-        }
-
-        false
-    }
-
-    /// Returns whether the current scope is external mutation-free.
-    #[inline]
-    pub const fn is_external_mutation_free(&self) -> bool {
-        if let Some(function_like) = self.function_like
-            && (function_like.flags.is_pure()
-                || function_like.flags.is_mutation_free()
-                || function_like.flags.is_external_mutation_free())
-        {
-            return true;
-        }
-
-        if let Some(class_like) = self.class_like
-            && (class_like.flags.is_mutation_free() || class_like.flags.is_external_mutation_free())
+            && function_like.flags.is_pure()
         {
             return true;
         }

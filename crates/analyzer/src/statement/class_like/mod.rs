@@ -482,30 +482,6 @@ fn check_class_like_extends(
                 );
             }
 
-            if extended_class_metadata.flags.is_external_mutation_free()
-                && !class_like_metadata.flags.is_external_mutation_free()
-            {
-                context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
-                    Issue::error(format!("Mutable class `{using_name_str}` cannot extend `@external-mutation-free` class `{extended_name_str}`"))
-                        .with_annotation(Annotation::primary(using_class_span).with_message("This class is mutable..."))
-                        .with_annotation(Annotation::secondary(extended_class_span).with_message(format!("...but it extends `{extended_name_str}`, which is `@external-mutation-free`")))
-                        .with_note("A class that allows mutation cannot inherit from a class that guarantees immutability via `@external-mutation-free`.")
-                        .with_help(format!("To resolve this, either mark `{using_name_str}` with the `@external-mutation-free` annotation, or choose a different parent class.")),
-                );
-            }
-
-            if extended_class_metadata.flags.is_mutation_free() && !class_like_metadata.flags.is_mutation_free() {
-                context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
-                    Issue::error(format!("Mutable class `{using_name_str}` cannot extend `@mutation-free` class `{extended_name_str}`"))
-                        .with_annotation(Annotation::primary(using_class_span).with_message("This class is mutable..."))
-                        .with_annotation(Annotation::secondary(extended_class_span).with_message(format!("...but it extends `{extended_name_str}`, which is `@mutation-free`")))
-                        .with_note("A class that allows mutation cannot inherit from a class that guarantees immutability via `@mutation-free`.")
-                        .with_help(format!("To resolve this, either mark `{using_name_str}` with the `@mutation-free` annotation, or choose a different parent class.")),
-                );
-            }
-
             if let Some(required_interface) =
                 class_like_metadata.get_missing_required_interface(extended_class_metadata)
             {
@@ -715,30 +691,6 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
                     .with_annotation(Annotation::secondary(used_class_span).with_message(format!("`{used_name_str}` was marked as deprecated here")))
                     .with_note("This trait is deprecated and may be removed in a future version, which would break the consuming type.")
                     .with_help("Consider refactoring to avoid using this trait, or consult its documentation for alternatives."),
-            );
-        }
-
-        if used_trait_metadata.flags.is_external_mutation_free()
-            && !class_like_metadata.flags.is_external_mutation_free()
-        {
-            context.collector.report_with_code(
-                Code::INVALID_TRAIT_USE,
-                Issue::error(format!("Mutable {using_kind_str} `{using_name_str}` cannot use `@external-mutation-free` trait `{used_name_str}`"))
-                    .with_annotation(Annotation::primary(using_class_span).with_message(format!("This {using_kind_str} is mutable...")))
-                    .with_annotation(Annotation::secondary(used_class_span).with_message(format!("...but it uses `{used_name_str}`, which is `@external-mutation-free`")))
-                    .with_note("A type that allows mutation cannot use a trait that guarantees immutability via `@external-mutation-free`.")
-                    .with_help(format!("To resolve this, either mark `{using_name_str}` with the `@external-mutation-free` annotation, or use a different trait.")),
-            );
-        }
-
-        if used_trait_metadata.flags.is_mutation_free() && !class_like_metadata.flags.is_mutation_free() {
-            context.collector.report_with_code(
-                Code::INVALID_TRAIT_USE,
-                Issue::error(format!("Mutable {using_kind_str} `{using_name_str}` cannot use `@mutation-free` trait `{used_name_str}`"))
-                    .with_annotation(Annotation::primary(using_class_span).with_message(format!("This {using_kind_str} is mutable...")))
-                    .with_annotation(Annotation::secondary(used_class_span).with_message(format!("...but it uses `{used_name_str}`, which is `@mutation-free`")))
-                    .with_note("A type that allows mutation cannot use a trait that guarantees immutability via `@mutation-free`.")
-                    .with_help(format!("To resolve this, either mark `{using_name_str}` with the `@mutation-free` annotation, or use a different trait.")),
             );
         }
 

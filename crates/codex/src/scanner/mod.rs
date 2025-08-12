@@ -411,7 +411,7 @@ fn finalize_class_like(scanner: &mut Scanner, context: &mut Context<'_>) {
         class_like_metadata.add_declaring_method_id(constructor_name, class_like_metadata.name);
         class_like_metadata.inheritable_method_ids.insert(constructor_name, class_like_metadata.name);
 
-        let mut flags = MetadataFlags::MUTATION_FREE | MetadataFlags::EXTERNAL_MUTATION_FREE;
+        let mut flags = MetadataFlags::PURE;
         if context.file.file_type.is_host() {
             flags |= MetadataFlags::USER_DEFINED;
         } else if context.file.file_type.is_builtin() {
