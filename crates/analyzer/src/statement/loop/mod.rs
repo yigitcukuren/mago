@@ -35,7 +35,6 @@ use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::loop_scope::LoopScope;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
-use crate::reconciler::ReconciliationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::r#loop::assignment_map_visitor::get_assignment_map;
 use crate::statement::r#loop::cleaner::clean_nodes;
@@ -713,8 +712,7 @@ fn analyze<'a, 'b>(
 
         if !negated_pre_condition_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
-            let mut reconciliation_context =
-                ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+            let mut reconciliation_context = context.get_reconciliation_context();
 
             reconcile_keyed_types(
                 &mut reconciliation_context,
@@ -863,8 +861,7 @@ fn apply_pre_condition_to_loop_context<'a>(
     );
 
     if !reconcilable_while_types.is_empty() {
-        let mut reconciliation_context =
-            ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+        let mut reconciliation_context = context.get_reconciliation_context();
 
         reconcile_keyed_types(
             &mut reconciliation_context,

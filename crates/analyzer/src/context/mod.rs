@@ -23,6 +23,7 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::code::Code;
 use crate::context::assertion::AssertionContext;
 use crate::context::block::BlockContext;
+use crate::reconciler::ReconciliationContext;
 use crate::settings::Settings;
 
 pub mod assertion;
@@ -66,6 +67,10 @@ impl<'a> Context<'a> {
             statement_span,
             collector,
         }
+    }
+
+    pub fn get_reconciliation_context<'b>(&'b mut self) -> ReconciliationContext<'b, 'a> {
+        ReconciliationContext::new(self.interner, self.codebase, &mut self.collector)
     }
 
     pub fn get_assertion_context_from_block<'b>(&'b self, block_context: &'a BlockContext<'_>) -> AssertionContext<'b> {

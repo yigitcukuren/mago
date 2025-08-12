@@ -1,21 +1,16 @@
-use ahash::HashSet;
-
 use mago_codex::assertion::Assertion;
 use mago_codex::consts::MAX_ENUM_CASES_FOR_ANALYSIS;
 use mago_codex::get_class_like;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::object::TObject;
-use mago_codex::ttype::atomic::object::r#enum::TEnum;
 use mago_codex::ttype::combine_union_types;
-use mago_codex::ttype::combiner;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -28,7 +23,6 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::expression::binary::utils::is_always_identical_to;
-use crate::reconciler::ReconciliationContext;
 use crate::reconciler::negated_assertion_reconciler;
 
 impl Analyzable for Match {
@@ -473,23 +467,8 @@ impl Analyzable for Match {
 ///
 /// A new `TUnion` representing `existing_type - type_to_remove`.
 pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, type_to_remove: TUnion) -> TUnion {
-    if type_to_remove.is_never() || existing_type.is_never() {
-        return existing_type;
-    }
-
     if existing_type == type_to_remove {
         return get_never();
-    }
-
-    if !can_expression_types_be_identical(
-        context.codebase,
-        context.interner,
-        &existing_type,
-        &type_to_remove,
-        true,
-        false,
-    ) {
-        return existing_type;
     }
 
     if !(existing_type.has_literal_value() && type_to_remove.has_literal_value())
@@ -507,21 +486,15 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
         return existing_type;
     }
 
-    let mut final_refined_union = subtract_handled_enum_cases(context, existing_type, &type_to_remove);
-    let mut reconciliation_context =
-        ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
-
+    let mut reconciliation_context = context.get_reconciliation_context();
+    let mut result = existing_type;
     for atomic in type_to_remove.types {
-        if let TAtomic::Object(TObject::Enum(_)) = atomic {
-            continue; // Enums are handled separately
-        }
-
         let assertion = Assertion::IsNotType(atomic);
-        let key = final_refined_union.get_id(Some(reconciliation_context.interner));
-        final_refined_union = negated_assertion_reconciler::reconcile(
+        let key = result.get_id(Some(reconciliation_context.interner));
+        result = negated_assertion_reconciler::reconcile(
             &mut reconciliation_context,
             &assertion,
-            &final_refined_union,
+            &result,
             false,
             None,
             key,
@@ -529,63 +502,12 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
             true,
         );
 
-        if final_refined_union.is_never() {
+        if result.is_never() {
             break;
         }
     }
 
-    final_refined_union
-}
-
-fn subtract_handled_enum_cases(
-    context: &mut Context<'_>,
-    remaining_subject_type: TUnion,
-    condition_type: &TUnion,
-) -> TUnion {
-    let handled_cases = condition_type
-        .get_enum_cases()
-        .into_iter()
-        .filter_map(|(enum_name, case_name)| case_name.map(|name| (enum_name, name)))
-        .collect::<HashSet<_>>();
-
-    if handled_cases.is_empty() {
-        return remaining_subject_type;
-    }
-
-    let mut final_atomic_types: Vec<TAtomic> = Vec::new();
-    let mut subject_possible_cases: HashSet<(StringIdentifier, StringIdentifier)> = HashSet::default();
-
-    for atomic in remaining_subject_type.types {
-        if let TAtomic::Object(TObject::Enum(enum_object)) = atomic {
-            if let Some(case_name) = enum_object.case {
-                subject_possible_cases.insert((enum_object.name, case_name));
-            } else if let Some(enum_metadata) = get_class_like(context.codebase, context.interner, &enum_object.name) {
-                // If the enum has too many cases, don't expand it.
-                // Instead, add the original full enum type back and continue.
-                // This prevents creating a massive union of thousands of cases.
-                if enum_metadata.enum_cases.len() > MAX_ENUM_CASES_FOR_ANALYSIS {
-                    final_atomic_types.push(TAtomic::Object(TObject::Enum(enum_object)));
-                    continue;
-                }
-
-                for (case_name, _) in &enum_metadata.enum_cases {
-                    subject_possible_cases.insert((enum_object.name, *case_name));
-                }
-            }
-        } else {
-            final_atomic_types.push(atomic);
-        }
-    }
-
-    for handled_case in &handled_cases {
-        subject_possible_cases.remove(handled_case);
-    }
-
-    for (enum_name, case_name) in &subject_possible_cases {
-        final_atomic_types.push(TAtomic::Object(TObject::Enum(TEnum { name: *enum_name, case: Some(*case_name) })));
-    }
-
-    TUnion::new(combiner::combine(final_atomic_types, context.codebase, context.interner, false))
+    result
 }
 
 #[cfg(test)]

@@ -27,7 +27,6 @@ use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
 use crate::reconciler;
-use crate::reconciler::ReconciliationContext;
 use crate::utils::conditional;
 
 #[inline]
@@ -103,8 +102,7 @@ pub fn analyze_logical_and_operation<'a>(
     if !left_assertions.is_empty() {
         right_block_context = block_context.clone();
 
-        let mut reconciliation_context =
-            ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+        let mut reconciliation_context = context.get_reconciliation_context();
 
         reconciler::reconcile_keyed_types(
             &mut reconciliation_context,
@@ -344,8 +342,7 @@ pub fn analyze_logical_or_operation<'a>(
         binary.rhs.analyze(context, &mut right_block_context, artifacts)?;
     } else {
         if !negated_type_assertions.is_empty() {
-            let mut reconciliation_context =
-                ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+            let mut reconciliation_context = context.get_reconciliation_context();
 
             reconciler::reconcile_keyed_types(
                 &mut reconciliation_context,
@@ -464,8 +461,7 @@ pub fn analyze_logical_or_operation<'a>(
         );
 
         if !right_type_assertions.is_empty() {
-            let mut reconciliation_context =
-                ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+            let mut reconciliation_context = context.get_reconciliation_context();
 
             let mut right_changed_var_ids = HashSet::default();
 

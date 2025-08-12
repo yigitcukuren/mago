@@ -21,7 +21,6 @@ use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
-use crate::reconciler::ReconciliationContext;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
@@ -303,8 +302,7 @@ pub fn find_expression_logic_issues<'a>(
         &mut cond_referenced_var_ids,
     );
 
-    let mut reconciliation_context =
-        ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+    let mut reconciliation_context = context.get_reconciliation_context();
 
     reconcile_keyed_types(
         &mut reconciliation_context,

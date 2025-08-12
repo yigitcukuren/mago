@@ -20,7 +20,6 @@ use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
 use crate::context::scope::if_scope::IfScope;
 use crate::error::AnalysisError;
-use crate::reconciler::ReconciliationContext;
 use crate::reconciler::reconcile_keyed_types;
 
 pub(crate) fn analyze<'a>(
@@ -44,8 +43,7 @@ pub(crate) fn analyze<'a>(
         if !if_scope.negated_types.is_empty() {
             let mut tmp_context = outer_context.clone();
 
-            let mut reconciliation_context =
-                ReconciliationContext::new(context.interner, context.codebase, &mut context.collector);
+            let mut reconciliation_context = context.get_reconciliation_context();
 
             reconcile_keyed_types(
                 &mut reconciliation_context,
