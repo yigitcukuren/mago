@@ -63,12 +63,7 @@ pub(super) fn print_binaryish_expression<'a>(
     //     b &&
     //     c
     //   ).call()
-    if is_at_callee(f)
-        || matches!(
-            f.grandparent_node(),
-            Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_) | Node::KeyValueArrayElement(_))
-        )
-    {
+    if is_at_callee(f) || matches!(f.grandparent_node(), Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_))) {
         return Document::Group(Group::new(vec![
             Document::Indent(vec![Document::Line(Line::soft()), Document::Array(parts)]),
             Document::Line(Line::soft()),

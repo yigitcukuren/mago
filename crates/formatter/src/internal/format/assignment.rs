@@ -10,6 +10,7 @@ use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::binaryish::should_inline_binary_expression;
 use crate::internal::format::member_access::collect_member_access_chain;
+use crate::internal::format::misc::is_breaking_expression;
 use crate::internal::format::misc::is_simple_expression;
 use crate::internal::utils::string_width;
 use crate::internal::utils::unwrap_parenthesized;
@@ -179,6 +180,16 @@ fn choose_layout<'a, 'b>(
     {
         // special case for require/include constructs.
         return Layout::NeverBreakAfterOperator;
+    }
+
+    if let Expression::Binary(binary) = rhs_expression {
+        if is_member_chain_or_single_arg_call(f, &binary.lhs) && is_simple_expression(&binary.rhs) {
+            return Layout::NeverBreakAfterOperator;
+        }
+
+        if is_breaking_expression(&binary.rhs, false) {
+            return Layout::NeverBreakAfterOperator;
+        }
     }
 
     if let Expression::Binary(Binary { lhs, rhs, .. }) = rhs_expression
