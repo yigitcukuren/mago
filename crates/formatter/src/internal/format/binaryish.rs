@@ -10,6 +10,7 @@ use crate::internal::FormatterState;
 use crate::internal::binaryish::should_flatten;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
+use crate::internal::format::format_operator;
 use crate::internal::utils::is_at_call_like_expression;
 use crate::internal::utils::is_at_callee;
 use crate::internal::utils::unwrap_parenthesized;
@@ -121,6 +122,8 @@ pub(super) fn print_binaryish_expressions<'a>(
 ) -> Vec<Document<'a>> {
     let left = unwrap_parenthesized(left);
     let right = unwrap_parenthesized(right);
+    let should_break =
+        f.has_comment(operator.span(), CommentFlags::Trailing | CommentFlags::Leading | CommentFlags::Line);
 
     let mut parts = vec![];
     if let Expression::Binary(binary) = left {
@@ -178,7 +181,7 @@ pub(super) fn print_binaryish_expressions<'a>(
         } else {
             Document::String(if has_space_around { " " } else { "" })
         },
-        Document::String(operator.as_str(f.interner)),
+        format_operator(f, operator.span(), operator.as_str(f.interner)),
         if line_before_operator || should_inline {
             Document::String(if has_space_around { " " } else { "" })
         } else {
@@ -190,7 +193,6 @@ pub(super) fn print_binaryish_expressions<'a>(
     // If there's only a single binary expression, we want to create a group
     // in order to avoid having a small right part like -1 be on its own line.
     let parent = f.parent_node();
-    let should_break = f.has_comment(left.span(), CommentFlags::Trailing | CommentFlags::Line);
     let should_group = !is_nested
         && (should_break
             || (!(is_inside_parenthesis && operator.is_logical())
