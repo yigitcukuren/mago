@@ -370,6 +370,39 @@ impl<'a> FormatterState<'a> {
     }
 
     #[must_use]
+    pub(crate) fn print_dangling_comments_between_nodes(&mut self, after: Span, before: Span) -> Option<Document<'a>> {
+        let mut parts = vec![];
+
+        let end_index = after.end.offset as usize;
+        while let Some(comment) = self.comments.peek() {
+            let comment = Comment::from_trivia(self.file, comment);
+
+            if comment.start >= after.end.offset
+                && comment.end <= before.start.offset
+                && self.file.contents[end_index..comment.start as usize]
+                    .chars()
+                    .all(|c| c == ' ' || c == ';' || c == ',')
+            {
+                parts.push(self.print_comment(comment));
+
+                self.comments.next();
+            } else {
+                break;
+            }
+        }
+
+        if parts.is_empty() {
+            return None;
+        }
+
+        Some(Document::Indent(vec![
+            Document::BreakParent,
+            Document::Line(Line::hard()),
+            Document::Array(Document::join(parts, Separator::HardLine)),
+        ]))
+    }
+
+    #[must_use]
     fn print_comment(&self, comment: Comment) -> Document<'a> {
         let mut content = &self.file.contents[comment.start as usize..comment.end as usize];
 

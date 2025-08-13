@@ -193,6 +193,38 @@ pub const fn is_simple_expression(node: &Expression) -> bool {
     )
 }
 
+pub fn is_simple_single_line_expression(f: &FormatterState<'_>, node: &Expression) -> bool {
+    if let Expression::Parenthesized(inner) = node {
+        return is_simple_single_line_expression(f, &inner.expression);
+    }
+
+    if let Expression::UnaryPrefix(operation) = node {
+        return is_simple_single_line_expression(f, &operation.operand);
+    }
+
+    if let Expression::Binary(operation) = node {
+        return is_simple_single_line_expression(f, &operation.lhs)
+            && is_simple_single_line_expression(f, &operation.rhs);
+    }
+
+    if let Expression::Literal(Literal::String(literal_string)) = node {
+        return f.file.line_number(literal_string.span.start.offset)
+            == f.file.line_number(literal_string.span.end.offset);
+    }
+
+    matches!(
+        node,
+        Expression::Static(_)
+            | Expression::Parent(_)
+            | Expression::Self_(_)
+            | Expression::MagicConstant(_)
+            | Expression::Identifier(_)
+            | Expression::ConstantAccess(_)
+            | Expression::Variable(_)
+            | Expression::Access(Access::ClassConstant(_))
+    )
+}
+
 #[inline]
 pub(super) const fn is_string_word_type(node: &Expression) -> bool {
     matches!(

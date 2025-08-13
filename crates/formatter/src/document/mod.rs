@@ -125,6 +125,19 @@ impl Line {
     }
 }
 
+impl Space {
+    /// Specify a space that is "soft" and will only be printed if the preceding
+    /// character is not whitespace.
+    pub fn soft() -> Self {
+        Self { soft: true }
+    }
+
+    /// Specify a space that is "hard" and will always be printed.
+    pub fn hard() -> Self {
+        Self { soft: false }
+    }
+}
+
 impl<'a> Group<'a> {
     pub fn new(contents: Vec<Document<'a>>) -> Self {
         Self { contents, should_break: false, id: None, expanded_states: None }

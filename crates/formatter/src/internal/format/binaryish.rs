@@ -10,7 +10,7 @@ use crate::internal::FormatterState;
 use crate::internal::binaryish::should_flatten;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
-use crate::internal::format::format_operator;
+use crate::internal::format::format_token;
 use crate::internal::utils::is_at_call_like_expression;
 use crate::internal::utils::is_at_callee;
 use crate::internal::utils::unwrap_parenthesized;
@@ -181,7 +181,7 @@ pub(super) fn print_binaryish_expressions<'a>(
         } else {
             Document::String(if has_space_around { " " } else { "" })
         },
-        format_operator(f, operator.span(), operator.as_str(f.interner)),
+        format_token(f, operator.span(), operator.as_str(f.interner)),
         if line_before_operator || should_inline {
             Document::String(if has_space_around { " " } else { "" })
         } else {

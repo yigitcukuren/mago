@@ -6,9 +6,11 @@ use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::call_node::CallLikeNode;
+use crate::internal::format::format_token;
 use crate::internal::format::misc;
 use crate::internal::format::misc::is_breaking_expression;
 use crate::internal::format::misc::is_simple_expression;
+use crate::internal::format::misc::is_simple_single_line_expression;
 use crate::internal::format::misc::is_string_word_type;
 use crate::internal::format::misc::should_hug_expression;
 use crate::internal::utils::could_expand_value;
@@ -64,15 +66,19 @@ pub(super) fn print_argument_list<'a>(
     argument_list: &'a ArgumentList,
     for_attribute: bool,
 ) -> Document<'a> {
+    let mut should_break = false;
     let left_parenthesis = {
-        let mut contents = vec![if f.settings.space_before_argument_list_parenthesis {
-            Document::String(" (")
-        } else {
-            Document::String("(")
-        }];
+        let mut contents = vec![
+            if f.settings.space_before_argument_list_parenthesis { Document::space() } else { Document::empty() },
+            Document::String("("),
+        ];
 
-        if let Some(trailing_comments) = f.print_trailing_comments(argument_list.left_parenthesis) {
+        if let Some(argument) = argument_list.arguments.first()
+            && let Some(trailing_comments) =
+                f.print_dangling_comments_between_nodes(argument_list.left_parenthesis, argument.span())
+        {
             contents.push(trailing_comments);
+            should_break = true;
         } else if f.settings.space_within_argument_list_parenthesis {
             contents.push(Document::space());
         }
@@ -80,15 +86,32 @@ pub(super) fn print_argument_list<'a>(
         Document::Array(contents)
     };
 
-    let get_right_parenthesis = |f: &mut FormatterState<'a>, can_have_space: bool| {
+    let get_right_parenthesis = |f: &mut FormatterState<'a>, breaking: Option<bool>| {
         let mut contents = vec![];
-        if let Some(leading_comments) = f.print_leading_comments(argument_list.right_parenthesis) {
-            contents.push(leading_comments);
-        } else if can_have_space && f.settings.space_within_argument_list_parenthesis {
-            contents.push(Document::space());
+
+        if let Some(dangling) = f.print_dangling_comments(argument_list.span(), true) {
+            contents.push(dangling);
+        } else {
+            match breaking {
+                Some(true) => {
+                    contents.push(Document::Line(Line::hard()));
+                }
+                Some(false) => {
+                    if f.settings.space_within_argument_list_parenthesis {
+                        contents.push(Document::Space(Space::soft()));
+                    }
+                }
+                None => {
+                    if f.settings.space_within_argument_list_parenthesis {
+                        contents.push(Document::Line(Line::default()));
+                    } else {
+                        contents.push(Document::Line(Line::soft()));
+                    }
+                }
+            }
         }
 
-        contents.push(Document::String(")"));
+        contents.push(format_token(f, argument_list.right_parenthesis, ")"));
 
         Document::Array(contents)
     };
@@ -96,20 +119,17 @@ pub(super) fn print_argument_list<'a>(
     let mut contents = vec![left_parenthesis.clone()];
 
     if argument_list.arguments.is_empty() {
-        if let Some(inner_comments) = f.print_inner_comment(argument_list.span(), true) {
-            contents.push(inner_comments);
-        }
-        contents.push(get_right_parenthesis(f, false));
+        contents.push(get_right_parenthesis(f, Some(false)));
 
         return Document::Array(contents);
     }
 
     // First, run all the decision functions with unformatted arguments
-    let should_break_all = should_break_all_arguments(f, argument_list, for_attribute);
-    let should_inline = should_inline_breaking_arguments(f, argument_list);
-    let should_expand_first = should_expand_first_arg(f, argument_list, false);
-    let should_expand_last = should_expand_last_arg(f, argument_list, false);
-    let is_single_late_breaking_argument = is_single_late_breaking_argument(f, argument_list);
+    let should_break_all = should_break || should_break_all_arguments(f, argument_list, for_attribute);
+    let should_inline = !should_break && should_inline_breaking_arguments(f, argument_list);
+    let should_expand_first = !should_break && should_expand_first_arg(f, argument_list, false);
+    let should_expand_last = !should_break && should_expand_last_arg(f, argument_list, false);
+    let is_single_late_breaking_argument = !should_break && is_single_late_breaking_argument(f, argument_list);
 
     let arguments_count = argument_list.arguments.len();
     let mut formatted_arguments: Vec<Document<'a>> = argument_list
@@ -188,11 +208,7 @@ pub(super) fn print_argument_list<'a>(
             if f.settings.trailing_comma { Document::String(",") } else { Document::empty() },
         ]));
 
-        parts.push(Document::Line(Line::hard()));
-        if let Some(leading_comments) = f.print_leading_comments(argument_list.right_parenthesis) {
-            parts.push(leading_comments);
-        }
-        parts.push(get_right_parenthesis(f, false));
+        parts.push(get_right_parenthesis(f, Some(true)));
 
         Document::Group(Group::new(parts))
     };
@@ -203,7 +219,7 @@ pub(super) fn print_argument_list<'a>(
 
     if is_single_late_breaking_argument {
         let single_argument = formatted_arguments.remove(0);
-        let right_parenthesis = get_right_parenthesis(f, false);
+        let right_parenthesis = get_right_parenthesis(f, None);
 
         return Document::IfBreak(IfBreak::new(
             Document::Group(Group::new(vec![
@@ -213,15 +229,9 @@ pub(super) fn print_argument_list<'a>(
                     Document::Group(Group::new(vec![single_argument.clone()])),
                     if f.settings.trailing_comma { Document::String(",") } else { Document::empty() },
                 ])),
-                Document::Line(Line::default()),
                 right_parenthesis.clone(),
             ])),
-            Document::Group(Group::new(vec![
-                left_parenthesis,
-                single_argument,
-                if f.settings.space_within_argument_list_parenthesis { Document::space() } else { Document::empty() },
-                right_parenthesis,
-            ])),
+            Document::Group(Group::new(vec![left_parenthesis, single_argument, right_parenthesis])),
         ));
     }
 
@@ -229,7 +239,7 @@ pub(super) fn print_argument_list<'a>(
         return Document::Group(Group::new(vec![
             left_parenthesis,
             Document::Group(Group::new(Document::join(formatted_arguments, Separator::CommaSpace))),
-            get_right_parenthesis(f, true),
+            get_right_parenthesis(f, Some(false)),
         ]));
     }
 
@@ -247,7 +257,7 @@ pub(super) fn print_argument_list<'a>(
                         Document::Group(Group::new(vec![first_doc]).with_break(true)),
                         Document::String(", "),
                         last_doc,
-                        get_right_parenthesis(f, true),
+                        get_right_parenthesis(f, None),
                     ],
                     vec![all_arguments_broken_out(f)],
                 )),
@@ -285,7 +295,7 @@ pub(super) fn print_argument_list<'a>(
             ]);
         }
 
-        let right_parenthesis = get_right_parenthesis(f, true);
+        let right_parenthesis = get_right_parenthesis(f, None);
 
         return Document::Group(Group::conditional(
             vec![
@@ -321,12 +331,7 @@ pub(super) fn print_argument_list<'a>(
     if f.settings.trailing_comma {
         contents.push(Document::IfBreak(IfBreak::then(Document::String(","))));
     }
-    contents.push(if f.settings.space_within_argument_list_parenthesis {
-        Document::Line(Line::default())
-    } else {
-        Document::Line(Line::soft())
-    });
-    contents.push(get_right_parenthesis(f, false));
+    contents.push(get_right_parenthesis(f, None));
 
     Document::Group(Group::new(contents))
 }
@@ -397,9 +402,38 @@ fn should_inline_breaking_arguments<'a>(f: &FormatterState<'a>, argument_list: &
             !argument_has_surrounding_comments(f, &arguments[0])
                 && should_hug_expression(f, arguments[0].value(), false)
         }
-        2 => arguments.iter().all(|argument| {
-            !argument_has_surrounding_comments(f, argument) && is_breaking_expression(argument.value(), false)
-        }),
+        2 => {
+            let Some(first_argument) = arguments.first() else {
+                return false;
+            };
+
+            let Some(second_argument) = arguments.last() else {
+                return false;
+            };
+
+            if argument_has_surrounding_comments(f, first_argument)
+                || argument_has_surrounding_comments(f, second_argument)
+            {
+                return false;
+            }
+
+            let first_expression = first_argument.value();
+            let second_expression = second_argument.value();
+
+            let is_first_breaking = is_breaking_expression(first_expression, false);
+            let is_second_breaking = is_breaking_expression(second_expression, false);
+            if is_first_breaking && is_second_breaking {
+                return true;
+            }
+
+            if !is_simple_single_line_expression(f, first_expression) {
+                return false;
+            }
+
+            is_second_breaking
+                || could_expand_value(f, second_expression, false)
+                || matches!(second_expression, Expression::Call(call) if call.get_argument_list().arguments.len() >= 2)
+        }
         _ => false,
     }
 }

@@ -1934,9 +1934,9 @@ impl<'a> Format<'a> for HaltCompiler {
     }
 }
 
-fn format_operator<'a>(f: &mut FormatterState<'a>, span: Span, operator: &'a str) -> Document<'a> {
+fn format_token<'a>(f: &mut FormatterState<'a>, span: Span, token_value: &'a str) -> Document<'a> {
     let leading = f.print_leading_comments(span);
     let trailing = f.print_trailing_comments(span);
 
-    f.print_comments(leading, Document::String(operator), trailing)
+    f.print_comments(leading, Document::String(token_value), trailing)
 }
