@@ -149,6 +149,7 @@ pub fn get_union_from_type_ast<'i>(
             for left_type in left_types {
                 if !left_type.can_be_intersected() {
                     return Err(TypeError::InvalidType(
+                        ttype.to_string(),
                         format!(
                             "Type `{}` used in intersection cannot be intersected with another type ( `{}` )",
                             left_type.get_id(Some(interner)),
@@ -163,6 +164,7 @@ pub fn get_union_from_type_ast<'i>(
 
                     if !intersection.add_intersection_type(right_type.clone()) {
                         return Err(TypeError::InvalidType(
+                            ttype.to_string(),
                             format!(
                                 "Type `{}` used in intersection cannot be intersected with another type ( `{}` )",
                                 right_type.get_id(Some(interner)),
@@ -267,6 +269,7 @@ pub fn get_union_from_type_ast<'i>(
             {
                 let Some(classname) = classname else {
                     return Err(TypeError::InvalidType(
+                        ttype.to_string(),
                         "Cannot resolve `self` type reference outside of a class context".to_string(),
                         member_reference.span(),
                     ));
@@ -400,6 +403,7 @@ pub fn get_union_from_type_ast<'i>(
                 && min_value > max_value
             {
                 return Err(TypeError::InvalidType(
+                    ttype.to_string(),
                     "Minimum value of an int range cannot be greater than maximum value".to_string(),
                     ttype.span(),
                 ));
@@ -518,6 +522,7 @@ fn get_shape_from_ast(
                                 }
                                 _ => {
                                     return Err(TypeError::InvalidType(
+                                        shape.to_string(),
                                         format!(
                                             "Shape key must be a literal string or int, found `{}`",
                                             single_key_type.get_id(Some(interner))
@@ -535,12 +540,14 @@ fn get_shape_from_ast(
                                 offset as usize
                             } else {
                                 return Err(TypeError::InvalidType(
+                                    shape.to_string(),
                                     "List shape keys must be sequential".to_string(),
                                     field_key.span(),
                                 ));
                             }
                         } else {
                             return Err(TypeError::InvalidType(
+                                shape.to_string(),
                                 "List shape keys are expected to be integers".to_string(),
                                 field_key.span(),
                             ));
@@ -616,6 +623,7 @@ fn get_shape_from_ast(
                                 }
                                 _ => {
                                     return Err(TypeError::InvalidType(
+                                        shape.to_string(),
                                         format!(
                                             "Shape key must be a literal string or int, found `{}`",
                                             single_key_type.get_id(Some(interner))
@@ -861,6 +869,7 @@ fn get_class_string_type_from_ast(
                     }
                     _ => {
                         return Err(TypeError::InvalidType(
+                            kind.to_string(),
                             format!(
                                 "class string parameter must target an object type, found `{}`.",
                                 constraint.get_id(Some(interner))
