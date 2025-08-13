@@ -492,8 +492,8 @@ mod tests {
             assert!(result.is_ok());
             match result.unwrap() {
                 Type::Negated(n) => {
-                    assert!(matches!(*n.inner, Type::LiteralInt(_)));
-                    if let Type::LiteralInt(lit) = *n.inner {
+                    assert!(matches!(n.number, LiteralIntOrFloatType::Int(_)));
+                    if let LiteralIntOrFloatType::Int(lit) = n.number {
                         assert_eq!(lit.value, expected_value);
                     } else {
                         panic!()
@@ -512,6 +512,76 @@ mod tests {
             123345,
         );
         assert_negated_int("-0b1", 1);
+    }
+
+    #[test]
+    fn test_parse_negated_float() {
+        let assert_negated_float = |input: &str, expected_value: f64| {
+            let result = do_parse(input);
+            assert!(result.is_ok());
+            match result.unwrap() {
+                Type::Negated(n) => {
+                    assert!(matches!(n.number, LiteralIntOrFloatType::Float(_)));
+                    if let LiteralIntOrFloatType::Float(lit) = n.number {
+                        assert_eq!(lit.value, expected_value);
+                    } else {
+                        panic!()
+                    }
+                }
+                _ => panic!("Expected Type::Negated"),
+            }
+        };
+
+        assert_negated_float("-0.0", 0.0);
+        assert_negated_float("-1.0", 1.0);
+        assert_negated_float("-0.1e1", 1.0);
+        assert_negated_float("-0.1e-1", 0.01);
+    }
+
+    #[test]
+    fn test_parse_negated_union() {
+        match do_parse("-1|-2.0|string") {
+            Ok(Type::Union(n)) => {
+                assert!(matches!(*n.left, Type::Negated(_)));
+                assert!(matches!(*n.right, Type::Union(_)));
+
+                if let Type::Negated(neg) = *n.left {
+                    assert!(matches!(neg.number, LiteralIntOrFloatType::Int(_)));
+                    if let LiteralIntOrFloatType::Int(lit) = neg.number {
+                        assert_eq!(lit.value, 1);
+                    } else {
+                        panic!()
+                    }
+                } else {
+                    panic!("Expected left side to be Type::Negated");
+                }
+
+                if let Type::Union(inner_union) = *n.right {
+                    assert!(matches!(*inner_union.left, Type::Negated(_)));
+                    assert!(matches!(*inner_union.right, Type::String(_)));
+
+                    if let Type::Negated(neg) = *inner_union.left {
+                        assert!(matches!(neg.number, LiteralIntOrFloatType::Float(_)));
+                        if let LiteralIntOrFloatType::Float(lit) = neg.number {
+                            assert_eq!(lit.value, 2.0);
+                        } else {
+                            panic!()
+                        }
+                    } else {
+                        panic!("Expected left side of inner union to be Type::Negated");
+                    }
+
+                    if let Type::String(s) = *inner_union.right {
+                        assert_eq!(s.value, "string");
+                    } else {
+                        panic!("Expected right side of inner union to be Type::String");
+                    }
+                } else {
+                    panic!("Expected right side to be Type::Union");
+                }
+            }
+            res => panic!("Expected Ok(Type::Negated), got {res:?}"),
+        }
     }
 
     #[test]

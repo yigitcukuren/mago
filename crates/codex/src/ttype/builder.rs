@@ -335,15 +335,13 @@ pub fn get_union_from_type_ast<'i>(
         Type::LiteralFloat(lit) => get_literal_float(*lit.value),
         Type::LiteralInt(lit) => get_literal_int(lit.value as i64),
         Type::LiteralString(lit) => get_literal_string(lit.value.to_owned()),
-        Type::Negated(negated) => match negated.inner.as_ref() {
-            Type::LiteralInt(lit) => get_literal_int(-(lit.value as i64)),
-            Type::LiteralFloat(lit) => get_literal_float(-(*lit.value)),
-            inner => return Err(TypeError::InvalidType(format!("Type `{inner}` cannot be negated"), ttype.span())),
+        Type::Negated(negated) => match negated.number {
+            LiteralIntOrFloatType::Int(lit) => get_literal_int(-(lit.value as i64)),
+            LiteralIntOrFloatType::Float(lit) => get_literal_float(-(*lit.value)),
         },
-        Type::Posited(posited) => match posited.inner.as_ref() {
-            Type::LiteralInt(lit) => get_literal_int(lit.value as i64),
-            Type::LiteralFloat(lit) => get_literal_float(*lit.value),
-            inner => return Err(TypeError::InvalidType(format!("Type `{inner}` cannot be posited"), ttype.span())),
+        Type::Posited(posited) => match posited.number {
+            LiteralIntOrFloatType::Int(lit) => get_literal_int(lit.value as i64),
+            LiteralIntOrFloatType::Float(lit) => get_literal_float(*lit.value),
         },
         Type::Iterable(iterable) => match iterable.parameters.as_ref() {
             Some(parameters) => match parameters.entries.len() {

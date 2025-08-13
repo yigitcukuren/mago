@@ -19,6 +19,12 @@ pub struct LiteralFloatType<'input> {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
+pub enum LiteralIntOrFloatType<'input> {
+    Int(LiteralIntType<'input>),
+    Float(LiteralFloatType<'input>),
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, PartialOrd, Ord)]
 pub struct LiteralStringType<'input> {
     pub span: Span,
     pub value: &'input str, // unquoted
@@ -37,6 +43,15 @@ impl HasSpan for LiteralIntType<'_> {
     }
 }
 
+impl HasSpan for LiteralIntOrFloatType<'_> {
+    fn span(&self) -> Span {
+        match self {
+            LiteralIntOrFloatType::Int(int) => int.span(),
+            LiteralIntOrFloatType::Float(float) => float.span(),
+        }
+    }
+}
+
 impl HasSpan for LiteralStringType<'_> {
     fn span(&self) -> Span {
         self.span
@@ -52,6 +67,15 @@ impl std::fmt::Display for LiteralIntType<'_> {
 impl std::fmt::Display for LiteralFloatType<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw)
+    }
+}
+
+impl std::fmt::Display for LiteralIntOrFloatType<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LiteralIntOrFloatType::Int(int) => write!(f, "{}", int),
+            LiteralIntOrFloatType::Float(float) => write!(f, "{}", float),
+        }
     }
 }
 

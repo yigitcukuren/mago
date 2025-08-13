@@ -185,10 +185,10 @@ pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'
             Type::LiteralString(LiteralStringType { span: token.span, value, raw: token.value })
         }
         TypeTokenKind::Minus => {
-            Type::Negated(NegatedType { minus: stream.consume()?.span, inner: Box::new(parse_type(stream)?) })
+            Type::Negated(NegatedType { minus: stream.consume()?.span, number: parse_literal_number_type(stream)? })
         }
         TypeTokenKind::Plus => {
-            Type::Posited(PositedType { plus: stream.consume()?.span, inner: Box::new(parse_type(stream)?) })
+            Type::Posited(PositedType { plus: stream.consume()?.span, number: parse_literal_number_type(stream)? })
         }
         TypeTokenKind::EnumString => Type::EnumString(EnumStringType {
             keyword: Keyword::from(stream.consume()?),
@@ -406,5 +406,35 @@ pub fn parse_type<'input>(stream: &mut TypeTokenStream<'input>) -> Result<Type<'
                 return Ok(inner);
             }
         };
+    }
+}
+
+pub fn parse_literal_number_type<'input>(
+    stream: &mut TypeTokenStream<'input>,
+) -> Result<LiteralIntOrFloatType<'input>, ParseError> {
+    let next = stream.peek()?;
+
+    match next.kind {
+        TypeTokenKind::LiteralInteger => {
+            let token = stream.consume()?;
+            let value = parse_literal_integer(token.value).unwrap_or_else(|| {
+                unreachable!("lexer generated invalid integer `{}`; this should never happen.", token.value)
+            });
+
+            Ok(LiteralIntOrFloatType::Int(LiteralIntType { span: token.span, value, raw: token.value }))
+        }
+        TypeTokenKind::LiteralFloat => {
+            let token = stream.consume()?;
+            let value = parse_literal_float(token.value).unwrap_or_else(|| {
+                unreachable!("lexer generated invalid float `{}`; this should never happen.", token.value)
+            });
+
+            Ok(LiteralIntOrFloatType::Float(LiteralFloatType {
+                span: token.span,
+                value: OrderedFloat(value),
+                raw: token.value,
+            }))
+        }
+        _ => Err(ParseError::UnexpectedToken(vec![], next.kind, next.span)),
     }
 }
