@@ -268,6 +268,30 @@ impl Expression {
     }
 
     #[inline]
+    pub const fn is_conditional(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_conditional()
+        } else {
+            matches!(&self, Expression::Conditional(_))
+        }
+    }
+
+    #[inline]
+    pub const fn is_unary_or_binary_or_conditional(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_unary_or_binary_or_conditional()
+        } else {
+            matches!(
+                &self,
+                Expression::UnaryPrefix(_)
+                    | Expression::UnaryPostfix(_)
+                    | Expression::Binary(_)
+                    | Expression::Conditional(_)
+            )
+        }
+    }
+
+    #[inline]
     pub const fn is_reference(&self) -> bool {
         if let Expression::Parenthesized(expression) = self {
             expression.expression.is_reference()

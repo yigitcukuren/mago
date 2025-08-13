@@ -202,7 +202,7 @@ impl BinaryOperator {
     }
 
     #[inline]
-    pub fn is_same_as(&self, other: &Self) -> bool {
+    pub const fn is_same_as(&self, other: &Self) -> bool {
         matches!(
             (self, other),
             (Self::Addition(_), Self::Addition(_))
