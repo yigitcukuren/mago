@@ -15,6 +15,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function is_string;
+
 final class InstallMagoBinaryCommand extends BaseCommand
 {
     protected function configure(): void
@@ -81,13 +83,17 @@ final class InstallMagoBinaryCommand extends BaseCommand
         $downloaded_file = $release_dir . '/' . $download['file'];
         $promise = $downloader
             ->addCopy($download['url'], $downloaded_file)
-            ->then(static function (Response $response) use (
+            ->then(static function (null|Response $response = null) use (
                 $filesystem,
                 $release_dir,
                 $downloaded_file,
                 $executable_platform_file,
                 $executable_platform_content,
-            ): Response {
+            ): null|Response {
+                if (null === $response) {
+                    return null;
+                }
+
                 $phar = new \PharData($downloaded_file);
                 $phar->extractTo($release_dir);
 
@@ -99,7 +105,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
             });
 
         $io->write('');
-        $progress_bar = ($io instanceof ConsoleIO) ? $io->getProgressBar() : null;
+        $progress_bar = $io instanceof ConsoleIO ? $io->getProgressBar() : null;
         $loop->wait([$promise], $progress_bar);
         $io->write('');
         $io->write('');
@@ -113,6 +119,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
         $version = InstalledVersions::getPrettyVersion(MagoPlugin::PACKAGE_NAME);
 
         $response = $httpDownloader->get($this->buildGithubApiUri('/releases?per_page=99999999999999999'));
+        /** @var array<string, array{'tag_name': string, 'id': int|string, ...}> $json */
         $json = $response->decodeJson();
 
         foreach ($json as $release) {
@@ -130,23 +137,33 @@ final class InstallMagoBinaryCommand extends BaseCommand
     private function buildAssetsMapForRelease(HttpDownloader $httpDownloader, string $releaseId): array
     {
         $response = $httpDownloader->get($this->buildGithubApiUri('/releases/' . $releaseId));
+        /**
+         * @var array{
+         *   'tag_name': string,
+         *   'assets'?: list<array{browser_download_url: string, name: string}>
+         * } $json
+         */
         $json = $response->decodeJson();
+        $assets = $json['assets'] ?? [];
 
         return [
             'tag' => $json['tag_name'],
             'downloads' => array_reduce(
-                $json['assets'] ?? [],
+                $assets,
                 /**
-                 * @param array<string, string> $downloadMap
+                 * @param null|array<string, array{'file': string, 'url': string}> $downloadMap
                  * @param array{browser_download_url: string, name: string} $asset
-                 * @return array<string, string>
+                 *
+                 * @return array<string, array{'file': string, 'url': string}>
                  */
-                static function (array $downloadMap, array $asset): array {
+                static function (null|array $downloadMap, array $asset): array {
+                    $downloadMap = $downloadMap ?? [];
+
                     if (!str_ends_with($asset['name'], '.tar.gz') && !str_ends_with($asset['name'], '.zip')) {
                         return $downloadMap;
                     }
 
-                    $platform = preg_replace('{^(.*)(\.tar\.gz|\.zip)$}', '$1', $asset['name']);
+                    $platform = preg_replace('{^(.*)(\.tar\.gz|\.zip)$}', '$1', $asset['name']) ?? '';
 
                     $downloadMap[$platform] = [
                         'file' => $asset['name'],
@@ -166,8 +183,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
     }
 
     /**
-     * @mago-expect best-practices/no-else-clause
-     * @mago-expect best-practices/no-boolean-literal-comparison
+     * @mago-expect lint:best-practices/no-else-clause
      *
      * @return array{platform: string, executable: string, storage_dir: string}
      */
@@ -227,8 +243,9 @@ final class InstallMagoBinaryCommand extends BaseCommand
                 break;
             case 'linux':
                 if ($process_executor->execute('command -v ldd') === 0) {
+                    $ldd_version = null;
                     $process_executor->execute('ldd --version 2>&1', $ldd_version);
-                    if (str_contains($ldd_version, 'musl')) {
+                    if (is_string($ldd_version) && str_contains($ldd_version, 'musl')) {
                         switch ($arch) {
                             case 'x86_64':
                             case 'aarch64':
@@ -237,7 +254,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
                                 break;
                             case 'arm':
                             case 'armv7':
-                                if (str_contains(file_get_contents('/proc/cpuinfo'), 'hard')) {
+                                if (str_contains(file_get_contents('/proc/cpuinfo') ?: '', 'hard')) {
                                     $os_suffix = 'musleabihf';
                                 } else {
                                     $os_suffix = 'musleabi';
@@ -259,7 +276,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
                                 break;
                             case 'arm':
                             case 'armv7':
-                                if (str_contains(file_get_contents('/proc/cpuinfo'), 'hard')) {
+                                if (str_contains(file_get_contents('/proc/cpuinfo') ?: '', 'hard')) {
                                     $os_suffix = 'gnueabihf';
                                 } else {
                                     $os_suffix = 'gnueabi';

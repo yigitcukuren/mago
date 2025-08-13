@@ -76,8 +76,13 @@ impl TArray {
         }
 
         match &self {
-            Self::Keyed(keyed_array) => keyed_array.known_items.is_none() && keyed_array.parameters.is_none(),
-            Self::List(list) => list.known_elements.is_none() && list.element_type.is_never(),
+            Self::Keyed(keyed_array) => {
+                keyed_array.parameters.is_none()
+                    && keyed_array.known_items.as_ref().is_none_or(|items| items.is_empty())
+            }
+            Self::List(list) => {
+                list.element_type.is_never() && list.known_elements.as_ref().is_none_or(|elements| elements.is_empty())
+            }
         }
     }
 

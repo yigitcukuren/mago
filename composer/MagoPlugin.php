@@ -66,7 +66,7 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
     }
 
     /**
-     * @mago-expect strictness/no-shorthand-ternary
+     * @mago-expect lint:strictness/no-shorthand-ternary
      */
     public function onPackageEvent(PackageEvent $event): void
     {
@@ -83,7 +83,7 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
         );
 
         $command_executor->executeTty(implode(' ', [
-            (new PhpExecutableFinder())->find(),
+            (new PhpExecutableFinder())->find() ?: 'php',
             ...array_map(static fn(string $argument): string => ProcessExecutor::escape($argument), [
                 getenv('COMPOSER_BINARY') ?: 'composer',
                 'mago:install-binary',
@@ -92,7 +92,7 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
     }
 
     /**
-     * @mago-expect best-practices/no-else-clause
+     * @mago-expect lint:best-practices/no-else-clause
      */
     private function isMagoPackageEvent(PackageEvent $event): bool
     {

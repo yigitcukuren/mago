@@ -82,16 +82,17 @@ fn infer_templates_from_input_and_container_types(
         .types
         .iter()
         .filter(|argument_atomic| {
-            !concrete_container_parts.iter().any(|container_atomic| {
-                atomic_comparator::is_contained_by(
-                    context.codebase,
-                    context.interner,
-                    container_atomic,
-                    argument_atomic,
-                    false,
-                    &mut ComparisonResult::default(),
-                )
-            })
+            !argument_atomic.is_empty_array()
+                && !concrete_container_parts.iter().any(|container_atomic| {
+                    atomic_comparator::is_contained_by(
+                        context.codebase,
+                        context.interner,
+                        container_atomic,
+                        argument_atomic,
+                        false,
+                        &mut ComparisonResult::default(),
+                    )
+                })
         })
         .cloned()
         .collect::<Vec<_>>();
