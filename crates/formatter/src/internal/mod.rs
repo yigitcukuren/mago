@@ -213,25 +213,37 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
+    fn is_insignificant(&self, start_index: u32, end_index: u32) -> bool {
+        let start_index = start_index as usize;
+        let end_index = end_index as usize;
+
+        if start_index >= end_index || end_index > self.file.contents.len() {
+            return false;
+        }
+
+        self.file.contents[start_index..end_index].bytes().all(is_insignificant)
+    }
+
+    #[inline]
     fn skip_to_line_end(&self, start_index: Option<u32>) -> Option<u32> {
-        let mut index = self.skip(start_index, false, |c| matches!(c, b' ' | b'\t' | b',' | b';'));
+        let mut index = self.skip(start_index, false, is_insignificant);
         index = self.skip_inline_comments(index);
         index
     }
 
     #[inline]
     fn skip_spaces(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
-        self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t'))
+        self.skip(start_index, backwards, is_space)
     }
 
     #[inline]
     fn skip_spaces_and_new_lines(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
-        self.skip(start_index, backwards, |c| matches!(c, b' ' | b'\t' | b'\r' | b'\n'))
+        self.skip(start_index, backwards, is_line_terminator_or_space)
     }
 
     #[inline]
     fn skip_everything_but_new_line(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
-        self.skip(start_index, backwards, |c| !matches!(c, b'\r' | b'\n'))
+        self.skip(start_index, backwards, |c| !is_line_terminator(c))
     }
 
     #[inline]
@@ -348,4 +360,24 @@ impl HasFileId for FormatterState<'_> {
     fn file_id(&self) -> FileId {
         self.file.id
     }
+}
+
+#[inline]
+const fn is_insignificant(c: u8) -> bool {
+    matches!(c, b' ' | b'\t' | b';' | b',')
+}
+
+#[inline]
+const fn is_line_terminator(c: u8) -> bool {
+    matches!(c, b'\n' | b'\r')
+}
+
+#[inline]
+const fn is_space(c: u8) -> bool {
+    matches!(c, b' ' | b'\t')
+}
+
+#[inline]
+const fn is_line_terminator_or_space(c: u8) -> bool {
+    is_line_terminator(c) || is_space(c)
 }

@@ -105,11 +105,7 @@ impl<'a> FormatterState<'a> {
                     }
 
                     should_break = false;
-                } else if range.end.offset < comment.start
-                    && self.file.contents[range.end.offset as usize..comment.start as usize]
-                        .chars()
-                        .all(|c| c == ' ' || c == ';' || c == ',')
-                {
+                } else if range.end.offset < comment.start && self.is_insignificant(range.end.offset, comment.start) {
                     if flags.contains(CommentFlags::Trailing) && comment.matches_flags(flags) {
                         return true;
                     }
@@ -223,15 +219,10 @@ impl<'a> FormatterState<'a> {
         let mut parts = vec![];
         let mut previous_comment: Option<Comment> = None;
 
-        let end_index = range.end.offset as usize;
         while let Some(comment) = self.comments.peek() {
             let comment = Comment::from_trivia(self.file, comment);
             // Trailing comment if there is nothing in between.
-            if range.end.offset < comment.start
-                && self.file.contents[end_index..comment.start as usize]
-                    .chars()
-                    .all(|c| c == ' ' || c == ';' || c == ',')
-            {
+            if range.end.offset < comment.start && self.is_insignificant(range.end.offset, comment.start) {
                 self.comments.next();
                 let previous = self.print_trailing_comment(&mut parts, comment, previous_comment);
                 previous_comment = Some(previous);
@@ -373,15 +364,12 @@ impl<'a> FormatterState<'a> {
     pub(crate) fn print_dangling_comments_between_nodes(&mut self, after: Span, before: Span) -> Option<Document<'a>> {
         let mut parts = vec![];
 
-        let end_index = after.end.offset as usize;
         while let Some(comment) = self.comments.peek() {
             let comment = Comment::from_trivia(self.file, comment);
 
             if comment.start >= after.end.offset
                 && comment.end <= before.start.offset
-                && self.file.contents[end_index..comment.start as usize]
-                    .chars()
-                    .all(|c| c == ' ' || c == ';' || c == ',')
+                && self.is_insignificant(after.end.offset, comment.start)
             {
                 parts.push(self.print_comment(comment));
 

@@ -11,6 +11,8 @@ use crate::document::Line;
 use crate::document::Space;
 use crate::document::Trim;
 use crate::document::group::GroupIdentifier;
+use crate::internal::is_line_terminator_or_space;
+use crate::internal::is_space;
 use crate::internal::printer::command::Command;
 use crate::internal::printer::command::Indentation;
 use crate::internal::printer::command::Mode;
@@ -108,7 +110,7 @@ impl<'a> Printer<'a> {
         if s.soft {
             // If the previous character is a space or a tab, we don't need to add another one.
             if let Some(&last) = self.out.last()
-                && (last == b' ' || last == b'\t')
+                && is_space(last)
             {
                 return;
             }
@@ -133,7 +135,7 @@ impl<'a> Printer<'a> {
         match trim {
             Trim::Whitespace => {
                 while let Some(&last) = self.out.last() {
-                    if last == b' ' || last == b'\t' {
+                    if is_space(last) {
                         self.out.pop();
                     } else {
                         break;
@@ -142,7 +144,7 @@ impl<'a> Printer<'a> {
             }
             Trim::Newlines => {
                 while let Some(&last) = self.out.last() {
-                    if last == b' ' || last == b'\t' || last == b'\n' {
+                    if is_line_terminator_or_space(last) {
                         self.out.pop();
                     } else {
                         break;
@@ -448,7 +450,7 @@ impl<'a> Printer<'a> {
                     if space.soft {
                         // If the previous character is a space or a tab, we don't need to add another one.
                         if let Some(&last) = self.out.last()
-                            && (last == b' ' || last == b'\t')
+                            && (is_space(last))
                         {
                             continue;
                         }
