@@ -393,7 +393,11 @@ pub(super) fn adjust_clause<'a>(
 
     if has_trailing_segment {
         if is_block {
-            Document::Array(vec![clause, Document::space()])
+            if f.is_followed_by_comment_on_next_line(node.span()) {
+                Document::Array(vec![clause, Document::Line(Line::hard())])
+            } else {
+                Document::Array(vec![clause, Document::space()])
+            }
         } else {
             Document::Indent(vec![Document::BreakParent, clause, Document::Line(Line::hard())])
         }

@@ -8,6 +8,7 @@ use crate::document::Fill;
 use crate::document::IfBreak;
 use crate::document::IndentIfBreak;
 use crate::document::Line;
+use crate::document::Space;
 use crate::document::Trim;
 use crate::document::group::GroupIdentifier;
 use crate::internal::printer::command::Command;
@@ -64,6 +65,7 @@ impl<'a> Printer<'a> {
 
             match document {
                 Document::String(s) => self.handle_str(s),
+                Document::Space(space) => self.handle_space(space),
                 Document::Array(docs) => self.handle_array(indentation, mode, docs),
                 Document::Indent(docs) => self.handle_indent(indentation, mode, docs),
                 Document::Align(align) => self.handle_align(align, mode),
@@ -100,6 +102,20 @@ impl<'a> Printer<'a> {
     fn handle_str(&mut self, s: &str) {
         self.out.extend(s.as_bytes());
         self.position += string_width(s);
+    }
+
+    fn handle_space(&mut self, s: Space) {
+        if s.soft {
+            // If the previous character is a space or a tab, we don't need to add another one.
+            if let Some(&last) = self.out.last()
+                && (last == b' ' || last == b'\t')
+            {
+                return;
+            }
+        }
+
+        self.out.push(32u8);
+        self.position += 1;
     }
 
     fn handle_array(&mut self, indentation: Indentation<'a>, mode: Mode, docs: Vec<Document<'a>>) {
@@ -427,6 +443,18 @@ impl<'a> Printer<'a> {
             match doc {
                 Document::String(string) => {
                     remaining_width -= string_width(string) as isize;
+                }
+                Document::Space(space) => {
+                    if space.soft {
+                        // If the previous character is a space or a tab, we don't need to add another one.
+                        if let Some(&last) = self.out.last()
+                            && (last == b' ' || last == b'\t')
+                        {
+                            continue;
+                        }
+                    }
+
+                    remaining_width -= 1_isize;
                 }
                 Document::IndentIfBreak(IndentIfBreak { contents, .. })
                 | Document::Indent(contents)

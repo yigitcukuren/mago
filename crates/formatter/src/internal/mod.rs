@@ -141,6 +141,23 @@ impl<'a> FormatterState<'a> {
         idx != idx2
     }
 
+    /// Checks if a span is at the start of its line, ignoring leading whitespace.
+    ///
+    /// For example, given the code `  $foo = 1;`, a span for `$foo` would
+    /// return `true`, but a span for `= 1` would return `false`.
+    ///
+    /// # Returns
+    ///
+    /// `true` if there are no non-whitespace characters on the line before the span's start.
+    pub(crate) fn is_at_start_of_line(&self, span: Span) -> bool {
+        let line_index = self.file.line_number(span.start.offset);
+        let line_start_offset = self.file.lines[line_index as usize] as usize;
+        let span_start_offset = span.start.offset as usize;
+        let prefix = &self.file.contents[line_start_offset..span_start_offset];
+
+        prefix.trim().is_empty()
+    }
+
     #[inline]
     fn is_next_line_empty(&self, span: Span) -> bool {
         self.is_next_line_empty_after_index(span.end.offset)

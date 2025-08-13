@@ -39,6 +39,7 @@ pub enum Document<'a> {
     Trim(Trim),
     /// Do not perform any trimming before printing the next document.
     DoNotTrim,
+    Space(Space),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
@@ -60,6 +61,13 @@ pub struct Line {
     pub hard: bool,
     pub soft: bool,
     pub literal: bool,
+}
+
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Space {
+    /// If `true`, the space is "soft" and will only be printed if the preceding
+    /// character is not whitespace. If `false`, the space is "hard" and will always be printed.
+    pub soft: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
@@ -192,7 +200,12 @@ impl<'a> Document<'a> {
 
     #[inline]
     pub fn space() -> Document<'a> {
-        Document::String(" ")
+        Document::Space(Space { soft: false })
+    }
+
+    #[inline]
+    pub fn soft_space() -> Document<'a> {
+        Document::Space(Space { soft: true })
     }
 
     pub fn can_break(&self) -> bool {
@@ -331,6 +344,13 @@ impl fmt::Display for Document<'_> {
                 Trim::Newlines => write!(f, "trimNewlines"),
             },
             Document::DoNotTrim => write!(f, "doNotTrim"),
+            Document::Space(space) => {
+                if space.soft {
+                    write!(f, "softSpace")
+                } else {
+                    write!(f, "hardSpace")
+                }
+            }
         }
     }
 }

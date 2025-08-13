@@ -181,13 +181,17 @@ impl<'a> Format<'a> for ClosingTag {
         wrap!(f, self, ClosingTag, {
             if f.settings.remove_trailing_close_tag
                 && !f.in_script_terminating_statement
-                && f.skip_spaces_and_new_lines(Some(self.span.end.offset), false).is_none()
+                && f.skip_spaces_and_new_lines(Some(self.span.end.offset), /* backwards */ false).is_none()
             {
                 f.scripting_mode = true;
 
                 Document::Trim(Trim::Newlines)
             } else {
-                Document::Array(vec![Document::LineSuffixBoundary, Document::String("?>")])
+                Document::Array(vec![
+                    Document::LineSuffixBoundary,
+                    if f.is_at_start_of_line(self.span) { Document::empty() } else { Document::soft_space() },
+                    Document::String("?>"),
+                ])
             }
         })
     }
