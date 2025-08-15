@@ -86,43 +86,7 @@ pub(super) fn print_argument_list<'a>(
         Document::Array(contents)
     };
 
-    let get_right_parenthesis = |f: &mut FormatterState<'a>, breaking: Option<bool>| {
-        let mut contents = vec![];
-
-        if let Some(dangling) = f.print_dangling_comments(argument_list.span(), true) {
-            contents.push(dangling);
-        } else {
-            match breaking {
-                Some(true) => {
-                    contents.push(Document::Line(Line::hard()));
-                }
-                Some(false) => {
-                    if f.settings.space_within_argument_list_parenthesis {
-                        contents.push(Document::Space(Space::soft()));
-                    }
-                }
-                None => {
-                    if f.settings.space_within_argument_list_parenthesis {
-                        contents.push(Document::Line(Line::default()));
-                    } else {
-                        contents.push(Document::Line(Line::soft()));
-                    }
-                }
-            }
-        }
-
-        contents.push(format_token(f, argument_list.right_parenthesis, ")"));
-
-        Document::Array(contents)
-    };
-
     let mut contents = vec![left_parenthesis.clone()];
-
-    if argument_list.arguments.is_empty() {
-        contents.push(get_right_parenthesis(f, Some(false)));
-
-        return Document::Array(contents);
-    }
 
     // First, run all the decision functions with unformatted arguments
     let should_break_all = should_break || should_break_all_arguments(f, argument_list, for_attribute);
@@ -161,19 +125,28 @@ pub(super) fn print_argument_list<'a>(
         })
         .collect();
 
+    let dangling_comments = f.print_dangling_comments(argument_list.span(), true);
+    let right_parenthesis = format_token(f, argument_list.right_parenthesis, ")");
+
+    if arguments_count == 0 {
+        contents.push(print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, Some(false)));
+
+        return Document::Array(contents);
+    }
+
     let get_printed_arguments = |f: &mut FormatterState<'a>, should_break: bool, skip_index: isize| {
         let mut printed_arguments = vec![];
-        let mut length = argument_list.arguments.len();
+        let mut length = arguments_count;
         let arguments_range: Box<dyn Iterator<Item = (usize, usize)>> = match skip_index {
             _ if skip_index > 0 => {
                 length -= skip_index as usize;
-                Box::new((skip_index as usize..argument_list.arguments.len()).enumerate())
+                Box::new((skip_index as usize..arguments_count).enumerate())
             }
             _ if skip_index < 0 => {
                 length -= (-skip_index) as usize;
-                Box::new((0..argument_list.arguments.len() - (-skip_index) as usize).enumerate())
+                Box::new((0..arguments_count - (-skip_index) as usize).enumerate())
             }
-            _ => Box::new((0..argument_list.arguments.len()).enumerate()),
+            _ => Box::new((0..arguments_count).enumerate()),
         };
 
         for (i, arg_idx) in arguments_range {
@@ -208,7 +181,7 @@ pub(super) fn print_argument_list<'a>(
             if f.settings.trailing_comma { Document::String(",") } else { Document::empty() },
         ]));
 
-        parts.push(get_right_parenthesis(f, Some(true)));
+        parts.push(print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, Some(true)));
 
         Document::Group(Group::new(parts))
     };
@@ -219,7 +192,7 @@ pub(super) fn print_argument_list<'a>(
 
     if is_single_late_breaking_argument {
         let single_argument = formatted_arguments.remove(0);
-        let right_parenthesis = get_right_parenthesis(f, None);
+        let right_parenthesis = print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None);
 
         return Document::IfBreak(IfBreak::new(
             Document::Group(Group::new(vec![
@@ -239,7 +212,7 @@ pub(super) fn print_argument_list<'a>(
         return Document::Group(Group::new(vec![
             left_parenthesis,
             Document::Group(Group::new(Document::join(formatted_arguments, Separator::CommaSpace))),
-            get_right_parenthesis(f, Some(false)),
+            print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, Some(false)),
         ]));
     }
 
@@ -257,7 +230,7 @@ pub(super) fn print_argument_list<'a>(
                         Document::Group(Group::new(vec![first_doc]).with_break(true)),
                         Document::String(", "),
                         last_doc,
-                        get_right_parenthesis(f, None),
+                        print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                     ],
                     vec![all_arguments_broken_out(f)],
                 )),
@@ -288,26 +261,24 @@ pub(super) fn print_argument_list<'a>(
                         left_parenthesis.clone(),
                         Document::Array(printed_arguments),
                         Document::Group(Group::new(vec![last_doc]).with_break(true)),
-                        Document::String(")"),
+                        print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                     ],
                     vec![all_arguments_broken_out(f)],
                 )),
             ]);
         }
 
-        let right_parenthesis = get_right_parenthesis(f, None);
-
         return Document::Group(Group::conditional(
             vec![
                 left_parenthesis.clone(),
                 Document::Array(printed_arguments),
                 last_doc.clone(),
-                right_parenthesis.clone(),
+                print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
             ],
             vec![
                 Document::Array(vec![
                     left_parenthesis.clone(),
-                    if argument_list.arguments.len() > 1 {
+                    if arguments_count > 1 {
                         Document::Array(vec![
                             Document::Array(original_printed_arguments),
                             Document::String(","),
@@ -317,7 +288,7 @@ pub(super) fn print_argument_list<'a>(
                         Document::empty()
                     },
                     Document::Group(Group::new(vec![last_doc]).with_break(true)),
-                    right_parenthesis,
+                    print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                 ]),
                 all_arguments_broken_out(f),
             ],
@@ -331,9 +302,44 @@ pub(super) fn print_argument_list<'a>(
     if f.settings.trailing_comma {
         contents.push(Document::IfBreak(IfBreak::then(Document::String(","))));
     }
-    contents.push(get_right_parenthesis(f, None));
+    contents.push(print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None));
 
     Document::Group(Group::new(contents))
+}
+
+fn print_right_parenthesis<'a>(
+    f: &mut FormatterState<'a>,
+    dangling_comments: Option<&Document<'a>>,
+    right_parenthesis: &Document<'a>,
+    breaking: Option<bool>,
+) -> Document<'a> {
+    let mut contents = vec![];
+
+    if let Some(dangling) = dangling_comments {
+        contents.push(dangling.clone());
+    } else {
+        match breaking {
+            Some(true) => {
+                contents.push(Document::Line(Line::hard()));
+            }
+            Some(false) => {
+                if f.settings.space_within_argument_list_parenthesis {
+                    contents.push(Document::Space(Space::soft()));
+                }
+            }
+            None => {
+                if f.settings.space_within_argument_list_parenthesis {
+                    contents.push(Document::Line(Line::default()));
+                } else {
+                    contents.push(Document::Line(Line::soft()));
+                }
+            }
+        }
+    }
+
+    contents.push(right_parenthesis.clone());
+
+    Document::Array(contents)
 }
 
 #[inline]
