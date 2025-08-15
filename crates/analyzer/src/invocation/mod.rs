@@ -15,6 +15,7 @@ use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
 
+mod arguments;
 mod resolver;
 mod special_function_like_handler;
 mod template_inference;
@@ -22,6 +23,7 @@ mod template_inference;
 pub mod analyzer;
 pub mod post_process;
 pub mod return_type_fetcher;
+pub mod template_result;
 
 /// Represents a resolved invocation of a function, method, or any callable expression.
 ///
@@ -165,6 +167,10 @@ impl<'a> InvocationTarget<'a> {
                 }
             }
         }
+    }
+
+    pub const fn is_method_call(&self) -> bool {
+        matches!(self.get_function_like_identifier(), Some(FunctionLikeIdentifier::Method(_, _)))
     }
 
     /// Checks if the target is a dynamic callable that is not explicitly a closure type.

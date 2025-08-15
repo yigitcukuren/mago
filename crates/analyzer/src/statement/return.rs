@@ -147,7 +147,36 @@ pub fn handle_return_value<'a>(
         },
     );
 
-    if return_value.is_some() {
+    let function_name = function_like_identifier.as_string(context.interner);
+
+    if let Some(return_value) = return_value {
+        if function_like_metadata.flags.is_by_reference() {
+            let is_referenceable = return_value.is_referenceable(false)
+                || (return_value.is_referenceable(true) && inferred_return_type.by_reference);
+
+            if !is_referenceable {
+                context.collector.report_with_code(
+                    Code::INVALID_RETURN_STATEMENT,
+                    Issue::error(format!(
+                        "Cannot return a non-referenceable value from function `{function_name}`.",
+                    ))
+                    .with_annotation(Annotation::primary(return_value.span()).with_message(
+                        "This value cannot be returned by reference.",
+                    ))
+                    .with_annotation(
+                        Annotation::secondary(function_like_metadata.name_span.unwrap_or(function_like_metadata.span))
+                            .with_message("Function is declared to return by reference here."),
+                    )
+                    .with_note(
+                        "You can only return variables, properties, array elements, or the result of another function call that itself returns a reference."
+                    )
+                    .with_help(
+                        "To fix this, either return a valid reference or remove the `&` from the function declaration to return by value."
+                    ),
+                );
+            }
+        }
+
         artifacts.inferred_return_types.push(inferred_return_type.clone());
     }
 
@@ -188,8 +217,6 @@ pub fn handle_return_value<'a>(
 
             get_mixed()
         };
-
-    let function_name = function_like_identifier.as_string(context.interner);
 
     if function_like_metadata.flags.has_yield() {
         match get_generator_return_type(context, &expected_return_type) {

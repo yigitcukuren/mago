@@ -6,6 +6,8 @@ use mago_algebra::clause::Clause;
 use mago_algebra::disjoin_clauses;
 use mago_codex::assertion::Assertion;
 use mago_codex::ttype::TType;
+use mago_codex::ttype::comparator::ComparisonResult;
+use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_literal_int;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
@@ -22,6 +24,7 @@ use crate::artifacts::get_expression_range;
 use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
+use crate::context::block::ReferenceConstraintSource;
 use crate::error::AnalysisError;
 use crate::expression::find_expression_logic_issues;
 use crate::formula::get_formula;
@@ -167,25 +170,25 @@ pub fn analyze_assignment<'a>(
         && let Some(assignment_span) = assignment_span
     {
         context.collector.report_with_code(
-                    Code::CLONE_INSIDE_LOOP,
-                    Issue::warning(format!(
-                        "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
-                    ))
-                    .with_annotation(
-                        Annotation::primary(assignment_span).with_message("Cloning onto self within loop")
-                    )
-                    .with_note(
-                        "This pattern overwrites the variable with a fresh clone on each loop iteration."
-                    )
-                    .with_note(
-                        "If the intent was to modify a copy of the variable defined *outside* the loop, the clone should happen *before* the loop starts."
-                    )
-                    .with_help(
-                        format!(
-                            "Consider cloning `{target_variable_id}` before the loop if you need a copy, or revise the loop logic if cloning onto itself is not the desired behavior."
-                        )
-                    ),
-                );
+            Code::CLONE_INSIDE_LOOP,
+            Issue::warning(format!(
+                "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
+            ))
+            .with_annotation(
+                Annotation::primary(assignment_span).with_message("Cloning onto self within loop")
+            )
+            .with_note(
+                "This pattern overwrites the variable with a fresh clone on each loop iteration."
+            )
+            .with_note(
+                "If the intent was to modify a copy of the variable defined *outside* the loop, the clone should happen *before* the loop starts."
+            )
+            .with_help(
+                format!(
+                    "Consider cloning `{target_variable_id}` before the loop if you need a copy, or revise the loop logic if cloning onto itself is not the desired behavior."
+                )
+            ),
+        );
     }
 
     if let (Some(target_variable_id), Some(existing_target_type)) = (&target_variable_id, &existing_target_type) {
@@ -273,9 +276,15 @@ pub(crate) fn assign_to_expression<'a>(
     target_expression: &Expression,
     target_expression_id: Option<String>,
     source_expression: Option<&Expression>,
-    source_type: TUnion,
+    mut source_type: TUnion,
     destructuring: bool,
 ) -> Result<bool, AnalysisError> {
+    if let Some(source_expression) = source_expression {
+        source_type.by_reference = source_expression.is_reference();
+
+        analyze_reference_assignment(context, block_context, target_expression, source_expression)?;
+    }
+
     match target_expression {
         Expression::Variable(target_variable) if target_expression_id.is_some() => analyze_assignment_to_variable(
             context,
@@ -340,6 +349,62 @@ pub(crate) fn assign_to_expression<'a>(
     Ok(true)
 }
 
+fn analyze_reference_assignment<'a>(
+    context: &mut Context<'a>,
+    block_context: &mut BlockContext<'a>,
+    target_expression: &Expression,
+    source_expression: &Expression,
+) -> Result<(), AnalysisError> {
+    let Expression::UnaryPrefix(UnaryPrefix {
+        operator: UnaryPrefixOperator::Reference(_),
+        operand: referenced_expression,
+    }) = source_expression
+    else {
+        return Ok(());
+    };
+
+    let target_variable_id = get_expression_id(
+        target_expression,
+        block_context.scope.get_class_like_name(),
+        context.resolved_names,
+        context.interner,
+        Some(context.codebase),
+    );
+
+    let referenced_variable_id = get_expression_id(
+        referenced_expression,
+        block_context.scope.get_class_like_name(),
+        context.resolved_names,
+        context.interner,
+        Some(context.codebase),
+    );
+
+    let (Some(target_variable_id), Some(referenced_variable_id)) = (target_variable_id, referenced_variable_id) else {
+        return Ok(());
+    };
+
+    if !block_context.locals.contains_key(&referenced_variable_id) {
+        block_context.locals.insert(referenced_variable_id.clone(), Rc::new(get_mixed()));
+    }
+
+    if block_context.references_in_scope.contains_key(&target_variable_id) {
+        block_context.decrement_reference_count(&target_variable_id);
+    }
+
+    // When assigning an existing reference as a reference it removes the
+    // old reference, so it's no longer potentially from a confusing scope.
+    block_context.references_possibly_from_confusing_scope.remove(&target_variable_id);
+    block_context.add_conditionally_referenced_variable(&target_variable_id);
+    block_context.references_in_scope.insert(target_variable_id.clone(), referenced_variable_id.clone());
+    block_context.referenced_counts.entry(referenced_variable_id.clone()).and_modify(|count| *count += 1).or_insert(1);
+
+    if referenced_variable_id.contains('[') || referenced_variable_id.contains("->") {
+        block_context.references_to_external_scope.insert(target_variable_id.clone());
+    }
+
+    Ok(())
+}
+
 pub fn analyze_assignment_to_variable<'a>(
     context: &mut Context<'a>,
     block_context: &mut BlockContext<'a>,
@@ -350,6 +415,100 @@ pub fn analyze_assignment_to_variable<'a>(
     variable_id: &str,
     destructuring: bool,
 ) {
+    if let Some(constraint) = block_context.by_reference_constraints.get(variable_id) {
+        if let Some(constraint_type) = constraint.constraint_type.as_ref()
+            && !union_comparator::is_contained_by(
+                context.codebase,
+                context.interner,
+                &assigned_type,
+                constraint_type,
+                assigned_type.ignore_nullable_issues,
+                assigned_type.ignore_falsable_issues,
+                false,
+                &mut ComparisonResult::default(),
+            )
+        {
+            let assigned_type_str = assigned_type.get_id(Some(context.interner));
+            let constraint_type_str = constraint_type.get_id(Some(context.interner));
+            let primary_error_span = source_expression.map_or(variable_span, |expr| expr.span());
+
+            let issue = match constraint.source {
+                ReferenceConstraintSource::Parameter => {
+                    Issue::error(format!(
+                        "Invalid assignment to by-reference parameter `{variable_id}`.",
+                    ))
+                    .with_annotation(Annotation::primary(primary_error_span).with_message(format!(
+                        "This value has type `{assigned_type_str}`, but the parameter expects `{constraint_type_str}`.",
+                    )))
+                    .with_annotation(Annotation::secondary(constraint.constraint_span).with_message(
+                        "Parameter is defined with a by-reference type constraint here.",
+                    ))
+                    .with_note(
+                        "Assigning an incompatible type to a by-reference parameter can cause unexpected `TypeError`s in the calling scope.",
+                    )
+                    .with_help(
+                        "If the parameter should have a different type on exit, declare it using a `@param-out` docblock tag.",
+                    )
+                },
+                ReferenceConstraintSource::Argument => {
+                    Issue::error(format!(
+                        "Potentially invalid assignment to referenced variable `{variable_id}`.",
+                    ))
+                    .with_annotation(Annotation::primary(primary_error_span).with_message(format!(
+                        "This assignment to type `{assigned_type_str}` may violate a reference constraint.",
+                    )))
+                    .with_annotation(Annotation::secondary(constraint.constraint_span).with_message(
+                        format!("Variable was passed as a by-reference argument here, constraining it to type `{constraint_type_str}`."),
+                    ))
+                    .with_note(
+                        "An object may still hold a reference to this variable. Changing its type can lead to a `TypeError` at runtime.",
+                    )
+                    .with_help(
+                        "Ensure this variable's type remains compatible, or refactor to avoid holding onto the external reference.",
+                    )
+                },
+                ReferenceConstraintSource::Static => {
+                    Issue::error(format!(
+                        "Invalid assignment to constrained static variable `{variable_id}`.",
+                    ))
+                    .with_annotation(Annotation::primary(primary_error_span).with_message(format!(
+                        "This value of type `{assigned_type_str}` is not compatible with the expected type `{constraint_type_str}`.",
+                    )))
+                    .with_annotation(Annotation::secondary(constraint.constraint_span).with_message(
+                        "Static variable's type is constrained here.",
+                    ))
+                    .with_note(
+                        "Static variables maintain their state across function calls. Violating the type constraint can cause errors in subsequent calls.",
+                    )
+                    .with_help(format!(
+                        "Ensure the assigned value is compatible with the `{constraint_type_str}` type.",
+                    ))
+                },
+                ReferenceConstraintSource::Global => {
+                    Issue::error(format!(
+                        "Invalid assignment to constrained global variable `{variable_id}`.",
+                    ))
+                    .with_annotation(Annotation::primary(primary_error_span).with_message(format!(
+                        "This value of type `{assigned_type_str}` is not compatible with the global's expected type `{constraint_type_str}`.",
+                    )))
+                    .with_annotation(Annotation::secondary(constraint.constraint_span).with_message(
+                        "Global variable is imported with a type constraint here.",
+                    ))
+                    .with_note(
+                        "Global variables are shared across the application. Changing a global to an incompatible type can lead to widespread errors.",
+                    )
+                    .with_help(format!(
+                        "Ensure the assigned value is compatible with the `{constraint_type_str}` type.",
+                    ))
+                },
+            };
+
+            context.collector.report_with_code(Code::REFERENCE_CONSTRAINT_VIOLATION, issue);
+        }
+
+        assigned_type.by_reference = true;
+    }
+
     if variable_id.eq("$this") {
         context.collector.report_with_code(
             Code::ASSIGNMENT_TO_THIS,

@@ -11,7 +11,10 @@ use mago_algebra::disjoin_clauses;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::negate_formula;
 use mago_algebra::saturate_clauses;
+use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_union_types;
+use mago_codex::ttype::comparator::ComparisonResult;
+use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -22,6 +25,8 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::code::Code;
+use crate::common::synthetic::new_synthetic_call;
+use crate::common::synthetic::new_synthetic_negation;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
@@ -250,9 +255,7 @@ impl Analyzable for If {
 
         block_context.variables_possibly_in_scope.extend(if_scope.new_variables_possibly_in_scope);
         block_context.possibly_assigned_variable_ids.extend(if_scope.possibly_assigned_variable_ids);
-        if let Some(variable_ids) = if_scope.assigned_variable_ids {
-            block_context.assigned_variable_ids.extend(variable_ids);
-        }
+        block_context.assigned_variable_ids.extend(if_scope.assigned_variable_ids.unwrap_or_default());
 
         if let Some(new_variables) = if_scope.new_variables {
             for (variable_id, variable_type) in new_variables {
@@ -304,14 +307,16 @@ impl Analyzable for If {
             let new_type =
                 combine_union_types(&existing_type, &variable_type, context.codebase, context.interner, false);
 
-            block_context.remove_descendants(
-                context.interner,
-                context.codebase,
-                &mut context.collector,
-                &variable_id,
-                &existing_type,
-                Some(&new_type),
-            );
+            if !new_type.eq(&existing_type) {
+                block_context.remove_descendants(
+                    context.interner,
+                    context.codebase,
+                    &mut context.collector,
+                    &variable_id,
+                    &existing_type,
+                    Some(&new_type),
+                );
+            }
 
             block_context.locals.insert(variable_id.clone(), Rc::new(new_type));
         }
@@ -455,6 +460,8 @@ fn analyze_if_statement_block<'a>(
     if_block_context.assigned_variable_ids.extend(assigned_variable_ids);
     if_block_context.possibly_assigned_variable_ids.extend(possibly_assigned_variable_ids);
 
+    reconcile_branch_reference_constraints(context, &mut if_block_context, outer_block_context);
+
     if !has_leaving_statements {
         let new_assigned_variable_ids_keys = new_assigned_variable_ids.keys().cloned().collect::<Vec<String>>();
 
@@ -520,8 +527,9 @@ fn analyze_if_statement_block<'a>(
     if !has_ending_statements {
         let variables_possibly_in_scope = if_block_context
             .variables_possibly_in_scope
-            .into_iter()
-            .filter(|id| !outer_block_context.variables_possibly_in_scope.contains(id))
+            .iter()
+            .filter(|id| !outer_block_context.variables_possibly_in_scope.contains(*id))
+            .cloned()
             .collect::<HashSet<String>>();
 
         if let Some(loop_scope) = artifacts.loop_scope.as_mut() {
@@ -535,9 +543,11 @@ fn analyze_if_statement_block<'a>(
         }
     }
 
-    for (exception, spans) in if_block_context.possibly_thrown_exceptions {
+    for (exception, spans) in std::mem::take(&mut if_block_context.possibly_thrown_exceptions) {
         outer_block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
     }
+
+    outer_block_context.update_references_possibly_from_confusing_scope(&if_block_context);
 
     Ok(())
 }
@@ -796,6 +806,8 @@ fn analyze_else_if_clause<'a>(
     else_if_block_context.assigned_variable_ids.extend(pre_assigned_variable_ids);
     else_if_block_context.possibly_assigned_variable_ids.extend(pre_possibly_assigned_variable_ids);
 
+    reconcile_branch_reference_constraints(context, &mut else_if_block_context, outer_block_context);
+
     let final_actions =
         ControlAction::from_statements(else_if_clause.1.iter().collect(), vec![], Some(artifacts), true);
 
@@ -868,8 +880,9 @@ fn analyze_else_if_clause<'a>(
     if !has_ending_statements {
         let variables_possibly_in_scope = else_if_block_context
             .variables_possibly_in_scope
-            .into_iter()
-            .filter(|id| !outer_block_context.variables_possibly_in_scope.contains(id))
+            .iter()
+            .filter(|id| !outer_block_context.variables_possibly_in_scope.contains(*id))
+            .cloned()
             .collect::<HashSet<String>>();
 
         let possibly_assigned_variable_ids = new_possibly_assigned_variable_ids;
@@ -897,6 +910,8 @@ fn analyze_else_if_clause<'a>(
         Some(negated_formula) => saturate_clauses(if_scope.negated_clauses.iter().chain(negated_formula.iter())),
         None => vec![],
     };
+
+    outer_block_context.update_references_possibly_from_confusing_scope(&else_if_block_context);
 
     Ok(())
 }
@@ -1010,6 +1025,10 @@ fn analyze_else_statements<'a>(
     else_block_context.assigned_variable_ids.extend(pre_assigned_variable_ids);
     else_block_context.possibly_assigned_variable_ids.extend(pre_possibly_assigned_variable_ids);
 
+    if else_statements.is_some() {
+        reconcile_branch_reference_constraints(context, else_block_context, outer_block_context);
+    }
+
     let final_actions = match else_statements {
         Some(else_statements) => {
             ControlAction::from_statements(else_statements.iter().collect(), vec![], Some(artifacts), true)
@@ -1022,6 +1041,7 @@ fn analyze_else_statements<'a>(
     let has_break_statement;
     let has_continue_statement;
     let has_leaving_statements;
+
     if !has_actions {
         has_ending_statements = false;
         has_break_statement = false;
@@ -1090,6 +1110,8 @@ fn analyze_else_statements<'a>(
         outer_block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
     }
 
+    outer_block_context.update_references_possibly_from_confusing_scope(else_block_context);
+
     Ok(())
 }
 
@@ -1101,12 +1123,32 @@ fn add_conditionally_assigned_variables_to_context<'a>(
     condition: &Expression,
     assigned_in_conditional_variable_ids: &HashMap<String, u32>,
 ) -> Result<(), AnalysisError> {
-    let negated_expression = Expression::UnaryPrefix(UnaryPrefix {
-        operator: UnaryPrefixOperator::Not(condition.span()),
-        operand: Box::new(condition.clone()),
+    if assigned_in_conditional_variable_ids.is_empty() {
+        return Ok(());
+    }
+
+    let old_expression_types = artifacts.expression_types.clone();
+    let expressions = get_definitely_evaluated_ored_expressions(condition);
+
+    let (result, _) = context.record(|context| {
+        for expression in expressions {
+            let negated_expression = new_synthetic_negation(expression);
+            let assertion = new_synthetic_call(context.interner, "assert", negated_expression);
+
+            let was_inside_negation = post_leaving_if_block_context.inside_negation;
+            post_leaving_if_block_context.inside_negation = true;
+
+            assertion.analyze(context, post_leaving_if_block_context, artifacts)?;
+
+            post_leaving_if_block_context.inside_negation = was_inside_negation;
+        }
+
+        Ok(())
     });
 
-    context.record(|context| negated_expression.analyze(context, post_leaving_if_block_context, artifacts)).0?;
+    result?;
+
+    artifacts.expression_types = old_expression_types;
 
     for variable_id in assigned_in_conditional_variable_ids.keys() {
         if let Some(variable_type) = post_leaving_if_block_context.locals.get(variable_id) {
@@ -1220,6 +1262,84 @@ fn update_if_scope<'a>(
             if_scope.possibly_redefined_variables = possibly_redefined_variables;
         }
     }
+}
+
+fn reconcile_branch_reference_constraints<'a>(
+    context: &mut Context<'a>,
+    branch_block_context: &mut BlockContext<'a>,
+    outer_block_context: &mut BlockContext<'a>,
+) {
+    for (variable, constraint) in &branch_block_context.by_reference_constraints {
+        let Some(outer_constraint) = outer_block_context.by_reference_constraints.get(variable) else {
+            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
+            continue;
+        };
+
+        let Some(constraint_type) = constraint.constraint_type.as_ref() else {
+            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
+            continue;
+        };
+
+        let Some(outer_constraint_type) = outer_constraint.constraint_type.as_ref() else {
+            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
+            continue;
+        };
+
+        if !union_comparator::is_contained_by(
+            context.codebase,
+            context.interner,
+            constraint_type,
+            outer_constraint_type,
+            false,
+            false,
+            false,
+            &mut ComparisonResult::default(),
+        ) {
+            let constraint_type_str = constraint_type.get_id(Some(context.interner));
+            let outer_constraint_type_str = outer_constraint_type.get_id(Some(context.interner));
+
+            context.collector.report_with_code(
+                Code::CONFLICTING_REFERENCE_CONSTRAINT,
+                Issue::error(format!(
+                    "Conflicting pass-by-reference constraints for variable `{variable}`.",
+                ))
+                .with_annotation(Annotation::primary(constraint.constraint_span).with_message(
+                    format!(
+                        "This scope imposes a constraint of `{constraint_type_str}`...",
+                    ),
+                ))
+                .with_annotation(
+                    Annotation::primary(outer_constraint.constraint_span).with_message(format!(
+                        "...which conflicts with the existing constraint of `{outer_constraint_type_str}` from the outer scope.",
+                    )),
+                )
+                .with_note(
+                    "A variable reference cannot have multiple, incompatible type constraints applied to it in different branches of execution."
+                )
+                .with_help(format!(
+                    "Refactor the code to ensure that `{variable}` adheres to a single, compatible type constraint across all execution paths.",
+                )),
+            );
+        } else {
+            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
+        }
+    }
+}
+
+fn get_definitely_evaluated_ored_expressions(expression: &Expression) -> Vec<&Expression> {
+    if let Expression::Binary(Binary {
+        lhs,
+        operator: BinaryOperator::Or(_) | BinaryOperator::LowOr(_) | BinaryOperator::LowXor(_),
+        rhs,
+    }) = expression
+    {
+        return get_definitely_evaluated_ored_expressions(lhs)
+            .into_iter()
+            .chain(get_definitely_evaluated_ored_expressions(rhs))
+            .collect();
+    }
+
+    vec![expression]
 }
 
 #[cfg(test)]
