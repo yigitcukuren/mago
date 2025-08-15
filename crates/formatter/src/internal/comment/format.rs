@@ -29,12 +29,8 @@ impl<'a> FormatterState<'a> {
             (None, None) => document,
         }
     }
+
     /// Checks if a node is followed by a comment on its own line.
-    ///
-    /// This is used to make layout decisions, for example, to decide whether
-    /// an `else` block should be on a new line. It checks two conditions:
-    /// 1. The span must be immediately followed by a newline (ignoring whitespace).
-    /// 2. The line following that newline must start with a comment.
     ///
     /// # Arguments
     ///
@@ -43,39 +39,33 @@ impl<'a> FormatterState<'a> {
     /// # Returns
     ///
     /// `true` if the next line is a comment line, `false` otherwise.
+    /// Checks if a node is followed by a comment on its own line.
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The span of the node after which to check for a comment.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the next substantive line is a comment line, `false` otherwise.
     pub(crate) fn is_followed_by_comment_on_next_line(&self, span: Span) -> bool {
-        // 1. Find the first non-whitespace character after the span ends.
         let Some(first_char_offset) = self.skip_spaces(Some(span.end.offset), false) else {
-            // Reached the end of the file, so there's no next line.
             return false;
         };
 
-        // 2. Check if that character is a newline. If not, something else (like an
-        // `else` keyword) is on the same line, so this condition fails.
         if !self.has_newline(first_char_offset, /* backwards */ false) {
             return false;
         }
 
-        // 3. Now that we know the span is followed by a newline, we can check the
-        //    content of the *following* line.
-        let end_line_index = self.file.line_number(span.end.offset);
-
-        // 4. Get the start offset of the next line.
-        let Some(&next_line_start_offset) = self.file.lines.get(end_line_index as usize + 1) else {
+        let Some(next_content_offset) = self.skip_spaces_and_new_lines(Some(first_char_offset), false) else {
             return false;
         };
 
-        // 5. Find the end of that next line.
-        let next_line_end_offset =
-            self.file.lines.get(end_line_index as usize + 2).map_or(self.file.contents.len(), |&end| end as usize);
+        let remaining_content = &self.file.contents[next_content_offset as usize..];
 
-        // 6. Get the content of the next line and check if it's a comment.
-        let next_line_content = &self.file.contents[next_line_start_offset as usize..next_line_end_offset];
-        let trimmed_line = next_line_content.trim_start();
-
-        trimmed_line.starts_with("//")
-            || (trimmed_line.starts_with('#') && !trimmed_line.starts_with("#["))
-            || trimmed_line.starts_with("/*")
+        remaining_content.starts_with("//")
+            || remaining_content.starts_with("/*")
+            || (remaining_content.starts_with('#') && !remaining_content.starts_with("#["))
     }
 
     pub(crate) fn has_leading_own_line_comment(&self, range: Span) -> bool {
