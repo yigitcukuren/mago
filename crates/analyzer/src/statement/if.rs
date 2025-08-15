@@ -1303,14 +1303,16 @@ fn reconcile_branch_reference_constraints<'a>(
                 Issue::error(format!(
                     "Conflicting pass-by-reference constraints for variable `{variable}`.",
                 ))
-                .with_annotation(Annotation::primary(constraint.constraint_span).with_message(
-                    format!(
-                        "This scope imposes a constraint of `{constraint_type_str}`...",
-                    ),
-                ))
                 .with_annotation(
-                    Annotation::primary(outer_constraint.constraint_span).with_message(format!(
-                        "...which conflicts with the existing constraint of `{outer_constraint_type_str}` from the outer scope.",
+                    Annotation::secondary(outer_constraint.constraint_span).with_message(format!(
+                        "An existing constraint requires this variable to be of type `{}`...",
+                        outer_constraint_type_str
+                    )),
+                )
+                .with_annotation(
+                    Annotation::primary(constraint.constraint_span).with_message(format!(
+                        "...but this branch imposes a conflicting constraint of `{}`.",
+                        constraint_type_str
                     )),
                 )
                 .with_note(
