@@ -266,7 +266,9 @@ impl FunctionLikeDocblockComment {
         let mut ignore_falsable_return = false;
         let mut inherits_docs = false;
         let mut no_named_arguments = false;
-        let mut return_type: Option<ReturnTypeTag> = None;
+        let mut generic_return_type: Option<ReturnTypeTag> = None;
+        let mut psalm_return_type: Option<ReturnTypeTag> = None;
+        let mut phpstan_return_type: Option<ReturnTypeTag> = None;
         let mut parameters: Vec<ParameterTag> = Vec::new();
         let mut parameters_out: Vec<ParameterOutTag> = Vec::new();
         let mut where_constraints: Vec<WhereTag> = Vec::new();
@@ -345,11 +347,25 @@ impl FunctionLikeDocblockComment {
                         templates.push(t);
                     }
                 }
-                TagKind::PsalmReturn | TagKind::PhpstanReturn | TagKind::Return => {
+                TagKind::Return => {
                     if let Some(return_tag) =
                         parse_return_tag(context.interner.lookup(&tag.description), tag.description_span)
                     {
-                        return_type = Some(return_tag);
+                        generic_return_type = Some(return_tag);
+                    }
+                }
+                TagKind::PhpstanReturn => {
+                    if let Some(return_tag) =
+                        parse_return_tag(context.interner.lookup(&tag.description), tag.description_span)
+                    {
+                        phpstan_return_type = Some(return_tag);
+                    }
+                }
+                TagKind::PsalmReturn => {
+                    if let Some(return_tag) =
+                        parse_return_tag(context.interner.lookup(&tag.description), tag.description_span)
+                    {
+                        psalm_return_type = Some(return_tag);
                     }
                 }
                 TagKind::Throws => {
@@ -427,7 +443,7 @@ impl FunctionLikeDocblockComment {
             ignore_falsable_return,
             inherits_docs,
             no_named_arguments,
-            return_type,
+            return_type: psalm_return_type.or(phpstan_return_type).or(generic_return_type),
             parameters,
             parameters_out,
             where_constraints,
@@ -454,7 +470,9 @@ impl PropertyDocblockComment {
         let mut is_deprecated = false;
         let mut is_internal = false;
         let mut is_readonly = false;
-        let mut type_string: Option<TypeString> = None;
+        let mut generic_type_string: Option<TypeString> = None;
+        let mut phpstan_type_string: Option<TypeString> = None;
+        let mut psalm_type_string: Option<TypeString> = None;
 
         let parsed_docblock = parse_trivia(context.interner, docblock)?;
 
@@ -473,25 +491,38 @@ impl PropertyDocblockComment {
                 TagKind::PhpstanReadOnly | TagKind::PsalmReadOnly | TagKind::ReadOnly => {
                     is_readonly = true;
                 }
-                TagKind::PsalmVar | TagKind::PhpstanVar => {
+                TagKind::PsalmVar => {
                     if let Some(type_string_tag) =
                         split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
                     {
-                        type_string = Some(type_string_tag.0);
+                        psalm_type_string = Some(type_string_tag.0);
                     }
                 }
-                TagKind::Var if type_string.is_none() => {
+                TagKind::PhpstanVar => {
                     if let Some(type_string_tag) =
                         split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
                     {
-                        type_string = Some(type_string_tag.0);
+                        phpstan_type_string = Some(type_string_tag.0);
+                    }
+                }
+                TagKind::Var => {
+                    if let Some(type_string_tag) =
+                        split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
+                    {
+                        generic_type_string = Some(type_string_tag.0);
                     }
                 }
                 _ => {}
             }
         }
 
-        Ok(Some(PropertyDocblockComment { span: docblock.span, type_string, is_deprecated, is_internal, is_readonly }))
+        Ok(Some(PropertyDocblockComment {
+            span: docblock.span,
+            type_string: psalm_type_string.or(phpstan_type_string).or(generic_type_string),
+            is_deprecated,
+            is_internal,
+            is_readonly,
+        }))
     }
 }
 
@@ -507,7 +538,10 @@ impl ConstantDocblockComment {
         let mut is_deprecated = false;
         let mut is_internal = false;
         let mut is_final = false;
-        let mut type_string: Option<TypeString> = None;
+
+        let mut generic_type_string: Option<TypeString> = None;
+        let mut phpstan_type_string: Option<TypeString> = None;
+        let mut psalm_type_string: Option<TypeString> = None;
 
         let parsed_docblock = parse_trivia(context.interner, docblock)?;
 
@@ -526,26 +560,38 @@ impl ConstantDocblockComment {
                 TagKind::Final => {
                     is_final = true;
                 }
-
-                TagKind::PsalmVar | TagKind::PhpstanVar => {
+                TagKind::PsalmVar => {
                     if let Some(type_string_tag) =
                         split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
                     {
-                        type_string = Some(type_string_tag.0);
+                        psalm_type_string = Some(type_string_tag.0);
                     }
                 }
-                TagKind::Var if type_string.is_none() => {
+                TagKind::PhpstanVar => {
                     if let Some(type_string_tag) =
                         split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
                     {
-                        type_string = Some(type_string_tag.0);
+                        phpstan_type_string = Some(type_string_tag.0);
+                    }
+                }
+                TagKind::Var => {
+                    if let Some(type_string_tag) =
+                        split_tag_content(context.interner.lookup(&tag.description), tag.description_span)
+                    {
+                        generic_type_string = Some(type_string_tag.0);
                     }
                 }
                 _ => {}
             }
         }
 
-        Ok(Some(ConstantDocblockComment { span: docblock.span, is_deprecated, is_internal, is_final, type_string }))
+        Ok(Some(ConstantDocblockComment {
+            span: docblock.span,
+            is_deprecated,
+            is_internal,
+            is_final,
+            type_string: psalm_type_string.or(phpstan_type_string).or(generic_type_string),
+        }))
     }
 }
 
