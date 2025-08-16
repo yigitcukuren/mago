@@ -31,12 +31,19 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
             continue;
         }
 
-        if !use_statements.is_empty() {
-            parts.extend(print_use_statements(f, std::mem::take(&mut use_statements)));
-            parts.push(Document::Line(Line::hard()));
+        if let Some(last_use) = use_statements.last() {
+            let (should_add_line, should_add_space) = should_add_new_line_after_use(f, stmts, i, last_use);
 
-            if f.settings.empty_line_after_use {
+            parts.extend(print_use_statements(f, std::mem::take(&mut use_statements)));
+
+            if should_add_line {
                 parts.push(Document::Line(Line::hard()));
+
+                if f.settings.empty_line_after_use {
+                    parts.push(Document::Line(Line::hard()));
+                }
+            } else if should_add_space {
+                parts.push(Document::space());
             }
         }
 
@@ -213,6 +220,28 @@ fn should_add_new_line_or_space_after_stmt<'a>(
                 true
             }
         }
+    };
+
+    (should_add_line, should_add_space)
+}
+
+fn should_add_new_line_after_use<'a>(
+    f: &mut FormatterState<'a>,
+    stmts: &[&'a Statement],
+    i: usize,
+    last_use: &'a Use,
+) -> (bool, bool) {
+    let mut should_add_space = false;
+    let should_add_line = if last_use.terminator.is_closing_tag() {
+        false
+    } else if f.has_newline(last_use.span().end_position().offset, false) {
+        true
+    } else if let Some(Statement::ClosingTag(_)) = stmts.get(i) {
+        should_add_space = !f.has_comment(last_use.span(), CommentFlags::Trailing);
+
+        false
+    } else {
+        true
     };
 
     (should_add_line, should_add_space)
