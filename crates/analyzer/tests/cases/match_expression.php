@@ -29,6 +29,7 @@ function is_string(mixed $value): bool
 
 /**
  * @mago-expect analysis:empty-match-expression
+ * @mago-expect analysis:unhandled-thrown-type
  */
 function test_empty_match(Status $status): never
 {
@@ -73,6 +74,7 @@ function test_unreachable_arm_by_type(Status $status): string
 /**
  * @mago-expect analysis:match-not-exhaustive
  * @mago-expect analysis:unreachable-match-arm
+ * @mago-expect analysis:unhandled-thrown-type
  */
 function test_unreachable_arm_by_condition(string $value): string
 {
@@ -126,6 +128,7 @@ function test_always_executed_default(string $s): string
 
 /**
  * @mago-expect analysis:match-not-exhaustive
+ * @mago-expect analysis:unhandled-thrown-type
  */
 function test_non_exhaustive(Status $status): string
 {

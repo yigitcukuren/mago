@@ -8,6 +8,9 @@ class Exception implements Throwable
 {
 }
 
+/**
+ * @throws Exception
+ */
 function type_is_not_narrowed_by_nested_conditional_exit(bool $flag_1, bool $flag_2): void
 {
     if ($flag_1) {

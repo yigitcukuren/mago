@@ -53,7 +53,7 @@ fn run_test_case_inner(config: TestCase) {
         &resolved_names,
         &codebase,
         &interner,
-        Settings { find_unused_expressions: true, ..Default::default() },
+        Settings { find_unused_expressions: true, check_throws: true, ..Default::default() },
     );
 
     let analysis_run_result = analyzer.analyze(&program, &mut analysis_result);

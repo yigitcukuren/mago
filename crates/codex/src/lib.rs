@@ -16,6 +16,7 @@ use crate::metadata::constant::ConstantMetadata;
 use crate::metadata::enum_case::EnumCaseMetadata;
 use crate::metadata::function_like::FunctionLikeMetadata;
 use crate::metadata::property::PropertyMetadata;
+use crate::metadata::ttype::TypeMetadata;
 use crate::symbol::SymbolKind;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::object::TObject;
@@ -693,6 +694,44 @@ pub fn is_method_overriding(
 
     get_class_like(codebase, interner, fqc_id)
         .is_some_and(|metadata| metadata.overridden_method_ids.contains_key(&lowered_method_name))
+}
+
+pub fn get_function_like_thrown_types<'a>(
+    codebase: &'a CodebaseMetadata,
+    class_like: Option<&'a ClassLikeMetadata>,
+    function_like: &'a FunctionLikeMetadata,
+) -> &'a [TypeMetadata] {
+    if !function_like.thrown_types.is_empty() {
+        return function_like.thrown_types.as_slice();
+    }
+
+    if !function_like.kind.is_method() {
+        return &[];
+    }
+
+    let Some(class_like) = class_like else {
+        return &[];
+    };
+
+    let Some(method_name) = function_like.name.as_ref() else {
+        return &[];
+    };
+
+    for parent_class_name_id in class_like.overridden_method_ids.get(method_name).into_iter().flatten() {
+        let Some(parent_class) = codebase.class_likes.get(parent_class_name_id) else {
+            continue;
+        };
+
+        let parent_method_id = (*parent_class_name_id, *method_name);
+        if let Some(parent_method) = codebase.function_likes.get(&parent_method_id) {
+            let thrown = get_function_like_thrown_types(codebase, Some(parent_class), parent_method);
+            if !thrown.is_empty() {
+                return thrown;
+            }
+        }
+    }
+
+    &[]
 }
 
 /// Retrieves the type of a class constant, considering type hints and inferred types.

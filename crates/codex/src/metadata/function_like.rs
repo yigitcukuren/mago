@@ -70,10 +70,13 @@ pub struct FunctionLikeMetadata {
     /// For closures/arrow functions, this covers the `function(...) { ... }` or `fn(...) => ...` part.
     pub span: Span,
 
-    /// The name of the function or method, if applicable.
+    /// The name of the function or method, lowercased, if applicable.
     /// `None` for closures and arrow functions unless assigned to a variable later.
     /// Example: `processRequest`, `__construct`, `my_global_func`.
     pub name: Option<StringIdentifier>,
+
+    /// The original name of the function or method, in its original case.
+    pub original_name: Option<StringIdentifier>,
 
     /// The specific source code location (span) of the function or method name identifier.
     /// `None` if the function/method has no name (closures/arrow functions).
@@ -171,6 +174,7 @@ impl FunctionLikeMetadata {
             span,
             flags,
             name: None,
+            original_name: None,
             name_span: None,
             parameters: vec![],
             return_type_declaration_metadata: None,
@@ -233,34 +237,6 @@ impl FunctionLikeMetadata {
     #[inline]
     pub fn take_issues(&mut self) -> Vec<Issue> {
         std::mem::take(&mut self.issues)
-    }
-
-    /// Sets the name and corresponding name span. Clears both if name is `None`. Updates constructor status.
-    #[inline]
-    pub fn set_name(&mut self, name: Option<StringIdentifier>, name_span: Option<Span>) {
-        if name.is_some() {
-            self.name = name;
-            self.name_span = name_span;
-        } else {
-            self.unset_name();
-        }
-    }
-
-    /// Returns a new instance with the name and name span set. Updates constructor status.
-    #[inline]
-    pub fn with_name(mut self, name: Option<StringIdentifier>, name_span: Option<Span>) -> Self {
-        self.set_name(name, name_span);
-        self
-    }
-
-    /// Sets the name and name span to `None`. Updates constructor status.
-    #[inline]
-    pub fn unset_name(&mut self) {
-        self.name = None;
-        self.name_span = None;
-        if let Some(ref mut info) = self.method_metadata {
-            info.is_constructor = false;
-        }
     }
 
     /// Sets the parameters, replacing existing ones.

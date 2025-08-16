@@ -3,7 +3,6 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use mago_analyzer::settings::Settings as AnalyzerSettings;
 use mago_database::DatabaseReader;
 use mago_interner::ThreadedInterner;
 
@@ -73,6 +72,11 @@ pub struct AnalyzeCommand {
     #[arg(long, help = "Allow the use of `empty` construct in the analysis")]
     pub allow_empty: Option<bool>,
 
+    /// Enable or disable checking for thrown exceptions.
+    /// This setting controls whether the analysis will report issues related to exceptions that are thrown but not caught.
+    #[arg(long, help = "Check for thrown exceptions that are not caught")]
+    pub check_throws: Option<bool>,
+
     /// Arguments related to reporting and fixing issues.
     #[clap(flatten)]
     pub reporting: ReportingArgs,
@@ -105,21 +109,38 @@ pub fn execute(command: AnalyzeCommand, configuration: Configuration) -> Result<
         return Ok(ExitCode::SUCCESS);
     }
 
-    let analyzer_settings = AnalyzerSettings {
-        version: configuration.php_version,
-        analyze_dead_code: command.analyze_dead_code.unwrap_or(configuration.analyze.analyze_dead_code),
-        find_unused_definitions: command
-            .find_unused_definitions
-            .unwrap_or(configuration.analyze.find_unused_definitions),
-        find_unused_expressions: command
-            .find_unused_expressions
-            .unwrap_or(configuration.analyze.find_unused_expressions),
-        memoize_properties: command.memoize_properties.unwrap_or(configuration.analyze.memoize_properties),
-        allow_include: command.allow_include.unwrap_or(configuration.analyze.allow_include),
-        allow_eval: command.allow_eval.unwrap_or(configuration.analyze.allow_eval),
-        allow_empty: command.allow_empty.unwrap_or(configuration.analyze.allow_empty),
-        ..Default::default()
-    };
+    let mut analyzer_settings = configuration.analyze.to_setttings(configuration.php_version);
+    if let Some(analyze_dead_code) = command.analyze_dead_code {
+        analyzer_settings.analyze_dead_code = analyze_dead_code;
+    }
+
+    if let Some(find_unused_definitions) = command.find_unused_definitions {
+        analyzer_settings.find_unused_definitions = find_unused_definitions;
+    }
+
+    if let Some(find_unused_expressions) = command.find_unused_expressions {
+        analyzer_settings.find_unused_expressions = find_unused_expressions;
+    }
+
+    if let Some(memoize_properties) = command.memoize_properties {
+        analyzer_settings.memoize_properties = memoize_properties;
+    }
+
+    if let Some(allow_include) = command.allow_include {
+        analyzer_settings.allow_include = allow_include;
+    }
+
+    if let Some(allow_eval) = command.allow_eval {
+        analyzer_settings.allow_eval = allow_eval;
+    }
+
+    if let Some(allow_empty) = command.allow_empty {
+        analyzer_settings.allow_empty = allow_empty;
+    }
+
+    if let Some(check_throws) = command.check_throws {
+        analyzer_settings.check_throws = check_throws;
+    }
 
     let analysis_results = run_analysis_pipeline(&interner, database.read_only(), analyzer_settings)?;
 

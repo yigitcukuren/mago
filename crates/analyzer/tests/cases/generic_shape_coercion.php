@@ -53,7 +53,7 @@ final class ShapeType
     ) {}
 
     /**
-     * @throws Exception
+     * @throws Throwable
      *
      * @return array<Tk, Tv>
      */

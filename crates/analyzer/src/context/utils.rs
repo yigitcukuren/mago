@@ -87,7 +87,9 @@ pub(crate) fn inherit_branch_context_properties<'a>(
         }
     }
 
-    for (exception, spans) in &source_context.possibly_thrown_exceptions {
-        destination_context.possibly_thrown_exceptions.entry(*exception).or_default().extend(spans);
+    if context.settings.check_throws {
+        for (exception, spans) in &source_context.possibly_thrown_exceptions {
+            destination_context.possibly_thrown_exceptions.entry(*exception).or_default().extend(spans);
+        }
     }
 }

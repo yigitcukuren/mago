@@ -52,7 +52,9 @@ pub fn scan_method(
     let mut metadata = FunctionLikeMetadata::new(FunctionLikeKind::Method, span, flags);
     metadata.attributes = scan_attribute_lists(&method.attribute_lists, context);
     metadata.type_resolution_context = type_resolution_context.filter(|c| !c.is_empty());
-    metadata.name = Some(method.name.value);
+    metadata.name = Some(context.interner.lowered(&method.name.value));
+    metadata.original_name = Some(method.name.value);
+
     metadata.name_span = Some(method.name.span);
     metadata.parameters = method
         .parameter_list
@@ -131,11 +133,19 @@ pub fn scan_function(
         flags |= MetadataFlags::BY_REFERENCE;
     }
 
-    let mut metadata = FunctionLikeMetadata::new(FunctionLikeKind::Function, function.span(), flags)
-        .with_name(Some(functionlike_id.1), Some(function.name.span))
-        .with_parameters(
-            function.parameter_list.parameters.iter().map(|p| scan_function_like_parameter(p, classname, context)),
-        );
+    let name = context.resolved_names.get(&function.name);
+
+    let mut metadata = FunctionLikeMetadata::new(FunctionLikeKind::Function, function.span(), flags);
+
+    metadata.name = Some(context.interner.lowered(name));
+    metadata.original_name = Some(*name);
+    metadata.name_span = Some(function.name.span);
+    metadata.parameters = function
+        .parameter_list
+        .parameters
+        .iter()
+        .map(|p| scan_function_like_parameter(p, classname, context))
+        .collect();
 
     metadata.attributes = scan_attribute_lists(&function.attribute_lists, context);
     metadata.type_resolution_context =

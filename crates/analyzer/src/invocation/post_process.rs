@@ -13,6 +13,7 @@ use mago_algebra::assertion_set::add_and_clause;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
 use mago_codex::assertion::Assertion;
+use mago_codex::get_function_like_thrown_types;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
@@ -126,6 +127,30 @@ pub fn post_invocation_process<'a>(
                     )))
                     .with_help("Convert this named argument to a positional argument."),
             );
+        }
+    }
+
+    if context.settings.check_throws {
+        let thrown_types = get_function_like_thrown_types(
+            context.codebase,
+            invoication.target.get_method_context().map(|context| context.class_like_metadata),
+            metadata,
+        );
+
+        for thrown_exception_type in thrown_types {
+            let resolved_exception_type = resolve_invocation_type(
+                context,
+                invoication,
+                template_result,
+                parameters,
+                thrown_exception_type.type_union.clone(),
+            );
+
+            for exception_atomic in resolved_exception_type.types {
+                for exception in exception_atomic.get_all_object_names() {
+                    block_context.possibly_thrown_exceptions.entry(exception).or_default().insert(invoication.span);
+                }
+            }
         }
     }
 

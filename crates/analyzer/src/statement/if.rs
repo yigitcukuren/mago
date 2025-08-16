@@ -541,10 +541,6 @@ fn analyze_if_statement_block<'a>(
         }
     }
 
-    for (exception, spans) in std::mem::take(&mut if_block_context.possibly_thrown_exceptions) {
-        outer_block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
-    }
-
     outer_block_context.update_references_possibly_from_confusing_scope(&if_block_context);
 
     Ok(())
@@ -900,10 +896,6 @@ fn analyze_else_if_clause<'a>(
         }
     }
 
-    for (exception, spans) in std::mem::take(&mut else_if_block_context.possibly_thrown_exceptions) {
-        outer_block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
-    }
-
     if_scope.negated_clauses = match negate_formula(else_if_clauses) {
         Some(negated_formula) => saturate_clauses(if_scope.negated_clauses.iter().chain(negated_formula.iter())),
         None => vec![],
@@ -1102,10 +1094,6 @@ fn analyze_else_statements<'a>(
             if_scope.new_variables_possibly_in_scope.extend(variables_possibly_in_scope.clone());
             if_scope.possibly_assigned_variable_ids.extend(new_possibly_assigned_variable_ids);
         }
-    }
-
-    for (exception, spans) in std::mem::take(&mut else_block_context.possibly_thrown_exceptions) {
-        outer_block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
     }
 
     outer_block_context.update_references_possibly_from_confusing_scope(else_block_context);

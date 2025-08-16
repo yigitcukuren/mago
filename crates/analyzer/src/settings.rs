@@ -12,6 +12,7 @@ pub struct Settings {
     pub memoize_properties: bool,
     pub trigger_error_exists: bool,
     pub allow_possibly_undefined_array_keys: bool,
+    pub check_throws: bool,
     pub diff: bool,
 }
 
@@ -34,6 +35,7 @@ impl Settings {
             memoize_properties: true,
             trigger_error_exists: false,
             allow_possibly_undefined_array_keys: true,
+            check_throws: false,
             diff: false,
         }
     }

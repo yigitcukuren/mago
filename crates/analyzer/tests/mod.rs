@@ -147,3 +147,5 @@ test_case!(ref_constraint_conflict);
 test_case!(match_not_exhaustive);
 test_case!(match_expression);
 test_case!(match_arm_reaching);
+test_case!(properties_added_to_context);
+test_case!(throwing_exceptions);

@@ -22,7 +22,8 @@ enum TextColor
 }
 
 /**
- * @mago-expect analysis:match-not-exhaustive - unhandled portion of subject: `enum(ExtendedColor::Blue)`
+ * @mago-expect analysis:match-not-exhaustive
+ * @mago-expect analysis:unhandled-thrown-type
  */
 function get_hex_color(Color|ExtendedColor|TextColor $color): string
 {

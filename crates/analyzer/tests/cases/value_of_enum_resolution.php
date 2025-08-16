@@ -55,6 +55,8 @@ class EnumValueType implements TypeInterface
 
     /**
      * @return value-of<T>
+     *
+     * @throws InvalidArgumentException
      */
     public function coerce(mixed $value): string|int
     {
@@ -68,6 +70,8 @@ class EnumValueType implements TypeInterface
 
     /**
      * @return value-of<T>
+     *
+     * @throws InvalidArgumentException
      */
     public function assert(mixed $value): string|int
     {

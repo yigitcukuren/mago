@@ -1,8 +1,10 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use ahash::HashMap;
 
 use mago_codex::get_class_like;
+use mago_codex::get_function_like_thrown_types;
 use mago_codex::get_interface;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
@@ -19,17 +21,21 @@ use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::r#enum::TEnum;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
 use mago_codex::ttype::atomic::reference::TReference;
+use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::StaticClassType;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
+use mago_reporting::Annotation;
+use mago_reporting::Issue;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::ReferenceConstraint;
@@ -126,10 +132,10 @@ pub fn analyze_function_like<'a, 'ast>(
         }
     }
 
+    check_thrown_types(context, block_context, &mut artifacts, function_like_metadata)?;
+
     std::mem::swap(&mut context.type_resolution_context, &mut previous_type_resolution_context);
-    for (expression_range, expression_type) in std::mem::take(&mut artifacts.expression_types) {
-        parent_artifacts.expression_types.insert(expression_range, expression_type);
-    }
+    parent_artifacts.expression_types.extend(std::mem::take(&mut artifacts.expression_types));
 
     Ok(artifacts)
 }
@@ -467,109 +473,99 @@ fn add_symbol_references(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
-
-    use crate::test_analysis;
-
-    test_analysis! {
-        name = properties_added_to_context,
-        code = indoc! {r#"
-            <?php
-
-            namespace DateTime {
-                final class Duration
-                {
-                    public function isPositive(): bool
-                    {
-                        return true;
-                    }
-                }
-
-                /**
-                 * @consistent-constructor
-                 */
-                abstract class AbstractTemporal
-                {
-                    public static function monotonic(): static
-                    {
-                        return new static();
-                    }
-                }
-
-                final class Timestamp extends AbstractTemporal
-                {
-                    public function plus(Duration $_duration): static
-                    {
-                        return new static();
-                    }
-
-                    public function since(Timestamp $_timestamp): Duration
-                    {
-                        return new Duration();
-                    }
-                }
-            }
-
-            namespace Example {
-                use Closure;
-                use DateTime\Duration;
-                use DateTime\Timestamp;
-
-                final class OptionalIncrementalTimeout
-                {
-                    /**
-                     * @var ?Timestamp The end time.
-                     */
-                    private null|Timestamp $end;
-
-                    /**
-                     * @var (Closure(): ?Duration) The handler to be called upon timeout.
-                     */
-                    private Closure $handler;
-
-                    /**
-                     * @param null|Duration $timeout The timeout duration. Null to disable timeout.
-                     * @param (Closure(): ?Duration) $handler The handler to be executed if the timeout is reached.
-                     */
-                    public function __construct(null|Duration $timeout, Closure $handler)
-                    {
-                        $this->handler = $handler;
-
-                        if (null === $timeout) {
-                            $this->end = null;
-
-                            return;
-                        }
-
-                        if (!$timeout->isPositive()) {
-                            $this->end = Timestamp::monotonic();
-                            return;
-                        }
-
-                        $this->end = Timestamp::monotonic()->plus($timeout);
-                    }
-
-                    /**
-                     * Retrieves the remaining time until the timeout is reached, or null if no timeout is set.
-                     *
-                     * If the timeout has already been exceeded, the handler is invoked, and its return value is provided.
-                     *
-                     * @return Duration|null The remaining time duration, null if no timeout is set, or the handler's return value if the timeout is exceeded.
-                     */
-                    public function getRemaining(): null|Duration
-                    {
-                        if ($this->end === null) {
-                            return null;
-                        }
-
-                        $remaining = $this->end->since(Timestamp::monotonic());
-
-                        return $remaining->isPositive() ? $remaining : ($this->handler)();
-                    }
-                }
-            }
-        "#},
+fn check_thrown_types<'a>(
+    context: &mut Context<'a>,
+    block_context: &mut BlockContext<'a>,
+    artifacts: &mut AnalysisArtifacts,
+    function_like_metadata: &FunctionLikeMetadata,
+) -> Result<(), AnalysisError> {
+    if !context.settings.check_throws {
+        // If the setting is disabled, we skip the check.
+        return Ok(());
     }
+
+    if block_context.possibly_thrown_exceptions.is_empty() {
+        // No exceptions are thrown in this block, so we can skip the check.
+        return Ok(());
+    }
+
+    let Some(function_name_id) = function_like_metadata.original_name.as_ref() else {
+        return Ok(());
+    };
+
+    let (function_kind, function_name) = match function_like_metadata.kind.is_method() {
+        true => {
+            let Some(class_like_metadata) = block_context.scope.get_class_like() else {
+                return Ok(());
+            };
+
+            let name = Cow::Owned(format!(
+                "{}::{}",
+                context.interner.lookup(&class_like_metadata.original_name),
+                context.interner.lookup(function_name_id),
+            ));
+
+            ("method", name)
+        }
+        false => ("function", Cow::Borrowed(context.interner.lookup(function_name_id))),
+    };
+
+    let expected_throw_types =
+        get_function_like_thrown_types(context.codebase, block_context.scope.get_class_like(), function_like_metadata)
+            .iter()
+            .map(|thrown_type| {
+                expand_type_metadata(context, block_context, artifacts, function_like_metadata, thrown_type)
+            })
+            .collect::<Vec<_>>();
+
+    for (thrown_type, thrown_spans) in &block_context.possibly_thrown_exceptions {
+        let thrown_type_union = TUnion::new(vec![TAtomic::Object(TObject::new_named(*thrown_type))]);
+
+        let mut is_expected = false;
+        for expected_type in &expected_throw_types {
+            if union_comparator::is_contained_by(
+                context.codebase,
+                context.interner,
+                &thrown_type_union,
+                expected_type,
+                false,
+                false,
+                false,
+                &mut Default::default(),
+            ) {
+                is_expected = true;
+                break;
+            }
+        }
+
+        if is_expected {
+            continue;
+        }
+
+        let thrown_type_name = context.interner.lookup(thrown_type);
+
+        let mut issue =
+            Issue::error(format!("Potentially unhandled exception `{}` in `{}`.", thrown_type_name, function_name));
+
+        for span in thrown_spans {
+            issue = issue.with_annotation(Annotation::primary(*span).with_message("Exception may be thrown here"));
+        }
+
+        issue = issue
+            .with_annotation(
+                Annotation::secondary(function_like_metadata.span)
+                    .with_message(format!("This {function_kind} does not declare that it throws `{}`", thrown_type_name)),
+            )
+            .with_note(format!(
+                "All possible exceptions must be caught or declared in a `@throws` tag in the {function_kind}'s docblock.",
+            ))
+            .with_help(format!(
+                "You can add `@throws {}` to the {function_kind}'s docblock or wrap the throwing code in a `try-catch` block.",
+                thrown_type_name
+            ));
+
+        context.collector.report_with_code(Code::UNHANDLED_THROWN_TYPE, issue);
+    }
+
+    Ok(())
 }
