@@ -4,7 +4,6 @@ pub mod control_action;
 pub mod finally_scope;
 pub mod if_scope;
 pub mod loop_scope;
-pub mod switch_scope;
 
 #[inline]
 pub fn var_has_root(var_id: &str, root_var_id: &str) -> bool {

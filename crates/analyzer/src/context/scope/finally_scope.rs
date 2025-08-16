@@ -12,10 +12,6 @@ impl FinallyScope {
     pub fn new() -> Self {
         Self { locals: BTreeMap::new() }
     }
-
-    pub fn contains(&self, var_id: &str) -> bool {
-        self.locals.contains_key(var_id)
-    }
 }
 
 impl Default for FinallyScope {

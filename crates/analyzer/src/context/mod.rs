@@ -1,7 +1,4 @@
-#![allow(dead_code)]
-
 use mago_codex::metadata::CodebaseMetadata;
-use mago_codex::reference::ReferenceSource;
 use mago_codex::ttype::resolution::TypeResolutionContext;
 use mago_collector::Collector;
 use mago_database::file::File;
@@ -75,29 +72,16 @@ impl<'a> Context<'a> {
     }
 
     pub fn get_assertion_context_from_block<'b>(&'b self, block_context: &'a BlockContext<'_>) -> AssertionContext<'b> {
-        self.get_assertion_context(
-            block_context.scope.get_class_like_name(),
-            block_context.scope.get_reference_source(),
-            block_context.inside_loop,
-        )
+        self.get_assertion_context(block_context.scope.get_class_like_name())
     }
 
     #[inline]
-    pub fn get_assertion_context<'b>(
-        &'b self,
-        this_class_name: Option<&'a StringIdentifier>,
-        reference_source: Option<ReferenceSource>,
-        inside_loop: bool,
-    ) -> AssertionContext<'b> {
+    pub fn get_assertion_context<'b>(&'b self, this_class_name: Option<&'a StringIdentifier>) -> AssertionContext<'b> {
         AssertionContext {
             resolved_names: self.resolved_names,
             interner: self.interner,
             codebase: self.codebase,
             this_class_name,
-            type_resolution_context: &self.type_resolution_context,
-            reference_source,
-            settings: self.settings,
-            in_loop: inside_loop,
         }
     }
 

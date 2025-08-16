@@ -1,5 +1,4 @@
 use ahash::HashSet;
-use ahash::HashSetExt;
 
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
@@ -408,32 +407,9 @@ impl ControlAction {
         control_actions
     }
 
-    pub fn from_expression(expression: &Expression, artifacts: Option<&AnalysisArtifacts>) -> HashSet<ControlAction> {
-        let mut control_actions = HashSet::with_capacity(1);
-
-        if let Some(artifacts) = artifacts
-            && let Some(expression_type) = artifacts.get_expression_type(&expression)
-            && expression_type.is_never()
-        {
-            control_actions.insert(ControlAction::End);
-        } else {
-            control_actions.insert(ControlAction::None);
-        }
-
-        control_actions
-    }
-
     #[inline]
     pub const fn is_none(&self) -> bool {
         matches!(self, ControlAction::None)
-    }
-
-    #[inline]
-    pub const fn is_final(&self) -> bool {
-        matches!(
-            self,
-            ControlAction::End | ControlAction::Return | ControlAction::LeaveSwitch | ControlAction::BreakImmediateLoop
-        )
     }
 
     #[inline]
@@ -461,11 +437,6 @@ impl BreakType {
     #[inline]
     pub const fn is_switch(&self) -> bool {
         matches!(self, BreakType::Switch)
-    }
-
-    #[inline]
-    pub const fn is_loop(&self) -> bool {
-        matches!(self, BreakType::Loop)
     }
 }
 

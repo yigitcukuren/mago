@@ -21,7 +21,6 @@ use mago_codex::ttype::union::TUnion;
 use mago_collector::Collector;
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
-use mago_span::Position;
 use mago_span::Span;
 
 use crate::context::Context;
@@ -89,7 +88,6 @@ pub struct BlockContext<'a> {
     pub inside_coalescing: bool,
     pub inside_isset: bool,
     pub inside_unset: bool,
-    pub inside_class_exists: bool,
     pub inside_general_use: bool,
     pub inside_return: bool,
     pub inside_throw: bool,
@@ -103,25 +101,17 @@ pub struct BlockContext<'a> {
     pub inside_variable_reference: bool,
     pub clauses: Vec<Rc<Clause>>,
     pub reconciled_expression_clauses: Vec<Rc<Clause>>,
-    pub branch_point: Option<u32>,
     pub break_types: Vec<BreakContext>,
     pub finally_scope: Option<Rc<RefCell<FinallyScope>>>,
-    pub calling_closure_id: Option<Position>,
     pub has_returned: bool,
     pub parent_conflicting_clause_variables: HashSet<String>,
     pub loop_bounds: (u32, u32),
-    pub for_loop_init_bounds: (u32, u32),
     pub if_body_context: Option<Rc<RefCell<Self>>>,
     pub control_actions: HashSet<ControlAction>,
     pub possibly_thrown_exceptions: HashMap<StringIdentifier, HashSet<Span>>,
 }
 
 impl BreakContext {
-    #[inline]
-    pub const fn is_loop(&self) -> bool {
-        matches!(self, BreakContext::Loop)
-    }
-
     #[inline]
     pub const fn is_switch(&self) -> bool {
         matches!(self, BreakContext::Switch)
@@ -172,7 +162,6 @@ impl<'a> BlockContext<'a> {
             inside_coalescing: false,
             inside_isset: false,
             inside_unset: false,
-            inside_class_exists: false,
             inside_general_use: false,
             inside_return: false,
             inside_throw: false,
@@ -186,14 +175,11 @@ impl<'a> BlockContext<'a> {
             has_returned: false,
             clauses: Vec::new(),
             reconciled_expression_clauses: Vec::new(),
-            branch_point: None,
             break_types: Vec::new(),
             inside_loop: false,
             finally_scope: None,
-            calling_closure_id: None,
             parent_conflicting_clause_variables: HashSet::default(),
             loop_bounds: (0, 0),
-            for_loop_init_bounds: (0, 0),
             if_body_context: None,
             control_actions: HashSet::default(),
             possibly_thrown_exceptions: HashMap::default(),
@@ -439,35 +425,6 @@ impl<'a> BlockContext<'a> {
                 self.locals.remove(&var_id);
             }
         }
-    }
-
-    pub fn remove_mutable_object_vars(&mut self) {
-        let mut removed_var_ids = Vec::new();
-
-        self.locals.retain(|var_id, _| {
-            let retain = !var_id.contains("->") && !var_id.contains("::");
-            if !retain {
-                removed_var_ids.push(var_id.clone());
-            }
-
-            retain
-        });
-
-        if removed_var_ids.is_empty() {
-            return;
-        }
-
-        self.clauses.retain(|clause| {
-            let mut retain_clause = true;
-
-            for var_id in clause.possibilities.keys() {
-                if var_id.contains("->") || var_id.contains("::") {
-                    retain_clause = false;
-                }
-            }
-
-            retain_clause
-        });
     }
 
     /// Registers a variable that is referenced conditionally, like in a property
