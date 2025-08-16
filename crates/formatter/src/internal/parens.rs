@@ -193,42 +193,26 @@ impl<'a> FormatterState<'a> {
         let unary_span = node.span();
         let precedence = match node {
             Node::UnaryPrefix(e) => {
-                if e.operator.is_error_control() {
-                    return match self.nth_parent_kind(2) {
-                        Some(Node::Binary(binary)) => {
-                            let operator_span = binary.operator.span();
-
-                            unary_span.end < operator_span.start
-                        }
-                        _ => false,
-                    };
+                if e.operator.is_not() {
+                    Precedence::Bang
+                } else {
+                    Precedence::IncDec
                 }
-
-                if e.operator.is_not() { Precedence::Bang } else { Precedence::IncDec }
             }
-            Node::UnaryPostfix(e) => {
-                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2) {
-                    let operator_span = binary.operator.span();
-                    if unary_span.end < operator_span.start {
-                        return false;
-                    }
-                };
-
-                e.operator.precedence()
-            }
+            Node::UnaryPostfix(e) => e.operator.precedence(),
             _ => return false,
         };
 
         let parent_precedence = match self.nth_parent_kind(2) {
             Some(Node::Binary(e)) => {
-                if e.operator.span().end < unary_span.start {
+                if e.operator.span().end.offset <= unary_span.start.offset {
                     return false;
                 }
 
                 e.operator.precedence()
             }
             Some(Node::Conditional(e)) => {
-                if e.question_mark.end < unary_span.start {
+                if e.question_mark.end <= unary_span.start {
                     return false;
                 }
 
