@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
-use colored::Colorize;
 
 use mago_analyzer::settings::Settings as AnalyzerSettings;
 use mago_database::DatabaseReader;
@@ -92,19 +91,6 @@ pub struct AnalyzeCommand {
 /// 3. Analyzing the user-defined sources against the compiled codebase (with progress).
 /// 4. Reporting any found issues.
 pub fn execute(command: AnalyzeCommand, configuration: Configuration) -> Result<ExitCode, Error> {
-    eprintln!();
-    eprintln!("╔════════════════════════════════════════════════════════════════════════════════╗");
-    eprintln!("║{}║", format!(" {:^80} ", "⚠️  EXPERIMENTAL ANALYZER ⚠️").bold().yellow());
-    eprintln!("╠════════════════════════════════════════════════════════════════════════════════╣");
-    eprintln!("║ {:<78} ║", "The analyzer is a work in progress. You may encounter:");
-    eprintln!("║ {:<78} ║", "  - False positive errors in your code.");
-    eprintln!("║ {:<78} ║", "  - Unexpected panics or crashes.");
-    eprintln!("║ {:<78} ║", "");
-    eprintln!("║ {:<78} ║", "Please report any issues to the Mago repository:");
-    eprintln!("║ {:<78} ║", "  https://github.com/carthage-software/mago/issues");
-    eprintln!("╚════════════════════════════════════════════════════════════════════════════════╝");
-    eprintln!();
-
     let interner = ThreadedInterner::new();
 
     let database = if !command.path.is_empty() {
