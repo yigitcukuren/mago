@@ -401,24 +401,53 @@ impl<'a> FormatterState<'a> {
         }
 
         let lines = content.lines().collect::<Vec<_>>();
+
+        let should_add_astricks = if content.starts_with("/**") {
+            true
+        } else {
+            let content_lines = &lines[1..lines.len() - 1];
+
+            let potential_prefix = content_lines
+                .iter()
+                .map(|line| line.trim_start())
+                .find(|trimmed| !trimmed.is_empty())
+                .and_then(|first_line| first_line.chars().next());
+
+            if let Some(prefix_char) = potential_prefix {
+                if !prefix_char.is_alphanumeric() && prefix_char != '*' {
+                    let all_lines_match = content_lines.iter().all(|line| line.trim_start().starts_with(prefix_char));
+
+                    !all_lines_match
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        };
+
         let mut contents = vec![];
 
         // Process each line according to the specified rules
         let mut processed_lines = Vec::with_capacity(lines.len());
         for (i, line) in lines.iter().enumerate() {
+            let trimmed_line = line.trim_start();
             let processed_line = if i == 0 {
                 // First line stays as is
                 Cow::Borrowed(*line)
-            } else if line.trim().is_empty() {
+            } else if !should_add_astricks {
+                // If the line does not start with an asterisk, add it.
+                // Replace leading whitespace with a single space
+                Cow::Owned(format!(" {}", trimmed_line.trim_end()))
+            } else if trimmed_line.is_empty() {
                 // If the line is empty, format it as " *"
                 Cow::Borrowed(" *")
-            } else if line.trim_start().starts_with('*') {
+            } else if trimmed_line.starts_with('*') {
                 // Replace leading whitespace with a single space
-                let rest = line.trim_start();
-                Cow::Owned(format!(" {rest}"))
+                Cow::Owned(format!(" {}", trimmed_line.trim_end()))
             } else {
                 // Line does not have '*' after whitespaces, add it.
-                Cow::Owned(format!(" * {}", line.trim()))
+                Cow::Owned(format!(" * {}", trimmed_line.trim_end()))
             };
 
             processed_lines.push(processed_line);
