@@ -146,3 +146,4 @@ test_case!(array_refs);
 test_case!(ref_constraint_conflict);
 test_case!(match_not_exhaustive);
 test_case!(match_expression);
+test_case!(match_arm_reaching);
