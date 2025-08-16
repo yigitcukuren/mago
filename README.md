@@ -49,6 +49,8 @@ wget -qO- https://carthage.software/mago.sh | bash
 
 ```sh
 brew install mago
+
+mago self-update
 ```
 
 #### Composer (PHP Project)
