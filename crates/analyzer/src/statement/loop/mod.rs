@@ -33,6 +33,7 @@ use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::loop_scope::LoopScope;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::reconciler::reconcile_keyed_types;
@@ -108,11 +109,11 @@ fn analyze_for_or_while_loop<'a>(
     Ok(())
 }
 
-fn inherit_loop_block_context(
-    context: &mut Context<'_>,
-    block_context: &mut BlockContext<'_>,
-    loop_block_context: BlockContext<'_>,
-    inner_loop_block_context: BlockContext<'_>,
+fn inherit_loop_block_context<'a>(
+    context: &mut Context<'a>,
+    block_context: &mut BlockContext<'a>,
+    loop_block_context: BlockContext<'a>,
+    inner_loop_block_context: BlockContext<'a>,
     loop_scope: LoopScope,
     always_enters_loop: bool,
     known_infinite_loop: bool,
@@ -121,6 +122,8 @@ fn inherit_loop_block_context(
     let has_continue = loop_scope.final_actions.contains(&ControlAction::Continue);
     let has_break_or_continue = has_break || has_continue;
     let can_leave_loop = !known_infinite_loop || has_break;
+
+    inherit_branch_context_properties(context, block_context, &inner_loop_block_context);
 
     if !can_leave_loop {
         block_context.control_actions.insert(ControlAction::End);
@@ -157,10 +160,6 @@ fn inherit_loop_block_context(
         block_context.possibly_assigned_variable_ids.extend(loop_block_context.possibly_assigned_variable_ids);
     } else {
         block_context.variables_possibly_in_scope = loop_scope.variables_possibly_in_scope;
-    }
-
-    for (exception, spans) in inner_loop_block_context.possibly_thrown_exceptions {
-        block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
     }
 }
 

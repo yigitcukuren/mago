@@ -23,6 +23,7 @@ use crate::code::Code;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
@@ -288,6 +289,9 @@ pub(super) fn analyze_conditional<'a>(
 
         block_context.locals.insert(redefined_variable_id, Rc::new(combined_type));
     }
+
+    inherit_branch_context_properties(context, block_context, &if_block_context);
+    inherit_branch_context_properties(context, block_context, &else_block_context);
 
     for if_redefined_variable in if_redefined_variables {
         let Some(if_type) = if_block_context.locals.get(&if_redefined_variable) else {

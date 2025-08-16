@@ -23,6 +23,7 @@ use crate::common::synthetic::new_synthetic_disjunctive_identity;
 use crate::common::synthetic::new_synthetic_variable;
 use crate::context::Context;
 use crate::context::block::BlockContext;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
@@ -395,11 +396,6 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
     }
 
     fn merge_match_contexts(&mut self, arm_exit_contexts: &[BlockContext<'a>]) {
-        if arm_exit_contexts.iter().all(|c| c.has_returned) {
-            self.block_context.has_returned = true;
-            return;
-        }
-
         let reachable_contexts: Vec<_> = arm_exit_contexts.iter().filter(|c| !c.has_returned).collect();
 
         if reachable_contexts.is_empty() {
@@ -409,6 +405,8 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
         let mut all_redefined_vars: HashSet<String> = HashSet::default();
         for ctx in &reachable_contexts {
+            inherit_branch_context_properties(self.context, self.block_context, ctx);
+
             all_redefined_vars.extend(
                 ctx.get_redefined_locals(&self.block_context.locals, false, &mut HashSet::default()).keys().cloned(),
             );

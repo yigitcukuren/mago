@@ -38,7 +38,7 @@ pub enum BreakContext {
     Loop,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReferenceConstraintSource {
     Global,
     Static,
@@ -46,7 +46,7 @@ pub enum ReferenceConstraintSource {
     Argument,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReferenceConstraint {
     pub constraint_span: Span,
     pub source: ReferenceConstraintSource,

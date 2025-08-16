@@ -28,6 +28,7 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::finally_scope::FinallyScope;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::statement::analyze_statements;
 
@@ -230,9 +231,7 @@ impl Analyzable for Try {
             let new_catch_assigned_variables_ids = catch_block_context.assigned_variable_ids.clone();
             catch_block_context.assigned_variable_ids.extend(old_catch_assigned_variable_ids);
 
-            for (exception, spans) in catch_block_context.possibly_thrown_exceptions {
-                block_context.possibly_thrown_exceptions.entry(exception).or_default().extend(spans);
-            }
+            inherit_branch_context_properties(context, block_context, &catch_block_context);
 
             let catch_doesnt_leave_parent_scope = {
                 let catch_actions = &catch_actions[i];

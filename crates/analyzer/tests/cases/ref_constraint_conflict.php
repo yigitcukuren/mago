@@ -29,7 +29,7 @@ function get_bool(): bool
 
 /**
  * @mago-expect analysis:conflicting-reference-constraint
- * @mago-expect reference-constraint-violation
+ * @mago-expect analysis:reference-constraint-violation
  */
 function constraint_conflict(): void
 {
@@ -45,7 +45,60 @@ function constraint_conflict(): void
 }
 
 /**
- * @mago-expect reference-constraint-violation
+ * @mago-expect analysis:conflicting-reference-constraint
+ * @mago-expect analysis:reference-constraint-violation
+ */
+function constraint_conflict_in_switch(): void
+{
+    switch (get_bool()) {
+        case true:
+            $v = 5;
+            $c = new A($v); // $v is constrained to an int
+            break;
+        default:
+            $v = 'hello';
+            $c = new B($v); // $v is constrained to a string
+            break;
+    }
+
+    $v = []; // constraint violation (`int` <- `array`)
+}
+
+/**
+ * @mago-expect analysis:conflicting-reference-constraint
+ * @mago-expect analysis:reference-constraint-violation
+ */
+function constraint_conflict_in_try(): void
+{
+    try {
+        $v = 5;
+        $c = new A($v); // $v is constrained to an int
+    } catch (Throwable $e) {
+        $v = 'hello';
+        $c = new B($v); // $v is constrained to a string
+    }
+
+    $v = []; // constraint violation (`int` <- `array`)
+}
+
+/**
+ * @mago-expect analysis:conflicting-reference-constraint
+ * @mago-expect analysis:reference-constraint-violation
+ */
+function constraint_conflict_in_loop(): void
+{
+    $v = 5;
+    $c = new A($v); // $v is constrained to an int
+    for ($i = 0; get_bool(); $i++) {
+        $v = 'hello';
+        $c = new B($v); // $v is constrained to a string
+    }
+
+    $v = []; // constraint violation (`int` <- `array`)
+}
+
+/**
+ * @mago-expect analysis:reference-constraint-violation
  */
 function arg_constraint_violation(): void
 {
@@ -55,7 +108,7 @@ function arg_constraint_violation(): void
 }
 
 /**
- * @mago-expect reference-constraint-violation
+ * @mago-expect analysis:reference-constraint-violation
  */
 function param_constraint_violation(string &$str): void
 {
@@ -63,7 +116,7 @@ function param_constraint_violation(string &$str): void
 }
 
 /**
- * @mago-expect reference-constraint-violation
+ * @mago-expect analysis:reference-constraint-violation
  */
 function &static_constraint_violation(): array
 {

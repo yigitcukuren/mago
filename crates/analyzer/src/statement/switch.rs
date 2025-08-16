@@ -35,6 +35,7 @@ use crate::context::block::BreakContext;
 use crate::context::scope::case_scope::CaseScope;
 use crate::context::scope::control_action::BreakType;
 use crate::context::scope::control_action::ControlAction;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::expression::binary::utils::is_always_identical_to;
 use crate::formula::get_formula;
@@ -554,6 +555,8 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         if !matches!(case_exit_type, ControlAction::Return) {
             self.handle_non_returning_case(&case_block_context, original_block_context, case_exit_type)?;
         }
+
+        inherit_branch_context_properties(self.context, self.block_context, &case_block_context);
 
         if let Some(break_vars) = &case_scope.break_vars {
             if let Some(ref mut possibly_redefined_var_ids) = self.possibly_redefined_variables {

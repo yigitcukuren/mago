@@ -29,6 +29,7 @@ use crate::settings::Settings;
 pub mod assertion;
 pub mod block;
 pub mod scope;
+pub mod utils;
 
 #[derive(Debug)]
 pub struct Context<'a> {

@@ -11,10 +11,7 @@ use mago_algebra::disjoin_clauses;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::negate_formula;
 use mago_algebra::saturate_clauses;
-use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_union_types;
-use mago_codex::ttype::comparator::ComparisonResult;
-use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -32,6 +29,7 @@ use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::if_scope::IfScope;
+use crate::context::utils::inherit_branch_context_properties;
 use crate::error::AnalysisError;
 use crate::formula;
 use crate::formula::negate_or_synthesize;
@@ -460,7 +458,7 @@ fn analyze_if_statement_block<'a>(
     if_block_context.assigned_variable_ids.extend(assigned_variable_ids);
     if_block_context.possibly_assigned_variable_ids.extend(possibly_assigned_variable_ids);
 
-    reconcile_branch_reference_constraints(context, &mut if_block_context, outer_block_context);
+    inherit_branch_context_properties(context, outer_block_context, &if_block_context);
 
     if !has_leaving_statements {
         let new_assigned_variable_ids_keys = new_assigned_variable_ids.keys().cloned().collect::<Vec<String>>();
@@ -806,7 +804,7 @@ fn analyze_else_if_clause<'a>(
     else_if_block_context.assigned_variable_ids.extend(pre_assigned_variable_ids);
     else_if_block_context.possibly_assigned_variable_ids.extend(pre_possibly_assigned_variable_ids);
 
-    reconcile_branch_reference_constraints(context, &mut else_if_block_context, outer_block_context);
+    inherit_branch_context_properties(context, outer_block_context, &else_if_block_context);
 
     let final_actions =
         ControlAction::from_statements(else_if_clause.1.iter().collect(), vec![], Some(artifacts), true);
@@ -1026,7 +1024,7 @@ fn analyze_else_statements<'a>(
     else_block_context.possibly_assigned_variable_ids.extend(pre_possibly_assigned_variable_ids);
 
     if else_statements.is_some() {
-        reconcile_branch_reference_constraints(context, else_block_context, outer_block_context);
+        inherit_branch_context_properties(context, outer_block_context, else_block_context);
     }
 
     let final_actions = match else_statements {
@@ -1260,70 +1258,6 @@ fn update_if_scope<'a>(
         None => {
             if_scope.redefined_variables = Some(redefined_variables);
             if_scope.possibly_redefined_variables = possibly_redefined_variables;
-        }
-    }
-}
-
-fn reconcile_branch_reference_constraints<'a>(
-    context: &mut Context<'a>,
-    branch_block_context: &mut BlockContext<'a>,
-    outer_block_context: &mut BlockContext<'a>,
-) {
-    for (variable, constraint) in &branch_block_context.by_reference_constraints {
-        let Some(outer_constraint) = outer_block_context.by_reference_constraints.get(variable) else {
-            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
-            continue;
-        };
-
-        let Some(constraint_type) = constraint.constraint_type.as_ref() else {
-            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
-            continue;
-        };
-
-        let Some(outer_constraint_type) = outer_constraint.constraint_type.as_ref() else {
-            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
-            continue;
-        };
-
-        if !union_comparator::is_contained_by(
-            context.codebase,
-            context.interner,
-            constraint_type,
-            outer_constraint_type,
-            false,
-            false,
-            false,
-            &mut ComparisonResult::default(),
-        ) {
-            let constraint_type_str = constraint_type.get_id(Some(context.interner));
-            let outer_constraint_type_str = outer_constraint_type.get_id(Some(context.interner));
-
-            context.collector.report_with_code(
-                Code::CONFLICTING_REFERENCE_CONSTRAINT,
-                Issue::error(format!(
-                    "Conflicting pass-by-reference constraints for variable `{variable}`.",
-                ))
-                .with_annotation(
-                    Annotation::secondary(outer_constraint.constraint_span).with_message(format!(
-                        "An existing constraint requires this variable to be of type `{}`...",
-                        outer_constraint_type_str
-                    )),
-                )
-                .with_annotation(
-                    Annotation::primary(constraint.constraint_span).with_message(format!(
-                        "...but this branch imposes a conflicting constraint of `{}`.",
-                        constraint_type_str
-                    )),
-                )
-                .with_note(
-                    "A variable reference cannot have multiple, incompatible type constraints applied to it in different branches of execution."
-                )
-                .with_help(format!(
-                    "Refactor the code to ensure that `{variable}` adheres to a single, compatible type constraint across all execution paths.",
-                )),
-            );
-        } else {
-            outer_block_context.by_reference_constraints.insert(variable.clone(), constraint.clone());
         }
     }
 }
