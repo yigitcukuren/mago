@@ -147,6 +147,7 @@ test_case!(inline_empty_braces_default);
 test_case!(inline_empty_braces_swapped);
 test_case!(pipe_operator);
 test_case!(disabled_class_like_member_separations);
+test_case!(unary_parens);
 
 // A special test case for regressions in the Psl codebase
 test_case!(psl_regressions);
