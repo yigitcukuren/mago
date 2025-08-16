@@ -9,10 +9,14 @@ use mago_algebra::clause::Clause;
 use mago_codex::assertion::Assertion;
 use mago_codex::context::ScopeContext;
 use mago_codex::metadata::CodebaseMetadata;
+use mago_codex::ttype::TType;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
+use mago_codex::ttype::comparator::ComparisonResult;
+use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_mixed;
+use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_collector::Collector;
 use mago_interner::StringIdentifier;
@@ -24,9 +28,9 @@ use crate::context::Context;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::finally_scope::FinallyScope;
 use crate::context::scope::var_has_root;
-use crate::expression::r#match::subtract_union_types;
 use crate::reconciler::ReconciliationContext;
 use crate::reconciler::assertion_reconciler;
+use crate::reconciler::negated_assertion_reconciler;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum BreakContext {
@@ -664,6 +668,69 @@ fn substitute_types(
         if existing_type.eq(&old_type) { get_mixed() } else { subtract_union_types(context, existing_type, old_type) };
 
     add_optional_union_type(updated_type, new_type, context.codebase, context.interner)
+}
+
+/// Subtracts the types in `type_to_remove` from `existing_type`.
+///
+/// This function iterates through each atomic type in `existing_type`. For each of these,
+/// it iteratively applies the logic of "is not `atomic_from_remove_set`" for every
+/// atomic type in `type_to_remove`. This effectively refines each part of `existing_type`
+/// to exclude any possibilities covered by `type_to_remove`.
+///
+/// This is primarily useful for determining remaining possible types for a match subject
+/// after some conditional arms have been considered.
+///
+/// # Arguments
+///
+/// * `context` - The reconciliation context, providing access to codebase and interner.
+/// * `existing_type` - The initial `TUnion` type (the minuend).
+/// * `type_to_remove` - The `TUnion` type whose components should be subtracted from `existing_type`.
+///
+/// # Returns
+///
+/// A new `TUnion` representing `existing_type - type_to_remove`.
+pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, type_to_remove: TUnion) -> TUnion {
+    if existing_type == type_to_remove {
+        return get_never();
+    }
+
+    if !(existing_type.has_literal_value() && type_to_remove.has_literal_value())
+        && union_comparator::is_contained_by(
+            context.codebase,
+            context.interner,
+            &existing_type,
+            &type_to_remove,
+            false,
+            false,
+            true,
+            &mut ComparisonResult::new(),
+        )
+    {
+        return existing_type;
+    }
+
+    let mut reconciliation_context = context.get_reconciliation_context();
+    let mut result = existing_type;
+    for atomic in type_to_remove.types {
+        let assertion = Assertion::IsNotType(atomic);
+        let key = result.get_id(Some(reconciliation_context.interner));
+        result = negated_assertion_reconciler::reconcile(
+            &mut reconciliation_context,
+            &assertion,
+            &result,
+            false,
+            None,
+            key,
+            None,
+            true,
+        );
+
+        if result.is_never() {
+            break;
+        }
+    }
+
+    result
 }
 
 fn should_keep_clause(clause: &Rc<Clause>, remove_var_id: &str, new_type: Option<&TUnion>) -> bool {

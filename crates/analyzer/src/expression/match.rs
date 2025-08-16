@@ -1,29 +1,33 @@
-use mago_codex::assertion::Assertion;
-use mago_codex::consts::MAX_ENUM_CASES_FOR_ANALYSIS;
-use mago_codex::get_class_like;
+use std::ops::Deref;
+use std::rc::Rc;
+
+use ahash::HashSet;
+
+use mago_algebra::saturate_clauses;
 use mago_codex::ttype::TType;
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::object::TObject;
+use mago_codex::ttype::combine_optional_union_types;
 use mago_codex::ttype::combine_union_types;
-use mago_codex::ttype::comparator::ComparisonResult;
-use mago_codex::ttype::comparator::union_comparator;
-use mago_codex::ttype::comparator::union_comparator::can_expression_types_be_identical;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
+use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::code::Code;
+use crate::common::synthetic::new_synthetic_disjunctive_identity;
+use crate::common::synthetic::new_synthetic_variable;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-use crate::expression::binary::utils::is_always_identical_to;
-use crate::reconciler::negated_assertion_reconciler;
+use crate::formula::get_formula;
+use crate::formula::negate_or_synthesize;
+use crate::reconciler::reconcile_keyed_types;
+use crate::utils::expression::get_expression_id;
 
 impl Analyzable for Match {
     fn analyze<'a>(
@@ -32,1209 +36,517 @@ impl Analyzable for Match {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        let was_inside_conditional = block_context.inside_conditional;
-        block_context.inside_conditional = true;
-        self.expression.analyze(context, block_context, artifacts)?;
-        block_context.inside_conditional = was_inside_conditional;
+        MatchAnalyzer::new(self, context, block_context, artifacts).analyze()
+    }
+}
 
-        let mut match_arms = Vec::new();
-        let mut default_arm: Option<&MatchDefaultArm> = None;
-        for arm in self.arms.iter() {
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum ArmExecutionStatus {
+    Always,
+    Never,
+    Conditional,
+}
+
+struct MatchAnalyzer<'s, 'a, 'b> {
+    stmt: &'s Match,
+    context: &'b mut Context<'a>,
+    block_context: &'b mut BlockContext<'a>,
+    artifacts: &'b mut AnalysisArtifacts,
+}
+
+impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
+    const SYNTHETIC_MATCH_VAR_PREFIX: &'static str = "$-tmp-match-";
+
+    fn new(
+        stmt: &'s Match,
+        context: &'b mut Context<'a>,
+        block_context: &'b mut BlockContext<'a>,
+        artifacts: &'b mut AnalysisArtifacts,
+    ) -> Self {
+        Self { stmt, context, block_context, artifacts }
+    }
+
+    fn analyze(&mut self) -> Result<(), AnalysisError> {
+        let was_inside_conditional = self.block_context.inside_conditional;
+        self.block_context.inside_conditional = true;
+        self.stmt.expression.analyze(self.context, self.block_context, self.artifacts)?;
+        self.block_context.inside_conditional = was_inside_conditional;
+
+        let mut expression_arms = vec![];
+        let mut first_default_arm = None;
+
+        for arm in self.stmt.arms.iter() {
             match arm {
-                MatchArm::Expression(match_expression_arm) => {
-                    match_arms.push(match_expression_arm);
-                }
-                MatchArm::Default(match_default_arm) => {
-                    if default_arm.is_none() {
-                        default_arm = Some(match_default_arm);
+                MatchArm::Expression(expr_arm) => expression_arms.push(expr_arm),
+                MatchArm::Default(default_arm) => {
+                    if first_default_arm.is_none() {
+                        first_default_arm = Some(default_arm);
                     }
                 }
             }
         }
 
-        if match_arms.is_empty() {
-            if let Some(default_arm) = default_arm {
-                context.collector.report_with_code(
-                    Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM,
-                    Issue::error("Match expression contains only a `default` arm.")
-                    .with_annotation(
-                        Annotation::primary(self.r#match.span())
-                            .with_message("This `match` expression has no conditional arms."),
-                    )
-                    .with_annotation(
-                        Annotation::secondary(default_arm.span())
-                            .with_message("Only this `default` arm is present."),
-                    )
-                    .with_note(
-                        "Since there are no conditional arms, the `default` arm will always be executed. The `match` structure might be unnecessary."
-                    )
-                    .with_help(
-                        "Consider refactoring to directly use the `default` arm's expression if no other conditions are intended, or add conditional arms if specific cases should be handled differently."
-                    ),
-                );
-
-                default_arm.expression.analyze(context, block_context, artifacts)?;
-                if let Some(expression_type) = artifacts.get_rc_expression_type(&default_arm.expression).cloned() {
-                    artifacts.set_rc_expression_type(self, expression_type);
+        if expression_arms.is_empty() {
+            if let Some(default_arm) = first_default_arm {
+                self.report_only_default_arm();
+                default_arm.expression.analyze(self.context, self.block_context, self.artifacts)?;
+                if let Some(expr_type) = self.artifacts.get_rc_expression_type(&default_arm.expression).cloned() {
+                    self.artifacts.set_rc_expression_type(self.stmt, expr_type);
                 }
-
-                return Ok(());
             } else {
-                context.collector.report_with_code(
-                    Code::EMPTY_MATCH_EXPRESSION,
-                    Issue::error("Match expression must have at least one arm.")
-                    .with_annotation(
-                        Annotation::primary(self.span()).with_message("This `match` expression is empty."),
-                    )
-                    .with_note("A `match` expression without any arms (neither conditional nor `default`) is syntactically invalid and will cause a fatal error.")
-                    .with_help("Add at least one conditional arm (e.g., `value => result,`) or a `default` arm (e.g., `default => result,`) to the `match` expression."),
-                );
-
-                artifacts.set_expression_type(self, get_never());
-
-                return Ok(());
+                self.report_empty_match();
+                self.set_unhandled_match_error(None, self.stmt.span(), true);
+                self.artifacts.set_expression_type(self.stmt, get_never());
             }
+            return Ok(());
         }
 
-        let subject_type = match artifacts.get_expression_type(&self.expression).cloned() {
-            Some(subject_type) => subject_type,
+        let subject_type = match self.artifacts.get_rc_expression_type(&self.stmt.expression).cloned() {
+            Some(t) => t,
             None => {
-                context.collector.report_with_code(
-                    Code::UNKNOWN_MATCH_SUBJECT_TYPE,
-                    Issue::error("Match subject expression type cannot be determined.")
-                        .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has an unknown type."))
-                        .with_annotation(Annotation::secondary(self.r#match.span()).with_message("The corresponding match expression is defined here."))
-                        .with_note("The type of the match subject expression must be known to determine which arm will be executed at runtime.")
-                        .with_help("Ensure that the match subject expression is well-formed and has a resolvable type."),
-                );
-
-                get_mixed()
+                self.report_unknown_subject_type();
+                Rc::new(get_mixed())
             }
         };
 
         if subject_type.is_never() {
-            context.collector.report_with_code(
-                Code::MATCH_SUBJECT_TYPE_IS_NEVER,
-                Issue::error("Match subject expression type is `never`.")
-                    .with_annotation(Annotation::primary(self.expression.span()).with_message("This match subject expression has type `never`."))
-                    .with_annotation(Annotation::secondary(self.r#match.span()).with_message("The corresponding match expression is defined here."))
-                    .with_note("A `never` type indicates that the expression can never be executed, making the match expression effectively unreachable.")
-                    .with_help("Consider revising the logic to ensure that the match subject expression can have a valid type."),
-            );
-
-            artifacts.set_expression_type(self, get_never());
-
+            self.report_subject_is_never();
+            self.artifacts.set_expression_type(self.stmt, get_never());
             return Ok(());
         }
 
-        let mut remaining_subject_type = subject_type.clone();
+        let (is_synthetic, subject_id, subject_for_conditions) = self.get_subject_info(&subject_type);
 
-        let mut possible_results = vec![];
-        let mut definite_match: Option<&MatchExpressionArm> = None;
-        for match_expression_arm in match_arms.iter() {
-            let mut arm_is_unreachable = false;
-            if remaining_subject_type.is_never() {
-                arm_is_unreachable = true;
+        let mut arm_body_types: Vec<Rc<TUnion>> = Vec::new();
+        let mut arm_exit_contexts: Vec<BlockContext<'a>> = Vec::new();
+        let mut running_else_context = self.block_context.clone();
+        let last_expression_arm_index = expression_arms.len().saturating_sub(1);
+        let mut previous_arms_executed = ArmExecutionStatus::Never;
 
-                context.collector.report_with_code(
-                    Code::UNREACHABLE_MATCH_ARM,
-                    Issue::warning("This match arm is unreachable because all possible values of the subject expression have been handled by preceding arms.")
-                        .with_annotation(Annotation::primary(match_expression_arm.span()).with_message("This arm will never be reached"))
-                        .with_annotation(Annotation::secondary(self.expression.span()).with_message(format!("Subject expression of type `{}`", subject_type.get_id(Some(context.interner)))))
-                        .with_note("Based on the type of the subject expression and the conditions of the preceding arms, there are no remaining values that could match this arm's conditions.")
-                        .with_help("Remove this unreachable arm or review the subject's type and the conditions of preceding arms to ensure all intended cases are reachable."),
-                );
+        for (i, expression_arm) in expression_arms.iter().enumerate() {
+            let is_last_arm = i == last_expression_arm_index && first_default_arm.is_none();
+            let arm_status = self.analyze_expression_arm(
+                &subject_for_conditions,
+                &subject_id,
+                expression_arm,
+                &mut running_else_context,
+                &mut arm_body_types,
+                &mut arm_exit_contexts,
+                is_last_arm,
+            )?;
+
+            if arm_status != ArmExecutionStatus::Never {
+                if previous_arms_executed == ArmExecutionStatus::Never {
+                    previous_arms_executed = arm_status;
+                } else {
+                    previous_arms_executed = ArmExecutionStatus::Conditional;
+                }
             }
 
-            let mut arm_block_context = block_context.clone();
-            arm_block_context.inside_conditional = true;
+            let mut else_referenced_ids = HashSet::default();
+            let (reconcilable_else_types, _) = mago_algebra::find_satisfying_assignments(
+                &running_else_context.clauses.iter().map(|c| (**c).clone()).collect::<Vec<_>>(),
+                None,
+                &mut else_referenced_ids,
+            );
 
-            let mut definitely_matches = false;
-            let mut unreachable_conditions = vec![];
-            for condition in match_expression_arm.conditions.iter() {
-                condition.analyze(context, &mut arm_block_context, artifacts)?;
-
-                let Some(condition_type) = artifacts.get_expression_type(condition) else {
-                    context.collector.report_with_code(
-                        Code::UNKNOWN_MATCH_CONDITION_TYPE,
-                        Issue::error("Cannot infer the type of this match condition.")
-                            .with_annotation(
-                                Annotation::primary(condition.span())
-                                    .with_message("This match condition has an unknown type."),
-                            )
-                            .with_annotation(
-                                Annotation::secondary(match_expression_arm.expression.span())
-                                    .with_message("This is the corresponding arm expression."),
-                            )
-                            .with_note("The type must be known to evaluate which arm can match.")
-                            .with_help("Make sure the condition is valid and its type can be resolved."),
-                    );
-
-                    continue;
-                };
-
-                if arm_is_unreachable {
-                    continue;
-                }
-
-                if !can_expression_types_be_identical(
-                    context.codebase,
-                    context.interner,
-                    &subject_type,
-                    condition_type,
-                    true,
+            if !reconcilable_else_types.is_empty() {
+                reconcile_keyed_types(
+                    &mut self.context.get_reconciliation_context(),
+                    &reconcilable_else_types,
+                    Default::default(),
+                    &mut running_else_context,
+                    &mut HashSet::default(),
+                    &else_referenced_ids,
+                    &expression_arm.span(),
                     false,
-                ) {
-                    unreachable_conditions.push((condition_type.get_id(Some(context.interner)), condition.span()));
-                } else if definite_match.is_none() && is_always_identical_to(condition_type, &subject_type) {
-                    let condition_type_str = condition_type.get_id(Some(context.interner));
-                    let subject_type_str = subject_type.get_id(Some(context.interner));
-
-                    context.collector.report_with_code(
-                        Code::MATCH_ARM_ALWAYS_TRUE,
-                        Issue::error(format!(
-                            "This condition (type `{condition_type_str}`) always strictly matches the subject (type `{subject_type_str}`)."
-                        ))
-                        .with_annotation(Annotation::primary(condition.span()).with_message(format!("Always matches: `{condition_type_str}`")))
-                        .with_annotation(Annotation::secondary(self.expression.span()).with_message(format!("Subject: `{subject_type_str}`")))
-                        .with_note("This arm will always match if reached, making following conditional arms (and possibly `default`) unreachable.")
-                        .with_help("Recheck the match order and logic. If intentional, consider making this the final arm."),
-                    );
-
-                    definitely_matches = true;
-                } else {
-                    remaining_subject_type =
-                        subtract_union_types(context, remaining_subject_type, condition_type.clone());
-                }
-            }
-
-            if arm_is_unreachable {
-                continue;
-            }
-
-            match_expression_arm.expression.analyze(context, &mut arm_block_context, artifacts)?;
-
-            let expression_type = match artifacts.get_expression_type(&match_expression_arm.expression) {
-                Some(expression_type) => expression_type.clone(),
-                None => get_never(),
-            };
-
-            if let Some(matched_arm) = definite_match {
-                context.collector.report_with_code(
-                    Code::UNREACHABLE_MATCH_ARM,
-                    Issue::warning("This match arm will never be executed.")
-                        .with_annotation(
-                            Annotation::primary(match_expression_arm.span()).with_message("Unreachable arm."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(matched_arm.span())
-                                .with_message("This earlier arm always matches if reached."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(self.expression.span())
-                                .with_message("Subject expression being matched."),
-                        )
-                        .with_note("A prior arm always strictly matches the subject, making this arm unreachable.")
-                        .with_help("Reorder or remove the unreachable arm to clean up your code."),
-                );
-
-                continue;
-            }
-
-            if !unreachable_conditions.is_empty() {
-                let subject_type_str = subject_type.get_id(Some(context.interner));
-
-                if unreachable_conditions.len() == match_expression_arm.conditions.len() {
-                    context.collector.report_with_code(
-                        Code::UNREACHABLE_MATCH_ARM,
-                        Issue::warning("This match arm will never be executed.")
-                            .with_annotation(
-                                Annotation::primary(match_expression_arm.expression.span())
-                                    .with_message("Arm expression is unreachable."),
-                            )
-                            .with_annotations(unreachable_conditions.into_iter().map(
-                                |(condition_type_str, condition)| {
-                                    Annotation::secondary(condition).with_message(format!(
-                                        "Condition type `{condition_type_str}` is never strictly equal to the subject type `{subject_type_str}`"
-                                    ))
-                                },
-                            ))
-                            .with_annotation(
-                                Annotation::secondary(self.expression.span())
-                                    .with_message(format!("Subject expression has type `{subject_type_str}`")),
-                            )
-                            .with_note(
-                                if match_expression_arm.conditions.len() == 1 {
-                                    "This arm's condition is never strictly equal to the subject type, making the arm unreachable."
-                                } else {
-                                    "All conditions are unreachable, making this arm unreachable."
-                                }
-                            )
-                            .with_help(
-                                if match_expression_arm.conditions.len() == 1 {
-                                    "Consider removing this unreachable arm, or adjust the condition to ensure it can match."
-                                } else {
-                                    "Consider removing this unreachable arm, or adjust the conditions to ensure at least one can match."
-                                }
-                            ),
-                    );
-
-                    continue;
-                } else {
-                    for (condition_type_str, condition) in unreachable_conditions {
-                        context.collector.report_with_code(
-                            Code::UNREACHABLE_MATCH_ARM_CONDITION,
-                            Issue::error(format!(
-                                "This condition type `{condition_type_str}` can never strictly equal the subject type `{subject_type_str}`."
-                            ))
-                            .with_annotation(Annotation::primary(condition).with_message(format!("This condition has type `{condition_type_str}`")))
-                            .with_annotation(Annotation::secondary(self.expression.span()).with_message(format!("Subject has type `{subject_type_str}`")))
-                            .with_note("Match uses strict comparison (`===`). The condition’s type is incompatible, so this arm can never be selected.")
-                            .with_help("Consider removing this unreachable condition, or adjust the types to ensure compatibility."),
-                        );
-                    }
-                }
-            }
-
-            if definitely_matches {
-                definite_match = Some(match_expression_arm);
-                possible_results = vec![expression_type];
-            } else {
-                possible_results.push(expression_type);
-            }
-        }
-
-        if let Some(default_arm) = default_arm {
-            let mut default_arm_block_context = block_context.clone();
-            default_arm_block_context.inside_conditional = true;
-
-            default_arm.expression.analyze(context, &mut default_arm_block_context, artifacts)?;
-
-            if let Some(definite_match) = definite_match {
-                context.collector.report_with_code(
-                    Code::UNREACHABLE_MATCH_DEFAULT_ARM,
-                    Issue::warning("This default arm will never be executed.")
-                        .with_annotation(
-                            Annotation::primary(default_arm.span()).with_message("Unreachable default arm."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(definite_match.span())
-                                .with_message("This earlier arm always matches if reached."),
-                        )
-                        .with_annotation(
-                            Annotation::secondary(self.expression.span())
-                                .with_message("Subject expression being matched."),
-                        )
-                        .with_note(
-                            "A prior arm always strictly matches the subject, making this default arm unreachable.",
-                        )
-                        .with_help("Reorder or remove the unreachable default arm to clean up your code."),
-                );
-            } else {
-                if remaining_subject_type.is_never() {
-                    context.collector.report_with_code(
-                        Code::UNREACHABLE_MATCH_DEFAULT_ARM,
-                        Issue::warning(
-                            "The `default` arm of this match expression is unreachable."
-                        )
-                        .with_annotation(
-                            Annotation::primary(default_arm.span()).with_message("This `default` arm will never be executed")
-                        )
-                        .with_annotation(
-                            Annotation::secondary(self.expression.span()).with_message(format!("Subject expression of type `{}`", subject_type.get_id(Some(context.interner))))
-                        )
-                        .with_note(
-                            "All possible values of the subject expression are covered by the preceding conditional arms, leaving no cases for the `default` arm to handle."
-                        )
-                        .with_help(
-                            "Remove this unreachable `default` arm, or review the conditions of the preceding arms if some cases were intended to fall through to default."
-                        ),
-                    );
-                }
-
-                if let Some(default_arm_type) = artifacts.get_expression_type(&default_arm.expression).cloned() {
-                    if possible_results.is_empty() && !match_arms.is_empty() {
-                        context.collector.report_with_code(
-                            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED,
-                            Issue::warning("This default arm will always execute.")
-                                .with_annotation(
-                                    Annotation::primary(default_arm.span()).with_message("This default arm is always executed."),
-                                )
-                                .with_annotations(
-                                    match_arms.iter().map(|arm| {
-                                        Annotation::secondary(arm.span()).with_message("This arm will never match.")
-                                    })
-                                )
-                                .with_annotation(
-                                    Annotation::secondary(self.expression.span())
-                                        .with_message("Subject expression being matched."),
-                                )
-                                .with_note("This default arm is the only one that will match, making it always executed.")
-                                .with_help("Consider removing the `match` expression and using the default arm's expression directly."),
-                        );
-                    }
-
-                    possible_results.push(default_arm_type);
-                } else {
-                    possible_results.push(get_never());
-                }
-            }
-        } else if possible_results.is_empty() || (!remaining_subject_type.is_never() && definite_match.is_none()) {
-            let mut skip_check = false;
-
-            // Check if the subject type consists only of enums.
-            let subject_is_all_enums =
-                subject_type.types.iter().all(|t| matches!(t, TAtomic::Object(TObject::Enum(_))));
-
-            if subject_is_all_enums {
-                // If so, check if any of those enums are larger than the threshold.
-                for atomic_subject in &subject_type.types {
-                    if let TAtomic::Object(TObject::Enum(enum_object)) = atomic_subject
-                        && let Some(enum_metadata) =
-                            get_class_like(context.codebase, context.interner, &enum_object.name)
-                        && enum_metadata.enum_cases.len() > MAX_ENUM_CASES_FOR_ANALYSIS
-                    {
-                        skip_check = true;
-                        break;
-                    }
-                }
-            }
-
-            if !skip_check {
-                context.collector.report_with_code(
-                    Code::MATCH_NOT_EXHAUSTIVE,
-                    Issue::error(format!(
-                        "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
-                        subject_type.get_id(Some(context.interner))
-                    ))
-                    .with_annotation(
-                        Annotation::primary(self.expression.span())
-                            .with_message(format!(
-                                "Unhandled portion of subject: `{}`",
-                                remaining_subject_type.get_id(Some(context.interner))
-                            ))
-                    )
-                    .with_annotation(
-                        Annotation::secondary(self.r#match.span()).with_message("This `match` expression does not cover all cases and lacks a `default` arm.")
-                    )
-                    .with_note(
-                        "If the subject expression evaluates to one of the unhandled types at runtime, PHP will throw an `UnhandledMatchError`."
-                    )
-                    .with_help(format!(
-                        "Add conditional arms to cover type(s) `{}` or include a `default` arm to handle all other possibilities.",
-                        remaining_subject_type.get_id(Some(context.interner))
-                    )),
+                    false,
                 );
             }
         }
 
-        let resulting_type = if possible_results.is_empty() {
-            get_never()
-        } else if possible_results.len() == 1 {
-            possible_results[0].clone()
-        } else {
-            let mut union = possible_results[0].clone();
-            for possible_result in possible_results.iter().skip(1) {
-                union = combine_union_types(&union, possible_result, context.codebase, context.interner, false);
+        if let Some(default_arm) = first_default_arm {
+            self.analyze_default_arm(
+                &subject_id,
+                default_arm,
+                &mut running_else_context,
+                &mut arm_body_types,
+                &mut arm_exit_contexts,
+                previous_arms_executed,
+            )?;
+        }
+
+        if first_default_arm.is_none() {
+            let unhandled_type =
+                running_else_context.locals.get(&subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
+
+            if !unhandled_type.is_never() {
+                self.report_non_exhaustive(&subject_type, &unhandled_type);
+                self.set_unhandled_match_error(Some(&mut running_else_context), self.stmt.span(), false);
             }
 
-            union
-        };
+            arm_body_types.push(Rc::new(get_never()));
+            arm_exit_contexts.push(running_else_context);
+        }
 
-        artifacts.set_expression_type(self, resulting_type);
+        self.merge_match_contexts(&arm_exit_contexts);
+
+        if is_synthetic {
+            self.block_context.locals.remove(&subject_id);
+        }
+
+        let final_type = arm_body_types.into_iter().reduce(|acc, item| {
+            Rc::new(combine_union_types(
+                acc.as_ref(),
+                item.as_ref(),
+                self.context.codebase,
+                self.context.interner,
+                false,
+            ))
+        });
+
+        self.artifacts.set_rc_expression_type(self.stmt, final_type.unwrap_or_else(|| Rc::new(get_mixed())));
 
         Ok(())
     }
-}
 
-/// Subtracts the types in `type_to_remove` from `existing_type`.
-///
-/// This function iterates through each atomic type in `existing_type`. For each of these,
-/// it iteratively applies the logic of "is not `atomic_from_remove_set`" for every
-/// atomic type in `type_to_remove`. This effectively refines each part of `existing_type`
-/// to exclude any possibilities covered by `type_to_remove`.
-///
-/// This is primarily useful for determining remaining possible types for a match subject
-/// after some conditional arms have been considered.
-///
-/// # Arguments
-///
-/// * `context` - The reconciliation context, providing access to codebase and interner.
-/// * `existing_type` - The initial `TUnion` type (the minuend).
-/// * `type_to_remove` - The `TUnion` type whose components should be subtracted from `existing_type`.
-///
-/// # Returns
-///
-/// A new `TUnion` representing `existing_type - type_to_remove`.
-pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, type_to_remove: TUnion) -> TUnion {
-    if existing_type == type_to_remove {
-        return get_never();
-    }
-
-    if !(existing_type.has_literal_value() && type_to_remove.has_literal_value())
-        && union_comparator::is_contained_by(
-            context.codebase,
-            context.interner,
-            &existing_type,
-            &type_to_remove,
-            false,
-            false,
-            true,
-            &mut ComparisonResult::new(),
-        )
-    {
-        return existing_type;
-    }
-
-    let mut reconciliation_context = context.get_reconciliation_context();
-    let mut result = existing_type;
-    for atomic in type_to_remove.types {
-        let assertion = Assertion::IsNotType(atomic);
-        let key = result.get_id(Some(reconciliation_context.interner));
-        result = negated_assertion_reconciler::reconcile(
-            &mut reconciliation_context,
-            &assertion,
-            &result,
-            false,
-            None,
-            key,
-            None,
-            true,
-        );
-
-        if result.is_never() {
-            break;
+    fn get_subject_info(&mut self, subject_type: &Rc<TUnion>) -> (bool, String, Expression) {
+        if let Some(id) = get_expression_id(
+            self.stmt.expression.as_ref(),
+            self.block_context.scope.get_class_like_name(),
+            self.context.resolved_names,
+            self.context.interner,
+            Some(self.context.codebase),
+        ) {
+            (false, id, self.stmt.expression.as_ref().clone())
+        } else {
+            let subject_id =
+                format!("{}{}", Self::SYNTHETIC_MATCH_VAR_PREFIX, self.stmt.expression.span().start.offset);
+            self.block_context.locals.insert(subject_id.clone(), subject_type.clone());
+            let subject_for_conditions =
+                new_synthetic_variable(self.context.interner, &subject_id, self.stmt.expression.span());
+            (true, subject_id, subject_for_conditions)
         }
     }
 
-    result
-}
+    fn analyze_expression_arm(
+        &mut self,
+        subject_expr: &Expression,
+        subject_id: &str,
+        expression_arm: &'s MatchExpressionArm,
+        running_else_context: &mut BlockContext<'a>,
+        arm_body_types: &mut Vec<Rc<TUnion>>,
+        arm_exit_contexts: &mut Vec<BlockContext<'a>>,
+        is_last: bool,
+    ) -> Result<ArmExecutionStatus, AnalysisError> {
+        let subject_type = running_else_context.locals.get(subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
 
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
+        if subject_type.is_never() {
+            self.report_unreachable_arm(
+                expression_arm,
+                "All possible types for the subject have been handled by previous arms.",
+            );
+            return Ok(ArmExecutionStatus::Never);
+        }
 
-    use crate::code::Code;
-    use crate::test_analysis;
+        let arm_condition = new_synthetic_disjunctive_identity(
+            subject_expr,
+            expression_arm.conditions.get(0).unwrap(),
+            expression_arm.conditions.iter().skip(1).collect(),
+        );
 
-    test_analysis! {
-        name = match_expression_empty,
-        code = indoc! {r#"
-            <?php
+        let was_inside_conditional = running_else_context.inside_conditional;
+        running_else_context.inside_conditional = true;
+        arm_condition.analyze(self.context, running_else_context, self.artifacts)?;
+        running_else_context.inside_conditional = was_inside_conditional;
 
-            $subject = 1;
-            $result = match ($subject) {
-                // No arms
-            };
-        "#},
-        issues = [
+        let arm_status = if let Some(condition_type) = self.artifacts.get_rc_expression_type(&arm_condition).cloned() {
+            if condition_type.is_always_truthy() {
+                if !is_last {
+                    self.report_always_matching_arm(expression_arm);
+                }
+                ArmExecutionStatus::Always
+            } else if condition_type.is_always_falsy() {
+                self.report_unreachable_arm(expression_arm, "The condition is always false in this context.");
+                ArmExecutionStatus::Never
+            } else {
+                ArmExecutionStatus::Conditional
+            }
+        } else {
+            ArmExecutionStatus::Conditional
+        };
+
+        if arm_status == ArmExecutionStatus::Never {
+            return Ok(ArmExecutionStatus::Never);
+        }
+
+        let mut arm_body_context = running_else_context.clone();
+        let assertion_context = self.context.get_assertion_context_from_block(&arm_body_context);
+
+        let arm_clauses = get_formula(
+            expression_arm.span(),
+            expression_arm.span(),
+            &arm_condition,
+            assertion_context,
+            self.artifacts,
+        )
+        .unwrap_or_default();
+
+        let combined_clauses: Vec<_> =
+            saturate_clauses(arm_clauses.iter().chain(arm_body_context.clauses.iter().map(Deref::deref)))
+                .into_iter()
+                .map(Rc::new)
+                .collect();
+
+        let mut arm_referenced_ids = HashSet::default();
+        let (reconcilable_types, active_types) = mago_algebra::find_satisfying_assignments(
+            &combined_clauses.iter().map(|c| (**c).clone()).collect::<Vec<_>>(),
+            None,
+            &mut arm_referenced_ids,
+        );
+
+        if !reconcilable_types.is_empty() {
+            reconcile_keyed_types(
+                &mut self.context.get_reconciliation_context(),
+                &reconcilable_types,
+                active_types,
+                &mut arm_body_context,
+                &mut HashSet::default(),
+                &arm_referenced_ids,
+                &arm_condition.span(),
+                false,
+                false,
+            );
+        }
+
+        expression_arm.expression.analyze(self.context, &mut arm_body_context, self.artifacts)?;
+        arm_body_types.push(
+            self.artifacts
+                .get_rc_expression_type(&expression_arm.expression)
+                .cloned()
+                .unwrap_or_else(|| Rc::new(get_mixed())),
+        );
+        arm_exit_contexts.push(arm_body_context);
+
+        let negated_arm_clauses = negate_or_synthesize(
+            arm_clauses,
+            &arm_condition,
+            self.context.get_assertion_context_from_block(running_else_context),
+            self.artifacts,
+        );
+
+        running_else_context.clauses =
+            saturate_clauses(running_else_context.clauses.iter().map(Deref::deref).chain(negated_arm_clauses.iter()))
+                .into_iter()
+                .map(Rc::new)
+                .collect();
+
+        Ok(arm_status)
+    }
+
+    fn analyze_default_arm(
+        &mut self,
+        subject_id: &str,
+        default_arm: &'s MatchDefaultArm,
+        running_else_context: &mut BlockContext<'a>,
+        arm_body_types: &mut Vec<Rc<TUnion>>,
+        arm_exit_contexts: &mut Vec<BlockContext<'a>>,
+        previous_arms_executed: ArmExecutionStatus,
+    ) -> Result<(), AnalysisError> {
+        if previous_arms_executed == ArmExecutionStatus::Never {
+            self.report_default_always_executed(default_arm);
+        }
+
+        let subject_type = running_else_context.locals.get(subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
+
+        if subject_type.is_never() {
+            self.report_unreachable_default_arm(default_arm);
+            return Ok(());
+        }
+
+        let mut default_context = running_else_context.clone();
+        default_arm.expression.analyze(self.context, &mut default_context, self.artifacts)?;
+
+        arm_body_types.push(
+            self.artifacts
+                .get_rc_expression_type(&default_arm.expression)
+                .cloned()
+                .unwrap_or_else(|| Rc::new(get_mixed())),
+        );
+        arm_exit_contexts.push(default_context);
+
+        Ok(())
+    }
+
+    fn set_unhandled_match_error(
+        &mut self,
+        block_context: Option<&mut BlockContext<'a>>,
+        span: Span,
+        always_throws: bool,
+    ) {
+        let block_context = block_context.unwrap_or(self.block_context);
+
+        let error_name = self.context.interner.intern("UnhandledMatchError");
+        block_context.possibly_thrown_exceptions.entry(error_name).or_default().insert(span);
+
+        if always_throws {
+            block_context.has_returned = true;
+        }
+    }
+
+    fn merge_match_contexts(&mut self, arm_exit_contexts: &[BlockContext<'a>]) {
+        if arm_exit_contexts.iter().all(|c| c.has_returned) {
+            self.block_context.has_returned = true;
+            return;
+        }
+
+        let reachable_contexts: Vec<_> = arm_exit_contexts.iter().filter(|c| !c.has_returned).collect();
+
+        if reachable_contexts.is_empty() {
+            self.block_context.has_returned = true;
+            return;
+        }
+
+        let mut all_redefined_vars: HashSet<String> = HashSet::default();
+        for ctx in &reachable_contexts {
+            all_redefined_vars.extend(
+                ctx.get_redefined_locals(&self.block_context.locals, false, &mut HashSet::default()).keys().cloned(),
+            );
+        }
+
+        for var_id in all_redefined_vars {
+            let mut final_type: Option<TUnion> = None;
+
+            for arm_context in &reachable_contexts {
+                let arm_type = arm_context.locals.get(&var_id).map(|rc| rc.as_ref());
+                final_type = Some(combine_optional_union_types(
+                    final_type.as_ref(),
+                    arm_type,
+                    self.context.codebase,
+                    self.context.interner,
+                ));
+            }
+
+            if let Some(final_type) = final_type {
+                self.block_context.locals.insert(var_id, Rc::new(final_type));
+            }
+        }
+
+        for ctx in &reachable_contexts {
+            self.block_context.variables_possibly_in_scope.extend(ctx.variables_possibly_in_scope.iter().cloned());
+        }
+    }
+
+    fn report_empty_match(&mut self) {
+        self.context.collector.report_with_code(
             Code::EMPTY_MATCH_EXPRESSION,
-            Code::IMPOSSIBLE_ASSIGNMENT,
-        ]
+            Issue::error("Match expression cannot be empty.")
+                .with_annotation(Annotation::primary(self.stmt.span()).with_message("This match has no arms"))
+                .with_note("In PHP, an empty `match` expression will result in a fatal `UnhandledMatchError`."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_only_default,
-        code = indoc! {r#"
-            <?php
-
-            /** @param int $_res */
-            function expect_int(int $_res): void {}
-
-            $subject = "a";
-            $result = match ($subject) {
-                default => 42,
-            };
-
-            expect_int($result);
-        "#},
-        issues = [Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM]
+    fn report_only_default_arm(&mut self) {
+        self.context.collector.report_with_code(
+            Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM,
+            Issue::help("This match expression is redundant as it only contains a default arm.")
+                .with_annotation(
+                    Annotation::primary(self.stmt.span())
+                        .with_message("This match will always execute the default arm"),
+                )
+                .with_help("Consider replacing the entire match expression with the body of the default arm."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_duplicate_default,
-        code = indoc! {r#"
-            <?php
-
-            $subject = "test";
-            $result = match ($subject) {
-                default => 1,
-                "a" => 2,
-                default => 3, // Duplicate
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // `"a"` is unreachable
-            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED, // For the default arm
-        ]
+    fn report_unknown_subject_type(&mut self) {
+        self.context.collector.report_with_code(
+            Code::UNKNOWN_MATCH_SUBJECT_TYPE,
+            Issue::error("The type of the match subject expression is unknown.")
+                .with_annotation(
+                    Annotation::primary(self.stmt.expression.span())
+                        .with_message("The type of the match subject expression could not be determined."),
+                )
+                .with_note("Ensure that the expression is well-formed and has a valid type."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_unknown_subject_type,
-        code = indoc! {r#"
-            <?php
-
-            // undefined_function() will result in mixed or unknown type for $subject
-            $result = match (undefined_function()) {
-                1 => "one",
-                default => "other",
-            };
-        "#},
-        issues = [
-            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
-            Code::UNKNOWN_MATCH_SUBJECT_TYPE
-        ]
+    fn report_subject_is_never(&mut self) {
+        self.context.collector.report_with_code(
+            Code::MATCH_SUBJECT_TYPE_IS_NEVER,
+            Issue::error("The match subject is of type `never`, making the match expression unreachable.")
+                .with_annotation(
+                    Annotation::primary(self.stmt.expression.span())
+                        .with_message("The match subject expression evaluates to `never`"),
+                )
+                .with_note("This means the subject can never have a value at runtime."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_unknown_condition_type,
-        code = indoc! {r#"
-            <?php
-
-            $subject = 1;
-            $result = match ($subject) {
-                undefined_function() => "one", // Condition type is unknown
-                default => "other",
-            };
-        "#},
-        issues = [
-            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
-            Code::UNKNOWN_MATCH_CONDITION_TYPE
-        ]
+    fn report_unreachable_arm(&mut self, arm: &MatchExpressionArm, note: &str) {
+        self.context.collector.report_with_code(
+            Code::UNREACHABLE_MATCH_ARM,
+            Issue::warning("This match arm is unreachable.")
+                .with_annotation(Annotation::primary(arm.span()).with_message("This arm can never be reached"))
+                .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
+                .with_note(note.to_string()),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_unknown_arm_expression_type,
-        code = indoc! {r#"
-            <?php
-
-            $subject = 1;
-            $result = match ($subject) {
-                1 => undefined_function(), // Arm expression type is unknown
-                default => "other",
-            };
-        "#},
-        issues = [
-            Code::NON_EXISTENT_FUNCTION, // For undefined_function()
-            Code::MATCH_ARM_ALWAYS_TRUE, // This arm always matches the subject type
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // Default arm is unreachable
-            Code::IMPOSSIBLE_ASSIGNMENT // If the result is unknown
-        ]
-    }
-
-    test_analysis! {
-        name = matching_enum_cases,
-        code = indoc! {r#"
-            <?php
-
-            enum Color {
-                case Red;
-                case Green;
-                case Blue;
-            }
-
-            enum ExtendedColor {
-                case Red;
-                case Green;
-                case Blue;
-                case Yellow;
-            }
-
-            enum TextColor {
-                case White;
-                case Black;
-            }
-
-            function get_hex_color(Color|ExtendedColor|TextColor $color): string {
-                return match ($color) {
-                    Color::Red, ExtendedColor::Red => '#FF0000',
-                    Color::Green, ExtendedColor::Green => '#00FF00',
-                    Color::Blue, ExtendedColor::Blue => '#0000FF',
-                    ExtendedColor::Yellow => '#FFFF00',
-                    TextColor::White => '#FFFFFF',
-                    TextColor::Black => '#000000',
-                };
-            }
-        "#},
-    }
-
-    test_analysis! {
-        name = matching_enum_cases_with_default,
-        code = indoc! {r#"
-            <?php
-
-            enum Color {
-                case Red;
-                case Green;
-                case Blue;
-            }
-
-            enum ExtendedColor {
-                case Red;
-                case Green;
-                case Blue;
-                case Yellow;
-            }
-
-            enum TextColor {
-                case White;
-                case Black;
-            }
-
-            function get_hex_color(Color|ExtendedColor|TextColor $color): string {
-                return match ($color) {
-                    Color::Red, ExtendedColor::Red => '#FF0000',
-                    Color::Green, ExtendedColor::Green => '#00FF00',
-                    Color::Blue, ExtendedColor::Blue => '#0000FF',
-                    ExtendedColor::Yellow => '#FFFF00',
-                    TextColor::White => '#FFFFFF',
-                    TextColor::Black => '#000000',
-                    default => '#000000', // matches nothing..
-                };
-            }
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // Default arm is unreachable since all cases are handled
-        ]
-    }
-
-    test_analysis! {
-        name = matching_enum_cases_missing,
-        code = indoc! {r#"
-            <?php
-
-            enum Color {
-                case Red;
-                case Green;
-                case Blue;
-            }
-
-            enum ExtendedColor {
-                case Red;
-                case Green;
-                case Blue;
-                case Yellow;
-            }
-
-            enum TextColor {
-                case White;
-                case Black;
-            }
-
-            function get_hex_color(Color|ExtendedColor|TextColor $color): string {
-                return match ($color) {
-                    Color::Red, ExtendedColor::Red => '#FF0000',
-                    Color::Green, ExtendedColor::Green => '#00FF00',
-                    Color::Blue => '#0000FF',
-                    ExtendedColor::Yellow => '#FFFF00',
-                    TextColor::White => '#FFFFFF',
-                    TextColor::Black => '#000000',
-                };
-            }
-        "#},
-        issues = [
-            Code::MATCH_NOT_EXHAUSTIVE, // Missing cases for ExtendedColor::Blue
-        ]
-    }
-
-    test_analysis! {
-        name = matching_enum_cases_missing_with_default,
-        code = indoc! {r#"
-            <?php
-
-            enum Color {
-                case Red;
-                case Green;
-                case Blue;
-            }
-
-            enum ExtendedColor {
-                case Red;
-                case Green;
-                case Blue;
-                case Yellow;
-            }
-
-            enum TextColor {
-                case White;
-                case Black;
-            }
-
-            function get_hex_color(Color|ExtendedColor|TextColor $color): string {
-                return match ($color) {
-                    Color::Red, ExtendedColor::Red => '#FF0000',
-                    Color::Green, ExtendedColor::Green => '#00FF00',
-                    Color::Blue, ExtendedColor::Blue => '#0000FF',
-                    ExtendedColor::Yellow => '#FFFF00',
-                    TextColor::White => '#FFFFFF',
-                    default => '#000000', // Default case handling `TextColor::Black`
-                };
-            }
-        "#},
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_condition_type_mismatch,
-        code = indoc! {r#"
-            <?php
-
-            $subject = 1; // int
-            $result = match ($subject) {
-                "1" => "one_string", // string !== int
-                1 => "one_int",
-                default => "other",
-            };
-        "#},
-
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // `"1"` is unreachable
-            Code::MATCH_ARM_ALWAYS_TRUE, // `1` is always true for the subject type
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // Default arm is unreachable
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_always_true_condition,
-        code = indoc! {r#"
-            <?php
-
-            /** @param string $_res */
-            function expect_string(string $_res): void {}
-
-            $subject = "specific_value";
-            $result = match ($subject) {
-                "specific_value" => "matched", // This will always match if subject is "specific_value"
-                "another" => "never_here",
-                default => "default_never_here",
-            };
-
-            expect_string($result);
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_due_to_previous_always_true,
-        code = indoc! {r#"
-            <?php
-
-            $subject = 10;
-            $result = match ($subject) {
-                10 => "first",      // This arm always matches if $subject is 10
-                10 => "second",     // This arm is unreachable
-                default => "default",
-            };
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first `10 => ...`
-            Code::UNREACHABLE_MATCH_ARM, // For the second `10 => ...`
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the default arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_default_due_to_always_true,
-        code = indoc! {r#"
-            <?php
-            $subject = true;
-            $result = match ($subject) {
-                true => "always_true_match", // This arm always matches if $subject is true
-                default => "unreachable_default",
-            };
-        "#},
-        issues = [
+    fn report_always_matching_arm(&mut self, arm: &MatchExpressionArm) {
+        self.context.collector.report_with_code(
             Code::MATCH_ARM_ALWAYS_TRUE,
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM
-        ]
+            Issue::warning("This match arm is always true, making subsequent arms unreachable.")
+                .with_annotation(
+                    Annotation::primary(arm.span()).with_message("This arm covers all remaining cases for the subject"),
+                )
+                .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
+                .with_note("Any arms after this one can never be reached."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_simple_int,
-        code = indoc! {r#"
-            <?php
-
-            function expect_string(string $_): void {}
-
-            $value = 1;
-            $result = match ($value) {
-                1 => "one",
-                2 => "two",
-                default => "other",
-            };
-
-            expect_string($result);
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
-        ]
+    fn report_unreachable_default_arm(&mut self, arm: &MatchDefaultArm) {
+        self.context.collector.report_with_code(
+            Code::UNREACHABLE_MATCH_DEFAULT_ARM,
+            Issue::warning("This default arm is unreachable.")
+                .with_annotation(Annotation::primary(arm.span()).with_message("This default arm can never be reached"))
+                .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
+                .with_note("All possible types for the subject have been handled by previous arms."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_simple_string,
-        code = indoc! {r#"
-            <?php
-
-            function expect_int(int $_): void {}
-
-            $value = "a";
-            $result = match ($value) {
-                "a" => 10,
-                "b" => 20,
-                default => 0,
-            };
-
-            expect_int($result); // Result type int
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
-        ]
+    fn report_default_always_executed(&mut self, arm: &MatchDefaultArm) {
+        self.context.collector.report_with_code(
+            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED,
+            Issue::warning("This default arm is always executed because no other arms can match.")
+                .with_annotation(Annotation::primary(arm.span()).with_message("This arm is always executed"))
+                .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
+                .with_note("None of the preceding conditions can be met."),
+        );
     }
 
-    test_analysis! {
-        name = match_expression_multiple_conditions_one_arm,
-        code = indoc! {r#"
-            <?php
-
-            function expect_string(string $_): void {}
-
-            $value = 2;
-            $result = match ($value) {
-                1, 2, 3 => "small_number",
-                4, 5 => "medium_number",
-                default => "large_number",
-            };
-
-            expect_string($result);
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm 2nd condition
-            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the first arm other 1st condition
-            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the first arm other 3rd condition
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // For the default arm
-
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_only_default_matches,
-        code = indoc! {r#"
-            <?php
-            $value = 100;
-            $result = match ($value) {
-                1 => true,
-                2 => true,
-                default => false,
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // For the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED, // For the default arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_null_condition,
-        code = indoc! {r#"
-            <?php
-
-            $value = null;
-            $result = match ($value) {
-                null => "is_null",
-                default => "not_null",
-            };
-        "#},
-        issues = [
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the first arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the second arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_bool_condition,
-        code = indoc! {r#"
-            <?php
-            /** @param 0 $_ */
-            function expect_int(int $_): void {}
-
-            $value = false;
-            $result = match ($value) {
-                true => 1,
-                false => 0,
-            };
-
-            expect_int($result);
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // For the first arm
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the second arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_subject_is_variable,
-        code = indoc! {r#"
-            <?php
-
-            /** @return "start"|"stop"|"unknown" */
-            function get_command(): string { return "start"; }
-
-            function expect_string(string $_): void {}
-
-            $command = get_command();
-            $message = match ($command) {
-                "start" => "Processing started.",
-                "stop" => "Processing stopped.",
-                default => "Unknown command.",
-            };
-
-            expect_string($message);
-        "#}
-    }
-
-    test_analysis! {
-        name = match_expression_result_type_union,
-        code = indoc! {r#"
-            <?php
-
-            function get_int(): int { return 1; }
-            function take_int_or_string(int|string $_): void {}
-
-            $result = match (get_int()) {
-                1 => 100,           // int
-                2 => "two hundred", // string
-                default => 0,       // int
-            };
-
-            take_int_or_string($result); // Result type is int|string
-        "#}
-    }
-
-    test_analysis! {
-        name = match_expression_unhandled_subject_no_default,
-        code = indoc! {r#"
-            <?php
-
-            $value = 3; // This value is not handled
-            $result = match ($value) {
-                1 => "one",
-                2 => "two",
-            };
-        "#},
-        issues = [
-            Code::MATCH_NOT_EXHAUSTIVE, // No default arm to handle unhandled subjects
-            Code::UNREACHABLE_MATCH_ARM, // For the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::IMPOSSIBLE_ASSIGNMENT, // Result type is never
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_condition_is_expression,
-        code = indoc! {r#"
-            <?php
-
-            /** @param 20|0 $_ */
-            function expect_int(int $_): void {}
-            function get_target(): int { return 2; }
-
-            $value = 2;
-            $result = match ($value) {
-                1 + 0 => 10,
-                get_target() => 20, // Type of get_target() should be used
-                default => 0,
-            };
-
-            expect_int($result);
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM,
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_partially_redundant_condition,
-        code = indoc! {r#"
-            <?php
-
-            $status = 2;
-            $message = match ($status) {
-                1, 2 => "Processed",
-                2 => "Also Processed, but unreachable", // This specific condition '2' is covered by '1, 2'
-                default => "Error"
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For the `1` in the first arm
-            Code::MATCH_ARM_ALWAYS_TRUE, // For the `2` in the first arm
-            Code::UNREACHABLE_MATCH_ARM, // For the second arm
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM, // For the default arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_exhaustive_no_default,
-        code = indoc! {r#"
-            <?php
-
-            function get_bool(): bool { return true; }
-            function expect_bool(bool $_b): void {}
-
-            $subject = get_bool(); // Type is bool (true|false)
-            $result = match ($subject) {
-                true => false,
-                false => true,
-            };
-            expect_bool($result);
-        "#}
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_later_conditional_arm,
-        code = indoc! {r#"
-            <?php
-
-            /** @return 1|2 */
-            function get_one_or_two(): int { return 1; }
-
-            /** @param "one"|"two" $_ */
-            function take_one_or_two_string(string $_): void {}
-
-            $subject = get_one_or_two();
-            $result = match ($subject) {
-                1 => "one",
-                2 => "two",
-                3 => "three", // Unreachable, as subject can only be 1 or 2
-            };
-
-            take_one_or_two_string($result); // Result type is "one"|"two"
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM,
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_conditional_due_to_exhaustion,
-        code = indoc! {r#"
-            <?php
-
-            /** @return 1|2 $val */
-            function get_one_or_two_for_match(): int { return 1; }
-
-            $val = get_one_or_two_for_match();
-            $result = match ($val) {
-                1 => 'A',
-                2 => 'B',
-                3 => 'C', // Unreachable because $val can only be 1 or 2
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // For the '3 => C' arm
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_useless_default_arm,
-        code = indoc! {r#"
-            <?php
-
-            function get_bool(): bool { return true; }
-
-            $subject = get_bool(); // Type is bool
-            $result = match ($subject) {
-                true => "is_true",
-                false => "is_false",
-                default => "unreachable_default", // Useless default
-            };
-        "#},
-        issues = [Code::UNREACHABLE_MATCH_DEFAULT_ARM]
-    }
-
-    test_analysis! {
-        name = match_expression_not_exhaustive_union_subject_missing_default,
-        code = indoc! {r#"
-            <?php
-
-            /** @return int|string */
-            function get_int_or_string(): int|string { return "hello"; }
-
-            $subject = get_int_or_string();
-            $result = match ($subject) {
-                1 => "one",
-                "hello" => "greeting",
-                // Missing case for other ints or other strings, and no default
-            };
-        "#},
-        issues = [
-            Code::MATCH_NOT_EXHAUSTIVE
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_unreachable_specific_condition_in_arm,
-        code = indoc! {r#"
-            <?php
-
-            /** @return 1|2 */
-            function get_one_or_two_again(): int { return 1; }
-
-            $subject = get_one_or_two_again(); // Subject is int(1)|int(2)
-            $result = match ($subject) {
-                1 => "is one",
-                2, 3 => "is two or three", // Condition '3' is unreachable as subject is never int(3)
-                default => "other",
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM_CONDITION, // For condition '3'
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM // Default is unreachable
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_all_conditional_arms_unreachable_no_default,
-        code = indoc! {r#"
-            <?php
-
-            $subject = "actual_string";
-            $result = match ($subject) {
-                1 => "one",        // Unreachable (string vs int)
-                true => "trueish", // Unreachable (string vs bool)
-            };
-        "#},
-        issues = [
-            Code::UNREACHABLE_MATCH_ARM, // For 1 => "one"
-            Code::UNREACHABLE_MATCH_ARM, // For true => "trueish"
-            Code::MATCH_NOT_EXHAUSTIVE,  // Because no arms match and no default
-            Code::IMPOSSIBLE_ASSIGNMENT // Because $result gets type `never`
-        ]
-    }
-
-    test_analysis! {
-        name = match_expression_uses_variables_from_condition,
-        code = indoc! {r#"
-            <?php
-
-            function get_bool(): bool { return true; }
-            function expect_false(false $_): void {}
-
-            $subject = get_bool(); // Type is bool
-            $result = match ($subject) {
-                ($truthy = true) => !$truthy,
-                ($falsy = false) => false,
-            };
-
-            expect_false($result); // Result type is false
-        "#}
+    fn report_non_exhaustive(&mut self, subject_type: &TUnion, unhandled_type: &TUnion) {
+        self.context.collector.report_with_code(
+            Code::MATCH_NOT_EXHAUSTIVE,
+            Issue::error(format!(
+                "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
+                subject_type.get_id(Some(self.context.interner))
+            ))
+            .with_annotation(Annotation::primary(self.stmt.expression.span()).with_message(format!(
+                "Unhandled portion of subject: `{}`",
+                unhandled_type.get_id(Some(self.context.interner))
+            )))
+            .with_annotation(
+                Annotation::secondary(self.stmt.span()).with_message(
+                    "The `match` arms here do not cover all possible types and lack a `default` arm.",
+                ),
+            )
+            .with_note(
+                "If the subject expression evaluates to one of the unhandled types at runtime, PHP will throw an `UnhandledMatchError`.",
+            )
+            .with_help(format!(
+                "Add conditional arms to cover type(s) `{}` or include a `default` arm to handle all other possibilities.",
+                unhandled_type.get_id(Some(self.context.interner))
+            )),
+        );
     }
 }

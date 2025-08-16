@@ -157,7 +157,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         let synthetic_switch_condition = if switch_var_id.starts_with(Self::SYNTHETIC_SWITCH_VAR_PREFIX) {
             condition_is_synthetic = true;
 
-            Some(new_synthetic_variable(self.context.interner, &switch_var_id))
+            Some(new_synthetic_variable(self.context.interner, &switch_var_id, switch.expression.span()))
         } else {
             None
         };

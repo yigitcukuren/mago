@@ -114,8 +114,6 @@ impl Code {
     pub const MATCH_EXPRESSION_ONLY_DEFAULT_ARM: &'static str = "match-expression-only-default-arm";
     pub const EMPTY_MATCH_EXPRESSION: &'static str = "empty-match-expression";
     pub const UNKNOWN_MATCH_SUBJECT_TYPE: &'static str = "unknown-match-subject-type";
-    pub const UNKNOWN_MATCH_CONDITION_TYPE: &'static str = "unknown-match-condition-type";
-    pub const UNREACHABLE_MATCH_ARM_CONDITION: &'static str = "unreachable-match-arm-condition";
     pub const UNREACHABLE_MATCH_ARM: &'static str = "unreachable-match-arm";
     pub const UNREACHABLE_MATCH_DEFAULT_ARM: &'static str = "unreachable-match-default-arm";
     pub const MATCH_ARM_ALWAYS_TRUE: &'static str = "match-arm-always-true";

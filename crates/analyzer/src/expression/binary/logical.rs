@@ -112,7 +112,7 @@ pub fn analyze_logical_and_operation<'a>(
             &mut changed_var_ids,
             &left_referenced_var_ids,
             &binary.rhs.span(),
-            true,
+            !binary.operator.span().is_zero(),
             !block_context.inside_negation,
         );
     } else {
@@ -473,7 +473,7 @@ pub fn analyze_logical_or_operation<'a>(
                 &mut right_changed_var_ids,
                 &right_referenced_var_ids,
                 &binary.rhs.span(),
-                true,
+                !binary.operator.span().is_zero(),
                 block_context.inside_negation,
             );
         }
@@ -642,6 +642,12 @@ fn report_redundant_logical_operation(
     rhs_description: &str,
     result_value_str: &str,
 ) {
+    let operator_span = binary.operator.span();
+    if operator_span.is_zero() {
+        // Do not report issues for synthetic nodes.
+        return;
+    }
+
     context.collector.report_with_code(
         Code::REDUNDANT_LOGICAL_OPERATION,
         Issue::help(format!(

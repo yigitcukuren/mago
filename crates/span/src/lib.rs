@@ -105,8 +105,13 @@ impl Span {
     ///
     /// In debug builds, this will panic if the start and end positions are not
     /// from the same file (unless one is a dummy position).
-    pub fn new(file_id: FileId, start: Position, end: Position) -> Self {
+    pub const fn new(file_id: FileId, start: Position, end: Position) -> Self {
         Self { file_id, start, end }
+    }
+
+    /// Creates a new `Span` with a zero-length, starting and ending at the same position.
+    pub const fn zero() -> Self {
+        Self { file_id: FileId::zero(), start: Position::zero(), end: Position::zero() }
     }
 
     /// Creates a "dummy" span with a null file ID.
@@ -118,6 +123,11 @@ impl Span {
     /// and ends at the conclusion of the second span.
     pub fn between(start: Span, end: Span) -> Self {
         start.join(end)
+    }
+
+    /// Checks if this span is a zero-length span, meaning it starts and ends at the same position.
+    pub const fn is_zero(&self) -> bool {
+        self.start.is_zero() && self.end.is_zero()
     }
 
     /// Creates a new span that encompasses both `self` and `other`.

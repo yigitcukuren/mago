@@ -348,6 +348,12 @@ fn report_redundant_comparison(
     comparison_description: &str,
     result_value_str: &str,
 ) {
+    let operator_span = binary.operator.span();
+    if operator_span.is_zero() {
+        // this is a synthetic node, do not report it.
+        return;
+    }
+
     context.collector.report_with_code(
         Code::REDUNDANT_COMPARISON,
         Issue::help(format!(

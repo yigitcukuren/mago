@@ -44,6 +44,20 @@ pub fn scrape_assertions(
     }
 
     match unwrap_expression(expression) {
+        Expression::UnaryPrefix(UnaryPrefix { operator: UnaryPrefixOperator::Not(_), operand }) => {
+            let assertions = scrape_assertions(operand, artifacts, assertion_context);
+            let mut negated_assertions = HashMap::default();
+            for assertion in assertions {
+                for (var_name, assertion_set) in assertion {
+                    negated_assertions
+                        .entry(var_name)
+                        .or_insert_with(Vec::new)
+                        .extend(negate_assertion_set(assertion_set));
+                }
+            }
+
+            return if negated_assertions.is_empty() { vec![] } else { vec![negated_assertions] };
+        }
         Expression::Call(call) => {
             // Collect `@assert` assertions.
             if_types.extend(process_custom_assertions(call.span(), artifacts));
@@ -331,15 +345,15 @@ pub(super) fn scrape_equality_assertions(
         }
     };
 
-    if let Some(null_position) = has_null_variable(left, right) {
+    if let Some(null_position) = has_null_variable(left, right, artifacts) {
         return get_null_equality_assertions(left, right, assertion_context, null_position);
     }
 
-    if let Some(true_position) = has_true_variable(left, right) {
-        return get_true_equality_assertions(left, is_identity, right, assertion_context, true_position);
+    if let Some(true_position) = has_true_variable(left, right, artifacts) {
+        return get_true_equality_assertions(left, is_identity, right, artifacts, assertion_context, true_position);
     }
 
-    if let Some(false_position) = has_false_variable(left, right) {
+    if let Some(false_position) = has_false_variable(left, right, artifacts) {
         return get_false_equality_assertions(left, is_identity, right, assertion_context, false_position);
     }
 
@@ -410,15 +424,15 @@ fn scrape_inequality_assertions(
         }
     };
 
-    if let Some(null_position) = has_null_variable(left, right) {
+    if let Some(null_position) = has_null_variable(left, right, artifacts) {
         return get_null_inequality_assertions(left, right, assertion_context, null_position);
     }
 
-    if let Some(false_position) = has_false_variable(left, right) {
+    if let Some(false_position) = has_false_variable(left, right, artifacts) {
         return get_false_inquality_assertions(left, right, assertion_context, false_position);
     }
 
-    if let Some(true_position) = has_true_variable(left, right) {
+    if let Some(true_position) = has_true_variable(left, right, artifacts) {
         return get_true_inquality_assertions(left, right, assertion_context, true_position);
     }
 
@@ -1142,6 +1156,7 @@ fn get_true_equality_assertions(
     left: &Expression,
     is_identity: bool,
     right: &Expression,
+    artifacts: &mut AnalysisArtifacts,
     assertion_context: AssertionContext<'_>,
     true_position: OtherValuePosition,
 ) -> Vec<HashMap<String, AssertionSet>> {
@@ -1166,10 +1181,11 @@ fn get_true_equality_assertions(
             if_types.insert(var_name, vec![vec![Assertion::Truthy]]);
         }
 
-        return vec![if_types];
+        vec![if_types]
+    } else {
+        // If we can't get an expression ID, we can still assert that the expression is truthy.
+        scrape_assertions(base_conditional, artifacts, assertion_context)
     }
-
-    vec![]
 }
 
 pub fn has_typed_value_comparison(
@@ -1473,8 +1489,18 @@ pub fn has_enum_case_comparison(
 }
 
 #[inline]
-pub const fn has_null_variable(left: &Expression, right: &Expression) -> Option<OtherValuePosition> {
+pub fn has_null_variable(
+    left: &Expression,
+    right: &Expression,
+    artifacts: &AnalysisArtifacts,
+) -> Option<OtherValuePosition> {
     if let Expression::Literal(Literal::Null(_)) = unwrap_expression(right) {
+        return Some(OtherValuePosition::Right);
+    }
+
+    if let Some(right_type) = artifacts.get_expression_type(right)
+        && right_type.is_null()
+    {
         return Some(OtherValuePosition::Right);
     }
 
@@ -1482,16 +1508,9 @@ pub const fn has_null_variable(left: &Expression, right: &Expression) -> Option<
         return Some(OtherValuePosition::Left);
     }
 
-    None
-}
-
-#[inline]
-pub const fn has_false_variable(left: &Expression, right: &Expression) -> Option<OtherValuePosition> {
-    if let Expression::Literal(Literal::False(_)) = unwrap_expression(right) {
-        return Some(OtherValuePosition::Right);
-    }
-
-    if let Expression::Literal(Literal::False(_)) = unwrap_expression(left) {
+    if let Some(left_type) = artifacts.get_expression_type(left)
+        && left_type.is_null()
+    {
         return Some(OtherValuePosition::Left);
     }
 
@@ -1499,12 +1518,57 @@ pub const fn has_false_variable(left: &Expression, right: &Expression) -> Option
 }
 
 #[inline]
-pub const fn has_true_variable(left: &Expression, right: &Expression) -> Option<OtherValuePosition> {
+pub fn has_false_variable(
+    left: &Expression,
+    right: &Expression,
+    artifacts: &AnalysisArtifacts,
+) -> Option<OtherValuePosition> {
+    if let Expression::Literal(Literal::False(_)) = unwrap_expression(right) {
+        return Some(OtherValuePosition::Right);
+    }
+
+    if let Some(right_type) = artifacts.get_expression_type(right)
+        && right_type.is_false()
+    {
+        return Some(OtherValuePosition::Right);
+    }
+
+    if let Expression::Literal(Literal::False(_)) = unwrap_expression(left) {
+        return Some(OtherValuePosition::Left);
+    }
+
+    if let Some(left_type) = artifacts.get_expression_type(left)
+        && left_type.is_false()
+    {
+        return Some(OtherValuePosition::Left);
+    }
+
+    None
+}
+
+#[inline]
+pub fn has_true_variable(
+    left: &Expression,
+    right: &Expression,
+    artifacts: &AnalysisArtifacts,
+) -> Option<OtherValuePosition> {
     if let Expression::Literal(Literal::True(_)) = unwrap_expression(right) {
         return Some(OtherValuePosition::Right);
     }
 
+    if let Some(right_type) = artifacts.get_expression_type(right)
+        && right_type.is_true()
+    {
+        return Some(OtherValuePosition::Right);
+    }
+
     if let Expression::Literal(Literal::True(_)) = unwrap_expression(left) {
+        return Some(OtherValuePosition::Left);
+    }
+
+    if let Some(left_type) = artifacts.get_expression_type(left)
+        && left_type.is_true()
+    {
         return Some(OtherValuePosition::Left);
     }
 
