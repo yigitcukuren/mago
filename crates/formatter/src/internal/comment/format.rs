@@ -389,10 +389,8 @@ impl<'a> FormatterState<'a> {
                 return Document::String(content);
             }
 
-            if self.settings.double_slash_comments && comment.is_shell_comment {
+            if comment.is_shell_comment {
                 content = self.as_str(format!("// {}", content[1..].trim()));
-            } else if !self.settings.double_slash_comments && !comment.is_shell_comment {
-                content = self.as_str(format!("# {}", content[2..].trim()));
             }
 
             return Document::String(content);

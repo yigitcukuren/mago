@@ -18,7 +18,7 @@ if( $condition ) {
     // ...
 }
 
-for( $i=0 ;$i<10 ;$i ++ ) {
+for( $i=0; $i<10; $i++ ) {
     // ...
 }
 
@@ -155,17 +155,17 @@ $array=[
 ];
 
 // Null type hints
-function nullableFunction ( null | string $param ) :null | int
+function nullableFunction ( null | string $param ) : null | int
 {
     return null;
 }
 
-function unionTypeFunction ( string | int $param ) :string | int
+function unionTypeFunction ( string | int $param ) : string | int
 {
     return $param;
 }
 
-function intersectionTypeFunction ( Foo & Bar $param ) :Foo & Bar
+function intersectionTypeFunction ( Foo & Bar $param ) : Foo & Bar
 {
     return $param;
 }
@@ -190,8 +190,8 @@ function namedArgs ( string $name = 'foo', int $age = 30 )
 }
 
 namedArgs (
-    name :'bar',
-    age :25,
+    name: 'bar',
+    age: 25,
 );
 
 // List destructuring
@@ -201,7 +201,7 @@ list ( $a, $b )=[ 1, 2 ];
 $legacyArray=array ( $a, $b );
 
 // Array access
-$value=$array[ $key ];
+$value=$array[$key];
 
 // Grouping parenthesis
 $result=( $a+$b )*$c;

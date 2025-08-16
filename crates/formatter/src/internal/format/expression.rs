@@ -222,18 +222,7 @@ impl<'a> Format<'a> for UnaryPostfix {
 
 impl<'a> Format<'a> for UnaryPostfixOperator {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
-        wrap!(f, self, UnaryPostfixOperator, {
-            let space_before = match self {
-                UnaryPostfixOperator::PostIncrement(_) => f.settings.space_before_increment_unary_postfix_operator,
-                UnaryPostfixOperator::PostDecrement(_) => f.settings.space_before_decrement_unary_postfix_operator,
-            };
-
-            if space_before {
-                Document::Array(vec![Document::space(), Document::String(self.as_str())])
-            } else {
-                Document::String(self.as_str())
-            }
-        })
+        wrap!(f, self, UnaryPostfixOperator, { Document::String(self.as_str()) })
     }
 }
 
@@ -541,18 +530,12 @@ impl<'a> Format<'a> for PositionalArgument {
 impl<'a> Format<'a> for NamedArgument {
     fn format(&'a self, f: &mut FormatterState<'a>) -> Document<'a> {
         wrap!(f, self, NamedArgument, {
-            let mut content = vec![self.name.format(f)];
-            if f.settings.space_before_colon_in_named_argument {
-                content.push(Document::space());
-            }
-            content.push(Document::String(":"));
-            if f.settings.space_after_colon_in_named_argument {
-                content.push(Document::space());
-            }
-
-            content.push(self.value.format(f));
-
-            Document::Group(Group::new(content))
+            Document::Group(Group::new(vec![
+                self.name.format(f),
+                Document::String(":"),
+                Document::space(),
+                self.value.format(f),
+            ]))
         })
     }
 }
@@ -835,9 +818,7 @@ impl<'a> Format<'a> for ArrayAccess {
             Document::Group(Group::new(vec![
                 self.array.format(f),
                 Document::String("["),
-                if f.settings.space_within_array_access_brackets { Document::space() } else { Document::empty() },
                 self.index.format(f),
-                if f.settings.space_within_array_access_brackets { Document::space() } else { Document::empty() },
                 Document::String("]"),
             ]))
         })

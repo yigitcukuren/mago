@@ -245,25 +245,11 @@ impl<'a> Format<'a> for For {
                 Document::Indent(vec![
                     Document::Line(Line::soft()),
                     format_expressions(f, self.initializations.as_slice()),
-                    if f.settings.space_before_for_semicolon { Document::space() } else { Document::empty() },
                     Document::String(";"),
-                    if self.conditions.is_empty() {
-                        Document::empty()
-                    } else if f.settings.space_after_for_semicolon {
-                        Document::Line(Line::default())
-                    } else {
-                        Document::Line(Line::soft())
-                    },
+                    if self.conditions.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
                     format_expressions(f, self.conditions.as_slice()),
-                    if f.settings.space_before_for_semicolon { Document::space() } else { Document::empty() },
                     Document::String(";"),
-                    if self.increments.is_empty() {
-                        Document::empty()
-                    } else if f.settings.space_after_for_semicolon {
-                        Document::Line(Line::default())
-                    } else {
-                        Document::Line(Line::soft())
-                    },
+                    if self.increments.is_empty() { Document::empty() } else { Document::Line(Line::default()) },
                     format_expressions(f, self.increments.as_slice()),
                 ]),
                 Document::Line(Line::soft()),

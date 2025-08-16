@@ -519,28 +519,6 @@ pub struct FormatSettings {
     #[serde(default)]
     pub null_type_hint: NullTypeHint,
 
-    /// Whether to put `static` before visibility keywords.
-    ///
-    /// When enabled:
-    /// ```php
-    /// class Foo {
-    ///     static public $bar;
-    /// }
-    /// ```
-    ///
-    /// When disabled:
-    /// ```php
-    /// class Foo {
-    ///     public static $bar;
-    /// }
-    /// ```
-    ///
-    /// This also affects placement of the `readonly` keyword.
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub static_before_visibility: bool,
-
     /// Whether to include parentheses around `new` when followed by a member access.
     ///
     /// Controls whether to use PHP 8.4's shorthand syntax for new expressions
@@ -756,33 +734,6 @@ pub struct FormatSettings {
     #[serde(default = "default_false")]
     pub space_before_legacy_array_parenthesis: bool,
 
-    /// Whether to add a space before increment postfix operator (++).
-    ///
-    /// When enabled: `$i ++`
-    /// When disabled: `$i++`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_before_increment_unary_postfix_operator: bool,
-
-    /// Whether to add a space before decrement postfix operator (--).
-    ///
-    /// When enabled: `$i --`
-    /// When disabled: `$i--`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_before_decrement_unary_postfix_operator: bool,
-
-    /// Whether to add a space before semicolons in for loops.
-    ///
-    /// When enabled: `for ($i = 0 ; $i < 10 ; $i++)`
-    /// When disabled: `for ($i = 0; $i < 10; $i++)`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_before_for_semicolon: bool,
-
     /// Whether to add a space before the colon in return type hints.
     ///
     /// When enabled: `function foo() : string`
@@ -791,15 +742,6 @@ pub struct FormatSettings {
     /// Default: false
     #[serde(default = "default_false")]
     pub space_before_colon_in_return_type: bool,
-
-    /// Whether to add a space before the colon in named arguments.
-    ///
-    /// When enabled: `foo(name : 'value')`
-    /// When disabled: `foo(name: 'value')`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_before_colon_in_named_argument: bool,
 
     /// Whether to add a space before the colon in enum backing types.
     ///
@@ -810,33 +752,6 @@ pub struct FormatSettings {
     #[serde(default = "default_false")]
     pub space_before_colon_in_enum_backing_type: bool,
 
-    /// Whether to add a space after semicolons in for loops.
-    ///
-    /// When enabled: `for ($i = 0; $i < 10; $i++)`
-    /// When disabled: `for ($i = 0;$i < 10;$i++)`
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub space_after_for_semicolon: bool,
-
-    /// Whether to add a space after the colon in return type hints.
-    ///
-    /// When enabled: `function foo(): string`
-    /// When disabled: `function foo():string`
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub space_after_colon_in_return_type: bool,
-
-    /// Whether to add a space after the colon in named arguments.
-    ///
-    /// When enabled: `foo(name: 'value')`
-    /// When disabled: `foo(name:'value')`
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub space_after_colon_in_named_argument: bool,
-
     /// Whether to add a space after the colon in enum backing types.
     ///
     /// When enabled: `enum Foo: string`
@@ -845,15 +760,6 @@ pub struct FormatSettings {
     /// Default: true
     #[serde(default = "default_true")]
     pub space_after_colon_in_enum_backing_type: bool,
-
-    /// Whether to add a space after the question mark in nullable type hints.
-    ///
-    /// When enabled: `function foo(? string $bar)`
-    /// When disabled: `function foo(?string $bar)`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_after_nullable_type_question_mark: bool,
 
     /// Whether to add a space after cast operators (int, float, string, etc.).
     ///
@@ -1061,15 +967,6 @@ pub struct FormatSettings {
     /// Default: false
     #[serde(default = "default_false")]
     pub space_around_ampersand_in_intersection_type: bool,
-
-    /// Whether to add spaces within array access brackets.
-    ///
-    /// When enabled: `$array[ $key ]`
-    /// When disabled: `$array[$key]`
-    ///
-    /// Default: false
-    #[serde(default = "default_false")]
-    pub space_within_array_access_brackets: bool,
 
     /// Whether to add spaces within type parentheses.
     ///
@@ -1308,15 +1205,6 @@ pub struct FormatSettings {
     #[serde(default = "default_true")]
     pub empty_line_before_dangling_comments: bool,
 
-    /// Whether to use double slash comments instead of hash comments.
-    ///
-    /// When enabled: `// This is a comment`
-    /// When disabled: `# This is a comment`
-    ///
-    /// Default: true
-    #[serde(default = "default_true")]
-    pub double_slash_comments: bool,
-
     /// Whether to separate class-like members of different kinds with a blank line.
     ///
     /// Default: true
@@ -1346,7 +1234,6 @@ impl Default for FormatSettings {
             inline_empty_constructor_braces: true,
             inline_empty_classlike_braces: false,
             inline_empty_anonymous_class_braces: true,
-            static_before_visibility: false,
             null_type_hint: NullTypeHint::default(),
             break_promoted_properties_list: true,
             method_chain_breaking_style: MethodChainBreakingStyle::NextLine,
@@ -1382,13 +1269,10 @@ impl Default for FormatSettings {
             space_before_function_parameter_list_parenthesis: false,
             space_before_list_parenthesis: false,
             space_before_legacy_array_parenthesis: false,
-            space_before_for_semicolon: false,
             space_before_colon_in_return_type: false,
-            space_before_colon_in_named_argument: false,
             space_before_colon_in_enum_backing_type: false,
             space_around_assignment_in_declare: false,
             space_around_pipe_in_union_type: false,
-            space_within_array_access_brackets: false,
             space_within_array_brackets: false,
             space_within_grouping_parenthesis: false,
             space_within_list_parenthesis: false,
@@ -1401,14 +1285,9 @@ impl Default for FormatSettings {
             space_within_catch_parenthesis: false,
             space_within_switch_parenthesis: false,
             space_within_match_parenthesis: false,
-            space_after_for_semicolon: true,
-            space_after_colon_in_return_type: true,
-            space_after_colon_in_named_argument: true,
             space_after_colon_in_enum_backing_type: true,
             space_before_hook_parameter_list_parenthesis: false,
             space_before_method_parameter_list_parenthesis: false,
-            space_before_increment_unary_postfix_operator: false,
-            space_before_decrement_unary_postfix_operator: false,
             space_around_assignment_operators: true,
             space_around_logical_binary_operators: true,
             space_around_equality_binary_operators: true,
@@ -1432,7 +1311,6 @@ impl Default for FormatSettings {
             space_after_increment_unary_prefix_operator: false,
             space_after_decrement_unary_prefix_operator: false,
             space_after_additive_unary_prefix_operator: false,
-            space_after_nullable_type_question_mark: false,
             empty_line_after_control_structure: false,
             empty_line_after_opening_tag: false,
             empty_line_after_declare: true,
@@ -1446,7 +1324,6 @@ impl Default for FormatSettings {
             empty_line_after_method: true,
             empty_line_before_return: false,
             empty_line_before_dangling_comments: true,
-            double_slash_comments: true,
             separate_class_like_members: true,
         }
     }

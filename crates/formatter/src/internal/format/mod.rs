@@ -1317,15 +1317,9 @@ impl<'a> Format<'a> for Hint {
                             },
                             nullable_hint.hint.format(f),
                         ])),
-                        NullTypeHint::Question => Document::Group(Group::new(vec![
-                            Document::String("?"),
-                            if f.settings.space_after_nullable_type_question_mark {
-                                Document::space()
-                            } else {
-                                Document::empty()
-                            },
-                            nullable_hint.hint.format(f),
-                        ])),
+                        NullTypeHint::Question => {
+                            Document::Group(Group::new(vec![Document::String("?"), nullable_hint.hint.format(f)]))
+                        }
                     }
                 }
                 Hint::Union(union_hint) => {
@@ -1345,11 +1339,6 @@ impl<'a> Format<'a> for Hint {
                         {
                             return Document::Group(Group::new(vec![
                                 Document::String("?"),
-                                if f.settings.space_after_nullable_type_question_mark {
-                                    Document::space()
-                                } else {
-                                    Document::empty()
-                                },
                                 union_hint.right.format(f),
                             ]));
                         }
@@ -1357,15 +1346,7 @@ impl<'a> Format<'a> for Hint {
                         if let Hint::Null(_) = union_hint.right.as_ref()
                             && f.settings.null_type_hint.is_question()
                         {
-                            return Document::Group(Group::new(vec![
-                                Document::String("?"),
-                                if f.settings.space_after_nullable_type_question_mark {
-                                    Document::space()
-                                } else {
-                                    Document::empty()
-                                },
-                                union_hint.left.format(f),
-                            ]));
+                            return Document::Group(Group::new(vec![Document::String("?"), union_hint.left.format(f)]));
                         }
                     }
 
@@ -1660,7 +1641,7 @@ impl<'a> Format<'a> for FunctionLikeReturnTypeHint {
             Document::Group(Group::new(vec![
                 if f.settings.space_before_colon_in_return_type { Document::space() } else { Document::empty() },
                 Document::String(":"),
-                if f.settings.space_after_colon_in_return_type { Document::space() } else { Document::empty() },
+                Document::space(),
                 self.hint.format(f),
             ]))
         })

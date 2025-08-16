@@ -284,38 +284,20 @@ pub(super) fn print_modifiers<'a>(f: &mut FormatterState<'a>, modifiers: &'a Seq
         printed_modifiers.push(modifier.format(f));
     }
 
-    if f.settings.static_before_visibility {
-        if let Some(modifier) = modifiers.get_static() {
-            printed_modifiers.push(modifier.format(f));
-        }
+    if let Some(modifier) = modifiers.get_first_read_visibility() {
+        printed_modifiers.push(modifier.format(f));
+    }
 
-        if let Some(modifier) = modifiers.get_readonly() {
-            printed_modifiers.push(modifier.format(f));
-        }
+    if let Some(modifier) = modifiers.get_first_write_visibility() {
+        printed_modifiers.push(modifier.format(f));
+    }
 
-        if let Some(modifier) = modifiers.get_first_read_visibility() {
-            printed_modifiers.push(modifier.format(f));
-        }
+    if let Some(modifier) = modifiers.get_static() {
+        printed_modifiers.push(modifier.format(f));
+    }
 
-        if let Some(modifier) = modifiers.get_first_write_visibility() {
-            printed_modifiers.push(modifier.format(f));
-        }
-    } else {
-        if let Some(modifier) = modifiers.get_first_read_visibility() {
-            printed_modifiers.push(modifier.format(f));
-        }
-
-        if let Some(modifier) = modifiers.get_first_write_visibility() {
-            printed_modifiers.push(modifier.format(f));
-        }
-
-        if let Some(modifier) = modifiers.get_static() {
-            printed_modifiers.push(modifier.format(f));
-        }
-
-        if let Some(modifier) = modifiers.get_readonly() {
-            printed_modifiers.push(modifier.format(f));
-        }
+    if let Some(modifier) = modifiers.get_readonly() {
+        printed_modifiers.push(modifier.format(f));
     }
 
     Document::join(printed_modifiers, Separator::Space)
