@@ -300,10 +300,10 @@ impl<'i> Collector<'i> {
             }
 
             let is_applicable = if let Some(scope_span) = pragma.scope_span {
-                scope_span.contains(&issue_span)
+                scope_span.contains(&issue_span) || issue_span.contains(&scope_span)
             } else if pragma.used {
                 false
-            } else if pragma.trivia_span.contains(&issue_span) {
+            } else if pragma.trivia_span.contains(&issue_span) || issue_span.contains(&pragma.trivia_span) {
                 // The issue is inside the same comment as the pragma!
                 true
             } else if pragma.own_line {

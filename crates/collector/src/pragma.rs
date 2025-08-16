@@ -154,11 +154,11 @@ fn parse_pragmas_in_trivia<'a>(
         let pragma_end_offset = pragma_start_offset + prefix.len() as u32 + content_with_leading_space.len() as u32;
         let span = Span::new(file.id, pragma_start_offset, pragma_end_offset);
 
-        let start_line = file.line_number(span.start.offset);
-        let end_line = file.line_number(span.end.offset);
+        let start_line = file.line_number(trivia.span.start.offset);
+        let end_line = file.line_number(trivia.span.end.offset);
         let line_start_offset = file.get_line_start_offset(start_line).unwrap_or(0);
-        let prefix_text = &file.contents[line_start_offset as usize..span.start.offset as usize];
-        let own_line = prefix_text.trim().is_empty();
+        let prefix_text = &file.contents[line_start_offset as usize..trivia.span.start.offset as usize];
+        let own_line = start_line == end_line && prefix_text.trim().is_empty();
 
         pragmas.push(Pragma {
             kind,
