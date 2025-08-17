@@ -598,7 +598,7 @@ pub fn split_tag_content(content: &str, input_span: Span) -> Option<(TypeString,
             break;
         }
 
-        if char.is_whitespace() {
+        if char.is_whitespace() || char == '.' {
             if bracket_stack.is_empty() && last_char_was_significant {
                 // Found the first potential split point
                 split_point_rel = Some(i);
@@ -756,6 +756,16 @@ mod tests {
         assert_eq!(ts.value, "array<int, string>");
         assert_eq!(ts.span, make_span(1, "array<int, string>".len() as u32 + 1));
         assert_eq!(rest, ""); // No rest part
+    }
+
+    #[test]
+    fn test_splitter_with_dot() {
+        let input = "string[]. something";
+        let span = test_span_for(input);
+        let (ts, rest) = split_tag_content(input, span).unwrap();
+        assert_eq!(ts.value, "string[]");
+        assert_eq!(ts.span, make_span(0, "string[]".len() as u32));
+        assert_eq!(rest, ". something");
     }
 
     #[test]
