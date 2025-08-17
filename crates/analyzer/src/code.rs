@@ -779,7 +779,7 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_argument_issue_codes() -> [Self; 14] {
+    pub const fn get_argument_issue_codes() -> [Self; 16] {
         [
             Self::DuplicateNamedArgument,
             Self::FalseArgument,
@@ -795,10 +795,12 @@ impl IssueCode {
             Self::PossiblyFalseArgument,
             Self::PossiblyInvalidArgument,
             Self::PossiblyNullArgument,
+            Self::TooFewArguments,
+            Self::TooManyArguments,
         ]
     }
 
-    pub const fn get_argument_issue_code_values() -> [&'static str; 14] {
+    pub const fn get_argument_issue_code_values() -> [&'static str; 16] {
         [
             "duplicate-named-argument",
             "false-argument",
@@ -814,6 +816,8 @@ impl IssueCode {
             "possibly-false-argument",
             "possibly-invalid-argument",
             "possibly-null-argument",
+            "too-few-arguments",
+            "too-many-arguments",
         ]
     }
 
@@ -838,6 +842,74 @@ impl IssueCode {
             "possibly-false-operand",
             "possibly-invalid-operand",
             "possibly-null-operand",
+        ]
+    }
+
+    pub const fn get_property_issue_codes() -> [Self; 14] {
+        [
+            Self::AmbiguousObjectPropertyAccess,
+            Self::IncompatiblePropertyType,
+            Self::InvalidPropertyAccess,
+            Self::InvalidPropertyAssignmentValue,
+            Self::InvalidPropertyRead,
+            Self::InvalidPropertyWrite,
+            Self::InvalidStaticPropertyAccess,
+            Self::MixedPropertyAccess,
+            Self::MixedPropertyTypeCoercion,
+            Self::NonExistentProperty,
+            Self::NullPropertyAccess,
+            Self::OverriddenPropertyAccess,
+            Self::PossiblyNullPropertyAccess,
+            Self::PropertyTypeCoercion,
+        ]
+    }
+
+    pub const fn get_property_issue_code_values() -> [&'static str; 14] {
+        [
+            "ambiguous-object-property-access",
+            "incompatible-property-type",
+            "invalid-property-access",
+            "invalid-property-assignment-value",
+            "invalid-property-read",
+            "invalid-property-write",
+            "invalid-static-property-access",
+            "mixed-property-access",
+            "mixed-property-type-coercion",
+            "non-existent-property",
+            "null-property-access",
+            "overridden-property-access",
+            "possibly-null-property-access",
+            "property-type-coercion",
+        ]
+    }
+
+    pub const fn get_generator_issue_codes() -> [Self; 10] {
+        [
+            Self::HiddenGeneratorReturn,
+            Self::InvalidGeneratorReturnType,
+            Self::InvalidYieldKeyType,
+            Self::InvalidYieldValueType,
+            Self::UnknownYieldFromIteratorType,
+            Self::YieldFromInvalidKeyType,
+            Self::YieldFromInvalidSendType,
+            Self::YieldFromInvalidValueType,
+            Self::YieldFromNonIterable,
+            Self::YieldOutsideFunction,
+        ]
+    }
+
+    pub const fn get_generator_issue_code_values() -> [&'static str; 10] {
+        [
+            "hidden-generator-return",
+            "invalid-generator-return-type",
+            "invalid-yield-key-type",
+            "invalid-yield-value-type",
+            "unknown-yield-from-iterator-type",
+            "yield-from-invalid-key-type",
+            "yield-from-invalid-send-type",
+            "yield-from-invalid-value-type",
+            "yield-from-non-iterable",
+            "yield-outside-function",
         ]
     }
 }

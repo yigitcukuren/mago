@@ -48,6 +48,12 @@ pub struct Settings {
     /// Report all issues related to operands in expressions. Defaults to `true`.
     pub operand_issues: bool,
 
+    /// Report all issues related to properties and their usage. Defaults to `true`.
+    pub property_issues: bool,
+
+    /// Report all issues related to the use of generators. Defaults to `true`.
+    pub generator_issues: bool,
+
     /// Find and report expressions whose results are not used (e.g., `$a + $b;`). Defaults to `false`.
     pub find_unused_expressions: bool,
 
@@ -111,6 +117,8 @@ impl Settings {
             argument_issues: true,
             operand_issues: true,
             ambiguity_issues: true,
+            property_issues: true,
+            generator_issues: true,
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,

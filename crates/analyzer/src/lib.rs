@@ -123,6 +123,14 @@ impl<'a> Analyzer<'a> {
             collector.add_disabled_codes(IssueCode::get_operand_issue_code_values());
         }
 
+        if !self.settings.property_issues {
+            collector.add_disabled_codes(IssueCode::get_property_issue_code_values());
+        }
+
+        if !self.settings.generator_issues {
+            collector.add_disabled_codes(IssueCode::get_generator_issue_code_values());
+        }
+
         let mut context = {
             Context::new(
                 self.interner,
