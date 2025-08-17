@@ -9,7 +9,7 @@ function is_int($value): bool
 /**
  * @mago-expect analysis:always-matching-switch-case
  * @mago-expect analysis:unreachable-switch-case
- * @mago-expect analysis:unnecessary-switch-default
+ * @mago-expect analysis:unreachable-switch-default
  */
 function test_switch_always_matching_case(int $value): string
 {

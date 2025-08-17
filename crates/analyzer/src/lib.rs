@@ -247,9 +247,9 @@ mod tests {
         actual_issues_collected.extend(codebase.take_issues(true));
 
         let actual_issues_count = actual_issues_collected.len();
-        let mut expected_issue_counts: BTreeMap<&IssueCode, usize> = BTreeMap::new();
+        let mut expected_issue_counts: BTreeMap<&str, usize> = BTreeMap::new();
         for kind in expected_issue_codes {
-            *expected_issue_counts.entry(kind).or_insert(0) += 1;
+            *expected_issue_counts.entry(kind.as_str()).or_insert(0) += 1;
         }
 
         let mut actual_issue_counts: BTreeMap<String, usize> = BTreeMap::new();
@@ -276,7 +276,7 @@ mod tests {
         }
 
         for (expected_kind, expected_count) in expected_issue_counts {
-            let actual_count = actual_issue_counts.get(expected_kind.as_str()).copied().unwrap_or(0);
+            let actual_count = actual_issue_counts.get(expected_kind).copied().unwrap_or(0);
             if actual_count < expected_count {
                 discrepancies.push(format!(
                     "- Missing expected issue(s) of kind `{expected_kind}`: expected {expected_count}, found {actual_count}.",

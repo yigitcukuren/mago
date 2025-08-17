@@ -2,7 +2,7 @@
 
 /**
  * @mago-expect analysis:always-matching-switch-case
- * @mago-expect analysis:unnecessary-switch-default
+ * @mago-expect analysis:unreachable-switch-default
  * @mago-expect analysis:unreachable-switch-case
  */
 function test_switch_on_literal(): string

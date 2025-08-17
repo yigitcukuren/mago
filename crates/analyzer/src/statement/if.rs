@@ -1345,10 +1345,10 @@ mod tests {
             }
         "#},
         issues = [
-            IssueCode::RedundantComparison, // `$a > $b` is always false
             IssueCode::ImpossibleCondition, // `if ($a > $b)` is never executed
+            IssueCode::RedundantComparison, // `$a > $b` is always false
+            IssueCode::RedundantCondition, // `if ($a < $b)` is always executed
             IssueCode::RedundantComparison, // `$a < $b` is always true
-            IssueCode::RedundantComparison, // `if ($a < $b) { }` is always executed
         ],
     }
 
