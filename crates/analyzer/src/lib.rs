@@ -135,6 +135,18 @@ impl<'a> Analyzer<'a> {
             collector.add_disabled_codes(IssueCode::get_array_issue_code_values());
         }
 
+        if !self.settings.return_issues {
+            collector.add_disabled_codes(IssueCode::get_return_issue_code_values());
+        }
+
+        if !self.settings.method_issues {
+            collector.add_disabled_codes(IssueCode::get_method_issue_code_values());
+        }
+
+        if !self.settings.iterator_issues {
+            collector.add_disabled_codes(IssueCode::get_iterator_issue_code_values());
+        }
+
         let mut context = {
             Context::new(
                 self.interner,

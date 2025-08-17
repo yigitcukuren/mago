@@ -65,6 +65,15 @@ pub struct AnalyzeConfiguration {
     /// Report all issues related to array operations and usage.
     pub array_issues: bool,
 
+    /// Report issues related to the return type of functions and methods.
+    pub return_issues: bool,
+
+    /// Report issues related to methods and their usage.
+    pub method_issues: bool,
+
+    /// Report issues related to iterators and their usage.
+    pub iterator_issues: bool,
+
     /// Whether to find unused expressions.
     pub find_unused_expressions: bool,
 
@@ -113,6 +122,9 @@ impl AnalyzeConfiguration {
             property_issues: self.property_issues,
             generator_issues: self.generator_issues,
             array_issues: self.array_issues,
+            return_issues: self.return_issues,
+            method_issues: self.method_issues,
+            iterator_issues: self.iterator_issues,
             analyze_dead_code: self.analyze_dead_code,
             find_unused_definitions: self.find_unused_definitions,
             find_unused_expressions: self.find_unused_expressions,
@@ -152,6 +164,9 @@ impl ConfigurationEntry for AnalyzeConfiguration {
             .set_default("analyze.property_issues", defaults.property_issues)?
             .set_default("analyze.generator_issues", defaults.generator_issues)?
             .set_default("analyze.array_issues", defaults.array_issues)?
+            .set_default("analyze.return_issues", defaults.return_issues)?
+            .set_default("analyze.method_issues", defaults.method_issues)?
+            .set_default("analyze.iterator_issues", defaults.iterator_issues)?
             .set_default("analyze.find_unused_definitions", defaults.find_unused_definitions)?
             .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
             .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
@@ -187,6 +202,9 @@ impl Default for AnalyzeConfiguration {
             property_issues: defaults.property_issues,
             generator_issues: defaults.generator_issues,
             array_issues: defaults.array_issues,
+            return_issues: defaults.return_issues,
+            method_issues: defaults.method_issues,
+            iterator_issues: defaults.iterator_issues,
             find_unused_expressions: defaults.find_unused_expressions,
             find_unused_definitions: defaults.find_unused_definitions,
             analyze_dead_code: defaults.analyze_dead_code,

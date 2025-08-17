@@ -964,6 +964,96 @@ impl IssueCode {
             "undefined-string-array-index",
         ]
     }
+
+    pub const fn get_return_issue_codes() -> [Self; 9] {
+        [
+            Self::FalsableReturnStatement,
+            Self::HiddenGeneratorReturn,
+            Self::InvalidGeneratorReturnType,
+            Self::InvalidReturnStatement,
+            Self::LessSpecificNestedReturnStatement,
+            Self::LessSpecificReturnStatement,
+            Self::MixedReturnStatement,
+            Self::NeverReturn,
+            Self::NullableReturnStatement,
+        ]
+    }
+
+    pub const fn get_return_issue_code_values() -> [&'static str; 9] {
+        [
+            "falsable-return-statement",
+            "hidden-generator-return",
+            "invalid-generator-return-type",
+            "invalid-return-statement",
+            "less-specific-nested-return-statement",
+            "less-specific-return-statement",
+            "mixed-return-statement",
+            "never-return",
+            "nullable-return-statement",
+        ]
+    }
+
+    pub const fn get_method_issue_codes() -> [Self; 11] {
+        [
+            Self::AmbiguousObjectMethodAccess,
+            Self::DeprecatedMethod,
+            Self::InvalidMethodAccess,
+            Self::InvalidStaticMethodAccess,
+            Self::InvalidStaticMethodCall,
+            Self::MethodAccessOnNull,
+            Self::MixedMethodAccess,
+            Self::NonExistentMethod,
+            Self::PossibleMethodAccessOnNull,
+            Self::UnimplementedAbstractMethod,
+            Self::UnusedMethodCall,
+        ]
+    }
+
+    pub const fn get_method_issue_code_values() -> [&'static str; 11] {
+        [
+            "ambiguous-object-method-access",
+            "deprecated-method",
+            "invalid-method-access",
+            "invalid-static-method-access",
+            "invalid-static-method-call",
+            "method-access-on-null",
+            "mixed-method-access",
+            "non-existent-method",
+            "possible-method-access-on-null",
+            "unimplemented-abstract-method",
+            "unused-method-call",
+        ]
+    }
+
+    pub const fn get_iterator_issue_codes() -> [Self; 10] {
+        [
+            Self::FalseIterator,
+            Self::InvalidIterator,
+            Self::NonIterableObjectIteration,
+            Self::NullIterator,
+            Self::PossiblyFalseIterator,
+            Self::PossiblyInvalidIterator,
+            Self::PossiblyNullIterator,
+            Self::UnknownIteratorType,
+            Self::UnknownYieldFromIteratorType,
+            Self::YieldFromNonIterable,
+        ]
+    }
+
+    pub const fn get_iterator_issue_code_values() -> [&'static str; 10] {
+        [
+            "false-iterator",
+            "invalid-iterator",
+            "non-iterable-object-iteration",
+            "null-iterator",
+            "possibly-false-iterator",
+            "possibly-invalid-iterator",
+            "possibly-null-iterator",
+            "unknown-iterator-type",
+            "unknown-yield-from-iterator-type",
+            "yield-from-non-iterable",
+        ]
+    }
 }
 
 impl std::str::FromStr for IssueCode {

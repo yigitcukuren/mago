@@ -57,6 +57,15 @@ pub struct Settings {
     /// Report all issues related to array operations and usage. Defaults to `true`.
     pub array_issues: bool,
 
+    /// Report issues related to the return type of functions and methods. Defaults to `true`.
+    pub return_issues: bool,
+
+    /// Report issues related to methods and their usage. Defaults to `true`.
+    pub method_issues: bool,
+
+    /// Report issues related to iterators and their usage. Defaults to `true`.
+    pub iterator_issues: bool,
+
     /// Find and report expressions whose results are not used (e.g., `$a + $b;`). Defaults to `false`.
     pub find_unused_expressions: bool,
 
@@ -123,6 +132,9 @@ impl Settings {
             property_issues: true,
             generator_issues: true,
             array_issues: true,
+            return_issues: true,
+            method_issues: true,
+            iterator_issues: true,
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,
