@@ -41,6 +41,9 @@ pub struct AnalyzeConfiguration {
     /// Report all issues related to logically impossible conditions.
     pub impossibility_issues: bool,
 
+    /// Report all issues related to ambiguous code constructs.
+    pub ambiguity_issues: bool,
+
     /// Whether to find unused expressions.
     pub find_unused_expressions: bool,
 
@@ -112,6 +115,7 @@ impl ConfigurationEntry for AnalyzeConfiguration {
             .set_default("analyze.unreachable_issues", defaults.unreachable_issues)?
             .set_default("analyze.deprecation_issues", defaults.deprecation_issues)?
             .set_default("analyze.impossibility_issues", defaults.impossibility_issues)?
+            .set_default("analyze.ambiguity_issues", defaults.ambiguity_issues)?
             .set_default("analyze.find_unused_definitions", defaults.find_unused_definitions)?
             .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
             .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
@@ -139,6 +143,7 @@ impl Default for AnalyzeConfiguration {
             unreachable_issues: defaults.unreachable_issues,
             deprecation_issues: defaults.deprecation_issues,
             impossibility_issues: defaults.impossibility_issues,
+            ambiguity_issues: defaults.ambiguity_issues,
             find_unused_expressions: defaults.find_unused_expressions,
             find_unused_definitions: defaults.find_unused_definitions,
             analyze_dead_code: defaults.analyze_dead_code,

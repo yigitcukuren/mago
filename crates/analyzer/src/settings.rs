@@ -33,6 +33,9 @@ pub struct Settings {
     /// Report all issues related to logically impossible conditions. Defaults to `true`.
     pub impossibility_issues: bool,
 
+    /// Report all issues related to ambiguous code constructs. Defaults to `true`.
+    pub ambiguity_issues: bool,
+
     /// Find and report expressions whose results are not used (e.g., `$a + $b;`). Defaults to `false`.
     pub find_unused_expressions: bool,
 
@@ -91,6 +94,7 @@ impl Settings {
             unreachable_issues: true,
             deprecation_issues: true,
             impossibility_issues: true,
+            ambiguity_issues: true,
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,

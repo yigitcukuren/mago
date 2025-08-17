@@ -103,6 +103,10 @@ impl<'a> Analyzer<'a> {
             collector.add_disabled_codes(IssueCode::get_impossibility_issue_code_values());
         }
 
+        if !self.settings.ambiguity_issues {
+            collector.add_disabled_codes(IssueCode::get_ambiguity_issue_code_values());
+        }
+
         let mut context = {
             Context::new(
                 self.interner,
