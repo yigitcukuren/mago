@@ -481,10 +481,8 @@ impl IssueCollection {
         self.issues.iter().map(|issue| issue.level).max()
     }
 
-    pub fn with_code(self, code: impl Into<String>) -> IssueCollection {
-        let code = code.into();
-
-        Self { issues: self.issues.into_iter().map(|issue| issue.with_code(&code)).collect() }
+    pub fn filter_out_ignored(&mut self, ignore: &[String]) {
+        self.issues.retain(|issue| if let Some(code) = &issue.code { !ignore.contains(code) } else { true });
     }
 
     pub fn take_suggestions(&mut self) -> impl Iterator<Item = (FileId, FixPlan)> + '_ {

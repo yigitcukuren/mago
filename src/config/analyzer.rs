@@ -17,6 +17,9 @@ pub struct AnalyzeConfiguration {
     /// A list of patterns to exclude from analysis.
     pub excludes: Vec<String>,
 
+    /// Ignore specific issues based on their code.
+    pub ignore: Vec<String>,
+
     /// Report all issues related to the use of `mixed` types.
     pub mixed_issues: bool,
 
@@ -148,6 +151,10 @@ impl ConfigurationEntry for AnalyzeConfiguration {
                 "analyze.excludes",
                 Value::new(None, ValueKind::Array(self.excludes.into_iter().map(Value::from).collect::<Vec<_>>())),
             )?
+            .set_default(
+                "analyze.ignore",
+                Value::new(None, ValueKind::Array(self.ignore.into_iter().map(Value::from).collect::<Vec<_>>())),
+            )?
             .set_default("analyze.mixed_issues", defaults.mixed_issues)?
             .set_default("analyze.falsable_issues", defaults.falsable_issues)?
             .set_default("analyze.nullable_issues", defaults.nullable_issues)?
@@ -186,6 +193,7 @@ impl Default for AnalyzeConfiguration {
 
         Self {
             excludes: vec![],
+            ignore: vec![],
             mixed_issues: defaults.mixed_issues,
             falsable_issues: defaults.falsable_issues,
             nullable_issues: defaults.nullable_issues,

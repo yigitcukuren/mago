@@ -68,5 +68,8 @@ pub fn execute(command: AnalyzeCommand, configuration: Configuration) -> Result<
     let analyzer_settings = configuration.analyze.to_setttings(configuration.php_version);
     let analysis_results = run_analysis_pipeline(&interner, database.read_only(), analyzer_settings)?;
 
-    command.reporting.process_issues(analysis_results.issues, configuration, interner, database)
+    let mut issues = analysis_results.issues;
+    issues.filter_out_ignored(&configuration.analyze.ignore);
+
+    command.reporting.process_issues(issues, configuration, interner, database)
 }
