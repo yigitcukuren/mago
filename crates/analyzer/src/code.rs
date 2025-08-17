@@ -912,6 +912,58 @@ impl IssueCode {
             "yield-outside-function",
         ]
     }
+
+    pub const fn get_array_issue_codes() -> [Self; 21] {
+        [
+            Self::ArrayAppendInReadContext,
+            Self::ArrayToStringConversion,
+            Self::DuplicateArrayKey,
+            Self::ImpossibleArrayAccess,
+            Self::ImpossibleArrayAssignment,
+            Self::InvalidArrayAccess,
+            Self::InvalidArrayElement,
+            Self::InvalidArrayElementKey,
+            Self::InvalidArrayIndex,
+            Self::MismatchedArrayIndex,
+            Self::MixedArrayAccess,
+            Self::MixedArrayAssignment,
+            Self::MixedArrayIndex,
+            Self::NullArrayIndex,
+            Self::PossiblyNullArrayAccess,
+            Self::PossiblyNullArrayIndex,
+            Self::PossiblyUndefinedArrayIndex,
+            Self::PossiblyUndefinedIntArrayIndex,
+            Self::PossiblyUndefinedStringArrayIndex,
+            Self::UndefinedIntArrayIndex,
+            Self::UndefinedStringArrayIndex,
+        ]
+    }
+
+    pub const fn get_array_issue_code_values() -> [&'static str; 21] {
+        [
+            "array-append-in-read-context",
+            "array-to-string-conversion",
+            "duplicate-array-key",
+            "impossible-array-access",
+            "impossible-array-assignment",
+            "invalid-array-access",
+            "invalid-array-element",
+            "invalid-array-element-key",
+            "invalid-array-index",
+            "mismatched-array-index",
+            "mixed-array-access",
+            "mixed-array-assignment",
+            "mixed-array-index",
+            "null-array-index",
+            "possibly-null-array-access",
+            "possibly-null-array-index",
+            "possibly-undefined-array-index",
+            "possibly-undefined-int-array-index",
+            "possibly-undefined-string-array-index",
+            "undefined-int-array-index",
+            "undefined-string-array-index",
+        ]
+    }
 }
 
 impl std::str::FromStr for IssueCode {

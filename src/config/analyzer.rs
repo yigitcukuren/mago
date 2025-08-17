@@ -62,6 +62,9 @@ pub struct AnalyzeConfiguration {
     /// Report all issues related to the use of generators.
     pub generator_issues: bool,
 
+    /// Report all issues related to array operations and usage.
+    pub array_issues: bool,
+
     /// Whether to find unused expressions.
     pub find_unused_expressions: bool,
 
@@ -109,6 +112,7 @@ impl AnalyzeConfiguration {
             operand_issues: self.operand_issues,
             property_issues: self.property_issues,
             generator_issues: self.generator_issues,
+            array_issues: self.array_issues,
             analyze_dead_code: self.analyze_dead_code,
             find_unused_definitions: self.find_unused_definitions,
             find_unused_expressions: self.find_unused_expressions,
@@ -147,6 +151,7 @@ impl ConfigurationEntry for AnalyzeConfiguration {
             .set_default("analyze.operand_issues", defaults.operand_issues)?
             .set_default("analyze.property_issues", defaults.property_issues)?
             .set_default("analyze.generator_issues", defaults.generator_issues)?
+            .set_default("analyze.array_issues", defaults.array_issues)?
             .set_default("analyze.find_unused_definitions", defaults.find_unused_definitions)?
             .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
             .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
@@ -181,6 +186,7 @@ impl Default for AnalyzeConfiguration {
             operand_issues: defaults.operand_issues,
             property_issues: defaults.property_issues,
             generator_issues: defaults.generator_issues,
+            array_issues: defaults.array_issues,
             find_unused_expressions: defaults.find_unused_expressions,
             find_unused_definitions: defaults.find_unused_definitions,
             analyze_dead_code: defaults.analyze_dead_code,

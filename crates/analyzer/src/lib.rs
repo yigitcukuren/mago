@@ -131,6 +131,10 @@ impl<'a> Analyzer<'a> {
             collector.add_disabled_codes(IssueCode::get_generator_issue_code_values());
         }
 
+        if !self.settings.array_issues {
+            collector.add_disabled_codes(IssueCode::get_array_issue_code_values());
+        }
+
         let mut context = {
             Context::new(
                 self.interner,
