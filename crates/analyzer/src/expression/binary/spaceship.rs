@@ -13,7 +13,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -49,7 +49,7 @@ pub fn analyze_spaceship_operation<'a>(
 
     if lhs_is_array && !rhs_is_array && !rhs_type.is_null() {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::error(format!(
                 "Comparing an `array` with a non-array type `{}` using `<=>`.",
                 rhs_type.get_id(Some(context.interner))
@@ -61,7 +61,7 @@ pub fn analyze_spaceship_operation<'a>(
         );
     } else if !lhs_is_array && rhs_is_array && !lhs_type.is_null() {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::error(format!(
                 "Comparing a non-array type `{}` with an `array` using `<=>`.",
                 lhs_type.get_id(Some(context.interner))
@@ -75,7 +75,7 @@ pub fn analyze_spaceship_operation<'a>(
 
     let result_type = if !block_context.inside_loop_expressions && is_always_greater_than(lhs_type, rhs_type) {
         context.collector.report_with_code(
-            Code::REDUNDANT_TYPE_COMPARISON,
+            IssueCode::RedundantTypeComparison,
             Issue::help("Redundant spaceship comparison: left-hand side is always greater than right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always greater"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always less"))
@@ -86,7 +86,7 @@ pub fn analyze_spaceship_operation<'a>(
         TUnion::new(vec![TAtomic::Scalar(TScalar::literal_int(1))])
     } else if !block_context.inside_loop_expressions && is_always_identical_to(lhs_type, rhs_type) {
         context.collector.report_with_code(
-            Code::REDUNDANT_TYPE_COMPARISON,
+            IssueCode::RedundantTypeComparison,
             Issue::help("Redundant spaceship comparison: left-hand side is always equal to right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always equal"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always equal"))
@@ -97,7 +97,7 @@ pub fn analyze_spaceship_operation<'a>(
         TUnion::new(vec![TAtomic::Scalar(TScalar::literal_int(0))])
     } else if !block_context.inside_loop_expressions && is_always_less_than(lhs_type, rhs_type) {
         context.collector.report_with_code(
-            Code::REDUNDANT_TYPE_COMPARISON,
+            IssueCode::RedundantTypeComparison,
             Issue::help("Redundant spaceship comparison: left-hand side is always less than right-hand side.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always less"))
                 .with_annotation(Annotation::secondary(binary.rhs.span()).with_message("This is always greater"))
@@ -127,7 +127,7 @@ fn check_spaceship_operand(
 ) -> Result<(), AnalysisError> {
     if operand_type.is_null() {
         context.collector.report_with_code(
-             Code::NULL_OPERAND,
+             IssueCode::NullOperand,
              Issue::error(format!(
                  "{side} operand in spaceship comparison (`<=>`) is `null`."
              ))
@@ -137,7 +137,7 @@ fn check_spaceship_operand(
          );
     } else if operand_type.is_nullable() && !operand_type.is_mixed() {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_OPERAND,
+            IssueCode::PossiblyNullOperand,
             Issue::warning(format!(
                 "{side} operand in spaceship comparison (`<=>`) might be `null` (type `{}`).",
                 operand_type.get_id(Some(context.interner))
@@ -148,7 +148,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_mixed() {
         context.collector.report_with_code(
-            Code::MIXED_OPERAND,
+            IssueCode::MixedOperand,
             Issue::error(format!("{side} operand in spaceship comparison (`<=>`) has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note("The result of comparing `mixed` types with `<=>` is unpredictable.")
@@ -156,7 +156,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_OPERAND,
+            IssueCode::FalseOperand,
             Issue::error(format!(
                 "{side} operand in spaceship comparison (`<=>`) is `false`."
             ))
@@ -166,7 +166,7 @@ fn check_spaceship_operand(
         );
     } else if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_OPERAND,
+            IssueCode::PossiblyFalseOperand,
             Issue::warning(format!(
                 "{side} operand in spaceship comparison (`<=>`) might be `false` (type `{}`).",
                 operand_type.get_id(Some(context.interner))

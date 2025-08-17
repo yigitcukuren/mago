@@ -24,7 +24,7 @@ use mago_syntax::ast::SwitchExpressionCase;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::common::synthetic::new_synthetic_disjunctive_equality;
 use crate::common::synthetic::new_synthetic_equals;
 use crate::common::synthetic::new_synthetic_or;
@@ -250,7 +250,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         if let Some((_, previously_matching_case_span)) = previously_matching_case {
             if switch_case.is_default() {
                 self.context.collector.report_with_code(
-                    Code::UNREACHABLE_SWITCH_DEFAULT,
+                    IssueCode::UnreachableSwitchDefault,
                     Issue::error("Unreachable default case")
                         .with_annotation(
                             Annotation::primary(switch_case.span()).with_message("this default case is unreachable"),
@@ -264,7 +264,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 );
             } else {
                 self.context.collector.report_with_code(
-                    Code::UNREACHABLE_SWITCH_CASE,
+                    IssueCode::UnreachableSwitchCase,
                     Issue::error("Unreachable switch case")
                         .with_annotation(
                             Annotation::primary(switch_case.span()).with_message("this case is unreachable"),
@@ -311,9 +311,9 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             result = Some(false);
 
             let (code, message, annotation_message) = if switch_case.is_default() {
-                (Code::UNREACHABLE_SWITCH_DEFAULT, "Unreachable default case", "this default case is unreachable")
+                (IssueCode::UnreachableSwitchDefault, "Unreachable default case", "this default case is unreachable")
             } else {
-                (Code::UNREACHABLE_SWITCH_CASE, "Unreachable switch case", "this case is unreachable")
+                (IssueCode::UnreachableSwitchCase, "Unreachable switch case", "this case is unreachable")
             };
 
             self.context.collector.report_with_code(
@@ -348,7 +348,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                     result = Some(false);
 
                     self.context.collector.report_with_code(
-                        Code::NEVER_MATCHING_SWITCH_CASE,
+                        IssueCode::NeverMatchingSwitchCase,
                         Issue::error("Switch case condition will never match")
                             .with_annotation(Annotation::primary(case_condition.span()).with_message(format!(
                                 "This case with type `{}` will never match the subject type.",
@@ -368,7 +368,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                     result = Some(true);
 
                     self.context.collector.report_with_code(
-                        Code::ALWAYS_MATCHING_SWITCH_CASE,
+                        IssueCode::AlwaysMatchingSwitchCase,
                         Issue::error("This switch case will always match, making subsequent cases unreachable.")
                             .with_annotation(
                                 Annotation::primary(case_condition.span())

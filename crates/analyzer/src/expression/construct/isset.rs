@@ -6,7 +6,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -21,7 +21,7 @@ impl Analyzable for IssetConstruct {
         for value in self.values.iter() {
             if !is_valid_isset_expression(value) {
                 context.collector.report_with_code(
-                    Code::INVALID_ISSET_EXPRESSION,
+                    IssueCode::InvalidIssetExpression,
                     Issue::error("Cannot use `isset()` on the result of an expression.")
                         .with_annotation(
                             Annotation::primary(value.span()).with_message("This is not a variable or property"),

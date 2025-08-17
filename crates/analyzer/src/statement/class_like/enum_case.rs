@@ -6,7 +6,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -65,7 +65,7 @@ impl Analyzable for EnumCaseBackedItem {
 
         let Some(backing_type) = &current_enum.enum_type else {
             context.collector.report_with_code(
-                Code::INVALID_ENUM_CASE_VALUE,
+                IssueCode::InvalidEnumCaseValue,
                 Issue::error(format!(
                     "Case `{case_name}` in pure enum `{enum_name}` cannot have a value."
                 ))
@@ -84,7 +84,7 @@ impl Analyzable for EnumCaseBackedItem {
 
         let Some(value_type) = artifacts.get_rc_expression_type(&self.value).cloned() else {
             context.collector.report_with_code(
-                Code::INVALID_ENUM_CASE_VALUE,
+                IssueCode::InvalidEnumCaseValue,
                 Issue::error(format!("Could not infer the type of the value for case `{enum_name}::{case_name}`."))
                     .with_annotation(Annotation::primary(self.value.span()).with_message("The type of this value could not be determined"))
                     .with_note("The value of a backed enum case must be a constant expression that resolves to either a string or an integer.")
@@ -100,7 +100,7 @@ impl Analyzable for EnumCaseBackedItem {
             let value_type_str = value_type.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                Code::INVALID_ENUM_CASE_VALUE,
+                IssueCode::InvalidEnumCaseValue,
                 Issue::error(format!(
                     "Invalid case value for `{enum_name}::{case_name}`. Expected `{backing_type_str}`, but got `{value_type_str}`."
                 ))

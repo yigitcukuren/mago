@@ -12,7 +12,7 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 
@@ -85,7 +85,7 @@ pub fn check_method_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            Code::INVALID_METHOD_ACCESS,
+            IssueCode::InvalidMethodAccess,
             issue_title,
             visibility,
             access_span,
@@ -146,7 +146,7 @@ pub fn check_property_read_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            Code::INVALID_PROPERTY_READ,
+            IssueCode::InvalidPropertyRead,
             issue_title,
             visibility,
             access_span,
@@ -204,7 +204,7 @@ pub fn check_property_write_visibility<'a>(
         report_visibility_issue(
             context,
             block_context,
-            Code::INVALID_PROPERTY_WRITE,
+            IssueCode::InvalidPropertyWrite,
             issue_title,
             visibility,
             access_span,
@@ -223,7 +223,7 @@ pub fn check_property_write_visibility<'a>(
         report_readonly_issue(
             context,
             block_context,
-            Code::INVALID_PROPERTY_WRITE,
+            IssueCode::InvalidPropertyWrite,
             access_span,
             member_span,
             property_metadata.span.or(property_metadata.name_span),
@@ -283,7 +283,7 @@ fn can_initialize_readonly_property(
 fn report_visibility_issue(
     context: &mut Context<'_>,
     block_context: &BlockContext<'_>,
-    kind: &'static str,
+    code: IssueCode,
     title: String,
     visibility: Visibility,
     access_span: Span,
@@ -319,13 +319,13 @@ fn report_visibility_issue(
 
     issue = issue.with_help(help_text);
 
-    context.collector.report_with_code(kind, issue);
+    context.collector.report_with_code(code, issue);
 }
 
 fn report_readonly_issue(
     context: &mut Context<'_>,
     block_context: &BlockContext<'_>,
-    kind: &'static str,
+    code: IssueCode,
     access_span: Span,
     member_span: Option<Span>,
     definition_span: Option<Span>,
@@ -359,5 +359,5 @@ fn report_readonly_issue(
         );
     }
 
-    context.collector.report_with_code(kind, issue);
+    context.collector.report_with_code(code, issue);
 }

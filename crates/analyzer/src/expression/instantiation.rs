@@ -28,7 +28,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -67,7 +67,7 @@ impl Analyzable for Instantiation {
                 .map_or("<unknown>".to_string(), |u| u.get_id(Some(context.interner)));
 
             context.collector.report_with_code(
-                Code::AMBIGUOUS_INSTANTIATION_TARGET,
+                IssueCode::AmbiguousInstantiationTarget,
                 Issue::warning("Ambiguous instantiation: the expression used with `new` can resolve to multiple different classes.".to_string())
                 .with_annotation(
                     Annotation::primary(self.class.span())
@@ -139,7 +139,7 @@ fn analyze_class_instantiation<'a>(
 
     let Some(fq_class_id) = classname.fq_class_id else {
         context.collector.report_with_code(
-            Code::UNKNOWN_CLASS_INSTANTIATION,
+            IssueCode::UnknownClassInstantiation,
             Issue::error("Cannot determine the concrete class for instantiation.")
                 .with_annotation(Annotation::primary(class_expression_span).with_message("This expression resolves to an unknown or non-specific class type"))
                 .with_note("This can happen if instantiating from a variable with a general type like `object`, `class-string` (without a specific class), or `mixed`.")
@@ -156,7 +156,7 @@ fn analyze_class_instantiation<'a>(
         let class_name_str = context.interner.lookup(&fq_class_id);
 
         context.collector.report_with_code(
-            Code::NON_EXISTENT_CLASS,
+            IssueCode::NonExistentClass,
             Issue::error(format!("Class `{class_name_str}` not found."))
             .with_annotation(
                 Annotation::primary(class_expression_span)
@@ -176,7 +176,7 @@ fn analyze_class_instantiation<'a>(
 
     if metadata.kind.is_interface() {
         context.collector.report_with_code(
-             Code::INTERFACE_INSTANTIATION,
+             IssueCode::InterfaceInstantiation,
              Issue::error(format!("Interface `{class_name_str}` cannot be instantiated with `new`."))
                  .with_annotation(
                      Annotation::primary(class_expression_span)
@@ -191,7 +191,7 @@ fn analyze_class_instantiation<'a>(
         return Ok(get_never());
     } else if metadata.kind.is_trait() {
         context.collector.report_with_code(
-            Code::TRAIT_INSTANTIATION,
+            IssueCode::TraitInstantiation,
             Issue::error(format!("Trait `{class_name_str}` cannot be instantiated with `new`."))
                 .with_annotation(
                     Annotation::primary(class_expression_span).with_message("Attempting to instantiate a trait"),
@@ -207,7 +207,7 @@ fn analyze_class_instantiation<'a>(
         return Ok(get_never());
     } else if metadata.kind.is_enum() {
         context.collector.report_with_code(
-            Code::ENUM_INSTANTIATION,
+            IssueCode::EnumInstantiation,
             Issue::error(format!("Enum `{class_name_str}` cannot be instantiated with `new`."))
                 .with_annotation(
                     Annotation::primary(class_expression_span)
@@ -227,7 +227,7 @@ fn analyze_class_instantiation<'a>(
     let mut is_impossible = false;
     if metadata.flags.is_abstract() && !classname.can_extend_static() {
         context.collector.report_with_code(
-            Code::ABSTRACT_INSTANTIATION,
+            IssueCode::AbstractInstantiation,
             Issue::error(format!("Cannot instantiate abstract class `{class_name_str}`."))
                 .with_annotation(
                     Annotation::primary(class_expression_span)
@@ -247,7 +247,7 @@ fn analyze_class_instantiation<'a>(
         && block_context.scope.get_class_like_name().is_none_or(|self_id| *self_id != metadata.original_name)
     {
         context.collector.report_with_code(
-            Code::DEPRECATED_CLASS,
+            IssueCode::DeprecatedClass,
             Issue::warning(format!("Class `{class_name_str}` is deprecated and should no longer be used."))
                 .with_annotation(
                     Annotation::primary(class_expression_span).with_message("Instantiation of deprecated class"),
@@ -388,7 +388,7 @@ fn analyze_class_instantiation<'a>(
         && !argument_list.arguments.is_empty()
     {
         context.collector.report_with_code(
-            Code::TOO_MANY_ARGUMENTS,
+            IssueCode::TooManyArguments,
             Issue::error(format!(
                 "Class `{class_name_str}` has no `__construct` method, but arguments were provided to `new`."
             ))
@@ -445,7 +445,7 @@ fn analyze_class_instantiation<'a>(
         }
 
         context.collector.report_with_code(
-            Code::UNSAFE_INSTANTIATION,
+            IssueCode::UnsafeInstantiation,
             issue
                 .with_help("Ensure constructor signature consistency across inheritance (e.g., using `@consistent-constructor` if applicable) or mark the class/constructor as final.")
         );
@@ -481,7 +481,7 @@ fn analyze_class_instantiation<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -528,7 +528,7 @@ mod tests {
             i_take_string_collection($collection); // error
         "#},
         issues = [
-            Code::INVALID_ARGUMENT, // expected Collection<string, string>, got Collection<string, int>
+            IssueCode::InvalidArgument, // expected Collection<string, string>, got Collection<string, int>
         ],
     }
 
@@ -551,10 +551,10 @@ mod tests {
             }
         "#},
         issues = [
-            Code::AMBIGUOUS_INSTANTIATION_TARGET, // `new $instance` could be A, B, C, or <unknown>
-            Code::UNSAFE_INSTANTIATION, // `A` is not final
-            Code::UNSAFE_INSTANTIATION, // `B` is not final
-            Code::UNSAFE_INSTANTIATION, // `C` is not final
+            IssueCode::AmbiguousInstantiationTarget, // `new $instance` could be A, B, C, or <unknown>
+            IssueCode::UnsafeInstantiation, // `A` is not final
+            IssueCode::UnsafeInstantiation, // `B` is not final
+            IssueCode::UnsafeInstantiation, // `C` is not final
         ],
     }
 
@@ -568,8 +568,8 @@ mod tests {
             $a = new MyInterface();
         "#},
         issues = [
-            Code::INTERFACE_INSTANTIATION,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::InterfaceInstantiation,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -583,8 +583,8 @@ mod tests {
             $a = new MyTrait();
         "#},
         issues = [
-            Code::TRAIT_INSTANTIATION,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::TraitInstantiation,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -598,8 +598,8 @@ mod tests {
             $a = new MyEnum();
         "#},
         issues = [
-            Code::ENUM_INSTANTIATION,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::EnumInstantiation,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -613,8 +613,8 @@ mod tests {
             $a = new MyAbstractClass();
         "#},
         issues = [
-            Code::ABSTRACT_INSTANTIATION,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::AbstractInstantiation,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -626,8 +626,8 @@ mod tests {
             $a = new self();
         "#},
         issues = [
-            Code::SELF_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::SelfOutsideClassScope,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -639,8 +639,8 @@ mod tests {
             $a = new static();
         "#},
         issues = [
-            Code::STATIC_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::StaticOutsideClassScope,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -652,8 +652,8 @@ mod tests {
             $a = new parent();
         "#},
         issues = [
-            Code::PARENT_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::ParentOutsideClassScope,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -665,8 +665,8 @@ mod tests {
             $a = new NonExistentClass();
         "#},
         issues = [
-            Code::NON_EXISTENT_CLASS,
-            Code::IMPOSSIBLE_ASSIGNMENT, // $a becomes never
+            IssueCode::NonExistentClass,
+            IssueCode::ImpossibleAssignment, // $a becomes never
         ]
     }
 
@@ -680,8 +680,8 @@ mod tests {
             $a = new $className();
         "#},
         issues = [
-            Code::INVALID_CLASS_STRING_EXPRESSION,
-            Code::IMPOSSIBLE_ASSIGNMENT, // `$a` becomes never
+            IssueCode::InvalidClassStringExpression,
+            IssueCode::ImpossibleAssignment, // `$a` becomes never
         ]
     }
 
@@ -696,7 +696,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::UNKNOWN_CLASS_INSTANTIATION, // `new $className()` could be any object
+            IssueCode::UnknownClassInstantiation, // `new $className()` could be any object
         ]
     }
 
@@ -710,7 +710,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::UNKNOWN_CLASS_INSTANTIATION, // `new $className()` could be any object
+            IssueCode::UnknownClassInstantiation, // `new $className()` could be any object
         ]
     }
 
@@ -721,7 +721,7 @@ mod tests {
             class NoConstructor {}
             $a = new NoConstructor(1, 2, 3);
         "#},
-        issues = [Code::TOO_MANY_ARGUMENTS]
+        issues = [IssueCode::TooManyArguments]
     }
 
     test_analysis! {
@@ -733,7 +733,7 @@ mod tests {
             }
             $a = new WithConstructor(1, 2, 3);
         "#},
-        issues = [Code::TOO_MANY_ARGUMENTS]
+        issues = [IssueCode::TooManyArguments]
     }
 
     test_analysis! {
@@ -752,7 +752,7 @@ mod tests {
             $a = new Child(1);
         "#},
         issues = [
-            Code::INVALID_ARGUMENT,
+            IssueCode::InvalidArgument,
         ]
     }
 

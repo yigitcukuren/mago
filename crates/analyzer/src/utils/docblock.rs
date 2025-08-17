@@ -15,7 +15,7 @@ use mago_span::Span;
 use mago_syntax::ast::Expression;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 
@@ -101,7 +101,7 @@ pub fn get_docblock_variables<'a>(
 
 
                         context.collector.report_with_code(
-                            Code::PSALM_TRACE,
+                            IssueCode::PsalmTrace,
                             Issue::note(format!(
                                 "Trace: Type of `{variable_name}` is `{variable_type_str}`"
                             ))
@@ -119,7 +119,7 @@ pub fn get_docblock_variables<'a>(
                     }
                     None => {
                         context.collector.report_with_code(
-                            Code::INVALID_DOCBLOCK,
+                            IssueCode::InvalidDocblock,
                             Issue::error(format!(
                                 "Invalid `@psalm-trace`: Variable `{variable_name}` not found in this scope."
                             ))
@@ -168,7 +168,7 @@ pub fn get_docblock_variables<'a>(
                 }
                 Err(type_error) => {
                     context.collector.report_with_code(
-                        Code::INVALID_DOCBLOCK,
+                        IssueCode::InvalidDocblock,
                         Issue::error(format!(
                             "Invalid type in `@var` tag for variable `{}`.",
                             variable_name.as_deref().unwrap_or("expression")
@@ -265,7 +265,7 @@ pub fn insert_variable_from_docblock<'a>(
         let previous_type_str = previous_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-            Code::DOCBLOCK_TYPE_MISMATCH,
+            IssueCode::DocblockTypeMismatch,
             Issue::error(format!("Docblock type mismatch for variable `{variable_name}`."))
                 .with_annotation(
                     Annotation::primary(variable_type_span)
@@ -338,6 +338,6 @@ pub fn check_docblock_type_incompatibility<'a>(
             ));
         }
 
-        context.collector.report_with_code(Code::DOCBLOCK_TYPE_MISMATCH, issue);
+        context.collector.report_with_code(IssueCode::DocblockTypeMismatch, issue);
     }
 }

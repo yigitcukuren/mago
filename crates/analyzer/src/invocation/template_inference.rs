@@ -36,7 +36,7 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::invocation::MethodTargetContext;
 
@@ -897,7 +897,7 @@ pub fn infer_parameter_templates_from_argument(
 
     for violation in violations {
         context.collector.report_with_code(
-            Code::TEMPLATE_CONSTRAINT_VIOLATION,
+            IssueCode::TemplateConstraintViolation,
             Issue::error(format!(
                 "Argument type mismatch for template `{}`.",
                 context.interner.lookup(&violation.template_name),

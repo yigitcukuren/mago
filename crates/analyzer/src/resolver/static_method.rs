@@ -23,7 +23,7 @@ use mago_syntax::ast::ClassLikeMemberSelector;
 use mago_syntax::ast::Expression;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -349,7 +349,7 @@ fn report_non_static_access(context: &mut Context, method_id: &MethodIdentifier,
     let method_name = context.interner.lookup(method_id.get_method_name());
     let class_name = context.interner.lookup(method_id.get_class_name());
     context.collector.report_with_code(
-        Code::INVALID_STATIC_METHOD_ACCESS,
+        IssueCode::InvalidStaticMethodAccess,
         Issue::error(format!("Cannot call non-static method `{class_name}::{method_name}` statically."))
             .with_annotation(Annotation::primary(span).with_message("This is a non-static method"))
             .with_help("To call this method, you must first create an instance of the class (e.g., `$obj = new MyClass(); $obj->method();`)."),
@@ -366,7 +366,7 @@ fn report_static_call_on_interface(
 
     if from_class_string {
         context.collector.report_with_code(
-            Code::POSSIBLY_STATIC_ACCESS_ON_INTERFACE,
+            IssueCode::PossiblyStaticAccessOnInterface,
             Issue::warning(format!("Potential static method call on interface `{name_str}` via `class-string`."))
                 .with_annotation(
                     Annotation::primary(span)
@@ -379,7 +379,7 @@ fn report_static_call_on_interface(
         );
     } else {
         context.collector.report_with_code(
-            Code::STATIC_ACCESS_ON_INTERFACE,
+            IssueCode::StaticAccessOnInterface,
             Issue::error(format!("Cannot call a static method directly on an interface (`{name_str}`)."))
                 .with_annotation(Annotation::primary(span).with_message("This is a direct static call on an interface"))
                 .with_note(
@@ -394,7 +394,7 @@ fn report_deprecated_static_access_on_trait(context: &mut Context, name: &String
     let name_str = context.interner.lookup(name);
 
     context.collector.report_with_code(
-        Code::DEPRECATED_FEATURE,
+        IssueCode::DeprecatedFeature,
         Issue::warning(format!("Calling static methods directly on traits (`{name_str}`) is deprecated."))
             .with_annotation(Annotation::primary(span).with_message("This is a trait"))
             .with_help("Static methods should be called on a class that uses the trait."),

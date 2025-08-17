@@ -44,7 +44,7 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
 
@@ -1026,19 +1026,19 @@ fn report_impossible_issue(
 
     let (issue_kind, main_message_verb, specific_note, specific_help) = match assertion {
         Assertion::Truthy => (
-            Code::IMPOSSIBLE_CONDITION,
+            IssueCode::ImpossibleCondition,
             "will always evaluate to false".to_owned(),
             format!("Variable {subject_desc} is always falsy and can never satisfy a truthiness check."),
             "Review the logic or type of the variable; this condition will never pass.".to_string(),
         ),
         Assertion::Falsy => (
-            Code::IMPOSSIBLE_CONDITION,
+            IssueCode::ImpossibleCondition,
             "will always evaluate to false".to_owned(),
             format!("Variable {subject_desc} is always truthy, so asserting it is falsy will always be false."),
             "Review the logic or type of the variable; this condition will never pass.".to_string(),
         ),
         Assertion::IsType(TAtomic::Null) => (
-            Code::IMPOSSIBLE_NULL_TYPE_COMPARISON,
+            IssueCode::ImpossibleNullTypeComparison,
             "can never be `null`".to_owned(),
             format!("Variable {subject_desc} does not include `null`."),
             format!(
@@ -1046,31 +1046,31 @@ fn report_impossible_issue(
             ),
         ),
         Assertion::IsNotType(TAtomic::Null) => (
-            Code::IMPOSSIBLE_NULL_TYPE_COMPARISON,
+            IssueCode::ImpossibleNullTypeComparison,
             "will always be `null`".to_owned(),
             format!("Variable {subject_desc} is already known to be `null`, so asserting it's not `null` is impossible."),
             format!("The condition checking if `{key}` is not `null` will always be false. Review the variable's state or condition."),
         ),
         Assertion::HasArrayKey(array_key_assertion) => (
-            Code::IMPOSSIBLE_KEY_CHECK,
+            IssueCode::ImpossibleKeyCheck,
             format!("can never have the key `{array_key_assertion}`"),
             format!("Variable {subject_desc} is known to not contain the key `{array_key_assertion}`. This check will always be false."),
             "Ensure the array structure and key are correct, or remove this condition.".to_owned(),
         ),
         Assertion::DoesNotHaveArrayKey(array_key_assertion) => (
-            Code::IMPOSSIBLE_KEY_CHECK,
+            IssueCode::ImpossibleKeyCheck,
             format!("will always have the key `{array_key_assertion}`"),
             format!("Variable {subject_desc} is known to always contain the key `{array_key_assertion}`. Asserting it doesn't have this key will always be false."),
             "Review the logic; this negative key check will always fail.".to_owned(),
         ),
         Assertion::HasNonnullEntryForKey(dict_key_name) => (
-            Code::IMPOSSIBLE_NONNULL_ENTRY_CHECK,
+            IssueCode::ImpossibleNonnullEntryCheck,
             format!("can never have a non-null entry for key `{dict_key_name}`"),
             format!("Variable {subject_desc} is known to either not have the key `{dict_key_name}` or its value is always `null`. This check for a non-null entry will always be false."),
             "Verify the array/object structure or remove this `!empty()` style check.".to_owned(),
         ),
         _ => (
-            Code::IMPOSSIBLE_TYPE_COMPARISON,
+            IssueCode::ImpossibleTypeComparison,
             format!("can never be `{assertion_string}`"),
             format!("The type of variable {subject_desc} is incompatible with the assertion that it is `{assertion_string}`."),
             "This condition is impossible and the associated code block will never execute. Review the types and condition logic.".to_owned(),
@@ -1104,55 +1104,55 @@ fn report_redundant_issue(
 
     let (issue_kind, main_message_verb, specific_note, specific_help) = match assertion {
         Assertion::IsIsset | Assertion::IsEqualIsset => (
-            Code::REDUNDANT_ISSET_CHECK,
+            IssueCode::RedundantIssetCheck,
             "is always considered set (not null)".to_owned(),
             format!("Variable {subject_desc} is already known to be non-null, making the `isset()` check redundant."),
             "Remove the redundant `isset()` check.".to_owned()
         ),
         Assertion::Truthy => (
-            Code::REDUNDANT_CONDITION,
+            IssueCode::RedundantCondition,
             "will always evaluate to true".to_owned(),
             format!("Variable {subject_desc} is always truthy. This condition is redundant and the code block will always execute if reached."),
             "Simplify or remove the redundant condition if the guarded code should always run.".to_owned()
         ),
         Assertion::Falsy => (
-            Code::REDUNDANT_CONDITION,
+            IssueCode::RedundantCondition,
             "will always evaluate to true".to_owned(),
             format!("Variable {subject_desc} is always falsy, so asserting it's falsy is always true and redundant."),
             "Simplify or remove the redundant condition if the guarded code should always run.".to_owned()
         ),
         Assertion::HasArrayKey(array_key_assertion) => (
-            Code::REDUNDANT_KEY_CHECK,
+            IssueCode::RedundantKeyCheck,
             format!("will always have the key `{array_key_assertion}`"),
             format!("Variable {subject_desc} is known to always contain the key `{array_key_assertion}`. This check is redundant."),
             "Remove the redundant `array_key_exists()` or key check.".to_owned()
         ),
         Assertion::DoesNotHaveArrayKey(array_key_assertion) => (
-            Code::REDUNDANT_KEY_CHECK,
+            IssueCode::RedundantKeyCheck,
             format!("will never have the key `{array_key_assertion}`"),
             format!("Variable {subject_desc} is known to never contain the key `{array_key_assertion}`. This negative check is redundant."),
             "Remove the redundant negative key check.".to_owned()
         ),
         Assertion::HasNonnullEntryForKey(dict_key_name) => (
-            Code::REDUNDANT_NONNULL_ENTRY_CHECK,
+            IssueCode::RedundantNonnullEntryCheck,
             format!("will always have a non-null entry for key `{dict_key_name}`"),
             format!("Variable {subject_desc} is known to always have a non-null value for key `{dict_key_name}`. This `!empty()` style check is redundant."),
             "Remove the redundant non-null entry check.".to_owned()
         ),
         Assertion::IsType(TAtomic::Mixed(mixed)) if mixed.is_non_null() => (
-            Code::REDUNDANT_NONNULL_TYPE_COMPARISON,
+            IssueCode::RedundantNonnullTypeComparison,
             "is already known to be non-null".to_owned(),
             format!("Variable {subject_desc} is already non-null. Checking against `mixed (not null)` is redundant."),
             "Remove the redundant non-null check.".to_owned()
         ),
         Assertion::IsNotType(TAtomic::Mixed(mixed)) if mixed.is_non_null() => (
-            Code::REDUNDANT_TYPE_COMPARISON,
+            IssueCode::RedundantTypeComparison,
             "comparison with `mixed (not null)` is redundant".to_owned(),
             format!("The check against `mixed (not null)` for variable {subject_desc} might be overly broad or redundant depending on context."),
             "Verify if a more specific type check is needed.".to_owned()
         ),
         _ => (
-            Code::REDUNDANT_TYPE_COMPARISON,
+            IssueCode::RedundantTypeComparison,
             format!("is already known to be `{assertion_string}`"),
             format!("The type of variable {subject_desc} already satisfies the condition that it is `{assertion_string}`. This check is redundant."),
             "This condition is always true and the associated code block will always execute if reached. Consider simplifying.".to_owned()

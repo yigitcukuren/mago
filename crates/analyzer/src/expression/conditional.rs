@@ -19,7 +19,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
@@ -72,7 +72,7 @@ pub(super) fn analyze_conditional<'a>(
     let assertion_context = context.get_assertion_context_from_block(block_context);
     let mut if_clauses = get_formula(condition.span(), condition.span(), condition, assertion_context, artifacts).unwrap_or_else(|| {
         context.collector.report_with_code(
-            Code::CONDITION_IS_TOO_COMPLEX,
+            IssueCode::ConditionIsTooComplex,
             Issue::warning("Condition is too complex for precise type analysis.")
                 .with_annotation(
                     Annotation::primary(condition.span())
@@ -405,7 +405,7 @@ pub(super) fn analyze_conditional<'a>(
                     .with_help("Consider removing the `?:` operator and the right-hand side expression.")
             };
 
-            context.collector.report_with_code(Code::REDUNDANT_CONDITION, issue);
+            context.collector.report_with_code(IssueCode::RedundantCondition, issue);
         } else if condition_type.is_always_falsy() {
             is_condition_falsy = true;
 
@@ -445,7 +445,7 @@ pub(super) fn analyze_conditional<'a>(
                     .with_help("Consider replacing the entire expression with just the right-hand side.")
             };
 
-            context.collector.report_with_code(Code::IMPOSSIBLE_CONDITION, issue);
+            context.collector.report_with_code(IssueCode::ImpossibleCondition, issue);
         }
     }
 

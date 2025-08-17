@@ -13,7 +13,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -45,7 +45,7 @@ pub fn analyze_construct_inputs<'a>(
 ) -> Result<(), AnalysisError> {
     if has_side_effects && block_context.scope.is_pure() {
         context.collector.report_with_code(
-            Code::IMPURE_CONSTRUCT,
+            IssueCode::ImpureConstruct,
             Issue::error(format!(
                 "Impure use of `{construct_kind}` in a pure context."
             ))
@@ -317,7 +317,7 @@ fn get_ordinal(index: usize) -> Cow<'static, str> {
 fn report_missing_input(context: &mut Context<'_>, kind: &str, keyword: &Span, is_argument: bool) {
     let term = if is_argument { "argument" } else { "value" };
     context.collector.report_with_code(
-        Code::TOO_FEW_ARGUMENTS,
+        IssueCode::TooFewArguments,
         Issue::error(format!("`{kind}` expects at least one {term}."))
             .with_annotation(Annotation::primary(keyword.span()).with_message(format!("{term} is missing here"))),
     );
@@ -334,7 +334,7 @@ fn report_too_many_inputs(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(index);
     context.collector.report_with_code(
-        Code::TOO_MANY_ARGUMENTS,
+        IssueCode::TooManyArguments,
         Issue::error(format!("Unexpected {position} {term} provided to `{kind}`."))
             .with_annotation(Annotation::primary(input_span).with_message(format!("Unexpected {term}")))
             .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` defined here"))),
@@ -352,7 +352,7 @@ fn report_never_input(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
     context.collector.report_with_code(
-        Code::NO_VALUE,
+        IssueCode::NoValue,
         Issue::error(format!("The {position} {term} for `{kind}` cannot produce a value."))
             .with_annotation(Annotation::primary(expr.span()).with_message("This expression has type `never`"))
             .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
@@ -372,7 +372,7 @@ fn report_null_input(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
     context.collector.report_with_code(
-        Code::NULL_ARGUMENT,
+        IssueCode::NullArgument,
         Issue::error(format!("The {position} {term} for `{kind}` is `null`."))
             .with_annotation(
                 Annotation::primary(expr.span()).with_message(format!("Expected `{param_type}`, but got `null`")),
@@ -395,7 +395,7 @@ fn report_possibly_null_input(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
     context.collector.report_with_code(
-        Code::POSSIBLY_NULL_ARGUMENT,
+        IssueCode::PossiblyNullArgument,
         Issue::error(format!("The {position} {term} for `{kind}` might be `null`."))
             .with_annotation(
                 Annotation::primary(expr.span()).with_message(format!("This is type `{in_type}` which can be `null`")),
@@ -419,7 +419,7 @@ fn report_false_input(
     let position = get_ordinal(offset);
 
     context.collector.report_with_code(
-        Code::FALSE_ARGUMENT,
+        IssueCode::FalseArgument,
         Issue::error(format!("The {position} {term} for `{kind}` is `false`."))
             .with_annotation(
                 Annotation::primary(expr.span()).with_message(format!("Expected `{param_type}`, but got `false`")),
@@ -443,7 +443,7 @@ fn report_possibly_false_input(
     let position = get_ordinal(offset);
 
     context.collector.report_with_code(
-        Code::POSSIBLY_FALSE_ARGUMENT,
+        IssueCode::PossiblyFalseArgument,
         Issue::error(format!("The {position} {term} for `{kind}` might be `false`."))
             .with_annotation(
                 Annotation::primary(expr.span()).with_message(format!("This is type `{in_type}` which can be `false`")),
@@ -468,7 +468,7 @@ fn report_mixed_input(
     let position = get_ordinal(offset);
 
     context.collector.report_with_code(
-        Code::MIXED_ARGUMENT,
+        IssueCode::MixedArgument,
         Issue::error(format!("The {position} {term} for `{kind}` is too general."))
             .with_annotation(Annotation::primary(expr.span()).with_message(format!("Type `{in_type}` is too broad")))
             .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
@@ -491,9 +491,9 @@ fn report_less_specific_input(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
     let (code, reason) = if comparison.type_coerced_from_nested_mixed.unwrap_or(false) {
-        (Code::LESS_SPECIFIC_NESTED_ARGUMENT_TYPE, "due to nested `mixed`")
+        (IssueCode::LessSpecificNestedArgumentType, "due to nested `mixed`")
     } else {
-        (Code::LESS_SPECIFIC_ARGUMENT, "it is a wider type")
+        (IssueCode::LessSpecificArgument, "it is a wider type")
     };
 
     context.collector.report_with_code(
@@ -531,7 +531,7 @@ fn report_invalid_or_possibly_invalid_input(
         false,
     ) {
         Issue::error(format!("The {position} {term} for `{kind}` might have the wrong type."))
-            .with_code(Code::POSSIBLY_INVALID_ARGUMENT)
+            .with_code(IssueCode::PossiblyInvalidArgument)
             .with_annotation(Annotation::primary(expr.span()).with_message(format!(
                 "This is `{in_type_str}`, which only sometimes overlaps with `{param_type_str}`"
             )))
@@ -539,7 +539,7 @@ fn report_invalid_or_possibly_invalid_input(
             .with_help("Add a type check to ensure the value is what you expect.")
     } else {
         Issue::error(format!("Invalid type for the {position} {term}."))
-            .with_code(Code::INVALID_ARGUMENT)
+            .with_code(IssueCode::InvalidArgument)
             .with_annotation(
                 Annotation::primary(expr.span())
                     .with_message(format!("This is type `{in_type_str}`, but expected `{param_type_str}`")),

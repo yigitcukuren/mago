@@ -70,7 +70,7 @@ impl Analyzable for StaticMethodCall {
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -251,8 +251,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLY_STATIC_ACCESS_ON_INTERFACE,
-            Code::POSSIBLY_STATIC_ACCESS_ON_INTERFACE,
+            IssueCode::PossiblyStaticAccessOnInterface,
+            IssueCode::PossiblyStaticAccessOnInterface,
         ]
     }
 
@@ -272,9 +272,9 @@ mod tests {
             echo Example::getSomeValue();
         "#},
         issues = [
-            Code::STATIC_ACCESS_ON_INTERFACE,
-            Code::STATIC_ACCESS_ON_INTERFACE,
-            Code::MIXED_ARGUMENT,
+            IssueCode::StaticAccessOnInterface,
+            IssueCode::StaticAccessOnInterface,
+            IssueCode::MixedArgument,
         ]
     }
 }

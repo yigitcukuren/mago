@@ -32,6 +32,8 @@ pub struct Collector<'i> {
     issues: IssueCollection,
     /// A stack of issue collections for recording issues speculatively.
     recordings: Vec<IssueCollection>,
+    /// A list of issue codes that should be silently ignored.
+    disabled_codes: Vec<&'static str>,
 }
 
 impl<'i> Collector<'i> {
@@ -46,11 +48,24 @@ impl<'i> Collector<'i> {
             pragmas: Pragma::extract(file, program.trivia.as_slice(), interner, Some(category)),
             issues: IssueCollection::new(),
             recordings: Vec::new(),
+            disabled_codes: Vec::new(),
         };
 
         attach_pragma_scopes(&mut collector, program);
 
         collector
+    }
+
+    /// Overwrites the list of disabled issue codes.
+    #[inline]
+    pub fn set_disabled_codes(&mut self, codes: impl IntoIterator<Item = &'static str>) {
+        self.disabled_codes = codes.into_iter().collect();
+    }
+
+    /// Adds new codes to the list of disabled issue codes.
+    #[inline]
+    pub fn add_disabled_codes(&mut self, codes: impl IntoIterator<Item = &'static str>) {
+        self.disabled_codes.extend(codes);
     }
 
     /// Reports an issue without checking for suppression pragmas.
@@ -76,8 +91,12 @@ impl<'i> Collector<'i> {
     pub fn report(&mut self, issue: Issue) -> bool {
         let primary_span = issue.annotations.iter().find(|ann| ann.kind.is_primary()).map(|ann| ann.span);
 
-        #[cfg(debug_assertions)]
-        if issue.code.is_none() {
+        if let Some(code) = issue.code.as_deref() {
+            if self.disabled_codes.contains(&code) {
+                // This code is disabled, do not report it.
+                return false;
+            }
+        } else if cfg!(debug_assertions) {
             let mut missing_code_issue = Issue::error("Internal: Diagnostic is missing a code.")
                 .with_code("missing-code")
                 .with_note("This diagnostic was reported without a unique code, which is required by the collector.")

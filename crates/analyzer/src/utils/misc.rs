@@ -11,7 +11,7 @@ use mago_reporting::Issue;
 use mago_span::Span;
 use mago_syntax::ast::Expression;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 
 /// Checks for two types of logical issues between a set of existing assertions (`formula_1`)
 /// and a new set of assertions (`formula_2`) from a conditional expression.
@@ -80,9 +80,9 @@ fn report_redundant_condition(
 ) {
     let clause_string = redundant_clause.to_string(interner);
     let (kind, title) = if clause_string == "isset" {
-        (Code::REDUNDANT_ISSET_CHECK, "Redundant `isset` check")
+        (IssueCode::RedundantIssetCheck, "Redundant `isset` check")
     } else {
-        (Code::REDUNDANT_CONDITION, "Redundant condition")
+        (IssueCode::RedundantCondition, "Redundant condition")
     };
 
     collector.report_with_code(
@@ -116,7 +116,7 @@ fn report_paradoxical_condition(
     let established_fact_str = original_clause.to_string(interner);
 
     collector.report_with_code(
-        Code::PARADOXICAL_CONDITION,
+        IssueCode::ParadoxicalCondition,
         Issue::error("Paradoxical condition")
             .with_annotation(
                 Annotation::primary(paradox_span)

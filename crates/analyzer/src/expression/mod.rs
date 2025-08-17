@@ -15,7 +15,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
@@ -72,7 +72,7 @@ impl Analyzable for Expression {
             Expression::ArrayAccess(expr) => expr.analyze(context, block_context, artifacts),
             Expression::ArrayAppend(_) => {
                 context.collector.report_with_code(
-                    Code::ARRAY_APPEND_IN_READ_CONTEXT,
+                    IssueCode::ArrayAppendInReadContext,
                     Issue::error("Array append syntax `[]` cannot be used in a read context.")
                     .with_annotation(
                         Annotation::primary(self.span()).with_message("This syntax is for appending elements, not for reading a value.")
@@ -130,7 +130,7 @@ impl Analyzable for Expression {
             Expression::Pipe(expr) => expr.analyze(context, block_context, artifacts),
             Expression::List(list_expr) => {
                 context.collector.report_with_code(
-                    Code::LIST_USED_IN_READ_CONTEXT,
+                    IssueCode::ListUsedInReadContext,
                     Issue::error("`list()` construct cannot be used as a value.")
                         .with_annotation(
                             Annotation::primary(list_expr.span())
@@ -152,7 +152,7 @@ impl Analyzable for Expression {
                 let keyword_str = context.interner.lookup(&keyword.value);
 
                 context.collector.report_with_code(
-                    Code::INVALID_SCOPE_KEYWORD_CONTEXT,
+                    IssueCode::InvalidScopeKeywordContext,
                     Issue::error(format!("The `{keyword_str}` keyword cannot be used as a standalone value."))
                         .with_annotation(
                             Annotation::primary(keyword.span)
@@ -224,7 +224,7 @@ pub fn find_expression_logic_issues<'a>(
         artifacts,
     ) else {
         context.collector.report_with_code(
-           Code::EXPRESSION_IS_TOO_COMPLEX,
+           IssueCode::ExpressionIsTooComplex,
            Issue::warning("Expression is too complex for complete logical analysis.")
                .with_annotation(
                    Annotation::primary(expression.span())

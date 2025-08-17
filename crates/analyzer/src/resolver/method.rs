@@ -28,7 +28,7 @@ use mago_syntax::ast::Expression;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -127,9 +127,9 @@ pub fn resolve_method_targets<'a>(
 
                     context.collector.report_with_code(
                         if object_type.is_null() {
-                            Code::METHOD_ACCESS_ON_NULL
+                            IssueCode::MethodAccessOnNull
                         } else {
-                            Code::POSSIBLE_METHOD_ACCESS_ON_NULL
+                            IssueCode::PossibleMethodAccessOnNull
                         },
                         Issue::error("Attempting to call a method on `null`.")
                             .with_annotation(
@@ -401,7 +401,7 @@ fn check_where_method_constraints(
         let actual_template_type_str = actual_template_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-            Code::WHERE_CONSTRAINT_VIOLATION,
+            IssueCode::WhereConstraintViolation,
             Issue::error(format!(
                 "Method call violates `@where` constraint for template `{template_name_str}`.",
             ))
@@ -439,7 +439,7 @@ fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_s
     let type_str = atomic_type.get_id(Some(context.interner));
 
     context.collector.report_with_code(
-        if atomic_type.is_mixed() { Code::MIXED_METHOD_ACCESS } else { Code::INVALID_METHOD_ACCESS },
+        if atomic_type.is_mixed() { IssueCode::MixedMethodAccess } else { IssueCode::InvalidMethodAccess },
         Issue::error(format!("Attempting to access a method on a non-object type (`{type_str}`)."))
             .with_annotation(Annotation::primary(selector_span).with_message("Cannot call method here"))
             .with_annotation(
@@ -450,7 +450,7 @@ fn report_call_on_non_object(context: &mut Context, atomic_type: &TAtomic, obj_s
 
 fn report_call_on_ambiguous_object(context: &mut Context, obj_span: Span, selector_span: Span) {
     context.collector.report_with_code(
-        Code::AMBIGUOUS_OBJECT_METHOD_ACCESS,
+        IssueCode::AmbiguousObjectMethodAccess,
         Issue::warning("Cannot statically verify method call on a generic `object` type.")
             .with_annotation(Annotation::primary(selector_span).with_message("Cannot verify this method call"))
             .with_annotation(
@@ -471,7 +471,7 @@ pub(super) fn report_non_existent_method(
     let class_name_str = context.interner.lookup(class_name);
 
     context.collector.report_with_code(
-        Code::NON_EXISTENT_METHOD,
+        IssueCode::NonExistentMethod,
         Issue::error(format!("Method `{method_name_str}` does not exist on type `{class_name_str}`."))
             .with_annotation(Annotation::primary(selector_span).with_message("This method selection is invalid"))
             .with_annotation(

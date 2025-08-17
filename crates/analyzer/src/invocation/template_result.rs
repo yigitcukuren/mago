@@ -21,7 +21,7 @@ use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::invocation::Invocation;
 use crate::invocation::InvocationTarget;
@@ -255,9 +255,9 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
                 let issue_kind = if comparison_result.type_coerced.unwrap_or(false)
                     && comparison_result.type_coerced_from_as_mixed.unwrap_or(false)
                 {
-                    Code::MIXED_ARGUMENT
+                    IssueCode::MixedArgument
                 } else {
-                    Code::INVALID_ARGUMENT
+                    IssueCode::InvalidArgument
                 };
 
                 context.collector.report_with_code(
@@ -295,7 +295,7 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
 
                 if equality_types.len() > 1 {
                     context.collector.report_with_code(
-                        Code::CONFLICTING_TEMPLATE_EQUALITY_BOUNDS,
+                        IssueCode::ConflictingTemplateEqualityBounds,
                         Issue::error(format!(
                             "Conflicting equality requirements found for template `{}`.",
                             interner.lookup(template_name)
@@ -333,7 +333,7 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
 
                     if !is_contained {
                         context.collector.report_with_code(
-                            Code::INCOMPATIBLE_TEMPLATE_LOWER_BOUND,
+                            IssueCode::IncompatibleTemplateLowerBound,
                             Issue::error(format!(
                                 "Incompatible bounds found for template `{}`.",
                                 interner.lookup(template_name)

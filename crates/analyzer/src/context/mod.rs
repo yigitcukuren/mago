@@ -17,7 +17,7 @@ use mago_syntax::comments;
 
 use crate::analysis_result::AnalysisResult;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::assertion::AssertionContext;
 use crate::context::block::BlockContext;
 use crate::reconciler::ReconciliationContext;
@@ -120,7 +120,7 @@ impl<'a> Context<'a> {
 
                 issue = issue.with_help(error.help());
 
-                self.collector.report_with_code(Code::INVALID_DOCBLOCK, issue);
+                self.collector.report_with_code(IssueCode::InvalidDocblock, issue);
 
                 None
             }

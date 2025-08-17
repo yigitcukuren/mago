@@ -19,7 +19,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::if_scope::IfScope;
@@ -582,7 +582,7 @@ fn check_logical_operand(
 
     if operand_type.is_mixed() {
         context.collector.report_with_code(
-            Code::MIXED_OPERAND,
+            IssueCode::MixedOperand,
             Issue::error(format!("{side} operand in `{operator_name}` operation has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note(format!(
@@ -594,7 +594,7 @@ fn check_logical_operand(
         critical_error_found = true;
     } else if operand_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_OPERAND,
+            IssueCode::NullOperand,
             Issue::warning(format!(
                 "{side} operand in `{operator_name}` operation is `null`, which coerces to `false`."
             ))
@@ -603,7 +603,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_array() {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is an `array`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is an `array`"))
                 .with_note(
@@ -613,7 +613,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_objecty() {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is an `object`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is an `object`"))
                 .with_note(
@@ -623,7 +623,7 @@ fn check_logical_operand(
         );
     } else if operand_type.is_resource() {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::warning(format!("{side} operand in `{operator_name}` operation is a `resource`."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This is a `resource`"))
                 .with_note("Resources generally coerce to `true`. This implicit conversion can be unclear.")
@@ -649,7 +649,7 @@ fn report_redundant_logical_operation(
     }
 
     context.collector.report_with_code(
-        Code::REDUNDANT_LOGICAL_OPERATION,
+        IssueCode::RedundantLogicalOperation,
         Issue::help(format!(
             "Redundant `{}` operation: left operand is {} and right operand is {}.",
             binary.operator.as_str(context.interner),

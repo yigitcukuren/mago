@@ -94,7 +94,7 @@ impl Analyzable for StaticPropertyAccess {
 
 #[cfg(test)]
 mod tests {
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
     use indoc::indoc;
 
@@ -182,7 +182,7 @@ mod tests {
             echo MyClass::$non_existent;
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -194,8 +194,8 @@ mod tests {
             echo MyClass::$secret;
         "#},
         issues = [
-            Code::INVALID_PROPERTY_READ,
-            Code::NO_VALUE,
+            IssueCode::InvalidPropertyRead,
+            IssueCode::NoValue,
         ]
     }
 
@@ -211,7 +211,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -223,8 +223,8 @@ mod tests {
             echo MyClass::$prop;
         "#},
         issues = [
-            Code::INVALID_PROPERTY_READ,
-            Code::NO_VALUE,
+            IssueCode::InvalidPropertyRead,
+            IssueCode::NoValue,
         ]
     }
 
@@ -236,8 +236,8 @@ mod tests {
             echo HasInstanceProp::$instance_prop;
         "#},
         issues = [
-            Code::INVALID_STATIC_PROPERTY_ACCESS,
-            Code::NO_VALUE,
+            IssueCode::InvalidStaticPropertyAccess,
+            IssueCode::NoValue,
         ]
     }
 
@@ -249,7 +249,7 @@ mod tests {
             echo MyInterface::$some_prop;
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -261,7 +261,7 @@ mod tests {
             echo MyEnum::$some_prop;
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 

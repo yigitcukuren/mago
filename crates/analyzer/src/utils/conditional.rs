@@ -14,7 +14,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::conditional_scope::IfConditionalScope;
@@ -220,7 +220,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
 
     if expression_type.is_always_falsy() {
         context.collector.report_with_code(
-            Code::IMPOSSIBLE_CONDITION,
+            IssueCode::ImpossibleCondition,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to false."
             ))
@@ -237,7 +237,7 @@ pub fn handle_paradoxical_condition<T: HasSpan>(context: &mut Context<'_>, expre
         );
     } else if expression_type.is_always_truthy() {
         context.collector.report_with_code(
-            Code::REDUNDANT_CONDITION,
+            IssueCode::RedundantCondition,
             Issue::warning(format!(
                 "This condition (type `{type_id}`) will always evaluate to true."
             ))

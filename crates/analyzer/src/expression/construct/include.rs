@@ -10,7 +10,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::common::construct::ConstructInput;
 use crate::common::construct::analyze_construct_inputs;
 use crate::context::Context;
@@ -122,7 +122,7 @@ fn analyze_include<'a>(
 
     if !context.settings.allow_include {
         context.collector.report_with_code(
-            Code::DISALLOWED_CONSTRUCT,
+            IssueCode::DisallowedConstruct,
             Issue::error(
                 format!("File inclusion via `{construct_kind}` is disallowed by your project configuration.",),
             )

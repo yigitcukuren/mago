@@ -21,7 +21,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::ReferenceConstraintSource;
@@ -170,7 +170,7 @@ pub fn analyze_assignment<'a>(
         && let Some(assignment_span) = assignment_span
     {
         context.collector.report_with_code(
-            Code::CLONE_INSIDE_LOOP,
+            IssueCode::CloneInsideLoop,
             Issue::warning(format!(
                 "Cloning variable `{target_variable_id}` onto itself inside a loop might not have the intended effect."
             ))
@@ -233,7 +233,7 @@ pub fn analyze_assignment<'a>(
             Expression::Identifier(_) | Expression::ConstantAccess(_) | Expression::Access(Access::ClassConstant(_))
         ) {
             context.collector.report_with_code(
-                Code::ASSIGNMENT_TO_CONSTANT,
+                IssueCode::AssignmentToConstant,
                 Issue::error("Cannot assign to a constant.")
                     .with_annotation(
                         Annotation::primary(target_expression.span())
@@ -244,7 +244,7 @@ pub fn analyze_assignment<'a>(
             );
         } else {
             context.collector.report_with_code(
-                Code::INVALID_ASSIGNMENT,
+                IssueCode::InvalidAssignment,
                 Issue::error(
                     "Invalid target for assignment."
                 )
@@ -503,7 +503,7 @@ pub fn analyze_assignment_to_variable<'a>(
                 },
             };
 
-            context.collector.report_with_code(Code::REFERENCE_CONSTRAINT_VIOLATION, issue);
+            context.collector.report_with_code(IssueCode::ReferenceConstraintViolation, issue);
         }
 
         assigned_type.by_reference = true;
@@ -511,7 +511,7 @@ pub fn analyze_assignment_to_variable<'a>(
 
     if variable_id.eq("$this") {
         context.collector.report_with_code(
-            Code::ASSIGNMENT_TO_THIS,
+            IssueCode::AssignmentToThis,
             Issue::error("Cannot assign to `$this`.")
                 .with_annotation(
                     Annotation::primary(variable_span).with_message("`$this` cannot be used as an assignment target."),
@@ -537,7 +537,7 @@ pub fn analyze_assignment_to_variable<'a>(
         }
 
         context.collector.report_with_code(
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::ImpossibleAssignment,
             issue
                 .with_note(
                     "An expression with type `never` is guaranteed to exit, throw, or loop indefinitely."
@@ -583,7 +583,7 @@ pub fn analyze_assignment_to_variable<'a>(
         }
 
         context.collector.report_with_code(
-            Code::MIXED_ASSIGNMENT,
+            IssueCode::MixedAssignment,
             issue.with_annotation(Annotation::primary(variable_span).with_message(format!("Assigning `{assigned_type_str}` type here.")))
                 .with_note(format!("Using `{assigned_type_str}` can lead to runtime errors if the variable is used in a way that assumes a specific type."))
                 .with_help("Consider using a more specific type to avoid potential issues."),
@@ -651,7 +651,7 @@ fn analyze_destructuring<'a>(
                 "Ensure the value on the right-hand side is an array before attempting to destructure it.",
             );
 
-        context.collector.report_with_code(Code::INVALID_DESTRUCTURING_SOURCE, issue);
+        context.collector.report_with_code(IssueCode::InvalidDestructuringSource, issue);
 
         non_array = true;
     }
@@ -697,7 +697,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.collector.report_with_code(Code::MIXED_DESTRUCTURING_SHAPE, issue);
+            context.collector.report_with_code(IssueCode::MixedDestructuringShape, issue);
 
             impossible = true;
         }
@@ -731,7 +731,7 @@ fn analyze_destructuring<'a>(
                     );
             }
 
-            context.collector.report_with_code(Code::SKIP_IN_KEYED_DESTRUCTURING, issue);
+            context.collector.report_with_code(IssueCode::SkipInKeyedDestructuring, issue);
 
             impossible = true;
         }
@@ -812,7 +812,7 @@ fn analyze_destructuring<'a>(
             }
             ArrayElement::Variadic(variadic_element) => {
                 context.collector.report_with_code(
-                    Code::SPREAD_IN_DESTRUCTURING,
+                    IssueCode::SpreadInDestructuring,
                     Issue::error("Variadic unpacking (`...`) is not permitted in a destructuring assignment.")
                         .with_annotation(Annotation::primary(variadic_element.span()).with_message("This syntax is not allowed here"))
                         .with_note("The `...` operator can be used for argument unpacking in function calls or for spreading elements into a new array on the right-hand side of an expression, but not on the left-hand side of an assignment.")
@@ -935,7 +935,7 @@ fn handle_assignment_with_boolean_logic(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::settings::Settings;
     use crate::test_analysis;
 
@@ -1041,7 +1041,7 @@ mod tests {
             $scalar = get_list();
         "#},
         issues = [
-            Code::DOCBLOCK_TYPE_MISMATCH,
+            IssueCode::DocblockTypeMismatch,
         ]
     }
 
@@ -1232,8 +1232,8 @@ mod tests {
             i_take_null($e);
         "#},
         issues = [
-            Code::MISMATCHED_ARRAY_INDEX,
-            Code::MISMATCHED_ARRAY_INDEX,
+            IssueCode::MismatchedArrayIndex,
+            IssueCode::MismatchedArrayIndex,
         ]
     }
 
@@ -1250,7 +1250,7 @@ mod tests {
             i_take_null($age);
         "#},
         issues = [
-            Code::UNDEFINED_STRING_ARRAY_INDEX,
+            IssueCode::UndefinedStringArrayIndex,
         ]
     }
 
@@ -1268,7 +1268,7 @@ mod tests {
             i_take_null($b);
         "#},
         issues = [
-            Code::UNDEFINED_INT_ARRAY_INDEX,
+            IssueCode::UndefinedIntArrayIndex,
         ]
     }
 
@@ -1369,8 +1369,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLY_UNDEFINED_ARRAY_INDEX,
-            Code::POSSIBLY_UNDEFINED_ARRAY_INDEX,
+            IssueCode::PossiblyUndefinedArrayIndex,
+            IssueCode::PossiblyUndefinedArrayIndex,
         ]
     }
 
@@ -1423,7 +1423,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::EXPRESSION_IS_TOO_COMPLEX,
+            IssueCode::ExpressionIsTooComplex,
         ]
     }
 }

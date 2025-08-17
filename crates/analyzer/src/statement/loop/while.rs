@@ -42,7 +42,7 @@ impl Analyzable for While {
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -76,7 +76,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::CONDITION_IS_TOO_COMPLEX,
+            IssueCode::ConditionIsTooComplex,
         ],
     }
 }

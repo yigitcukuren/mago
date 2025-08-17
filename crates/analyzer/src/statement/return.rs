@@ -20,7 +20,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
@@ -46,7 +46,7 @@ impl Analyzable for Return {
                 && inferred_return_type.is_never()
             {
                 context.collector.report_with_code(
-                    Code::NEVER_RETURN,
+                    IssueCode::NeverReturn,
                     Issue::error("Cannot return value with type 'never' from this function.")
                     .with_annotation(
                         Annotation::primary(return_value.span())
@@ -156,7 +156,7 @@ pub fn handle_return_value<'a>(
 
             if !is_referenceable {
                 context.collector.report_with_code(
-                    Code::INVALID_RETURN_STATEMENT,
+                    IssueCode::InvalidReturnStatement,
                     Issue::error(format!(
                         "Cannot return a non-referenceable value from function `{function_name}`.",
                     ))
@@ -233,7 +233,7 @@ pub fn handle_return_value<'a>(
 
                     if let Some(return_value) = return_value {
                         context.collector.report_with_code(
-                            Code::HIDDEN_GENERATOR_RETURN,
+                            IssueCode::HiddenGeneratorReturn,
                             Issue::warning(format!(
                                 "The value returned by generator function `{function_name}` may be inaccessible to callers.",
                             ))
@@ -270,7 +270,7 @@ pub fn handle_return_value<'a>(
 
         if expected_return_type.is_void() {
             context.collector.report_with_code(
-                Code::INVALID_RETURN_STATEMENT,
+                IssueCode::InvalidReturnStatement,
                 Issue::error(format!(
                     "Function `{function_name}` is declared to return 'void' but returns a value."
                 ))
@@ -294,7 +294,7 @@ pub fn handle_return_value<'a>(
 
         if inferred_return_type.is_mixed() {
             context.collector.report_with_code(
-                Code::MIXED_RETURN_STATEMENT,
+                IssueCode::MixedReturnStatement,
                 Issue::error(format!(
                     "Could not infer a precise return type for function `{}`. Saw type `{}`.",
                     function_name,
@@ -341,7 +341,7 @@ pub fn handle_return_value<'a>(
             && !expected_return_type.has_template()
         {
             context.collector.report_with_code(
-                Code::NULLABLE_RETURN_STATEMENT,
+                IssueCode::NullableReturnStatement,
                 Issue::error(format!(
                     "Function `{function_name}` is declared to return `{expected_return_type_str}` but possibly returns a nullable value (inferred as `{inferred_return_type_str}`).",
                 ))
@@ -369,7 +369,7 @@ pub fn handle_return_value<'a>(
             && !expected_return_type.has_template()
         {
             context.collector.report_with_code(
-                Code::FALSABLE_RETURN_STATEMENT,
+                IssueCode::FalsableReturnStatement,
                 Issue::error(format!(
                     "Function `{function_name}` is declared to return `{expected_return_type_str}` but possibly returns 'false' (inferred as `{inferred_return_type_str}`).",
                 ))
@@ -398,7 +398,7 @@ pub fn handle_return_value<'a>(
 
             if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
                 context.collector.report_with_code(
-                    Code::LESS_SPECIFIC_NESTED_RETURN_STATEMENT,
+                    IssueCode::LessSpecificNestedReturnStatement,
                     Issue::error(format!(
                         "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}` due to nested 'mixed'."
                     ))
@@ -417,7 +417,7 @@ pub fn handle_return_value<'a>(
                 );
             } else {
                 context.collector.report_with_code(
-                    Code::LESS_SPECIFIC_RETURN_STATEMENT,
+                    IssueCode::LessSpecificReturnStatement,
                     Issue::error(format!(
                         "Returned type `{inferred_return_type_str}` is less specific than the declared return type `{expected_return_type_str}` for function `{function_name}`."
                     ))
@@ -439,7 +439,7 @@ pub fn handle_return_value<'a>(
             }
         } else {
             context.collector.report_with_code(
-                Code::INVALID_RETURN_STATEMENT,
+                IssueCode::InvalidReturnStatement,
                 Issue::error(format!(
                     "Invalid return type for function `{function_name}`: expected `{expected_return_type_str}`, but found `{inferred_return_type_str}`."
                 ))
@@ -470,7 +470,7 @@ pub fn handle_return_value<'a>(
         let expected_return_type_str = expected_return_type.get_id(Some(context.interner));
 
         context.collector.report_with_code(
-            Code::INVALID_RETURN_STATEMENT,
+            IssueCode::InvalidReturnStatement,
             Issue::error(format!(
                 "Function `{function_name}` is declared to return `{expected_return_type_str}` but no return value was specified.",
             ))
@@ -536,7 +536,7 @@ fn get_generator_return_type(context: &Context, return_type: &TUnion) -> Option<
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -573,7 +573,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::HIDDEN_GENERATOR_RETURN,
+            IssueCode::HiddenGeneratorReturn,
         ]
     }
 
@@ -640,7 +640,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_RETURN_STATEMENT,
+            IssueCode::InvalidReturnStatement,
         ]
     }
 

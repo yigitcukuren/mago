@@ -10,7 +10,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -65,7 +65,7 @@ impl Analyzable for Throw {
                     let exception_atomic_str = exception_atomic.get_id(Some(context.interner));
 
                     context.collector.report_with_code(
-                        Code::INVALID_THROW,
+                        IssueCode::InvalidThrow,
                         Issue::error(format!(
                             "Cannot throw type `{exception_atomic_str}` because it is not an instance of Throwable."
                         ))

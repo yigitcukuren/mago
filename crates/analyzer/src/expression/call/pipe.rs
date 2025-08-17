@@ -42,7 +42,7 @@ impl Analyzable for Pipe {
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -55,7 +55,7 @@ mod tests {
             "foo" |> do_nothing(...);
         "#},
         issues = [
-            Code::TOO_MANY_ARGUMENTS,
+            IssueCode::TooManyArguments,
         ],
     }
 
@@ -69,8 +69,8 @@ mod tests {
             "foo" |> do_nothing(...);
         "#},
         issues = [
-            Code::INVALID_ARGUMENT, // "foo" is not an int
-            Code::TOO_FEW_ARGUMENTS,
+            IssueCode::InvalidArgument, // "foo" is not an int
+            IssueCode::TooFewArguments,
         ],
     }
 

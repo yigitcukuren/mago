@@ -16,7 +16,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
@@ -225,7 +225,7 @@ fn get_function_like_target<'a>(
         };
 
         context.collector.report_with_code(
-            Code::NON_EXISTENT_FUNCTION,
+            IssueCode::NonExistentFunction,
             issue.with_note("This often means the function/method is misspelled, not imported correctly (e.g., missing `use` statement for namespaced functions), or not defined/autoloaded.")
                 .with_help(format!("Check for typos in `{name_str}`. Verify namespace imports if applicable, and ensure the {kind_str} is defined and accessible."))
         );
@@ -281,7 +281,7 @@ fn inspect_arguments<'a>(
     }
 
     context.collector.report_with_code(
-        Code::TYPE_INSPECTION,
+        IssueCode::TypeInspection,
         issue
             .with_note(
                 "The `Mago\\inspect()` function is a static analysis debugging utility; it has no effect at runtime.",
@@ -319,7 +319,7 @@ fn confirm_argument_type<'a>(
 
     if arguments.len() != 2 {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::error(format!(
                 "`Mago\\confirm()` expects exactly 2 arguments (a value and an expected type string), but {} {} provided.",
                 arguments.len(),
@@ -345,7 +345,7 @@ fn confirm_argument_type<'a>(
     let expected_type_expression = expected_type_string_argument.value();
     let Some(actual_argument_type) = artifacts.get_expression_type(value_expression) else {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::error("Cannot determine the type of the first argument passed to `Mago\\confirm()`.")
                 .with_annotation(
                     Annotation::primary(value_expression.span())
@@ -364,7 +364,7 @@ fn confirm_argument_type<'a>(
 
     let Some(expected_type_expression_type) = artifacts.get_expression_type(expected_type_expression) else {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::error(
                 "Cannot determine the type of the second argument (the expected type string) passed to `Mago\\confirm()`."
             )
@@ -384,7 +384,7 @@ fn confirm_argument_type<'a>(
 
     let Some(expected_type_literal_string) = expected_type_expression_type.get_single_literal_string_value() else {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::error(format!(
                 "Second argument to `Mago\\confirm()` must be a literal string, but found type `{}`.",
                 expected_type_expression_type.get_id(Some(context.interner))
@@ -406,7 +406,7 @@ fn confirm_argument_type<'a>(
 
     if is_match {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::help(format!("Type of expression is `{actual_argument_type_string}` as expected.",))
                 .with_annotation(
                     Annotation::primary(value_expression.span())
@@ -421,7 +421,7 @@ fn confirm_argument_type<'a>(
         );
     } else {
         context.collector.report_with_code(
-            Code::TYPE_CONFIRMATION,
+            IssueCode::TypeConfirmation,
             Issue::error(format!(
                 "Type of expression is `{actual_argument_type_string}`, but expected `{expected_type_literal_string}`."
             ))

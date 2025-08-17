@@ -14,7 +14,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -62,7 +62,7 @@ pub fn analyze_comparison_operation<'a>(
 
         if lhs_is_array && !rhs_is_array && !rhs_type.is_null() {
             context.collector.report_with_code(
-                Code::INVALID_OPERAND,
+                IssueCode::InvalidOperand,
                 Issue::warning(format!(
                     "Comparing an `array` with a non-array type `{}` using `{}`.",
                     rhs_type.get_id(Some(context.interner)),
@@ -76,7 +76,7 @@ pub fn analyze_comparison_operation<'a>(
             reported_general_invalid_operand = true;
         } else if !lhs_is_array && rhs_is_array && !lhs_type.is_null() {
             context.collector.report_with_code(
-                Code::INVALID_OPERAND,
+                IssueCode::InvalidOperand,
                 Issue::warning(format!(
                     "Comparing a non-array type `{}` with an `array` using `{}`.",
                     lhs_type.get_id(Some(context.interner)),
@@ -285,7 +285,7 @@ fn check_comparison_operand(
 
     if operand_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_OPERAND,
+            IssueCode::NullOperand,
             Issue::error(format!(
                 "{side} operand in `{op_str}` comparison is `null`."
             ))
@@ -295,7 +295,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_nullable() && !operand_type.is_mixed() {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_OPERAND,
+            IssueCode::PossiblyNullOperand,
             Issue::warning(format!(
                 "{} operand in `{}` comparison might be `null` (type `{}`).",
                 side, op_str, operand_type.get_id(Some(context.interner))
@@ -306,7 +306,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_mixed() {
         context.collector.report_with_code(
-            Code::MIXED_OPERAND,
+            IssueCode::MixedOperand,
             Issue::error(format!("{side} operand in `{op_str}` comparison has `mixed` type."))
                 .with_annotation(Annotation::primary(operand.span()).with_message("This has type `mixed`"))
                 .with_note(format!(
@@ -316,7 +316,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_OPERAND,
+            IssueCode::FalseOperand,
             Issue::error(format!(
                "{side} operand in `{op_str}` comparison is `false`."
             ))
@@ -326,7 +326,7 @@ fn check_comparison_operand(
         );
     } else if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_OPERAND,
+            IssueCode::PossiblyFalseOperand,
             Issue::warning(format!(
                 "{} operand in `{}` comparison might be `false` (type `{}`).",
                 side, op_str, operand_type.get_id(Some(context.interner))
@@ -355,7 +355,7 @@ fn report_redundant_comparison(
     }
 
     context.collector.report_with_code(
-        Code::REDUNDANT_COMPARISON,
+        IssueCode::RedundantComparison,
         Issue::help(format!(
             "Redundant `{}` comparison: left-hand side is {} right-hand side.",
             binary.operator.as_str(context.interner),

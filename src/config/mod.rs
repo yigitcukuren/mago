@@ -54,6 +54,7 @@ pub struct Configuration {
 
     /// Configuration options for the analyzer.
     #[serde(default)]
+    #[serde(alias = "analysis")]
     pub analyze: AnalyzeConfiguration,
 
     /// The log filter.

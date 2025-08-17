@@ -23,7 +23,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -49,7 +49,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
     if left_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_OPERAND,
+            IssueCode::NullOperand,
             Issue::error("Left operand in arithmetic operation cannot be `null`.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is `null`."))
                 .with_note("Performing arithmetic operations on `null` typically results in `0`.")
@@ -61,7 +61,7 @@ pub fn analyze_arithmetic_operation<'a>(
         final_result_type = Some(get_mixed());
     } else if left_type.is_nullable() && !left_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_OPERAND,
+            IssueCode::PossiblyNullOperand,
             Issue::warning(format!(
                 "Left operand in arithmetic operation might be `null` (type `{}`).",
                 left_type.get_id(Some(context.interner))
@@ -76,7 +76,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
     if right_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_OPERAND,
+            IssueCode::NullOperand,
             Issue::error("Right operand in arithmetic operation cannot be `null`.")
                 .with_annotation(Annotation::primary(binary.rhs.span()).with_message("This is `null`."))
                 .with_note("Performing arithmetic operations on `null` typically results in `0`.")
@@ -86,7 +86,7 @@ pub fn analyze_arithmetic_operation<'a>(
         final_result_type = Some(get_mixed());
     } else if right_type.is_nullable() && !right_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_OPERAND,
+            IssueCode::PossiblyNullOperand,
             Issue::warning(format!(
                 "Right operand in arithmetic operation might be `null` (type `{}`).",
                 right_type.get_id(Some(context.interner))
@@ -113,7 +113,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
     if left_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_OPERAND,
+            IssueCode::FalseOperand,
             Issue::warning(
                 "Left operand in arithmetic operation is `false`.",
             )
@@ -127,7 +127,7 @@ pub fn analyze_arithmetic_operation<'a>(
         // If *only* false, Psalm might bail; let's continue for now
     } else if left_type.is_falsable() && !left_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_OPERAND,
+            IssueCode::PossiblyFalseOperand,
             Issue::warning(format!(
                 "Left operand in arithmetic operation might be `false` (type `{}`).",
                 left_type.get_id(Some(context.interner))
@@ -147,7 +147,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
     if right_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_OPERAND,
+            IssueCode::FalseOperand,
             Issue::warning(
                 "Right operand in arithmetic operation is `false`."
             )
@@ -164,7 +164,7 @@ pub fn analyze_arithmetic_operation<'a>(
         );
     } else if right_type.is_falsable() && !right_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_OPERAND,
+            IssueCode::PossiblyFalseOperand,
             Issue::warning(format!(
                 "Right operand in arithmetic operation might be `false` (type `{}`).",
                 right_type.get_id(Some(context.interner))
@@ -225,7 +225,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
             if left_atomic.is_mixed() {
                 context.collector.report_with_code(
-                    Code::MIXED_OPERAND,
+                    IssueCode::MixedOperand,
                     Issue::error(
                         "Left operand in binary operation has type `mixed`."
                     )
@@ -249,7 +249,7 @@ pub fn analyze_arithmetic_operation<'a>(
 
             if right_atomic.is_mixed() {
                 context.collector.report_with_code(
-                    Code::MIXED_OPERAND,
+                    IssueCode::MixedOperand,
                     Issue::error(
                         "Right operand in binary operation has type `mixed`."
                     )
@@ -405,7 +405,8 @@ pub fn analyze_arithmetic_operation<'a>(
     }
 
     if !invalid_left_messages.is_empty() {
-        let issue_kind = if has_valid_left_operand { Code::POSSIBLY_INVALID_OPERAND } else { Code::INVALID_OPERAND };
+        let issue_kind =
+            if has_valid_left_operand { IssueCode::PossiblyInvalidOperand } else { IssueCode::InvalidOperand };
 
         let mut issue = if has_valid_left_operand {
             Issue::warning("Possibly invalid type for left operand.".to_string())
@@ -431,7 +432,8 @@ pub fn analyze_arithmetic_operation<'a>(
     }
 
     if !invalid_right_messages.is_empty() {
-        let issue_kind = if has_valid_right_operand { Code::POSSIBLY_INVALID_OPERAND } else { Code::INVALID_OPERAND };
+        let issue_kind =
+            if has_valid_right_operand { IssueCode::PossiblyInvalidOperand } else { IssueCode::InvalidOperand };
 
         let mut issue = if has_valid_right_operand {
             Issue::warning("Possibly invalid type for right operand.".to_string())

@@ -15,7 +15,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -69,7 +69,7 @@ impl Analyzable for YieldValue {
             &mut ComparisonResult::new(),
         ) {
             context.collector.report_with_code(
-                Code::INVALID_YIELD_VALUE_TYPE,
+                IssueCode::InvalidYieldValueType,
                 Issue::error(format!(
                     "Invalid value type yielded; expected `{}`, but found `{}`.",
                     v.get_id(Some(context.interner)),
@@ -95,7 +95,7 @@ impl Analyzable for YieldValue {
             &mut ComparisonResult::new(),
         ) {
             context.collector.report_with_code(
-                Code::INVALID_YIELD_KEY_TYPE,
+                IssueCode::InvalidYieldKeyType,
                 Issue::error(format!(
                     "Invalid key type yielded implicitly; expected `{}`, but implicit key is `{}`.",
                     k.get_id(Some(context.interner)),
@@ -156,7 +156,7 @@ impl Analyzable for YieldPair {
             &mut ComparisonResult::new(),
         ) {
             context.collector.report_with_code(
-               Code::INVALID_YIELD_VALUE_TYPE,
+               IssueCode::InvalidYieldValueType,
                Issue::error(format!(
                    "Invalid value type yielded; expected `{}`, but found `{}`.",
                    v.get_id(Some(context.interner)),
@@ -182,7 +182,7 @@ impl Analyzable for YieldPair {
             &mut ComparisonResult::new(),
         ) {
             context.collector.report_with_code(
-                Code::INVALID_YIELD_KEY_TYPE,
+                IssueCode::InvalidYieldKeyType,
                 Issue::error(format!(
                     "Invalid key type yielded; expected `{}`, but found `{}`.",
                     k.get_id(Some(context.interner)),
@@ -221,7 +221,7 @@ impl Analyzable for YieldFrom {
 
         let Some(iterator_type) = artifacts.get_rc_expression_type(&self.iterator).cloned() else {
             context.collector.report_with_code(
-                Code::UNKNOWN_YIELD_FROM_ITERATOR_TYPE,
+                IssueCode::UnknownYieldFromIteratorType,
                 Issue::error("Cannot determine the type of the expression in `yield from`.")
                     .with_annotation(
                         Annotation::primary(self.iterator.span())
@@ -255,7 +255,7 @@ impl Analyzable for YieldFrom {
                     &mut ComparisonResult::new(),
                 ) {
                     context.collector.report_with_code(
-                        Code::YIELD_FROM_INVALID_SEND_TYPE,
+                        IssueCode::YieldFromInvalidSendType,
                         Issue::error(format!(
                             "Incompatible `send` type for `yield from`: current generator expects to be sent `{}`, but yielded generator expects `{}`.",
                             s.get_id(Some(context.interner)),
@@ -275,7 +275,7 @@ impl Analyzable for YieldFrom {
                 parameters
             } else {
                 context.collector.report_with_code(
-                    Code::YIELD_FROM_NON_ITERABLE,
+                    IssueCode::YieldFromNonIterable,
                     Issue::error(format!(
                         "Cannot `yield from` non-iterable type `{}`.",
                         atomic.get_id(Some(context.interner))
@@ -304,7 +304,7 @@ impl Analyzable for YieldFrom {
                 &mut ComparisonResult::new(),
             ) {
                 context.collector.report_with_code(
-                    Code::YIELD_FROM_INVALID_VALUE_TYPE,
+                    IssueCode::YieldFromInvalidValueType,
                     Issue::error(format!(
                         "Invalid value type from `yield from`: current generator expects to yield `{}`, but the inner iterable yields `{}`.",
                         v.get_id(Some(context.interner)),
@@ -330,7 +330,7 @@ impl Analyzable for YieldFrom {
                 &mut ComparisonResult::new(),
             ) {
                 context.collector.report_with_code(
-                   Code::YIELD_FROM_INVALID_KEY_TYPE,
+                   IssueCode::YieldFromInvalidKeyType,
                    Issue::error(format!(
                        "Invalid key type from `yield from`: current generator expects to yield keys of type `{}`, but the inner iterable yields keys of type `{}`.",
                        k.get_id(Some(context.interner)),
@@ -359,7 +359,7 @@ fn get_current_generator_parameters<'a>(
 ) -> Option<(TUnion, TUnion, TUnion, TUnion)> {
     let Some(function) = block_context.scope.get_function_like() else {
         context.collector.report_with_code(
-            Code::YIELD_OUTSIDE_FUNCTION,
+            IssueCode::YieldOutsideFunction,
             Issue::error("`yield` can only be used inside a function or method.")
                 .with_annotation(
                     Annotation::primary(yield_span).with_message("`yield` used in an invalid context"),
@@ -397,7 +397,7 @@ fn get_current_generator_parameters<'a>(
                 }
                 None => {
                     context.collector.report_with_code(
-                        Code::INVALID_GENERATOR_RETURN_TYPE,
+                        IssueCode::InvalidGeneratorReturnType,
                         Issue::error(format!(
                             "Declared return type `{}` for generator function `{}` is not a valid Generator or iterable type.",
                             iterable_type.get_id(Some(context.interner)),

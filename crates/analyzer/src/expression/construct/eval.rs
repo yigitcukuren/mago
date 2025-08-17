@@ -8,7 +8,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::common::construct::ConstructInput;
 use crate::common::construct::analyze_construct_inputs;
 use crate::context::Context;
@@ -24,7 +24,7 @@ impl Analyzable for EvalConstruct {
     ) -> Result<(), AnalysisError> {
         if !context.settings.allow_eval {
             context.collector.report_with_code(
-                Code::DISALLOWED_CONSTRUCT,
+                IssueCode::DisallowedConstruct,
                 Issue::error("Use of `eval` is disallowed by project configuration.")
                     .with_annotation(Annotation::primary(self.eval.span).with_message("`eval` is disallowed here"))
                     .with_note(

@@ -11,6 +11,7 @@ use mago_syntax::ast::Program;
 
 use crate::analysis_result::AnalysisResult;
 use crate::artifacts::AnalysisArtifacts;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -18,13 +19,13 @@ use crate::settings::Settings;
 use crate::statement::analyze_statements;
 
 pub mod analysis_result;
+pub mod code;
 pub mod error;
 pub mod settings;
 
 mod analyzable;
 mod artifacts;
 mod assertion;
-mod code;
 mod common;
 mod context;
 mod expression;
@@ -63,14 +64,46 @@ impl<'a> Analyzer<'a> {
 
         if !program.has_script() {
             analysis_result.time_in_analysis = start_time.elapsed();
+
             return Ok(());
         }
 
         let statements = program.statements.as_slice();
 
-        let mut context = {
-            let collector = Collector::new(self.source_file, program, self.interner, COLLECTOR_CATEGORY);
+        let mut collector = Collector::new(self.source_file, program, self.interner, COLLECTOR_CATEGORY);
+        if !self.settings.mixed_issues {
+            collector.add_disabled_codes(IssueCode::get_mixed_issue_code_values());
+        }
 
+        if !self.settings.falsable_issues {
+            collector.add_disabled_codes(IssueCode::get_falsable_issue_code_values());
+        }
+
+        if !self.settings.nullable_issues {
+            collector.add_disabled_codes(IssueCode::get_nullable_issue_code_values());
+        }
+
+        if !self.settings.redundancy_issues {
+            collector.add_disabled_codes(IssueCode::get_redundancy_issue_code_values());
+        }
+
+        if !self.settings.reference_issues {
+            collector.add_disabled_codes(IssueCode::get_reference_issue_code_values());
+        }
+
+        if !self.settings.unreachable_issues {
+            collector.add_disabled_codes(IssueCode::get_unreachable_issue_code_values());
+        }
+
+        if !self.settings.deprecation_issues {
+            collector.add_disabled_codes(IssueCode::get_deprecation_issue_code_values());
+        }
+
+        if !self.settings.impossibility_issues {
+            collector.add_disabled_codes(IssueCode::get_impossibility_issue_code_values());
+        }
+
+        let mut context = {
             Context::new(
                 self.interner,
                 self.codebase,
@@ -114,6 +147,7 @@ mod tests {
 
     use crate::Analyzer;
     use crate::analysis_result::AnalysisResult;
+    use crate::code::IssueCode;
     use crate::settings::Settings;
 
     #[derive(Debug, Clone)]
@@ -121,7 +155,7 @@ mod tests {
         name: &'static str,
         content: &'static str,
         settings: Settings,
-        expected_issues: Vec<&'static str>,
+        expected_issues: Vec<IssueCode>,
     }
 
     impl TestCase {
@@ -144,8 +178,8 @@ mod tests {
             self
         }
 
-        pub fn expect_issues(mut self, kinds: Vec<&'static str>) -> Self {
-            self.expected_issues = kinds;
+        pub fn expect_issues(mut self, codes: Vec<IssueCode>) -> Self {
+            self.expected_issues = codes;
             self
         }
 
@@ -186,15 +220,15 @@ mod tests {
         test_name: &str,
         mut analysis_result: AnalysisResult,
         mut codebase: CodebaseMetadata,
-        expected_issue_kinds: &[&'static str],
+        expected_issue_codes: &[IssueCode],
     ) {
         let mut actual_issues_collected = std::mem::take(&mut analysis_result.issues);
 
         actual_issues_collected.extend(codebase.take_issues(true));
 
         let actual_issues_count = actual_issues_collected.len();
-        let mut expected_issue_counts: BTreeMap<&'static str, usize> = BTreeMap::new();
-        for kind in expected_issue_kinds {
+        let mut expected_issue_counts: BTreeMap<&IssueCode, usize> = BTreeMap::new();
+        for kind in expected_issue_codes {
             *expected_issue_counts.entry(kind).or_insert(0) += 1;
         }
 
@@ -222,7 +256,7 @@ mod tests {
         }
 
         for (expected_kind, expected_count) in expected_issue_counts {
-            let actual_count = actual_issue_counts.get(expected_kind).copied().unwrap_or(0);
+            let actual_count = actual_issue_counts.get(expected_kind.as_str()).copied().unwrap_or(0);
             if actual_count < expected_count {
                 discrepancies.push(format!(
                     "- Missing expected issue(s) of kind `{expected_kind}`: expected {expected_count}, found {actual_count}.",
@@ -239,7 +273,7 @@ mod tests {
             panic!("{}", panic_message);
         }
 
-        if expected_issue_kinds.is_empty() && actual_issues_count != 0 {
+        if expected_issue_codes.is_empty() && actual_issues_count != 0 {
             let mut panic_message = format!("Test '{test_name}': Expected no issues, but found:\n");
             for issue in actual_issues_collected {
                 panic_message.push_str(&format!(

@@ -15,7 +15,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -89,7 +89,7 @@ fn resolve_function_callable_types<'a, 'b>(
             };
 
             context.collector.report_with_code(
-                Code::NON_EXISTENT_FUNCTION,
+                IssueCode::NonExistentFunction,
                 issue.with_note("This often means the function is misspelled, not imported correctly (e.g., missing `use` statement for namespaced functions), or not defined/autoloaded.")
                     .with_help(format!("Check for typos in `{name_str}`. Verify namespace imports if applicable, and ensure the function is defined and accessible."))
             );
@@ -117,7 +117,7 @@ fn resolve_function_callable_types<'a, 'b>(
             let type_name = atomic.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                Code::INVALID_CALLABLE,
+                IssueCode::InvalidCallable,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be treated as a callable.",
                 ))
@@ -142,7 +142,7 @@ fn resolve_function_callable_types<'a, 'b>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -155,7 +155,7 @@ mod tests {
             (((((((((strlen(...)))(...))(...))(...))(...))(...))(...))(...))(...)(str: "hello");
         "#},
         issues = [
-            Code::UNKNOWN_NAMED_ARGUMENT,
+            IssueCode::InvalidNamedArgument,
         ],
     }
 
@@ -232,7 +232,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_ARGUMENT, // `$tuple` is a tuple/list, not an `int`.
+            IssueCode::InvalidArgument, // `$tuple` is a tuple/list, not an `int`.
         ],
     }
 }

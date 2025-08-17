@@ -18,7 +18,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::common::synthetic::new_synthetic_disjunctive_identity;
 use crate::common::synthetic::new_synthetic_variable;
 use crate::context::Context;
@@ -437,7 +437,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_empty_match(&mut self) {
         self.context.collector.report_with_code(
-            Code::EMPTY_MATCH_EXPRESSION,
+            IssueCode::EmptyMatchExpression,
             Issue::error("Match expression cannot be empty.")
                 .with_annotation(Annotation::primary(self.stmt.span()).with_message("This match has no arms"))
                 .with_note("In PHP, an empty `match` expression will result in a fatal `UnhandledMatchError`."),
@@ -446,7 +446,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_only_default_arm(&mut self) {
         self.context.collector.report_with_code(
-            Code::MATCH_EXPRESSION_ONLY_DEFAULT_ARM,
+            IssueCode::MatchExpressionOnlyDefaultArm,
             Issue::help("This match expression is redundant as it only contains a default arm.")
                 .with_annotation(
                     Annotation::primary(self.stmt.span())
@@ -458,7 +458,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_unknown_subject_type(&mut self) {
         self.context.collector.report_with_code(
-            Code::UNKNOWN_MATCH_SUBJECT_TYPE,
+            IssueCode::UnknownMatchSubjectType,
             Issue::error("The type of the match subject expression is unknown.")
                 .with_annotation(
                     Annotation::primary(self.stmt.expression.span())
@@ -470,7 +470,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_subject_is_never(&mut self) {
         self.context.collector.report_with_code(
-            Code::MATCH_SUBJECT_TYPE_IS_NEVER,
+            IssueCode::MatchSubjectTypeIsNever,
             Issue::error("The match subject is of type `never`, making the match expression unreachable.")
                 .with_annotation(
                     Annotation::primary(self.stmt.expression.span())
@@ -482,7 +482,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_unreachable_arm(&mut self, arm: &MatchExpressionArm, note: &str) {
         self.context.collector.report_with_code(
-            Code::UNREACHABLE_MATCH_ARM,
+            IssueCode::UnreachableMatchArm,
             Issue::warning("This match arm is unreachable.")
                 .with_annotation(Annotation::primary(arm.span()).with_message("This arm can never be reached"))
                 .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
@@ -492,7 +492,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_always_matching_arm(&mut self, arm: &MatchExpressionArm) {
         self.context.collector.report_with_code(
-            Code::MATCH_ARM_ALWAYS_TRUE,
+            IssueCode::MatchArmAlwaysTrue,
             Issue::warning("This match arm is always true, making subsequent arms unreachable.")
                 .with_annotation(
                     Annotation::primary(arm.span()).with_message("This arm covers all remaining cases for the subject"),
@@ -504,7 +504,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_unreachable_default_arm(&mut self, arm: &MatchDefaultArm) {
         self.context.collector.report_with_code(
-            Code::UNREACHABLE_MATCH_DEFAULT_ARM,
+            IssueCode::UnreachableMatchDefaultArm,
             Issue::warning("This default arm is unreachable.")
                 .with_annotation(Annotation::primary(arm.span()).with_message("This default arm can never be reached"))
                 .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
@@ -514,7 +514,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_default_always_executed(&mut self, arm: &MatchDefaultArm) {
         self.context.collector.report_with_code(
-            Code::MATCH_DEFAULT_ARM_ALWAYS_EXECUTED,
+            IssueCode::MatchDefaultArmAlwaysExecuted,
             Issue::warning("This default arm is always executed because no other arms can match.")
                 .with_annotation(Annotation::primary(arm.span()).with_message("This arm is always executed"))
                 .with_annotation(Annotation::secondary(self.stmt.span()).with_message("In this match expression"))
@@ -524,7 +524,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn report_non_exhaustive(&mut self, subject_type: &TUnion, unhandled_type: &TUnion) {
         self.context.collector.report_with_code(
-            Code::MATCH_NOT_EXHAUSTIVE,
+            IssueCode::MatchNotExhaustive,
             Issue::error(format!(
                 "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
                 subject_type.get_id(Some(self.context.interner))

@@ -21,7 +21,7 @@ use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -250,7 +250,7 @@ pub fn analyze_invocation<'a>(
             if let Some(named_argument) = argument.get_named_argument() {
                 if let Some(previous_span) = assigned_parameters_by_name.get(&named_argument.name.value) {
                     context.collector.report_with_code(
-                        Code::DUPLICATE_NAMED_ARGUMENT,
+                        IssueCode::DuplicateNamedArgument,
                         Issue::error(format!(
                             "Duplicate named argument `${}` in call to {} `{}`.",
                             context.interner.lookup(&named_argument.name.value),
@@ -270,7 +270,7 @@ pub fn analyze_invocation<'a>(
                     if let Some(previous_span) = assigned_parameters_by_position.get(&parameter_offset) {
                         if !parameter_ref.is_variadic() {
                             context.collector.report_with_code(
-                                Code::NAMED_ARGUMENT_OVERRIDES_POSITIONAL,
+                                IssueCode::NamedArgumentOverridesPositional,
                                 Issue::error(format!(
                                     "Named argument `${}` for {} `{}` targets a parameter already provided positionally.",
                                     context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
@@ -281,7 +281,7 @@ pub fn analyze_invocation<'a>(
                             );
                         } else {
                             context.collector.report_with_code(
-                                Code::NAMED_ARGUMENT_AFTER_POSITIONAL,
+                                IssueCode::NamedArgumentAfterPositional,
                                  Issue::warning(format!(
                                     "Named argument `${}` for {} `{}` targets a variadic parameter that has already captured positional arguments.",
                                     context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
@@ -331,9 +331,9 @@ pub fn analyze_invocation<'a>(
             let argument_name = context.interner.lookup(&named_argument.name.value);
 
             context.collector.report_with_code(
-                Code::UNKNOWN_NAMED_ARGUMENT,
+                IssueCode::InvalidNamedArgument,
                 Issue::error(format!(
-                    "Unknown named argument `${argument_name}` for {target_kind_str} `{target_name_str}`"
+                    "Invalid named argument `${argument_name}` for {target_kind_str} `{target_name_str}`"
                 ))
                 .with_annotation(
                     Annotation::primary(named_argument.name.span())
@@ -477,7 +477,7 @@ pub fn analyze_invocation<'a>(
                 }
             } else {
                 context.collector.report_with_code(
-                    Code::TOO_MANY_ARGUMENTS,
+                    IssueCode::TooManyArguments,
                     Issue::error(format!(
                         "Cannot unpack arguments into non-variadic {} `{}`.",
                         invocation.target.guess_kind(),
@@ -493,7 +493,7 @@ pub fn analyze_invocation<'a>(
             }
         } else if !unpacked_arguments.is_empty() {
             context.collector.report_with_code(
-                Code::TOO_MANY_ARGUMENTS,
+                IssueCode::TooManyArguments,
                 Issue::error(format!(
                     "Cannot unpack arguments into {} `{}` which expects no arguments.",
                     invocation.target.guess_kind(),
@@ -542,7 +542,7 @@ pub fn analyze_invocation<'a>(
         };
 
         issue = issue.with_help("Provide all required arguments.");
-        context.collector.report_with_code(Code::TOO_FEW_ARGUMENTS, issue);
+        context.collector.report_with_code(IssueCode::TooFewArguments, issue);
     } else if has_too_many_arguments
         || (!parameter_refs.last().is_some_and(|p| p.is_variadic())
             && number_of_provided_parameters > max_params
@@ -586,7 +586,7 @@ pub fn analyze_invocation<'a>(
             .with_note(format!("Expected {max_params} argument(s), but received {number_of_provided_parameters}."))
             .with_help("Remove the extra argument(s).");
 
-        context.collector.report_with_code(Code::TOO_MANY_ARGUMENTS, issue);
+        context.collector.report_with_code(IssueCode::TooManyArguments, issue);
     }
 
     check_template_result(context, template_result, invocation.span);

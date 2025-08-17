@@ -8,7 +8,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::ReferenceConstraint;
@@ -26,7 +26,7 @@ impl Analyzable for Static {
     ) -> Result<(), AnalysisError> {
         if block_context.scope.is_pure() {
             context.collector.report_with_code(
-                Code::IMPURE_STATIC_VARIABLE,
+                IssueCode::ImpureStaticVariable,
                 Issue::error(
                     "Cannot declare `static` variables inside a pure function or method."
                 )

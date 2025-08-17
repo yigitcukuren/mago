@@ -30,7 +30,7 @@ use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::ReferenceConstraint;
@@ -89,9 +89,9 @@ pub fn post_invocation_process<'a>(
 
     if metadata.flags.is_deprecated() {
         let issue_kind = match identifier {
-            FunctionLikeIdentifier::Function(_) => Code::DEPRECATED_FUNCTION,
-            FunctionLikeIdentifier::Method(_, _) => Code::DEPRECATED_METHOD,
-            FunctionLikeIdentifier::Closure(_, _) => Code::DEPRECATED_CLOSURE,
+            FunctionLikeIdentifier::Function(_) => IssueCode::DeprecatedFunction,
+            FunctionLikeIdentifier::Method(_, _) => IssueCode::DeprecatedMethod,
+            FunctionLikeIdentifier::Closure(_, _) => IssueCode::DeprecatedClosure,
         };
 
         context.collector.report_with_code(
@@ -119,7 +119,7 @@ pub fn post_invocation_process<'a>(
             };
 
             context.collector.report_with_code(
-                Code::NAMED_ARGUMENT_NOT_ALLOWED,
+                IssueCode::NamedArgumentNotAllowed,
                 Issue::error(format!("Named arguments are not allowed for {full_callable_name}."))
                     .with_annotation(Annotation::primary(argument.span()).with_message("Named argument used here"))
                     .with_annotation(Annotation::secondary(invoication.target.span()).with_message(format!(

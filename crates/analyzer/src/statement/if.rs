@@ -21,7 +21,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::common::synthetic::new_synthetic_call;
 use crate::common::synthetic::new_synthetic_negation;
 use crate::context::Context;
@@ -84,7 +84,7 @@ impl Analyzable for If {
             artifacts,
         ).unwrap_or_else(|| {
             context.collector.report_with_code(
-                Code::CONDITION_IS_TOO_COMPLEX,
+                IssueCode::ConditionIsTooComplex,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(self.condition.span())
@@ -583,7 +583,7 @@ fn analyze_else_if_clause<'a>(
 
         if let Some(clauses_statements_span) = clauses_statements_span {
             context.collector.report_with_code(
-                Code::CONDITION_IS_TOO_COMPLEX,
+                IssueCode::ConditionIsTooComplex,
                 Issue::warning("Condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(else_if_clause.0.span())
@@ -1270,7 +1270,7 @@ fn get_definitely_evaluated_ored_expressions(expression: &Expression) -> Vec<&Ex
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -1345,10 +1345,10 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_COMPARISON, // `$a > $b` is always false
-            Code::IMPOSSIBLE_CONDITION, // `if ($a > $b)` is never executed
-            Code::REDUNDANT_COMPARISON, // `$a < $b` is always true
-            Code::REDUNDANT_CONDITION, // `if ($a < $b) { }` is always executed
+            IssueCode::RedundantComparison, // `$a > $b` is always false
+            IssueCode::ImpossibleCondition, // `if ($a > $b)` is never executed
+            IssueCode::RedundantComparison, // `$a < $b` is always true
+            IssueCode::RedundantComparison, // `if ($a < $b) { }` is always executed
         ],
     }
 
@@ -1402,9 +1402,9 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_COMPARISON,
-            Code::IMPOSSIBLE_CONDITION,
-            Code::NO_VALUE,
+            IssueCode::RedundantComparison,
+            IssueCode::ImpossibleCondition,
+            IssueCode::NoValue,
         ],
     }
 
@@ -1608,7 +1608,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLY_INVALID_ARGUMENT, // `expect_x_or_y` expects 'x'|'y', but $result is 'x'|'y'|'z'
+            IssueCode::PossiblyInvalidArgument, // `expect_x_or_y` expects 'x'|'y', but $result is 'x'|'y'|'z'
         ]
     }
 
@@ -1645,9 +1645,9 @@ mod tests {
             test_or_lhs_true('text');
         "#},
         issues = [
-            Code::REDUNDANT_COMPARISON, // `$input === 'text'` is always true
-            Code::IMPOSSIBLE_CONDITION, // `if ($input === 'text')` is never executed
-            Code::NO_VALUE, // `takes_string($input)` is called with 'never' type
+            IssueCode::RedundantComparison, // `$input === 'text'` is always true
+            IssueCode::ImpossibleCondition, // `if ($input === 'text')` is never executed
+            IssueCode::NoValue, // `takes_string($input)` is called with 'never' type
         ]
     }
 
@@ -1730,8 +1730,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::IMPOSSIBLE_CONDITION, // `if ($message = "")` is never executed
-            Code::NO_VALUE, // `takes_string($message)` is called with 'never' type
+            IssueCode::ImpossibleCondition, // `if ($message = "")` is never executed
+            IssueCode::NoValue, // `takes_string($message)` is called with 'never' type
         ]
     }
 
@@ -1770,7 +1770,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::IMPOSSIBLE_CONDITION, // `if (false)` is never executed
+            IssueCode::ImpossibleCondition, // `if (false)` is never executed
         ]
     }
 
@@ -1787,7 +1787,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_CONDITION, // `if (true)` is always executed
+            IssueCode::RedundantCondition, // `if (true)` is always executed
         ]
     }
 
@@ -1806,9 +1806,9 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_COMPARISON, // `$input === 'b'` is always false after `$input === 'a'`
-            Code::REDUNDANT_LOGICAL_OPERATION, // `$input === 'a' && $input === 'b'` is false because `$input === 'b'` is false.
-            Code::IMPOSSIBLE_CONDITION, // `if ($input === 'a' && $input === 'b')` is never executed
+            IssueCode::RedundantComparison, // `$input === 'b'` is always false after `$input === 'a'`
+            IssueCode::RedundantLogicalOperation, // `$input === 'a' && $input === 'b'` is false because `$input === 'b'` is false.
+            IssueCode::ImpossibleCondition, // `if ($input === 'a' && $input === 'b')` is never executed
         ]
     }
 
@@ -1832,8 +1832,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_COMPARISON, // `$input === null` is always false in the else block
-            Code::IMPOSSIBLE_CONDITION, // `if ($input === null)` in the else block is never executed
+            IssueCode::RedundantComparison, // `$input === null` is always false in the else block
+            IssueCode::ImpossibleCondition, // `if ($input === null)` in the else block is never executed
         ]
     }
 
@@ -1851,7 +1851,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::IMPOSSIBLE_CONDITION, // `if ($val)` is never executed because $val is null
+            IssueCode::ImpossibleCondition, // `if ($val)` is never executed because $val is null
         ]
     }
 
@@ -1869,7 +1869,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_CONDITION, // `if ($val)` is always executed because $val is truthy
+            IssueCode::RedundantCondition, // `if ($val)` is always executed because $val is truthy
         ]
     }
 
@@ -2133,7 +2133,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::CONDITION_IS_TOO_COMPLEX,
+            IssueCode::ConditionIsTooComplex,
         ]
     }
 
@@ -2170,7 +2170,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::CONDITION_IS_TOO_COMPLEX,
+            IssueCode::ConditionIsTooComplex,
         ]
     }
 }

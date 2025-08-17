@@ -27,7 +27,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::analyze_statements;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
@@ -213,7 +213,7 @@ fn analyze<'a, 'b>(
         if let Some(statements_span) = statements_span {
             for complex_condition in complex_conditions {
                 context.collector.report_with_code(
-                    Code::CONDITION_IS_TOO_COMPLEX,
+                    IssueCode::ConditionIsTooComplex,
                     Issue::warning("Loop condition is too complex for precise type analysis.")
                         .with_annotation(
                             Annotation::primary(complex_condition)
@@ -979,7 +979,7 @@ fn analyze_iterator<'a>(
         var_type
     } else {
         context.collector.report_with_code(
-            Code::UNKNOWN_ITERATOR_TYPE,
+            IssueCode::UnknownIteratorType,
             Issue::error("Cannot determine the type of the expression provided to `foreach`.")
                 .with_annotation(
                     Annotation::primary(iterator.span())
@@ -1002,7 +1002,7 @@ fn analyze_iterator<'a>(
 
     if iterator_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_ITERATOR,
+            IssueCode::NullIterator,
             Issue::error("Iterating over `null` in `foreach`.")
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This expression is `null`"))
                 .with_annotation(Annotation::secondary(foreach.body.span()).with_message("This `foreach` will not be executed"))
@@ -1016,7 +1016,7 @@ fn analyze_iterator<'a>(
 
     if iterator_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_ITERATOR,
+            IssueCode::FalseIterator,
             Issue::error("Iterating over `false` in `foreach`.")
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This expression is `false`"))
                 .with_annotation(Annotation::secondary(foreach.span()).with_message("This `foreach` will not be executed"))
@@ -1030,7 +1030,7 @@ fn analyze_iterator<'a>(
 
     if iterator_type.is_nullable() && !iterator_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_ITERATOR,
+            IssueCode::PossiblyNullIterator,
             Issue::warning(format!("Expression being iterated (type `{}`) might be `null` at runtime.", iterator_type.get_id(Some(context.interner))))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `null`"))
                 .with_annotation(Annotation::secondary(foreach.span()).with_message("This `foreach` might not be executed"))
@@ -1041,7 +1041,7 @@ fn analyze_iterator<'a>(
 
     if iterator_type.is_falsable() && !iterator_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_ITERATOR,
+            IssueCode::PossiblyFalseIterator,
             Issue::warning(format!("Expression being iterated (type `{}`) might be `false` at runtime.", iterator_type.get_id(Some(context.interner))))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `false`"))
                 .with_annotation(Annotation::secondary(foreach.span()).with_message("This `foreach` might not be executed"))
@@ -1088,7 +1088,7 @@ fn analyze_iterator<'a>(
                 let (obj_key_type, obj_value_type) = match object {
                     TObject::Any => {
                         context.collector.report_with_code(
-                            Code::GENERIC_OBJECT_ITERATION,
+                            IssueCode::GenericObjectIteration,
                             Issue::warning("Iterating over a generic `object`. This will iterate its public properties.")
                                 .with_annotation(Annotation::primary(iterator.span()).with_message("Iterating a generic `object` type"))
                                 .with_note("When `foreach` is used on a generic `object` whose specific class is unknown, PHP will attempt to iterate over its public properties. The keys will be property names (strings) and values their types (typically `mixed` from a static analysis perspective).")
@@ -1107,7 +1107,7 @@ fn analyze_iterator<'a>(
                             let iterator_atomic_str = iterator_atomic.get_id(Some(context.interner));
 
                             context.collector.report_with_code(
-                                Code::NON_ITERABLE_OBJECT_ITERATION,
+                                IssueCode::NonIterableObjectIteration,
                                 Issue::warning(format!(
                                     "Iterating over object of type `{class_name}` which does not implement `Iterator` or `IteratorAggregate`.",
                                 ))
@@ -1132,7 +1132,7 @@ fn analyze_iterator<'a>(
                                 .and_then(|class_like| class_like.enum_type.as_ref());
 
                         context.collector.report_with_code(
-                            Code::ENUM_ITERATION,
+                            IssueCode::EnumIteration,
                             Issue::warning(format!("Iterating directly over the enum enum `{enum_name}`. This will yield its public properties.",))
                                 .with_annotation(
                                     Annotation::primary(iterator.span()).with_message("This enum instance is being iterated directly"),
@@ -1189,7 +1189,7 @@ fn analyze_iterator<'a>(
         };
 
         context.collector.report_with_code(
-            Code::INVALID_ITERATOR,
+            IssueCode::InvalidIterator,
             Issue::error(format!(
                 "The expression provided to `foreach` is not iterable. It {problematic_types_str}."
             ))
@@ -1214,7 +1214,7 @@ fn analyze_iterator<'a>(
         let problematic_types_list_str = invalid_atomic_ids.join("`, `");
 
         context.collector.report_with_code(
-            Code::POSSIBLY_INVALID_ITERATOR,
+            IssueCode::PossiblyInvalidIterator,
             Issue::warning(format!(
                 "The expression provided to `foreach` (type `{iterator_type_id_str}`) might not be iterable at runtime."
             ))

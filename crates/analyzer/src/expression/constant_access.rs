@@ -9,7 +9,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -31,7 +31,7 @@ impl Analyzable for ConstantAccess {
             let constant_name = context.interner.lookup(name);
 
             context.collector.report_with_code(
-                Code::NON_EXISTENT_CONSTANT,
+                IssueCode::NonExistentConstant,
                 Issue::error(format!(
                     "Undefined constant: `{constant_name}`."
                 ))
@@ -56,7 +56,7 @@ impl Analyzable for ConstantAccess {
             let constant_name = context.interner.lookup(name);
 
             context.collector.report_with_code(
-                Code::DEPRECATED_CONSTANT,
+                IssueCode::DeprecatedConstant,
                 Issue::warning(format!("Using deprecated constant: `{constant_name}`."))
                     .with_annotation(Annotation::primary(self.span()).with_message("This constant is deprecated."))
                     .with_note("Consider using an alternative constant or variable.")

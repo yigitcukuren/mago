@@ -20,7 +20,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -69,7 +69,7 @@ impl Analyzable for Closure {
 
                 if let Some(previous_span) = variable_spans.get(&variable) {
                     context.collector.report_with_code(
-                        Code::DUPLICATE_CLOSURE_USE_VARIABLE,
+                        IssueCode::DuplicateClosureUseVariable,
                         Issue::error(
                             format!("Variable `{variable_str}` is imported multiple times into the closure.",),
                         )
@@ -88,7 +88,7 @@ impl Analyzable for Closure {
 
                 if !block_context.has_variable(variable_str) {
                     context.collector.report_with_code(
-                        Code::UNDEFINED_VARIABLE_IN_CLOSURE_USE,
+                        IssueCode::UndefinedVariableInClosureUse,
                         Issue::error(format!(
                             "Cannot import undefined variable `{variable_str}` into closure.",
                         ))
@@ -203,7 +203,7 @@ impl Analyzable for Closure {
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -286,7 +286,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_ARGUMENT,
+            IssueCode::InvalidArgument,
         ]
     }
 
@@ -342,9 +342,9 @@ mod tests {
             echo fibaonacci(10);
         "#},
         issues = [
-            Code::INVALID_STATIC_METHOD_CALL,
-            Code::IMPOSSIBLE_ASSIGNMENT,
-            Code::UNEVALUATED_CODE,
+            IssueCode::InvalidStaticMethodCall,
+            IssueCode::ImpossibleAssignment,
+            IssueCode::UnevaluatedCode,
         ]
     }
 
@@ -375,9 +375,9 @@ mod tests {
             echo (new Foo())->fibaonacci(10);
         "#},
         issues = [
-            Code::INVALID_STATIC_METHOD_CALL,
-            Code::IMPOSSIBLE_ASSIGNMENT,
-            Code::UNEVALUATED_CODE,
+            IssueCode::InvalidStaticMethodCall,
+            IssueCode::ImpossibleAssignment,
+            IssueCode::UnevaluatedCode,
         ]
     }
 
@@ -396,8 +396,8 @@ mod tests {
             $_fn = Closure::getCurrent();
         "#},
         issues = [
-            Code::INVALID_STATIC_METHOD_CALL,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::InvalidStaticMethodCall,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 }

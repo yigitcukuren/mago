@@ -13,7 +13,7 @@ use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -59,7 +59,7 @@ pub(crate) fn analyze<'a>(
 
         if !type_match_found && union_comparison_result.type_coerced.is_none() {
             context.collector.report_with_code(
-                Code::INVALID_PROPERTY_ASSIGNMENT_VALUE,
+                IssueCode::InvalidPropertyAssignmentValue,
                 Issue::error("Invalid property assignment value").with_annotation(
                     Annotation::primary(property_access.class.span()).with_message(format!(
                         "{}::{} with declared type {}, cannot be assigned type {}",
@@ -75,7 +75,7 @@ pub(crate) fn analyze<'a>(
         if union_comparison_result.type_coerced.is_some() {
             if union_comparison_result.type_coerced_from_nested_mixed.is_some() {
                 context.collector.report_with_code(
-                    Code::MIXED_PROPERTY_TYPE_COERCION,
+                    IssueCode::MixedPropertyTypeCoercion,
                     Issue::error("Mixed property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
@@ -87,7 +87,7 @@ pub(crate) fn analyze<'a>(
                 );
             } else {
                 context.collector.report_with_code(
-                    Code::PROPERTY_TYPE_COERCION,
+                    IssueCode::PropertyTypeCoercion,
                     Issue::error("Property type coercion").with_annotation(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
@@ -153,7 +153,7 @@ pub(crate) fn analyze<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -205,7 +205,7 @@ mod tests {
             MyClass::$prop = 123;
         "#},
         issues = [
-            Code::INVALID_PROPERTY_ASSIGNMENT_VALUE,
+            IssueCode::InvalidPropertyAssignmentValue,
         ]
     }
 
@@ -217,7 +217,7 @@ mod tests {
             MyClass::$undefined = 'new';
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -229,7 +229,7 @@ mod tests {
             PrivateWrite::$value = 1;
         "#},
         issues = [
-            Code::INVALID_PROPERTY_READ,
+            IssueCode::InvalidPropertyRead,
         ]
     }
 
@@ -241,7 +241,7 @@ mod tests {
             MyClass::$prop = 500;
         "#},
         issues = [
-            Code::INVALID_PROPERTY_READ,
+            IssueCode::InvalidPropertyRead,
         ]
     }
 

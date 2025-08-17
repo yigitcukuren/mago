@@ -10,7 +10,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -111,7 +111,7 @@ pub(super) fn resolve_targets<'a>(
             let type_name = atomic.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                Code::INVALID_CALLABLE,
+                IssueCode::InvalidCallable,
                 Issue::error(format!(
                     "Expression of type `{type_name}` cannot be called as a function or method.",
                 ))
@@ -134,7 +134,7 @@ pub(super) fn resolve_targets<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -230,7 +230,7 @@ mod tests {
 
             needs_string(123);
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -243,7 +243,7 @@ mod tests {
             needs_int("hello");
         "#},
         issues = [
-            Code::INVALID_ARGUMENT,
+            IssueCode::InvalidArgument,
         ]
     }
 
@@ -257,7 +257,7 @@ mod tests {
             requires_two(1);
         "#},
         issues = [
-            Code::TOO_FEW_ARGUMENTS,
+            IssueCode::TooFewArguments,
         ]
     }
 
@@ -271,7 +271,7 @@ mod tests {
             accepts_one(1, 2);
         "#},
         issues = [
-            Code::TOO_MANY_ARGUMENTS,
+            IssueCode::TooManyArguments,
         ]
     }
 
@@ -285,7 +285,7 @@ mod tests {
             needs_string(null);
         "#},
         issues = [
-            Code::NULL_ARGUMENT,
+            IssueCode::NullArgument,
         ]
     }
 
@@ -302,7 +302,7 @@ mod tests {
             needs_string(get_string_or_null());
         "#},
         issues = [
-            Code::POSSIBLY_NULL_ARGUMENT,
+            IssueCode::PossiblyNullArgument,
         ]
     }
 
@@ -316,7 +316,7 @@ mod tests {
             needs_string(false);
         "#},
         issues = [
-            Code::FALSE_ARGUMENT,
+            IssueCode::FalseArgument,
         ]
     }
 
@@ -333,7 +333,7 @@ mod tests {
             needs_string(get_string_or_false());
         "#},
         issues = [
-            Code::POSSIBLY_FALSE_ARGUMENT,
+            IssueCode::PossiblyFalseArgument,
         ]
     }
 
@@ -348,7 +348,7 @@ mod tests {
             known_params(a: 1, c: "test");
         "#},
         issues = [
-            Code::UNKNOWN_NAMED_ARGUMENT,
+            IssueCode::InvalidNamedArgument,
         ]
     }
 
@@ -372,7 +372,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_ARGUMENT
+            IssueCode::InvalidArgument
         ]
     }
 
@@ -397,7 +397,7 @@ mod tests {
                 needs_callable_return_int($arg_cb);
             }
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -440,7 +440,7 @@ mod tests {
                 needs_callable_one_param($arg_cb);
             }
         "#},
-        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
+        issues = [IssueCode::PossiblyInvalidArgument]
     }
 
     test_analysis! {
@@ -462,7 +462,7 @@ mod tests {
 
             main_list_of_ints([1, 2, 3]);
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -484,7 +484,7 @@ mod tests {
 
             main_map_to_string(["a" => "apple", "b" => "banana"]);
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -506,7 +506,7 @@ mod tests {
 
             main_list_can_be_empty([]); // Definitely empty
         "#},
-        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
+        issues = [IssueCode::PossiblyInvalidArgument]
     }
 
     test_analysis! {
@@ -528,7 +528,7 @@ mod tests {
 
             main_array_int_keys([0 => 1, 1 => 2]);
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -550,7 +550,7 @@ mod tests {
 
             main_bool_arg(true);
         "#},
-        issues = [Code::INVALID_ARGUMENT]
+        issues = [IssueCode::InvalidArgument]
     }
 
     test_analysis! {
@@ -582,7 +582,7 @@ mod tests {
                 string_to_int(...)
             );
         "#},
-        issues = [Code::POSSIBLY_INVALID_ARGUMENT]
+        issues = [IssueCode::PossiblyInvalidArgument]
     }
 
     test_analysis! {
@@ -937,11 +937,11 @@ mod tests {
             foo('unknown');          // Error: 'unknown' does not match any pattern
         "#},
         issues = [
-            Code::INVALID_ARGUMENT,
-            Code::INVALID_ARGUMENT,
-            Code::INVALID_ARGUMENT,
-            Code::INVALID_ARGUMENT,
-            Code::INVALID_ARGUMENT,
+            IssueCode::InvalidArgument,
+            IssueCode::InvalidArgument,
+            IssueCode::InvalidArgument,
+            IssueCode::InvalidArgument,
+            IssueCode::InvalidArgument,
         ],
     }
 
@@ -995,8 +995,8 @@ mod tests {
             foo(ChangeKind::REMOVE); // Error: 'remove' does not match any pattern
         "#},
         issues = [
-            Code::POSSIBLY_INVALID_ARGUMENT,
-            Code::POSSIBLY_INVALID_ARGUMENT,
+            IssueCode::PossiblyInvalidArgument,
+            IssueCode::PossiblyInvalidArgument,
         ],
     }
 

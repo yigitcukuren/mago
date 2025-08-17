@@ -16,7 +16,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -109,7 +109,7 @@ pub fn analyze_and_store_argument_type<'a>(
             let target_name_str = invocation_target.guess_name(context.interner);
 
             context.collector.report_with_code(
-                Code::INVALID_PASS_BY_REFERENCE,
+                IssueCode::InvalidPassByReference,
                 Issue::error(format!(
                     "Invalid argument for by-reference parameter #{} in call to {} `{}`.",
                     argument_offset + 1,
@@ -155,7 +155,7 @@ pub fn verify_argument_type(
 
     if input_type.is_never() {
         context.collector.report_with_code(
-            Code::NO_VALUE,
+            IssueCode::NoValue,
             Issue::error(format!(
                 "Argument #{} passed to {} `{}` has type `never`, meaning it cannot produce a value.",
                 argument_offset + 1,
@@ -189,7 +189,7 @@ pub fn verify_argument_type(
     if !parameter_type.accepts_null() {
         if input_type.is_null() {
             context.collector.report_with_code(
-                Code::NULL_ARGUMENT,
+                IssueCode::NullArgument,
                 Issue::error(format!(
                     "Argument #{} of {} `{}` is `null`, but parameter type `{}` does not accept it.",
                     argument_offset + 1,
@@ -209,7 +209,7 @@ pub fn verify_argument_type(
 
         if input_type.is_nullable() && !input_type.ignore_nullable_issues {
             context.collector.report_with_code(
-                Code::POSSIBLY_NULL_ARGUMENT,
+                IssueCode::PossiblyNullArgument,
                 Issue::error(format!(
                     "Argument #{} of {} `{}` is possibly `null`, but parameter type `{}` does not accept it.",
                     argument_offset + 1,
@@ -230,7 +230,7 @@ pub fn verify_argument_type(
     if !parameter_type.accepts_false() {
         if input_type.is_false() {
             context.collector.report_with_code(
-                Code::FALSE_ARGUMENT,
+                IssueCode::FalseArgument,
                 Issue::error(format!(
                     "Argument #{} of {} `{}` is `false`, but parameter type `{}` does not accept it.",
                     argument_offset + 1,
@@ -250,7 +250,7 @@ pub fn verify_argument_type(
 
         if input_type.is_falsable() && !input_type.ignore_falsable_issues {
             context.collector.report_with_code(
-                Code::POSSIBLY_FALSE_ARGUMENT,
+                IssueCode::PossiblyFalseArgument,
                 Issue::error(format!(
                     "Argument #{} of {} `{}` is possibly `false`, but parameter type `{}` does not accept it.",
                     argument_offset + 1,
@@ -286,7 +286,7 @@ pub fn verify_argument_type(
 
     if input_type.is_mixed() {
         context.collector.report_with_code(
-            Code::MIXED_ARGUMENT,
+            IssueCode::MixedArgument,
             Issue::error(format!(
                 "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
                 argument_offset + 1,
@@ -314,11 +314,11 @@ pub fn verify_argument_type(
         let note_msg;
 
         if union_comparison_result.type_coerced_from_nested_mixed.unwrap_or(false) {
-            issue_kind = Code::LESS_SPECIFIC_NESTED_ARGUMENT_TYPE;
+            issue_kind = IssueCode::LessSpecificNestedArgumentType;
             annotation_msg = format!("Provided type `{input_type_str}` is too general due to nested `mixed`.");
             note_msg = "The structure contains `mixed`, making it incompatible.".to_string();
         } else {
-            issue_kind = Code::LESS_SPECIFIC_ARGUMENT;
+            issue_kind = IssueCode::LessSpecificArgument;
             annotation_msg = format!("Provided type `{input_type_str}` is too general.");
             note_msg = format!(
                     "The provided type `{input_type_str}` can be assigned to `{parameter_type_str}`, but is wider (less specific)."
@@ -349,7 +349,7 @@ pub fn verify_argument_type(
 
         if types_can_be_identical {
             context.collector.report_with_code(
-                Code::POSSIBLY_INVALID_ARGUMENT,
+                IssueCode::PossiblyInvalidArgument,
                 Issue::error(format!(
                     "Possible argument type mismatch for argument #{} of `{}`: expected `{}`, but possibly received `{}`.",
                     argument_offset + 1, target_name_str, parameter_type_str, input_type_str
@@ -361,7 +361,7 @@ pub fn verify_argument_type(
             );
         } else {
             context.collector.report_with_code(
-                Code::INVALID_ARGUMENT,
+                IssueCode::InvalidArgument,
                 Issue::error(format!(
                     "Invalid argument type for argument #{} of `{}`: expected `{}`, but found `{}`.",
                     argument_offset + 1,
@@ -422,7 +422,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
             TAtomic::Mixed(_) => {
                 if !reported_an_error {
                     context.collector.report_with_code(
-                        Code::MIXED_ARGUMENT,
+                        IssueCode::MixedArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
                             atomic_type.get_id(Some(context.interner))
@@ -441,7 +441,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
                 if !reported_an_error {
                     let type_str = atomic_type.get_id(Some(context.interner));
                     context.collector.report_with_code(
-                        Code::INVALID_ARGUMENT,
+                        IssueCode::InvalidArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{type_str}` because it is not an iterable type."
                         ))

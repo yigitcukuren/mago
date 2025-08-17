@@ -1,243 +1,991 @@
-#[derive(Debug, Clone, Copy)]
-pub struct Code;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u8)]
+pub enum IssueCode {
+    InvalidAssignment,
+    AssignmentToThis,
+    AssignmentToConstant,
+    AbstractInstantiation,
+    CloneInsideLoop,
+    DuplicateArrayKey,
+    FalsableReturnStatement,
+    ImpossibleArrayAccess,
+    ImpossibleArrayAssignment,
+    MixedAssignment,
+    ImpossibleAssignment,
+    ImpossibleKeyCheck,
+    ImpossibleNonnullEntryCheck,
+    ImpossibleNullTypeComparison,
+    ImpossibleCondition,
+    ImpossibleTypeComparison,
+    InvalidDocblock,
+    InvalidArgument,
+    InvalidArrayElementKey,
+    InvalidArrayElement,
+    MismatchedArrayIndex,
+    InvalidArrayIndex,
+    InvalidArrayAccess,
+    InvalidMethodAccess,
+    InvalidPropertyAssignmentValue,
+    InvalidContinue,
+    InvalidBreak,
+    InvalidReturnStatement,
+    InvalidTypeCast,
+    InvalidGlobal,
+    InvalidThrow,
+    InvalidUnset,
+    InvalidCallable,
+    InvalidNamedArgument,
+    LessSpecificArgument,
+    LessSpecificNestedArgumentType,
+    LessSpecificNestedReturnStatement,
+    LessSpecificReturnStatement,
+    MethodAccessOnNull,
+    MixedReturnStatement,
+    MixedArgument,
+    MixedArrayAccess,
+    MixedArrayAssignment,
+    MixedArrayIndex,
+    MixedMethodAccess,
+    PossiblyNullOperand,
+    NullOperand,
+    PossiblyFalseOperand,
+    FalseOperand,
+    PossiblyInvalidOperand,
+    InvalidOperand,
+    MixedOperand,
+    ArrayAppendInReadContext,
+    MixedPropertyTypeCoercion,
+    NoValue,
+    NonExistentClass,
+    NonExistentClassLike,
+    NonExistentConstant,
+    NonExistentFunction,
+    NonExistentMethod,
+    NonExistentProperty,
+    NeverReturn,
+    NullArrayIndex,
+    NullableReturnStatement,
+    ParadoxicalCondition,
+    PossibleMethodAccessOnNull,
+    PossiblyInvalidArgument,
+    PossiblyNullArrayAccess,
+    PossiblyNullArrayIndex,
+    PossiblyUndefinedArrayIndex,
+    PossiblyUndefinedIntArrayIndex,
+    PossiblyUndefinedStringArrayIndex,
+    PropertyTypeCoercion,
+    RedundantCast,
+    RedundantNullCoalesce,
+    ImplicitToStringCast,
+    RedundantIssetCheck,
+    RedundantKeyCheck,
+    RedundantNonnullEntryCheck,
+    RedundantNonnullTypeComparison,
+    RedundantCondition,
+    RedundantTypeComparison,
+    RedundantComparison,
+    RedundantLogicalOperation,
+    TooFewArguments,
+    TooManyArguments,
+    UndefinedIntArrayIndex,
+    UndefinedStringArrayIndex,
+    UndefinedVariable,
+    PossiblyUndefinedVariable,
+    ReferenceToUndefinedVariable,
+    UnevaluatedCode,
+    UnusedFunctionCall,
+    UnusedMethodCall,
+    UnusedStatement,
+    UselessControlFlow,
+    ImpureStaticVariable,
+    ConflictingTemplateEqualityBounds,
+    IncompatibleTemplateLowerBound,
+    DeprecatedFunction,
+    DeprecatedMethod,
+    DeprecatedClosure,
+    NamedArgumentNotAllowed,
+    DuplicateNamedArgument,
+    NamedArgumentOverridesPositional,
+    NamedArgumentAfterPositional,
+    TemplateConstraintViolation,
+    ArrayToStringConversion,
+    ImplicitResourceToStringCast,
+    MatchExpressionOnlyDefaultArm,
+    EmptyMatchExpression,
+    UnknownMatchSubjectType,
+    UnreachableMatchArm,
+    UnreachableMatchDefaultArm,
+    MatchArmAlwaysTrue,
+    MatchDefaultArmAlwaysExecuted,
+    MatchSubjectTypeIsNever,
+    MatchNotExhaustive,
+    NonExistentAttributeClass,
+    NonClassUsedAsAttribute,
+    ClassNotMarkedAsAttribute,
+    AttributeNotRepeatable,
+    AbstractClassUsedAsAttribute,
+    InvalidAttributeTarget,
+    InvalidCatchType,
+    DuplicateCaughtType,
+    NoValidCatchTypeFound,
+    CatchTypeNotThrowable,
+    InvalidCatchTypeNotClassOrInterface,
+    NonExistentCatchType,
+    UnknownIteratorType,
+    NullIterator,
+    PossiblyNullIterator,
+    FalseIterator,
+    PossiblyFalseIterator,
+    GenericObjectIteration,
+    NonIterableObjectIteration,
+    EnumIteration,
+    InvalidIterator,
+    PossiblyInvalidIterator,
+    InvalidForeachKey,
+    InvalidForeachValue,
+    UndefinedVariableInClosureUse,
+    DuplicateClosureUseVariable,
+    InvalidYieldValueType,
+    InvalidYieldKeyType,
+    UnknownYieldFromIteratorType,
+    YieldFromInvalidSendType,
+    YieldFromNonIterable,
+    YieldFromInvalidValueType,
+    YieldFromInvalidKeyType,
+    YieldOutsideFunction,
+    InvalidGeneratorReturnType,
+    HiddenGeneratorReturn,
+    NameAlreadyInUse,
+    SelfOutsideClassScope,
+    StaticOutsideClassScope,
+    ParentOutsideClassScope,
+    InvalidParentType,
+    InvalidClassStringExpression,
+    UnknownClassInstantiation,
+    InterfaceInstantiation,
+    TraitInstantiation,
+    EnumInstantiation,
+    DeprecatedClass,
+    DeprecatedTrait,
+    UnsafeInstantiation,
+    AmbiguousInstantiationTarget,
+    UnknownConstantSelectorType,
+    StringConstantSelector,
+    InvalidConstantSelector,
+    AmbiguousClassLikeConstantAccess,
+    InvalidClassConstantOnString,
+    UnknownMemberSelectorType,
+    StringMemberSelector,
+    InvalidMemberSelector,
+    InvalidStaticMethodCall,
+    DeprecatedFeature,
+    TypeInspection,
+    TypeConfirmation,
+    NullPropertyAccess,
+    PossiblyNullPropertyAccess,
+    MixedPropertyAccess,
+    InvalidPropertyAccess,
+    AmbiguousObjectPropertyAccess,
+    InvalidStaticPropertyAccess,
+    RedundantNullsafeOperator,
+    AmbiguousObjectMethodAccess,
+    DisallowedConstruct,
+    ImpureConstruct,
+    DocblockTypeMismatch,
+    InvalidDestructuringSource,
+    MixedDestructuringShape,
+    SkipInKeyedDestructuring,
+    SpreadInDestructuring,
+    InvalidStaticMethodAccess,
+    PossiblyStaticAccessOnInterface,
+    StaticAccessOnInterface,
+    ListUsedInReadContext,
+    InvalidScopeKeywordContext,
+    MixedClone,
+    PossiblyInvalidClone,
+    InvalidClone,
+    InvalidExtend,
+    InvalidImplement,
+    MissingRequiredInterface,
+    MissingRequiredParent,
+    MissingTemplateParameter,
+    ExcessTemplateParameter,
+    InconsistentTemplate,
+    InvalidTemplateParameter,
+    UnimplementedAbstractMethod,
+    OverriddenPropertyAccess,
+    IncompatiblePropertyType,
+    InvalidPropertyWrite,
+    InvalidPropertyRead,
+    DeprecatedConstant,
+    InvalidEnumCaseValue,
+    ConditionIsTooComplex,
+    ExpressionIsTooComplex,
+    WhereConstraintViolation,
+    ExtendFinalClass,
+    NonExistentClassConstant,
+    PossiblyFalseArgument,
+    FalseArgument,
+    PossiblyNullArgument,
+    NullArgument,
+    NeverMatchingSwitchCase,
+    AlwaysMatchingSwitchCase,
+    UnreachableSwitchCase,
+    UnreachableSwitchDefault,
+    InvalidIssetExpression,
+    InvalidTraitUse,
+    PsalmTrace,
+    ReferenceConstraintViolation,
+    InvalidPassByReference,
+    ConflictingReferenceConstraint,
+    UnhandledThrownType,
+}
 
-impl Code {
-    pub const INVALID_ASSIGNMENT: &'static str = "invalid-assignment";
-    pub const ASSIGNMENT_TO_THIS: &'static str = "assignment-to-this";
-    pub const ASSIGNMENT_TO_CONSTANT: &'static str = "assignment-to-constant";
-    pub const ABSTRACT_INSTANTIATION: &'static str = "abstract-instantiation";
-    pub const CLONE_INSIDE_LOOP: &'static str = "clone-inside-loop";
-    pub const DUPLICATE_ARRAY_KEY: &'static str = "duplicate-array-key";
-    pub const FALSABLE_RETURN_STATEMENT: &'static str = "falsable-return-statement";
-    pub const IMPOSSIBLE_ARRAY_ACCESS: &'static str = "impossible-array-access";
-    pub const IMPOSSIBLE_ARRAY_ASSIGNMENT: &'static str = "impossible-array-assignment";
-    pub const MIXED_ASSIGNMENT: &'static str = "mixed-assignment";
-    pub const IMPOSSIBLE_ASSIGNMENT: &'static str = "impossible-assignment";
-    pub const IMPOSSIBLE_KEY_CHECK: &'static str = "impossible-key-check";
-    pub const IMPOSSIBLE_NONNULL_ENTRY_CHECK: &'static str = "impossible-nonnull-entry-check";
-    pub const IMPOSSIBLE_NULL_TYPE_COMPARISON: &'static str = "impossible-null-type-comparison";
-    pub const IMPOSSIBLE_CONDITION: &'static str = "impossible-condition";
-    pub const IMPOSSIBLE_TYPE_COMPARISON: &'static str = "impossible-type-comparison";
-    pub const INVALID_DOCBLOCK: &'static str = "invalid-docblock";
-    pub const INVALID_ARGUMENT: &'static str = "invalid-argument";
-    pub const INVALID_ARRAY_ELEMENT_KEY: &'static str = "invalid-array-element-key";
-    pub const INVALID_ARRAY_ELEMENT: &'static str = "invalid-array-element";
-    pub const MISMATCHED_ARRAY_INDEX: &'static str = "mismatched-array-index";
-    pub const INVALID_ARRAY_INDEX: &'static str = "invalid-array-index";
-    pub const INVALID_ARRAY_ACCESS: &'static str = "invalid-array-access";
-    pub const INVALID_METHOD_ACCESS: &'static str = "invalid-method-access";
-    pub const INVALID_PROPERTY_ASSIGNMENT_VALUE: &'static str = "invalid-property-assignment-value";
-    pub const INVALID_CONTINUE: &'static str = "invalid-continue";
-    pub const INVALID_BREAK: &'static str = "invalid-break";
-    pub const INVALID_RETURN_STATEMENT: &'static str = "invalid-return-statement";
-    pub const INVALID_TYPE_CAST: &'static str = "invalid-type-cast";
-    pub const INVALID_GLOBAL: &'static str = "invalid-global";
-    pub const INVALID_THROW: &'static str = "invalid-throw";
-    pub const INVALID_UNSET: &'static str = "invalid-unset";
-    pub const INVALID_CALLABLE: &'static str = "invalid-callable";
-    pub const UNKNOWN_NAMED_ARGUMENT: &'static str = "invalid-named-argument";
-    pub const LESS_SPECIFIC_ARGUMENT: &'static str = "less-specific-argument";
-    pub const LESS_SPECIFIC_NESTED_ARGUMENT_TYPE: &'static str = "less-specific-nested-argument-type";
-    pub const LESS_SPECIFIC_NESTED_RETURN_STATEMENT: &'static str = "less-specific-nested-return-statement";
-    pub const LESS_SPECIFIC_RETURN_STATEMENT: &'static str = "less-specific-return-statement";
-    pub const METHOD_ACCESS_ON_NULL: &'static str = "method-access-on-null";
-    pub const MIXED_RETURN_STATEMENT: &'static str = "mixed-return-statement";
-    pub const MIXED_ARGUMENT: &'static str = "mixed-argument";
-    pub const MIXED_ARRAY_ACCESS: &'static str = "mixed-array-access";
-    pub const MIXED_ARRAY_ASSIGNMENT: &'static str = "mixed-array-assignment";
-    pub const MIXED_ARRAY_INDEX: &'static str = "mixed-array-index";
-    pub const MIXED_METHOD_ACCESS: &'static str = "mixed-method-access";
-    pub const POSSIBLY_NULL_OPERAND: &'static str = "possibly-null-operand";
-    pub const NULL_OPERAND: &'static str = "null-operand";
-    pub const POSSIBLY_FALSE_OPERAND: &'static str = "possibly-false-operand";
-    pub const FALSE_OPERAND: &'static str = "false-operand";
-    pub const POSSIBLY_INVALID_OPERAND: &'static str = "possibly-invalid-operand";
-    pub const INVALID_OPERAND: &'static str = "invalid-operand";
-    pub const MIXED_OPERAND: &'static str = "mixed-operand";
-    pub const ARRAY_APPEND_IN_READ_CONTEXT: &'static str = "array-append-in-read-context";
-    pub const MIXED_PROPERTY_TYPE_COERCION: &'static str = "mixed-property-type-coercion";
-    pub const NO_VALUE: &'static str = "no-value";
-    pub const NON_EXISTENT_CLASS: &'static str = "non-existent-class";
-    pub const NON_EXISTENT_CLASS_LIKE: &'static str = "non-existent-class-like";
-    pub const NON_EXISTENT_CONSTANT: &'static str = "non-existent-constant";
-    pub const NON_EXISTENT_FUNCTION: &'static str = "non-existent-function";
-    pub const NON_EXISTENT_METHOD: &'static str = "non-existent-method";
-    pub const NON_EXISTENT_PROPERTY: &'static str = "non-existent-property";
-    pub const NEVER_RETURN: &'static str = "never-return";
-    pub const NULL_ARRAY_INDEX: &'static str = "null-array-index";
-    pub const NULLABLE_RETURN_STATEMENT: &'static str = "nullable-return-statement";
-    pub const PARADOXICAL_CONDITION: &'static str = "paradoxical-condition";
-    pub const POSSIBLE_METHOD_ACCESS_ON_NULL: &'static str = "possible-method-access-on-null";
-    pub const POSSIBLY_INVALID_ARGUMENT: &'static str = "possibly-invalid-argument";
-    pub const POSSIBLY_NULL_ARRAY_ACCESS: &'static str = "possibly-null-array-access";
-    pub const POSSIBLY_NULL_ARRAY_INDEX: &'static str = "possibly-null-array-index";
-    pub const POSSIBLY_UNDEFINED_ARRAY_INDEX: &'static str = "possibly-undefined-array-index";
-    pub const POSSIBLY_UNDEFINED_INT_ARRAY_INDEX: &'static str = "possibly-undefined-int-array-index";
-    pub const POSSIBLY_UNDEFINED_STRING_ARRAY_INDEX: &'static str = "possibly-undefined-string-array-index";
-    pub const PROPERTY_TYPE_COERCION: &'static str = "property-type-coercion";
-    pub const REDUNDANT_CAST: &'static str = "redundant-cast";
-    pub const REDUNDANT_NULL_COALESCE: &'static str = "redundant-null-coalesce";
-    pub const IMPLICIT_TO_STRING_CAST: &'static str = "implicit-to-string-cast";
-    pub const REDUNDANT_ISSET_CHECK: &'static str = "redundant-isset-check";
-    pub const REDUNDANT_KEY_CHECK: &'static str = "redundant-key-check";
-    pub const REDUNDANT_NONNULL_ENTRY_CHECK: &'static str = "redundant-nonnull-entry-check";
-    pub const REDUNDANT_NONNULL_TYPE_COMPARISON: &'static str = "redundant-nonnull-type-comparison";
-    pub const REDUNDANT_CONDITION: &'static str = "redundant-condition";
-    pub const REDUNDANT_TYPE_COMPARISON: &'static str = "redundant-type-comparison";
-    pub const REDUNDANT_COMPARISON: &'static str = "redundant-comparison";
-    pub const REDUNDANT_LOGICAL_OPERATION: &'static str = "redundant-logical-operation";
-    pub const TOO_FEW_ARGUMENTS: &'static str = "too-few-arguments";
-    pub const TOO_MANY_ARGUMENTS: &'static str = "too-many-arguments";
-    pub const UNDEFINED_INT_ARRAY_INDEX: &'static str = "undefined-int-array-index";
-    pub const UNDEFINED_STRING_ARRAY_INDEX: &'static str = "undefined-string-array-index";
-    pub const UNDEFINED_VARIABLE: &'static str = "undefined-variable";
-    pub const POSSIBLY_UNDEFINED_VARIABLE: &'static str = "possibly-undefined-variable";
-    pub const REFERENCE_TO_UNDEFINED_VARIABLE: &'static str = "reference-to-undefined-variable";
-    pub const UNEVALUATED_CODE: &'static str = "unevaluated-code";
-    pub const UNUSED_FUNCTION_CALL: &'static str = "unused-function-call";
-    pub const UNUSED_METHOD_CALL: &'static str = "unused-method-call";
-    pub const UNUSED_STATEMENT: &'static str = "unused-statement";
-    pub const USELESS_CONTROL_FLOW: &'static str = "useless-control-flow";
-    pub const IMPURE_STATIC_VARIABLE: &'static str = "impure-static-variable";
-    pub const CONFLICTING_TEMPLATE_EQUALITY_BOUNDS: &'static str = "conflicting-template-equality-bounds";
-    pub const INCOMPATIBLE_TEMPLATE_LOWER_BOUND: &'static str = "incompatible-template-lower-bound";
-    pub const DEPRECATED_FUNCTION: &'static str = "deprecated-function";
-    pub const DEPRECATED_METHOD: &'static str = "deprecated-method";
-    pub const DEPRECATED_CLOSURE: &'static str = "deprecated-closure";
-    pub const NAMED_ARGUMENT_NOT_ALLOWED: &'static str = "named-argument-not-allowed";
-    pub const DUPLICATE_NAMED_ARGUMENT: &'static str = "duplicate-named-argument";
-    pub const NAMED_ARGUMENT_OVERRIDES_POSITIONAL: &'static str = "named-argument-overrides-positional";
-    pub const NAMED_ARGUMENT_AFTER_POSITIONAL: &'static str = "named-argument-after-positional";
-    pub const TEMPLATE_CONSTRAINT_VIOLATION: &'static str = "template-constraint-violation";
-    pub const ARRAY_TO_STRING_CONVERSION: &'static str = "array-to-string-conversion";
-    pub const IMPLICIT_RESOURCE_TO_STRING_CAST: &'static str = "implicit-resource-to-string-cast";
-    pub const MATCH_EXPRESSION_ONLY_DEFAULT_ARM: &'static str = "match-expression-only-default-arm";
-    pub const EMPTY_MATCH_EXPRESSION: &'static str = "empty-match-expression";
-    pub const UNKNOWN_MATCH_SUBJECT_TYPE: &'static str = "unknown-match-subject-type";
-    pub const UNREACHABLE_MATCH_ARM: &'static str = "unreachable-match-arm";
-    pub const UNREACHABLE_MATCH_DEFAULT_ARM: &'static str = "unreachable-match-default-arm";
-    pub const MATCH_ARM_ALWAYS_TRUE: &'static str = "match-arm-always-true";
-    pub const MATCH_DEFAULT_ARM_ALWAYS_EXECUTED: &'static str = "match-default-arm-always-executed";
-    pub const MATCH_SUBJECT_TYPE_IS_NEVER: &'static str = "match-subject-type-is-never";
-    pub const MATCH_NOT_EXHAUSTIVE: &'static str = "match-not-exhaustive";
-    pub const NON_EXISTENT_ATTRIBUTE_CLASS: &'static str = "non-existent-attribute-class";
-    pub const NON_CLASS_USED_AS_ATTRIBUTE: &'static str = "non-class-used-as-attribute";
-    pub const CLASS_NOT_MARKED_AS_ATTRIBUTE: &'static str = "class-not-marked-as-attribute";
-    pub const ATTRIBUTE_NOT_REPEATABLE: &'static str = "attribute-not-repeatable";
-    pub const ABSTRACT_CLASS_USED_AS_ATTRIBUTE: &'static str = "abstract-class-used-as-attribute";
-    pub const INVALID_ATTRIBUTE_TARGET: &'static str = "invalid-attribute-target";
-    pub const INVALID_CATCH_TYPE: &'static str = "invalid-catch-type";
-    pub const DUPLICATE_CAUGHT_TYPE: &'static str = "duplicate-caught-type";
-    pub const NO_VALID_CATCH_TYPE_FOUND: &'static str = "no-valid-catch-type-found";
-    pub const CATCH_TYPE_NOT_THROWABLE: &'static str = "catch-type-not-throwable";
-    pub const INVALID_CATCH_TYPE_NOT_CLASS_OR_INTERFACE: &'static str = "invalid-catch-type-not-class-or-interface";
-    pub const NON_EXISTENT_CATCH_TYPE: &'static str = "non-existent-catch-type";
-    pub const UNKNOWN_ITERATOR_TYPE: &'static str = "unknown-iterator-type";
-    pub const NULL_ITERATOR: &'static str = "null-iterator";
-    pub const POSSIBLY_NULL_ITERATOR: &'static str = "possibly-null-iterator";
-    pub const FALSE_ITERATOR: &'static str = "false-iterator";
-    pub const POSSIBLY_FALSE_ITERATOR: &'static str = "possibly-false-iterator";
-    pub const GENERIC_OBJECT_ITERATION: &'static str = "generic-object-iteration";
-    pub const NON_ITERABLE_OBJECT_ITERATION: &'static str = "non-iterable-object-iteration";
-    pub const ENUM_ITERATION: &'static str = "enum-iteration";
-    pub const INVALID_ITERATOR: &'static str = "invalid-iterator";
-    pub const POSSIBLY_INVALID_ITERATOR: &'static str = "possibly-invalid-iterator";
-    pub const INVALID_FOREACH_KEY: &'static str = "invalid-foreach-key";
-    pub const INVALID_FOREACH_VALUE: &'static str = "invalid-foreach-value";
-    pub const UNDEFINED_VARIABLE_IN_CLOSURE_USE: &'static str = "undefined-variable-in-closure-use";
-    pub const DUPLICATE_CLOSURE_USE_VARIABLE: &'static str = "duplicate-closure-use-variable";
-    pub const INVALID_YIELD_VALUE_TYPE: &'static str = "invalid-yield-value-type";
-    pub const INVALID_YIELD_KEY_TYPE: &'static str = "invalid-yield-key-type";
-    pub const UNKNOWN_YIELD_FROM_ITERATOR_TYPE: &'static str = "unknown-yield-from-iterator-type";
-    pub const YIELD_FROM_INVALID_SEND_TYPE: &'static str = "yield-from-invalid-send-type";
-    pub const YIELD_FROM_NON_ITERABLE: &'static str = "yield-from-non-iterable";
-    pub const YIELD_FROM_INVALID_VALUE_TYPE: &'static str = "yield-from-invalid-value-type";
-    pub const YIELD_FROM_INVALID_KEY_TYPE: &'static str = "yield-from-invalid-key-type";
-    pub const YIELD_OUTSIDE_FUNCTION: &'static str = "yield-outside-function";
-    pub const INVALID_GENERATOR_RETURN_TYPE: &'static str = "invalid-generator-return-type";
-    pub const HIDDEN_GENERATOR_RETURN: &'static str = "hidden-generator-return";
-    pub const NAME_ALREADY_IN_USE: &'static str = "name-already-in-use";
-    pub const SELF_OUTSIDE_CLASS_SCOPE: &'static str = "self-outside-class-scope";
-    pub const STATIC_OUTSIDE_CLASS_SCOPE: &'static str = "static-outside-class-scope";
-    pub const PARENT_OUTSIDE_CLASS_SCOPE: &'static str = "parent-outside-class-scope";
-    pub const INVALID_PARENT_TYPE: &'static str = "invalid-parent-type";
-    pub const INVALID_CLASS_STRING_EXPRESSION: &'static str = "invalid-class-string-expression";
-    pub const UNKNOWN_CLASS_INSTANTIATION: &'static str = "unknown-class-instantiation";
-    pub const INTERFACE_INSTANTIATION: &'static str = "interface-instantiation";
-    pub const TRAIT_INSTANTIATION: &'static str = "trait-instantiation";
-    pub const ENUM_INSTANTIATION: &'static str = "enum-instantiation";
-    pub const DEPRECATED_CLASS: &'static str = "deprecated-class";
-    pub const DEPRECATED_TRAIT: &'static str = "deprecated-trait";
-    pub const UNSAFE_INSTANTIATION: &'static str = "unsafe-instantiation";
-    pub const AMBIGUOUS_INSTANTIATION_TARGET: &'static str = "ambiguous-instantiation-target";
-    pub const UNKNOWN_CONSTANT_SELECTOR_TYPE: &'static str = "unknown-constant-selector-type";
-    pub const STRING_CONSTANT_SELECTOR: &'static str = "string-constant-selector";
-    pub const INVALID_CONSTANT_SELECTOR: &'static str = "invalid-constant-selector";
-    pub const AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS: &'static str = "ambiguous-class-like-constant-access";
-    pub const INVALID_CLASS_CONSTANT_ON_STRING: &'static str = "invalid-class-constant-on-string";
-    pub const UNKNOWN_MEMBER_SELECTOR_TYPE: &'static str = "unknown-member-selector-type";
-    pub const STRING_MEMBER_SELECTOR: &'static str = "string-member-selector";
-    pub const INVALID_MEMBER_SELECTOR: &'static str = "invalid-member-selector";
-    pub const INVALID_STATIC_METHOD_CALL: &'static str = "invalid-static-method-call";
-    pub const DEPRECATED_FEATURE: &'static str = "deprecated-feature";
-    pub const TYPE_INSPECTION: &'static str = "type-inspection";
-    pub const TYPE_CONFIRMATION: &'static str = "type-confirmation";
-    pub const NULL_PROPERTY_ACCESS: &'static str = "null-property-access";
-    pub const POSSIBLY_NULL_PROPERTY_ACCESS: &'static str = "possibly-null-property-access";
-    pub const MIXED_PROPERTY_ACCESS: &'static str = "mixed-property-access";
-    pub const INVALID_PROPERTY_ACCESS: &'static str = "invalid-property-access";
-    pub const AMBIGUOUS_OBJECT_PROPERTY_ACCESS: &'static str = "ambiguous-object-property-access";
-    pub const INVALID_STATIC_PROPERTY_ACCESS: &'static str = "invalid-static-property-access";
-    pub const REDUNDANT_NULLSAFE_OPERATOR: &'static str = "redundant-nullsafe-operator";
-    pub const AMBIGUOUS_OBJECT_METHOD_ACCESS: &'static str = "ambiguous-object-method-access";
-    pub const DISALLOWED_CONSTRUCT: &'static str = "disallowed-construct";
-    pub const IMPURE_CONSTRUCT: &'static str = "impure-construct";
-    pub const DOCBLOCK_TYPE_MISMATCH: &'static str = "docblock-type-mismatch";
-    pub const INVALID_DESTRUCTURING_SOURCE: &'static str = "invalid-destructuring-source";
-    pub const MIXED_DESTRUCTURING_SHAPE: &'static str = "mixed-destructuring-shape";
-    pub const SKIP_IN_KEYED_DESTRUCTURING: &'static str = "skip-in-keyed-destructuring";
-    pub const SPREAD_IN_DESTRUCTURING: &'static str = "spread-in-destructuring";
-    pub const INVALID_STATIC_METHOD_ACCESS: &'static str = "invalid-static-method-access";
-    pub const POSSIBLY_STATIC_ACCESS_ON_INTERFACE: &'static str = "possibly-static-access-on-interface";
-    pub const STATIC_ACCESS_ON_INTERFACE: &'static str = "static-access-on-interface";
-    pub const LIST_USED_IN_READ_CONTEXT: &'static str = "list-used-in-read-context";
-    pub const INVALID_SCOPE_KEYWORD_CONTEXT: &'static str = "invalid-scope-keyword-context";
-    pub const MIXED_CLONE: &'static str = "mixed-clone";
-    pub const POSSIBLY_INVALID_CLONE: &'static str = "possibly-invalid-clone";
-    pub const INVALID_CLONE: &'static str = "invalid-clone";
-    pub const INVALID_EXTEND: &'static str = "invalid-extend";
-    pub const INVALID_IMPLEMENT: &'static str = "invalid-implement";
-    pub const MISSING_REQUIRED_INTERFACE: &'static str = "missing-required-interface";
-    pub const MISSING_REQUIRED_PARENT: &'static str = "missing-required-parent";
-    pub const MISSING_TEMPLATE_PARAMETER: &'static str = "missing-template-parameter";
-    pub const EXCESS_TEMPLATE_PARAMETER: &'static str = "excess-template-parameter";
-    pub const INCONSISTENT_TEMPLATE: &'static str = "inconsistent-template";
-    pub const INVALID_TEMPLATE_PARAMETER: &'static str = "invalid-template-parameter";
-    pub const UNIMPLEMENTED_ABSTRACT_METHOD: &'static str = "unimplemented-abstract-method";
-    pub const OVERRIDDEN_PROPERTY_ACCESS: &'static str = "overridden-property-access";
-    pub const INCOMPATIBLE_PROPERTY_TYPE: &'static str = "incompatible-property-type";
-    pub const INVALID_PROPERTY_WRITE: &'static str = "invalid-property-write";
-    pub const INVALID_PROPERTY_READ: &'static str = "invalid-property-read";
-    pub const DEPRECATED_CONSTANT: &'static str = "deprecated-constant";
-    pub const INVALID_ENUM_CASE_VALUE: &'static str = "invalid-enum-case-value";
-    pub const CONDITION_IS_TOO_COMPLEX: &'static str = "condition-is-too-complex";
-    pub const EXPRESSION_IS_TOO_COMPLEX: &'static str = "expression-is-too-complex";
-    pub const WHERE_CONSTRAINT_VIOLATION: &'static str = "where-constraint-violation";
-    pub const EXTEND_FINAL_CLASS: &'static str = "extend-final-class";
-    pub const NON_EXISTENT_CLASS_CONSTANT: &'static str = "non-existent-class-constant";
-    pub const POSSIBLY_FALSE_ARGUMENT: &'static str = "possibly-false-argument";
-    pub const FALSE_ARGUMENT: &'static str = "false-argument";
-    pub const POSSIBLY_NULL_ARGUMENT: &'static str = "possibly-null-argument";
-    pub const NULL_ARGUMENT: &'static str = "null-argument";
-    pub const NEVER_MATCHING_SWITCH_CASE: &'static str = "always-matching-switch-case";
-    pub const ALWAYS_MATCHING_SWITCH_CASE: &'static str = "always-matching-switch-case";
-    pub const UNREACHABLE_SWITCH_CASE: &'static str = "unreachable-switch-case";
-    pub const UNREACHABLE_SWITCH_DEFAULT: &'static str = "unnecessary-switch-default";
-    pub const INVALID_ISSET_EXPRESSION: &'static str = "invalid-isset-expression";
-    pub const INVALID_TRAIT_USE: &'static str = "invalid-trait-use";
-    pub const PSALM_TRACE: &'static str = "psalm-trace";
-    pub const REFERENCE_CONSTRAINT_VIOLATION: &'static str = "reference-constraint-violation";
-    pub const INVALID_PASS_BY_REFERENCE: &'static str = "invalid-pass-by-reference";
-    pub const CONFLICTING_REFERENCE_CONSTRAINT: &'static str = "conflicting-reference-constraint";
-    pub const UNHANDLED_THROWN_TYPE: &'static str = "unhandled-thrown-type";
+impl IssueCode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::InvalidAssignment => "invalid-assignment",
+            Self::AssignmentToThis => "assignment-to-this",
+            Self::AssignmentToConstant => "assignment-to-constant",
+            Self::AbstractInstantiation => "abstract-instantiation",
+            Self::CloneInsideLoop => "clone-inside-loop",
+            Self::DuplicateArrayKey => "duplicate-array-key",
+            Self::FalsableReturnStatement => "falsable-return-statement",
+            Self::ImpossibleArrayAccess => "impossible-array-access",
+            Self::ImpossibleArrayAssignment => "impossible-array-assignment",
+            Self::MixedAssignment => "mixed-assignment",
+            Self::ImpossibleAssignment => "impossible-assignment",
+            Self::ImpossibleKeyCheck => "impossible-key-check",
+            Self::ImpossibleNonnullEntryCheck => "impossible-nonnull-entry-check",
+            Self::ImpossibleNullTypeComparison => "impossible-null-type-comparison",
+            Self::ImpossibleCondition => "impossible-condition",
+            Self::ImpossibleTypeComparison => "impossible-type-comparison",
+            Self::InvalidDocblock => "invalid-docblock",
+            Self::InvalidArgument => "invalid-argument",
+            Self::InvalidArrayElementKey => "invalid-array-element-key",
+            Self::InvalidArrayElement => "invalid-array-element",
+            Self::MismatchedArrayIndex => "mismatched-array-index",
+            Self::InvalidArrayIndex => "invalid-array-index",
+            Self::InvalidArrayAccess => "invalid-array-access",
+            Self::InvalidMethodAccess => "invalid-method-access",
+            Self::InvalidPropertyAssignmentValue => "invalid-property-assignment-value",
+            Self::InvalidContinue => "invalid-continue",
+            Self::InvalidBreak => "invalid-break",
+            Self::InvalidReturnStatement => "invalid-return-statement",
+            Self::InvalidTypeCast => "invalid-type-cast",
+            Self::InvalidGlobal => "invalid-global",
+            Self::InvalidThrow => "invalid-throw",
+            Self::InvalidUnset => "invalid-unset",
+            Self::InvalidCallable => "invalid-callable",
+            Self::InvalidNamedArgument => "invalid-named-argument",
+            Self::LessSpecificArgument => "less-specific-argument",
+            Self::LessSpecificNestedArgumentType => "less-specific-nested-argument-type",
+            Self::LessSpecificNestedReturnStatement => "less-specific-nested-return-statement",
+            Self::LessSpecificReturnStatement => "less-specific-return-statement",
+            Self::MethodAccessOnNull => "method-access-on-null",
+            Self::MixedReturnStatement => "mixed-return-statement",
+            Self::MixedArgument => "mixed-argument",
+            Self::MixedArrayAccess => "mixed-array-access",
+            Self::MixedArrayAssignment => "mixed-array-assignment",
+            Self::MixedArrayIndex => "mixed-array-index",
+            Self::MixedMethodAccess => "mixed-method-access",
+            Self::PossiblyNullOperand => "possibly-null-operand",
+            Self::NullOperand => "null-operand",
+            Self::PossiblyFalseOperand => "possibly-false-operand",
+            Self::FalseOperand => "false-operand",
+            Self::PossiblyInvalidOperand => "possibly-invalid-operand",
+            Self::InvalidOperand => "invalid-operand",
+            Self::MixedOperand => "mixed-operand",
+            Self::ArrayAppendInReadContext => "array-append-in-read-context",
+            Self::MixedPropertyTypeCoercion => "mixed-property-type-coercion",
+            Self::NoValue => "no-value",
+            Self::NonExistentClass => "non-existent-class",
+            Self::NonExistentClassLike => "non-existent-class-like",
+            Self::NonExistentConstant => "non-existent-constant",
+            Self::NonExistentFunction => "non-existent-function",
+            Self::NonExistentMethod => "non-existent-method",
+            Self::NonExistentProperty => "non-existent-property",
+            Self::NeverReturn => "never-return",
+            Self::NullArrayIndex => "null-array-index",
+            Self::NullableReturnStatement => "nullable-return-statement",
+            Self::ParadoxicalCondition => "paradoxical-condition",
+            Self::PossibleMethodAccessOnNull => "possible-method-access-on-null",
+            Self::PossiblyInvalidArgument => "possibly-invalid-argument",
+            Self::PossiblyNullArrayAccess => "possibly-null-array-access",
+            Self::PossiblyNullArrayIndex => "possibly-null-array-index",
+            Self::PossiblyUndefinedArrayIndex => "possibly-undefined-array-index",
+            Self::PossiblyUndefinedIntArrayIndex => "possibly-undefined-int-array-index",
+            Self::PossiblyUndefinedStringArrayIndex => "possibly-undefined-string-array-index",
+            Self::PropertyTypeCoercion => "property-type-coercion",
+            Self::RedundantCast => "redundant-cast",
+            Self::RedundantNullCoalesce => "redundant-null-coalesce",
+            Self::ImplicitToStringCast => "implicit-to-string-cast",
+            Self::RedundantIssetCheck => "redundant-isset-check",
+            Self::RedundantKeyCheck => "redundant-key-check",
+            Self::RedundantNonnullEntryCheck => "redundant-nonnull-entry-check",
+            Self::RedundantNonnullTypeComparison => "redundant-nonnull-type-comparison",
+            Self::RedundantCondition => "redundant-condition",
+            Self::RedundantTypeComparison => "redundant-type-comparison",
+            Self::RedundantComparison => "redundant-comparison",
+            Self::RedundantLogicalOperation => "redundant-logical-operation",
+            Self::TooFewArguments => "too-few-arguments",
+            Self::TooManyArguments => "too-many-arguments",
+            Self::UndefinedIntArrayIndex => "undefined-int-array-index",
+            Self::UndefinedStringArrayIndex => "undefined-string-array-index",
+            Self::UndefinedVariable => "undefined-variable",
+            Self::PossiblyUndefinedVariable => "possibly-undefined-variable",
+            Self::ReferenceToUndefinedVariable => "reference-to-undefined-variable",
+            Self::UnevaluatedCode => "unevaluated-code",
+            Self::UnusedFunctionCall => "unused-function-call",
+            Self::UnusedMethodCall => "unused-method-call",
+            Self::UnusedStatement => "unused-statement",
+            Self::UselessControlFlow => "useless-control-flow",
+            Self::ImpureStaticVariable => "impure-static-variable",
+            Self::ConflictingTemplateEqualityBounds => "conflicting-template-equality-bounds",
+            Self::IncompatibleTemplateLowerBound => "incompatible-template-lower-bound",
+            Self::DeprecatedFunction => "deprecated-function",
+            Self::DeprecatedMethod => "deprecated-method",
+            Self::DeprecatedClosure => "deprecated-closure",
+            Self::NamedArgumentNotAllowed => "named-argument-not-allowed",
+            Self::DuplicateNamedArgument => "duplicate-named-argument",
+            Self::NamedArgumentOverridesPositional => "named-argument-overrides-positional",
+            Self::NamedArgumentAfterPositional => "named-argument-after-positional",
+            Self::TemplateConstraintViolation => "template-constraint-violation",
+            Self::ArrayToStringConversion => "array-to-string-conversion",
+            Self::ImplicitResourceToStringCast => "implicit-resource-to-string-cast",
+            Self::MatchExpressionOnlyDefaultArm => "match-expression-only-default-arm",
+            Self::EmptyMatchExpression => "empty-match-expression",
+            Self::UnknownMatchSubjectType => "unknown-match-subject-type",
+            Self::UnreachableMatchArm => "unreachable-match-arm",
+            Self::UnreachableMatchDefaultArm => "unreachable-match-default-arm",
+            Self::MatchArmAlwaysTrue => "match-arm-always-true",
+            Self::MatchDefaultArmAlwaysExecuted => "match-default-arm-always-executed",
+            Self::MatchSubjectTypeIsNever => "match-subject-type-is-never",
+            Self::MatchNotExhaustive => "match-not-exhaustive",
+            Self::NonExistentAttributeClass => "non-existent-attribute-class",
+            Self::NonClassUsedAsAttribute => "non-class-used-as-attribute",
+            Self::ClassNotMarkedAsAttribute => "class-not-marked-as-attribute",
+            Self::AttributeNotRepeatable => "attribute-not-repeatable",
+            Self::AbstractClassUsedAsAttribute => "abstract-class-used-as-attribute",
+            Self::InvalidAttributeTarget => "invalid-attribute-target",
+            Self::InvalidCatchType => "invalid-catch-type",
+            Self::DuplicateCaughtType => "duplicate-caught-type",
+            Self::NoValidCatchTypeFound => "no-valid-catch-type-found",
+            Self::CatchTypeNotThrowable => "catch-type-not-throwable",
+            Self::InvalidCatchTypeNotClassOrInterface => "invalid-catch-type-not-class-or-interface",
+            Self::NonExistentCatchType => "non-existent-catch-type",
+            Self::UnknownIteratorType => "unknown-iterator-type",
+            Self::NullIterator => "null-iterator",
+            Self::PossiblyNullIterator => "possibly-null-iterator",
+            Self::FalseIterator => "false-iterator",
+            Self::PossiblyFalseIterator => "possibly-false-iterator",
+            Self::GenericObjectIteration => "generic-object-iteration",
+            Self::NonIterableObjectIteration => "non-iterable-object-iteration",
+            Self::EnumIteration => "enum-iteration",
+            Self::InvalidIterator => "invalid-iterator",
+            Self::PossiblyInvalidIterator => "possibly-invalid-iterator",
+            Self::InvalidForeachKey => "invalid-foreach-key",
+            Self::InvalidForeachValue => "invalid-foreach-value",
+            Self::UndefinedVariableInClosureUse => "undefined-variable-in-closure-use",
+            Self::DuplicateClosureUseVariable => "duplicate-closure-use-variable",
+            Self::InvalidYieldValueType => "invalid-yield-value-type",
+            Self::InvalidYieldKeyType => "invalid-yield-key-type",
+            Self::UnknownYieldFromIteratorType => "unknown-yield-from-iterator-type",
+            Self::YieldFromInvalidSendType => "yield-from-invalid-send-type",
+            Self::YieldFromNonIterable => "yield-from-non-iterable",
+            Self::YieldFromInvalidValueType => "yield-from-invalid-value-type",
+            Self::YieldFromInvalidKeyType => "yield-from-invalid-key-type",
+            Self::YieldOutsideFunction => "yield-outside-function",
+            Self::InvalidGeneratorReturnType => "invalid-generator-return-type",
+            Self::HiddenGeneratorReturn => "hidden-generator-return",
+            Self::NameAlreadyInUse => "name-already-in-use",
+            Self::SelfOutsideClassScope => "self-outside-class-scope",
+            Self::StaticOutsideClassScope => "static-outside-class-scope",
+            Self::ParentOutsideClassScope => "parent-outside-class-scope",
+            Self::InvalidParentType => "invalid-parent-type",
+            Self::InvalidClassStringExpression => "invalid-class-string-expression",
+            Self::UnknownClassInstantiation => "unknown-class-instantiation",
+            Self::InterfaceInstantiation => "interface-instantiation",
+            Self::TraitInstantiation => "trait-instantiation",
+            Self::EnumInstantiation => "enum-instantiation",
+            Self::DeprecatedClass => "deprecated-class",
+            Self::DeprecatedTrait => "deprecated-trait",
+            Self::UnsafeInstantiation => "unsafe-instantiation",
+            Self::AmbiguousInstantiationTarget => "ambiguous-instantiation-target",
+            Self::UnknownConstantSelectorType => "unknown-constant-selector-type",
+            Self::StringConstantSelector => "string-constant-selector",
+            Self::InvalidConstantSelector => "invalid-constant-selector",
+            Self::AmbiguousClassLikeConstantAccess => "ambiguous-class-like-constant-access",
+            Self::InvalidClassConstantOnString => "invalid-class-constant-on-string",
+            Self::UnknownMemberSelectorType => "unknown-member-selector-type",
+            Self::StringMemberSelector => "string-member-selector",
+            Self::InvalidMemberSelector => "invalid-member-selector",
+            Self::InvalidStaticMethodCall => "invalid-static-method-call",
+            Self::DeprecatedFeature => "deprecated-feature",
+            Self::TypeInspection => "type-inspection",
+            Self::TypeConfirmation => "type-confirmation",
+            Self::NullPropertyAccess => "null-property-access",
+            Self::PossiblyNullPropertyAccess => "possibly-null-property-access",
+            Self::MixedPropertyAccess => "mixed-property-access",
+            Self::InvalidPropertyAccess => "invalid-property-access",
+            Self::AmbiguousObjectPropertyAccess => "ambiguous-object-property-access",
+            Self::InvalidStaticPropertyAccess => "invalid-static-property-access",
+            Self::RedundantNullsafeOperator => "redundant-nullsafe-operator",
+            Self::AmbiguousObjectMethodAccess => "ambiguous-object-method-access",
+            Self::DisallowedConstruct => "disallowed-construct",
+            Self::ImpureConstruct => "impure-construct",
+            Self::DocblockTypeMismatch => "docblock-type-mismatch",
+            Self::InvalidDestructuringSource => "invalid-destructuring-source",
+            Self::MixedDestructuringShape => "mixed-destructuring-shape",
+            Self::SkipInKeyedDestructuring => "skip-in-keyed-destructuring",
+            Self::SpreadInDestructuring => "spread-in-destructuring",
+            Self::InvalidStaticMethodAccess => "invalid-static-method-access",
+            Self::PossiblyStaticAccessOnInterface => "possibly-static-access-on-interface",
+            Self::StaticAccessOnInterface => "static-access-on-interface",
+            Self::ListUsedInReadContext => "list-used-in-read-context",
+            Self::InvalidScopeKeywordContext => "invalid-scope-keyword-context",
+            Self::MixedClone => "mixed-clone",
+            Self::PossiblyInvalidClone => "possibly-invalid-clone",
+            Self::InvalidClone => "invalid-clone",
+            Self::InvalidExtend => "invalid-extend",
+            Self::InvalidImplement => "invalid-implement",
+            Self::MissingRequiredInterface => "missing-required-interface",
+            Self::MissingRequiredParent => "missing-required-parent",
+            Self::MissingTemplateParameter => "missing-template-parameter",
+            Self::ExcessTemplateParameter => "excess-template-parameter",
+            Self::InconsistentTemplate => "inconsistent-template",
+            Self::InvalidTemplateParameter => "invalid-template-parameter",
+            Self::UnimplementedAbstractMethod => "unimplemented-abstract-method",
+            Self::OverriddenPropertyAccess => "overridden-property-access",
+            Self::IncompatiblePropertyType => "incompatible-property-type",
+            Self::InvalidPropertyWrite => "invalid-property-write",
+            Self::InvalidPropertyRead => "invalid-property-read",
+            Self::DeprecatedConstant => "deprecated-constant",
+            Self::InvalidEnumCaseValue => "invalid-enum-case-value",
+            Self::ConditionIsTooComplex => "condition-is-too-complex",
+            Self::ExpressionIsTooComplex => "expression-is-too-complex",
+            Self::WhereConstraintViolation => "where-constraint-violation",
+            Self::ExtendFinalClass => "extend-final-class",
+            Self::NonExistentClassConstant => "non-existent-class-constant",
+            Self::PossiblyFalseArgument => "possibly-false-argument",
+            Self::FalseArgument => "false-argument",
+            Self::PossiblyNullArgument => "possibly-null-argument",
+            Self::NullArgument => "null-argument",
+            Self::NeverMatchingSwitchCase => "never-matching-switch-case",
+            Self::AlwaysMatchingSwitchCase => "always-matching-switch-case",
+            Self::UnreachableSwitchCase => "unreachable-switch-case",
+            Self::UnreachableSwitchDefault => "unreachable-switch-default",
+            Self::InvalidIssetExpression => "invalid-isset-expression",
+            Self::InvalidTraitUse => "invalid-trait-use",
+            Self::PsalmTrace => "psalm-trace",
+            Self::ReferenceConstraintViolation => "reference-constraint-violation",
+            Self::InvalidPassByReference => "invalid-pass-by-reference",
+            Self::ConflictingReferenceConstraint => "conflicting-reference-constraint",
+            Self::UnhandledThrownType => "unhandled-thrown-type",
+        }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        *self as u8
+    }
+
+    pub const fn get_falsable_issue_codes() -> [Self; 7] {
+        [
+            Self::FalsableReturnStatement,
+            Self::PossiblyFalseOperand,
+            Self::FalseOperand,
+            Self::FalseIterator,
+            Self::PossiblyFalseIterator,
+            Self::PossiblyFalseArgument,
+            Self::FalseArgument,
+        ]
+    }
+
+    pub const fn get_falsable_issue_code_values() -> [&'static str; 7] {
+        [
+            "falsable-return-statement",
+            "possibly-false-operand",
+            "false-operand",
+            "false-iterator",
+            "possibly-false-iterator",
+            "possibly-false-argument",
+            "false-argument",
+        ]
+    }
+
+    pub const fn get_nullable_issue_codes() -> [Self; 16] {
+        [
+            Self::ImpossibleNullTypeComparison,
+            Self::MethodAccessOnNull,
+            Self::PossiblyNullOperand,
+            Self::NullOperand,
+            Self::NullArrayIndex,
+            Self::NullableReturnStatement,
+            Self::PossibleMethodAccessOnNull,
+            Self::PossiblyNullArrayAccess,
+            Self::PossiblyNullArrayIndex,
+            Self::RedundantNullCoalesce,
+            Self::NullIterator,
+            Self::PossiblyNullIterator,
+            Self::NullPropertyAccess,
+            Self::PossiblyNullPropertyAccess,
+            Self::PossiblyNullArgument,
+            Self::NullArgument,
+        ]
+    }
+
+    pub const fn get_nullable_issue_code_values() -> [&'static str; 16] {
+        [
+            "impossible-null-type-comparison",
+            "method-access-on-null",
+            "possibly-null-operand",
+            "null-operand",
+            "null-array-index",
+            "nullable-return-statement",
+            "possible-method-access-on-null",
+            "possibly-null-array-access",
+            "possibly-null-array-index",
+            "redundant-null-coalesce",
+            "null-iterator",
+            "possibly-null-iterator",
+            "null-property-access",
+            "possibly-null-property-access",
+            "possibly-null-argument",
+            "null-argument",
+        ]
+    }
+
+    pub const fn get_mixed_issue_codes() -> [Self; 12] {
+        [
+            Self::MixedAssignment,
+            Self::MixedReturnStatement,
+            Self::MixedArgument,
+            Self::MixedArrayAccess,
+            Self::MixedArrayAssignment,
+            Self::MixedArrayIndex,
+            Self::MixedMethodAccess,
+            Self::MixedOperand,
+            Self::MixedPropertyTypeCoercion,
+            Self::MixedPropertyAccess,
+            Self::MixedDestructuringShape,
+            Self::MixedClone,
+        ]
+    }
+
+    pub const fn get_mixed_issue_code_values() -> [&'static str; 12] {
+        [
+            "mixed-assignment",
+            "mixed-return-statement",
+            "mixed-argument",
+            "mixed-array-access",
+            "mixed-array-assignment",
+            "mixed-array-index",
+            "mixed-method-access",
+            "mixed-operand",
+            "mixed-property-type-coercion",
+            "mixed-property-access",
+            "mixed-destructuring-shape",
+            "mixed-clone",
+        ]
+    }
+
+    pub const fn get_redundancy_issue_codes() -> [Self; 10] {
+        [
+            Self::RedundantCast,
+            Self::RedundantIssetCheck,
+            Self::RedundantKeyCheck,
+            Self::RedundantNonnullEntryCheck,
+            Self::RedundantNonnullTypeComparison,
+            Self::RedundantCondition,
+            Self::RedundantTypeComparison,
+            Self::RedundantComparison,
+            Self::RedundantLogicalOperation,
+            Self::RedundantNullsafeOperator,
+        ]
+    }
+
+    pub const fn get_redundancy_issue_code_values() -> [&'static str; 10] {
+        [
+            "redundant-cast",
+            "redundant-isset-check",
+            "redundant-key-check",
+            "redundant-nonnull-entry-check",
+            "redundant-nonnull-type-comparison",
+            "redundant-condition",
+            "redundant-type-comparison",
+            "redundant-comparison",
+            "redundant-logical-operation",
+            "redundant-nullsafe-operator",
+        ]
+    }
+
+    pub const fn get_reference_issue_codes() -> [Self; 4] {
+        [
+            Self::ReferenceToUndefinedVariable,
+            Self::ReferenceConstraintViolation,
+            Self::InvalidPassByReference,
+            Self::ConflictingReferenceConstraint,
+        ]
+    }
+
+    pub const fn get_reference_issue_code_values() -> [&'static str; 4] {
+        [
+            "reference-to-undefined-variable",
+            "reference-constraint-violation",
+            "invalid-pass-by-reference",
+            "conflicting-reference-constraint",
+        ]
+    }
+
+    pub const fn get_unreachable_issue_codes() -> [Self; 4] {
+        [
+            Self::UnreachableMatchArm,
+            Self::UnreachableMatchDefaultArm,
+            Self::UnreachableSwitchCase,
+            Self::UnreachableSwitchDefault,
+        ]
+    }
+
+    pub const fn get_unreachable_issue_code_values() -> [&'static str; 4] {
+        [
+            "unreachable-match-arm",
+            "unreachable-match-default-arm",
+            "unreachable-switch-case",
+            "unreachable-switch-default",
+        ]
+    }
+
+    pub const fn get_deprecation_issue_codes() -> [Self; 7] {
+        [
+            Self::DeprecatedFunction,
+            Self::DeprecatedMethod,
+            Self::DeprecatedClosure,
+            Self::DeprecatedClass,
+            Self::DeprecatedTrait,
+            Self::DeprecatedFeature,
+            Self::DeprecatedConstant,
+        ]
+    }
+
+    pub const fn get_deprecation_issue_code_values() -> [&'static str; 7] {
+        [
+            "deprecated-function",
+            "deprecated-method",
+            "deprecated-closure",
+            "deprecated-class",
+            "deprecated-trait",
+            "deprecated-feature",
+            "deprecated-constant",
+        ]
+    }
+
+    pub const fn get_impossibility_issue_codes() -> [Self; 7] {
+        [
+            Self::ImpossibleArrayAccess,
+            Self::ImpossibleArrayAssignment,
+            Self::ImpossibleAssignment,
+            Self::ImpossibleKeyCheck,
+            Self::ImpossibleNonnullEntryCheck,
+            Self::ImpossibleCondition,
+            Self::ImpossibleTypeComparison,
+        ]
+    }
+
+    pub const fn get_impossibility_issue_code_values() -> [&'static str; 7] {
+        [
+            "impossible-array-access",
+            "impossible-array-assignment",
+            "impossible-assignment",
+            "impossible-key-check",
+            "impossible-nonnull-entry-check",
+            "impossible-condition",
+            "impossible-type-comparison",
+        ]
+    }
+}
+
+impl std::str::FromStr for IssueCode {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "invalid-assignment" => Ok(Self::InvalidAssignment),
+            "assignment-to-this" => Ok(Self::AssignmentToThis),
+            "assignment-to-constant" => Ok(Self::AssignmentToConstant),
+            "abstract-instantiation" => Ok(Self::AbstractInstantiation),
+            "clone-inside-loop" => Ok(Self::CloneInsideLoop),
+            "duplicate-array-key" => Ok(Self::DuplicateArrayKey),
+            "falsable-return-statement" => Ok(Self::FalsableReturnStatement),
+            "impossible-array-access" => Ok(Self::ImpossibleArrayAccess),
+            "impossible-array-assignment" => Ok(Self::ImpossibleArrayAssignment),
+            "mixed-assignment" => Ok(Self::MixedAssignment),
+            "impossible-assignment" => Ok(Self::ImpossibleAssignment),
+            "impossible-key-check" => Ok(Self::ImpossibleKeyCheck),
+            "impossible-nonnull-entry-check" => Ok(Self::ImpossibleNonnullEntryCheck),
+            "impossible-null-type-comparison" => Ok(Self::ImpossibleNullTypeComparison),
+            "impossible-condition" => Ok(Self::ImpossibleCondition),
+            "impossible-type-comparison" => Ok(Self::ImpossibleTypeComparison),
+            "invalid-docblock" => Ok(Self::InvalidDocblock),
+            "invalid-argument" => Ok(Self::InvalidArgument),
+            "invalid-array-element-key" => Ok(Self::InvalidArrayElementKey),
+            "invalid-array-element" => Ok(Self::InvalidArrayElement),
+            "mismatched-array-index" => Ok(Self::MismatchedArrayIndex),
+            "invalid-array-index" => Ok(Self::InvalidArrayIndex),
+            "invalid-array-access" => Ok(Self::InvalidArrayAccess),
+            "invalid-method-access" => Ok(Self::InvalidMethodAccess),
+            "invalid-property-assignment-value" => Ok(Self::InvalidPropertyAssignmentValue),
+            "invalid-continue" => Ok(Self::InvalidContinue),
+            "invalid-break" => Ok(Self::InvalidBreak),
+            "invalid-return-statement" => Ok(Self::InvalidReturnStatement),
+            "invalid-type-cast" => Ok(Self::InvalidTypeCast),
+            "invalid-global" => Ok(Self::InvalidGlobal),
+            "invalid-throw" => Ok(Self::InvalidThrow),
+            "invalid-unset" => Ok(Self::InvalidUnset),
+            "invalid-callable" => Ok(Self::InvalidCallable),
+            "invalid-named-argument" => Ok(Self::InvalidNamedArgument),
+            "less-specific-argument" => Ok(Self::LessSpecificArgument),
+            "less-specific-nested-argument-type" => Ok(Self::LessSpecificNestedArgumentType),
+            "less-specific-nested-return-statement" => Ok(Self::LessSpecificNestedReturnStatement),
+            "less-specific-return-statement" => Ok(Self::LessSpecificReturnStatement),
+            "method-access-on-null" => Ok(Self::MethodAccessOnNull),
+            "mixed-return-statement" => Ok(Self::MixedReturnStatement),
+            "mixed-argument" => Ok(Self::MixedArgument),
+            "mixed-array-access" => Ok(Self::MixedArrayAccess),
+            "mixed-array-assignment" => Ok(Self::MixedArrayAssignment),
+            "mixed-array-index" => Ok(Self::MixedArrayIndex),
+            "mixed-method-access" => Ok(Self::MixedMethodAccess),
+            "possibly-null-operand" => Ok(Self::PossiblyNullOperand),
+            "null-operand" => Ok(Self::NullOperand),
+            "possibly-false-operand" => Ok(Self::PossiblyFalseOperand),
+            "false-operand" => Ok(Self::FalseOperand),
+            "possibly-invalid-operand" => Ok(Self::PossiblyInvalidOperand),
+            "invalid-operand" => Ok(Self::InvalidOperand),
+            "mixed-operand" => Ok(Self::MixedOperand),
+            "array-append-in-read-context" => Ok(Self::ArrayAppendInReadContext),
+            "mixed-property-type-coercion" => Ok(Self::MixedPropertyTypeCoercion),
+            "no-value" => Ok(Self::NoValue),
+            "non-existent-class" => Ok(Self::NonExistentClass),
+            "non-existent-class-like" => Ok(Self::NonExistentClassLike),
+            "non-existent-constant" => Ok(Self::NonExistentConstant),
+            "non-existent-function" => Ok(Self::NonExistentFunction),
+            "non-existent-method" => Ok(Self::NonExistentMethod),
+            "non-existent-property" => Ok(Self::NonExistentProperty),
+            "never-return" => Ok(Self::NeverReturn),
+            "null-array-index" => Ok(Self::NullArrayIndex),
+            "nullable-return-statement" => Ok(Self::NullableReturnStatement),
+            "paradoxical-condition" => Ok(Self::ParadoxicalCondition),
+            "possible-method-access-on-null" => Ok(Self::PossibleMethodAccessOnNull),
+            "possibly-invalid-argument" => Ok(Self::PossiblyInvalidArgument),
+            "possibly-null-array-access" => Ok(Self::PossiblyNullArrayAccess),
+            "possibly-null-array-index" => Ok(Self::PossiblyNullArrayIndex),
+            "possibly-undefined-array-index" => Ok(Self::PossiblyUndefinedArrayIndex),
+            "possibly-undefined-int-array-index" => Ok(Self::PossiblyUndefinedIntArrayIndex),
+            "possibly-undefined-string-array-index" => Ok(Self::PossiblyUndefinedStringArrayIndex),
+            "property-type-coercion" => Ok(Self::PropertyTypeCoercion),
+            "redundant-cast" => Ok(Self::RedundantCast),
+            "redundant-null-coalesce" => Ok(Self::RedundantNullCoalesce),
+            "implicit-to-string-cast" => Ok(Self::ImplicitToStringCast),
+            "redundant-isset-check" => Ok(Self::RedundantIssetCheck),
+            "redundant-key-check" => Ok(Self::RedundantKeyCheck),
+            "redundant-nonnull-entry-check" => Ok(Self::RedundantNonnullEntryCheck),
+            "redundant-nonnull-type-comparison" => Ok(Self::RedundantNonnullTypeComparison),
+            "redundant-condition" => Ok(Self::RedundantCondition),
+            "redundant-type-comparison" => Ok(Self::RedundantTypeComparison),
+            "redundant-comparison" => Ok(Self::RedundantComparison),
+            "redundant-logical-operation" => Ok(Self::RedundantLogicalOperation),
+            "too-few-arguments" => Ok(Self::TooFewArguments),
+            "too-many-arguments" => Ok(Self::TooManyArguments),
+            "undefined-int-array-index" => Ok(Self::UndefinedIntArrayIndex),
+            "undefined-string-array-index" => Ok(Self::UndefinedStringArrayIndex),
+            "undefined-variable" => Ok(Self::UndefinedVariable),
+            "possibly-undefined-variable" => Ok(Self::PossiblyUndefinedVariable),
+            "reference-to-undefined-variable" => Ok(Self::ReferenceToUndefinedVariable),
+            "unevaluated-code" => Ok(Self::UnevaluatedCode),
+            "unused-function-call" => Ok(Self::UnusedFunctionCall),
+            "unused-method-call" => Ok(Self::UnusedMethodCall),
+            "unused-statement" => Ok(Self::UnusedStatement),
+            "useless-control-flow" => Ok(Self::UselessControlFlow),
+            "impure-static-variable" => Ok(Self::ImpureStaticVariable),
+            "conflicting-template-equality-bounds" => Ok(Self::ConflictingTemplateEqualityBounds),
+            "incompatible-template-lower-bound" => Ok(Self::IncompatibleTemplateLowerBound),
+            "deprecated-function" => Ok(Self::DeprecatedFunction),
+            "deprecated-method" => Ok(Self::DeprecatedMethod),
+            "deprecated-closure" => Ok(Self::DeprecatedClosure),
+            "named-argument-not-allowed" => Ok(Self::NamedArgumentNotAllowed),
+            "duplicate-named-argument" => Ok(Self::DuplicateNamedArgument),
+            "named-argument-overrides-positional" => Ok(Self::NamedArgumentOverridesPositional),
+            "named-argument-after-positional" => Ok(Self::NamedArgumentAfterPositional),
+            "template-constraint-violation" => Ok(Self::TemplateConstraintViolation),
+            "array-to-string-conversion" => Ok(Self::ArrayToStringConversion),
+            "implicit-resource-to-string-cast" => Ok(Self::ImplicitResourceToStringCast),
+            "match-expression-only-default-arm" => Ok(Self::MatchExpressionOnlyDefaultArm),
+            "empty-match-expression" => Ok(Self::EmptyMatchExpression),
+            "unknown-match-subject-type" => Ok(Self::UnknownMatchSubjectType),
+            "unreachable-match-arm" => Ok(Self::UnreachableMatchArm),
+            "unreachable-match-default-arm" => Ok(Self::UnreachableMatchDefaultArm),
+            "match-arm-always-true" => Ok(Self::MatchArmAlwaysTrue),
+            "match-default-arm-always-executed" => Ok(Self::MatchDefaultArmAlwaysExecuted),
+            "match-subject-type-is-never" => Ok(Self::MatchSubjectTypeIsNever),
+            "match-not-exhaustive" => Ok(Self::MatchNotExhaustive),
+            "non-existent-attribute-class" => Ok(Self::NonExistentAttributeClass),
+            "non-class-used-as-attribute" => Ok(Self::NonClassUsedAsAttribute),
+            "class-not-marked-as-attribute" => Ok(Self::ClassNotMarkedAsAttribute),
+            "attribute-not-repeatable" => Ok(Self::AttributeNotRepeatable),
+            "abstract-class-used-as-attribute" => Ok(Self::AbstractClassUsedAsAttribute),
+            "invalid-attribute-target" => Ok(Self::InvalidAttributeTarget),
+            "invalid-catch-type" => Ok(Self::InvalidCatchType),
+            "duplicate-caught-type" => Ok(Self::DuplicateCaughtType),
+            "no-valid-catch-type-found" => Ok(Self::NoValidCatchTypeFound),
+            "catch-type-not-throwable" => Ok(Self::CatchTypeNotThrowable),
+            "invalid-catch-type-not-class-or-interface" => Ok(Self::InvalidCatchTypeNotClassOrInterface),
+            "non-existent-catch-type" => Ok(Self::NonExistentCatchType),
+            "unknown-iterator-type" => Ok(Self::UnknownIteratorType),
+            "null-iterator" => Ok(Self::NullIterator),
+            "possibly-null-iterator" => Ok(Self::PossiblyNullIterator),
+            "false-iterator" => Ok(Self::FalseIterator),
+            "possibly-false-iterator" => Ok(Self::PossiblyFalseIterator),
+            "generic-object-iteration" => Ok(Self::GenericObjectIteration),
+            "non-iterable-object-iteration" => Ok(Self::NonIterableObjectIteration),
+            "enum-iteration" => Ok(Self::EnumIteration),
+            "invalid-iterator" => Ok(Self::InvalidIterator),
+            "possibly-invalid-iterator" => Ok(Self::PossiblyInvalidIterator),
+            "invalid-foreach-key" => Ok(Self::InvalidForeachKey),
+            "invalid-foreach-value" => Ok(Self::InvalidForeachValue),
+            "undefined-variable-in-closure-use" => Ok(Self::UndefinedVariableInClosureUse),
+            "duplicate-closure-use-variable" => Ok(Self::DuplicateClosureUseVariable),
+            "invalid-yield-value-type" => Ok(Self::InvalidYieldValueType),
+            "invalid-yield-key-type" => Ok(Self::InvalidYieldKeyType),
+            "unknown-yield-from-iterator-type" => Ok(Self::UnknownYieldFromIteratorType),
+            "yield-from-invalid-send-type" => Ok(Self::YieldFromInvalidSendType),
+            "yield-from-non-iterable" => Ok(Self::YieldFromNonIterable),
+            "yield-from-invalid-value-type" => Ok(Self::YieldFromInvalidValueType),
+            "yield-from-invalid-key-type" => Ok(Self::YieldFromInvalidKeyType),
+            "yield-outside-function" => Ok(Self::YieldOutsideFunction),
+            "invalid-generator-return-type" => Ok(Self::InvalidGeneratorReturnType),
+            "hidden-generator-return" => Ok(Self::HiddenGeneratorReturn),
+            "name-already-in-use" => Ok(Self::NameAlreadyInUse),
+            "self-outside-class-scope" => Ok(Self::SelfOutsideClassScope),
+            "static-outside-class-scope" => Ok(Self::StaticOutsideClassScope),
+            "parent-outside-class-scope" => Ok(Self::ParentOutsideClassScope),
+            "invalid-parent-type" => Ok(Self::InvalidParentType),
+            "invalid-class-string-expression" => Ok(Self::InvalidClassStringExpression),
+            "unknown-class-instantiation" => Ok(Self::UnknownClassInstantiation),
+            "interface-instantiation" => Ok(Self::InterfaceInstantiation),
+            "trait-instantiation" => Ok(Self::TraitInstantiation),
+            "enum-instantiation" => Ok(Self::EnumInstantiation),
+            "deprecated-class" => Ok(Self::DeprecatedClass),
+            "deprecated-trait" => Ok(Self::DeprecatedTrait),
+            "unsafe-instantiation" => Ok(Self::UnsafeInstantiation),
+            "ambiguous-instantiation-target" => Ok(Self::AmbiguousInstantiationTarget),
+            "unknown-constant-selector-type" => Ok(Self::UnknownConstantSelectorType),
+            "string-constant-selector" => Ok(Self::StringConstantSelector),
+            "invalid-constant-selector" => Ok(Self::InvalidConstantSelector),
+            "ambiguous-class-like-constant-access" => Ok(Self::AmbiguousClassLikeConstantAccess),
+            "invalid-class-constant-on-string" => Ok(Self::InvalidClassConstantOnString),
+            "unknown-member-selector-type" => Ok(Self::UnknownMemberSelectorType),
+            "string-member-selector" => Ok(Self::StringMemberSelector),
+            "invalid-member-selector" => Ok(Self::InvalidMemberSelector),
+            "invalid-static-method-call" => Ok(Self::InvalidStaticMethodCall),
+            "deprecated-feature" => Ok(Self::DeprecatedFeature),
+            "type-inspection" => Ok(Self::TypeInspection),
+            "type-confirmation" => Ok(Self::TypeConfirmation),
+            "null-property-access" => Ok(Self::NullPropertyAccess),
+            "possibly-null-property-access" => Ok(Self::PossiblyNullPropertyAccess),
+            "mixed-property-access" => Ok(Self::MixedPropertyAccess),
+            "invalid-property-access" => Ok(Self::InvalidPropertyAccess),
+            "ambiguous-object-property-access" => Ok(Self::AmbiguousObjectPropertyAccess),
+            "invalid-static-property-access" => Ok(Self::InvalidStaticPropertyAccess),
+            "redundant-nullsafe-operator" => Ok(Self::RedundantNullsafeOperator),
+            "ambiguous-object-method-access" => Ok(Self::AmbiguousObjectMethodAccess),
+            "disallowed-construct" => Ok(Self::DisallowedConstruct),
+            "impure-construct" => Ok(Self::ImpureConstruct),
+            "docblock-type-mismatch" => Ok(Self::DocblockTypeMismatch),
+            "invalid-destructuring-source" => Ok(Self::InvalidDestructuringSource),
+            "mixed-destructuring-shape" => Ok(Self::MixedDestructuringShape),
+            "skip-in-keyed-destructuring" => Ok(Self::SkipInKeyedDestructuring),
+            "spread-in-destructuring" => Ok(Self::SpreadInDestructuring),
+            "invalid-static-method-access" => Ok(Self::InvalidStaticMethodAccess),
+            "possibly-static-access-on-interface" => Ok(Self::PossiblyStaticAccessOnInterface),
+            "static-access-on-interface" => Ok(Self::StaticAccessOnInterface),
+            "list-used-in-read-context" => Ok(Self::ListUsedInReadContext),
+            "invalid-scope-keyword-context" => Ok(Self::InvalidScopeKeywordContext),
+            "mixed-clone" => Ok(Self::MixedClone),
+            "possibly-invalid-clone" => Ok(Self::PossiblyInvalidClone),
+            "invalid-clone" => Ok(Self::InvalidClone),
+            "invalid-extend" => Ok(Self::InvalidExtend),
+            "invalid-implement" => Ok(Self::InvalidImplement),
+            "missing-required-interface" => Ok(Self::MissingRequiredInterface),
+            "missing-required-parent" => Ok(Self::MissingRequiredParent),
+            "missing-template-parameter" => Ok(Self::MissingTemplateParameter),
+            "excess-template-parameter" => Ok(Self::ExcessTemplateParameter),
+            "inconsistent-template" => Ok(Self::InconsistentTemplate),
+            "invalid-template-parameter" => Ok(Self::InvalidTemplateParameter),
+            "unimplemented-abstract-method" => Ok(Self::UnimplementedAbstractMethod),
+            "overridden-property-access" => Ok(Self::OverriddenPropertyAccess),
+            "incompatible-property-type" => Ok(Self::IncompatiblePropertyType),
+            "invalid-property-write" => Ok(Self::InvalidPropertyWrite),
+            "invalid-property-read" => Ok(Self::InvalidPropertyRead),
+            "deprecated-constant" => Ok(Self::DeprecatedConstant),
+            "invalid-enum-case-value" => Ok(Self::InvalidEnumCaseValue),
+            "condition-is-too-complex" => Ok(Self::ConditionIsTooComplex),
+            "expression-is-too-complex" => Ok(Self::ExpressionIsTooComplex),
+            "where-constraint-violation" => Ok(Self::WhereConstraintViolation),
+            "extend-final-class" => Ok(Self::ExtendFinalClass),
+            "non-existent-class-constant" => Ok(Self::NonExistentClassConstant),
+            "possibly-false-argument" => Ok(Self::PossiblyFalseArgument),
+            "false-argument" => Ok(Self::FalseArgument),
+            "possibly-null-argument" => Ok(Self::PossiblyNullArgument),
+            "null-argument" => Ok(Self::NullArgument),
+            "never-matching-switch-case" => Ok(Self::NeverMatchingSwitchCase),
+            "always-matching-switch-case" => Ok(Self::AlwaysMatchingSwitchCase),
+            "unreachable-switch-case" => Ok(Self::UnreachableSwitchCase),
+            "unreachable-switch-default" => Ok(Self::UnreachableSwitchDefault),
+            "invalid-isset-expression" => Ok(Self::InvalidIssetExpression),
+            "invalid-trait-use" => Ok(Self::InvalidTraitUse),
+            "psalm-trace" => Ok(Self::PsalmTrace),
+            "reference-constraint-violation" => Ok(Self::ReferenceConstraintViolation),
+            "invalid-pass-by-reference" => Ok(Self::InvalidPassByReference),
+            "conflicting-reference-constraint" => Ok(Self::ConflictingReferenceConstraint),
+            "unhandled-thrown-type" => Ok(Self::UnhandledThrownType),
+            _ => Err("unknown issue code"),
+        }
+    }
+}
+
+impl std::fmt::Display for IssueCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::convert::TryFrom<&str> for IssueCode {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        <Self as std::str::FromStr>::from_str(value)
+    }
+}
+
+impl std::convert::From<IssueCode> for &'static str {
+    fn from(val: IssueCode) -> Self {
+        val.as_str()
+    }
+}
+
+impl std::convert::From<IssueCode> for String {
+    fn from(val: IssueCode) -> Self {
+        val.as_str().to_string()
+    }
+}
+
+impl std::borrow::Borrow<str> for IssueCode {
+    fn borrow(&self) -> &'static str {
+        self.as_str()
+    }
+}
+
+impl<'a> std::borrow::Borrow<str> for &'a IssueCode {
+    fn borrow(&self) -> &'a str {
+        self.as_str()
+    }
 }

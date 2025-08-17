@@ -9,7 +9,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -133,8 +133,8 @@ fn resolve_selector_from_type(
 
     let Some(selector_type) = selector_type else {
         let issue_kind = match kind {
-            SelectorKind::Constant => Code::UNKNOWN_CONSTANT_SELECTOR_TYPE,
-            SelectorKind::Member => Code::UNKNOWN_MEMBER_SELECTOR_TYPE,
+            SelectorKind::Constant => IssueCode::UnknownConstantSelectorType,
+            SelectorKind::Member => IssueCode::UnknownMemberSelectorType,
         };
 
         context.collector.report_with_code(
@@ -162,8 +162,8 @@ fn resolve_selector_from_type(
 
         if atomic.is_any_string() {
             let issue_kind = match kind {
-                SelectorKind::Constant => Code::STRING_CONSTANT_SELECTOR,
-                SelectorKind::Member => Code::STRING_MEMBER_SELECTOR,
+                SelectorKind::Constant => IssueCode::StringConstantSelector,
+                SelectorKind::Member => IssueCode::StringMemberSelector,
             };
 
             context.collector.report_with_code(
@@ -176,8 +176,8 @@ fn resolve_selector_from_type(
             resolved_selectors.push(ResolvedSelector::GenericString);
         } else {
             let issue_kind = match kind {
-                SelectorKind::Constant => Code::INVALID_CONSTANT_SELECTOR,
-                SelectorKind::Member => Code::INVALID_MEMBER_SELECTOR,
+                SelectorKind::Constant => IssueCode::InvalidConstantSelector,
+                SelectorKind::Member => IssueCode::InvalidMemberSelector,
             };
 
             context.collector.report_with_code(

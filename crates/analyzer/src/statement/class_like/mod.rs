@@ -25,7 +25,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -268,7 +268,7 @@ pub(crate) fn analyze_class_like<'a>(
                 let method_span = function_like.name_span.unwrap_or(function_like.span);
 
                 context.collector.report_with_code(
-                    Code::UNIMPLEMENTED_ABSTRACT_METHOD,
+                    IssueCode::UnimplementedAbstractMethod,
                     Issue::error(format!(
                         "Class `{name_str}` does not implement the abstract method `{method_name_str}`.",
                     ))
@@ -304,7 +304,7 @@ pub(crate) fn analyze_class_like<'a>(
                 let conflicting_class_span = conflicting_class.name_span.unwrap_or(conflicting_class.span);
 
                 context.collector.report_with_code(
-                    Code::NAME_ALREADY_IN_USE,
+                    IssueCode::NameAlreadyInUse,
                     Issue::error(format!(
                         "In class `{class_name_str}`, the template parameter `{template_name_str}` conflicts with an existing class.",
                     ))
@@ -386,7 +386,7 @@ fn check_class_like_extends(
         let Some(extended_class_metadata) = extended_class_metadata else {
             let extended_name = context.interner.lookup(extended_type.value());
             context.collector.report_with_code(
-                Code::NON_EXISTENT_CLASS_LIKE,
+                IssueCode::NonExistentClassLike,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot extend unknown type `{extended_name}`"))
                     .with_annotation(Annotation::primary(extended_type.span()).with_message("This type could not be found"))
                     .with_note("Mago could not find a definition for this class, interface, or trait.")
@@ -403,7 +403,7 @@ fn check_class_like_extends(
 
         if extended_class_metadata.flags.is_deprecated() {
             context.collector.report_with_code(
-                Code::DEPRECATED_CLASS,
+                IssueCode::DeprecatedClass,
                 Issue::warning(format!("Use of deprecated class `{extended_name_str}` in `extends` clause"))
                     .with_annotation(Annotation::primary(extended_type.span()).with_message("This class is marked as deprecated"))
                     .with_annotation(Annotation::secondary(extended_class_span).with_message(format!("`{extended_name_str}` was marked deprecated here")))
@@ -415,7 +415,7 @@ fn check_class_like_extends(
         if class_like_metadata.kind.is_interface() {
             if !extended_class_metadata.kind.is_interface() {
                 context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
+                    IssueCode::InvalidExtend,
                     Issue::error(format!("Interface `{using_name_str}` cannot extend non-interface type `{extended_name_str}`"))
                         .with_annotation(Annotation::primary(extended_type.span())
                             .with_message(format!("...because it is {extended_kind_prefix} {extended_kind_str}, not an interface")))
@@ -430,7 +430,7 @@ fn check_class_like_extends(
 
             if extended_class_metadata.flags.is_enum_interface() && !class_like_metadata.flags.is_enum_interface() {
                 context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
+                    IssueCode::InvalidExtend,
                     Issue::error(format!("Interface `{using_name_str}` cannot extend enum-interface `{extended_name_str}`"))
                         .with_annotation(Annotation::primary(using_class_span).with_message("This interface is not an `@enum-interface`..."))
                         .with_annotation(Annotation::secondary(extended_type.span()).with_message("...but it extends an `@enum-interface`"))
@@ -443,7 +443,7 @@ fn check_class_like_extends(
         if class_like_metadata.kind.is_class() {
             if !extended_class_metadata.kind.is_class() {
                 context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
+                    IssueCode::InvalidExtend,
                     Issue::error(format!(
                         "Class `{using_name_str}` cannot extend non-class type `{extended_name_str}`"
                     ))
@@ -462,7 +462,7 @@ fn check_class_like_extends(
 
             if extended_class_metadata.flags.is_final() {
                 context.collector.report_with_code(
-                    Code::EXTEND_FINAL_CLASS,
+                    IssueCode::ExtendFinalClass,
                     Issue::error(format!("Class `{using_name_str}` cannot extend final class `{extended_name_str}`"))
                         .with_annotation(Annotation::primary(extended_type.span()).with_message("This inheritance is not allowed"))
                         .with_annotation(Annotation::secondary(extended_class_span).with_message(format!("`{extended_name_str}` is declared 'final' here")))
@@ -473,7 +473,7 @@ fn check_class_like_extends(
 
             if extended_class_metadata.flags.is_readonly() && !class_like_metadata.flags.is_readonly() {
                 context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
+                    IssueCode::InvalidExtend,
                     Issue::error(format!("Non-readonly class `{using_name_str}` cannot extend readonly class `{extended_name_str}`"))
                         .with_annotation(Annotation::primary(using_class_span).with_message("This class is not `readonly`..."))
                         .with_annotation(Annotation::secondary(extended_class_span).with_message(format!("...but it extends `{extended_name_str}`, which is `readonly`")))
@@ -487,7 +487,7 @@ fn check_class_like_extends(
             {
                 let required_iface_str = context.interner.lookup(required_interface);
                 context.collector.report_with_code(
-                    Code::MISSING_REQUIRED_INTERFACE,
+                    IssueCode::MissingRequiredInterface,
                     Issue::error(format!("Class `{using_name_str}` must implement required interface `{required_iface_str}`"))
                         .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because its parent `{extended_name_str}` requires it")))
                         .with_annotation(Annotation::secondary(extended_class_span).with_message("Requirement declared here (likely via `@require-implements`)"))
@@ -498,7 +498,7 @@ fn check_class_like_extends(
 
             if !class_like_metadata.is_permitted_to_inherit(extended_class_metadata) {
                 context.collector.report_with_code(
-                    Code::INVALID_EXTEND,
+                    IssueCode::InvalidExtend,
                     Issue::error(format!("Class `{using_name_str}` is not permitted to extend `{extended_name_str}`"))
                         .with_annotation(Annotation::primary(extended_type.span()).with_message("This inheritance is restricted"))
                         .with_annotation(Annotation::secondary(extended_class_span)
@@ -564,7 +564,7 @@ fn check_class_like_implements(
 
                 if !implemented_metadata.kind.is_interface() {
                     context.collector.report_with_code(
-                        Code::INVALID_IMPLEMENT,
+                        IssueCode::InvalidImplement,
                         Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot implement non-interface type `{implemented_name_str}`"))
                             .with_annotation(Annotation::primary(implemented_type.span())
                                 .with_message(format!("...because it is {implemented_kind_prefix} {implemented_kind_str}, not an interface")))
@@ -579,7 +579,7 @@ fn check_class_like_implements(
 
                 if implemented_metadata.flags.is_enum_interface() && !class_like_metadata.kind.is_enum() {
                     context.collector.report_with_code(
-                        Code::INVALID_IMPLEMENT,
+                        IssueCode::InvalidImplement,
                         Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot implement enum-only interface `{implemented_name_str}`"))
                             .with_annotation(Annotation::primary(using_class_span).with_message(format!("This {using_kind_str} is not an enum...")))
                             .with_annotation(Annotation::secondary(implemented_type.span()).with_message("...but it implements an interface restricted to enums"))
@@ -591,7 +591,7 @@ fn check_class_like_implements(
 
                 if !class_like_metadata.is_permitted_to_inherit(implemented_metadata) {
                     context.collector.report_with_code(
-                        Code::INVALID_IMPLEMENT,
+                        IssueCode::InvalidImplement,
                         Issue::error(format!("{using_kind_capitalized} `{using_name_str}` is not permitted to implement `{implemented_name_str}`"))
                              .with_annotation(Annotation::primary(implemented_type.span()).with_message("This implementation is restricted"))
                             .with_annotation(Annotation::secondary(implemented_class_span)
@@ -619,7 +619,7 @@ fn check_class_like_implements(
                 let implemented_name = context.interner.lookup(implemented_type.value());
 
                 context.collector.report_with_code(
-                    Code::NON_EXISTENT_CLASS_LIKE,
+                    IssueCode::NonExistentClassLike,
                     Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot implement unknown type `{implemented_name}`"))
                         .with_annotation(Annotation::primary(implemented_type.span()).with_message("This type could not be found"))
                         .with_note("Mago could not find a definition for this interface. The `implements` keyword is for interfaces only.")
@@ -644,7 +644,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
         let Some(used_trait_metadata) = used_trait_metadata else {
             let used_name = context.interner.lookup(used_type.value());
             context.collector.report_with_code(
-                Code::NON_EXISTENT_CLASS_LIKE,
+                IssueCode::NonExistentClassLike,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` cannot use unknown type `{used_name}`"))
                     .with_annotation(Annotation::primary(used_type.span()).with_message("This type could not be found"))
                     .with_note("Mago could not find a definition for this trait. The `use` keyword is for traits only.")
@@ -663,7 +663,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
         // Case: Using something that is not a trait.
         if !used_trait_metadata.kind.is_trait() {
             context.collector.report_with_code(
-                Code::INVALID_TRAIT_USE,
+                IssueCode::InvalidTraitUse,
                 Issue::error(format!(
                     "{using_kind_capitalized} `{using_name_str}` cannot use non-trait type `{used_name_str}`"
                 ))
@@ -685,7 +685,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
 
         if used_trait_metadata.flags.is_deprecated() {
             context.collector.report_with_code(
-                Code::DEPRECATED_TRAIT,
+                IssueCode::DeprecatedTrait,
                 Issue::error(format!("Use of deprecated trait `{used_name_str}` in `{using_name_str}`"))
                     .with_annotation(Annotation::primary(used_type.span()).with_message("This trait is marked as deprecated"))
                     .with_annotation(Annotation::secondary(used_class_span).with_message(format!("`{used_name_str}` was marked as deprecated here")))
@@ -698,7 +698,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             let required_iface_str = context.interner.lookup(required_interface);
 
             context.collector.report_with_code(
-                Code::MISSING_REQUIRED_INTERFACE,
+                IssueCode::MissingRequiredInterface,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must implement required interface `{required_iface_str}`"))
                     .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
                     .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
@@ -711,7 +711,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
             let required_class_str = context.interner.lookup(required_class);
 
             context.collector.report_with_code(
-                Code::MISSING_REQUIRED_PARENT,
+                IssueCode::MissingRequiredParent,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` must extend required class `{required_class_str}`"))
                     .with_annotation(Annotation::primary(using_class_span).with_message(format!("...because the trait `{used_name_str}` requires it")))
                     .with_annotation(Annotation::secondary(used_type.span()).with_message(format!("The requirement is introduced by using `{used_name_str}` here")))
@@ -722,7 +722,7 @@ fn check_class_like_use(context: &mut Context<'_>, class_like_metadata: &ClassLi
 
         if !class_like_metadata.is_permitted_to_inherit(used_trait_metadata) {
             context.collector.report_with_code(
-                Code::INVALID_TRAIT_USE,
+                IssueCode::InvalidTraitUse,
                 Issue::error(format!("{using_kind_capitalized} `{using_name_str}` is not permitted to use trait `{used_name_str}`"))
                     .with_annotation(Annotation::primary(used_type.span()).with_message("This usage is restricted"))
                     .with_annotation(Annotation::secondary(used_class_span).with_message(format!("The `@inheritors` annotation on this trait does not include `{using_name_str}`")))
@@ -797,7 +797,7 @@ fn check_template_parameters(
         )
         .with_help(format!("Provide all {expected_parameters_count} required template arguments in the `{inheritance_tag}` docblock tag for `{class_name_str}`."));
 
-        context.collector.report_with_code(Code::MISSING_TEMPLATE_PARAMETER, issue);
+        context.collector.report_with_code(IssueCode::MissingTemplateParameter, issue);
     } else if expected_parameters_count < actual_parameters_count {
         let issue = Issue::error(format!(
             "Too many template arguments for `{parent_name_str}`: expected {expected_parameters_count}, but found {actual_parameters_count}."
@@ -816,13 +816,13 @@ fn check_template_parameters(
         )
         .with_help(format!("Remove the extra arguments from the `{inheritance_tag}` tag for `{class_name_str}`."));
 
-        context.collector.report_with_code(Code::EXCESS_TEMPLATE_PARAMETER, issue);
+        context.collector.report_with_code(IssueCode::ExcessTemplateParameter, issue);
     }
 
     let own_template_parameters_len = class_like_metadata.template_types.len();
     if parent_metadata.flags.has_consistent_templates() && own_template_parameters_len != expected_parameters_count {
         context.collector.report_with_code(
-            Code::INCONSISTENT_TEMPLATE,
+            IssueCode::InconsistentTemplate,
             Issue::error(format!(
                 "Template parameter count mismatch: `{class_name_str}` must have {expected_parameters_count} template parameters to match `{parent_name_str}`."
             ))
@@ -875,7 +875,7 @@ fn check_template_parameters(
                         let child_template_name_str = context.interner.lookup(&generic_parameter.parameter_name);
 
                         context.collector.report_with_code(
-                            Code::INVALID_TEMPLATE_PARAMETER,
+                            IssueCode::InvalidTemplateParameter,
                             Issue::error("Invalid template variance: cannot use a covariant template to satisfy an invariant one.")
                                 .with_annotation(Annotation::primary(class_name_span).with_message(format!("In the definition of `{class_name_str}`")))
                                 .with_note(format!("The parent `{parent_name_str}` defines template `{template_name_str}` as invariant (`@template`)."))
@@ -891,7 +891,7 @@ fn check_template_parameters(
                     let extended_as_template = extended_type_atomic.get_generic_parameter_name();
                     if extended_as_template.is_none() {
                         context.collector.report_with_code(
-                            Code::INVALID_TEMPLATE_PARAMETER,
+                            IssueCode::InvalidTemplateParameter,
                             Issue::error("Inconsistent template: expected a template parameter, but found a concrete type.")
                                 .with_annotation(Annotation::primary(parent_definition_span).with_message(format!(
                                     "Expected a template parameter, but got `{}`",
@@ -906,7 +906,7 @@ fn check_template_parameters(
                         && child_template_type.get_id(None) != template_type.get_id(None)
                     {
                         context.collector.report_with_code(
-                            Code::INVALID_TEMPLATE_PARAMETER,
+                            IssueCode::InvalidTemplateParameter,
                             Issue::error("Inconsistent template: template parameter constraints do not match.")
                                 .with_annotation(Annotation::primary(class_name_span).with_message(format!("This template parameter has constraint `{}`...", child_template_type.get_id(Some(context.interner)))))
                                 .with_annotation(Annotation::secondary(parent_definition_span).with_message(format!("...but parent `{parent_name_str}` requires a constraint of `{}` for this template.", template_type.get_id(Some(context.interner)))))
@@ -943,7 +943,7 @@ fn check_template_parameters(
                     let replaced_type_str = replaced_template_type.get_id(Some(context.interner));
 
                     context.collector.report_with_code(
-                        Code::INVALID_TEMPLATE_PARAMETER,
+                        IssueCode::InvalidTemplateParameter,
                         Issue::error(format!("Template argument for `{parent_name_str}` is not compatible with its constraint."))
                             .with_annotation(Annotation::primary(class_name_span).with_message(format!("In the definition of `{class_name_str}`")))
                             .with_note(format!("The type `{extended_type_str}` provided for template `{template_name_str}`..."))
@@ -998,7 +998,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                     let parent_class_name_str = context.interner.lookup(&parent_metadata.original_name);
 
                     context.collector.report_with_code(
-                        Code::OVERRIDDEN_PROPERTY_ACCESS,
+                        IssueCode::OverriddenPropertyAccess,
                         Issue::error(format!(
                             "Property `{declaring_class_name_str}::{property_name_str}` has a different read access level than `{parent_class_name_str}::{property_name_str}`."
                         ))
@@ -1026,7 +1026,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                     let parent_class_name_str = context.interner.lookup(&parent_metadata.original_name);
 
                     context.collector.report_with_code(
-                        Code::OVERRIDDEN_PROPERTY_ACCESS,
+                        IssueCode::OverriddenPropertyAccess,
                         Issue::error(format!(
                             "Property `{declaring_class_name_str}::{property_name_str}` has a different write access level than `{parent_class_name_str}::{property_name_str}`."
                         ))
@@ -1082,7 +1082,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                             let class_name_str = context.interner.lookup(&class_like_metadata.original_name);
 
                             context.collector.report_with_code(
-                                Code::INCOMPATIBLE_PROPERTY_TYPE,
+                                IssueCode::IncompatiblePropertyType,
                                 Issue::error(format!(
                                     "Property `{class_name_str}::{property_name_str}` has an incompatible type declaration."
                                 ))
@@ -1120,7 +1120,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                             );
                         };
 
-                        context.collector.report_with_code(Code::INCOMPATIBLE_PROPERTY_TYPE, issue
+                        context.collector.report_with_code(IssueCode::IncompatiblePropertyType, issue
                             .with_note("Adding a type to a property that was untyped in a parent class is an incompatible change.")
                                    .with_help("You can either remove the type from this property or add an identical type to the property in the parent class."));
                     }
@@ -1133,7 +1133,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                             let parent_type_id = parent_type.type_union.get_id(Some(context.interner));
 
                             context.collector.report_with_code(
-                                Code::INCOMPATIBLE_PROPERTY_TYPE,
+                                IssueCode::IncompatiblePropertyType,
                                 Issue::error(format!(
                                     "Property `{class_name_str}::{property_name_str}` is missing the type declaration from its parent."
                                 ))
@@ -1185,7 +1185,7 @@ fn check_class_like_properties(context: &mut Context<'_>, class_like_metadata: &
                     let class_name_str = context.interner.lookup(&class_like_metadata.original_name);
 
                     context.collector.report_with_code(
-                        Code::INCOMPATIBLE_PROPERTY_TYPE,
+                        IssueCode::IncompatiblePropertyType,
                         Issue::error(format!(
                             "Property `{class_name_str}::{property_name_str}` has an incompatible type declaration from docblock."
                         ))

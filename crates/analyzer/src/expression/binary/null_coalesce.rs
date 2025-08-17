@@ -13,7 +13,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -56,7 +56,7 @@ pub fn analyze_null_coalesce_operation<'a>(
 
     if lhs_type.is_null() {
         context.collector.report_with_code(
-            Code::REDUNDANT_NULL_COALESCE,
+            IssueCode::RedundantNullCoalesce,
             Issue::help("Redundant null coalesce: left-hand side is always `null`.")
                 .with_annotation(Annotation::primary(binary.lhs.span()).with_message("This is always `null`"))
                 .with_annotation(
@@ -71,7 +71,7 @@ pub fn analyze_null_coalesce_operation<'a>(
         result_type = artifacts.get_expression_type(&binary.rhs).cloned().unwrap_or_else(get_mixed); // Fallback if RHS analysis fails
     } else if !lhs_type.has_nullish() && !lhs_type.possibly_undefined && !lhs_type.possibly_undefined_from_try {
         context.collector.report_with_code(
-            Code::REDUNDANT_NULL_COALESCE,
+            IssueCode::RedundantNullCoalesce,
             Issue::help(
                 "Redundant null coalesce: left-hand side can never be `null` or undefined."
             )

@@ -1,18 +1,75 @@
 use mago_php_version::PHPVersion;
 
+/// Configuration settings that control the behavior of the Mago analyzer.
+///
+/// This struct allows you to enable/disable specific checks, suppress categories of issues,
+/// and tune the analyzer's performance and strictness.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
+    /// The target PHP version for the analysis.
     pub version: PHPVersion,
+
+    /// Report all issues related to the use of `mixed` types. Defaults to `true`.
+    pub mixed_issues: bool,
+
+    /// Report all issues related to possibly `false` values. Defaults to `true`.
+    pub falsable_issues: bool,
+
+    /// Report all issues related to possibly `null` values. Defaults to `true`.
+    pub nullable_issues: bool,
+
+    /// Report all issues related to redundant code. Defaults to `true`.
+    pub redundancy_issues: bool,
+
+    /// Report all issues related to by-reference variables. Defaults to `true`.
+    pub reference_issues: bool,
+
+    /// Report all issues related to unreachable code. Defaults to `true`.
+    pub unreachable_issues: bool,
+
+    /// Report all issues related to using deprecated code. Defaults to `true`.
+    pub deprecation_issues: bool,
+
+    /// Report all issues related to logically impossible conditions. Defaults to `true`.
+    pub impossibility_issues: bool,
+
+    /// Find and report expressions whose results are not used (e.g., `$a + $b;`). Defaults to `false`.
     pub find_unused_expressions: bool,
+
+    /// Find and report unused definitions (e.g., private methods that are never called). Defaults to `false`.
     pub find_unused_definitions: bool,
+
+    /// Analyze code that appears to be unreachable. Defaults to `false`.
     pub analyze_dead_code: bool,
+
+    /// Allow the use of `include`, `require`, and related constructs. Defaults to `true`.
     pub allow_include: bool,
+
+    /// Allow the use of the `eval()` construct. Defaults to `true`.
     pub allow_eval: bool,
+
+    /// Allow the use of the `empty()` construct. Defaults to `true`.
     pub allow_empty: bool,
+
+    /// Track the literal values of class properties when they are assigned.
+    /// This improves type inference but may increase memory usage. Defaults to `true`.
     pub memoize_properties: bool,
-    pub trigger_error_exists: bool,
+
+    /// Allow accessing array keys that may not be defined without reporting an issue. Defaults to `true`.
     pub allow_possibly_undefined_array_keys: bool,
+
+    /// Enable checking for unhandled thrown exceptions.
+    ///
+    /// When `true`, the analyzer will report any exception that is thrown but not caught
+    /// in a `try-catch` block or documented in a `@throws` tag.
+    ///
+    /// This check is disabled by default (`false`) as it can be computationally expensive.
     pub check_throws: bool,
+
+    /// **Internal use only.**
+    ///
+    /// Enables a diffing mode for incremental analysis, used by integrations like LSPs.
+    /// This avoids re-analyzing unchanged code in the same session. Defaults to `false`.
     pub diff: bool,
 }
 
@@ -26,6 +83,14 @@ impl Settings {
     pub fn new(version: PHPVersion) -> Self {
         Self {
             version,
+            mixed_issues: true,
+            falsable_issues: true,
+            nullable_issues: true,
+            redundancy_issues: true,
+            reference_issues: true,
+            unreachable_issues: true,
+            deprecation_issues: true,
+            impossibility_issues: true,
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,
@@ -33,7 +98,6 @@ impl Settings {
             allow_eval: true,
             allow_empty: true,
             memoize_properties: true,
-            trigger_error_exists: false,
             allow_possibly_undefined_array_keys: true,
             check_throws: false,
             diff: false,

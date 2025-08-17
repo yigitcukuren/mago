@@ -12,7 +12,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
@@ -35,7 +35,7 @@ impl Analyzable for Continue {
                     expression.analyze(context, block_context, artifacts)?;
 
                     context.collector.report_with_code(
-                        Code::INVALID_CONTINUE,
+                        IssueCode::InvalidContinue,
                         Issue::error("Continue level must be an integer literal.").with_annotation(
                             Annotation::primary(expression.span()).with_message(format!(
                                 "Expected an integer literal here, found an expression of type `{}`.",
@@ -85,7 +85,7 @@ impl Analyzable for Continue {
                     );
                 }
 
-                context.collector.report_with_code(Code::INVALID_CONTINUE, issue);
+                context.collector.report_with_code(IssueCode::InvalidContinue, issue);
 
                 block_context.has_returned = true;
 
@@ -99,7 +99,7 @@ impl Analyzable for Continue {
 
         let Some(loop_scope) = loop_scope_ref else {
             context.collector.report_with_code(
-                Code::INVALID_CONTINUE,
+                IssueCode::InvalidContinue,
                 Issue::error("Continue statement used outside of loop.").with_annotation(
                     Annotation::primary(self.span())
                         .with_message("Continue statement must be inside a loop.".to_string()),

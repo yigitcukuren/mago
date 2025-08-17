@@ -14,7 +14,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -85,7 +85,7 @@ impl Analyzable for Unset {
                         let scalar_str = scalar.get_id(Some(context.interner));
 
                         context.collector.report_with_code(
-                            Code::INVALID_UNSET,
+                            IssueCode::InvalidUnset,
                             Issue::error(format!(
                                 "Cannot apply `unset` to an offset of non-array type `{scalar_str}`."
                             ))

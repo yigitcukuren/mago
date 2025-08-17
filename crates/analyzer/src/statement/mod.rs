@@ -15,7 +15,7 @@ use mago_syntax::ast::*;
 use crate::Context;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::utils::docblock::populate_docblock_variables;
@@ -201,7 +201,7 @@ pub fn analyze_statements<'a>(
 
                 if is_harmless {
                     context.collector.report_with_code(
-                        Code::USELESS_CONTROL_FLOW,
+                        IssueCode::UselessControlFlow,
                         Issue::help("This control flow is unnecessary")
                             .with_annotation(
                                 Annotation::primary(statement.span()).with_message("This statement has no effect."),
@@ -211,7 +211,7 @@ pub fn analyze_statements<'a>(
                     );
                 } else {
                     context.collector.report_with_code(
-                        Code::UNEVALUATED_CODE,
+                        IssueCode::UnevaluatedCode,
                         Issue::help("Unreachable code detected.")
                             .with_annotation(Annotation::primary(statement.span()).with_message("This code will never be executed."))
                             .with_note("Execution cannot reach this point due to preceding code (e.g., return, throw, break, continue, exit, or an infinite loop).")
@@ -314,7 +314,7 @@ fn detect_unused_statement_expressions(
     };
 
     context.collector.report_with_code(
-        Code::UNUSED_STATEMENT,
+        IssueCode::UnusedStatement,
         Issue::note("Expression has no effect as a statement")
             .with_annotation(Annotation::primary(expression.span()).with_message(useless_expression_message))
             .with_note("This expression does not produce a side effect or return value that is used.")
@@ -330,7 +330,7 @@ fn has_unused_must_use<'a>(
     expression: &'a Expression,
     context: &'a Context<'_>,
     artifacts: &'a AnalysisArtifacts,
-) -> Option<(&'static str, StringIdentifier)> {
+) -> Option<(IssueCode, StringIdentifier)> {
     let call_expression = match expression {
         Expression::Call(call_expr) => call_expr,
         _ => return None,
@@ -349,7 +349,7 @@ fn has_unused_must_use<'a>(
                     .iter()
                     .any(|attr| context.interner.lookup(&attr.name).eq_ignore_ascii_case("NoDiscard"));
 
-            if must_use { Some((Code::UNUSED_FUNCTION_CALL, function_id)) } else { None }
+            if must_use { Some((IssueCode::UnusedFunctionCall, function_id)) } else { None }
         }
         FunctionLikeIdentifier::Method(method_class, method_name) => {
             let method_metadata = get_method_by_id(
@@ -364,7 +364,7 @@ fn has_unused_must_use<'a>(
                     .iter()
                     .any(|attr| context.interner.lookup(&attr.name).eq_ignore_ascii_case("NoDiscard"));
 
-            if must_use { Some((Code::UNUSED_METHOD_CALL, method_name)) } else { None }
+            if must_use { Some((IssueCode::UnusedMethodCall, method_name)) } else { None }
         }
         FunctionLikeIdentifier::Closure(_, _) => None,
     }

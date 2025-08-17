@@ -12,7 +12,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
@@ -52,7 +52,7 @@ impl Analyzable for DoWhile {
         )
         .unwrap_or_else(|| {
             context.collector.report_with_code(
-                Code::CONDITION_IS_TOO_COMPLEX,
+                IssueCode::ConditionIsTooComplex,
                 Issue::warning("Loop condition is too complex for precise type analysis.")
                     .with_annotation(
                         Annotation::primary(self.condition.span())

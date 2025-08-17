@@ -16,7 +16,7 @@ use mago_syntax::ast::*;
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
 use crate::artifacts::get_expression_range;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -54,7 +54,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_null() {
         context.collector.report_with_code(
-            Code::NULL_OPERAND,
+            IssueCode::NullOperand,
             Issue::error(format!(
                 "Implicit conversion of `null` to empty string for {} operand in string concatenation.",
                 side.to_ascii_lowercase()
@@ -71,7 +71,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_false() {
         context.collector.report_with_code(
-            Code::FALSE_OPERAND,
+            IssueCode::FalseOperand,
             Issue::error(format!(
                 "Implicit conversion of `false` to empty string for {} operand in string concatenation.",
                 side.to_ascii_lowercase()
@@ -86,7 +86,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_nullable() && !operand_type.ignore_nullable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_NULL_OPERAND,
+            IssueCode::PossiblyNullOperand,
             Issue::warning(format!(
                 "Possibly null {} operand used in string concatenation (type `{}`).",
                 side.to_ascii_lowercase(),
@@ -100,7 +100,7 @@ fn analyze_string_concat_operand(
 
     if operand_type.is_falsable() && !operand_type.ignore_falsable_issues {
         context.collector.report_with_code(
-            Code::POSSIBLY_FALSE_OPERAND,
+            IssueCode::PossiblyFalseOperand,
             Issue::warning(format!(
                 "Possibly false {} operand used in string concatenation (type `{}`).",
                 side.to_ascii_lowercase(),
@@ -140,7 +140,7 @@ fn analyze_string_concat_operand(
                 } else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            Code::INVALID_OPERAND,
+                            IssueCode::InvalidOperand,
                             Issue::error(format!(
                                 "Invalid {} operand: template parameter `{}` constraint `{}` is not compatible with string concatenation.",
                                 side.to_ascii_lowercase(),
@@ -161,7 +161,7 @@ fn analyze_string_concat_operand(
                 let Some(class_like_name) = object.get_name() else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            Code::INVALID_OPERAND,
+                            IssueCode::InvalidOperand,
                             Issue::error(format!(
                                 "Invalid {} operand: cannot determine if generic `object` is stringable.",
                                 side.to_ascii_lowercase()
@@ -188,7 +188,7 @@ fn analyze_string_concat_operand(
                     current_atomic_is_valid = true;
 
                     context.collector.report_with_code(
-                        Code::IMPLICIT_TO_STRING_CAST,
+                        IssueCode::ImplicitToStringCast,
                         Issue::warning(format!(
                             "Implicit conversion to `string` for {} operand via `{}`.",
                             side.to_ascii_lowercase(),
@@ -203,7 +203,7 @@ fn analyze_string_concat_operand(
                 } else {
                     if !reported_invalid_issue {
                         context.collector.report_with_code(
-                            Code::INVALID_OPERAND,
+                            IssueCode::InvalidOperand,
                             Issue::error(format!(
                                 "Invalid {} operand: object of type `{}` cannot be converted to `string`.",
                                 side.to_ascii_lowercase(),
@@ -225,7 +225,7 @@ fn analyze_string_concat_operand(
             TAtomic::Array(_) => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        Code::ARRAY_TO_STRING_CONVERSION,
+                        IssueCode::ArrayToStringConversion,
                         Issue::error(format!(
                             "Invalid {} operand: cannot use type `array` in string concatenation.",
                             side.to_ascii_lowercase()
@@ -242,7 +242,7 @@ fn analyze_string_concat_operand(
             }
             TAtomic::Resource(_) => {
                 context.collector.report_with_code(
-                    Code::IMPLICIT_RESOURCE_TO_STRING_CAST,
+                    IssueCode::ImplicitResourceToStringCast,
                     Issue::warning(format!(
                         "Implicit conversion of `resource` to string for {} operand.",
                         side.to_ascii_lowercase()
@@ -257,7 +257,7 @@ fn analyze_string_concat_operand(
             TAtomic::Mixed(_) => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        Code::MIXED_OPERAND,
+                        IssueCode::MixedOperand,
                         Issue::error(format!(
                             "Invalid {} operand: type `{}` cannot be reliably used in string concatenation.",
                             side.to_ascii_lowercase(),
@@ -276,7 +276,7 @@ fn analyze_string_concat_operand(
             _ => {
                 if !reported_invalid_issue {
                     context.collector.report_with_code(
-                        Code::INVALID_OPERAND,
+                        IssueCode::InvalidOperand,
                         Issue::error(format!(
                             "Invalid type `{}` for {} operand in string concatenation.",
                              operand_atomic_type.get_id(Some(context.interner)),
@@ -298,7 +298,7 @@ fn analyze_string_concat_operand(
 
     if !overall_type_match && !has_at_least_one_valid_operand_type && !reported_invalid_issue {
         context.collector.report_with_code(
-            Code::INVALID_OPERAND,
+            IssueCode::InvalidOperand,
             Issue::error(format!(
                 "Invalid type `{}` for {} operand in string concatenation.",
                 operand_type.get_id(Some(context.interner)), side.to_ascii_lowercase()
@@ -309,7 +309,7 @@ fn analyze_string_concat_operand(
         );
     } else if !overall_type_match && has_at_least_one_valid_operand_type && !reported_invalid_issue {
         context.collector.report_with_code(
-            Code::POSSIBLY_INVALID_OPERAND,
+            IssueCode::PossiblyInvalidOperand,
             Issue::warning(format!(
                 "Possibly invalid type `{}` for {} operand in string concatenation.",
                 operand_type.get_id(Some(context.interner)),

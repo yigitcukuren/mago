@@ -7,7 +7,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -21,7 +21,7 @@ impl Analyzable for EmptyConstruct {
     ) -> Result<(), AnalysisError> {
         if !context.settings.allow_empty {
             context.collector.report_with_code(
-                Code::DISALLOWED_CONSTRUCT,
+                IssueCode::DisallowedConstruct,
                 Issue::error("Use of `empty` is disallowed by project configuration.")
                     .with_annotation(Annotation::primary(self.empty.span).with_message("`empty` is disallowed here"))
                     .with_note(

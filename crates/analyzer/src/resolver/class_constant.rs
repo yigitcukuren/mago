@@ -18,7 +18,7 @@ use mago_syntax::ast::ClassLikeConstantSelector;
 use mago_syntax::ast::Expression;
 
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
@@ -149,7 +149,7 @@ fn handle_class_magic_constant(
 ) -> Option<TUnion> {
     if matches!(class_resolution.origin, ResolutionOrigin::AnyString) {
         context.collector.report_with_code(
-            Code::INVALID_CLASS_CONSTANT_ON_STRING,
+            IssueCode::InvalidClassConstantOnString,
             Issue::error("Cannot use `::class` on an expression of type string.")
                 .with_annotation(
                     Annotation::primary(class_expr.span()).with_message("This expression is a string here"),
@@ -217,7 +217,7 @@ fn find_constant_in_class(
 fn report_non_existent_class(context: &mut Context, class_id: &StringIdentifier, class_span: Span) {
     let class_name_str = context.interner.lookup(class_id);
     context.collector.report_with_code(
-        Code::NON_EXISTENT_CLASS_LIKE,
+        IssueCode::NonExistentClassLike,
         Issue::error(format!("Class, interface, enum, or trait `{class_name_str}` not found."))
             .with_annotation(
                 Annotation::primary(class_span)
@@ -253,7 +253,7 @@ fn report_non_existent_constant(
     };
 
     context.collector.report_with_code(
-        Code::NON_EXISTENT_CLASS_CONSTANT,
+        IssueCode::NonExistentClassConstant,
         Issue::error(main_message)
             .with_annotation(
                 Annotation::primary(const_span).with_message(primary_annotation_message),
@@ -271,7 +271,7 @@ fn report_non_existent_constant(
 /// Reports a warning when a constant is accessed on an ambiguous type like `object` or `class-string`.
 fn report_ambiguous_constant_access(context: &mut Context, class_expr: &Expression) {
     context.collector.report_with_code(
-        Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
+        IssueCode::AmbiguousClassLikeConstantAccess,
         Issue::warning("Cannot reliably determine class for constant access due to an ambiguous type.")
             .with_annotation(
                 Annotation::primary(class_expr.span())

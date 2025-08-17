@@ -43,7 +43,7 @@ impl Analyzable for ClassConstantAccess {
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -54,8 +54,8 @@ mod tests {
             $_ = NonExistentClass::SOME_CONST;
         "#},
         issues = [
-            Code::NON_EXISTENT_CLASS_LIKE,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::NonExistentClassLike,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -67,8 +67,8 @@ mod tests {
             $_ = self::SOME_CONST;
         "#},
         issues = [
-            Code::SELF_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::SelfOutsideClassScope,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -80,8 +80,8 @@ mod tests {
             $_ = static::SOME_CONST;
         "#},
         issues = [
-            Code::STATIC_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::StaticOutsideClassScope,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -93,8 +93,8 @@ mod tests {
             $_ = parent::SOME_CONST;
         "#},
         issues = [
-            Code::PARENT_OUTSIDE_CLASS_SCOPE,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::ParentOutsideClassScope,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -106,10 +106,10 @@ mod tests {
             $const = $unknownVar::{KNOWN_CONST};
         "#},
         issues = [
-            Code::UNDEFINED_VARIABLE,
-            Code::NON_EXISTENT_CONSTANT,
-            Code::UNKNOWN_CONSTANT_SELECTOR_TYPE,
-            Code::MIXED_ASSIGNMENT,
+            IssueCode::UndefinedVariable,
+            IssueCode::NonExistentConstant,
+            IssueCode::UnknownConstantSelectorType,
+            IssueCode::MixedAssignment,
         ]
     }
 
@@ -123,9 +123,9 @@ mod tests {
             $const = MyClass::{$unknownConstName};
         "#},
         issues = [
-            Code::UNDEFINED_VARIABLE,
-            Code::INVALID_CONSTANT_SELECTOR,
-            Code::MIXED_ASSIGNMENT,
+            IssueCode::UndefinedVariable,
+            IssueCode::InvalidConstantSelector,
+            IssueCode::MixedAssignment,
         ]
     }
 
@@ -142,8 +142,8 @@ mod tests {
             $const = MyClass::{$constName};
         "#},
         issues = [
-            Code::STRING_CONSTANT_SELECTOR,
-            Code::MIXED_ASSIGNMENT,
+            IssueCode::StringConstantSelector,
+            IssueCode::MixedAssignment,
         ]
     }
 
@@ -157,8 +157,8 @@ mod tests {
             $_ = MyClass::{$constName};
         "#},
         issues = [
-            Code::INVALID_CONSTANT_SELECTOR,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::InvalidConstantSelector,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -170,8 +170,8 @@ mod tests {
             $_ = $className::class;
         "#},
         issues = [
-            Code::INVALID_CLASS_CONSTANT_ON_STRING,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::InvalidClassConstantOnString,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 
@@ -187,8 +187,8 @@ mod tests {
             $const = $obj::SOME_CONST;
         "#},
         issues = [
-            Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
-            Code::MIXED_ASSIGNMENT,
+            IssueCode::AmbiguousClassLikeConstantAccess,
+            IssueCode::MixedAssignment,
         ]
     }
 
@@ -202,7 +202,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::AMBIGUOUS_CLASS_LIKE_CONSTANT_ACCESS,
+            IssueCode::AmbiguousClassLikeConstantAccess,
         ]
     }
 
@@ -214,8 +214,8 @@ mod tests {
             $_ = Suit::Diamonds; // Accessing 'Diamonds' like a const/case
         "#},
         issues = [
-            Code::NON_EXISTENT_CLASS_CONSTANT,
-            Code::IMPOSSIBLE_ASSIGNMENT,
+            IssueCode::NonExistentClassConstant,
+            IssueCode::ImpossibleAssignment,
         ]
     }
 

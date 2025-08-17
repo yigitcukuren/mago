@@ -228,7 +228,7 @@ fn analyze_method_call<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -288,7 +288,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLE_METHOD_ACCESS_ON_NULL
+            IssueCode::PossibleMethodAccessOnNull
         ]
     }
 
@@ -311,8 +311,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::MIXED_ASSIGNMENT,
-            Code::MIXED_METHOD_ACCESS
+            IssueCode::MixedAssignment,
+            IssueCode::MixedMethodAccess
         ]
     }
 
@@ -329,8 +329,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::UNDEFINED_VARIABLE,
-            Code::MIXED_METHOD_ACCESS
+            IssueCode::UndefinedVariable,
+            IssueCode::MixedMethodAccess
         ]
     }
 
@@ -348,7 +348,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_METHOD_ACCESS
+            IssueCode::InvalidMethodAccess
         ]
     }
 
@@ -398,7 +398,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::AMBIGUOUS_OBJECT_METHOD_ACCESS
+            IssueCode::AmbiguousObjectMethodAccess
         ]
     }
 
@@ -736,7 +736,7 @@ mod tests {
             $a->toString(); // violation of @where constraint
         "#},
         issues = [
-            Code::WHERE_CONSTRAINT_VIOLATION
+            IssueCode::WhereConstraintViolation
         ]
     }
 }

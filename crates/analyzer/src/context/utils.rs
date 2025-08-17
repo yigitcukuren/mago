@@ -4,7 +4,7 @@ use mago_codex::ttype::comparator::union_comparator;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 
@@ -59,7 +59,7 @@ pub(crate) fn inherit_branch_context_properties<'a>(
             let outer_constraint_type_str = outer_constraint_type.get_id(Some(context.interner));
 
             context.collector.report_with_code(
-                Code::CONFLICTING_REFERENCE_CONSTRAINT,
+                IssueCode::ConflictingReferenceConstraint,
                 Issue::error(format!(
                     "Conflicting pass-by-reference constraints for variable `{variable}`.",
                 ))

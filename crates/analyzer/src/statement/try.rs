@@ -23,7 +23,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
@@ -395,7 +395,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
 
                 if let Some(&first_span) = caught.get(&id) {
                     context.collector.report_with_code(
-                        Code::DUPLICATE_CAUGHT_TYPE,
+                        IssueCode::DuplicateCaughtType,
                         Issue::error(format!(
                             "Type `{}` is caught multiple times in the same `catch` clause.",
                             context.interner.lookup(&id)
@@ -420,7 +420,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
             }
             _ => {
                 context.collector.report_with_code(
-                    Code::INVALID_CATCH_TYPE,
+                    IssueCode::InvalidCatchType,
                     Issue::error("Invalid type used in `catch` declaration. Only class or interface names are allowed.")
                     .with_annotation(
                         Annotation::primary(hint.span())
@@ -452,7 +452,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
             let caught_type_str = context.interner.lookup(&caught_type);
 
             context.collector.report_with_code(
-                Code::NON_EXISTENT_CATCH_TYPE,
+                IssueCode::NonExistentCatchType,
                 Issue::error(format!("Attempting to catch an undefined class or interface: `{caught_type_str}`."))
                 .with_annotation(
                     Annotation::primary(caught_span)
@@ -474,7 +474,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
             let kind_str = if class_like_metadata.kind.is_enum() { "an enum" } else { "a trait" };
 
             context.collector.report_with_code(
-                Code::INVALID_CATCH_TYPE_NOT_CLASS_OR_INTERFACE,
+                IssueCode::InvalidCatchTypeNotClassOrInterface,
                 Issue::error(format!(
                     "Only classes or interfaces can be caught, but `{caught_type_str}` is {kind_str}.",
                 ))
@@ -497,7 +497,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
 
         if !is_throwable {
             context.collector.report_with_code(
-                Code::CATCH_TYPE_NOT_THROWABLE,
+                IssueCode::CatchTypeNotThrowable,
                 Issue::error(format!(
                     "The type `{caught_type_str}` caught in a catch block must implement the `Throwable` interface.",
                 ))
@@ -521,7 +521,7 @@ fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringI
 
     if caught_classes.is_empty() {
         context.collector.report_with_code(
-            Code::NO_VALID_CATCH_TYPE_FOUND,
+            IssueCode::NoValidCatchTypeFound,
             Issue::error(
                 "None of the types specified in the `catch` declaration are valid catchable exceptions."
             )

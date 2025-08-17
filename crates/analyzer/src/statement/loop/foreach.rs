@@ -7,7 +7,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::BreakContext;
@@ -80,7 +80,7 @@ impl Analyzable for Foreach {
 
             if !assigned {
                 context.collector.report_with_code(
-                    Code::INVALID_FOREACH_KEY,
+                    IssueCode::InvalidForeachKey,
                     Issue::error("The key expression in `foreach` is not assignable.")
                         .with_annotation(
                             Annotation::primary(key_expression.span())
@@ -124,7 +124,7 @@ impl Analyzable for Foreach {
 
         if !assigned {
             context.collector.report_with_code(
-                Code::INVALID_FOREACH_VALUE,
+                IssueCode::InvalidForeachValue,
                 Issue::error("The value expression in `foreach` is not assignable.")
                     .with_annotation(
                         Annotation::primary(value_expression.span())

@@ -144,7 +144,7 @@ fn analyze_property_access<'a>(
 mod tests {
     use indoc::indoc;
 
-    use crate::code::Code;
+    use crate::code::IssueCode;
     use crate::test_analysis;
 
     test_analysis! {
@@ -216,7 +216,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::REDUNDANT_NULLSAFE_OPERATOR,
+            IssueCode::RedundantNullsafeOperator,
         ]
     }
 
@@ -236,7 +236,7 @@ mod tests {
                 }
             "#},
         issues = [
-            Code::REDUNDANT_NULLSAFE_OPERATOR, // redundant inside `??` operator
+            IssueCode::RedundantNullsafeOperator, // redundant inside `??` operator
         ]
     }
 
@@ -256,7 +256,7 @@ mod tests {
                 }
             "#},
         issues = [
-            Code::REDUNDANT_NULLSAFE_OPERATOR, // redundant inside `isset`
+            IssueCode::RedundantNullsafeOperator, // redundant inside `isset`
         ]
     }
 
@@ -274,7 +274,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLY_NULL_PROPERTY_ACCESS,
+            IssueCode::PossiblyNullPropertyAccess,
         ]
     }
 
@@ -338,8 +338,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::MIXED_PROPERTY_ACCESS,
-            Code::MIXED_ARGUMENT,
+            IssueCode::MixedPropertyAccess,
+            IssueCode::MixedArgument,
         ]
     }
 
@@ -353,7 +353,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_PROPERTY_ACCESS,
+            IssueCode::InvalidPropertyAccess,
         ]
     }
 
@@ -373,8 +373,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
-            Code::MIXED_ARGUMENT,
+            IssueCode::NonExistentProperty,
+            IssueCode::MixedArgument,
         ]
     }
 
@@ -416,7 +416,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NULL_PROPERTY_ACCESS,
+            IssueCode::NullPropertyAccess,
         ]
     }
 
@@ -433,9 +433,9 @@ mod tests {
              }
         "#},
         issues = [
-            Code::UNDEFINED_VARIABLE,
-            Code::INVALID_MEMBER_SELECTOR,
-            Code::MIXED_RETURN_STATEMENT,
+            IssueCode::UndefinedVariable,
+            IssueCode::InvalidMemberSelector,
+            IssueCode::MixedReturnStatement,
         ]
     }
 
@@ -467,8 +467,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::INVALID_MEMBER_SELECTOR,
-            Code::INVALID_RETURN_STATEMENT,
+            IssueCode::InvalidMemberSelector,
+            IssueCode::InvalidReturnStatement,
         ]
     }
 
@@ -481,7 +481,7 @@ mod tests {
                 return $obj->some_property;
             }
         "#},
-        issues = [Code::AMBIGUOUS_OBJECT_PROPERTY_ACCESS]
+        issues = [IssueCode::AmbiguousObjectPropertyAccess]
     }
 
     test_analysis! {
@@ -508,8 +508,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
-            Code::MIXED_RETURN_STATEMENT,
+            IssueCode::NonExistentProperty,
+            IssueCode::MixedReturnStatement,
         ]
     }
 
@@ -525,7 +525,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -541,7 +541,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_PROPERTY,
+            IssueCode::NonExistentProperty,
         ]
     }
 
@@ -558,7 +558,7 @@ mod tests {
             }
         "#},
         issues = [
-            Code::POSSIBLY_NULL_PROPERTY_ACCESS
+            IssueCode::PossiblyNullPropertyAccess
         ]
     }
 
@@ -587,7 +587,7 @@ mod tests {
             echo $result->property;
         "#},
         issues = [
-            Code::NULL_PROPERTY_ACCESS,
+            IssueCode::NullPropertyAccess,
         ]
     }
 
@@ -645,8 +645,8 @@ mod tests {
             }
         "#},
         issues = [
-            Code::NON_EXISTENT_CLASS_LIKE,
-            Code::UNUSED_STATEMENT,
+            IssueCode::NonExistentClassLike,
+            IssueCode::UnusedStatement,
         ]
     }
 

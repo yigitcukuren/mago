@@ -35,7 +35,7 @@ use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::Code;
+use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::block::ReferenceConstraint;
@@ -564,7 +564,7 @@ fn check_thrown_types<'a>(
                 thrown_type_name
             ));
 
-        context.collector.report_with_code(Code::UNHANDLED_THROWN_TYPE, issue);
+        context.collector.report_with_code(IssueCode::UnhandledThrownType, issue);
     }
 
     Ok(())
