@@ -187,10 +187,10 @@ impl<'a> FormatterState<'a> {
         }
 
         if self.file.contents[start_index_usize..].starts_with("//")
-            || (self.file.contents[start_index_usize..].starts_with("#")
-                && !self.file.contents[start_index_usize + 1..].starts_with("["))
+            || (self.file.contents[start_index_usize..].starts_with('#')
+                && !self.file.contents[start_index_usize + 1..].starts_with('['))
         {
-            return self.skip_everything_but_new_line(Some(start_index), false);
+            return self.skip_to_line_end_or_closing_tag(Some(start_index));
         }
 
         if self.file.contents[start_index_usize..].starts_with("/*") {
@@ -242,11 +242,6 @@ impl<'a> FormatterState<'a> {
     }
 
     #[inline]
-    fn skip_everything_but_new_line(&self, start_index: Option<u32>, backwards: bool) -> Option<u32> {
-        self.skip(start_index, backwards, |c| !is_line_terminator(c))
-    }
-
-    #[inline]
     fn skip<F>(&self, start_index: Option<u32>, backwards: bool, f: F) -> Option<u32>
     where
         F: Fn(u8) -> bool,
@@ -270,6 +265,32 @@ impl<'a> FormatterState<'a> {
 
                 index += 1;
             }
+        }
+
+        None
+    }
+
+    /// Skips forward from a starting index until a newline or a `?>` tag is found.
+    #[inline]
+    fn skip_to_line_end_or_closing_tag(&self, start_index: Option<u32>) -> Option<u32> {
+        let mut index = start_index? as usize;
+        let source_bytes = self.file.contents.as_bytes();
+        let text_len = source_bytes.len();
+
+        while index < text_len {
+            let byte = source_bytes[index];
+
+            // Stop if we find a newline character.
+            if is_line_terminator(byte) {
+                return Some(index as u32);
+            }
+
+            // Stop if we find a `?>` sequence.
+            if byte == b'?' && index + 1 < text_len && source_bytes[index + 1] == b'>' {
+                return Some(index as u32);
+            }
+
+            index += 1;
         }
 
         None

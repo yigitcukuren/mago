@@ -108,9 +108,9 @@ impl<'a> Printer<'a> {
 
     fn handle_space(&mut self, s: Space) {
         if s.soft {
-            // If the previous character is a space or a tab, we don't need to add another one.
+            // If the previous character is a line terminator, space, or a tab, we don't need to add another one.
             if let Some(&last) = self.out.last()
-                && is_space(last)
+                && is_line_terminator_or_space(last)
             {
                 return;
             }
