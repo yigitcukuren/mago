@@ -31,7 +31,7 @@ paths = [{paths}]
 includes = [{includes}]
 excludes = [{excludes}]
 
-[format]
+[formatter]
 print_width = 120
 tab_width = 4
 use_tabs = false
@@ -39,6 +39,73 @@ use_tabs = false
 [linter]
 default_plugins = true
 plugins = [{plugins}]
+
+[analyser]
+# A list of file patterns to exclude from analysis.
+# excludes = ["src/Generated/"]
+
+# A list of specific issue codes to ignore across the entire project. This is a
+# powerful way to establish a baseline of ignored issues without cluttering
+# your code with `@mago-expect` pragmas.
+# ignore = ["mixed-argument", "unhandled-thrown-type"]
+
+# -- Issue Categories --
+#
+# All categories are enabled by default. Set any to `false` to suppress all
+# issues belonging to that group, which can be useful for gradual adoption.
+#
+# ambiguity_issues = true
+# argument_issues = true
+# array_issues = true
+# deprecation_issues = true
+# existence_issues = true
+# falsable_issues = true
+# generator_issues = true
+# impossibility_issues = true
+# iterator_issues = true
+# method_issues = true
+# mixed_issues = true
+# nullable_issues = true
+# operand_issues = true
+# property_issues = true
+# redundancy_issues = true
+# reference_issues = true
+# return_issues = true
+# template_issues = true
+# unreachable_issues = true
+
+# -- Feature Flags --
+#
+# Enable or disable specific analysis capabilities.
+
+# Find and report unused definitions (e.g., private methods that are never called).
+# find_unused_definitions = false
+
+# Find and report expressions whose results are not used (e.g., `$a + $b;`).
+# find_unused_expressions = false
+
+# Analyze code that appears to be unreachable.
+# analyze_dead_code = false
+
+# Enable checking for unhandled thrown exceptions. This will report any exception
+# that is not caught or documented with `@throws`.
+# check_throws = false
+
+# Allow accessing array keys that may not be defined without reporting an issue.
+# allow_possibly_undefined_array_keys = true
+
+# Allow the use of `include`, `require`, and related constructs.
+# allow_include = true
+
+# Allow the use of the `eval()` construct.
+# allow_eval = true
+
+# Allow the use of the `empty()` construct.
+# allow_empty = true
+
+# Track the literal values of class properties when they are assigned.
+# This improves type inference and performance, but *may* increase memory usage.
+# memoize_properties = true
 "#;
 
 const PSL_PLUGIN: &str = "psl";

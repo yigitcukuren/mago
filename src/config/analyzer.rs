@@ -13,7 +13,7 @@ use crate::error::Error;
 /// Configuration options for the static analyzer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct AnalyzeConfiguration {
+pub struct AnalyzerConfiguration {
     /// A list of patterns to exclude from analysis.
     pub excludes: Vec<String>,
 
@@ -105,7 +105,7 @@ pub struct AnalyzeConfiguration {
     pub check_throws: bool,
 }
 
-impl AnalyzeConfiguration {
+impl AnalyzerConfiguration {
     pub fn to_setttings(&self, php_version: PHPVersion) -> Settings {
         Settings {
             version: php_version,
@@ -142,7 +142,7 @@ impl AnalyzeConfiguration {
     }
 }
 
-impl ConfigurationEntry for AnalyzeConfiguration {
+impl ConfigurationEntry for AnalyzerConfiguration {
     fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
         let defaults = Self::default();
 
@@ -187,7 +187,7 @@ impl ConfigurationEntry for AnalyzeConfiguration {
     }
 }
 
-impl Default for AnalyzeConfiguration {
+impl Default for AnalyzerConfiguration {
     fn default() -> Self {
         let defaults = Settings::default();
 

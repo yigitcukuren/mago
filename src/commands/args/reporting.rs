@@ -270,7 +270,8 @@ impl ReportingArgs {
                 let mut fixed_content = plan.execute(&file.contents).get_fixed();
 
                 if self.format_after_fix {
-                    let formatter = Formatter::new(interner, configuration.php_version, configuration.format.settings);
+                    let formatter =
+                        Formatter::new(interner, configuration.php_version, configuration.formatter.settings);
                     if let Ok(content) = formatter.format_code(file.name.clone(), Cow::Owned(fixed_content.clone())) {
                         fixed_content = content;
                     }

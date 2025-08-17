@@ -1,7 +1,7 @@
 use std::env::home_dir;
 use std::path::PathBuf;
 
-use analyzer::AnalyzeConfiguration;
+use analyzer::AnalyzerConfiguration;
 use config::Config;
 use config::ConfigBuilder;
 use config::Environment;
@@ -46,16 +46,18 @@ pub struct Configuration {
 
     /// Configuration options for the linter.
     #[serde(default)]
+    #[serde(alias = "lint")]
     pub linter: LinterConfiguration,
 
     /// Configuration options for the formatter.
     #[serde(default)]
-    pub format: FormatterConfiguration,
+    #[serde(alias = "format")]
+    pub formatter: FormatterConfiguration,
 
     /// Configuration options for the analyzer.
     #[serde(default)]
-    #[serde(alias = "analysis")]
-    pub analyze: AnalyzeConfiguration,
+    #[serde(alias = "analyser", alias = "analyze", alias = "analyse")]
+    pub analyzer: AnalyzerConfiguration,
 
     /// The log filter.
     ///
@@ -171,8 +173,8 @@ impl Configuration {
             allow_unsupported_php_version: false,
             source: SourceConfiguration::from_workspace(workspace),
             linter: LinterConfiguration::default(),
-            format: FormatterConfiguration::default(),
-            analyze: AnalyzeConfiguration::default(),
+            formatter: FormatterConfiguration::default(),
+            analyzer: AnalyzerConfiguration::default(),
             log: Value::new(None, ValueKind::Nil),
         }
     }
@@ -198,8 +200,8 @@ impl ConfigurationEntry for Configuration {
 
         builder = self.source.configure(builder)?;
         builder = self.linter.configure(builder)?;
-        builder = self.format.configure(builder)?;
-        builder = self.analyze.configure(builder)?;
+        builder = self.formatter.configure(builder)?;
+        builder = self.analyzer.configure(builder)?;
 
         Ok(builder)
     }
@@ -248,8 +250,8 @@ impl ConfigurationEntry for Configuration {
 
         self.source.normalize()?;
         self.linter.normalize()?;
-        self.format.normalize()?;
-        self.analyze.normalize()?;
+        self.formatter.normalize()?;
+        self.analyzer.normalize()?;
 
         Ok(())
     }

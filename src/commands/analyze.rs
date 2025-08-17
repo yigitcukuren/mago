@@ -65,11 +65,11 @@ pub fn execute(command: AnalyzeCommand, configuration: Configuration) -> Result<
         return Ok(ExitCode::SUCCESS);
     }
 
-    let analyzer_settings = configuration.analyze.to_setttings(configuration.php_version);
+    let analyzer_settings = configuration.analyzer.to_setttings(configuration.php_version);
     let analysis_results = run_analysis_pipeline(&interner, database.read_only(), analyzer_settings)?;
 
     let mut issues = analysis_results.issues;
-    issues.filter_out_ignored(&configuration.analyze.ignore);
+    issues.filter_out_ignored(&configuration.analyzer.ignore);
 
     command.reporting.process_issues(issues, configuration, interner, database)
 }

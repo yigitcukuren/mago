@@ -56,11 +56,11 @@ pub struct FormatCommand {
 pub fn execute(command: FormatCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
     let interner = ThreadedInterner::new();
 
-    configuration.source.excludes.extend(std::mem::take(&mut configuration.format.excludes));
+    configuration.source.excludes.extend(std::mem::take(&mut configuration.formatter.excludes));
 
     if command.stdin_input {
         let file = create_file_from_stdin()?;
-        let formatter = Formatter::new(&interner, configuration.php_version, configuration.format.settings);
+        let formatter = Formatter::new(&interner, configuration.php_version, configuration.formatter.settings);
         return Ok(match formatter.format_file(&file) {
             Ok(formatted) => {
                 print!("{formatted}");
@@ -83,7 +83,7 @@ pub fn execute(command: FormatCommand, mut configuration: Configuration) -> Resu
     let change_log = ChangeLog::new();
     let shared_context = FormatContext {
         php_version: configuration.php_version,
-        settings: configuration.format.settings,
+        settings: configuration.formatter.settings,
         dry_run: command.dry_run,
         change_log: change_log.clone(),
     };
