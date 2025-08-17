@@ -589,7 +589,7 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_redundancy_issue_codes() -> [Self; 10] {
+    pub const fn get_redundancy_issue_codes() -> [Self; 11] {
         [
             Self::RedundantCast,
             Self::RedundantComparison,
@@ -599,12 +599,13 @@ impl IssueCode {
             Self::RedundantLogicalOperation,
             Self::RedundantNonnullEntryCheck,
             Self::RedundantNonnullTypeComparison,
+            Self::RedundantNullCoalesce,
             Self::RedundantNullsafeOperator,
             Self::RedundantTypeComparison,
         ]
     }
 
-    pub const fn get_redundancy_issue_code_values() -> [&'static str; 10] {
+    pub const fn get_redundancy_issue_code_values() -> [&'static str; 11] {
         [
             "redundant-cast",
             "redundant-comparison",
@@ -614,6 +615,7 @@ impl IssueCode {
             "redundant-logical-operation",
             "redundant-nonnull-entry-check",
             "redundant-nonnull-type-comparison",
+            "redundant-null-coalesce",
             "redundant-nullsafe-operator",
             "redundant-type-comparison",
         ]
@@ -679,7 +681,7 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_impossibility_issue_codes() -> [Self; 7] {
+    pub const fn get_impossibility_issue_codes() -> [Self; 8] {
         [
             Self::ImpossibleArrayAccess,
             Self::ImpossibleArrayAssignment,
@@ -687,11 +689,12 @@ impl IssueCode {
             Self::ImpossibleCondition,
             Self::ImpossibleKeyCheck,
             Self::ImpossibleNonnullEntryCheck,
+            Self::ImpossibleNullTypeComparison,
             Self::ImpossibleTypeComparison,
         ]
     }
 
-    pub const fn get_impossibility_issue_code_values() -> [&'static str; 7] {
+    pub const fn get_impossibility_issue_code_values() -> [&'static str; 8] {
         [
             "impossible-array-access",
             "impossible-array-assignment",
@@ -699,6 +702,7 @@ impl IssueCode {
             "impossible-condition",
             "impossible-key-check",
             "impossible-nonnull-entry-check",
+            "impossible-null-type-comparison",
             "impossible-type-comparison",
         ]
     }
@@ -718,6 +722,122 @@ impl IssueCode {
             "ambiguous-instantiation-target",
             "ambiguous-object-method-access",
             "ambiguous-object-property-access",
+        ]
+    }
+
+    pub const fn get_existence_issue_codes() -> [Self; 9] {
+        [
+            Self::NonExistentAttributeClass,
+            Self::NonExistentCatchType,
+            Self::NonExistentClass,
+            Self::NonExistentClassConstant,
+            Self::NonExistentClassLike,
+            Self::NonExistentConstant,
+            Self::NonExistentFunction,
+            Self::NonExistentMethod,
+            Self::NonExistentProperty,
+        ]
+    }
+
+    pub const fn get_existence_issue_code_values() -> [&'static str; 9] {
+        [
+            "non-existent-attribute-class",
+            "non-existent-catch-type",
+            "non-existent-class",
+            "non-existent-class-constant",
+            "non-existent-class-like",
+            "non-existent-constant",
+            "non-existent-function",
+            "non-existent-method",
+            "non-existent-property",
+        ]
+    }
+
+    pub const fn get_template_issue_codes() -> [Self; 8] {
+        [
+            Self::ConflictingTemplateEqualityBounds,
+            Self::ExcessTemplateParameter,
+            Self::IncompatibleTemplateLowerBound,
+            Self::InconsistentTemplate,
+            Self::InvalidTemplateParameter,
+            Self::MissingTemplateParameter,
+            Self::TemplateConstraintViolation,
+            Self::WhereConstraintViolation,
+        ]
+    }
+
+    pub const fn get_template_issue_code_values() -> [&'static str; 8] {
+        [
+            "conflicting-template-equality-bounds",
+            "excess-template-parameter",
+            "incompatible-template-lower-bound",
+            "inconsistent-template",
+            "invalid-template-parameter",
+            "missing-template-parameter",
+            "template-constraint-violation",
+            "where-constraint-violation",
+        ]
+    }
+
+    pub const fn get_argument_issue_codes() -> [Self; 14] {
+        [
+            Self::DuplicateNamedArgument,
+            Self::FalseArgument,
+            Self::InvalidArgument,
+            Self::InvalidNamedArgument,
+            Self::LessSpecificArgument,
+            Self::LessSpecificNestedArgumentType,
+            Self::MixedArgument,
+            Self::NamedArgumentAfterPositional,
+            Self::NamedArgumentNotAllowed,
+            Self::NamedArgumentOverridesPositional,
+            Self::NullArgument,
+            Self::PossiblyFalseArgument,
+            Self::PossiblyInvalidArgument,
+            Self::PossiblyNullArgument,
+        ]
+    }
+
+    pub const fn get_argument_issue_code_values() -> [&'static str; 14] {
+        [
+            "duplicate-named-argument",
+            "false-argument",
+            "invalid-argument",
+            "invalid-named-argument",
+            "less-specific-argument",
+            "less-specific-nested-argument-type",
+            "mixed-argument",
+            "named-argument-after-positional",
+            "named-argument-not-allowed",
+            "named-argument-overrides-positional",
+            "null-argument",
+            "possibly-false-argument",
+            "possibly-invalid-argument",
+            "possibly-null-argument",
+        ]
+    }
+
+    pub const fn get_operand_issue_codes() -> [Self; 7] {
+        [
+            Self::FalseOperand,
+            Self::InvalidOperand,
+            Self::MixedOperand,
+            Self::NullOperand,
+            Self::PossiblyFalseOperand,
+            Self::PossiblyInvalidOperand,
+            Self::PossiblyNullOperand,
+        ]
+    }
+
+    pub const fn get_operand_issue_code_values() -> [&'static str; 7] {
+        [
+            "false-operand",
+            "invalid-operand",
+            "mixed-operand",
+            "null-operand",
+            "possibly-false-operand",
+            "possibly-invalid-operand",
+            "possibly-null-operand",
         ]
     }
 }

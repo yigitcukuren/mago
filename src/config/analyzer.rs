@@ -44,6 +44,18 @@ pub struct AnalyzeConfiguration {
     /// Report all issues related to ambiguous code constructs.
     pub ambiguity_issues: bool,
 
+    /// Report all issues related to the existence of symbols (e.g., classes, functions, constants).
+    pub existence_issues: bool,
+
+    /// Report all issues related to generic template types and their usage.
+    pub template_issues: bool,
+
+    /// Report all issues related to function arguments.
+    pub argument_issues: bool,
+
+    /// Report all issues related to operands in expressions.
+    pub operand_issues: bool,
+
     /// Whether to find unused expressions.
     pub find_unused_expressions: bool,
 
@@ -84,6 +96,11 @@ impl AnalyzeConfiguration {
             unreachable_issues: self.unreachable_issues,
             deprecation_issues: self.deprecation_issues,
             impossibility_issues: self.impossibility_issues,
+            ambiguity_issues: self.ambiguity_issues,
+            existence_issues: self.existence_issues,
+            template_issues: self.template_issues,
+            argument_issues: self.argument_issues,
+            operand_issues: self.operand_issues,
             analyze_dead_code: self.analyze_dead_code,
             find_unused_definitions: self.find_unused_definitions,
             find_unused_expressions: self.find_unused_expressions,
@@ -93,7 +110,7 @@ impl AnalyzeConfiguration {
             allow_empty: self.allow_empty,
             allow_possibly_undefined_array_keys: self.allow_possibly_undefined_array_keys,
             check_throws: self.check_throws,
-            ..Default::default()
+            diff: false,
         }
     }
 }
@@ -116,6 +133,10 @@ impl ConfigurationEntry for AnalyzeConfiguration {
             .set_default("analyze.deprecation_issues", defaults.deprecation_issues)?
             .set_default("analyze.impossibility_issues", defaults.impossibility_issues)?
             .set_default("analyze.ambiguity_issues", defaults.ambiguity_issues)?
+            .set_default("analyze.existence_issues", defaults.existence_issues)?
+            .set_default("analyze.template_issues", defaults.template_issues)?
+            .set_default("analyze.argument_issues", defaults.argument_issues)?
+            .set_default("analyze.operand_issues", defaults.operand_issues)?
             .set_default("analyze.find_unused_definitions", defaults.find_unused_definitions)?
             .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
             .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
@@ -144,6 +165,10 @@ impl Default for AnalyzeConfiguration {
             deprecation_issues: defaults.deprecation_issues,
             impossibility_issues: defaults.impossibility_issues,
             ambiguity_issues: defaults.ambiguity_issues,
+            existence_issues: defaults.existence_issues,
+            template_issues: defaults.template_issues,
+            argument_issues: defaults.argument_issues,
+            operand_issues: defaults.operand_issues,
             find_unused_expressions: defaults.find_unused_expressions,
             find_unused_definitions: defaults.find_unused_definitions,
             analyze_dead_code: defaults.analyze_dead_code,

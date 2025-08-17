@@ -36,6 +36,18 @@ pub struct Settings {
     /// Report all issues related to ambiguous code constructs. Defaults to `true`.
     pub ambiguity_issues: bool,
 
+    /// Report all issues related to the existence of symbols (e.g., classes, functions, constants). Defaults to `true`.
+    pub existence_issues: bool,
+
+    /// Report all issues related to generic template types and their usage. Defaults to `true`.
+    pub template_issues: bool,
+
+    /// Report all issues related to function arguments. Defaults to `true`.
+    pub argument_issues: bool,
+
+    /// Report all issues related to operands in expressions. Defaults to `true`.
+    pub operand_issues: bool,
+
     /// Find and report expressions whose results are not used (e.g., `$a + $b;`). Defaults to `false`.
     pub find_unused_expressions: bool,
 
@@ -94,6 +106,10 @@ impl Settings {
             unreachable_issues: true,
             deprecation_issues: true,
             impossibility_issues: true,
+            existence_issues: true,
+            template_issues: true,
+            argument_issues: true,
+            operand_issues: true,
             ambiguity_issues: true,
             find_unused_expressions: false,
             find_unused_definitions: false,

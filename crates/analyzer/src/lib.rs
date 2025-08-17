@@ -107,6 +107,22 @@ impl<'a> Analyzer<'a> {
             collector.add_disabled_codes(IssueCode::get_ambiguity_issue_code_values());
         }
 
+        if !self.settings.existence_issues {
+            collector.add_disabled_codes(IssueCode::get_existence_issue_code_values());
+        }
+
+        if !self.settings.template_issues {
+            collector.add_disabled_codes(IssueCode::get_template_issue_code_values());
+        }
+
+        if !self.settings.argument_issues {
+            collector.add_disabled_codes(IssueCode::get_argument_issue_code_values());
+        }
+
+        if !self.settings.operand_issues {
+            collector.add_disabled_codes(IssueCode::get_operand_issue_code_values());
+        }
+
         let mut context = {
             Context::new(
                 self.interner,
