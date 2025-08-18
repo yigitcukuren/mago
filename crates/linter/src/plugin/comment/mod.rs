@@ -3,7 +3,6 @@ use crate::plugin::comment::rules::docblock_syntax::DocblockSyntaxRule;
 use crate::plugin::comment::rules::no_empty_comments::NoEmptyCommentsRule;
 use crate::plugin::comment::rules::no_shell_style::NoShellStyleRule;
 use crate::plugin::comment::rules::no_trailing_whitespace::NoTrailingWhitespaceRule;
-use crate::plugin::comment::rules::no_uncategorized_pragma::NoUncategorizedPragmaRule;
 use crate::plugin::comment::rules::no_untagged_fixme::NoUntaggedFixmeRule;
 use crate::plugin::comment::rules::no_untagged_todo::NoUntaggedTodoRule;
 
@@ -32,7 +31,6 @@ impl Plugin for CommentPlugin {
             Box::new(NoShellStyleRule),
             Box::new(NoTrailingWhitespaceRule),
             Box::new(DocblockSyntaxRule),
-            Box::new(NoUncategorizedPragmaRule),
         ]
     }
 }

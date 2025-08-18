@@ -32,7 +32,7 @@ pub struct Pragma<'a> {
     /// Indicates whether the comment appears on its own line (i.e., only whitespace precedes it).
     pub own_line: bool,
     /// The category of the pragma, e.g., "lint" or "analysis".
-    pub category: Option<&'a str>,
+    pub category: &'a str,
     /// The code specification.
     pub code: &'a str,
     /// The span of the code within the pragma.
@@ -123,28 +123,25 @@ fn parse_pragmas_in_trivia<'a>(
         let content_with_leading_space = &trimmed[prefix.len()..];
         let content = content_with_leading_space.trim_start();
 
-        if content.is_empty() {
-            continue;
-        }
-
-        let (category, rest) = if let Some((cat, rest)) = content.split_once(':') {
-            if cat.contains(char::is_whitespace) {
-                continue; // Invalid category format.
-            }
-            (Some(cat), rest.trim_start())
-        } else {
-            (None, content)
+        let Some((category, rest)) = content.split_once(':') else {
+            continue; // Malformed pragma, no category or code.
         };
 
-        // Filter by category: keep if pragma's category matches the filter, or if the pragma has no category.
-        if let Some(category_filter) = category_filter
-            && category.is_some_and(|c| c != category_filter)
-        {
-            continue;
+        if category.contains(char::is_whitespace) {
+            continue; // Invalid category format.
         }
 
+        if category_filter.is_some_and(|category_filter| category_filter != category) {
+            continue; // Skip if category does not match the filter.
+        }
+
+        let rest = rest.trim_start();
+
         let mut parts = rest.splitn(2, char::is_whitespace);
-        let Some(code) = parts.next() else { continue };
+        let Some(code) = parts.next() else {
+            continue; // Malformed pragma, no code.
+        };
+
         let description = parts.next().unwrap_or("").trim();
 
         // Calculate the precise span for the code part of the pragma.
