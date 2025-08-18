@@ -28,8 +28,8 @@ pub enum ReportingTarget {
 
 /// The format to use when writing the report.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display, VariantNames)]
-#[serde(rename_all = "lowercase")]
-#[strum(serialize_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum ReportingFormat {
     #[default]
     Rich,
@@ -40,6 +40,7 @@ pub enum ReportingFormat {
     Gitlab,
     Json,
     Count,
+    CodeCount,
     Checkstyle,
     Emacs,
 }
@@ -101,6 +102,7 @@ impl FromStr for ReportingFormat {
             "gitlab" => Ok(Self::Gitlab),
             "json" => Ok(Self::Json),
             "count" => Ok(Self::Count),
+            "codecode" | "code-count" => Ok(Self::CodeCount),
             "checkstyle" => Ok(Self::Checkstyle),
             "emacs" => Ok(Self::Emacs),
             _ => Err(ReportingError::InvalidFormat(s.to_string())),

@@ -11,6 +11,7 @@ mod utils;
 
 pub mod ariadne;
 pub mod checkstyle;
+pub mod code_count;
 pub mod codespan;
 pub mod count;
 pub mod emacs;
@@ -57,6 +58,7 @@ impl Emitter for ReportingFormat {
             ReportingFormat::Gitlab => gitlab::gitlab_format.emit(writer, database, issues),
             ReportingFormat::Json => json::json_format.emit(writer, database, issues),
             ReportingFormat::Count => count::count_format.emit(writer, database, issues),
+            ReportingFormat::CodeCount => code_count::code_count_format.emit(writer, database, issues),
             ReportingFormat::Checkstyle => checkstyle::checkstyle_format.emit(writer, database, issues),
             ReportingFormat::Emacs => emacs::emacs_format.emit(writer, database, issues),
         }
