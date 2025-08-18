@@ -30,6 +30,27 @@ pub mod feature;
 #[repr(transparent)]
 pub struct PHPVersion(u32);
 
+/// Represents a range of PHP versions, defined by a minimum and maximum version.
+///
+/// This is useful for specifying compatibility ranges, such as "supports PHP 7.0 to 7.4".
+///
+/// # Examples
+///
+/// ```
+/// use mago_php_version::PHPVersion;
+/// use mago_php_version::PHPVersionRange;
+///
+/// let range = PHPVersionRange::between(PHPVersion::new(7, 0, 0), PHPVersion::new(7, 4, 99));
+///
+/// assert!(range.includes(PHPVersion::new(7, 2, 0))); // true
+/// assert!(!range.includes(PHPVersion::new(8, 0, 0))); // false
+/// ```
+#[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, PartialOrd, Deserialize, Serialize, Default)]
+pub struct PHPVersionRange {
+    pub min: Option<PHPVersion>,
+    pub max: Option<PHPVersion>,
+}
+
 impl PHPVersion {
     /// The PHP 7.0 version.
     pub const PHP70: PHPVersion = PHPVersion::new(7, 0, 0);
@@ -339,6 +360,58 @@ impl PHPVersion {
     /// ```
     pub const fn to_version_id(&self) -> u32 {
         self.0
+    }
+}
+
+impl PHPVersionRange {
+    /// Represents the range of PHP versions from 7.0.0 to 7.99.99.
+    pub const PHP7: PHPVersionRange = Self::between(PHPVersion::new(7, 0, 0), PHPVersion::new(7, 99, 99));
+
+    /// Represents the range of PHP versions from 8.0.0 to 8.99.99.
+    pub const PHP8: PHPVersionRange = Self::between(PHPVersion::new(8, 0, 0), PHPVersion::new(8, 99, 99));
+
+    /// Creates a new `PHPVersionRange` that includes all versions.
+    pub const fn any() -> Self {
+        Self { min: None, max: None }
+    }
+
+    /// Creates a new `PHPVersionRange` that includes all versions up to (and including) the specified version.
+    pub const fn until(version: PHPVersion) -> Self {
+        Self { min: None, max: Some(version) }
+    }
+
+    /// Creates a new `PHPVersionRange` that includes all versions from (and including) the specified version.
+    pub const fn from(version: PHPVersion) -> Self {
+        Self { min: Some(version), max: None }
+    }
+
+    /// Creates a new `PHPVersionRange` that includes all versions between (and including) the specified minimum and maximum versions.
+    pub const fn between(min: PHPVersion, max: PHPVersion) -> Self {
+        Self { min: Some(min), max: Some(max) }
+    }
+
+    /// Checks if this version range supports the given `PHPVersion`.
+    #[inline]
+    pub const fn includes(&self, version: PHPVersion) -> bool {
+        if let Some(min) = self.min
+            && version.0 < min.0
+        {
+            return false;
+        }
+
+        if let Some(max) = self.max
+            && version.0 > max.0
+        {
+            return false;
+        }
+
+        true
+    }
+}
+
+impl std::default::Default for PHPVersion {
+    fn default() -> Self {
+        Self::LATEST
     }
 }
 
