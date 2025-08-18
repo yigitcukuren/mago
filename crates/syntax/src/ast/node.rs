@@ -12,6 +12,7 @@ use crate::ast::ast::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Display)]
 #[serde(tag = "type", content = "value")]
+#[repr(u8)]
 pub enum NodeKind {
     Program,
     ConstantAccess,
