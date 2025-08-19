@@ -1564,6 +1564,7 @@ dependencies = [
 name = "mago-collector"
 version = "1.0.0-alpha.12"
 dependencies = [
+ "ahash",
  "mago-database",
  "mago-fixer",
  "mago-interner",

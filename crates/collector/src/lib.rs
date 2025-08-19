@@ -1,3 +1,4 @@
+use ahash::HashMap;
 use mago_database::file::File;
 use mago_fixer::FixPlan;
 use mago_interner::ThreadedInterner;
@@ -34,6 +35,10 @@ pub struct Collector<'i> {
     recordings: Vec<IssueCollection>,
     /// A list of issue codes that should be silently ignored.
     disabled_codes: Vec<&'static str>,
+    /// A map of legacy issue codes to their new, canonical counterparts.
+    aliases: HashMap<&'static str, &'static str>,
+    /// An optional URL template for generating links to issue documentation.
+    link_template: Option<&'static str>,
 }
 
 impl<'i> Collector<'i> {
@@ -49,11 +54,31 @@ impl<'i> Collector<'i> {
             issues: IssueCollection::new(),
             recordings: Vec::new(),
             disabled_codes: Vec::new(),
+            aliases: HashMap::default(),
+            link_template: None,
         };
 
         attach_pragma_scopes(&mut collector, program);
 
         collector
+    }
+
+    /// Sets the issue code aliases.
+    ///
+    /// This allows old issue codes used in pragmas to be mapped to their new,
+    /// canonical counterparts. The map should be from `alias -> canonical_code`.
+    #[inline]
+    pub fn set_aliases(&mut self, aliases: impl IntoIterator<Item = (&'static str, &'static str)>) {
+        self.aliases = aliases.into_iter().collect();
+    }
+
+    /// Sets the link template for generating documentation URLs for issues.
+    ///
+    /// The template should contain a `{code}` placeholder which will be replaced
+    /// by the issue's code.
+    #[inline]
+    pub fn set_link_template(&mut self, template: &'static str) {
+        self.link_template = Some(template);
     }
 
     /// Overwrites the list of disabled issue codes.
@@ -78,6 +103,12 @@ impl<'i> Collector<'i> {
     #[inline]
     pub fn force_report(&mut self, mut issue: Issue) {
         issue.annotations.retain(|annotation| !annotation.span.file_id.is_zero());
+
+        if let (Some(template), Some(code)) = (self.link_template, issue.code.as_deref()) {
+            let link = template.replace("{code}", code);
+
+            issue = issue.with_link(link);
+        }
 
         if let Some(recording) = self.recordings.last_mut() {
             recording.push(issue);
@@ -314,7 +345,9 @@ impl<'i> Collector<'i> {
         let mut best_match_index = None;
 
         for (i, pragma) in self.pragmas.iter().enumerate() {
-            if pragma.kind != kind || pragma.code != issue_code {
+            let resolved_pragma_code = self.aliases.get(pragma.code).copied().unwrap_or(pragma.code);
+
+            if pragma.kind != kind || resolved_pragma_code != issue_code {
                 continue;
             }
 
