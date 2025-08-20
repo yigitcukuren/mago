@@ -1,4 +1,5 @@
 use std::env::home_dir;
+use std::path::Path;
 use std::path::PathBuf;
 
 use analyzer::AnalyzerConfiguration;
@@ -26,7 +27,7 @@ pub mod linter;
 pub mod source;
 
 /// Configuration options for mago.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     /// The number of threads to use.
@@ -97,7 +98,7 @@ impl Configuration {
     /// A `Result` containing the loaded `Configuration`, or an `Error` if the configuration could not be loaded or validated.
     pub fn load(
         workspace: Option<PathBuf>,
-        file: Option<PathBuf>,
+        file: Option<&Path>,
         php_version: Option<PHPVersion>,
         threads: Option<usize>,
         allow_unsupported_php_version: bool,
@@ -302,7 +303,7 @@ mod tests {
                 ("MAGO_PHP_VERSION", None),
                 ("MAGO_ALLOW_UNSUPPORTED_PHP_VERSION", None),
             ],
-            || Configuration::load(Some(workspace_path), Some(config_file_path), None, None, false).unwrap(),
+            || Configuration::load(Some(workspace_path), Some(&config_file_path), None, None, false).unwrap(),
         );
 
         assert_eq!(config.threads, 3);
@@ -326,7 +327,7 @@ mod tests {
                 ("MAGO_PHP_VERSION", None),
                 ("MAGO_ALLOW_UNSUPPORTED_PHP_VERSION", None),
             ],
-            || Configuration::load(Some(workspace_path), Some(config_file_path), None, None, false).unwrap(),
+            || Configuration::load(Some(workspace_path), Some(&config_file_path), None, None, false).unwrap(),
         );
 
         assert_eq!(config.threads, 1);

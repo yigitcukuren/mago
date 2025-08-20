@@ -52,6 +52,11 @@ impl Identifier {
     }
 
     #[inline]
+    pub const fn is_qualified(&self) -> bool {
+        matches!(self, Identifier::Qualified(_))
+    }
+
+    #[inline]
     pub const fn is_fully_qualified(&self) -> bool {
         matches!(self, Identifier::FullyQualified(_))
     }

@@ -1,5 +1,3 @@
-use mago_codex::metadata::CodebaseMetadata;
-use mago_codex::reference::SymbolReferences;
 use mago_database::ReadDatabase;
 use mago_interner::ThreadedInterner;
 use mago_linter::Linter;
@@ -11,8 +9,6 @@ use mago_semantics::SemanticsChecker;
 use mago_syntax::parser::parse_file;
 
 use crate::error::Error;
-use crate::pipeline::ParallelPipeline;
-use crate::pipeline::Reducer;
 use crate::pipeline::StatelessParallelPipeline;
 use crate::pipeline::StatelessReducer;
 
@@ -24,21 +20,6 @@ const PROGRESS_BAR_THEME: &str = "🧹 Linting";
 /// `IssueCollection`s from parallel tasks into a single, final collection.
 #[derive(Debug)]
 pub struct LintResultReducer;
-
-impl Reducer<IssueCollection, IssueCollection> for LintResultReducer {
-    fn reduce(
-        &self,
-        mut codebase: CodebaseMetadata,
-        _symbol_references: SymbolReferences,
-        results: Vec<IssueCollection>,
-    ) -> Result<IssueCollection, Error> {
-        let mut final_issues = codebase.take_issues(true);
-        for issues in results {
-            final_issues.extend(issues);
-        }
-        Ok(final_issues)
-    }
-}
 
 impl StatelessReducer<IssueCollection, IssueCollection> for LintResultReducer {
     fn reduce(&self, results: Vec<IssueCollection>) -> Result<IssueCollection, Error> {
@@ -67,8 +48,6 @@ pub struct LintContext {
 pub enum LintMode {
     /// Runs only parsing and semantic checks. This is the fastest mode.
     SemanticsOnly,
-    /// Runs semantic checks and codebase compilation, reporting issues from both.
-    Compilation,
     /// Runs all checks: semantics, compilation, and the full linter rule set.
     Full,
 }
@@ -84,7 +63,6 @@ pub fn run_lint_pipeline(
 ) -> Result<IssueCollection, Error> {
     match context.mode {
         LintMode::Full => run_full_pipeline(interner, database, context),
-        LintMode::Compilation => run_compilation_pipeline(interner, database, context),
         LintMode::SemanticsOnly => run_semantics_pipeline(interner, database, context),
     }
 }
@@ -98,8 +76,8 @@ fn run_full_pipeline(
     database: ReadDatabase,
     context: LintContext,
 ) -> Result<IssueCollection, Error> {
-    ParallelPipeline::new(PROGRESS_BAR_THEME, database, interner, context, Box::new(LintResultReducer)).run(
-        |context, interner, file, codebase| {
+    StatelessParallelPipeline::new(PROGRESS_BAR_THEME, database, interner, context, Box::new(LintResultReducer)).run(
+        |context, interner, file| {
             let (program, parsing_error) = parse_file(&interner, &file);
             let resolved_names = NameResolver::new(&interner).resolve(&program);
 
@@ -110,34 +88,7 @@ fn run_full_pipeline(
 
             let semantics_checker = SemanticsChecker::new(&context.php_version, &interner);
             issues.extend(semantics_checker.check(&file, &program, &resolved_names));
-            issues.extend(context.linter.lint(&file, &program, &resolved_names, &codebase));
-
-            Ok(issues)
-        },
-    )
-}
-
-/// Executes a stateful pipeline that stops after the compilation phase.
-///
-/// This mode is used to gather both semantic and compilation-related issues
-/// without running the full linter rule set.
-fn run_compilation_pipeline(
-    interner: &ThreadedInterner,
-    database: ReadDatabase,
-    context: LintContext,
-) -> Result<IssueCollection, Error> {
-    ParallelPipeline::new(PROGRESS_BAR_THEME, database, interner, context, Box::new(LintResultReducer)).run(
-        |context, interner, file, _| {
-            let (program, parsing_error) = parse_file(&interner, &file);
-            let resolved_names = NameResolver::new(&interner).resolve(&program);
-
-            let mut issues = IssueCollection::new();
-            if let Some(error) = parsing_error {
-                issues.push(Issue::from(&error));
-            }
-
-            let semantics_checker = SemanticsChecker::new(&context.php_version, &interner);
-            issues.extend(semantics_checker.check(&file, &program, &resolved_names));
+            issues.extend(context.linter.lint(&file, &program, &resolved_names));
 
             Ok(issues)
         },

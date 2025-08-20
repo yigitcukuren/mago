@@ -1,3 +1,4 @@
+use mago_codex::function_exists;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::ttype::resolution::TypeResolutionContext;
 use mago_collector::Collector;
@@ -12,6 +13,7 @@ use mago_reporting::Issue;
 use mago_reporting::IssueCollection;
 use mago_span::HasSpan;
 use mago_span::Span;
+use mago_syntax::ast::Identifier;
 use mago_syntax::ast::Trivia;
 use mago_syntax::comments;
 
@@ -65,6 +67,56 @@ impl<'a> Context<'a> {
             statement_span,
             collector,
         }
+    }
+
+    /// Resolves the correct function name based on PHP's dynamic name resolution rules.
+    ///
+    /// This function determines the fully qualified name (FQN) of a function being called,
+    /// accounting for PHP's nuanced resolution rules:
+    ///
+    /// - If the function is explicitly imported via `use`, it resolves to the imported name.
+    /// - If the function name starts with a leading `\`, it is treated as a global function.
+    /// - If no `\` is present:
+    ///   1. The function name is checked in the current namespace.
+    ///   2. If not found, it falls back to the global namespace.
+    ///   3. If neither exists, it defaults to the current namespace's FQN.
+    ///
+    /// # Arguments
+    ///
+    /// - `identifier`: The identifier representing the function name in the source code.
+    ///
+    /// # Returns
+    ///
+    /// - A reference to the resolved function name as a string.
+    ///
+    /// # Note
+    ///
+    /// Function names in PHP are case-insensitive; they are stored and looked up in lowercase
+    /// within the codebase metadata.
+    pub fn resolve_function_name(&self, identifier: &Identifier) -> &str {
+        if self.resolved_names.is_imported(identifier) {
+            let fqfn_id = self.resolved_names.get(identifier);
+
+            return self.interner.lookup(fqfn_id);
+        }
+
+        let name_id = identifier.value();
+        let name = self.interner.lookup(name_id);
+
+        if let Some(stripped) = name.strip_prefix('\\') {
+            return stripped;
+        }
+
+        let fqfn_id = self.resolved_names.get(&identifier);
+        if function_exists(self.codebase, self.interner, fqfn_id) {
+            return self.interner.lookup(fqfn_id);
+        }
+
+        if !name.contains('\\') && function_exists(self.codebase, self.interner, name_id) {
+            return name;
+        }
+
+        self.interner.lookup(fqfn_id)
     }
 
     pub fn get_reconciliation_context<'b>(&'b mut self) -> ReconciliationContext<'b, 'a> {

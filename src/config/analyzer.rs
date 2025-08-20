@@ -89,20 +89,14 @@ pub struct AnalyzerConfiguration {
     /// Whether to memoize properties.
     pub memoize_properties: bool,
 
-    /// Whether to allow the use of `include` construct.
-    pub allow_include: bool,
-
-    /// Whether to allow the use of `eval` construct.
-    pub allow_eval: bool,
-
-    /// Whether to allow the use of `empty` construct.
-    pub allow_empty: bool,
-
     /// Allow accessing array keys that may not be defined without reporting an issue.
     pub allow_possibly_undefined_array_keys: bool,
 
     /// Whether to check for thrown exceptions.
     pub check_throws: bool,
+
+    /// Whether to perform heuristic checks.
+    pub perform_heuristic_checks: bool,
 }
 
 impl AnalyzerConfiguration {
@@ -132,11 +126,9 @@ impl AnalyzerConfiguration {
             find_unused_definitions: self.find_unused_definitions,
             find_unused_expressions: self.find_unused_expressions,
             memoize_properties: self.memoize_properties,
-            allow_include: self.allow_include,
-            allow_eval: self.allow_eval,
-            allow_empty: self.allow_empty,
             allow_possibly_undefined_array_keys: self.allow_possibly_undefined_array_keys,
             check_throws: self.check_throws,
+            perform_heuristic_checks: self.perform_heuristic_checks,
             diff: false,
         }
     }
@@ -178,11 +170,9 @@ impl ConfigurationEntry for AnalyzerConfiguration {
             .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
             .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
             .set_default("analyze.memoize_properties", defaults.memoize_properties)?
-            .set_default("analyze.allow_include", defaults.allow_include)?
-            .set_default("analyze.allow_eval", defaults.allow_eval)?
-            .set_default("analyze.allow_empty", defaults.allow_empty)?
             .set_default("analyze.allow_possibly_undefined_array_keys", defaults.allow_possibly_undefined_array_keys)?
-            .set_default("analyze.check_throws", defaults.check_throws)
+            .set_default("analyze.check_throws", defaults.check_throws)?
+            .set_default("analyze.perform_heuristic_checks", defaults.perform_heuristic_checks)
             .map_err(Error::from)
     }
 }
@@ -217,11 +207,9 @@ impl Default for AnalyzerConfiguration {
             find_unused_definitions: defaults.find_unused_definitions,
             analyze_dead_code: defaults.analyze_dead_code,
             memoize_properties: defaults.memoize_properties,
-            allow_include: defaults.allow_include,
-            allow_eval: defaults.allow_eval,
-            allow_empty: defaults.allow_empty,
             allow_possibly_undefined_array_keys: defaults.allow_possibly_undefined_array_keys,
             check_throws: defaults.check_throws,
+            perform_heuristic_checks: defaults.perform_heuristic_checks,
         }
     }
 }

@@ -1462,6 +1462,7 @@ dependencies = [
  "dialoguer",
  "diffy",
  "indicatif 0.18.0",
+ "indoc",
  "mago-analyzer",
  "mago-codex",
  "mago-composer",
@@ -1778,6 +1779,7 @@ dependencies = [
 name = "mago-wasm"
 version = "1.0.0-alpha.12"
 dependencies = [
+ "mago-analyzer",
  "mago-codex",
  "mago-database",
  "mago-formatter",

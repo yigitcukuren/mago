@@ -2,15 +2,12 @@ use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
-use mago_reporting::Annotation;
-use mago_reporting::Issue;
 use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
 use crate::artifacts::AnalysisArtifacts;
-use crate::code::IssueCode;
 use crate::common::construct::ConstructInput;
 use crate::common::construct::analyze_construct_inputs;
 use crate::context::Context;
@@ -119,18 +116,6 @@ fn analyze_include<'a>(
     } else {
         "require"
     };
-
-    if !context.settings.allow_include {
-        context.collector.report_with_code(
-            IssueCode::DisallowedConstruct,
-            Issue::error(
-                format!("File inclusion via `{construct_kind}` is disallowed by your project configuration.",),
-            )
-            .with_annotation(Annotation::primary(keyword_span).with_message("This operation is disallowed"))
-            .with_note("Including files can introduce security vulnerabilities and make dependencies less explicit.")
-            .with_help("Refactor to use a class autoloader or dependency injection instead of manual file includes."),
-        );
-    }
 
     analyze_construct_inputs(
         context,

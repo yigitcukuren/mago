@@ -17,6 +17,7 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
+use crate::heuristic;
 use crate::statement::function_like::FunctionLikeBody;
 use crate::statement::function_like::analyze_function_like;
 use crate::utils::expression::variable::get_variables_referenced_in_expression;
@@ -111,6 +112,13 @@ impl Analyzable for ArrowFunction {
         };
 
         artifacts.set_expression_type(self, resulting_closure);
+
+        heuristic::check_function_like(
+            function_metadata,
+            self.parameter_list.parameters.as_slice(),
+            FunctionLikeBody::Expression(&self.expression),
+            context,
+        );
 
         Ok(())
     }

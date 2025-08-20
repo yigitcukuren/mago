@@ -8,6 +8,7 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
+use crate::heuristic;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
 use crate::statement::function_like::FunctionLikeBody;
@@ -54,6 +55,13 @@ impl Analyzable for Function {
             FunctionLikeBody::Statements(self.body.statements.as_slice()),
             None,
         )?;
+
+        heuristic::check_function_like(
+            function_metadata,
+            self.parameter_list.parameters.as_slice(),
+            FunctionLikeBody::Statements(self.body.statements.as_slice()),
+            context,
+        );
 
         Ok(())
     }

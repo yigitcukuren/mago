@@ -385,7 +385,7 @@ impl Analyzable for Try {
     }
 }
 
-fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringIdentifier> {
+pub(crate) fn get_caught_classes(context: &mut Context<'_>, hint: &Hint) -> HashSet<StringIdentifier> {
     let mut caught_identifiers: HashMap<StringIdentifier, Span> = HashMap::default();
 
     fn walk(context: &mut Context<'_>, hint: &Hint, caught: &mut HashMap<StringIdentifier, Span>) {

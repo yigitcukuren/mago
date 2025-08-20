@@ -68,8 +68,8 @@ impl<'i> Collector<'i> {
     /// This allows old issue codes used in pragmas to be mapped to their new,
     /// canonical counterparts. The map should be from `alias -> canonical_code`.
     #[inline]
-    pub fn set_aliases(&mut self, aliases: impl IntoIterator<Item = (&'static str, &'static str)>) {
-        self.aliases = aliases.into_iter().collect();
+    pub fn set_aliases<'c>(&mut self, aliases: impl IntoIterator<Item = &'c (&'static str, &'static str)>) {
+        self.aliases = aliases.into_iter().copied().collect();
     }
 
     /// Sets the link template for generating documentation URLs for issues.

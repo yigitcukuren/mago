@@ -32,6 +32,7 @@ mago-names = { workspace = true }
 mago-codex = { workspace = true }
 mago-formatter = { workspace = true }
 mago-semantics = { workspace = true }
+mago-analyzer = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
 serde = { workspace = true }

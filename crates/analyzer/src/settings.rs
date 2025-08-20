@@ -75,15 +75,6 @@ pub struct Settings {
     /// Analyze code that appears to be unreachable. Defaults to `false`.
     pub analyze_dead_code: bool,
 
-    /// Allow the use of `include`, `require`, and related constructs. Defaults to `true`.
-    pub allow_include: bool,
-
-    /// Allow the use of the `eval()` construct. Defaults to `true`.
-    pub allow_eval: bool,
-
-    /// Allow the use of the `empty()` construct. Defaults to `true`.
-    pub allow_empty: bool,
-
     /// Track the literal values of class properties when they are assigned.
     /// This improves type inference but may increase memory usage. Defaults to `true`.
     pub memoize_properties: bool,
@@ -98,6 +89,12 @@ pub struct Settings {
     ///
     /// This check is disabled by default (`false`) as it can be computationally expensive.
     pub check_throws: bool,
+
+    /// Perform heuristic checks to identify potential issues in the code.
+    ///
+    /// This includes checks that are not strictly type-related but can help catch common mistakes.
+    /// Defaults to `true`.
+    pub perform_heuristic_checks: bool,
 
     /// **Internal use only.**
     ///
@@ -138,12 +135,10 @@ impl Settings {
             find_unused_expressions: false,
             find_unused_definitions: false,
             analyze_dead_code: false,
-            allow_include: true,
-            allow_eval: true,
-            allow_empty: true,
             memoize_properties: true,
             allow_possibly_undefined_array_keys: true,
             check_throws: false,
+            perform_heuristic_checks: true,
             diff: false,
         }
     }

@@ -1,105 +1,153 @@
-use ahash::HashMap;
 use serde::Deserialize;
 use serde::Serialize;
-use toml::value::Value;
+use serde::de::DeserializeOwned;
 
 use mago_php_version::PHPVersion;
-use mago_reporting::Level;
 
-/// `Settings` is a struct that holds all the configuration options for the linter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+use crate::integration::Integration;
+use crate::rule::*;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct Settings {
-    /// The PHP version to lint against.
     pub php_version: PHPVersion,
-
-    /// Indicates whether all plugins that mark themselves as "default" are automatically enabled,
-    /// in addition to those explicitly listed in [`plugins`].
-    pub default_plugins: bool,
-
-    /// A list of plugin slugs (e.g., `"analysis"`, `"migration"`) that are explicitly enabled.
-    ///
-    /// If `default_plugins` is `true`, those “default” plugins also become enabled,
-    /// even if not listed here.
-    pub plugins: Vec<String>,
-
-    /// A map of `rule_slug -> RuleSettings`, where `rule_slug` might look like `"analysis/instantiation"`.
-    ///
-    /// This allows fine-grained control (e.g. enabling or disabling a particular rule, or overriding
-    /// its default level) on a rule-by-rule basis.
-    pub rules: HashMap<String, RuleSettings>,
+    pub integrations: Vec<Integration>,
+    pub rules: RulesSettings,
 }
 
-/// Specifies how a single rule is configured in user settings, such as whether it’s enabled,
-/// which severity level applies, and any custom options specific to that rule.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-pub struct RuleSettings {
-    /// If `false`, the rule is disabled entirely.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields, bound = "C: Serialize + DeserializeOwned")]
+pub struct RuleSettings<C: Default> {
     pub enabled: bool,
 
-    /// The severity level set by the user (e.g., `Level::Error` or `Level::Warning`).
-    ///
-    /// If `None`, the rule uses its default level.
-    pub level: Option<Level>,
-
-    /// A map of additional **rule-specific** configuration options (e.g., a threshold or a
-    /// boolean toggle), stored as a [`toml::Value`]. If none are needed, this may be empty.
-    pub options: HashMap<String, Value>,
+    #[serde(flatten)]
+    pub config: C,
 }
 
-impl Settings {
-    pub fn new(php_version: PHPVersion) -> Self {
-        Self { php_version, default_plugins: true, plugins: Vec::new(), rules: HashMap::default() }
-    }
-
-    pub fn get_rule_settings(&self, rule_name: &str) -> Option<&RuleSettings> {
-        self.rules.get(rule_name)
-    }
-
-    pub fn with_default_plugins(mut self, default_plugins: bool) -> Self {
-        self.default_plugins = default_plugins;
-        self
-    }
-
-    pub fn with_plugins(mut self, plugins: Vec<String>) -> Self {
-        self.plugins = plugins;
-        self
-    }
-
-    pub fn with_rules(mut self, rules: HashMap<String, RuleSettings>) -> Self {
-        self.rules = rules;
-        self
-    }
-
-    pub fn with_rule(mut self, rule: impl Into<String>, settings: RuleSettings) -> Self {
-        self.rules.insert(rule.into(), settings);
-        self
-    }
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct RulesSettings {
+    pub ambiguous_function_call: RuleSettings<AmbiguousFunctionCallConfig>,
+    pub array_style: RuleSettings<ArrayStyleConfig>,
+    pub assert_description: RuleSettings<AssertDescriptionConfig>,
+    pub assertion_style: RuleSettings<AssertionStyleConfig>,
+    pub block_statement: RuleSettings<BlockStatementConfig>,
+    pub braced_string_interpolation: RuleSettings<BracedStringInterpolationConfig>,
+    pub class_name: RuleSettings<ClassNameConfig>,
+    pub combine_consecutive_issets: RuleSettings<CombineConsecutiveIssetsConfig>,
+    pub constant_name: RuleSettings<ConstantNameConfig>,
+    pub constant_type: RuleSettings<ConstantTypeConfig>,
+    pub cyclomatic_complexity: RuleSettings<CyclomaticComplexityConfig>,
+    pub disallowed_functions: RuleSettings<DisallowedFunctionsConfig>,
+    pub enum_name: RuleSettings<EnumNameConfig>,
+    pub excessive_nesting: RuleSettings<ExcessiveNestingConfig>,
+    pub excessive_parameter_list: RuleSettings<ExcessiveParameterListConfig>,
+    pub halstead: RuleSettings<HalsteadConfig>,
+    pub kan_defect: RuleSettings<KanDefectConfig>,
+    pub literal_named_argument: RuleSettings<LiteralNamedArgumentConfig>,
+    pub loop_does_not_iterate: RuleSettings<LoopDoesNotIterateConfig>,
+    pub lowercase_keyword: RuleSettings<LowercaseKeywordConfig>,
+    pub no_debug_symbols: RuleSettings<NoDebugSymbolsConfig>,
+    pub no_request_variable: RuleSettings<NoRequestVariableConfig>,
+    pub no_shell_execute_string: RuleSettings<NoShellExecuteStringConfig>,
+    pub no_short_opening_tag: RuleSettings<NoShortOpeningTagConfig>,
+    pub no_shorthand_ternary: RuleSettings<NoShorthandTernaryConfig>,
+    pub no_sprintf_concat: RuleSettings<NoSprintfConcatConfig>,
+    pub optional_param_order: RuleSettings<OptionalParamOrderConfig>,
+    pub prefer_anonymous_migration: RuleSettings<PreferAnonymousMigrationConfig>,
+    pub no_void_reference_return: RuleSettings<NoVoidReferenceReturnConfig>,
+    pub no_underscore_class: RuleSettings<NoUnderscoreClassConfig>,
+    pub no_trailing_space: RuleSettings<NoTrailingSpaceConfig>,
+    pub no_redundant_write_visibility: RuleSettings<NoRedundantWriteVisibilityConfig>,
+    pub no_redundant_string_concat: RuleSettings<NoRedundantStringConcatConfig>,
+    pub no_redundant_parentheses: RuleSettings<NoRedundantParenthesesConfig>,
+    pub no_redundant_method_override: RuleSettings<NoRedundantMethodOverrideConfig>,
+    pub no_redundant_math: RuleSettings<NoRedundantMathConfig>,
+    pub no_redundant_label: RuleSettings<NoRedundantLabelConfig>,
+    pub no_redundant_final: RuleSettings<NoRedundantFinalConfig>,
+    pub no_redundant_file: RuleSettings<NoRedundantFileConfig>,
+    pub no_redundant_continue: RuleSettings<NoRedundantContinueConfig>,
+    pub no_redundant_block: RuleSettings<NoRedundantBlockConfig>,
+    pub no_php_tag_terminator: RuleSettings<NoPhpTagTerminatorConfig>,
+    pub no_noop: RuleSettings<NoNoopConfig>,
+    pub no_multi_assignments: RuleSettings<NoMultiAssignmentsConfig>,
+    pub no_hash_emoji: RuleSettings<NoHashEmojiConfig>,
+    pub no_hash_comment: RuleSettings<NoHashCommentConfig>,
+    pub no_goto: RuleSettings<NoGotoConfig>,
+    pub no_global: RuleSettings<NoGlobalConfig>,
+    pub no_ffi: RuleSettings<NoFfiConfig>,
+    pub no_eval: RuleSettings<NoEvalConfig>,
+    pub no_error_control_operator: RuleSettings<NoErrorControlOperatorConfig>,
+    pub no_empty: RuleSettings<NoEmptyConfig>,
+    pub no_empty_loop: RuleSettings<NoEmptyLoopConfig>,
+    pub no_empty_comment: RuleSettings<NoEmptyCommentConfig>,
+    pub no_empty_catch_clause: RuleSettings<NoEmptyCatchClauseConfig>,
+    pub no_else_clause: RuleSettings<NoElseClauseConfig>,
+    pub no_closing_tag: RuleSettings<NoClosingTagConfig>,
+    pub no_boolean_literal_comparison: RuleSettings<NoBooleanLiteralComparisonConfig>,
+    pub no_boolean_flag_parameter: RuleSettings<NoBooleanFlagParameterConfig>,
+    pub no_assign_in_condition: RuleSettings<NoAssignInConditionConfig>,
+    pub no_alias_function: RuleSettings<NoAliasFunctionConfig>,
+    pub lowercase_type_hint: RuleSettings<LowercaseTypeHintConfig>,
+    pub interface_name: RuleSettings<InterfaceNameConfig>,
+    pub identity_comparison: RuleSettings<IdentityComparisonConfig>,
+    pub function_name: RuleSettings<FunctionNameConfig>,
+    pub explicit_nullable_param: RuleSettings<ExplicitNullableParamConfig>,
+    pub explicit_octal: RuleSettings<ExplicitOctalConfig>,
+    pub prefer_interface: RuleSettings<PreferInterfaceConfig>,
+    pub prefer_view_array: RuleSettings<PreferViewArrayConfig>,
+    pub prefer_while_loop: RuleSettings<PreferWhileLoopConfig>,
+    pub psl_array_functions: RuleSettings<PslArrayFunctionsConfig>,
+    pub psl_data_structures: RuleSettings<PslDataStructuresConfig>,
+    pub psl_datetime: RuleSettings<PslDatetimeConfig>,
+    pub psl_math_functions: RuleSettings<PslMathFunctionsConfig>,
+    pub psl_output: RuleSettings<PslOutputConfig>,
+    pub psl_randomness_functions: RuleSettings<PslRandomnessFunctionsConfig>,
+    pub psl_regex_functions: RuleSettings<PslRegexFunctionsConfig>,
+    pub psl_sleep_functions: RuleSettings<PslSleepFunctionsConfig>,
+    pub psl_string_functions: RuleSettings<PslStringFunctionsConfig>,
+    pub return_type: RuleSettings<ReturnTypeConfig>,
+    pub str_contains: RuleSettings<StrContainsConfig>,
+    pub str_starts_with: RuleSettings<StrStartsWithConfig>,
+    pub strict_behavior: RuleSettings<StrictBehaviorConfig>,
+    pub strict_types: RuleSettings<StrictTypesConfig>,
+    pub tagged_fixme: RuleSettings<TaggedFixmeConfig>,
+    pub tagged_todo: RuleSettings<TaggedTodoConfig>,
+    pub too_many_enum_cases: RuleSettings<TooManyEnumCasesConfig>,
+    pub too_many_methods: RuleSettings<TooManyMethodsConfig>,
+    pub too_many_properties: RuleSettings<TooManyPropertiesConfig>,
+    pub trait_name: RuleSettings<TraitNameConfig>,
+    pub valid_docblock: RuleSettings<ValidDocblockConfig>,
+    pub constant_condition: RuleSettings<ConstantConditionConfig>,
+    pub no_insecure_comparison: RuleSettings<NoInsecureComparisonConfig>,
+    pub no_literal_password: RuleSettings<NoLiteralPasswordConfig>,
+    pub tainted_data_to_sink: RuleSettings<TaintedDataToSinkConfig>,
+    pub parameter_type: RuleSettings<ParameterTypeConfig>,
+    pub property_type: RuleSettings<PropertyTypeConfig>,
+    pub no_unsafe_finally: RuleSettings<NoUnsafeFinallyConfig>,
+    pub strict_assertions: RuleSettings<StrictAssertionsConfig>,
+    pub no_request_all: RuleSettings<NoRequestAllConfig>,
+    pub middleware_in_routes: RuleSettings<MiddlewareInRoutesConfig>,
 }
 
-impl RuleSettings {
-    pub fn enabled() -> Self {
-        Self { enabled: true, level: None, options: Default::default() }
-    }
-
-    pub fn disabled() -> Self {
-        Self { enabled: false, level: None, options: Default::default() }
-    }
-
-    pub fn from_level(level: Option<Level>) -> Self {
-        Self { enabled: true, level, options: Default::default() }
-    }
-
-    pub fn with_options(mut self, options: HashMap<String, Value>) -> Self {
-        self.options = options;
-
-        self
-    }
-
+impl<C: Default> RuleSettings<C> {
     pub fn is_enabled(&self) -> bool {
-        self.level.is_some()
+        self.enabled
     }
 
-    pub fn get_option<'c>(&'c self, option_name: &str) -> Option<&'c Value> {
-        self.options.get(option_name)
+    pub fn default_enabled() -> bool {
+        true
+    }
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { php_version: PHPVersion::PHP80, integrations: vec![], rules: RulesSettings::default() }
+    }
+}
+
+impl<C: Default> Default for RuleSettings<C> {
+    fn default() -> Self {
+        Self { enabled: true, config: C::default() }
     }
 }

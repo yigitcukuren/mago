@@ -49,7 +49,8 @@ pub fn run() -> Result<ExitCode, Error> {
     let CliArguments { workspace, config, threads, allow_unsupported_php_version, command, .. } = arguments;
 
     // Load the configuration.
-    let configuration = Configuration::load(workspace, config, php_version, threads, allow_unsupported_php_version)?;
+    let configuration =
+        Configuration::load(workspace, config.as_deref(), php_version, threads, allow_unsupported_php_version)?;
 
     if !configuration.allow_unsupported_php_version {
         if configuration.php_version < MINIMUM_PHP_VERSION {
@@ -67,7 +68,7 @@ pub fn run() -> Result<ExitCode, Error> {
         .build_global()?;
 
     match command {
-        MagoCommand::Init(cmd) => commands::init::execute(cmd, configuration),
+        MagoCommand::Init(cmd) => commands::init::execute(cmd, configuration, config),
         MagoCommand::Lint(cmd) => commands::lint::execute(cmd, configuration),
         MagoCommand::Format(cmd) => commands::format::execute(cmd, configuration),
         MagoCommand::Ast(cmd) => commands::ast::execute(cmd, configuration),

@@ -29,6 +29,7 @@ use crate::code::IssueCode;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
+use crate::heuristic;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
 
@@ -71,6 +72,8 @@ impl Analyzable for Class {
             self.members.as_slice(),
         )?;
 
+        heuristic::check_class_like(class_like_metadata, self.members.as_slice(), context);
+
         Ok(())
     }
 }
@@ -108,6 +111,8 @@ impl Analyzable for Interface {
             class_like_metadata,
             self.members.as_slice(),
         )?;
+
+        heuristic::check_class_like(class_like_metadata, self.members.as_slice(), context);
 
         Ok(())
     }
@@ -147,6 +152,8 @@ impl Analyzable for Trait {
             self.members.as_slice(),
         )?;
 
+        heuristic::check_class_like(class_like_metadata, self.members.as_slice(), context);
+
         Ok(())
     }
 }
@@ -184,6 +191,8 @@ impl Analyzable for Enum {
             class_like_metadata,
             self.members.as_slice(),
         )?;
+
+        heuristic::check_class_like(class_like_metadata, self.members.as_slice(), context);
 
         Ok(())
     }

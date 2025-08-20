@@ -6,21 +6,11 @@ includes = ["vendor"]
 excludes = []
 
 [linter]
-default_plugins = true
-plugins = ["symfony"]
+integrations = ["symfony", "laravel"]
 
-[[linter.rules]]
-name = "maintainability/cyclomatic-complexity"
-threshold = 20
-
-[[linter.rules]]
-name = "maintainability/kan-defect"
-threshold = 1.9
-
-[[linter.rules]]
-name = "maintainability/halstead"
-effort_threshold = 7000
-
-[[linter.rules]]
-name = "best-practices/literal-named-argument"
-level = "off"
+[linter.rules]
+ambiguous-function-call = { enabled = false }
+cyclomatic-complexity = { threshold = 20 }
+kan-defect = { threshold = 1.9 }
+halstead = { effort-threshold = 7000 }
+literal-named-argument = { enabled = false }

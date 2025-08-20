@@ -1,6 +1,7 @@
 use mago_codex::context::ScopeContext;
 use mago_codex::get_method_by_id;
 use mago_codex::identifier::method::MethodIdentifier;
+use mago_codex::is_method_overriding;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -8,6 +9,7 @@ use crate::artifacts::AnalysisArtifacts;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
+use crate::heuristic;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
 use crate::statement::function_like::FunctionLikeBody;
@@ -74,6 +76,15 @@ impl Analyzable for Method {
             FunctionLikeBody::Statements(concrete_body.statements.as_slice()),
             None,
         )?;
+
+        if !is_method_overriding(context.codebase, context.interner, &class_like_metadata.name, &self.name.value) {
+            heuristic::check_function_like(
+                method_metadata,
+                self.parameter_list.parameters.as_slice(),
+                FunctionLikeBody::Statements(concrete_body.statements.as_slice()),
+                context,
+            );
+        }
 
         Ok(())
     }

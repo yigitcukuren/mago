@@ -21,6 +21,7 @@ use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
 use crate::error::AnalysisError;
 use crate::formula::get_formula;
+use crate::heuristic;
 use crate::reconciler::reconcile_keyed_types;
 use crate::statement::attributes::AttributeTarget;
 use crate::statement::attributes::analyze_attributes;
@@ -58,7 +59,7 @@ impl Analyzable for Expression {
         block_context: &mut BlockContext<'a>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        match self {
+        let result = match self {
             Expression::Parenthesized(expr) => expr.analyze(context, block_context, artifacts),
             Expression::Literal(expr) => expr.analyze(context, block_context, artifacts),
             Expression::Binary(expr) => expr.analyze(context, block_context, artifacts),
@@ -107,6 +108,8 @@ impl Analyzable for Expression {
                     class_like_metadata,
                     anonymous_class.members.as_slice(),
                 )?;
+
+                heuristic::check_class_like(class_like_metadata, anonymous_class.members.as_slice(), context);
 
                 artifacts
                     .set_expression_type(&self, get_named_object(context.interner, class_like_metadata.name, None));
@@ -187,7 +190,11 @@ impl Analyzable for Expression {
 
                 Ok(())
             }
-        }
+        };
+
+        result?;
+
+        Ok(())
     }
 }
 
