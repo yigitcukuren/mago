@@ -18,10 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use function is_string;
 
 /**
- * @mago-expect lint:strictness/no-shorthand-ternary
- * @mago-expect lint:maintainability/kan-defect
- * @mago-expect lint:maintainability/halstead
- * @mago-expect lint:maintainability/cyclomatic-complexity
+ * @mago-expect lint:kan-defect
+ * @mago-expect lint:cyclomatic-complexity
+ * @mago-expect lint:halstead
+ * @mago-expect lint:no-shorthand-ternary
  */
 final class InstallMagoBinaryCommand extends BaseCommand
 {
