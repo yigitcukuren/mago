@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
 
 use crate::ttype::TType;
 use crate::ttype::TypeRef;
@@ -148,7 +149,15 @@ impl TType for TNamedObject {
         true
     }
 
-    fn get_id(&self, interner: Option<&mago_interner::ThreadedInterner>) -> String {
+    fn needs_population(&self) -> bool {
+        true
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
+    }
+
+    fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let mut id = match interner {
             Some(interner) => interner.lookup(&self.name).to_string(),
             None => self.name.to_string(),

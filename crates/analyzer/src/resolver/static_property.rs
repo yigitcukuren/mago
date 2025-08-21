@@ -66,7 +66,7 @@ pub fn resolve_static_properties<'a>(
             break 'resolve_names;
         };
 
-        for variable_atomic_type in &variable_type.types {
+        for variable_atomic_type in variable_type.types.as_ref() {
             let Some(property_name) = variable_atomic_type.get_literal_string_value() else {
                 if variable_atomic_type.is_any_string() {
                     result.has_ambiguous_path = true;

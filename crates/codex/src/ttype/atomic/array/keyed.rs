@@ -116,6 +116,34 @@ impl TType for TKeyedArray {
         children
     }
 
+    fn needs_population(&self) -> bool {
+        if let Some(known_items) = &self.known_items
+            && known_items.iter().any(|(_, (_, item_type))| item_type.needs_population())
+        {
+            return true;
+        }
+
+        if let Some(parameters) = &self.parameters {
+            return parameters.0.needs_population() || parameters.1.needs_population();
+        }
+
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        if let Some(known_items) = &self.known_items
+            && known_items.iter().any(|(_, (_, item_type))| item_type.is_expandable())
+        {
+            return true;
+        }
+
+        if let Some(parameters) = &self.parameters {
+            return parameters.0.is_expandable() || parameters.1.is_expandable();
+        }
+
+        false
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         if let Some(items) = &self.known_items {
             let mut str = String::new();

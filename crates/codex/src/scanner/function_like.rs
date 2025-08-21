@@ -678,22 +678,22 @@ fn parse_assertion_string(
     match get_type_metadata_from_type_string(&type_string, classname, type_context, context, scope) {
         Ok(type_metadata) => match (is_equal, is_negation) {
             (true, true) => {
-                for atomic in type_metadata.type_union.types {
+                for atomic in type_metadata.type_union.types.into_owned() {
                     assertions.push(Assertion::IsNotIdentical(atomic));
                 }
             }
             (true, false) => {
-                for atomic in type_metadata.type_union.types {
+                for atomic in type_metadata.type_union.types.into_owned() {
                     assertions.push(Assertion::IsIdentical(atomic));
                 }
             }
             (false, true) => {
-                for atomic in type_metadata.type_union.types {
+                for atomic in type_metadata.type_union.types.into_owned() {
                     assertions.push(Assertion::IsNotType(atomic));
                 }
             }
             (false, false) => {
-                for atomic in type_metadata.type_union.types {
+                for atomic in type_metadata.type_union.types.into_owned() {
                     assertions.push(Assertion::IsType(atomic));
                 }
             }

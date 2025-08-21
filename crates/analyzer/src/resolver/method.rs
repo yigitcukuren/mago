@@ -328,7 +328,7 @@ pub fn get_method_ids_from_object<'a, 'b>(
                 }
                 TAtomic::GenericParameter(generic_parameter) => {
                     // If the intersection type is a generic parameter, we need to check its constraint
-                    for constraint_atomic in &generic_parameter.constraint.types {
+                    for constraint_atomic in generic_parameter.constraint.types.as_ref() {
                         if let TAtomic::Object(intersected_object) = constraint_atomic {
                             // Recursively search in the intersection types
                             ids.extend(get_method_ids_from_object(

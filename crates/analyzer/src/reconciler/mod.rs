@@ -334,11 +334,11 @@ fn adjust_array_type(
         return;
     };
 
-    for base_atomic_type in existing_type.types.iter_mut() {
+    for base_atomic_type in existing_type.types.to_mut() {
         match base_atomic_type {
             TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, .. })) => {
                 let dictkey = if has_string_offset {
-                    ArrayKey::String(arraykey_offset.clone())
+                    ArrayKey::String(Cow::Owned(arraykey_offset.clone()))
                 } else if let Ok(arraykey_value) = arraykey_offset.parse::<i64>() {
                     ArrayKey::Integer(arraykey_value)
                 } else {
@@ -382,7 +382,7 @@ fn refine_array_key(key_type: &TUnion) -> TUnion {
         let mut refined = false;
         let mut types = vec![];
 
-        for cat in &key_type.types {
+        for cat in key_type.types.as_ref() {
             match cat {
                 TAtomic::GenericParameter(param) => {
                     if let Some(as_type) = refine_array_key_inner(&param.constraint) {
@@ -402,7 +402,7 @@ fn refine_array_key(key_type: &TUnion) -> TUnion {
             }
         }
 
-        if refined { Some(TUnion::new(types)) } else { None }
+        if refined { Some(TUnion::from_vec(types)) } else { None }
     }
 
     refine_array_key_inner(key_type).unwrap_or_else(|| key_type.clone())
@@ -472,7 +472,7 @@ fn add_nested_assertions(
                     let entry = new_types.entry(base_key.clone()).or_default();
 
                     let new_key = if array_key.starts_with('\'') {
-                        Some(ArrayKey::String(array_key[1..(array_key.len() - 1)].to_string()))
+                        Some(ArrayKey::String(Cow::Owned(array_key[1..(array_key.len() - 1)].to_string())))
                     } else if array_key.starts_with('$') {
                         None
                     } else if let Ok(arraykey_value) = array_key.parse::<i64>() {
@@ -723,19 +723,19 @@ fn get_value_for_key(
             let array_key_type = if let Some(array_key_offset) = array_key_offset {
                 ArrayKey::Integer(array_key_offset as i64)
             } else {
-                ArrayKey::String(array_key.replace('\'', "").to_string())
+                ArrayKey::String(Cow::Owned(array_key.replace('\'', "").to_string()))
             };
 
             let new_base_key = base_key.clone() + "[" + array_key.as_str() + "]";
 
             if !block_context.locals.contains_key(&new_base_key) {
                 let mut new_base_type: Option<Rc<TUnion>> = None;
-                let mut atomic_types = base_key_type.types.clone();
+                let mut atomic_types = base_key_type.types.clone().into_owned();
 
                 atomic_types.reverse();
                 while let Some(existing_key_type_part) = atomic_types.pop() {
                     if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = existing_key_type_part {
-                        atomic_types.extend(constraint.types.clone());
+                        atomic_types.extend(constraint.types.into_owned());
                         continue;
                     }
 
@@ -880,11 +880,11 @@ fn get_value_for_key(
 
             if !block_context.locals.contains_key(&new_base_key) {
                 let mut new_base_type: Option<Rc<TUnion>> = None;
-                let mut atomic_types = base_key_type.types.clone();
+                let mut atomic_types = base_key_type.types.clone().into_owned();
 
                 while let Some(existing_key_type_part) = atomic_types.pop() {
                     if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = existing_key_type_part {
-                        atomic_types.extend(constraint.types.clone());
+                        atomic_types.extend(constraint.types.into_owned());
                         continue;
                     }
 

@@ -50,12 +50,12 @@ impl TKeyOf {
                     if retain_generics {
                         key_types.push(TAtomic::GenericParameter(parameter.clone()));
                     } else if let Some(generic_key_types) = Self::get_key_of_targets(
-                        parameter.get_constraint().types.as_slice(),
+                        parameter.get_constraint().types.as_ref(),
                         codebase,
                         interner,
                         retain_generics,
                     ) {
-                        key_types.extend(generic_key_types.types);
+                        key_types.extend(generic_key_types.types.into_owned());
                     }
                 }
                 _ => {
@@ -64,13 +64,21 @@ impl TKeyOf {
             }
         }
 
-        if key_types.is_empty() { None } else { Some(TUnion::new(key_types)) }
+        if key_types.is_empty() { None } else { Some(TUnion::from_vec(key_types)) }
     }
 }
 
 impl TType for TKeyOf {
     fn get_child_nodes<'a>(&'a self) -> Vec<TypeRef<'a>> {
         vec![TypeRef::Atomic(&self.0)]
+    }
+
+    fn needs_population(&self) -> bool {
+        self.0.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
     }
 
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {

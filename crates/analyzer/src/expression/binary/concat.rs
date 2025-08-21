@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use mago_codex::get_method_id;
@@ -7,6 +8,8 @@ use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::string::TString;
 use mago_codex::ttype::atomic::scalar::string::TStringLiteral;
+use mago_codex::ttype::get_string;
+use mago_codex::ttype::get_string_with_props;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -118,7 +121,7 @@ fn analyze_string_concat_operand(
     let mut has_at_least_one_valid_operand_type = false;
     let mut reported_invalid_issue = false;
 
-    for operand_atomic_type in &operand_type.types {
+    for operand_atomic_type in operand_type.types.as_ref() {
         if operand_atomic_type.is_any_string()
             || operand_atomic_type.is_int()
             || operand_atomic_type.is_null()
@@ -334,15 +337,32 @@ fn concat_operands(
     context: &mut Context<'_>,
     artifacts: &mut AnalysisArtifacts,
 ) -> TUnion {
-    let left_strings = artifacts
-        .get_expression_type(left)
-        .map(|t| get_operand_strings(context, t))
-        .unwrap_or_else(|| vec![TString::general()]);
+    let left_type = artifacts.get_expression_type(left);
+    let right_type = artifacts.get_expression_type(right);
 
-    let right_strings = artifacts
-        .get_expression_type(right)
-        .map(|t| get_operand_strings(context, t))
-        .unwrap_or_else(|| vec![TString::general()]);
+    let (left_strings, right_strings) = match (left_type, right_type) {
+        (Some(left_type), Some(right_type)) => {
+            (get_operand_strings(context, left_type), get_operand_strings(context, right_type))
+        }
+        (Some(left_type), None) => (get_operand_strings(context, left_type), vec![TString::general()]),
+        (None, Some(right_type)) => (vec![TString::general()], get_operand_strings(context, right_type)),
+        (None, None) => {
+            return get_string();
+        }
+    };
+
+    // Determine if we can take the fast path. The fast path is possible only if there are
+    // no specific literal values that need to be concatenated at runtime.
+    let has_literals =
+        left_strings.iter().any(|s| s.literal.is_some()) || right_strings.iter().any(|s| s.literal.is_some());
+
+    if !has_literals {
+        let is_non_empty = left_strings.iter().any(|s| s.is_non_empty) || right_strings.iter().any(|s| s.is_non_empty);
+        let is_truthy = left_strings.iter().all(|s| s.is_truthy) || right_strings.iter().all(|s| s.is_truthy);
+        let is_lowercase = left_strings.iter().all(|s| s.is_lowercase) && right_strings.iter().all(|s| s.is_lowercase);
+
+        return get_string_with_props(false, is_truthy, is_non_empty, is_lowercase);
+    }
 
     let mut result_strings = vec![];
     for left_string in left_strings {
@@ -353,7 +373,7 @@ fn concat_operands(
             resulting_string.is_lowercase = left_string.is_lowercase && right_string.is_lowercase;
             resulting_string.literal = match (&left_string.literal, &right_string.literal) {
                 (Some(TStringLiteral::Value(left_literal)), Some(TStringLiteral::Value(right_literal))) => {
-                    result_strings.push(TString::known_literal(format!("{left_literal}{right_literal}")));
+                    result_strings.push(TString::known_literal(Cow::Owned(format!("{left_literal}{right_literal}"))));
 
                     continue;
                 }
@@ -366,7 +386,15 @@ fn concat_operands(
     }
 
     if result_strings.is_empty() {
-        result_strings.push(TString::general());
+        return get_string();
+    }
+
+    if result_strings.iter().all(|s| !s.is_literal_origin()) {
+        let is_non_empty = result_strings.iter().any(|s| s.is_non_empty);
+        let is_truthy = result_strings.iter().all(|s| s.is_truthy);
+        let is_lowercase = result_strings.iter().all(|s| s.is_lowercase);
+
+        return get_string_with_props(false, is_truthy, is_non_empty, is_lowercase);
     }
 
     TUnion::new(result_strings.into_iter().map(|string| TAtomic::Scalar(TScalar::String(string))).collect())
@@ -376,15 +404,15 @@ fn concat_operands(
 fn get_operand_strings(context: &mut Context<'_>, operand_type: &TUnion) -> Vec<TString> {
     let mut operand_strings = vec![];
 
-    for operand_atomic_type in &operand_type.types {
+    for operand_atomic_type in operand_type.types.as_ref() {
         match operand_atomic_type {
             TAtomic::Array(_) => {
-                operand_strings.push(TString::known_literal("Array".to_owned()));
+                operand_strings.push(TString::known_literal(Cow::Borrowed("Array")));
 
                 continue;
             }
             TAtomic::Never | TAtomic::Null | TAtomic::Void => {
-                operand_strings.push(TString::known_literal("".to_owned()));
+                operand_strings.push(TString::known_literal(Cow::Borrowed("")));
 
                 continue;
             }
@@ -405,24 +433,24 @@ fn get_operand_strings(context: &mut Context<'_>, operand_type: &TUnion) -> Vec<
         match operand_scalar {
             TScalar::Bool(boolean) => {
                 if boolean.is_true() {
-                    operand_strings.push(TString::known_literal("1".to_owned()));
+                    operand_strings.push(TString::known_literal(Cow::Borrowed("1")));
                 } else if boolean.is_false() {
-                    operand_strings.push(TString::known_literal("".to_owned()));
+                    operand_strings.push(TString::known_literal(Cow::Borrowed("")));
                 } else {
-                    operand_strings.push(TString::known_literal("1".to_owned()));
-                    operand_strings.push(TString::known_literal("".to_owned()));
+                    operand_strings.push(TString::known_literal(Cow::Borrowed("1")));
+                    operand_strings.push(TString::known_literal(Cow::Borrowed("")));
                 }
             }
             TScalar::Integer(tint) => {
                 if let Some(v) = tint.get_literal_value() {
-                    operand_strings.push(TString::known_literal(v.to_string()));
+                    operand_strings.push(TString::known_literal(Cow::Owned(v.to_string())));
                 } else {
                     operand_strings.push(TString::general_with_props(true, false, false, true));
                 }
             }
             TScalar::Float(tfloat) => {
                 if let Some(v) = tfloat.get_literal_value() {
-                    operand_strings.push(TString::known_literal(v.to_string()));
+                    operand_strings.push(TString::known_literal(Cow::Owned(v.to_string())));
                 } else {
                     operand_strings.push(TString::general_with_props(true, false, false, true));
                 }
@@ -434,7 +462,7 @@ fn get_operand_strings(context: &mut Context<'_>, operand_type: &TUnion) -> Vec<
                 if let Some(id) = tclass_like_string.literal_value() {
                     let id = context.interner.lookup(&id).to_string();
 
-                    operand_strings.push(TString::known_literal(id));
+                    operand_strings.push(TString::known_literal(Cow::Owned(id)));
                 } else {
                     operand_strings.push(TString::general_with_props(false, true, true, false));
                 }

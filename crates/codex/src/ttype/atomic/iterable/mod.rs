@@ -110,6 +110,14 @@ impl TType for TIterable {
         true
     }
 
+    fn needs_population(&self) -> bool {
+        self.key_type.needs_population() || self.value_type.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        self.key_type.is_expandable() || self.value_type.is_expandable()
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let intersection_types = self.intersection_types.as_deref();
 

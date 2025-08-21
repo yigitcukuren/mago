@@ -3,11 +3,10 @@ use std::rc::Rc;
 use mago_codex::class_or_interface_exists;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::mixed::TMixed;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::combine_union_types;
+use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
-use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -138,7 +137,7 @@ impl Analyzable for Clone {
 
         let resulting_type = if !invalid_clone_atomics.is_empty() {
             Rc::new(if has_mixed_type {
-                TUnion::new(vec![TAtomic::Mixed(TMixed::new()), TAtomic::Never])
+                get_mixed()
             } else if has_cloneable_object {
                 combine_union_types(&object_type, &get_never(), context.codebase, context.interner, false)
             } else {

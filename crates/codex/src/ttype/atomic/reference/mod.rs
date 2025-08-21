@@ -161,6 +161,14 @@ impl TType for TReference {
         }
     }
 
+    fn needs_population(&self) -> bool {
+        true
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let mut str = String::new();
         str += "unknown-ref(";

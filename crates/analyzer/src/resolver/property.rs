@@ -368,7 +368,7 @@ fn update_template_types(
             .unwrap_or(&IndexMap::default())
             .get(type_name)
         {
-            for mapped_type_atomic in &mapped_type.types {
+            for mapped_type_atomic in mapped_type.types.as_ref() {
                 if let TAtomic::GenericParameter(TGenericParameter { parameter_name, .. }) = &mapped_type_atomic {
                     let position = property_class_metadata
                         .template_types

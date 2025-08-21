@@ -87,7 +87,7 @@ pub(crate) fn collect(
                     .entry(*template_name)
                     .or_default()
                     .entry(GenericParent::ClassLike(class_metadata.name))
-                    .or_insert(TUnion::new(expand_type(
+                    .or_insert(TUnion::from_vec(expand_type(
                         extended_type,
                         &static_class_metadata.template_extended_parameters,
                         &static_class_metadata.name,
@@ -124,7 +124,7 @@ pub(crate) fn resolve_template_parameter(
 ) -> Option<TUnion> {
     let mut output_type_extends = None;
 
-    for type_extends_atomic in &input_type_extends.types {
+    for type_extends_atomic in input_type_extends.types.as_ref() {
         if let TAtomic::GenericParameter(TGenericParameter {
             parameter_name,
             defining_entity: GenericParent::ClassLike(defining_entity),
@@ -188,7 +188,7 @@ fn expand_type(
 ) -> Vec<TAtomic> {
     let mut output_type_extends = Vec::new();
 
-    for extends_atomic in &input_type_extends.types {
+    for extends_atomic in input_type_extends.types.as_ref() {
         let TAtomic::GenericParameter(TGenericParameter {
             parameter_name,
             defining_entity: GenericParent::ClassLike(defining_entity),

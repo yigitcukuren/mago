@@ -8,9 +8,9 @@ use crate::ttype::TypeRef;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::array::keyed::TKeyedArray;
 use crate::ttype::atomic::array::list::TList;
-use crate::ttype::atomic::mixed::TMixed;
-use crate::ttype::atomic::scalar::TScalar;
+use crate::ttype::get_arraykey;
 use crate::ttype::get_int;
+use crate::ttype::get_mixed;
 use crate::ttype::union::TUnion;
 
 pub mod key;
@@ -249,17 +249,17 @@ impl TArray {
             Self::Keyed(keyed_array) => {
                 if let Some(parameters) = keyed_array.parameters.as_mut() {
                     if let TAtomic::Placeholder = parameters.0.get_single() {
-                        parameters.0 = Box::new(TUnion::new(vec![TAtomic::Scalar(TScalar::ArrayKey)]));
+                        parameters.0 = Box::new(get_arraykey());
                     }
 
                     if let TAtomic::Placeholder = parameters.1.get_single() {
-                        parameters.1 = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::new())]));
+                        parameters.1 = Box::new(get_mixed());
                     }
                 }
             }
             Self::List(list) => {
                 if let TAtomic::Placeholder = list.element_type.get_single() {
-                    list.element_type = Box::new(TUnion::new(vec![TAtomic::Mixed(TMixed::new())]));
+                    list.element_type = Box::new(get_mixed());
                 }
             }
         }
@@ -271,6 +271,20 @@ impl TType for TArray {
         match self {
             TArray::Keyed(keyed_array) => keyed_array.get_child_nodes(),
             TArray::List(list) => list.get_child_nodes(),
+        }
+    }
+
+    fn needs_population(&self) -> bool {
+        match self {
+            TArray::Keyed(keyed_array) => keyed_array.needs_population(),
+            TArray::List(list) => list.needs_population(),
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TArray::Keyed(keyed_array) => keyed_array.is_expandable(),
+            TArray::List(list) => list.is_expandable(),
         }
     }
 

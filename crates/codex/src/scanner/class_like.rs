@@ -785,7 +785,7 @@ fn scan_class_like(
                 context.interner,
             ) {
                 Ok(inheritors_union) => {
-                    for inheritor in inheritors_union.types {
+                    for inheritor in inheritors_union.types.as_ref() {
                         match inheritor {
                             TAtomic::Reference(TReference::Symbol {
                                 name,
@@ -795,7 +795,7 @@ fn scan_class_like(
                                 class_like_metadata
                                     .permitted_inheritors
                                     .get_or_insert_default()
-                                    .insert(context.interner.lowered(&name));
+                                    .insert(context.interner.lowered(name));
                             }
                             _ => {
                                 class_like_metadata.issues.push(
@@ -878,9 +878,7 @@ fn scan_class_like(
             }
         }
 
-        if name_types.is_empty() {
-            name_types.push(TAtomic::Scalar(TScalar::string()));
-        }
+        let name_union = if name_types.is_empty() { get_string() } else { TUnion::from_vec(name_types) };
 
         if value_types.is_empty()
             && let Some(enum_backing_type) = &backing_type
@@ -892,7 +890,7 @@ fn scan_class_like(
         let flags = MetadataFlags::READONLY | MetadataFlags::HAS_DEFAULT;
         let mut property_metadata = PropertyMetadata::new(VariableIdentifier(name), flags);
         property_metadata.type_declaration_metadata = Some(TypeMetadata::new(get_string(), enum_name_span));
-        property_metadata.type_metadata = Some(TypeMetadata::new(TUnion::new(name_types), enum_name_span));
+        property_metadata.type_metadata = Some(TypeMetadata::new(name_union, enum_name_span));
 
         class_like_metadata.add_property_metadata(property_metadata);
 
@@ -903,12 +901,13 @@ fn scan_class_like(
             let mut property_metadata = PropertyMetadata::new(VariableIdentifier(value), flags);
 
             property_metadata.set_type_declaration_metadata(Some(TypeMetadata::new(
-                TUnion::new(vec![enum_backing_type]),
+                TUnion::from_vec(vec![enum_backing_type]),
                 enum_name_span,
             )));
 
             if !value_types.is_empty() {
-                property_metadata.set_type_metadata(Some(TypeMetadata::new(TUnion::new(value_types), enum_name_span)));
+                property_metadata
+                    .set_type_metadata(Some(TypeMetadata::new(TUnion::from_vec(value_types), enum_name_span)));
             }
 
             class_like_metadata.add_property_metadata(property_metadata);

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -78,13 +80,13 @@ impl TClassLikeString {
 
     /// Creates a new `class-string` instance with a literal value.
     #[inline]
-    pub fn literal(value: StringIdentifier) -> Self {
+    pub const fn literal(value: StringIdentifier) -> Self {
         Self::Literal { value }
     }
 
     /// Creates a new `class-string` instance.
     #[inline]
-    pub fn class_string() -> Self {
+    pub const fn class_string() -> Self {
         Self::Any { kind: TClassLikeStringKind::Class }
     }
 
@@ -96,7 +98,7 @@ impl TClassLikeString {
 
     /// Creates a new `interface-string` instance.
     #[inline]
-    pub fn interface_string() -> Self {
+    pub const fn interface_string() -> Self {
         Self::Any { kind: TClassLikeStringKind::Interface }
     }
 
@@ -108,7 +110,7 @@ impl TClassLikeString {
 
     /// Creates a new `enum-string` instance.
     #[inline]
-    pub fn enum_string() -> Self {
+    pub const fn enum_string() -> Self {
         Self::Any { kind: TClassLikeStringKind::Enum }
     }
 
@@ -120,7 +122,7 @@ impl TClassLikeString {
 
     /// Creates a new `trait-string` instance.
     #[inline]
-    pub fn trait_string() -> Self {
+    pub const fn trait_string() -> Self {
         Self::Any { kind: TClassLikeStringKind::Trait }
     }
 
@@ -250,7 +252,7 @@ impl TClassLikeString {
             TClassLikeString::Generic { parameter_name, defining_entity, constraint, .. } => {
                 TAtomic::GenericParameter(TGenericParameter::new(
                     *parameter_name,
-                    Box::new(TUnion::new(vec![constraint.as_ref().clone()])),
+                    Box::new(TUnion::from_single(Cow::Owned(constraint.as_ref().clone()))),
                     *defining_entity,
                 ))
             }
@@ -277,6 +279,24 @@ impl TType for TClassLikeString {
         }
 
         children
+    }
+
+    fn needs_population(&self) -> bool {
+        match self {
+            TClassLikeString::Any { .. } => false,
+            TClassLikeString::Generic { constraint, .. } => constraint.needs_population(),
+            TClassLikeString::Literal { .. } => false,
+            TClassLikeString::OfType { constraint, .. } => constraint.needs_population(),
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TClassLikeString::Any { .. } => false,
+            TClassLikeString::Generic { constraint, .. } => constraint.is_expandable(),
+            TClassLikeString::Literal { .. } => false,
+            TClassLikeString::OfType { constraint, .. } => constraint.is_expandable(),
+        }
     }
 
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {

@@ -16,8 +16,7 @@ use crate::common::global::get_global_variable_type;
 use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
-
-use super::assignment;
+use crate::expression::assignment;
 
 impl Analyzable for Variable {
     fn analyze<'a>(
@@ -44,7 +43,7 @@ impl Analyzable for DirectVariable {
         let name = context.interner.lookup(&self.name);
         let resulting_type = read_variable(context, block_context, artifacts, name, self.span());
 
-        artifacts.set_expression_type(self, resulting_type);
+        artifacts.set_rc_expression_type(self, resulting_type);
 
         Ok(())
     }
@@ -67,13 +66,13 @@ impl Analyzable for IndirectVariable {
 
                         read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
-                    _ => get_mixed(),
+                    _ => Rc::new(get_mixed()),
                 }
             }
-            _ => get_mixed(),
+            _ => Rc::new(get_mixed()),
         };
 
-        artifacts.set_expression_type(self, resulting_type);
+        artifacts.set_rc_expression_type(self, resulting_type);
 
         Ok(())
     }
@@ -96,13 +95,13 @@ impl Analyzable for NestedVariable {
 
                         read_variable(context, block_context, artifacts, &variable_name, self.span())
                     }
-                    _ => get_mixed(),
+                    _ => Rc::new(get_mixed()),
                 }
             }
-            _ => get_mixed(),
+            _ => Rc::new(get_mixed()),
         };
 
-        artifacts.set_expression_type(self, resulting_type);
+        artifacts.set_rc_expression_type(self, resulting_type);
 
         Ok(())
     }
@@ -114,14 +113,14 @@ fn read_variable<'a>(
     artifacts: &mut AnalysisArtifacts,
     variable_name: &str,
     variable_span: Span,
-) -> TUnion {
+) -> Rc<TUnion> {
     let _ = block_context.has_variable(variable_name);
 
     let variable_type = match block_context.locals.get(variable_name) {
-        Some(variable_type) => (**variable_type).clone(),
+        Some(variable_type) => variable_type.clone(),
         None => {
             if let Some(global_variable_type) = get_global_variable_type(variable_name) {
-                block_context.locals.insert(variable_name.to_string(), Rc::new(global_variable_type.clone()));
+                block_context.locals.insert(variable_name.to_string(), global_variable_type.clone());
 
                 global_variable_type
             } else if block_context.variables_possibly_in_scope.contains(variable_name) {
@@ -139,7 +138,7 @@ fn read_variable<'a>(
                     .with_help(format!("Initialize `{variable_name}` before conditional paths, or use `isset()` to check its existence."))
                 );
 
-                get_mixed()
+                Rc::new(get_mixed())
             } else if block_context.inside_variable_reference {
                 context.collector.report_with_code(
                     IssueCode::ReferenceToUndefinedVariable,
@@ -172,11 +171,11 @@ fn read_variable<'a>(
                     false,
                 );
 
-                get_null()
+                Rc::new(get_mixed())
             } else if block_context.inside_unset {
-                get_null()
+                Rc::new(get_null())
             } else if block_context.inside_isset {
-                get_mixed()
+                Rc::new(get_mixed())
             } else {
                 let mut issue = Issue::error(format!("Undefined variable: `{variable_name}`.")).with_annotation(
                     Annotation::primary(variable_span)
@@ -211,7 +210,7 @@ fn read_variable<'a>(
 
                 context.collector.report_with_code(IssueCode::UndefinedVariable, issue.with_help(help_message));
 
-                get_mixed()
+                Rc::new(get_mixed())
             }
         }
     };

@@ -35,7 +35,7 @@ pub fn replace(
     let mut keys_to_unset = HashSet::default();
     let mut new_types = Vec::new();
 
-    for atomic_type in &union.types {
+    for atomic_type in union.types.as_ref() {
         let mut atomic_type = atomic_type.clone();
         atomic_type = replace_atomic(atomic_type, template_result, codebase, interner);
 
@@ -62,7 +62,7 @@ pub fn replace(
 
                 if let Some(template_type) = template_type {
                     keys_to_unset.insert(*key);
-                    new_types.extend(template_type.types);
+                    new_types.extend(template_type.types.into_owned());
                 } else {
                     new_types.push(atomic_type);
                 }
@@ -80,7 +80,7 @@ pub fn replace(
 
                     let mut class_template_type = None;
 
-                    for template_type_part in &template_type.types {
+                    for template_type_part in template_type.types.as_ref() {
                         if template_type_part.is_mixed() || matches!(template_type_part, TAtomic::Object(TObject::Any))
                         {
                             class_template_type =
@@ -162,14 +162,16 @@ fn replace_template_parameter(
             traversed_type.clone()
         };
 
-        if let Some(intersection_types) = intersection_types {
+        if let Some(intersection_types) = intersection_types
+            && template_type_inner.types.iter().any(|atomic| atomic.can_be_intersected())
+        {
             let replaced_intersection_parts: Vec<TAtomic> = intersection_types
                 .iter()
                 .cloned()
                 .map(|part| replace_atomic(part, template_result, codebase, interner))
                 .collect();
 
-            for atomic_template_type in &mut template_type_inner.types {
+            for atomic_template_type in template_type_inner.types.to_mut() {
                 if !atomic_template_type.can_be_intersected() {
                     continue;
                 }
@@ -268,9 +270,10 @@ fn replace_atomic(
             *value_type = replace(value_type, template_result, codebase, interner);
 
             if let Some(intersection_types) = iterable.get_intersection_types_mut() {
-                let old_intersection_types = TUnion::new(intersection_types.clone());
+                let old_intersection_types = TUnion::from_vec(intersection_types.clone());
 
-                *intersection_types = replace(&old_intersection_types, template_result, codebase, interner).types;
+                *intersection_types =
+                    replace(&old_intersection_types, template_result, codebase, interner).types.into_owned();
             }
         }
         TAtomic::Object(TObject::Named(named_object)) => {
@@ -281,9 +284,10 @@ fn replace_atomic(
             }
 
             if let Some(intersection_types) = named_object.get_intersection_types_mut() {
-                let old_intersection_types = TUnion::new(intersection_types.clone());
+                let old_intersection_types = TUnion::from_vec(intersection_types.clone());
 
-                *intersection_types = replace(&old_intersection_types, template_result, codebase, interner).types;
+                *intersection_types =
+                    replace(&old_intersection_types, template_result, codebase, interner).types.into_owned();
             }
         }
         TAtomic::Callable(TCallable::Signature(signature)) => {

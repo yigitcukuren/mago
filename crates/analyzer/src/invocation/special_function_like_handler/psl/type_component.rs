@@ -71,10 +71,10 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
                             known_elements.insert(*index, (possibly_undefined, inner_type));
                         }
 
-                        Some(TUnion::new(vec![TAtomic::Object(TObject::Named(
+                        Some(TUnion::from_atomic(TAtomic::Object(TObject::Named(
                             TNamedObject::new_with_type_parameters(
                                 context.interner.intern("Psl\\Type\\TypeInterface"),
-                                Some(vec![TUnion::new(vec![TAtomic::Array(TArray::List(TList {
+                                Some(vec![TUnion::from_atomic(TAtomic::Array(TArray::List(TList {
                                     element_type: if allows_unknown_elements {
                                         Box::new(get_mixed())
                                     } else {
@@ -83,9 +83,9 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
                                     known_count: Some(known_elements.len()),
                                     non_empty: !known_elements.is_empty(),
                                     known_elements: Some(known_elements),
-                                }))])]),
+                                })))]),
                             ),
-                        ))]))
+                        ))))
                     }
                     TArray::Keyed(keyed_array) => {
                         let mut known_items = BTreeMap::new();
@@ -102,10 +102,10 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
                             known_items.insert(key.clone(), (possibly_undefined, inner_type));
                         }
 
-                        Some(TUnion::new(vec![TAtomic::Object(TObject::Named(
+                        Some(TUnion::from_atomic(TAtomic::Object(TObject::Named(
                             TNamedObject::new_with_type_parameters(
                                 context.interner.intern("Psl\\Type\\TypeInterface"),
-                                Some(vec![TUnion::new(vec![TAtomic::Array(TArray::Keyed(TKeyedArray {
+                                Some(vec![TUnion::from_atomic(TAtomic::Array(TArray::Keyed(TKeyedArray {
                                     parameters: if allows_unknown_elements {
                                         Some((Box::new(get_arraykey()), Box::new(get_mixed())))
                                     } else {
@@ -113,9 +113,9 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
                                     },
                                     non_empty: !known_items.is_empty(),
                                     known_items: Some(known_items),
-                                }))])]),
+                                })))]),
                             ),
-                        ))]))
+                        ))))
                     }
                 }
             }

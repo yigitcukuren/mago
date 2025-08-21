@@ -64,15 +64,15 @@ impl SpecialFunctionLikeHandlerTrait for GetCurrentClosureMethodHandler {
         };
 
         Some(if closure.template_types.is_empty() {
-            TUnion::new(vec![TAtomic::Callable(TCallable::Signature(get_signature_of_function_like_metadata(
+            TUnion::from_atomic(TAtomic::Callable(TCallable::Signature(get_signature_of_function_like_metadata(
                 &closure_identifier,
                 closure,
                 context.codebase,
                 context.interner,
                 &TypeExpansionOptions::default(),
-            )))])
+            ))))
         } else {
-            TUnion::new(vec![TAtomic::Callable(TCallable::Alias(closure_identifier))])
+            TUnion::from_atomic(TAtomic::Callable(TCallable::Alias(closure_identifier)))
         })
     }
 }

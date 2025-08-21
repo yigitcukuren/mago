@@ -746,10 +746,9 @@ pub fn get_class_constant_type<'a>(
     let class_metadata = get_class_like(codebase, interner, fq_class_name)?;
 
     if class_metadata.kind.is_enum() && class_metadata.enum_cases.contains_key(constant_name) {
-        return Some(Cow::Owned(TUnion::new(vec![TAtomic::Object(TObject::new_enum_case(
-            class_metadata.original_name,
-            *constant_name,
-        ))])));
+        let atomic = Cow::Owned(TAtomic::Object(TObject::new_enum_case(class_metadata.original_name, *constant_name)));
+
+        return Some(Cow::Owned(TUnion::from_single(atomic)));
     }
 
     // It's a regular class constant
@@ -766,7 +765,7 @@ pub fn get_class_constant_type<'a>(
     // Fall back to inferred type if no signature
     constant_metadata.inferred_type.as_ref().map(|atomic_type| {
         // Wrap the atomic type in a TUnion if returning inferred type
-        Cow::Owned(TUnion::new(vec![atomic_type.clone()]))
+        Cow::Owned(TUnion::from_single(Cow::Owned(atomic_type.clone())))
     })
 }
 

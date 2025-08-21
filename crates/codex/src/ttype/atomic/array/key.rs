@@ -1,9 +1,16 @@
+use std::borrow::Cow;
+
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::scalar::TScalar;
 use crate::ttype::atomic::scalar::int::TInteger;
+use crate::ttype::atomic::scalar::string::TString;
+use crate::ttype::get_int;
+use crate::ttype::get_string;
+use crate::ttype::shared::INT_ATOMIC;
+use crate::ttype::shared::STRING_ATOMIC;
 use crate::ttype::union::TUnion;
 
 /// Represents a key used in PHP arrays, which can be either an integer (`int`) or a string (`string`).
@@ -16,7 +23,7 @@ pub enum ArrayKey {
     /// An integer array key.
     Integer(i64),
     /// A string array key.
-    String(String),
+    String(Cow<'static, str>),
 }
 
 impl ArrayKey {
@@ -33,7 +40,7 @@ impl ArrayKey {
     #[inline]
     // Not const because it returns a reference derived from a match on a reference.
     // While theoretically possible in future Rust, currently references from matches prevent const.
-    pub fn get_string(&self) -> Option<&String> {
+    pub fn get_string(&self) -> Option<&str> {
         match self {
             ArrayKey::Integer(_) => None,
             ArrayKey::String(s) => Some(s),
@@ -60,33 +67,33 @@ impl ArrayKey {
     pub fn to_atomic(&self) -> TAtomic {
         match &self {
             ArrayKey::Integer(i) => TAtomic::Scalar(TScalar::Integer(TInteger::literal(*i))),
-            ArrayKey::String(s) => TAtomic::Scalar(TScalar::String(s.clone().into())),
+            ArrayKey::String(s) => TAtomic::Scalar(TScalar::String(TString::known_literal(s.clone()))),
         }
     }
 
     /// Converts the array key into a `TUnion` containing its specific literal atomic type.
-    /// Equivalent to `TUnion::new(vec![self.to_atomic()])`.
     #[inline]
     pub fn to_union(&self) -> TUnion {
-        TUnion::new(vec![self.to_atomic()])
+        TUnion::from_single(Cow::Owned(self.to_atomic()))
     }
 
     /// Converts the array key into a general atomic type representing the key *type* (`int` or `string`).
     /// Does not preserve the specific literal value.
     #[inline]
-    pub const fn to_general_atomic(&self) -> TAtomic {
+    pub const fn to_general_atomic(&self) -> &'static TAtomic {
         match self {
-            ArrayKey::Integer(_) => TAtomic::Scalar(TScalar::int()),
-            ArrayKey::String(_) => TAtomic::Scalar(TScalar::string()),
+            ArrayKey::Integer(_) => INT_ATOMIC,
+            ArrayKey::String(_) => STRING_ATOMIC,
         }
     }
 
     /// Converts the array key into a `TUnion` containing its general atomic type (`int` or `string`).
-    ///
-    /// Equivalent to `TUnion::new(vec![self.to_general_atomic()])`.
     #[inline]
     pub fn to_general_union(&self) -> TUnion {
-        TUnion::new(vec![self.to_general_atomic()])
+        match self {
+            ArrayKey::Integer(_) => get_int(),
+            ArrayKey::String(_) => get_string(),
+        }
     }
 }
 
@@ -114,17 +121,15 @@ impl From<i64> for ArrayKey {
 }
 
 impl From<String> for ArrayKey {
-    /// Converts a `String` to an `ArrayKey::String`.
     #[inline]
     fn from(s: String) -> Self {
-        ArrayKey::String(s)
+        ArrayKey::String(Cow::Owned(s))
     }
 }
 
-impl From<&str> for ArrayKey {
-    /// Converts a `&str` to an `ArrayKey::String`.
+impl From<&'static str> for ArrayKey {
     #[inline]
-    fn from(s: &str) -> Self {
-        ArrayKey::String(s.to_string())
+    fn from(s: &'static str) -> Self {
+        ArrayKey::String(Cow::Borrowed(s))
     }
 }

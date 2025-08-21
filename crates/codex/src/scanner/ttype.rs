@@ -4,6 +4,7 @@ use mago_names::scope::NamespaceScope;
 use mago_span::HasSpan;
 use mago_syntax::ast::Hint;
 use mago_syntax::ast::Identifier;
+use mago_syntax::ast::UnionHint;
 
 use crate::metadata::ttype::TypeMetadata;
 use crate::scanner::Context;
@@ -57,19 +58,37 @@ fn get_union_from_hint<'ast>(
     match hint {
         Hint::Parenthesized(parenthesized_hint) => get_union_from_hint(&parenthesized_hint.hint, classname, context),
         Hint::Identifier(identifier) => get_union_from_identifier_hint(identifier, context),
-        Hint::Nullable(nullable_hint) => {
-            let mut tunion = get_union_from_hint(&nullable_hint.hint, classname, context);
-
-            tunion.types.push(TAtomic::Null);
-            tunion
-        }
+        Hint::Nullable(nullable_hint) => match nullable_hint.hint.as_ref() {
+            Hint::Null(_) => get_null(),
+            Hint::String(_) => get_nullable_string(),
+            Hint::Integer(_) => get_nullable_int(),
+            Hint::Float(_) => get_nullable_float(),
+            Hint::Object(_) => get_nullable_object(),
+            _ => get_union_from_hint(&nullable_hint.hint, classname, context).as_nullable(),
+        },
+        Hint::Union(UnionHint { left, right, .. }) if matches!(left.as_ref(), Hint::Null(_)) => match right.as_ref() {
+            Hint::Null(_) => get_null(),
+            Hint::String(_) => get_nullable_string(),
+            Hint::Integer(_) => get_nullable_int(),
+            Hint::Float(_) => get_nullable_float(),
+            Hint::Object(_) => get_nullable_object(),
+            _ => get_union_from_hint(right, classname, context).as_nullable(),
+        },
+        Hint::Union(UnionHint { left, right, .. }) if matches!(right.as_ref(), Hint::Null(_)) => match left.as_ref() {
+            Hint::Null(_) => get_null(),
+            Hint::String(_) => get_nullable_string(),
+            Hint::Integer(_) => get_nullable_int(),
+            Hint::Float(_) => get_nullable_float(),
+            Hint::Object(_) => get_nullable_object(),
+            _ => get_union_from_hint(left, classname, context).as_nullable(),
+        },
         Hint::Union(union_hint) => {
-            let mut all_atomics = vec![];
+            let left = get_union_from_hint(&union_hint.left, classname, context);
+            let right = get_union_from_hint(&union_hint.right, classname, context);
 
-            all_atomics.extend(get_union_from_hint(&union_hint.left, classname, context).types);
-            all_atomics.extend(get_union_from_hint(&union_hint.right, classname, context).types);
+            let combined_types: Vec<TAtomic> = left.types.iter().chain(right.types.iter()).cloned().collect();
 
-            TUnion::new(all_atomics)
+            TUnion::from_vec(combined_types)
         }
         Hint::Null(_) => get_null(),
         Hint::True(_) => get_true(),
@@ -106,13 +125,13 @@ fn get_union_from_hint<'ast>(
             let left_types = left.types;
             let right_types = right.types;
             let mut intersection_types = vec![];
-            for left_type in left_types {
+            for left_type in left_types.into_owned() {
                 if !left_type.can_be_intersected() {
                     // should be an error.
                     continue;
                 }
 
-                for right_type in &right_types {
+                for right_type in right_types.as_ref() {
                     if !right_type.can_be_intersected() {
                         // should be an error.
                         continue;
@@ -124,7 +143,7 @@ fn get_union_from_hint<'ast>(
                 }
             }
 
-            TUnion::new(intersection_types)
+            TUnion::from_vec(intersection_types)
         }
         Hint::Iterable(_) => get_mixed_iterable(),
     }

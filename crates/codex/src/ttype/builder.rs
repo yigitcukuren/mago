@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use mago_interner::StringIdentifier;
@@ -39,15 +40,23 @@ use crate::ttype::get_literal_int;
 use crate::ttype::get_literal_string;
 use crate::ttype::get_lowercase_string;
 use crate::ttype::get_mixed;
+use crate::ttype::get_negative_int;
 use crate::ttype::get_never;
 use crate::ttype::get_non_empty_lowercase_string;
 use crate::ttype::get_non_empty_string;
 use crate::ttype::get_non_empty_unspecified_literal_string;
+use crate::ttype::get_non_negative_int;
 use crate::ttype::get_null;
+use crate::ttype::get_nullable_float;
+use crate::ttype::get_nullable_int;
+use crate::ttype::get_nullable_object;
+use crate::ttype::get_nullable_scalar;
+use crate::ttype::get_nullable_string;
 use crate::ttype::get_numeric;
 use crate::ttype::get_numeric_string;
 use crate::ttype::get_object;
 use crate::ttype::get_open_resource;
+use crate::ttype::get_positive_int;
 use crate::ttype::get_resource;
 use crate::ttype::get_scalar;
 use crate::ttype::get_string;
@@ -123,18 +132,40 @@ pub fn get_union_from_type_ast<'i>(
         Type::Parenthesized(parenthesized_type) => {
             get_union_from_type_ast(&parenthesized_type.inner, scope, type_context, classname, interner)?
         }
+        Type::Nullable(nullable_type) => match nullable_type.inner.as_ref() {
+            Type::Null(_) => get_null(),
+            Type::String(_) => get_nullable_string(),
+            Type::Int(_) => get_nullable_int(),
+            Type::Float(_) => get_nullable_float(),
+            Type::Object(_) => get_nullable_object(),
+            Type::Scalar(_) => get_nullable_scalar(),
+            _ => get_union_from_type_ast(&nullable_type.inner, scope, type_context, classname, interner)?.as_nullable(),
+        },
+        Type::Union(UnionType { left, right, .. }) if matches!(left.as_ref(), Type::Null(_)) => match right.as_ref() {
+            Type::Null(_) => get_null(),
+            Type::String(_) => get_nullable_string(),
+            Type::Int(_) => get_nullable_int(),
+            Type::Float(_) => get_nullable_float(),
+            Type::Object(_) => get_nullable_object(),
+            Type::Scalar(_) => get_nullable_scalar(),
+            _ => get_union_from_type_ast(right, scope, type_context, classname, interner)?.as_nullable(),
+        },
+        Type::Union(UnionType { left, right, .. }) if matches!(right.as_ref(), Type::Null(_)) => match left.as_ref() {
+            Type::Null(_) => get_null(),
+            Type::String(_) => get_nullable_string(),
+            Type::Int(_) => get_nullable_int(),
+            Type::Float(_) => get_nullable_float(),
+            Type::Object(_) => get_nullable_object(),
+            Type::Scalar(_) => get_nullable_scalar(),
+            _ => get_union_from_type_ast(left, scope, type_context, classname, interner)?.as_nullable(),
+        },
         Type::Union(union_type) => {
             let left = get_union_from_type_ast(&union_type.left, scope, type_context, classname, interner)?;
             let right = get_union_from_type_ast(&union_type.right, scope, type_context, classname, interner)?;
 
-            TUnion::new(left.types.into_iter().chain(right.types).collect())
-        }
-        Type::Nullable(nullable_type) => {
-            let mut inner = get_union_from_type_ast(&nullable_type.inner, scope, type_context, classname, interner)?;
-            inner.types.push(TAtomic::Null);
-            inner.types.shrink_to_fit();
+            let combined_types: Vec<TAtomic> = left.types.iter().chain(right.types.iter()).cloned().collect();
 
-            inner
+            TUnion::from_vec(combined_types)
         }
         Type::Intersection(intersection) => {
             let left = get_union_from_type_ast(&intersection.left, scope, type_context, classname, interner)?;
@@ -143,8 +174,8 @@ pub fn get_union_from_type_ast<'i>(
             let left_str = left.get_id(Some(interner));
             let right_str = right.get_id(Some(interner));
 
-            let left_types = left.types;
-            let right_types = right.types;
+            let left_types = left.types.into_owned();
+            let right_types = right.types.into_owned();
             let mut intersection_types = vec![];
             for left_type in left_types {
                 if !left_type.can_be_intersected() {
@@ -178,7 +209,7 @@ pub fn get_union_from_type_ast<'i>(
                 }
             }
 
-            TUnion::new(intersection_types)
+            TUnion::from_vec(intersection_types)
         }
         Type::Slice(slice) => wrap_atomic(get_array_type_from_ast(
             None,
@@ -382,10 +413,10 @@ pub fn get_union_from_type_ast<'i>(
             },
             None => wrap_atomic(TAtomic::Iterable(TIterable::mixed())),
         },
-        Type::PositiveInt(_) => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::positive()))]),
-        Type::NegativeInt(_) => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::negative()))]),
-        Type::NonPositiveInt(_) => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::non_positive()))]),
-        Type::NonNegativeInt(_) => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::non_negative()))]),
+        Type::PositiveInt(_) => get_positive_int(),
+        Type::NegativeInt(_) => get_negative_int(),
+        Type::NonPositiveInt(_) => get_positive_int(),
+        Type::NonNegativeInt(_) => get_non_negative_int(),
         Type::IntRange(range) => {
             let min = match range.min {
                 IntOrKeyword::NegativeInt { int, .. } => Some(-(int.value as i64)),
@@ -409,26 +440,28 @@ pub fn get_union_from_type_ast<'i>(
                 ));
             }
 
-            TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::from_bounds(min, max)))])
+            TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::Integer(TInteger::from_bounds(min, max)))))
         }
-        Type::Conditional(conditional) => TUnion::new(vec![TAtomic::Conditional(TConditional::new(
+        Type::Conditional(conditional) => TUnion::from_single(Cow::Owned(TAtomic::Conditional(TConditional::new(
             Box::new(get_union_from_type_ast(&conditional.subject, scope, type_context, classname, interner)?),
             Box::new(get_union_from_type_ast(&conditional.target, scope, type_context, classname, interner)?),
             Box::new(get_union_from_type_ast(&conditional.then, scope, type_context, classname, interner)?),
             Box::new(get_union_from_type_ast(&conditional.otherwise, scope, type_context, classname, interner)?),
             conditional.is_negated(),
-        ))]),
-        Type::Variable(variable_type) => TUnion::new(vec![TAtomic::Variable(interner.intern(variable_type.value))]),
+        )))),
+        Type::Variable(variable_type) => {
+            TUnion::from_single(Cow::Owned(TAtomic::Variable(interner.intern(variable_type.value))))
+        }
         Type::KeyOf(key_of_type) => {
             let target =
                 get_union_from_type_ast(&key_of_type.parameter.entry.inner, scope, type_context, classname, interner)?;
 
             let mut atomics = vec![];
-            for target_type in target.types {
+            for target_type in target.types.into_owned() {
                 atomics.push(TAtomic::Derived(TDerived::KeyOf(TKeyOf::new(Box::new(target_type)))));
             }
 
-            TUnion::new(atomics)
+            TUnion::from_vec(atomics)
         }
         Type::ValueOf(value_of_type) => {
             let target = get_union_from_type_ast(
@@ -440,11 +473,11 @@ pub fn get_union_from_type_ast<'i>(
             )?;
 
             let mut atomics = vec![];
-            for target_type in target.types {
+            for target_type in target.types.into_owned() {
                 atomics.push(TAtomic::Derived(TDerived::ValueOf(TValueOf::new(Box::new(target_type)))));
             }
 
-            TUnion::new(atomics)
+            TUnion::from_vec(atomics)
         }
         Type::PropertiesOf(properties_of_type) => {
             let target = get_union_from_type_ast(
@@ -456,7 +489,7 @@ pub fn get_union_from_type_ast<'i>(
             )?;
 
             let mut atomics = vec![];
-            for target_type in target.types {
+            for target_type in target.types.into_owned() {
                 atomics.push(TAtomic::Derived(TDerived::PropertiesOf(match properties_of_type.filter {
                     PropertiesOfFilter::All => TPropertiesOf::new(Box::new(target_type)),
                     PropertiesOfFilter::Public => TPropertiesOf::public(Box::new(target_type)),
@@ -465,7 +498,7 @@ pub fn get_union_from_type_ast<'i>(
                 })));
             }
 
-            TUnion::new(atomics)
+            TUnion::from_vec(atomics)
         }
         _ => {
             return Err(TypeError::UnsupportedType(ttype.to_string(), ttype.span()));
@@ -518,7 +551,7 @@ fn get_shape_from_ast(
                                     let name_str = interner.lookup(&name);
                                     let last_part = name_str.split("\\").last().unwrap_or(name_str);
 
-                                    ArrayKey::String(last_part.to_string())
+                                    ArrayKey::from(last_part.to_string())
                                 }
                                 _ => {
                                     return Err(TypeError::InvalidType(
@@ -619,7 +652,7 @@ fn get_shape_from_ast(
                                     let name_str = interner.lookup(&name);
                                     let last_part = name_str.split("\\").last().unwrap_or(name_str);
 
-                                    ArrayKey::String(last_part.to_string())
+                                    ArrayKey::from(last_part.to_string())
                                 }
                                 _ => {
                                     return Err(TypeError::InvalidType(
@@ -846,7 +879,7 @@ fn get_class_string_type_from_ast(
                 get_union_from_type_ast(&parameter.entry.inner, scope, type_context, classname, interner)?;
 
             let mut class_strings = vec![];
-            for constraint in constraint_union.types {
+            for constraint in constraint_union.types.into_owned() {
                 match constraint {
                     TAtomic::Object(TObject::Named(_))
                     | TAtomic::Object(TObject::Enum(_))
@@ -858,7 +891,7 @@ fn get_class_string_type_from_ast(
                         constraint,
                         ..
                     }) => {
-                        for constraint_atomic in constraint.types {
+                        for constraint_atomic in constraint.types.into_owned() {
                             class_strings.push(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::generic(
                                 kind,
                                 parameter_name,
@@ -880,7 +913,7 @@ fn get_class_string_type_from_ast(
                 }
             }
 
-            TUnion::new(class_strings)
+            TUnion::from_vec(class_strings)
         }
         None => wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::any(kind)))),
     })

@@ -16,7 +16,7 @@ macro_rules! intersect_simple {
             let mut acceptable_types = Vec::new();
             let mut did_remove_type = false;
 
-            for atomic in &$existing_var_type.types {
+            for atomic in $existing_var_type.types.as_ref() {
                 if matches!(atomic, $( $subtype_pattern )|+ $( if $subtype_guard )?) {
                     acceptable_types.push(atomic.clone());
                 } else if matches!(atomic, $( $supertype_pattern )|+ $( if $supertype_guard )?) {
@@ -46,7 +46,7 @@ macro_rules! intersect_simple {
             }
 
             if !acceptable_types.is_empty() {
-                return Some(TUnion::new(acceptable_types));
+                return Some(TUnion::from_vec(acceptable_types));
             }
 
             Some(get_never())

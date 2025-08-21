@@ -194,9 +194,8 @@ pub fn is_contained_by(
 
             if is_atomic_contained_by {
                 if let Some(replacement_atomic_type) = atomic_comparison_result.replacement_atomic_type {
-                    if let Some(ref mut replacement_union_type) = union_comparison_result.replacement_union_type {
-                        replacement_union_type.remove_type(input_type_part);
-                        replacement_union_type.types.push(replacement_atomic_type);
+                    if let Some(replacement_union_type) = &mut union_comparison_result.replacement_union_type {
+                        replacement_union_type.replace_type(input_type_part, replacement_atomic_type);
                     } else {
                         union_comparison_result.replacement_union_type = Some(wrap_atomic(replacement_atomic_type));
                     }
@@ -290,7 +289,7 @@ pub(crate) fn can_be_contained_by(
         return true;
     }
 
-    for container_type_part in &container_type.types {
+    for container_type_part in container_type.types.as_ref() {
         if matches!(container_type_part, TAtomic::Null) && ignore_null {
             continue;
         }
@@ -299,7 +298,7 @@ pub(crate) fn can_be_contained_by(
             continue;
         }
 
-        for input_type_part in &input_type.types {
+        for input_type_part in input_type.types.as_ref() {
             let mut atomic_comparison_result = ComparisonResult::new();
 
             let is_atomic_contained_by = atomic_comparator::is_contained_by(
@@ -337,8 +336,8 @@ pub fn can_expression_types_be_identical(
         return true;
     }
 
-    for type1_part in &type1.types {
-        for type2_part in &type2.types {
+    for type1_part in type1.types.as_ref() {
+        for type2_part in type2.types.as_ref() {
             if atomic_comparator::can_be_identical(
                 codebase,
                 interner,

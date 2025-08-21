@@ -863,7 +863,7 @@ fn check_template_parameters(
             let extended_type_str = extended_type.get_id(Some(context.interner));
 
             if parent_metadata.template_variance.get(&i).is_some_and(|variance| variance.is_invariant()) {
-                for extended_type_atomic in &extended_type.types {
+                for extended_type_atomic in extended_type.types.as_ref() {
                     let TAtomic::GenericParameter(generic_parameter) = extended_type_atomic else {
                         continue;
                     };
@@ -896,7 +896,7 @@ fn check_template_parameters(
             }
 
             if parent_metadata.flags.has_consistent_templates() {
-                for extended_type_atomic in &extended_type.types {
+                for extended_type_atomic in extended_type.types.as_ref() {
                     let extended_as_template = extended_type_atomic.get_generic_parameter_name();
                     if extended_as_template.is_none() {
                         context.collector.report_with_code(

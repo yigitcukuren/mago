@@ -166,6 +166,14 @@ impl TMixed {
 }
 
 impl TType for TMixed {
+    fn needs_population(&self) -> bool {
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        false
+    }
+
     fn get_id(&self, _interner: Option<&mago_interner::ThreadedInterner>) -> String {
         let id = match self.truthiness {
             TMixedTruthiness::Truthy => "truthy-mixed",

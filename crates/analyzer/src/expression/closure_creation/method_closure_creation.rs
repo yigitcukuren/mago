@@ -35,7 +35,7 @@ impl Analyzable for MethodClosureCreation {
         let resulting_type = if callables.is_empty() {
             if method_resolution.has_invalid_target { get_never() } else { get_mixed_closure() }
         } else {
-            TUnion::new(callables)
+            TUnion::from_vec(callables)
         };
 
         artifacts.set_expression_type(self, resulting_type);

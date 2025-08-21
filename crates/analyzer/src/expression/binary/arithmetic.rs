@@ -193,7 +193,11 @@ pub fn analyze_arithmetic_operation<'a>(
         .iter()
         .cloned()
         .flat_map(|atomic| {
-            if let TAtomic::GenericParameter(parameter) = atomic { parameter.constraint.types } else { vec![atomic] }
+            if let TAtomic::GenericParameter(parameter) = atomic {
+                parameter.constraint.types.into_owned()
+            } else {
+                vec![atomic]
+            }
         })
         .collect::<VecDeque<_>>();
 
@@ -202,7 +206,11 @@ pub fn analyze_arithmetic_operation<'a>(
         .iter()
         .cloned()
         .flat_map(|atomic| {
-            if let TAtomic::GenericParameter(parameter) = atomic { parameter.constraint.types } else { vec![atomic] }
+            if let TAtomic::GenericParameter(parameter) = atomic {
+                parameter.constraint.types.into_owned()
+            } else {
+                vec![atomic]
+            }
         })
         .collect::<Vec<_>>();
 
@@ -459,7 +467,7 @@ pub fn analyze_arithmetic_operation<'a>(
     }
 
     let final_type = if !result_atomic_types.is_empty() {
-        TUnion::new(combiner::combine(result_atomic_types, context.codebase, context.interner, false))
+        TUnion::from_vec(combiner::combine(result_atomic_types, context.codebase, context.interner, false))
     } else {
         // No valid pairs found, and potentially errors issued.
         // Psalm often defaults to mixed here if operands were invalid.

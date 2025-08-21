@@ -31,6 +31,7 @@ use crate::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use crate::ttype::atomic::scalar::int::TInteger;
 use crate::ttype::atomic::scalar::string::TString;
 use crate::ttype::atomic::scalar::string::TStringLiteral;
+use crate::ttype::get_arraykey;
 use crate::ttype::get_mixed;
 use crate::ttype::union::TUnion;
 use crate::ttype::union::populate_union_type;
@@ -275,7 +276,7 @@ impl TAtomic {
                     }
                 }
 
-                for constraint_atomic in &parameter.constraint.types {
+                for constraint_atomic in parameter.constraint.types.as_ref() {
                     if constraint_atomic.extends_or_implements(codebase, interner, interface) {
                         return true;
                     }
@@ -635,21 +636,6 @@ impl TAtomic {
         matches!(self, TAtomic::Derived(_))
     }
 
-    #[inline]
-    pub fn needs_population(&self) -> bool {
-        matches!(
-            self,
-            TAtomic::Array(_)
-                | TAtomic::Iterable(_)
-                | TAtomic::Callable(TCallable::Signature(_))
-                | TAtomic::Object(TObject::Named(_))
-                | TAtomic::Reference { .. }
-                | TAtomic::GenericParameter(_)
-                | TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::Generic { .. }))
-                | TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::OfType { .. }))
-        )
-    }
-
     pub fn clone_without_intersection_types(&self) -> TAtomic {
         let mut clone = self.clone();
         match &mut clone {
@@ -686,23 +672,19 @@ impl TAtomic {
                         if let Some(key_or_value_param) = type_parameters.get_mut(0)
                             && let TAtomic::Placeholder = key_or_value_param.get_single()
                         {
-                            *key_or_value_param = if has_kv_pair {
-                                TUnion::new(vec![TAtomic::Scalar(TScalar::ArrayKey)])
-                            } else {
-                                TUnion::new(vec![TAtomic::Mixed(TMixed::new())])
-                            };
+                            *key_or_value_param = if has_kv_pair { get_arraykey() } else { get_mixed() };
                         }
 
                         if has_kv_pair
                             && let Some(value_param) = type_parameters.get_mut(1)
                             && let TAtomic::Placeholder = value_param.get_single()
                         {
-                            *value_param = TUnion::new(vec![TAtomic::Mixed(TMixed::new())]);
+                            *value_param = get_mixed();
                         }
                     } else {
                         for type_param in type_parameters {
                             if let TAtomic::Placeholder = type_param.get_single() {
-                                *type_param = TUnion::new(vec![TAtomic::Mixed(TMixed::new())]);
+                                *type_param = get_mixed();
                             }
                         }
                     }
@@ -861,6 +843,56 @@ impl TType for TAtomic {
             TAtomic::Resource(ttype) => ttype.add_intersection_type(intersection_type),
             TAtomic::Conditional(ttype) => ttype.add_intersection_type(intersection_type),
             TAtomic::Derived(ttype) => ttype.add_intersection_type(intersection_type),
+            _ => false,
+        }
+    }
+
+    fn needs_population(&self) -> bool {
+        if let Some(intersection) = self.get_intersection_types() {
+            for intersection_type in intersection {
+                if intersection_type.needs_population() {
+                    return true;
+                }
+            }
+        }
+
+        match self {
+            TAtomic::Object(ttype) => ttype.needs_population(),
+            TAtomic::Reference(ttype) => ttype.needs_population(),
+            TAtomic::GenericParameter(ttype) => ttype.needs_population(),
+            TAtomic::Iterable(ttype) => ttype.needs_population(),
+            TAtomic::Array(ttype) => ttype.needs_population(),
+            TAtomic::Callable(ttype) => ttype.needs_population(),
+            TAtomic::Conditional(ttype) => ttype.needs_population(),
+            TAtomic::Derived(ttype) => ttype.needs_population(),
+            TAtomic::Scalar(ttype) => ttype.needs_population(),
+            TAtomic::Mixed(ttype) => ttype.needs_population(),
+            TAtomic::Resource(ttype) => ttype.needs_population(),
+            _ => false,
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        if let Some(intersection) = self.get_intersection_types() {
+            for intersection_type in intersection {
+                if intersection_type.is_expandable() {
+                    return true;
+                }
+            }
+        }
+
+        match self {
+            TAtomic::Object(ttype) => ttype.is_expandable(),
+            TAtomic::Reference(ttype) => ttype.is_expandable(),
+            TAtomic::GenericParameter(ttype) => ttype.is_expandable(),
+            TAtomic::Iterable(ttype) => ttype.is_expandable(),
+            TAtomic::Array(ttype) => ttype.is_expandable(),
+            TAtomic::Callable(ttype) => ttype.is_expandable(),
+            TAtomic::Conditional(ttype) => ttype.is_expandable(),
+            TAtomic::Derived(ttype) => ttype.is_expandable(),
+            TAtomic::Scalar(ttype) => ttype.is_expandable(),
+            TAtomic::Mixed(ttype) => ttype.is_expandable(),
+            TAtomic::Resource(ttype) => ttype.is_expandable(),
             _ => false,
         }
     }

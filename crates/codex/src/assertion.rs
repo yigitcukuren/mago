@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::hash::Hash;
 use std::hash::Hasher;
 
@@ -276,11 +277,11 @@ impl Assertion {
     ) -> Vec<Self> {
         match self {
             Assertion::IsType(atomic) => {
-                let union = TUnion::new(vec![atomic.clone()]);
+                let union = TUnion::from_single(Cow::Owned(atomic.clone()));
                 let resolved_union = inferred_type_replacer::replace(&union, template_result, codebase, interner);
 
                 let mut result = vec![];
-                for resolved_atomic in resolved_union.types {
+                for resolved_atomic in resolved_union.types.into_owned() {
                     result.push(Assertion::IsType(resolved_atomic));
                 }
 
@@ -291,11 +292,11 @@ impl Assertion {
                 result
             }
             Assertion::IsNotType(atomic) => {
-                let union = TUnion::new(vec![atomic.clone()]);
+                let union = TUnion::from_single(Cow::Owned(atomic.clone()));
                 let resolved_union = inferred_type_replacer::replace(&union, template_result, codebase, interner);
 
                 let mut result = vec![];
-                for resolved_atomic in resolved_union.types {
+                for resolved_atomic in resolved_union.types.into_owned() {
                     result.push(Assertion::IsNotType(resolved_atomic));
                 }
 

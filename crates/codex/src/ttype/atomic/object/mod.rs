@@ -176,6 +176,22 @@ impl TType for TObject {
         }
     }
 
+    fn needs_population(&self) -> bool {
+        match self {
+            TObject::Any => false,
+            TObject::Enum(enum_object) => enum_object.needs_population(),
+            TObject::Named(named_object) => named_object.needs_population(),
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TObject::Any => false,
+            TObject::Enum(enum_object) => enum_object.is_expandable(),
+            TObject::Named(named_object) => named_object.is_expandable(),
+        }
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         match self {
             TObject::Any => "object".to_string(),

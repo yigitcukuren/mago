@@ -38,6 +38,14 @@ impl TResource {
 }
 
 impl TType for TResource {
+    fn needs_population(&self) -> bool {
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        false
+    }
+
     fn get_id(&self, _interner: Option<&ThreadedInterner>) -> String {
         match self.closed {
             Some(true) => "closed-resource".to_string(),

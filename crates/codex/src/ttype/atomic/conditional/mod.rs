@@ -74,6 +74,17 @@ impl TType for TConditional {
         ]
     }
 
+    fn needs_population(&self) -> bool {
+        self.subject.needs_population()
+            || self.target.needs_population()
+            || self.then.needs_population()
+            || self.otherwise.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let mut id = "(".to_string();
 

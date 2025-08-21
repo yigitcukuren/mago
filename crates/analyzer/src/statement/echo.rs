@@ -1,6 +1,4 @@
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
-use mago_codex::ttype::union::TUnion;
+use mago_codex::ttype::get_nullable_scalar;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -25,7 +23,7 @@ impl Analyzable for Echo {
             "echo",
             self.echo.span,
             ConstructInput::ExpressionList(self.values.as_slice()),
-            TUnion::new(vec![TAtomic::Scalar(TScalar::generic()), TAtomic::Null]),
+            get_nullable_scalar(),
             true,
             false,
             true,

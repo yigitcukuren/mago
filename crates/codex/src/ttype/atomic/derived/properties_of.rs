@@ -56,6 +56,14 @@ impl TType for TPropertiesOf {
         vec![TypeRef::Atomic(&self.target_type)]
     }
 
+    fn needs_population(&self) -> bool {
+        self.target_type.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let mut id = String::new();
         if let Some(visibility) = &self.visibility {

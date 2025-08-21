@@ -57,6 +57,14 @@ impl TBool {
 }
 
 impl TType for TBool {
+    fn needs_population(&self) -> bool {
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        false
+    }
+
     fn get_id(&self, _interner: Option<&ThreadedInterner>) -> String {
         match self.value {
             Some(true) => "true".to_string(),

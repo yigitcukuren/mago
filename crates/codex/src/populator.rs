@@ -15,6 +15,7 @@ use crate::misc::GenericParent;
 use crate::reference::ReferenceSource;
 use crate::reference::SymbolReferences;
 use crate::symbol::Symbols;
+use crate::ttype::TType;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::generic::TGenericParameter;
 use crate::ttype::atomic::populate_atomic_type;
@@ -917,7 +918,7 @@ fn extend_type(
 
     let mut extended_types = Vec::new();
 
-    let mut worklist = extended_type.types.clone();
+    let mut worklist = extended_type.types.clone().into_owned();
     while let Some(atomic_type) = worklist.pop() {
         if let TAtomic::GenericParameter(TGenericParameter {
             parameter_name,
@@ -927,12 +928,12 @@ fn extend_type(
             && let Some(extended_parameters) = template_extended_parameters.get(defining_entity)
             && let Some(referenced_type) = extended_parameters.get(parameter_name)
         {
-            extended_types.extend(referenced_type.types.clone());
+            extended_types.extend(referenced_type.types.clone().into_owned());
             continue;
         }
 
         extended_types.push(atomic_type);
     }
 
-    TUnion::new(extended_types)
+    TUnion::from_vec(extended_types)
 }

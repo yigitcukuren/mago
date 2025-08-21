@@ -106,7 +106,7 @@ pub(super) fn is_intersection_shallowly_contained_by(
                     }
                 }
                 (GenericParent::ClassLike(_), _) | (_, GenericParent::ClassLike(_)) => {
-                    for input_as_atomic in &input_constraint.types {
+                    for input_as_atomic in input_constraint.types.as_ref() {
                         // todo use type equality
                         if input_as_atomic == intersection_container_type {
                             return true;

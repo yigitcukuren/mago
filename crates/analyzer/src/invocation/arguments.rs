@@ -61,7 +61,7 @@ pub fn analyze_and_store_argument_type<'a>(
     let mut inferred_parameter_types: Option<HashMap<usize, TUnion>> = None;
     if let Some(closure_parameter_type) = closure_parameter_type {
         let mut inferred_parameters = HashMap::default();
-        for closure_parameter_atomic in &closure_parameter_type.types {
+        for closure_parameter_atomic in closure_parameter_type.types.as_ref() {
             let TAtomic::Callable(TCallable::Signature(callable)) = closure_parameter_atomic else {
                 continue;
             };
@@ -408,7 +408,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
     let mut potential_element_types = Vec::new();
     let mut reported_an_error = false;
 
-    for atomic_type in &argument_value_type.types {
+    for atomic_type in argument_value_type.types.as_ref() {
         if let Some(value_parameter) = get_iterable_value_parameter(atomic_type, context.codebase, context.interner) {
             potential_element_types.push(value_parameter);
 

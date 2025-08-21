@@ -138,7 +138,9 @@ impl Settings {
             memoize_properties: true,
             allow_possibly_undefined_array_keys: true,
             check_throws: false,
-            perform_heuristic_checks: true,
+            // TODO(azjezz): enable heuristic checks in the future,
+            // need optimizations first
+            perform_heuristic_checks: false,
             diff: false,
         }
     }

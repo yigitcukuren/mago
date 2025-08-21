@@ -1,7 +1,5 @@
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
+use mago_codex::ttype::get_int_or_string;
 use mago_codex::ttype::get_never;
-use mago_codex::ttype::union::TUnion;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -27,7 +25,7 @@ impl Analyzable for ExitConstruct {
             "exit",
             self.exit.span,
             ConstructInput::ArgumentList(self.arguments.as_ref()),
-            TUnion::new(vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::string())]),
+            get_int_or_string(),
             true,
             true,
             true,
@@ -56,7 +54,7 @@ impl Analyzable for DieConstruct {
             "die",
             self.die.span,
             ConstructInput::ArgumentList(self.arguments.as_ref()),
-            TUnion::new(vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::string())]),
+            get_int_or_string(),
             true,
             true,
             true,

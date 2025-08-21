@@ -46,9 +46,9 @@ impl Analyzable for Global {
             };
 
             let is_argc_or_argv = var_id == "$argc" || var_id == "$argv";
-            let global_type = get_global_variable_type(&var_id).unwrap_or_else(get_mixed);
+            let global_type = get_global_variable_type(&var_id).unwrap_or_else(|| Rc::new(get_mixed()));
 
-            block_context.locals.insert(var_id.clone(), Rc::new(global_type));
+            block_context.locals.insert(var_id.clone(), global_type);
 
             if !is_argc_or_argv {
                 block_context.variables_possibly_in_scope.insert(var_id.clone());

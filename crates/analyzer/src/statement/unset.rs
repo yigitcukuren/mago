@@ -80,7 +80,7 @@ impl Analyzable for Unset {
                 let mut atomics = vec![];
 
                 let array_key = key_type.get_single_array_key();
-                for atomic in Rc::unwrap_or_clone(array_variable).types {
+                for atomic in Rc::unwrap_or_clone(array_variable).types.into_owned() {
                     if let TAtomic::Scalar(scalar) = &atomic {
                         let scalar_str = scalar.get_id(Some(context.interner));
 
@@ -308,7 +308,7 @@ impl Analyzable for Unset {
                     }
                 }
 
-                let rc = Rc::new(TUnion::new(atomics));
+                let rc = Rc::new(TUnion::from_vec(atomics));
 
                 block_context.locals.insert(array_id.clone(), rc.clone());
                 block_context.remove_variable_from_conflicting_clauses(

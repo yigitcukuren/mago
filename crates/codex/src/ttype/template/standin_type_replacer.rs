@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use ahash::HashMap;
@@ -88,7 +89,7 @@ pub fn replace(
     argument_span: Option<Span>,
     options: StandinOptions<'_>,
 ) -> TUnion {
-    let mut original_parameter_atomics = parameter_type.types.clone();
+    let mut original_parameter_atomics = parameter_type.types.clone().into_owned();
     let mut new_parameter_atomics = Vec::with_capacity(original_parameter_atomics.len());
 
     let mut argument_type = argument_type.cloned();
@@ -99,10 +100,10 @@ pub fn replace(
     {
         original_parameter_atomics.retain(|t| !matches!(t, TAtomic::Null));
 
-        argument_type.types = vec![match argument_type.types[0] {
+        argument_type.types = Cow::Owned(vec![match argument_type.types[0] {
             TAtomic::Mixed(mixed) => TAtomic::Mixed(mixed.with_is_non_null(true)),
             _ => TAtomic::Mixed(TMixed::new().with_is_non_null(true)),
-        }];
+        }]);
     }
 
     if let Some(ref mut argument_type_inner) = argument_type
@@ -140,7 +141,7 @@ pub fn replace(
         return parameter_type.clone();
     }
 
-    let mut new_union_type = TUnion::new(if new_parameter_atomics.len() > 1 {
+    let mut new_union_type = TUnion::from_vec(if new_parameter_atomics.len() > 1 {
         combiner::combine(new_parameter_atomics, codebase, interner, false)
     } else {
         new_parameter_atomics
@@ -553,7 +554,7 @@ fn handle_template_param_standin(
     }
 
     if &template_type.get_id(None) == normalized_key {
-        return template_type.clone().types;
+        return template_type.types.clone().into_owned();
     }
 
     let mut replacement_type = template_type.clone();
@@ -565,7 +566,7 @@ fn handle_template_param_standin(
     if let Some(intersection_types) = intersection_types {
         for intersection_type in intersection_types {
             let intersection_type_union = self::replace(
-                &TUnion::new(vec![intersection_type.clone()]),
+                &TUnion::from_vec(vec![intersection_type.clone()]),
                 template_result,
                 codebase,
                 interner,
@@ -621,7 +622,7 @@ fn handle_template_param_standin(
             );
         }
 
-        for replacement_atomic_type in &replacement_type.types {
+        for replacement_atomic_type in replacement_type.types.as_ref() {
             let mut replacements_found = false;
 
             if let TAtomic::GenericParameter(TGenericParameter {
@@ -644,7 +645,7 @@ fn handle_template_param_standin(
                     None => true,
                 }
             {
-                for nested_type_atomic in &replacement_as_type.types {
+                for nested_type_atomic in replacement_as_type.types.as_ref() {
                     replacements_found = true;
                     atomic_types.push(nested_type_atomic.clone());
                 }
@@ -705,7 +706,7 @@ fn handle_template_param_standin(
         let mut input_type = (*input_type).clone();
 
         if !matching_input_keys.is_empty() {
-            for atomic in &input_type.clone().types {
+            for atomic in input_type.types.clone().as_ref() {
                 if !matching_input_keys.contains(&atomic.get_id(None)) {
                     input_type.remove_type(atomic);
                 }
@@ -713,7 +714,7 @@ fn handle_template_param_standin(
         }
 
         if !options.add_lower_bound {
-            return input_type.types.clone();
+            return input_type.types.into_owned();
         }
 
         if let Some(existing_lower_bounds) =
@@ -867,7 +868,7 @@ fn handle_template_param_class_standin(
         } {
             let mut valid_input_atomic_types = vec![];
 
-            for input_atomic_type in &input_type.types {
+            for input_atomic_type in input_type.types.as_ref() {
                 if let TAtomic::Scalar(TScalar::ClassLikeString(input_class_string)) = input_atomic_type {
                     let valid_input_type = match input_class_string {
                         TClassLikeString::Generic { parameter_name, defining_entity, constraint, .. } => {
@@ -892,7 +893,7 @@ fn handle_template_param_class_standin(
             }
 
             let generic_param = if !valid_input_atomic_types.is_empty() {
-                Some(TUnion::new(valid_input_atomic_types))
+                Some(TUnion::from_vec(valid_input_atomic_types))
             } else if was_single {
                 Some(get_mixed())
             } else {
@@ -900,7 +901,7 @@ fn handle_template_param_class_standin(
             };
 
             let as_type_union = self::replace(
-                &TUnion::new(vec![atomic_type_as.clone()]),
+                &TUnion::from_vec(vec![atomic_type_as.clone()]),
                 template_result,
                 codebase,
                 interner,
@@ -960,7 +961,7 @@ fn handle_template_param_class_standin(
                 .next()
                 .unwrap();
 
-            for template_atomic_type in &template_type.types {
+            for template_atomic_type in template_type.types.as_ref() {
                 if let TAtomic::Object(_) = &template_atomic_type {
                     atomic_types.push(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::OfType {
                         kind: *kind,
@@ -1026,7 +1027,7 @@ fn find_matching_atomic_types_for_template(
 ) -> Vec<TAtomic> {
     let mut matching_atomic_types = Vec::new();
 
-    for atomic_input_type in &input_type.types {
+    for atomic_input_type in input_type.types.as_ref() {
         match (atomic_input_type, base_type) {
             (TAtomic::Callable(TCallable::Signature(_)), TAtomic::Callable(TCallable::Signature(_))) => {
                 matching_atomic_types.push(atomic_input_type.clone());
@@ -1227,7 +1228,7 @@ pub fn get_mapped_generic_type_parameters(
             let mut mapped_input_offset = None;
             let mut new_input_parameter = None;
 
-            for extended_input_parameter_type in &extended_input_parameter.types {
+            for extended_input_parameter_type in extended_input_parameter.types.as_ref() {
                 let extended_input_parameter_types = get_extended_templated_types(
                     extended_input_parameter_type,
                     &input_class_metadata.template_extended_parameters,
@@ -1301,7 +1302,7 @@ pub fn get_extended_templated_types<'a>(
     {
         if let Some(defining_parameters) = extends.get(defining_class) {
             if let Some(extended_parameter) = defining_parameters.get(parameter_name) {
-                for extended_atomic_type in &extended_parameter.types {
+                for extended_atomic_type in extended_parameter.types.as_ref() {
                     if let TAtomic::GenericParameter(_) = extended_atomic_type {
                         extra_added_types.extend(get_extended_templated_types(extended_atomic_type, extends));
                     } else {

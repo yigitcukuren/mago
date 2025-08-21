@@ -118,6 +118,26 @@ impl TType for TList {
         children
     }
 
+    fn needs_population(&self) -> bool {
+        if let Some(elements) = &self.known_elements
+            && elements.iter().any(|element| element.1.1.needs_population())
+        {
+            return true;
+        }
+
+        self.element_type.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        if let Some(elements) = &self.known_elements
+            && elements.iter().any(|element| element.1.1.is_expandable())
+        {
+            return true;
+        }
+
+        self.element_type.is_expandable()
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         if let Some(elements) = &self.known_elements {
             // Format as list{...} shape

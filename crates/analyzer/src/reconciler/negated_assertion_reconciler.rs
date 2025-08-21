@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use ahash::HashSet;
 
 use mago_codex::assertion::Assertion;
@@ -128,7 +130,7 @@ fn subtract_complex_type(
 ) {
     let mut acceptable_types = vec![];
 
-    let existing_atomic_types = existing_var_type.types.drain(..).collect::<Vec<_>>();
+    let existing_atomic_types = existing_var_type.types.to_mut().drain(..).collect::<Vec<_>>();
 
     for existing_atomic in existing_atomic_types {
         if &existing_atomic == assertion_type {
@@ -249,7 +251,7 @@ fn subtract_complex_type(
         acceptable_types = combiner::combine(acceptable_types, context.codebase, context.interner, false);
     }
 
-    existing_var_type.types = acceptable_types;
+    existing_var_type.types = Cow::Owned(acceptable_types);
 }
 
 fn handle_negated_class(
@@ -299,7 +301,7 @@ fn handle_literal_negated_equality(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for existing_atomic_type in new_var_type.types.drain(..) {
+    for existing_atomic_type in new_var_type.types.to_mut().drain(..) {
         match &existing_atomic_type {
             TAtomic::Scalar(TScalar::String(existing_string)) => {
                 let existing_literal_string = existing_atomic_type.get_literal_string_value();
@@ -399,6 +401,6 @@ fn handle_literal_negated_equality(
         return get_never();
     }
 
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
     new_var_type
 }

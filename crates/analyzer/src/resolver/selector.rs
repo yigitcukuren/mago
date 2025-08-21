@@ -152,7 +152,7 @@ fn resolve_selector_from_type(
     }
 
     let mut resolved_selectors = vec![];
-    for atomic in &selector_type.types {
+    for atomic in selector_type.types.as_ref() {
         if let Some(literal_string) = atomic.get_literal_string_value() {
             resolved_selectors.push(ResolvedSelector::LiteralString(context.interner.intern(literal_string)));
             continue;

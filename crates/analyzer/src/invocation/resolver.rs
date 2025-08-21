@@ -79,18 +79,18 @@ fn resolve_union(
 ) -> TUnion {
     let mut resulting_union = union_to_resolve;
     let mut resulting_atomics = Vec::with_capacity(resulting_union.types.len());
-    for atomic_to_resolve in resulting_union.types {
+    for atomic_to_resolve in resulting_union.types.into_owned() {
         let return_atomic = resolve_atomic(context, invocation, template_result, parameters, atomic_to_resolve);
 
         match return_atomic {
             Either::Left(atomic) => resulting_atomics.push(atomic),
             Either::Right(union) => {
-                resulting_atomics.extend(union.types);
+                resulting_atomics.extend(union.types.into_owned());
             }
         }
     }
 
-    resulting_union.types = resulting_atomics;
+    resulting_union.types = Cow::Owned(resulting_atomics);
 
     if !template_result.lower_bounds.is_empty() || resulting_union.has_template_types() {
         expander::expand_union(

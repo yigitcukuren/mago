@@ -50,7 +50,7 @@ impl SpecialFunctionLikeHandlerTrait for StrComponentFunctionsHandler {
                 let haystack = get_argument(context, invocation.arguments_source, 0, vec!["haystack"])?;
                 let haystack_type = artifacts.get_expression_type(haystack)?.get_single_string()?;
 
-                Some(TUnion::new(vec![
+                Some(TUnion::from_vec(vec![
                     TAtomic::Null,
                     TAtomic::Scalar(TScalar::String(TString::general_with_props(
                         false,
@@ -86,14 +86,14 @@ impl SpecialFunctionLikeHandlerTrait for StrComponentFunctionsHandler {
                 let string_type = artifacts.get_expression_type(string)?.get_single_string()?;
 
                 Some(if string_type.is_literal_origin() {
-                    TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
+                    TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                         false,
                         false,
                         false,
                         string_type.is_lowercase,
                     ))))
                 } else {
-                    TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
                         false,
                         false,
                         false,
@@ -109,14 +109,14 @@ impl SpecialFunctionLikeHandlerTrait for StrComponentFunctionsHandler {
                 let replacement_type = artifacts.get_expression_type(replacement)?.get_single_string()?;
 
                 Some(if string_type.is_literal_origin() && replacement_type.is_literal_origin() {
-                    TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
+                    TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                         false,
                         string_type.is_truthy || replacement_type.is_truthy,
                         string_type.is_non_empty || replacement_type.is_non_empty,
                         string_type.is_lowercase && replacement_type.is_lowercase,
                     ))))
                 } else {
-                    TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
                         false,
                         string_type.is_truthy || replacement_type.is_truthy,
                         string_type.is_non_empty || replacement_type.is_non_empty,
@@ -130,14 +130,14 @@ impl SpecialFunctionLikeHandlerTrait for StrComponentFunctionsHandler {
 
                 Some(match string_type.literal {
                     Some(_) => {
-                        TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
+                        TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                             string_type.is_numeric,
                             string_type.is_truthy,
                             string_type.is_non_empty,
                             true,
                         ))))
                     }
-                    None => TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    None => TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
                         string_type.is_numeric,
                         string_type.is_truthy,
                         string_type.is_non_empty,
@@ -151,14 +151,14 @@ impl SpecialFunctionLikeHandlerTrait for StrComponentFunctionsHandler {
 
                 Some(match string_type.literal {
                     Some(_) => {
-                        TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
+                        TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                             string_type.is_numeric,
                             string_type.is_truthy,
                             string_type.is_non_empty,
                             false,
                         ))))
                     }
-                    None => TUnion::from_single(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    None => TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
                         string_type.is_numeric,
                         string_type.is_truthy,
                         string_type.is_non_empty,

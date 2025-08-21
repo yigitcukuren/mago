@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
@@ -98,7 +99,7 @@ pub(crate) fn analyze<'a>(
     });
 
     if let Some(index_type) = &index_type {
-        for index_atomic_type in &index_type.types {
+        for index_atomic_type in index_type.types.as_ref() {
             if index_atomic_type.is_literal_int() || index_atomic_type.is_known_literal_string() {
                 key_values.push(index_atomic_type.clone());
             }
@@ -145,6 +146,7 @@ pub(crate) fn update_type_with_key_values(
 
     new_type.types = new_type
         .types
+        .into_owned()
         .into_iter()
         .map(|atomic_type| {
             update_atomic_given_key(
@@ -186,7 +188,7 @@ fn update_atomic_given_key(
         for key_value in key_values {
             if let TAtomic::Array(array) = &mut atomic_type {
                 let array_key = if let Some(str) = key_value.get_literal_string_value() {
-                    ArrayKey::String(str.to_owned())
+                    ArrayKey::String(Cow::Owned(str.to_owned()))
                 } else if let Some(int) = key_value.get_literal_int_value() {
                     ArrayKey::Integer(int)
                 } else {
@@ -297,7 +299,7 @@ fn update_array_assignment_child_type(
     if let Some(key_type) = &key_type {
         let key_type = if key_type.is_mixed() { Rc::new(get_arraykey()) } else { key_type.clone() };
 
-        for original_type in &root_type.types {
+        for original_type in root_type.types.as_ref() {
             if let TAtomic::Array(array_type) = original_type {
                 match array_type {
                     TArray::List(list) => {
@@ -324,7 +326,7 @@ fn update_array_assignment_child_type(
             }
         }
     } else {
-        for original_type in &root_type.types {
+        for original_type in root_type.types.as_ref() {
             if let TAtomic::Array(array) = original_type {
                 match array {
                     TArray::List(list) => {
@@ -399,7 +401,8 @@ fn update_array_assignment_child_type(
         return root_type;
     }
 
-    let collection_type = TUnion::new(combiner::combine(collection_types, context.codebase, context.interner, false));
+    let collection_type =
+        TUnion::from_vec(combiner::combine(collection_types, context.codebase, context.interner, false));
 
     add_union_type(root_type, &collection_type, context.codebase, context.interner, true)
 }
@@ -608,7 +611,7 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
 
 fn get_index_literal_types(expression_index_type: &TUnion) -> Vec<TAtomic> {
     let mut valid_offset_types = vec![];
-    for single_atomic in &expression_index_type.types {
+    for single_atomic in expression_index_type.types.as_ref() {
         if single_atomic.is_literal_int() || single_atomic.is_known_literal_string() {
             valid_offset_types.push(single_atomic.clone());
         }

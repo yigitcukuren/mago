@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use mago_interner::ThreadedInterner;
@@ -19,15 +20,20 @@ use crate::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use crate::ttype::atomic::scalar::float::TFloat;
 use crate::ttype::atomic::scalar::int::TInteger;
 use crate::ttype::atomic::scalar::string::TString;
+use crate::ttype::atomic::scalar::string::TStringLiteral;
 use crate::ttype::get_bool;
+use crate::ttype::get_empty_string;
 use crate::ttype::get_false;
 use crate::ttype::get_float;
 use crate::ttype::get_int;
+use crate::ttype::get_int_or_float;
 use crate::ttype::get_literal_int;
 use crate::ttype::get_never;
 use crate::ttype::get_non_empty_string;
+use crate::ttype::get_non_negative_int;
 use crate::ttype::get_null;
 use crate::ttype::get_open_resource;
+use crate::ttype::get_positive_int;
 use crate::ttype::get_string;
 use crate::ttype::get_true;
 use crate::ttype::union::TUnion;
@@ -41,8 +47,12 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             Literal::String(literal_string) => {
                 Some(match literal_string.value.as_deref() {
                     Some(value) => {
-                        if value.len() < 1000 {
-                            wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(value.to_owned()))))
+                        if value.is_empty() {
+                            get_empty_string()
+                        } else if value.len() < 1000 {
+                            wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(Cow::Owned(
+                                value.to_owned(),
+                            )))))
                         } else {
                             wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                                 str_is_numeric(value),
@@ -57,10 +67,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             }
             Literal::Integer(literal_integer) => Some(match literal_integer.value {
                 Some(value) => get_literal_int(value as i64),
-                None => TUnion::new(vec![
-                    TAtomic::Scalar(TScalar::Float(TFloat::general())),
-                    TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified)),
-                ]),
+                None => get_int_or_float(),
             }),
             Literal::Float(_) => Some(get_float()),
             Literal::True(_) => Some(get_true()),
@@ -83,11 +90,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                 }
             }
 
-            if contains_content {
-                Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::non_empty()))))
-            } else {
-                Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general()))))
-            }
+            if contains_content { Some(get_non_empty_string()) } else { Some(get_string()) }
         }
         Expression::UnaryPrefix(UnaryPrefix { operator, operand }) => {
             let operand_type = infer(interner, resolved_names, operand)?;
@@ -97,7 +100,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                     Some(if let Some(operand_value) = operand_type.get_single_literal_int_value() {
                         get_literal_int(operand_value)
                     } else if let Some(operand_value) = operand_type.get_single_literal_float_value() {
-                        TUnion::new(vec![TAtomic::Scalar(TScalar::Float(TFloat::literal(operand_value)))])
+                        TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::Float(TFloat::literal(operand_value)))))
                     } else {
                         operand_type
                     })
@@ -106,7 +109,9 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                     Some(if let Some(operand_value) = operand_type.get_single_literal_int_value() {
                         get_literal_int(operand_value.saturating_mul(-1))
                     } else if let Some(operand_value) = operand_type.get_single_literal_float_value() {
-                        TUnion::new(vec![TAtomic::Scalar(TScalar::Float(TFloat::literal(-operand_value)))])
+                        TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::Float(TFloat::literal(
+                            -operand_value,
+                        )))))
                     } else {
                         operand_type
                     })
@@ -115,25 +120,27 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             }
         }
         Expression::Binary(Binary { operator: BinaryOperator::StringConcat(_), lhs, rhs }) => {
-            let lhs_type = infer(interner, resolved_names, lhs);
-            let rhs_type = infer(interner, resolved_names, rhs);
+            let Some(lhs_type) = infer(interner, resolved_names, lhs) else { return Some(get_string()) };
+            let Some(rhs_type) = infer(interner, resolved_names, rhs) else { return Some(get_string()) };
 
-            let lhs_string = lhs_type.map_or_else(TString::general, |t| match t.get_single_owned() {
+            let lhs_string = match lhs_type.get_single_owned() {
                 TAtomic::Scalar(TScalar::String(s)) => s.clone(),
-                _ => TString::general(),
-            });
+                _ => return Some(get_string()),
+            };
 
-            let rhs_string = rhs_type.map_or_else(TString::general, |t| match t.get_single_owned() {
+            let rhs_string = match rhs_type.get_single_owned() {
                 TAtomic::Scalar(TScalar::String(s)) => s.clone(),
-                _ => TString::general(),
-            });
+                _ => return Some(get_string()),
+            };
 
             if let (Some(left_val), Some(right_val)) =
                 (lhs_string.get_known_literal_value(), rhs_string.get_known_literal_value())
             {
                 let combined_value = format!("{left_val}{right_val}");
 
-                return Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(combined_value)))));
+                return Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(Cow::Owned(
+                    combined_value,
+                ))))));
             }
 
             let is_non_empty = lhs_string.is_non_empty() || rhs_string.is_non_empty();
@@ -213,7 +220,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                 };
 
                 match bits {
-                    Some(bits) => TAtomic::Scalar(TScalar::literal_int(bits as i64)),
+                    Some(bits) => return Some(get_literal_int(bits as i64)),
                     None => TAtomic::Reference(TReference::Member {
                         class_like_name: *class_name,
                         member_selector: TReferenceMemberSelector::Identifier(identifier.value),
@@ -267,7 +274,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             keyed_array.non_empty = !known_items.is_empty();
             keyed_array.known_items = Some(known_items);
 
-            Some(TUnion::new(vec![TAtomic::Array(TArray::Keyed(keyed_array))]))
+            Some(TUnion::from_single(Cow::Owned(TAtomic::Array(TArray::Keyed(keyed_array)))))
         }
         Expression::Closure(closure) => {
             let span = closure.span();
@@ -291,6 +298,43 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
 
 #[inline]
 fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: &Identifier) -> Option<TUnion> {
+    const DIR_SEPARATOR_SLICE: &[TAtomic] = &[
+        TAtomic::Scalar(TScalar::String(TString {
+            literal: Some(TStringLiteral::Value(Cow::Borrowed("/"))),
+            is_numeric: false,
+            is_truthy: true,
+            is_non_empty: true,
+            is_lowercase: true,
+        })),
+        TAtomic::Scalar(TScalar::String(TString {
+            literal: Some(TStringLiteral::Value(Cow::Borrowed("\\"))),
+            is_numeric: false,
+            is_truthy: true,
+            is_non_empty: true,
+            is_lowercase: true,
+        })),
+    ];
+    const PHP_INT_MAX_SLICE: &[TAtomic] = &[
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(9223372036854775807))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(2147483647))),
+    ];
+    const PHP_INT_MIN_SLICE: &[TAtomic] = &[
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(-9223372036854775808))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(-2147483648))),
+    ];
+    const PHP_MAJOR_VERSION_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(8, 9)));
+    const PHP_ZTS_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)));
+    const PHP_DEBUG_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)));
+    const PHP_INT_SIZE_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(4, 8)));
+    const PHP_WINDOWS_VERSION_MAJOR_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(4, 6)));
+    const PHP_WINDOWS_VERSION_MINOR_SLICE: &[TAtomic] = &[
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(0))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(1))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(2))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(10))),
+        TAtomic::Scalar(TScalar::Integer(TInteger::Literal(90))),
+    ];
+
     let (short_name, _) = if names.is_imported(constant) {
         let name = interner.lookup(names.get(constant));
 
@@ -312,12 +356,9 @@ fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: 
         | "LIBXML_VERSION"
         | "OPENSSL_VERSION_NUMBER"
         | "PHP_FLOAT_DIG" => get_int(),
-        "PHP_VERSION_ID" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::positive()))]),
-        "PHP_RELEASE_VERSION" | "PHP_MINOR_VERSION" => {
-            TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::non_negative()))])
-        }
         "PHP_EXTRA_VERSION" => get_string(),
-        "PEAR_EXTENSION_DIR"
+        "PHP_BUILD_DATE"
+        | "PEAR_EXTENSION_DIR"
         | "PEAR_INSTALL_DIR"
         | "PHP_BINARY"
         | "PHP_BINDIR"
@@ -339,33 +380,19 @@ fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: 
         | "ICONV_IMPL"
         | "LIBXML_DOTTED_VERSION"
         | "PCRE_VERSION" => get_non_empty_string(),
-        "DIRECTORY_SEPARATOR" => TUnion::new(vec![
-            TAtomic::Scalar(TScalar::String(TString::known_literal("\\".to_string()))),
-            TAtomic::Scalar(TScalar::String(TString::known_literal("/".to_string()))),
-        ]),
-        "PHP_INT_MAX" => TUnion::new(vec![
-            get_literal_int(9223372036854775807).get_single_owned(),
-            get_literal_int(2147483647).get_single_owned(),
-        ]),
-        "PHP_INT_MIN" => TUnion::new(vec![
-            get_literal_int(-9223372036854775808).get_single_owned(),
-            get_literal_int(-2147483648).get_single_owned(),
-        ]),
-        "PHP_BUILD_DATE" => get_non_empty_string(),
-        "PHP_MAJOR_VERSION" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(8, 9)))]),
-        "PHP_ZTS" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)))]),
-        "PHP_DEBUG" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)))]),
-        "PHP_INT_SIZE" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(4, 8)))]),
-        "PHP_WINDOWS_VERSION_MAJOR" => TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(4, 6)))]),
-        "PHP_WINDOWS_VERSION_MINOR" => TUnion::new(vec![
-            get_literal_int(0).get_single_owned(),  // Vista/2008/2000/NT4/95
-            get_literal_int(1).get_single_owned(),  // XP
-            get_literal_int(2).get_single_owned(),  // 2003 R2/2003/XP x64
-            get_literal_int(10).get_single_owned(), // 98
-            get_literal_int(90).get_single_owned(), // Me
-        ]),
         "STDIN" | "STDOUT" | "STDERR" => get_open_resource(),
         "NAN" | "PHP_FLOAT_EPSILON" | "INF" => get_float(),
+        "PHP_VERSION_ID" => get_positive_int(),
+        "PHP_RELEASE_VERSION" | "PHP_MINOR_VERSION" => get_non_negative_int(),
+        "PHP_MAJOR_VERSION" => TUnion::from_single(Cow::Borrowed(PHP_MAJOR_VERSION_ATOMIC)),
+        "PHP_ZTS" => TUnion::from_single(Cow::Borrowed(PHP_ZTS_ATOMIC)),
+        "PHP_DEBUG" => TUnion::from_single(Cow::Borrowed(PHP_DEBUG_ATOMIC)),
+        "PHP_INT_SIZE" => TUnion::from_single(Cow::Borrowed(PHP_INT_SIZE_ATOMIC)),
+        "PHP_WINDOWS_VERSION_MAJOR" => TUnion::from_single(Cow::Borrowed(PHP_WINDOWS_VERSION_MAJOR_ATOMIC)),
+        "DIRECTORY_SEPARATOR" => TUnion::new(Cow::Borrowed(DIR_SEPARATOR_SLICE)),
+        "PHP_INT_MAX" => TUnion::new(Cow::Borrowed(PHP_INT_MAX_SLICE)),
+        "PHP_INT_MIN" => TUnion::new(Cow::Borrowed(PHP_INT_MIN_SLICE)),
+        "PHP_WINDOWS_VERSION_MINOR" => TUnion::new(Cow::Borrowed(PHP_WINDOWS_VERSION_MINOR_SLICE)),
         _ => return None,
     })
 }

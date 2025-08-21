@@ -100,7 +100,7 @@ fn infer_templates_from_input_and_container_types(
     let residual_input_type = if residual_input_types.is_empty() {
         return;
     } else {
-        TUnion::new(residual_input_types)
+        TUnion::from_vec(residual_input_types)
     };
 
     let mut potential_template_violations = HashMap::default();
@@ -108,7 +108,7 @@ fn infer_templates_from_input_and_container_types(
     for container_atomic_part in &generic_container_parts {
         match container_atomic_part {
             TAtomic::Array(container_array) => {
-                for input_atomic in &residual_input_type.types {
+                for input_atomic in residual_input_type.types.as_ref() {
                     if let TAtomic::Array(input_array) = input_atomic {
                         match (container_array, input_array) {
                             (TArray::List(container_list), TArray::List(input_list)) => {
@@ -458,7 +458,7 @@ fn infer_templates_from_input_and_container_types(
                 }
             }
             TAtomic::Iterable(container_iterable) => {
-                for input_atomic in &residual_input_type.types {
+                for input_atomic in residual_input_type.types.as_ref() {
                     let Some(input_params) = get_iterable_parameters(input_atomic, context.codebase, context.interner)
                     else {
                         return;
@@ -497,7 +497,7 @@ fn infer_templates_from_input_and_container_types(
                     }
                 };
 
-                for input_atomic in &residual_input_type.types {
+                for input_atomic in residual_input_type.types.as_ref() {
                     let input_signature = match input_atomic {
                         TAtomic::Callable(TCallable::Signature(argument_signature)) => {
                             Cow::Borrowed(argument_signature)
@@ -575,7 +575,7 @@ fn infer_templates_from_input_and_container_types(
                     continue;
                 };
 
-                for input_atomic in &residual_input_type.types {
+                for input_atomic in residual_input_type.types.as_ref() {
                     let TAtomic::Object(TObject::Named(input_obj)) = input_atomic else {
                         continue;
                     };
@@ -664,7 +664,7 @@ fn infer_templates_from_input_and_container_types(
                     continue;
                 }
 
-                let mut lower_bound_type = TUnion::new(input_objects);
+                let mut lower_bound_type = TUnion::from_vec(input_objects);
                 if let Some(template_types) = template_result.template_types.get_mut(parameter_name) {
                     for (_, template_type) in template_types {
                         if !union_comparator::is_contained_by(

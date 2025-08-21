@@ -62,6 +62,22 @@ impl TType for TDerived {
         }
     }
 
+    fn needs_population(&self) -> bool {
+        match self {
+            TDerived::KeyOf(ttype) => ttype.needs_population(),
+            TDerived::ValueOf(ttype) => ttype.needs_population(),
+            TDerived::PropertiesOf(ttype) => ttype.needs_population(),
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TDerived::KeyOf(ttype) => ttype.is_expandable(),
+            TDerived::ValueOf(ttype) => ttype.is_expandable(),
+            TDerived::PropertiesOf(ttype) => ttype.is_expandable(),
+        }
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         match self {
             TDerived::KeyOf(key_of) => key_of.get_id(interner),

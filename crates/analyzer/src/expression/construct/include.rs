@@ -1,7 +1,5 @@
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::union::TUnion;
+use mago_codex::ttype::get_string;
 use mago_span::HasSpan;
 use mago_span::Span;
 use mago_syntax::ast::*;
@@ -124,7 +122,7 @@ fn analyze_include<'a>(
         construct_kind,
         keyword_span,
         ConstructInput::Expression(included_file),
-        TUnion::new(vec![TAtomic::Scalar(TScalar::string())]),
+        get_string(),
         false,
         false,
         true,

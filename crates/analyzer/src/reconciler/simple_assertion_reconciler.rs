@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use mago_codex::assertion::Assertion;
@@ -9,7 +10,6 @@ use mago_codex::ttype::atomic::array::keyed::TKeyedArray;
 use mago_codex::ttype::atomic::array::list::TList;
 use mago_codex::ttype::atomic::generic::TGenericParameter;
 use mago_codex::ttype::atomic::iterable::TIterable;
-use mago_codex::ttype::atomic::mixed::TMixed;
 use mago_codex::ttype::atomic::mixed::truthiness::TMixedTruthiness;
 use mago_codex::ttype::atomic::object::TObject;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
@@ -23,6 +23,7 @@ use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_arraykey;
 use mago_codex::ttype::get_bool;
+use mago_codex::ttype::get_closed_resource;
 use mago_codex::ttype::get_false;
 use mago_codex::ttype::get_float;
 use mago_codex::ttype::get_mixed;
@@ -34,10 +35,14 @@ use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_numeric;
 use mago_codex::ttype::get_object;
+use mago_codex::ttype::get_open_resource;
+use mago_codex::ttype::get_resource;
 use mago_codex::ttype::get_scalar;
 use mago_codex::ttype::get_string_with_props;
 use mago_codex::ttype::get_true;
+use mago_codex::ttype::get_union_from_integer;
 use mago_codex::ttype::intersect_union_types;
+use mago_codex::ttype::shared::MIXED_KEYED_ARRAY_ATOMIC;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_span::Span;
@@ -370,7 +375,7 @@ pub(crate) fn intersect_null(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Null => {
                 acceptable_types.push(TAtomic::Null);
@@ -413,7 +418,7 @@ pub(crate) fn intersect_null(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -429,13 +434,17 @@ pub(crate) fn intersect_resource(
     resource_to_intersection: &TResource,
 ) -> TUnion {
     if existing_var_type.is_mixed() {
-        return TUnion::new(vec![TAtomic::Resource(*resource_to_intersection)]);
+        return match resource_to_intersection.closed {
+            None => get_resource(),
+            Some(true) => get_closed_resource(),
+            Some(false) => get_open_resource(),
+        };
     }
 
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Resource(existing_resource) => match (existing_resource.closed, resource_to_intersection.closed) {
                 (Some(true), Some(true)) | (Some(false), Some(false)) | (None, None) | (Some(_), None) => {
@@ -453,7 +462,7 @@ pub(crate) fn intersect_resource(
             TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
                 if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_null, |constraint| {
-                    intersect_null(context, assertion, constraint, None, false, None)
+                    intersect_resource(context, assertion, constraint, None, false, None, resource_to_intersection)
                 }) {
                     acceptable_types.push(atomic);
                 }
@@ -474,7 +483,7 @@ pub(crate) fn intersect_resource(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -496,7 +505,7 @@ fn intersect_object(
     let mut object_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         if atomic.is_object_type() {
             object_types.push(atomic.clone());
         } else if let TAtomic::GenericParameter(generic_parameter) = atomic {
@@ -522,7 +531,7 @@ fn intersect_object(
     }
 
     if !object_types.is_empty() {
-        return TUnion::new(object_types);
+        return TUnion::from_vec(object_types);
     }
 
     get_never()
@@ -544,7 +553,7 @@ fn intersect_iterable(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         if atomic.is_array_or_traversable(context.codebase, context.interner) {
             acceptable_types.push(atomic.clone());
 
@@ -589,7 +598,7 @@ fn intersect_iterable(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -616,7 +625,7 @@ fn intersect_array_list(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    'outer: for atomic in &existing_var_type.types {
+    'outer: for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, parameters, non_empty })) => {
                 if let Some(known_items) = known_items {
@@ -696,7 +705,7 @@ fn intersect_array_list(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -724,7 +733,7 @@ fn intersect_keyed_array(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Array(TArray::Keyed(keyed_array)) if !keyed_array.has_known_items() => {
                 let mut non_empty = keyed_array.is_non_empty();
@@ -789,7 +798,7 @@ fn intersect_keyed_array(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -811,7 +820,7 @@ fn intersect_arraykey(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) => {
                 return get_arraykey();
@@ -869,7 +878,7 @@ fn intersect_arraykey(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -887,7 +896,7 @@ fn intersect_numeric(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) => {
                 return get_numeric();
@@ -946,7 +955,7 @@ fn intersect_numeric(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -968,7 +977,7 @@ fn intersect_string(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Scalar(TScalar::String(existing_string)) => {
                 acceptable_types.push(
@@ -1052,7 +1061,7 @@ fn intersect_string(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -1071,20 +1080,20 @@ fn intersect_int(
     let mut acceptable_types = Vec::new();
     let mut did_remove_type = false;
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         match atomic {
             TAtomic::Scalar(TScalar::Integer(_)) => {
                 acceptable_types.push(TAtomic::Scalar(TScalar::Integer(*integer)));
             }
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
-                return TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]);
+                return get_union_from_integer(integer);
             }
             TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
 
                 if let Some(atomic) = map_generic_constraint_or_else(
                     generic_parameter,
-                    || TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]),
+                    || get_union_from_integer(integer),
                     |constraint| intersect_int(context, assertion, constraint, None, false, None, is_equality, integer),
                 ) {
                     acceptable_types.push(atomic);
@@ -1127,7 +1136,7 @@ fn intersect_int(
     }
 
     if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
+        return TUnion::from_vec(acceptable_types);
     }
 
     get_never()
@@ -1147,7 +1156,7 @@ fn reconcile_truthy_or_non_empty(
 
     let is_non_empty_assertion = matches!(assertion, Assertion::NonEmpty);
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if atomic.is_falsy() {
             did_remove_type = true;
         } else if !atomic.is_truthy() || new_var_type.possibly_undefined_from_try {
@@ -1230,7 +1239,7 @@ fn reconcile_isset(
 
     let mut new_var_type = existing_var_type.clone();
 
-    let existing_var_types = new_var_type.types.drain(..).collect::<Vec<_>>();
+    let existing_var_types = new_var_type.types.to_mut().drain(..).collect::<Vec<_>>();
 
     let mut acceptable_types = vec![];
 
@@ -1260,15 +1269,14 @@ fn reconcile_isset(
     }
 
     if acceptable_types.is_empty() {
-        acceptable_types.push(TAtomic::Never);
+        return get_mixed_maybe_from_loop(inside_loop);
     }
 
     new_var_type.possibly_undefined_from_try = false;
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
 
     if new_var_type.is_never() {
-        new_var_type.remove_type(&TAtomic::Never);
-        new_var_type.types.push(TAtomic::Mixed(TMixed::maybe_isset_from_loop(inside_loop)));
+        return get_mixed_maybe_from_loop(inside_loop);
     }
 
     new_var_type
@@ -1287,7 +1295,7 @@ fn reconcile_non_empty_countable(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         match atomic {
             TAtomic::Array(TArray::List(TList { non_empty, element_type, known_elements, known_count })) => {
                 if !non_empty {
@@ -1332,7 +1340,7 @@ fn reconcile_non_empty_countable(
         return get_never();
     }
 
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
     new_var_type
 }
 
@@ -1350,7 +1358,7 @@ fn reconcile_exactly_countable(
 
     let mut did_remove_type = false;
 
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut existing_var_type = existing_var_type.clone();
 
     for atomic in existing_var_types {
@@ -1360,7 +1368,7 @@ fn reconcile_exactly_countable(
                 if element_type.is_never() {
                     existing_var_type.remove_type(atomic);
                 } else {
-                    existing_var_type.types.push(TAtomic::Array(TArray::List(TList {
+                    existing_var_type.types.to_mut().push(TAtomic::Array(TArray::List(TList {
                         element_type: element_type.clone(),
                         known_elements: known_elements.clone(),
                         known_count: Some(*count),
@@ -1375,7 +1383,7 @@ fn reconcile_exactly_countable(
                 if parameters.is_none() {
                     existing_var_type.remove_type(atomic);
                 } else {
-                    existing_var_type.types.push(TAtomic::Array(TArray::Keyed(TKeyedArray {
+                    existing_var_type.types.to_mut().push(TAtomic::Array(TArray::Keyed(TKeyedArray {
                         known_items: known_items.clone(),
                         parameters: parameters.clone(),
                         non_empty: true,
@@ -1427,19 +1435,16 @@ fn reconcile_countable(
     span: Option<&Span>,
 ) -> TUnion {
     if existing_var_type.has_mixed() || existing_var_type.has_template() {
-        return TUnion::new(vec![
+        return TUnion::from_vec(vec![
             TAtomic::Object(TObject::Named(TNamedObject::new(context.interner.intern("Countable")))),
-            TAtomic::Array(TArray::Keyed(TKeyedArray::new_with_parameters(
-                Box::new(get_arraykey()),
-                Box::new(get_mixed()),
-            ))),
+            MIXED_KEYED_ARRAY_ATOMIC.clone(),
         ]);
     }
 
     let mut redundant = true;
     let mut countable_types = vec![];
 
-    for atomic in &existing_var_type.types {
+    for atomic in existing_var_type.types.as_ref() {
         if atomic.is_countable(context.codebase, context.interner) {
             countable_types.push(atomic.clone());
         } else if let TAtomic::Object(TObject::Any) = atomic {
@@ -1598,7 +1603,7 @@ fn reconcile_integer_comparison(
 ) -> TUnion {
     let old_var_type_string = existing_var_type.get_id(Some(context.interner));
 
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut existing_var_type = existing_var_type.clone();
 
     let mut redundant = true;
@@ -1622,13 +1627,13 @@ fn reconcile_integer_comparison(
             redundant = false;
 
             if is_less_than {
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::Integer(TInteger::To(if or_equal {
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::Integer(TInteger::To(if or_equal {
                     *value
                 } else {
                     value.saturating_sub(1)
                 }))));
             } else {
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::Integer(TInteger::From(if or_equal {
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::Integer(TInteger::From(if or_equal {
                     *value
                 } else {
                     value.saturating_add(1)
@@ -1647,7 +1652,7 @@ fn reconcile_integer_comparison(
                     redundant = false;
                 }
 
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::Integer(new_integer)));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::Integer(new_integer)));
             } else {
                 redundant = false;
             }
@@ -1684,7 +1689,7 @@ fn reconcile_array_access(
         return new_var_type;
     }
 
-    new_var_type.types.retain(|atomic| {
+    new_var_type.types.to_mut().retain(|atomic| {
         (allow_int_key && atomic.is_array_accessible_with_int_or_string_key())
             || (!allow_int_key && atomic.is_array_accessible_with_string_key())
     });
@@ -1752,7 +1757,7 @@ fn reconcile_has_array_key(
     let mut did_remove_type = possibly_undefined;
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
-    let existing_var_types = new_var_type.types.drain(..).collect::<Vec<_>>();
+    let existing_var_types = new_var_type.types.to_mut().drain(..).collect::<Vec<_>>();
 
     for mut atomic in existing_var_types {
         match &mut atomic {
@@ -1878,7 +1883,7 @@ fn reconcile_has_array_key(
         return get_never();
     }
 
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
     new_var_type
 }
 
@@ -1896,7 +1901,7 @@ fn reconcile_has_nonnull_entry_for_key(
 
     let mut new_var_type = existing_var_type.clone();
 
-    let existing_var_types = new_var_type.types.drain(..).collect::<Vec<_>>();
+    let existing_var_types = new_var_type.types.to_mut().drain(..).collect::<Vec<_>>();
 
     let mut acceptable_types = vec![];
 
@@ -2033,7 +2038,7 @@ fn reconcile_has_nonnull_entry_for_key(
         return get_never();
     }
 
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
     new_var_type
 }
 
@@ -2063,6 +2068,6 @@ pub(crate) fn get_acceptable_type(
         return get_never();
     }
 
-    new_var_type.types = acceptable_types;
+    new_var_type.types = Cow::Owned(acceptable_types);
     new_var_type
 }

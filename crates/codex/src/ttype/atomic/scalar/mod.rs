@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -33,24 +35,14 @@ pub enum TScalar {
     /// Represents the union type `array-key` (`int` | `string`).
     ArrayKey,
     /// Represents boolean types (`bool`, literal `true`, literal `false`).
-    ///
-    /// See `TBool`.
     Bool(TBool),
     /// Represents integer types (`int`, literal `int`).
-    ///
-    /// See `TInteger`.
     Integer(TInteger),
     /// Represents float types (`float`, literal `float`).
-    ///
-    /// See `FloatScalar`.
     Float(TFloat),
     /// Represents string types (`string`, literal strings, potentially with known properties).
-    ///
-    /// See `StringScalar`.
     String(TString),
     /// Represents class-like string types (`class-string`, `interface-string`, `enum-string`, potentially with `<T>`).
-    ///
-    /// See `ClassLikeStringScalar`.
     ClassLikeString(TClassLikeString),
 }
 
@@ -136,31 +128,43 @@ impl TScalar {
     /// Creates a literal `string` type with a known value (e.g., `"hello"`).
     #[inline]
     pub fn literal_string(value: String) -> Self {
-        TScalar::String(TString::known_literal(value))
+        TScalar::String(TString::known_literal(Cow::Owned(value)))
+    }
+
+    /// Creates a literal `string` type with a known value from a static string slice (e.g., `"hello"`).
+    #[inline]
+    pub fn static_literal_string(value: &'static str) -> Self {
+        TScalar::String(TString::known_literal(Cow::Borrowed(value)))
     }
 
     /// Creates a literal `string` type with an unspecified value
     #[inline]
-    pub fn unspecified_literal_string() -> Self {
-        TScalar::String(TString::unspecified_literal())
+    pub const fn unspecified_literal_string(non_empty: bool) -> Self {
+        TScalar::String(TString::unspecified_literal(non_empty))
     }
 
     /// Creates the general `class-string` type (no constraint `<T>`).
     #[inline]
-    pub fn class_string() -> Self {
+    pub const fn class_string() -> Self {
         TScalar::ClassLikeString(TClassLikeString::class_string())
     }
 
     /// Creates the general `interface-string` type (no constraint `<T>`).
     #[inline]
-    pub fn interface_string() -> Self {
+    pub const fn interface_string() -> Self {
         TScalar::ClassLikeString(TClassLikeString::interface_string())
     }
 
     /// Creates the general `enum-string` type (no constraint `<T>`).
     #[inline]
-    pub fn enum_string() -> Self {
+    pub const fn enum_string() -> Self {
         TScalar::ClassLikeString(TClassLikeString::enum_string())
+    }
+
+    /// Creates the general `trait-string` type (no constraint `<T>`).
+    #[inline]
+    pub const fn trait_string() -> Self {
+        TScalar::ClassLikeString(TClassLikeString::trait_string())
     }
 
     /// Creates the `class-string<T>` type.
@@ -517,6 +521,28 @@ impl TType for TScalar {
             TScalar::String(ttype) => ttype.get_child_nodes(),
             TScalar::ClassLikeString(ttype) => ttype.get_child_nodes(),
             _ => vec![],
+        }
+    }
+
+    fn needs_population(&self) -> bool {
+        match self {
+            TScalar::Bool(ttype) => ttype.needs_population(),
+            TScalar::Integer(ttype) => ttype.needs_population(),
+            TScalar::Float(ttype) => ttype.needs_population(),
+            TScalar::String(ttype) => ttype.needs_population(),
+            TScalar::ClassLikeString(ttype) => ttype.needs_population(),
+            _ => false,
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TScalar::Bool(ttype) => ttype.is_expandable(),
+            TScalar::Integer(ttype) => ttype.is_expandable(),
+            TScalar::Float(ttype) => ttype.is_expandable(),
+            TScalar::String(ttype) => ttype.is_expandable(),
+            TScalar::ClassLikeString(ttype) => ttype.is_expandable(),
+            _ => false,
         }
     }
 

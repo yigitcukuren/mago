@@ -6,6 +6,7 @@ use mago_codex::ttype::atomic::object::r#enum::TEnum;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeStringKind;
+use mago_codex::ttype::get_class_string;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
@@ -174,10 +175,10 @@ fn handle_class_magic_constant(
                 ))
             }
         }
-        None => TScalar::ClassLikeString(TClassLikeString::Any { kind: TClassLikeStringKind::Class }),
+        None => return Some(get_class_string()),
     };
 
-    Some(TUnion::new(vec![TAtomic::Scalar(class_string)]))
+    Some(TUnion::from_atomic(TAtomic::Scalar(class_string)))
 }
 
 /// Finds a constant or enum case by name within a class.
@@ -203,7 +204,7 @@ fn find_constant_in_class(
     // Check for an enum case
     if metadata.kind.is_enum() && metadata.enum_cases.contains_key(&const_name) {
         let const_type =
-            TUnion::new(vec![TAtomic::Object(TObject::Enum(TEnum::new_case(metadata.original_name, const_name)))]);
+            TUnion::from_atomic(TAtomic::Object(TObject::Enum(TEnum::new_case(metadata.original_name, const_name))));
 
         return Some(ResolvedConstant { const_type });
     }

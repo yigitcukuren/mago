@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_interner::StringIdentifier;
+use mago_interner::ThreadedInterner;
 
 use crate::ttype::TType;
 
@@ -56,7 +57,15 @@ impl TEnum {
 }
 
 impl TType for TEnum {
-    fn get_id(&self, interner: Option<&mago_interner::ThreadedInterner>) -> String {
+    fn needs_population(&self) -> bool {
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        false
+    }
+
+    fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         let mut id = String::new();
         id += "enum(";
         if let Some(interner) = interner {

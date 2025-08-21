@@ -123,15 +123,15 @@ impl ReferenceConstraint {
         let constraint_type = match constraint_type {
             Some(mut constraint_type) => {
                 if constraint_type.has_literal_string() {
-                    constraint_type.types.push(TAtomic::Scalar(TScalar::string()));
+                    constraint_type.types.to_mut().push(TAtomic::Scalar(TScalar::string()));
                 }
 
                 if constraint_type.has_literal_int() {
-                    constraint_type.types.push(TAtomic::Scalar(TScalar::int()));
+                    constraint_type.types.to_mut().push(TAtomic::Scalar(TScalar::int()));
                 }
 
                 if constraint_type.has_literal_float() {
-                    constraint_type.types.push(TAtomic::Scalar(TScalar::float()));
+                    constraint_type.types.to_mut().push(TAtomic::Scalar(TScalar::float()));
                 }
 
                 Some(constraint_type)
@@ -668,7 +668,7 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
 
     let mut reconciliation_context = context.get_reconciliation_context();
     let mut result = existing_type;
-    for atomic in type_to_remove.types {
+    for atomic in type_to_remove.types.into_owned() {
         let assertion = Assertion::IsNotType(atomic);
         let key = result.get_id(Some(reconciliation_context.interner));
         result = negated_assertion_reconciler::reconcile(

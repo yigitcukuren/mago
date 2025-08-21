@@ -1,9 +1,12 @@
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeString;
-use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeStringKind;
-use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::atomic::scalar::string::TString;
+use mago_codex::ttype::get_class_string;
+use mago_codex::ttype::get_empty_string;
+use mago_codex::ttype::get_non_empty_string;
+use mago_codex::ttype::get_non_negative_int;
+use mago_codex::ttype::get_string;
 use mago_codex::ttype::union::TUnion;
 use mago_syntax::ast::*;
 
@@ -20,64 +23,50 @@ impl Analyzable for MagicConstant {
         block_context: &mut BlockContext,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        let mut potentially_undefined = false;
-        let constant_scalar = match self {
-            MagicConstant::Line(_) => TScalar::Integer(TInteger::non_negative()),
-            MagicConstant::File(_) => TScalar::String(TString::non_empty()),
-            MagicConstant::Directory(_) => TScalar::String(TString::non_empty()),
+        let constant_type = match self {
+            MagicConstant::Line(_) => get_non_negative_int(),
+            MagicConstant::File(_) => get_non_empty_string(),
+            MagicConstant::Directory(_) => get_non_empty_string(),
             MagicConstant::Namespace(_) => {
                 if let Some(namespace_name) = context.scope.namespace_name() {
-                    TScalar::String(TString::from(namespace_name))
+                    TUnion::from_atomic(TAtomic::Scalar(TScalar::String(TString::from(namespace_name.to_owned()))))
                 } else {
-                    TScalar::String(TString::from(""))
+                    get_empty_string()
                 }
             }
             MagicConstant::Trait(_) => {
                 if let Some(class_like) = block_context.scope.get_class_like() {
                     if class_like.kind.is_trait() {
-                        TScalar::ClassLikeString(TClassLikeString::literal(class_like.original_name))
+                        TUnion::from_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(
+                            class_like.original_name,
+                        ))))
                     } else {
-                        TScalar::String(TString::from(""))
+                        get_empty_string()
                     }
                 } else {
-                    potentially_undefined = true;
-
-                    TScalar::ClassLikeString(TClassLikeString::any(TClassLikeStringKind::Trait))
+                    get_string()
                 }
             }
             MagicConstant::Class(_) => {
                 if let Some(class_like) = block_context.scope.get_class_like() {
                     if !class_like.kind.is_trait() {
-                        TScalar::ClassLikeString(TClassLikeString::literal(class_like.original_name))
+                        TUnion::from_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(
+                            class_like.original_name,
+                        ))))
                     } else {
-                        TScalar::ClassLikeString(TClassLikeString::any(TClassLikeStringKind::Class))
+                        get_class_string()
                     }
                 } else {
-                    potentially_undefined = true;
-
-                    TScalar::ClassLikeString(TClassLikeString::any(TClassLikeStringKind::Class))
+                    get_string()
                 }
             }
             MagicConstant::Function(_) | MagicConstant::Method(_) => {
-                if block_context.scope.get_function_like().is_none() {
-                    potentially_undefined = true;
-                }
-
-                TScalar::String(TString::general_with_props(false, true, true, false))
+                if block_context.scope.get_function_like().is_none() { get_string() } else { get_non_empty_string() }
             }
-            MagicConstant::Property(_) => {
-                potentially_undefined = true;
-
-                TScalar::String(TString::general_with_props(false, true, true, false))
-            }
+            MagicConstant::Property(_) => get_string(),
         };
 
-        let mut constant_types = vec![TAtomic::Scalar(constant_scalar)];
-        if potentially_undefined {
-            constant_types.push(TAtomic::Scalar(TScalar::String(TString::from(""))));
-        }
-
-        artifacts.set_expression_type(&self, TUnion::new(constant_types));
+        artifacts.set_expression_type(&self, constant_type);
 
         Ok(())
     }

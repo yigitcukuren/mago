@@ -1056,7 +1056,7 @@ fn analyze_iterator<'a>(
     let mut has_valid_iterable_type = false;
     let mut invalid_atomic_ids = Vec::with_capacity(iterator_type.types.len());
 
-    for iterator_atomic_original in &iterator_type.types {
+    for iterator_atomic_original in iterator_type.types.as_ref() {
         let iterator_atomic = if let TAtomic::GenericParameter(generic_parameter) = iterator_atomic_original {
             generic_parameter.get_constraint().get_single()
         } else {
@@ -1074,15 +1074,15 @@ fn analyze_iterator<'a>(
                 }
 
                 let (k, v) = get_array_parameters(array, context.codebase, context.interner);
-                collected_key_atomics.extend(k.types);
-                collected_value_atomics.extend(v.types);
+                collected_key_atomics.extend(k.types.into_owned());
+                collected_value_atomics.extend(v.types.into_owned());
             }
             TAtomic::Iterable(iterable) => {
                 has_valid_iterable_type = true;
                 has_at_least_one_entry = false;
 
-                collected_key_atomics.extend(iterable.key_type.types.clone());
-                collected_value_atomics.extend(iterable.value_type.types.clone());
+                collected_key_atomics.extend(iterable.key_type.types.clone().into_owned());
+                collected_value_atomics.extend(iterable.value_type.types.clone().into_owned());
             }
             TAtomic::Object(object) => {
                 let (obj_key_type, obj_value_type) = match object {
@@ -1151,11 +1151,14 @@ fn analyze_iterator<'a>(
 
                         match enum_backing_type {
                             Some(backing_type) => (
-                                TUnion::new(vec![
+                                TUnion::from_vec(vec![
                                     TAtomic::Scalar(TScalar::literal_string("name".to_owned())),
                                     TAtomic::Scalar(TScalar::literal_string("value".to_owned())),
                                 ]),
-                                TUnion::new(vec![TAtomic::Scalar(TScalar::non_empty_string()), backing_type.clone()]),
+                                TUnion::from_vec(vec![
+                                    TAtomic::Scalar(TScalar::non_empty_string()),
+                                    backing_type.clone(),
+                                ]),
                             ),
                             None => (get_literal_string("name".to_owned()), get_non_empty_string()),
                         }
@@ -1164,8 +1167,8 @@ fn analyze_iterator<'a>(
 
                 has_valid_iterable_type = true;
 
-                collected_key_atomics.extend(obj_key_type.types);
-                collected_value_atomics.extend(obj_value_type.types);
+                collected_key_atomics.extend(obj_key_type.types.into_owned());
+                collected_value_atomics.extend(obj_value_type.types.into_owned());
             }
             _ => {
                 let iterator_atomic_id = iterator_atomic.get_id(Some(context.interner));
@@ -1236,13 +1239,13 @@ fn analyze_iterator<'a>(
     let final_key_type = if collected_key_atomics.is_empty() {
         get_mixed()
     } else {
-        TUnion::new(combine(collected_key_atomics, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(collected_key_atomics, context.codebase, context.interner, false))
     };
 
     let final_value_type = if collected_value_atomics.is_empty() {
         get_mixed()
     } else {
-        TUnion::new(combine(collected_value_atomics, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(collected_value_atomics, context.codebase, context.interner, false))
     };
 
     Ok((has_at_least_one_entry, final_key_type, final_value_type))

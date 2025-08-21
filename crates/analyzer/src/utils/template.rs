@@ -71,7 +71,7 @@ pub fn get_template_types_for_class_member(
                     for (template_name, provided_type_arc) in type_map {
                         let resolved_type = if provided_type_arc.has_template_types() {
                             let mut resolved_union = None;
-                            for atomic_type in &provided_type_arc.types {
+                            for atomic_type in provided_type_arc.types.as_ref() {
                                 let resolved_atomic_type_union = if let TAtomic::GenericParameter(TGenericParameter {
                                     defining_entity: GenericParent::ClassLike(defining_entity),
                                     parameter_name,
@@ -195,7 +195,7 @@ pub fn get_generic_parameter_for_offset(
 
     for (extending_class_name, type_map) in template_extended_parameters {
         for (extended_template_name, extended_type_union) in type_map {
-            for extended_atomic_type in &extended_type_union.types {
+            for extended_atomic_type in extended_type_union.types.as_ref() {
                 if let TAtomic::GenericParameter(TGenericParameter {
                     parameter_name: current_parameter_name,
                     defining_entity: GenericParent::ClassLike(current_defining_class),

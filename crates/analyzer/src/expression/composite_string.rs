@@ -80,7 +80,7 @@ impl Analyzable for CompositeString {
             let mut part_literal_string: Option<&str> = None;
             let mut could_specify_literals = true;
 
-            for cast_part_atomic in &casted_part_type.types {
+            for cast_part_atomic in casted_part_type.types.as_ref() {
                 is_non_empty_part = is_non_empty_part && cast_part_atomic.is_non_empty_string();
 
                 if !part_is_all_literals {

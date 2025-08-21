@@ -1,7 +1,5 @@
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::get_mixed;
-use mago_codex::ttype::union::TUnion;
+use mago_codex::ttype::get_string;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -26,7 +24,7 @@ impl Analyzable for EvalConstruct {
             "eval",
             self.eval.span,
             ConstructInput::Expression(&self.value),
-            TUnion::new(vec![TAtomic::Scalar(TScalar::string())]),
+            get_string(),
             false, // is_variadic
             false, // is_optional
             true,  // has_side_effects

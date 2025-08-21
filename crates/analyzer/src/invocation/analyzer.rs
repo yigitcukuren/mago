@@ -451,7 +451,7 @@ pub fn analyze_invocation<'a>(
                         artifacts.get_expression_type(argument_expression).cloned().unwrap_or_else(get_mixed); // Get type of the iterable
 
                     let mut sizes = vec![];
-                    for argument_atomic in &argument_value_type.types {
+                    for argument_atomic in argument_value_type.types.as_ref() {
                         let TAtomic::Array(array) = argument_atomic else {
                             sizes.push(0);
 

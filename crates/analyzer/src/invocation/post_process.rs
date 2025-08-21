@@ -146,7 +146,7 @@ pub fn post_invocation_process<'a>(
                 thrown_exception_type.type_union.clone(),
             );
 
-            for exception_atomic in resolved_exception_type.types {
+            for exception_atomic in resolved_exception_type.types.into_owned() {
                 for exception in exception_atomic.get_all_object_names() {
                     block_context.possibly_thrown_exceptions.entry(exception).or_default().insert(invoication.span);
                 }
@@ -352,11 +352,11 @@ fn resolve_invocation_assertion<'a>(
                         invocation,
                         template_result,
                         parameters,
-                        TUnion::new(vec![assertion_atomic.clone()]),
+                        TUnion::from_atomic(assertion_atomic.to_owned()),
                     );
 
                     if !resolved_assertion_type.is_never() {
-                        for resolved_atomic in resolved_assertion_type.types {
+                        for resolved_atomic in resolved_assertion_type.types.into_owned() {
                             resolved_or_clause.push(variable_assertion.with_type(resolved_atomic));
                         }
                     } else if let Some(asserted_type) = block_context.locals.get(&assertion_variable) {
@@ -392,7 +392,7 @@ fn resolve_invocation_assertion<'a>(
                                     }
                                 };
 
-                                for intersection_atomic in intersection.types {
+                                for intersection_atomic in intersection.types.into_owned() {
                                     add_and_assertion(
                                         &mut new_variable_possibilities,
                                         Assertion::IsIdentical(intersection_atomic),

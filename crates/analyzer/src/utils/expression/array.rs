@@ -145,7 +145,7 @@ pub(crate) fn get_array_target_type_given_index<'a>(
     let mut expected_index_types = vec![];
     while let Some(atomic_var_type) = array_atomic_types.pop() {
         if let TAtomic::GenericParameter(parameter) = atomic_var_type {
-            array_atomic_types.extend(&parameter.constraint.types);
+            array_atomic_types.extend(parameter.constraint.types.as_ref());
 
             continue;
         }
@@ -286,8 +286,8 @@ pub(crate) fn get_array_target_type_given_index<'a>(
         let index_type_str = index_type.get_id(Some(context.interner));
         let array_like_type_str = array_like_type.get_id(Some(context.interner));
         let expected_index_types_str = expected_index_types
-            .into_iter()
-            .flat_map(|union| union.types)
+            .iter()
+            .flat_map(|union| union.types.as_ref())
             .map(|t| t.get_id(Some(context.interner)))
             .collect::<Vec<_>>();
 
@@ -398,7 +398,7 @@ pub(crate) fn handle_array_access_on_list(
     has_valid_expected_index: &mut bool,
     expected_index_types: &mut Vec<TUnion>,
 ) -> TUnion {
-    let expected_key_type = TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::unspecified()))]);
+    let expected_key_type = get_int();
 
     let mut union_comparison_result = ComparisonResult::new();
     let index_type_contained_by_expected = is_contained_by(
@@ -931,7 +931,7 @@ pub(crate) fn handle_array_access_on_string(
             if val.is_empty() {
                 get_never()
             } else {
-                TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, val.len() as i64 - 1)))])
+                TUnion::from_atomic(TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, val.len() as i64 - 1))))
             }
         } else {
             get_int()

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 
@@ -10,20 +12,16 @@ use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::array::TArray;
 use crate::ttype::atomic::array::keyed::TKeyedArray;
 use crate::ttype::atomic::array::list::TList;
-use crate::ttype::atomic::callable::TCallable;
-use crate::ttype::atomic::callable::TCallableSignature;
 use crate::ttype::atomic::generic::TGenericParameter;
 use crate::ttype::atomic::iterable::TIterable;
-use crate::ttype::atomic::mixed::TMixed;
 use crate::ttype::atomic::object::TObject;
 use crate::ttype::atomic::object::named::TNamedObject;
-use crate::ttype::atomic::resource::TResource;
 use crate::ttype::atomic::scalar::TScalar;
 use crate::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use crate::ttype::atomic::scalar::class_like_string::TClassLikeStringKind;
 use crate::ttype::atomic::scalar::int::TInteger;
-use crate::ttype::atomic::scalar::string::TString;
 use crate::ttype::resolution::TypeResolutionContext;
+use crate::ttype::shared::*;
 use crate::ttype::template::TemplateResult;
 use crate::ttype::template::inferred_type_replacer;
 use crate::ttype::union::TUnion;
@@ -37,6 +35,7 @@ pub mod comparator;
 pub mod error;
 pub mod expander;
 pub mod resolution;
+pub mod shared;
 pub mod template;
 pub mod union;
 
@@ -101,6 +100,10 @@ pub trait TType {
         false
     }
 
+    fn needs_population(&self) -> bool;
+
+    fn is_expandable(&self) -> bool;
+
     /// Return a human-readable identifier for this type, which is
     /// suitable for use in error messages or debugging.
     ///
@@ -142,6 +145,20 @@ impl<'a> TType for TypeRef<'a> {
         }
     }
 
+    fn needs_population(&self) -> bool {
+        match self {
+            TypeRef::Union(ttype) => ttype.needs_population(),
+            TypeRef::Atomic(ttype) => ttype.needs_population(),
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        match self {
+            TypeRef::Union(ttype) => ttype.is_expandable(),
+            TypeRef::Atomic(ttype) => ttype.is_expandable(),
+        }
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         match self {
             TypeRef::Union(ttype) => ttype.get_id(interner),
@@ -162,212 +179,425 @@ impl<'a> From<&'a TAtomic> for TypeRef<'a> {
     }
 }
 
+/// Creates a `TUnion` from a `TInteger`, using a canonical static type where possible.
+///
+/// This function is a key optimization point. It checks if the provided `TInteger`
+/// matches a common, reusable form (like "any integer" or "a positive integer").
+/// If it does, it returns a zero-allocation `TUnion` that borrows a static,
+/// shared instance.
+///
+/// For specific literal values or ranges that do not have a canonical static
+/// representation, it falls back to creating a new, owned `TUnion`, which
+/// involves a heap allocation.
+pub fn get_union_from_integer(integer: &TInteger) -> TUnion {
+    if integer.is_unspecified() {
+        return get_int();
+    }
+
+    if integer.is_positive() {
+        return get_positive_int();
+    }
+
+    if integer.is_negative() {
+        return get_negative_int();
+    }
+
+    if integer.is_non_negative() {
+        return get_non_negative_int();
+    }
+
+    if integer.is_non_positive() {
+        return get_non_positive_int();
+    }
+
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::Integer(*integer))))
+}
+
 #[inline]
 pub fn wrap_atomic(tinner: TAtomic) -> TUnion {
-    TUnion::new(vec![tinner])
+    TUnion::from_single(Cow::Owned(tinner))
 }
 
 #[inline]
 pub fn get_int() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::int()))
+    TUnion::from_single(Cow::Borrowed(INT_ATOMIC))
+}
+
+#[inline]
+pub fn get_positive_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(POSITIVE_INT_ATOMIC))
+}
+
+#[inline]
+pub fn get_negative_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(NEGATIVE_INT_ATOMIC))
+}
+
+#[inline]
+pub fn get_non_positive_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(NON_POSITIVE_INT_ATOMIC))
+}
+
+#[inline]
+pub fn get_non_negative_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(NON_NEGATIVE_INT_ATOMIC))
 }
 
 #[inline]
 pub fn get_int_range(from: Option<i64>, to: Option<i64>) -> TUnion {
-    match (from, to) {
-        (Some(from), Some(to)) => wrap_atomic(TAtomic::Scalar(TScalar::Integer(TInteger::Range(from, to)))),
-        (Some(from), None) => wrap_atomic(TAtomic::Scalar(TScalar::Integer(TInteger::From(from)))),
-        (None, Some(to)) => wrap_atomic(TAtomic::Scalar(TScalar::Integer(TInteger::To(to)))),
-        (None, None) => get_int(),
-    }
+    let atomic = match (from, to) {
+        (Some(from), Some(to)) => TAtomic::Scalar(TScalar::Integer(TInteger::Range(from, to))),
+        (Some(from), None) => {
+            if 0 == from {
+                return get_non_negative_int();
+            }
+
+            if 1 == from {
+                return get_positive_int();
+            }
+
+            TAtomic::Scalar(TScalar::Integer(TInteger::From(from)))
+        }
+        (None, Some(to)) => {
+            if 0 == to {
+                return get_non_positive_int();
+            }
+
+            if -1 == to {
+                return get_negative_int();
+            }
+
+            TAtomic::Scalar(TScalar::Integer(TInteger::To(to)))
+        }
+        (None, None) => return get_int(),
+    };
+
+    TUnion::from_single(Cow::Owned(atomic))
+}
+
+/// Returns a zero-allocation `TUnion` for the type `-1|0|1`.
+#[inline]
+pub fn get_signum_result() -> TUnion {
+    TUnion::new(Cow::Borrowed(SIGNUM_RESULT_SLICE))
+}
+
+/// Returns a zero-allocation `TUnion` for the integer literal `1`.
+#[inline]
+pub fn get_one_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(ONE_INT_ATOMIC))
+}
+
+/// Returns a zero-allocation `TUnion` for the integer literal `0`.
+#[inline]
+pub fn get_zero_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(ZERO_INT_ATOMIC))
+}
+
+/// Returns a zero-allocation `TUnion` for the integer literal `-1`.
+#[inline]
+pub fn get_minus_one_int() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(MINUS_ONE_INT_ATOMIC))
 }
 
 #[inline]
 pub fn get_literal_int(value: i64) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::literal_int(value)))
+    if value == 0 {
+        return get_zero_int();
+    }
+
+    if value == 1 {
+        return get_one_int();
+    }
+
+    if value == -1 {
+        return get_minus_one_int();
+    }
+
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::literal_int(value))))
+}
+
+#[inline]
+pub fn get_int_or_float() -> TUnion {
+    TUnion::new(Cow::Borrowed(INT_FLOAT_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_int_or_string() -> TUnion {
+    TUnion::new(Cow::Borrowed(INT_STRING_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_nullable_int() -> TUnion {
+    TUnion::new(Cow::Borrowed(NULL_INT_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_nullable_float() -> TUnion {
+    TUnion::new(Cow::Borrowed(NULL_FLOAT_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_nullable_object() -> TUnion {
+    TUnion::new(Cow::Borrowed(NULL_OBJECT_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_nullable_string() -> TUnion {
+    TUnion::new(Cow::Borrowed(NULL_STRING_ATOMIC_SLICE))
 }
 
 #[inline]
 pub fn get_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::string()))
+    TUnion::from_single(Cow::Borrowed(STRING_ATOMIC))
 }
 
+/// Returns a zero-allocation `TUnion` for a `string` with the specified properties.
+///
+/// This function maps all possible boolean property combinations to a canonical,
+/// static `TAtomic` instance, avoiding heap allocations for common string types.
 pub fn get_string_with_props(is_numeric: bool, is_truthy: bool, is_non_empty: bool, is_lowercase: bool) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(
-        is_numeric,
-        is_truthy,
-        is_non_empty,
-        is_lowercase,
-    ))))
+    let atomic_ref = match (is_numeric, is_truthy, is_non_empty, is_lowercase) {
+        // is_numeric = true
+        (true, true, _, _) => NUMERIC_TRUTHY_STRING_ATOMIC,
+        (true, false, _, _) => NUMERIC_STRING_ATOMIC,
+        // is_numeric = false, is_truthy = true
+        (false, true, _, false) => TRUTHY_STRING_ATOMIC,
+        (false, true, _, true) => TRUTHY_LOWERCASE_STRING_ATOMIC,
+        // is_numeric = false, is_truthy = false
+        (false, false, false, false) => STRING_ATOMIC,
+        (false, false, false, true) => LOWERCASE_STRING_ATOMIC,
+        (false, false, true, false) => NON_EMPTY_STRING_ATOMIC,
+        (false, false, true, true) => NON_EMPTY_LOWERCASE_STRING_ATOMIC,
+    };
+
+    TUnion::from_single(Cow::Borrowed(atomic_ref))
 }
 
 #[inline]
 pub fn get_literal_class_string(value: StringIdentifier) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(value))))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(value)))))
 }
 
 #[inline]
 pub fn get_class_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::class_string())))
+    TUnion::from_single(Cow::Borrowed(CLASS_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_class_string_of_type(constraint: TAtomic) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::class_string_of_type(constraint))))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::class_string_of_type(
+        constraint,
+    )))))
 }
 
 #[inline]
 pub fn get_interface_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::interface_string())))
+    TUnion::from_single(Cow::Borrowed(INTERFACE_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_interface_string_of_type(constraint: TAtomic) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::interface_string_of_type(constraint))))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::ClassLikeString(
+        TClassLikeString::interface_string_of_type(constraint),
+    ))))
 }
 
 #[inline]
 pub fn get_enum_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::enum_string())))
+    TUnion::from_single(Cow::Borrowed(ENUM_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_enum_string_of_type(constraint: TAtomic) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::enum_string_of_type(constraint))))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::enum_string_of_type(
+        constraint,
+    )))))
 }
 
 #[inline]
 pub fn get_trait_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::trait_string())))
+    TUnion::from_single(Cow::Borrowed(TRAIT_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_trait_string_of_type(constraint: TAtomic) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::trait_string_of_type(constraint))))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::trait_string_of_type(
+        constraint,
+    )))))
 }
 
 #[inline]
 pub fn get_literal_string(value: String) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::literal_string(value)))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::literal_string(value))))
 }
 
 #[inline]
 pub fn get_float() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::float()))
+    TUnion::from_single(Cow::Borrowed(FLOAT_ATOMIC))
 }
 
 #[inline]
 pub fn get_literal_float(v: f64) -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::literal_float(v)))
+    TUnion::from_single(Cow::Owned(TAtomic::Scalar(TScalar::literal_float(v))))
 }
 
 #[inline]
 pub fn get_mixed() -> TUnion {
-    wrap_atomic(TAtomic::Mixed(TMixed::new()))
+    TUnion::from_single(Cow::Borrowed(MIXED_ATOMIC))
+}
+
+#[inline]
+pub fn get_isset_from_mixed_mixed() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(ISSET_FROM_LOOP_MIXED_ATOMIC))
 }
 
 pub fn get_mixed_maybe_from_loop(from_loop_isset: bool) -> TUnion {
-    wrap_atomic(TAtomic::Mixed(TMixed::maybe_isset_from_loop(from_loop_isset)))
+    if from_loop_isset { get_isset_from_mixed_mixed() } else { get_mixed() }
 }
 
 #[inline]
 pub fn get_never() -> TUnion {
-    wrap_atomic(TAtomic::Never)
+    TUnion::from_single(Cow::Borrowed(NEVER_ATOMIC))
 }
 
 #[inline]
 pub fn get_resource() -> TUnion {
-    wrap_atomic(TAtomic::Resource(TResource::new(None)))
+    TUnion::from_single(Cow::Borrowed(RESOURCE_ATOMIC))
 }
 
 #[inline]
 pub fn get_closed_resource() -> TUnion {
-    wrap_atomic(TAtomic::Resource(TResource::new(Some(true))))
+    TUnion::from_single(Cow::Borrowed(CLOSED_RESOURCE_ATOMIC))
 }
 
 #[inline]
 pub fn get_open_resource() -> TUnion {
-    wrap_atomic(TAtomic::Resource(TResource::new(Some(false))))
+    TUnion::from_single(Cow::Borrowed(OPEN_RESOURCE_ATOMIC))
 }
 
 #[inline]
 pub fn get_placeholder() -> TUnion {
-    wrap_atomic(TAtomic::Placeholder)
+    TUnion::from_single(Cow::Borrowed(PLACEHOLDER_ATOMIC))
 }
 
 #[inline]
 pub fn get_void() -> TUnion {
-    wrap_atomic(TAtomic::Void)
+    TUnion::from_single(Cow::Borrowed(VOID_ATOMIC))
 }
 
 #[inline]
 pub fn get_null() -> TUnion {
-    wrap_atomic(TAtomic::Null)
+    TUnion::from_single(Cow::Borrowed(NULL_ATOMIC))
 }
 
 #[inline]
 pub fn get_arraykey() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::ArrayKey))
+    TUnion::from_single(Cow::Borrowed(ARRAYKEY_ATOMIC))
 }
 
 #[inline]
 pub fn get_bool() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::bool()))
+    TUnion::from_single(Cow::Borrowed(BOOL_ATOMIC))
 }
 
 #[inline]
 pub fn get_false() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::r#false()))
+    TUnion::from_single(Cow::Borrowed(FALSE_ATOMIC))
 }
 
 #[inline]
 pub fn get_true() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::r#true()))
+    TUnion::from_single(Cow::Borrowed(TRUE_ATOMIC))
 }
 
 #[inline]
 pub fn get_object() -> TUnion {
-    wrap_atomic(TAtomic::Object(TObject::Any))
+    TUnion::from_single(Cow::Borrowed(OBJECT_ATOMIC))
 }
 
 #[inline]
 pub fn get_numeric() -> TUnion {
-    TUnion::new(vec![TAtomic::Scalar(TScalar::Numeric)])
+    TUnion::from_single(Cow::Borrowed(NUMERIC_ATOMIC))
 }
 
 #[inline]
 pub fn get_numeric_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false, true))))
+    TUnion::from_single(Cow::Borrowed(NUMERIC_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_lowercase_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, false, true))))
+    TUnion::from_single(Cow::Borrowed(LOWERCASE_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_non_empty_lowercase_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, true))))
+    TUnion::from_single(Cow::Borrowed(NON_EMPTY_LOWERCASE_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_non_empty_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, false))))
+    TUnion::from_single(Cow::Borrowed(NON_EMPTY_STRING_ATOMIC))
+}
+
+#[inline]
+pub fn get_empty_string() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(EMPTY_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_truthy_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, true, false, false))))
+    TUnion::from_single(Cow::Borrowed(TRUTHY_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_unspecified_literal_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal())))
+    TUnion::from_single(Cow::Borrowed(UNSPECIFIED_LITERAL_STRING_ATOMIC))
 }
 
 #[inline]
 pub fn get_non_empty_unspecified_literal_string() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(false, false, true, false))))
+    TUnion::from_single(Cow::Borrowed(NON_EMPTY_UNSPECIFIED_LITERAL_STRING_ATOMIC))
+}
+
+#[inline]
+pub fn get_scalar() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(SCALAR_ATOMIC))
+}
+
+#[inline]
+pub fn get_nullable_scalar() -> TUnion {
+    TUnion::new(Cow::Borrowed(NULL_SCALAR_ATOMIC_SLICE))
+}
+
+#[inline]
+pub fn get_mixed_iterable() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(&MIXED_ITERABLE_ATOMIC))
+}
+
+#[inline]
+pub fn get_empty_keyed_array() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(&EMPTY_KEYED_ARRAY_ATOMIC))
+}
+
+#[inline]
+pub fn get_mixed_list() -> TUnion {
+    get_list(get_mixed())
+}
+
+#[inline]
+pub fn get_mixed_keyed_array() -> TUnion {
+    get_keyed_array(get_arraykey(), get_mixed())
+}
+
+#[inline]
+pub fn get_mixed_callable() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(&MIXED_CALLABLE_ATOMIC))
+}
+
+#[inline]
+pub fn get_mixed_closure() -> TUnion {
+    TUnion::from_single(Cow::Borrowed(&MIXED_CLOSURE_ATOMIC))
 }
 
 #[inline]
@@ -392,16 +622,6 @@ pub fn get_named_object(
 }
 
 #[inline]
-pub fn get_scalar() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::Generic))
-}
-
-#[inline]
-pub fn get_mixed_iterable() -> TUnion {
-    wrap_atomic(TAtomic::Iterable(TIterable::mixed()))
-}
-
-#[inline]
 pub fn get_iterable(key_parameter: TUnion, value_parameter: TUnion) -> TUnion {
     wrap_atomic(TAtomic::Iterable(TIterable::new(Box::new(key_parameter), Box::new(value_parameter))))
 }
@@ -412,36 +632,11 @@ pub fn get_list(element_type: TUnion) -> TUnion {
 }
 
 #[inline]
-pub fn get_empty_keyed_array() -> TUnion {
-    wrap_atomic(TAtomic::Array(TArray::Keyed(TKeyedArray::new())))
-}
-
-#[inline]
 pub fn get_keyed_array(key_parameter: TUnion, value_parameter: TUnion) -> TUnion {
     wrap_atomic(TAtomic::Array(TArray::Keyed(TKeyedArray::new_with_parameters(
         Box::new(key_parameter),
         Box::new(value_parameter),
     ))))
-}
-
-#[inline]
-pub fn get_mixed_list() -> TUnion {
-    get_list(get_mixed())
-}
-
-#[inline]
-pub fn get_mixed_keyed_array() -> TUnion {
-    get_keyed_array(get_arraykey(), get_mixed())
-}
-
-#[inline]
-pub fn get_mixed_callable() -> TUnion {
-    wrap_atomic(TAtomic::Callable(TCallable::Signature(TCallableSignature::mixed(false))))
-}
-
-#[inline]
-pub fn get_mixed_closure() -> TUnion {
-    wrap_atomic(TAtomic::Callable(TCallable::Signature(TCallableSignature::mixed(true))))
 }
 
 #[inline]
@@ -488,10 +683,11 @@ pub fn combine_union_types(
     } else if type_1.is_vanilla_mixed() && type_2.is_vanilla_mixed() {
         get_mixed()
     } else {
-        let mut all_atomic_types = type_1.types.clone();
-        all_atomic_types.extend(type_2.types.clone());
+        let mut all_atomic_types = type_1.types.clone().into_owned();
+        all_atomic_types.extend(type_2.types.clone().into_owned());
 
-        let mut result = TUnion::new(combiner::combine(all_atomic_types, codebase, interner, overwrite_empty_array));
+        let mut result =
+            TUnion::from_vec(combiner::combine(all_atomic_types, codebase, interner, overwrite_empty_array));
 
         if type_1.had_template && type_2.had_template {
             result.had_template = true;
@@ -539,10 +735,7 @@ pub fn add_union_type(
     base_type.types = if base_type.is_vanilla_mixed() && other_type.is_vanilla_mixed() {
         base_type.types
     } else {
-        let mut all_atomic_types = base_type.types.clone();
-        all_atomic_types.extend(other_type.types.clone());
-
-        combiner::combine(all_atomic_types, codebase, interner, overwrite_empty_array)
+        combine_union_types(&base_type, other_type, codebase, interner, overwrite_empty_array).types
     };
 
     if !other_type.had_template {
@@ -643,7 +836,7 @@ pub fn get_array_parameters(
             let mut value_param;
 
             if let Some((key_param, value_p)) = &keyed_data.parameters {
-                key_types.extend(key_param.types.clone());
+                key_types.extend(key_param.types.clone().into_owned());
                 value_param = (**value_p).clone();
             } else {
                 key_types.push(TAtomic::Never);
@@ -658,7 +851,7 @@ pub fn get_array_parameters(
             }
 
             let combined_key_types = combiner::combine(key_types, codebase, interner, false);
-            let key_param_union = TUnion::new(combined_key_types);
+            let key_param_union = TUnion::from_vec(combined_key_types);
 
             (key_param_union, value_param)
         }
@@ -682,7 +875,7 @@ pub fn get_array_parameters(
                 }
             }
 
-            let key_type = TUnion::new(combiner::combine(key_types, codebase, interner, false));
+            let key_type = TUnion::from_vec(combiner::combine(key_types, codebase, interner, false));
 
             (key_type, value_type)
         }
@@ -804,7 +997,7 @@ pub fn get_specialized_template_type(
     }
 
     let defining_template_type = defining_class_metadata.get_template_type(template_name)?;
-    let template_union = TUnion::new(
+    let template_union = TUnion::from_vec(
         defining_template_type
             .iter()
             .map(|(defining_entity, constraint)| {

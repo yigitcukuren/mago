@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use mago_interner::StringIdentifier;
 use mago_interner::ThreadedInterner;
 
@@ -8,6 +10,7 @@ use crate::get_function;
 use crate::identifier::function_like::FunctionLikeIdentifier;
 use crate::metadata::CodebaseMetadata;
 use crate::metadata::function_like::FunctionLikeMetadata;
+use crate::ttype::TType;
 use crate::ttype::atomic::TAtomic;
 use crate::ttype::atomic::array::TArray;
 use crate::ttype::atomic::callable::TCallable;
@@ -68,13 +71,18 @@ pub fn expand_union(
     return_type: &mut TUnion,
     options: &TypeExpansionOptions,
 ) {
-    let previous_types = std::mem::take(&mut return_type.types);
-    return_type.types = combiner::combine(previous_types, codebase, interner, false);
+    if !return_type.is_expandable() {
+        return;
+    }
+
+    let mut types = std::mem::take(&mut return_type.types).into_owned();
+
+    types = combiner::combine(types, codebase, interner, false);
 
     let mut new_return_type_parts = vec![];
     let mut skipped_keys = vec![];
 
-    for (i, return_type_part) in return_type.types.iter_mut().enumerate() {
+    for (i, return_type_part) in types.iter_mut().enumerate() {
         let mut skip_key = false;
         expand_atomic(return_type_part, codebase, interner, options, &mut skip_key, &mut new_return_type_parts);
 
@@ -85,25 +93,26 @@ pub fn expand_union(
 
     if !skipped_keys.is_empty() {
         let mut i = 0;
-
-        return_type.types.retain(|_| {
+        types.retain(|_| {
             let to_retain = !skipped_keys.contains(&i);
             i += 1;
             to_retain
         });
 
-        new_return_type_parts.append(&mut return_type.types);
+        new_return_type_parts.append(&mut types);
 
         if new_return_type_parts.is_empty() {
             new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
         }
 
-        if new_return_type_parts.len() > 1 {
-            return_type.types = combiner::combine(new_return_type_parts, codebase, interner, false)
+        types = if new_return_type_parts.len() > 1 {
+            combiner::combine(new_return_type_parts, codebase, interner, false)
         } else {
-            return_type.types = new_return_type_parts;
-        }
+            new_return_type_parts
+        };
     }
+
+    return_type.types = Cow::Owned(types);
 }
 
 pub(crate) fn expand_atomic(
@@ -196,7 +205,7 @@ pub(crate) fn expand_atomic(
 
                             expand_union(codebase, interner, &mut constant_type, options);
 
-                            new_return_type_parts.extend(constant_type.types);
+                            new_return_type_parts.extend(constant_type.types.into_owned());
                         } else {
                             new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
@@ -244,7 +253,7 @@ pub(crate) fn expand_atomic(
 
                             expand_union(codebase, interner, &mut constant_type, options);
 
-                            new_return_type_parts.extend(constant_type.types);
+                            new_return_type_parts.extend(constant_type.types.into_owned());
                         } else {
                             new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
@@ -298,7 +307,7 @@ pub(crate) fn expand_atomic(
 
                             expand_union(codebase, interner, &mut constant_type, options);
 
-                            new_return_type_parts.extend(constant_type.types);
+                            new_return_type_parts.extend(constant_type.types.into_owned());
                         } else {
                             new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
@@ -347,7 +356,7 @@ pub(crate) fn expand_atomic(
 
                             expand_union(codebase, interner, &mut constant_type, options);
 
-                            new_return_type_parts.extend(constant_type.types);
+                            new_return_type_parts.extend(constant_type.types.into_owned());
                         } else {
                             new_return_type_parts.push(TAtomic::Mixed(TMixed::new()));
                         }
@@ -372,8 +381,8 @@ pub(crate) fn expand_atomic(
             expand_union(codebase, interner, &mut then, options);
             expand_union(codebase, interner, &mut otherwise, options);
 
-            new_return_type_parts.extend(then.types);
-            new_return_type_parts.extend(otherwise.types);
+            new_return_type_parts.extend(then.types.into_owned());
+            new_return_type_parts.extend(otherwise.types.into_owned());
         }
         TAtomic::Derived(derived) => match derived {
             TDerived::KeyOf(key_of) => {
@@ -572,7 +581,7 @@ fn expand_key_of(
         return vec![TAtomic::Derived(TDerived::KeyOf(return_type_key_of.clone()))];
     };
 
-    new_return_types.types
+    new_return_types.types.into_owned()
 }
 
 fn expand_value_of(
@@ -596,5 +605,5 @@ fn expand_value_of(
         return vec![TAtomic::Derived(TDerived::ValueOf(return_type_value_of.clone()))];
     };
 
-    new_return_types.types
+    new_return_types.types.into_owned()
 }

@@ -40,7 +40,7 @@ impl Analyzable for Return {
             return_value.analyze(context, block_context, artifacts)?;
             block_context.inside_return = false;
 
-            let inferred_return_type = artifacts.get_expression_type(&return_value).cloned();
+            let inferred_return_type = artifacts.get_rc_expression_type(&return_value).cloned();
 
             if let Some(inferred_return_type) = &inferred_return_type
                 && inferred_return_type.is_never()
@@ -77,14 +77,14 @@ impl Analyzable for Return {
                         None,
                     );
 
-                    docblock_type
+                    Rc::new(docblock_type)
                 }
-                (None, Some((docblock_type, _))) => docblock_type,
+                (None, Some((docblock_type, _))) => Rc::new(docblock_type),
                 (Some(inferred_type), None) => inferred_type,
-                (None, None) => get_mixed(),
+                (None, None) => Rc::new(get_mixed()),
             }
         } else {
-            get_void()
+            Rc::new(get_void())
         };
 
         handle_return_value(context, block_context, artifacts, self.value.as_ref(), inferred_return_type, self.span())
@@ -96,11 +96,11 @@ pub fn handle_return_value<'a>(
     block_context: &mut BlockContext<'a>,
     artifacts: &mut AnalysisArtifacts,
     return_value: Option<&Expression>,
-    mut inferred_return_type: TUnion,
+    mut inferred_return_type: Rc<TUnion>,
     return_span: Span,
 ) -> Result<(), AnalysisError> {
     if inferred_return_type.is_void() {
-        inferred_return_type = get_null();
+        inferred_return_type = Rc::new(get_null());
     }
 
     if let Some(finally_scope) = block_context.finally_scope.clone() {
@@ -127,25 +127,31 @@ pub fn handle_return_value<'a>(
         return Ok(());
     };
 
-    expand_union(
-        context.codebase,
-        context.interner,
-        &mut inferred_return_type,
-        &TypeExpansionOptions {
-            self_class: block_context.scope.get_class_like_name(),
-            static_class_type: if let Some(calling_class) = block_context.scope.get_class_like_name() {
-                StaticClassType::Name(*calling_class)
-            } else {
-                StaticClassType::None
+    if inferred_return_type.is_expandable() {
+        let mut inner_union = (*inferred_return_type).clone();
+
+        expand_union(
+            context.codebase,
+            context.interner,
+            &mut inner_union,
+            &TypeExpansionOptions {
+                self_class: block_context.scope.get_class_like_name(),
+                static_class_type: if let Some(calling_class) = block_context.scope.get_class_like_name() {
+                    StaticClassType::Name(*calling_class)
+                } else {
+                    StaticClassType::None
+                },
+                function_is_final: if let Some(method_metadata) = &&function_like_metadata.method_metadata {
+                    method_metadata.is_final
+                } else {
+                    false
+                },
+                ..Default::default()
             },
-            function_is_final: if let Some(method_metadata) = &&function_like_metadata.method_metadata {
-                method_metadata.is_final
-            } else {
-                false
-            },
-            ..Default::default()
-        },
-    );
+        );
+
+        inferred_return_type = Rc::new(inner_union);
+    }
 
     let function_name = function_like_identifier.as_string(context.interner);
 

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ahash::HashSet;
@@ -10,6 +11,7 @@ use mago_codex::ttype::atomic::array::keyed::TKeyedArray;
 use mago_codex::ttype::atomic::array::list::TList;
 use mago_codex::ttype::atomic::mixed::TMixed;
 use mago_codex::ttype::atomic::scalar::TScalar;
+use mago_codex::ttype::atomic::scalar::string::TString;
 use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::combiner::combine;
 use mago_codex::ttype::comparator::ComparisonResult;
@@ -161,7 +163,7 @@ fn analyze_array_elements<'a>(
 
                                 Some(match string_to_int {
                                     Some(integer) => ArrayKey::Integer(integer),
-                                    None => ArrayKey::String(item_key_literal_type.to_owned()),
+                                    None => ArrayKey::String(Cow::Owned(item_key_literal_type.to_owned())),
                                 })
                             } else if let Some(literal_integer) = key_type.get_single_literal_int_value() {
                                 // The most recent integer key becomes the next available integer key
@@ -173,7 +175,7 @@ fn analyze_array_elements<'a>(
 
                                 array_creation_info.class_strings.insert(class_string.clone());
 
-                                Some(ArrayKey::String(class_string))
+                                Some(ArrayKey::String(Cow::Owned(class_string)))
                             } else {
                                 None
                             };
@@ -304,7 +306,7 @@ fn analyze_array_elements<'a>(
                     array_creation_info.property_types.insert(item_key_value, (false, value_type.clone()));
                 } else {
                     array_creation_info.can_create_objectlike = false;
-                    array_creation_info.item_key_atomic_types.extend(key_type.types);
+                    array_creation_info.item_key_atomic_types.extend(key_type.types.into_owned());
                     array_creation_info.item_value_atomic_types.extend(value_type.types.iter().cloned());
                 }
             }
@@ -313,7 +315,7 @@ fn analyze_array_elements<'a>(
                     array_creation_info.property_types.insert(item_key_value, (false, get_mixed()));
                 } else {
                     array_creation_info.can_create_objectlike = false;
-                    array_creation_info.item_key_atomic_types.extend(key_type.types);
+                    array_creation_info.item_key_atomic_types.extend(key_type.types.into_owned());
                     array_creation_info.item_value_atomic_types.push(TAtomic::Mixed(TMixed::new()));
                 }
             }
@@ -321,13 +323,18 @@ fn analyze_array_elements<'a>(
     }
 
     let item_key_type = if !array_creation_info.item_key_atomic_types.is_empty() {
-        Some(TUnion::new(combine(array_creation_info.item_key_atomic_types, context.codebase, context.interner, false)))
+        Some(TUnion::from_vec(combine(
+            array_creation_info.item_key_atomic_types,
+            context.codebase,
+            context.interner,
+            false,
+        )))
     } else {
         None
     };
 
     let item_value_type = if !array_creation_info.item_value_atomic_types.is_empty() {
-        Some(TUnion::new(combine(
+        Some(TUnion::from_vec(combine(
             array_creation_info.item_value_atomic_types,
             context.codebase,
             context.interner,
@@ -339,7 +346,7 @@ fn analyze_array_elements<'a>(
 
     let array_type = if !array_creation_info.property_types.is_empty() {
         if array_creation_info.is_list {
-            TUnion::new(vec![TAtomic::Array(TArray::List(TList {
+            TUnion::from_vec(vec![TAtomic::Array(TArray::List(TList {
                 known_count: Some(array_creation_info.property_types.len()),
                 known_elements: Some(BTreeMap::from_iter(
                     array_creation_info
@@ -355,7 +362,7 @@ fn analyze_array_elements<'a>(
                 non_empty: true,
             }))])
         } else {
-            TUnion::new(vec![TAtomic::Array(TArray::Keyed(TKeyedArray {
+            TUnion::from_vec(vec![TAtomic::Array(TArray::Keyed(TKeyedArray {
                 known_items: Some(BTreeMap::from_iter(
                     array_creation_info.property_types.into_iter().map(|(k, v)| (k, (v.0, v.1))),
                 )),
@@ -375,14 +382,14 @@ fn analyze_array_elements<'a>(
     } else if item_key_type.is_none() && item_value_type.is_none() {
         get_empty_keyed_array()
     } else if array_creation_info.is_list {
-        TUnion::new(vec![TAtomic::Array(TArray::List(TList {
+        TUnion::from_vec(vec![TAtomic::Array(TArray::List(TList {
             known_elements: None,
             element_type: Box::new(item_value_type.unwrap_or_else(get_mixed)),
             known_count: None,
             non_empty: !array_creation_info.can_be_empty,
         }))])
     } else {
-        TUnion::new(vec![TAtomic::Array(TArray::Keyed(TKeyedArray {
+        TUnion::from_vec(vec![TAtomic::Array(TArray::Keyed(TKeyedArray {
             known_items: None,
             parameters: match (item_key_type, item_value_type) {
                 (Some(key), Some(value)) => Some((Box::new(key), Box::new(value))),
@@ -419,7 +426,7 @@ fn handle_variadic_array_element(
 ) {
     let mut all_non_empty = true;
 
-    for atomic_type in &variadic_array_element_type.types {
+    for atomic_type in variadic_array_element_type.types.as_ref() {
         let (key_type, value_type) = match atomic_type {
             TAtomic::Array(array_type) => match array_type {
                 TArray::Keyed(keyed_data) => {
@@ -464,9 +471,9 @@ fn handle_variadic_array_element(
                                 }
                                 ArrayKey::String(string_key) => {
                                     array_creation_info.is_list = false;
-                                    array_creation_info
-                                        .item_key_atomic_types
-                                        .push(TAtomic::Scalar(TScalar::literal_string(string_key.clone())));
+                                    array_creation_info.item_key_atomic_types.push(TAtomic::Scalar(TScalar::String(
+                                        TString::known_literal(string_key.clone()),
+                                    )));
                                     ArrayKey::String(string_key.clone())
                                 }
                             };
@@ -624,10 +631,10 @@ fn handle_variadic_array_element(
                 *v = (false, combine_union_types(&v.1, value_type, context.codebase, context.interner, false))
             }
 
-            array_creation_info.item_key_atomic_types.extend(key_type.types.clone());
+            array_creation_info.item_key_atomic_types.extend(key_type.types.clone().into_owned());
         }
 
-        array_creation_info.item_value_atomic_types.extend(value_type.types.clone());
+        array_creation_info.item_value_atomic_types.extend(value_type.types.clone().into_owned());
     }
 
     if all_non_empty {

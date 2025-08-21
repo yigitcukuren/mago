@@ -178,7 +178,7 @@ impl Analyzable for Closure {
             let mut inferred_return_type = None;
             for inferred_return in inner_artifacts.inferred_return_types {
                 inferred_return_type = Some(add_optional_union_type(
-                    inferred_return,
+                    (*inferred_return).clone(),
                     inferred_return_type.as_ref(),
                     context.codebase,
                     context.interner,
@@ -189,9 +189,9 @@ impl Analyzable for Closure {
                 signature.return_type = Some(Box::new(inferred_return_type));
             }
 
-            TUnion::new(vec![TAtomic::Callable(TCallable::Signature(signature))])
+            TUnion::from_atomic(TAtomic::Callable(TCallable::Signature(signature)))
         } else {
-            TUnion::new(vec![TAtomic::Callable(TCallable::Alias(function_identifier))])
+            TUnion::from_atomic(TAtomic::Callable(TCallable::Alias(function_identifier)))
         };
 
         artifacts.set_expression_type(self, resulting_closure);

@@ -216,6 +216,23 @@ impl TType for TCallable {
         children
     }
 
+    fn needs_population(&self) -> bool {
+        match self {
+            TCallable::Signature(signature) => {
+                signature.return_type.as_ref().is_some_and(|ty| ty.needs_population())
+                    || signature
+                        .parameters
+                        .iter()
+                        .any(|param| param.get_type_signature().is_some_and(|ty| ty.needs_population()))
+            }
+            TCallable::Alias(_) => false,
+        }
+    }
+
+    fn is_expandable(&self) -> bool {
+        matches!(self, TCallable::Alias(_))
+    }
+
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
         match self {
             TCallable::Signature(signature) => {

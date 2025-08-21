@@ -202,7 +202,7 @@ pub(crate) fn reconcile(
         }
         Assertion::NotCountable(_) => {
             let mut atomics = vec![];
-            for existing_atomic in &existing_var_type.types {
+            for existing_atomic in existing_var_type.types.as_ref() {
                 match existing_atomic {
                     TAtomic::Array(_) => {
                         continue;
@@ -254,7 +254,7 @@ fn subtract_object(
 
     let mut new_var_type = existing_var_type.clone();
 
-    let existing_var_types = new_var_type.types.drain(..).collect::<Vec<_>>();
+    let existing_var_types = new_var_type.types.to_mut().drain(..).collect::<Vec<_>>();
 
     let mut acceptable_types = vec![];
 
@@ -313,7 +313,7 @@ fn subtract_list_array(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::GenericParameter(generic_parameter) = &atomic {
             if !is_equality && !generic_parameter.constraint.is_mixed() {
                 if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
@@ -371,7 +371,7 @@ fn subtract_keyed_array(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::GenericParameter(generic_parameter) = &atomic {
             if !is_equality && !generic_parameter.constraint.is_mixed() {
                 if let Some(atomic) = map_generic_constraint(generic_parameter, |constraint| {
@@ -426,7 +426,7 @@ fn subtract_string(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::GenericParameter(generic_parameter) = &atomic {
             did_remove_type = true;
 
@@ -509,7 +509,7 @@ fn subtract_int(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::GenericParameter(generic_parameter) = &atomic {
             did_remove_type = true;
 
@@ -595,7 +595,7 @@ fn subtract_float(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::GenericParameter(generic_parameter) = &atomic {
             if !is_equality && !generic_parameter.constraint.is_mixed() {
                 if let Some(new_atomic) = map_generic_constraint(generic_parameter, |constraint| {
@@ -658,7 +658,7 @@ fn subtract_arraykey(
 
     let old_var_type_string = existing_var_type.get_id(Some(context.interner));
     let mut did_remove_type = false;
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut existing_var_type = existing_var_type.clone();
 
     for atomic in existing_var_types {
@@ -672,13 +672,13 @@ fn subtract_arraykey(
                 })
             {
                 existing_var_type.remove_type(&atomic);
-                existing_var_type.types.push(atomic);
+                existing_var_type.types.to_mut().push(atomic);
             }
         } else if let TAtomic::Scalar(TScalar::Generic) = atomic {
             if !is_equality {
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::bool()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::float()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::bool()));
             }
 
             did_remove_type = true;
@@ -719,7 +719,7 @@ fn subtract_bool(
     }
 
     let old_var_type_string = existing_var_type.get_id(Some(context.interner));
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut did_remove_type = false;
     let mut existing_var_type = existing_var_type.clone();
 
@@ -730,7 +730,7 @@ fn subtract_bool(
                     subtract_bool(context, assertion, constraint, None, false, None, is_equality)
                 }) {
                     existing_var_type.remove_type(&atomic);
-                    existing_var_type.types.push(atomic);
+                    existing_var_type.types.to_mut().push(atomic);
                 }
             } else {
                 did_remove_type = true;
@@ -738,9 +738,9 @@ fn subtract_bool(
         } else if let TAtomic::Scalar(TScalar::Generic) = atomic {
             if !is_equality {
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::string()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::int()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::string()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::int()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::float()));
             }
 
             did_remove_type = true;
@@ -779,7 +779,7 @@ pub(crate) fn subtract_null(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         match atomic {
             TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
@@ -838,7 +838,7 @@ pub(crate) fn subtract_resource(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         match atomic {
             TAtomic::GenericParameter(generic_parameter) => {
                 did_remove_type = true;
@@ -899,7 +899,7 @@ fn subtract_false(
     }
 
     let old_var_type_string = existing_var_type.get_id(Some(context.interner));
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut did_remove_type = false;
     let mut existing_var_type = existing_var_type.clone();
 
@@ -912,22 +912,22 @@ fn subtract_false(
                     })
                 {
                     existing_var_type.remove_type(&atomic);
-                    existing_var_type.types.push(atomic);
+                    existing_var_type.types.to_mut().push(atomic);
                 } else {
                     did_remove_type = true;
                 }
             }
             TAtomic::Scalar(TScalar::Generic) => {
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::r#true()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::string()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::int()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::r#true()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::string()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::int()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::float()));
                 did_remove_type = true;
             }
             TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_general() => {
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::r#true()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::r#true()));
                 did_remove_type = true;
             }
             TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_false() => {
@@ -966,7 +966,7 @@ fn subtract_true(
     }
 
     let old_var_type_string = existing_var_type.get_id(Some(context.interner));
-    let existing_var_types = &existing_var_type.types;
+    let existing_var_types = existing_var_type.types.as_ref();
     let mut did_remove_type = false;
     let mut existing_var_type = existing_var_type.clone();
 
@@ -979,7 +979,7 @@ fn subtract_true(
                     })
                 {
                     existing_var_type.remove_type(&atomic);
-                    existing_var_type.types.push(atomic);
+                    existing_var_type.types.to_mut().push(atomic);
                 } else {
                     did_remove_type = true;
                 }
@@ -987,14 +987,14 @@ fn subtract_true(
             TAtomic::Scalar(TScalar::Generic) => {
                 did_remove_type = true;
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::r#false()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::string()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::int()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::r#false()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::string()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::int()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::float()));
             }
             TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_general() => {
                 existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::r#false()));
+                existing_var_type.types.to_mut().push(TAtomic::Scalar(TScalar::r#false()));
                 did_remove_type = true;
             }
             TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_true() => {
@@ -1034,7 +1034,7 @@ fn reconcile_falsy_or_empty(
 
     let is_empty_assertion = matches!(assertion, Assertion::Empty);
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if atomic.is_truthy() && !new_var_type.possibly_undefined_from_try {
             did_remove_type = true;
         } else if !atomic.is_falsy() {
@@ -1144,7 +1144,7 @@ fn reconcile_empty_countable(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::Array(TArray::List(_)) = atomic {
             did_remove_type = true;
 
@@ -1191,7 +1191,7 @@ fn reconcile_not_exactly_countable(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for atomic in new_var_type.types.drain(..) {
+    for atomic in new_var_type.types.to_mut().drain(..) {
         if let TAtomic::Array(TArray::List(TList { known_count, .. })) = atomic {
             if let Some(known_count) = &known_count {
                 if known_count == count {
@@ -1269,7 +1269,7 @@ fn reconcile_no_array_key(
     let mut new_var_type = existing_var_type.clone();
     let mut acceptable_types = vec![];
 
-    for mut atomic in new_var_type.types.drain(..) {
+    for mut atomic in new_var_type.types.to_mut().drain(..) {
         match &mut atomic {
             TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, parameters, .. })) => {
                 if let Some(known_items) = known_items {
@@ -1365,7 +1365,7 @@ fn reconcile_no_array_key(
 fn reconcile_no_nonnull_entry_for_key(existing_var_type: &TUnion, key_name: &ArrayKey) -> TUnion {
     let mut existing_var_type = existing_var_type.clone();
 
-    for atomic in existing_var_type.types.iter_mut() {
+    for atomic in existing_var_type.types.to_mut() {
         if let TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, .. })) = atomic {
             let mut all_known_items_removed = false;
             if let Some(known_items_inner) = known_items {

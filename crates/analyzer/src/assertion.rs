@@ -1066,7 +1066,7 @@ fn scrape_instanceof_assertions(
             expression => {
                 if let Some(expression_type) = artifacts.get_expression_type(expression) {
                     let mut assertions = vec![];
-                    for atomic in &expression_type.types {
+                    for atomic in expression_type.types.as_ref() {
                         let Some(name) = get_class_name_from_atomic(context.interner, atomic) else {
                             continue;
                         };

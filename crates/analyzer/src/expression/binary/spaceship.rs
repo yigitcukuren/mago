@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
 use mago_codex::ttype::TType;
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
+use mago_codex::ttype::get_minus_one_int;
 use mago_codex::ttype::get_mixed;
+use mago_codex::ttype::get_one_int;
+use mago_codex::ttype::get_signum_result;
+use mago_codex::ttype::get_zero_int;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -83,7 +85,7 @@ pub fn analyze_spaceship_operation<'a>(
                 .with_help("Consider removing this comparison. It will always evaluate to `1`."),
         );
 
-        TUnion::new(vec![TAtomic::Scalar(TScalar::literal_int(1))])
+        get_one_int()
     } else if !block_context.inside_loop_expressions && is_always_identical_to(lhs_type, rhs_type) {
         context.collector.report_with_code(
             IssueCode::RedundantTypeComparison,
@@ -94,7 +96,7 @@ pub fn analyze_spaceship_operation<'a>(
                 .with_help("Consider removing this comparison. It will always evaluate to `0`."),
         );
 
-        TUnion::new(vec![TAtomic::Scalar(TScalar::literal_int(0))])
+        get_zero_int()
     } else if !block_context.inside_loop_expressions && is_always_less_than(lhs_type, rhs_type) {
         context.collector.report_with_code(
             IssueCode::RedundantTypeComparison,
@@ -105,13 +107,9 @@ pub fn analyze_spaceship_operation<'a>(
                 .with_help("Consider removing this comparison. It will always evaluate to `-1`."),
         );
 
-        TUnion::new(vec![TAtomic::Scalar(TScalar::literal_int(-1))])
+        get_minus_one_int()
     } else {
-        TUnion::new(vec![
-            TAtomic::Scalar(TScalar::literal_int(1)),
-            TAtomic::Scalar(TScalar::literal_int(0)),
-            TAtomic::Scalar(TScalar::literal_int(-1)),
-        ])
+        get_signum_result()
     };
 
     artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));

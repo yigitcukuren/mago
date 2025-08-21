@@ -125,7 +125,8 @@ pub fn analyze_function_like<'a, 'ast>(
                 block_context.inside_return = false;
                 block_context.conditionally_referenced_variable_ids = Default::default();
 
-                let value_type = artifacts.get_expression_type(value).cloned().unwrap_or_else(get_mixed);
+                let value_type =
+                    artifacts.get_rc_expression_type(value).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
 
                 handle_return_value(context, block_context, &mut artifacts, Some(value), value_type, value.span())?;
             }
@@ -234,40 +235,35 @@ fn expand_type_metadata<'a>(
         artifacts,
     );
 
-    let signature_union = type_metadata.type_union.clone();
+    let mut signature_union = type_metadata.type_union.clone();
 
-    if !signature_union.is_mixed() {
-        let mut parameter_type = signature_union.clone();
-        let calling_class = block_context.scope.get_class_like_name();
+    let calling_class = block_context.scope.get_class_like_name();
 
-        expander::expand_union(
-            context.codebase,
-            context.interner,
-            &mut parameter_type,
-            &TypeExpansionOptions {
-                self_class: calling_class,
-                static_class_type: if let Some(calling_class) = calling_class {
-                    StaticClassType::Name(*calling_class)
-                } else {
-                    StaticClassType::None
-                },
-                evaluate_class_constants: true,
-                evaluate_conditional_types: true,
-                function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
-                    method_metadata.is_final
-                } else {
-                    false
-                },
-                expand_generic: true,
-                expand_templates: true,
-                ..Default::default()
+    expander::expand_union(
+        context.codebase,
+        context.interner,
+        &mut signature_union,
+        &TypeExpansionOptions {
+            self_class: calling_class,
+            static_class_type: if let Some(calling_class) = calling_class {
+                StaticClassType::Name(*calling_class)
+            } else {
+                StaticClassType::None
             },
-        );
+            evaluate_class_constants: true,
+            evaluate_conditional_types: true,
+            function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
+                method_metadata.is_final
+            } else {
+                false
+            },
+            expand_generic: true,
+            expand_templates: true,
+            ..Default::default()
+        },
+    );
 
-        parameter_type
-    } else {
-        signature_union
-    }
+    signature_union
 }
 
 fn add_properties_to_context<'a>(
@@ -519,7 +515,7 @@ fn check_thrown_types<'a>(
             .collect::<Vec<_>>();
 
     for (thrown_type, thrown_spans) in &block_context.possibly_thrown_exceptions {
-        let thrown_type_union = TUnion::new(vec![TAtomic::Object(TObject::new_named(*thrown_type))]);
+        let thrown_type_union = TUnion::from_atomic(TAtomic::Object(TObject::new_named(*thrown_type)));
 
         let mut is_expected = false;
         for expected_type in &expected_throw_types {

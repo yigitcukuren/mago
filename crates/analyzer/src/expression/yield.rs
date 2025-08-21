@@ -380,7 +380,7 @@ fn get_current_generator_parameters<'a>(
     let mut value = None;
     let mut sent = None;
     let mut r#return = None;
-    for atomic_iterable in &iterable_type.types {
+    for atomic_iterable in iterable_type.types.as_ref() {
         match atomic_iterable.get_generator_parameters(context.interner) {
             Some((k, v, s, r)) => {
                 key = Some(add_optional_union_type(k, key.as_ref(), context.codebase, context.interner));

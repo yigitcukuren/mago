@@ -134,7 +134,7 @@ pub(crate) fn refine_atomic_with_union(
 ) -> TUnion {
     let intersection_type = intersect_union_with_atomic(context, existing_var_type, new_type);
     if let Some(mut intersection_type) = intersection_type {
-        for intersection_atomic_type in intersection_type.types.iter_mut() {
+        for intersection_atomic_type in intersection_type.types.to_mut() {
             intersection_atomic_type.remove_placeholders(context.interner);
         }
 
@@ -151,7 +151,7 @@ fn intersect_union_with_atomic(
 ) -> Option<TUnion> {
     let mut acceptable_types = Vec::new();
 
-    for existing_atomic in &existing_var_type.types {
+    for existing_atomic in existing_var_type.types.as_ref() {
         let intersected_atomic_type = intersect_atomic_with_atomic(context, existing_atomic, new_type);
         if let Some(intersected_atomic_type) = intersected_atomic_type {
             acceptable_types.push(intersected_atomic_type);
@@ -163,7 +163,7 @@ fn intersect_union_with_atomic(
             acceptable_types = combiner::combine(acceptable_types, context.codebase, context.interner, false);
         }
 
-        return Some(TUnion::new(acceptable_types));
+        return Some(TUnion::from_vec(acceptable_types));
     }
 
     None
@@ -482,11 +482,13 @@ pub(crate) fn intersect_union_with_union(
                 let new_types = type_2_param
                     .types
                     .iter()
-                    .flat_map(|t| intersect_union_with_atomic(context, type_1_param, t).unwrap_or(get_never()).types)
+                    .flat_map(|t| {
+                        intersect_union_with_atomic(context, type_1_param, t).unwrap_or(get_never()).types.into_owned()
+                    })
                     .collect::<Vec<_>>();
 
                 let combined_union =
-                    TUnion::new(combiner::combine(new_types, context.codebase, context.interner, false));
+                    TUnion::from_vec(combiner::combine(new_types, context.codebase, context.interner, false));
 
                 if combined_union.is_never() { None } else { Some(combined_union) }
             }
@@ -593,7 +595,7 @@ fn handle_literal_equality(
             handle_literal_equality_with_str(
                 context,
                 assertion,
-                assertion_str.as_str(),
+                assertion_str.as_ref(),
                 existing_var_type,
                 key,
                 old_var_type_string,
@@ -645,10 +647,10 @@ fn handle_literal_equality_with_int(
         || existing_var_type.has_array_key()
         || existing_var_type.has_mixed()
     {
-        return if is_loose_equality { existing_var_type.clone() } else { TUnion::new(vec![literal_asserted_type]) };
+        return if is_loose_equality { existing_var_type.clone() } else { TUnion::from_atomic(literal_asserted_type) };
     }
 
-    for existing_var_atomic_type in &existing_var_type.types {
+    for existing_var_atomic_type in existing_var_type.types.as_ref() {
         match existing_var_atomic_type {
             TAtomic::Scalar(TScalar::Integer(TInteger::Literal(existing_int)))
                 if *existing_int == assertion_integer =>
@@ -660,44 +662,44 @@ fn handle_literal_equality_with_int(
                     trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, span);
                 }
 
-                return TUnion::new(vec![literal_asserted_type]);
+                return TUnion::from_atomic(literal_asserted_type);
             }
-            TAtomic::Scalar(TScalar::Integer(_)) => return TUnion::new(vec![literal_asserted_type]),
+            TAtomic::Scalar(TScalar::Integer(_)) => return TUnion::from_atomic(literal_asserted_type),
             TAtomic::Scalar(TScalar::Float(TFloat { value: Some(float_value) }))
                 if is_loose_equality && (*float_value == assertion_integer as f64) =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(false) }))
                 if is_loose_equality && assertion_integer == 0 =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(true) }))
                 if is_loose_equality && assertion_integer == 1 =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::String(TString {
                 literal: Some(TStringLiteral::Value(string_value)), ..
-            })) if is_loose_equality && string_value == &assertion_integer.to_string() => {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+            })) if is_loose_equality && string_value.as_ref() == assertion_integer.to_string() => {
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             _ => {}
         }
     }
 
     if is_loose_equality {
-        for existing_var_atomic_type in &existing_var_type.types {
+        for existing_var_atomic_type in existing_var_type.types.as_ref() {
             match existing_var_atomic_type {
                 TAtomic::Scalar(TScalar::Float(TFloat { value: None })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 TAtomic::Scalar(TScalar::String(TString { literal: None, .. })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 TAtomic::Scalar(TScalar::Bool(TBool { value: None })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 _ => {}
             }
@@ -727,13 +729,13 @@ fn handle_literal_equality_with_str(
     let is_loose_equality = matches!(assertion, Assertion::IsEqual(_));
 
     if existing_var_type.has_scalar() || existing_var_type.has_array_key() || existing_var_type.has_mixed() {
-        return if is_loose_equality { existing_var_type.clone() } else { TUnion::new(vec![literal_asserted_type]) };
+        return if is_loose_equality { existing_var_type.clone() } else { TUnion::from_atomic(literal_asserted_type) };
     }
 
-    for existing_var_atomic_type in &existing_var_type.types {
+    for existing_var_atomic_type in existing_var_type.types.as_ref() {
         match existing_var_atomic_type {
             TAtomic::Scalar(TScalar::String(TString { literal: None | Some(TStringLiteral::Unspecified), .. })) => {
-                return TUnion::new(vec![literal_asserted_type]);
+                return TUnion::from_atomic(literal_asserted_type);
             }
             TAtomic::Scalar(TScalar::String(TString {
                 literal: Some(TStringLiteral::Value(existing_str)), ..
@@ -745,40 +747,40 @@ fn handle_literal_equality_with_str(
                     trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, span);
                 }
 
-                return TUnion::new(vec![literal_asserted_type]);
+                return TUnion::from_atomic(literal_asserted_type);
             }
             TAtomic::Scalar(TScalar::Float(TFloat { value: Some(float_value) }))
                 if is_loose_equality && float_value.to_string() == assertion_str_val =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(false) }))
                 if is_loose_equality && assertion_str_val.is_empty() =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(true) }))
                 if is_loose_equality && assertion_str_val == "1" =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             TAtomic::Scalar(TScalar::Integer(TInteger::Literal(int_value)))
                 if is_loose_equality && int_value.to_string() == assertion_str_val =>
             {
-                return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             _ => {}
         }
     }
 
     if is_loose_equality {
-        for existing_var_atomic_type in &existing_var_type.types {
+        for existing_var_atomic_type in existing_var_type.types.as_ref() {
             match existing_var_atomic_type {
                 TAtomic::Scalar(TScalar::Float(TFloat { value: None })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified)) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 _ => {}
             }
@@ -808,13 +810,13 @@ fn handle_literal_equality_with_float(
     let is_loose_equality = matches!(assertion, Assertion::IsEqual(_));
 
     if existing_var_type.has_scalar() || existing_var_type.has_numeric() || existing_var_type.has_mixed() {
-        return if is_loose_equality { existing_var_type.clone() } else { TUnion::new(vec![literal_asserted_type]) };
+        return if is_loose_equality { existing_var_type.clone() } else { TUnion::from_atomic(literal_asserted_type) };
     }
 
-    for existing_var_atomic_type in &existing_var_type.types {
+    for existing_var_atomic_type in existing_var_type.types.as_ref() {
         match existing_var_atomic_type {
             TAtomic::Scalar(TScalar::Float(TFloat { value: None, .. })) => {
-                return TUnion::new(vec![literal_asserted_type]);
+                return TUnion::from_atomic(literal_asserted_type);
             }
             TAtomic::Scalar(TScalar::Float(TFloat { value: Some(existing_float), .. })) => {
                 if (existing_float.0 - assertion_float_val).abs() < f64::EPSILON {
@@ -832,30 +834,30 @@ fn handle_literal_equality_with_float(
                             s_ref,
                         );
                     }
-                    return TUnion::new(vec![literal_asserted_type]);
+                    return TUnion::from_atomic(literal_asserted_type);
                 }
             }
             TAtomic::Scalar(TScalar::Integer(TInteger::Literal(existing_int))) if is_loose_equality => {
                 if (*existing_int as f64 - assertion_float_val).abs() < f64::EPSILON {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Scalar(TScalar::String(TString {
                 literal: Some(TStringLiteral::Value(string_value)), ..
             })) if is_loose_equality => {
                 if string_value.parse::<f64>().is_ok_and(|f_val| (f_val - assertion_float_val).abs() < f64::EPSILON) {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(b_val), .. })) if is_loose_equality => {
                 let bool_as_f64 = if *b_val { 1.0 } else { 0.0 };
                 if (bool_as_f64 - assertion_float_val).abs() < f64::EPSILON {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Null if is_loose_equality => {
                 if (0.0 - assertion_float_val).abs() < f64::EPSILON {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             _ => {}
@@ -863,12 +865,12 @@ fn handle_literal_equality_with_float(
     }
 
     if is_loose_equality {
-        for existing_var_atomic_type in &existing_var_type.types {
+        for existing_var_atomic_type in existing_var_type.types.as_ref() {
             match existing_var_atomic_type {
                 TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified))
                 | TAtomic::Scalar(TScalar::String(TString { literal: None, .. }))
                 | TAtomic::Scalar(TScalar::Bool(TBool { value: None, .. })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 _ => {}
             }
@@ -898,13 +900,13 @@ fn handle_literal_equality_with_bool(
     let is_loose_equality = matches!(assertion, Assertion::IsEqual(_));
 
     if existing_var_type.has_scalar() || existing_var_type.has_mixed() {
-        return if is_loose_equality { existing_var_type.clone() } else { TUnion::new(vec![literal_asserted_type]) };
+        return if is_loose_equality { existing_var_type.clone() } else { TUnion::from_atomic(literal_asserted_type) };
     }
 
-    for existing_var_atomic_type in &existing_var_type.types {
+    for existing_var_atomic_type in existing_var_type.types.as_ref() {
         match existing_var_atomic_type {
             TAtomic::Scalar(TScalar::Bool(TBool { value: None, .. })) => {
-                return TUnion::new(vec![literal_asserted_type]);
+                return TUnion::from_atomic(literal_asserted_type);
             }
             TAtomic::Scalar(TScalar::Bool(TBool { value: Some(existing_bool_val), .. })) => {
                 if *existing_bool_val == assertion_bool_val {
@@ -923,20 +925,20 @@ fn handle_literal_equality_with_bool(
                         );
                     }
 
-                    return TUnion::new(vec![literal_asserted_type]);
+                    return TUnion::from_atomic(literal_asserted_type);
                 }
             }
             TAtomic::Scalar(TScalar::Integer(TInteger::Literal(existing_int))) if is_loose_equality => {
                 let int_as_bool = *existing_int != 0;
 
                 if int_as_bool == assertion_bool_val {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Scalar(TScalar::Float(TFloat { value: Some(existing_float), .. })) if is_loose_equality => {
                 let float_as_bool = (existing_float.0).abs() > f64::EPSILON;
                 if float_as_bool == assertion_bool_val {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Scalar(TScalar::String(TString {
@@ -945,12 +947,12 @@ fn handle_literal_equality_with_bool(
                 let string_as_bool = !string_value.is_empty() && string_value != "0";
 
                 if string_as_bool == assertion_bool_val {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             TAtomic::Null if is_loose_equality => {
                 if !assertion_bool_val {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
             }
             _ => {}
@@ -958,12 +960,12 @@ fn handle_literal_equality_with_bool(
     }
 
     if is_loose_equality {
-        for existing_var_atomic_type in &existing_var_type.types {
+        for existing_var_atomic_type in existing_var_type.types.as_ref() {
             match existing_var_atomic_type {
                 TAtomic::Scalar(TScalar::Integer(TInteger::Unspecified))
                 | TAtomic::Scalar(TScalar::Float(TFloat { value: None, .. }))
                 | TAtomic::Scalar(TScalar::String(TString { literal: None, .. })) => {
-                    return TUnion::new(vec![existing_var_atomic_type.clone()]);
+                    return TUnion::from_atomic(existing_var_atomic_type.clone());
                 }
                 _ => {}
             }

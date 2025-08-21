@@ -110,7 +110,7 @@ fn resolve_function_callable_types<'a, 'b>(
     };
 
     let mut targets = vec![];
-    for atomic in &expression_type.types {
+    for atomic in expression_type.types.as_ref() {
         let as_callable = cast_atomic_to_callable(atomic, context.codebase, context.interner, None);
 
         let Some(callable) = as_callable else {

@@ -116,12 +116,12 @@ impl TValueOf {
                     if retain_generics {
                         value_types.push(TAtomic::GenericParameter(parameter.clone()));
                     } else if let Some(generic_value_types) = Self::get_value_of_targets(
-                        parameter.get_constraint().types.as_slice(),
+                        parameter.get_constraint().types.as_ref(),
                         codebase,
                         interner,
                         retain_generics,
                     ) {
-                        value_types.extend(generic_value_types.types);
+                        value_types.extend(generic_value_types.types.into_owned());
                     }
                 }
                 _ => {
@@ -130,13 +130,21 @@ impl TValueOf {
             }
         }
 
-        if value_types.is_empty() { None } else { Some(TUnion::new(value_types)) }
+        if value_types.is_empty() { None } else { Some(TUnion::from_vec(value_types)) }
     }
 }
 
 impl TType for TValueOf {
     fn get_child_nodes<'a>(&'a self) -> Vec<TypeRef<'a>> {
         vec![TypeRef::Atomic(&self.0)]
+    }
+
+    fn needs_population(&self) -> bool {
+        self.0.needs_population()
+    }
+
+    fn is_expandable(&self) -> bool {
+        true
     }
 
     fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {

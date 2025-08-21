@@ -736,6 +736,14 @@ impl TInteger {
 }
 
 impl TType for TInteger {
+    fn needs_population(&self) -> bool {
+        false
+    }
+
+    fn is_expandable(&self) -> bool {
+        false
+    }
+
     fn get_id(&self, _interner: Option<&ThreadedInterner>) -> String {
         match self {
             TInteger::Literal(value) => format!("int({value})"),

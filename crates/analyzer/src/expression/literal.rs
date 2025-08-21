@@ -1,13 +1,11 @@
-use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::get_false;
+use mago_codex::ttype::get_int_or_float;
 use mago_codex::ttype::get_literal_float;
 use mago_codex::ttype::get_literal_int;
 use mago_codex::ttype::get_literal_string;
 use mago_codex::ttype::get_non_empty_string;
 use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_true;
-use mago_codex::ttype::union::TUnion;
 use mago_syntax::ast::*;
 
 use crate::analyzable::Analyzable;
@@ -36,7 +34,7 @@ impl Analyzable for Literal {
                 },
                 Literal::Integer(literal_integer) => match literal_integer.value {
                     Some(value) => get_literal_int(value as i64),
-                    None => TUnion::new(vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::float())]),
+                    None => get_int_or_float(),
                 },
                 Literal::Float(literal_float) => get_literal_float(*literal_float.value),
                 Literal::True(_) => get_true(),

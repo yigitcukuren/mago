@@ -79,7 +79,7 @@ pub(super) fn resolve_targets<'a>(
 
     let mut encountered_invalid_targets = false;
     let mut targets = vec![];
-    for atomic in &expression_type.types {
+    for atomic in expression_type.types.as_ref() {
         if let Some(callable) =
             cast_atomic_to_callable(atomic, context.codebase, context.interner, Some(template_result))
         {

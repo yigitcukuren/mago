@@ -95,7 +95,7 @@ impl Analyzable for UnaryPrefix {
             }
             UnaryPrefixOperator::Negation(_) => {
                 let mut resulting_types = vec![];
-                for operand_part in operand_type.as_ref().map(|o| o.types.as_slice()).unwrap_or_default() {
+                for operand_part in operand_type.as_ref().map(|o| o.types.as_ref()).unwrap_or_default() {
                     match operand_part {
                         TAtomic::Null | TAtomic::Void => {
                             // -null results in int(0).
@@ -146,7 +146,8 @@ impl Analyzable for UnaryPrefix {
                     resulting_types.push(TAtomic::Scalar(TScalar::float()));
                 }
 
-                let resulting_type = TUnion::new(combine(resulting_types, context.codebase, context.interner, false));
+                let resulting_type =
+                    TUnion::from_vec(combine(resulting_types, context.codebase, context.interner, false));
 
                 artifacts.set_expression_type(self, resulting_type);
             }
@@ -336,7 +337,7 @@ fn increment_operand<'a>(
     };
 
     let mut possibilities = vec![];
-    for operand_atomic_type in &operand_type.types {
+    for operand_atomic_type in operand_type.types.as_ref() {
         match operand_atomic_type {
             TAtomic::Scalar(scalar) => match scalar {
                 TScalar::Integer(int_scalar) => {
@@ -369,7 +370,7 @@ fn increment_operand<'a>(
                         possibilities.push(TAtomic::Scalar(TScalar::String(string_scalar.without_literal())));
                     } else if let Some(TStringLiteral::Value(string_val)) = &string_scalar.literal {
                         if string_val.is_empty() {
-                            possibilities.push(TAtomic::Scalar(TScalar::literal_string("1".to_string())));
+                            possibilities.push(TAtomic::Scalar(TScalar::static_literal_string("1")));
                         } else if str_is_numeric(string_val) {
                             let mut negative = false;
                             let value = if let Some(value) = string_val.strip_prefix("+") {
@@ -498,7 +499,7 @@ fn increment_operand<'a>(
     let resulting_type_union = if possibilities.is_empty() {
         get_mixed()
     } else {
-        TUnion::new(combine(possibilities, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(possibilities, context.codebase, context.interner, false))
     };
 
     let operand_id = get_expression_id(
@@ -566,7 +567,7 @@ fn decrement_operand<'a>(
 
     let mut possibilities = vec![];
 
-    for operand_atomic_type in &operand_type.types {
+    for operand_atomic_type in operand_type.types.as_ref() {
         match operand_atomic_type {
             TAtomic::Scalar(scalar) => {
                 match scalar {
@@ -733,7 +734,7 @@ fn decrement_operand<'a>(
     let resulting_type_union = if possibilities.is_empty() {
         get_mixed()
     } else {
-        TUnion::new(combine(possibilities, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(possibilities, context.codebase, context.interner, false))
     };
 
     let operand_id = get_expression_id(
@@ -809,7 +810,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
     let mut resulting_array_atomics = Vec::new();
     let mut reported_object_warning = false;
 
-    for atomic_type in &operand_type.types {
+    for atomic_type in operand_type.types.as_ref() {
         match atomic_type {
             TAtomic::Array(arr) => {
                 // If it's already an array, it remains as is.
@@ -920,7 +921,7 @@ fn cast_type_to_array(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
     }
 
     // Combine all potential array types resulting from the cast.
-    TUnion::new(combine(resulting_array_atomics, context.codebase, context.interner, false))
+    TUnion::from_vec(combine(resulting_array_atomics, context.codebase, context.interner, false))
 }
 
 fn cast_type_to_bool(operand_type: &TUnion, context: &mut Context<'_>, cast_expression: &UnaryPrefix) -> TUnion {
@@ -932,7 +933,7 @@ fn cast_type_to_bool(operand_type: &TUnion, context: &mut Context<'_>, cast_expr
     let mut falsy_counts = 0;
     let mut has_non_literal_bool = false;
 
-    for atomic_type in &operand_type.types {
+    for atomic_type in operand_type.types.as_ref() {
         if atomic_type.is_truthy() {
             truthy_counts += 1;
 
@@ -979,7 +980,7 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
     let mut resulting_float_atomics = Vec::new();
     let mut reported_error_for_object = false;
 
-    for atomic_type in &operand_type.types {
+    for atomic_type in operand_type.types.as_ref() {
         match atomic_type {
             TAtomic::Null | TAtomic::Void => resulting_float_atomics.push(TAtomic::Scalar(TScalar::literal_float(0.0))),
             TAtomic::Scalar(scalar) => {
@@ -1119,12 +1120,12 @@ fn cast_type_to_float(operand_type: &TUnion, context: &mut Context<'_>, cast_exp
         return get_float();
     }
 
-    TUnion::new(combine(resulting_float_atomics, context.codebase, context.interner, false))
+    TUnion::from_vec(combine(resulting_float_atomics, context.codebase, context.interner, false))
 }
 
 fn cast_type_to_int(operand_type: &TUnion, context: &mut Context<'_>) -> TUnion {
     let mut possibilities = vec![];
-    for t in &operand_type.types {
+    for t in operand_type.types.as_ref() {
         let possible = match t {
             TAtomic::Null | TAtomic::Void => TAtomic::Scalar(TScalar::literal_int(0)),
             TAtomic::Array(array) => {
@@ -1193,12 +1194,12 @@ fn cast_type_to_int(operand_type: &TUnion, context: &mut Context<'_>) -> TUnion 
         possibilities.push(possible);
     }
 
-    TUnion::new(combine(possibilities, context.codebase, context.interner, false))
+    TUnion::from_vec(combine(possibilities, context.codebase, context.interner, false))
 }
 
 fn cast_type_to_object(operand_type: &TUnion, context: &mut Context<'_>, cast_expression: &UnaryPrefix) -> TUnion {
     let mut possibilities = vec![];
-    for t in &operand_type.types {
+    for t in operand_type.types.as_ref() {
         match t {
             TAtomic::Resource(_) => {
                 context.collector.report_with_code(
@@ -1232,7 +1233,7 @@ fn cast_type_to_object(operand_type: &TUnion, context: &mut Context<'_>, cast_ex
         return get_named_object(context.interner, context.interner.intern("stdClass"), None);
     }
 
-    TUnion::new(combine(possibilities, context.codebase, context.interner, false))
+    TUnion::from_vec(combine(possibilities, context.codebase, context.interner, false))
 }
 
 pub fn cast_type_to_string<'a>(
@@ -1243,7 +1244,7 @@ pub fn cast_type_to_string<'a>(
     expression_span: Span,
 ) -> Result<TUnion, AnalysisError> {
     let mut possibilities = vec![];
-    for t in &operand_type.types {
+    for t in operand_type.types.as_ref() {
         let possible = match t {
             TAtomic::Scalar(scalar) => match scalar {
                 TScalar::Bool(boolean) => {
@@ -1461,7 +1462,7 @@ pub fn cast_type_to_string<'a>(
         possibilities.push(possible);
     }
 
-    Ok(TUnion::new(combine(possibilities, context.codebase, context.interner, false)))
+    Ok(TUnion::from_vec(combine(possibilities, context.codebase, context.interner, false)))
 }
 
 #[cfg(test)]
