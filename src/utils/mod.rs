@@ -33,9 +33,14 @@ pub fn apply_update(
     file: &File,
     modified_contents: String,
     dry_run: bool,
+    check: bool,
 ) -> Result<bool, Error> {
     if file.contents == modified_contents {
         return Ok(false);
+    }
+
+    if check {
+        return Ok(true);
     }
 
     if dry_run {

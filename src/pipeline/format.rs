@@ -24,6 +24,16 @@ impl StatelessReducer<bool, usize> for FormatReducer {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormatMode {
+    /// Apply formatting changes to files.
+    Format,
+    /// Check if files are formatted without making changes.
+    Check,
+    /// Print a diff of changes without modifying files.
+    DryRun,
+}
+
 /// Shared, read-only context provided to each parallel formatting task.
 #[derive(Clone)]
 pub struct FormatContext {
@@ -31,8 +41,8 @@ pub struct FormatContext {
     pub php_version: PHPVersion,
     /// The configured settings for the formatter.
     pub settings: FormatSettings,
-    /// If `true`, the pipeline will only check for changes and not modify files.
-    pub dry_run: bool,
+    /// The mode of operation: format, check, or dry-run.
+    pub mode: FormatMode,
     /// A thread-safe log for recording formatting changes.
     pub change_log: ChangeLog,
 }
@@ -69,7 +79,13 @@ pub fn run_format_pipeline(
             let formatter = Formatter::new(&interner, context.php_version, context.settings);
             let formatted_content = formatter.format(&file, &program);
 
-            utils::apply_update(&context.change_log, &file, formatted_content, context.dry_run)
+            utils::apply_update(
+                &context.change_log,
+                &file,
+                formatted_content,
+                matches!(context.mode, FormatMode::DryRun),
+                matches!(context.mode, FormatMode::Check),
+            )
         },
     )
 }

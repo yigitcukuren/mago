@@ -277,7 +277,7 @@ impl ReportingArgs {
                     }
                 }
 
-                let changed = utils::apply_update(&change_log, file, fixed_content, self.dry_run)?;
+                let changed = utils::apply_update(&change_log, file, fixed_content, self.dry_run, false)?;
                 progress_bar.inc(1);
                 Ok(changed)
             })

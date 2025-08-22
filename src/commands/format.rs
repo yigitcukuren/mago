@@ -15,6 +15,7 @@ use crate::config::Configuration;
 use crate::database;
 use crate::error::Error;
 use crate::pipeline::format::FormatContext;
+use crate::pipeline::format::FormatMode;
 use crate::pipeline::format::run_format_pipeline;
 
 /// Represents the `format` command, which is responsible for formatting source files
@@ -35,11 +36,37 @@ pub struct FormatCommand {
     #[arg(help = "Format specific files or directories, overriding the source configuration")]
     pub path: Vec<PathBuf>,
 
-    /// Perform a dry run to check if files are already formatted.
-    #[arg(long, short = 'd', help = "Check if the source files are already formatted without making changes")]
+    /// Perform a dry run, printing a diff without modifying files.
+    ///
+    /// This will calculate and print a diff of any changes that would be made.
+    /// No files will be modified on disk.
+    #[arg(
+        long,
+        short = 'd',
+        help = "Print a diff of changes without modifying files",
+        conflicts_with_all = ["check", "stdin_input"],
+    )]
     pub dry_run: bool,
 
-    #[arg(long, short = 'i', help = "Read input from STDIN, format it, and write to STDOUT")]
+    /// Check if the source files are formatted.
+    ///
+    /// This flag is ideal for CI environments. The command will exit with a
+    /// success code (`0`) if all files are formatted, and a failure code (`1`)
+    /// if any files would be changed. No output is printed to `stdout`.
+    #[arg(
+        long,
+        short = 'c',
+        help = "Check if files are formatted, exiting with a non-zero status code on changes",
+        conflicts_with_all = ["dry_run", "stdin_input"],
+    )]
+    pub check: bool,
+
+    #[arg(
+        long,
+        short = 'i',
+        help = "Read input from STDIN, format it, and write to STDOUT",
+        conflicts_with_all = ["dry_run", "check", "path"],
+    )]
     pub stdin_input: bool,
 }
 
@@ -84,7 +111,13 @@ pub fn execute(command: FormatCommand, mut configuration: Configuration) -> Resu
     let shared_context = FormatContext {
         php_version: configuration.php_version,
         settings: configuration.formatter.settings,
-        dry_run: command.dry_run,
+        mode: if command.dry_run {
+            FormatMode::DryRun
+        } else if command.check {
+            FormatMode::Check
+        } else {
+            FormatMode::Format
+        },
         change_log: change_log.clone(),
     };
 
@@ -98,7 +131,7 @@ pub fn execute(command: FormatCommand, mut configuration: Configuration) -> Resu
         return Ok(ExitCode::SUCCESS);
     }
 
-    Ok(if command.dry_run {
+    Ok(if command.dry_run || command.check {
         tracing::info!("Found {} file(s) that need formatting.", changed_count);
         ExitCode::FAILURE
     } else {
