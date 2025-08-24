@@ -93,7 +93,7 @@ impl LintRule for LowercaseKeywordRule {
             return;
         };
 
-        if keyword.value.chars().all(|c| c.is_ascii_lowercase()) {
+        if keyword.value.chars().all(|c| !c.is_ascii_alphabetic() || c.is_ascii_lowercase()) {
             return; // Already in lowercase, no issue to report
         }
 
