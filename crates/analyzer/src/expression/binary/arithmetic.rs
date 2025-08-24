@@ -3,16 +3,12 @@ use std::rc::Rc;
 
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
-use mago_codex::ttype::atomic::array::TArray;
-use mago_codex::ttype::atomic::array::keyed::TKeyedArray;
 use mago_codex::ttype::atomic::mixed::TMixed;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
-use mago_codex::ttype::combine_union_types;
 use mago_codex::ttype::combiner;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
-use mago_codex::ttype::get_arraykey;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
@@ -290,47 +286,29 @@ pub fn analyze_arithmetic_operation<'ctx, 'arena>(
                 && (left_atomic.is_array() || right_atomic.is_array())
             {
                 if left_atomic.is_array() && right_atomic.is_array() {
-                    // TODO(azjezz): Implement array combination logic similar to Psalm
-                    // This involves merging keys for KeyedArray, combining types for Array
-                    // For now, let's assume a generic array result. Refine this.
-
-                    let array_key_type = match (left_atomic.get_array_key_type(), right_atomic.get_array_key_type()) {
-                        (Some(left_key), Some(right_key)) => {
-                            combine_union_types(&left_key, &right_key, context.codebase, false)
-                        }
-                        _ => get_arraykey(),
-                    };
-
-                    let array_value_type =
-                        match (left_atomic.get_array_value_type(), right_atomic.get_array_value_type()) {
-                            (Some(left_value), Some(right_value)) => {
-                                combine_union_types(&left_value, &right_value, context.codebase, false)
-                            }
-                            _ => get_mixed(),
-                        };
-
-                    let mut keyed_array = TKeyedArray::new();
-                    keyed_array.parameters = Some((Box::new(array_key_type), Box::new(array_value_type)));
-                    keyed_array.non_empty = left_atomic.is_non_empty_array() || right_atomic.is_non_empty_array();
-
-                    pair_result_atomics.push(TAtomic::Array(TArray::Keyed(keyed_array)));
+                    pair_result_atomics.extend(combiner::combine(
+                        vec![left_atomic.clone(), right_atomic.clone()],
+                        context.codebase,
+                        false,
+                    ));
 
                     has_valid_left_operand = true;
                     has_valid_right_operand = true;
+                } else if left_atomic.is_array() {
+                    invalid_right_messages.push((
+                        format!("Cannot add array to non-array type {}", right_atomic.get_id()),
+                        binary.rhs.span(),
+                    ));
+
+                    has_valid_left_operand = true;
+                    invalid_pair = true;
                 } else {
-                    if left_atomic.is_array() {
-                        invalid_right_messages.push((
-                            format!("Cannot add array to non-array type {}", right_atomic.get_id()),
-                            binary.rhs.span(),
-                        ));
-                        has_valid_left_operand = true;
-                    } else {
-                        invalid_left_messages.push((
-                            format!("Cannot add {} to non-array type array", left_atomic.get_id()),
-                            binary.lhs.span(),
-                        ));
-                        has_valid_right_operand = true;
-                    }
+                    invalid_left_messages.push((
+                        format!("Cannot add {} to non-array type array", left_atomic.get_id()),
+                        binary.lhs.span(),
+                    ));
+
+                    has_valid_right_operand = true;
                     invalid_pair = true;
                 }
             } else if left_atomic.is_numeric() && right_atomic.is_numeric() {

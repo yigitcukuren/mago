@@ -149,3 +149,6 @@ test_case!(match_expression);
 test_case!(match_arm_reaching);
 test_case!(properties_added_to_context);
 test_case!(throwing_exceptions);
+
+// Github Issues
+test_case!(issue_306);
