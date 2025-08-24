@@ -1,11 +1,14 @@
+use bumpalo::Bump;
+use bumpalo::collections::Vec;
+
 use crate::document::Document;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Indentation<'a> {
+pub enum Indentation<'arena> {
     Root,
     Indent,
-    Alignment(&'a str),
-    Combined(Vec<Indentation<'a>>),
+    Alignment(&'arena str),
+    Combined(Vec<'arena, Indentation<'arena>>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,13 +18,13 @@ pub enum Mode {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Command<'a> {
-    pub indentation: Indentation<'a>,
+pub struct Command<'arena> {
+    pub indentation: Indentation<'arena>,
     pub mode: Mode,
-    pub document: Document<'a>,
+    pub document: Document<'arena>,
 }
 
-impl Indentation<'_> {
+impl<'arena> Indentation<'arena> {
     pub fn root() -> Self {
         Self::Root
     }
@@ -34,18 +37,26 @@ impl Indentation<'_> {
 
     #[must_use]
     #[inline]
-    pub fn get_value(&self, use_tabs: bool, tab_width: usize) -> String {
+    pub fn get_value_in(&self, arena: &'arena Bump, use_tabs: bool, tab_width: usize) -> &'arena [u8] {
         match self {
-            Indentation::Root => String::new(),
+            Indentation::Root => &[],
             Indentation::Indent => {
                 if use_tabs {
-                    "\t".to_string()
+                    b"\t"
                 } else {
-                    " ".repeat(tab_width)
+                    let mut spaces = Vec::with_capacity_in(tab_width, arena);
+                    spaces.resize(tab_width, b' ');
+                    spaces.into_bump_slice()
                 }
             }
-            Indentation::Alignment(value) => value.to_string(),
-            Indentation::Combined(nested) => nested.iter().map(|i| i.get_value(use_tabs, tab_width)).collect(),
+            Indentation::Alignment(value) => value.as_bytes(),
+            Indentation::Combined(nested) => {
+                let mut combined = Vec::new_in(arena);
+                for i in nested {
+                    combined.extend_from_slice(i.get_value_in(arena, use_tabs, tab_width));
+                }
+                combined.into_bump_slice()
+            }
         }
     }
 }
@@ -60,8 +71,8 @@ impl Mode {
     }
 }
 
-impl<'a> Command<'a> {
-    pub fn new(indent: Indentation<'a>, mode: Mode, document: Document<'a>) -> Self {
+impl<'arena> Command<'arena> {
+    pub fn new(indent: Indentation<'arena>, mode: Mode, document: Document<'arena>) -> Self {
         Self { indentation: indent, mode, document }
     }
 

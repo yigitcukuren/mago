@@ -8,6 +8,7 @@ use mago_algebra::clause::Clause;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::negate_formula;
 use mago_algebra::saturate_clauses;
+use mago_atom::atom;
 use mago_codex::get_enum;
 use mago_codex::ttype;
 use mago_codex::ttype::atomic::TAtomic;
@@ -50,14 +51,14 @@ pub mod r#for;
 pub mod foreach;
 pub mod r#while;
 
-fn analyze_for_or_while_loop<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn analyze_for_or_while_loop<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    initializations: &[Expression],
-    conditions: &[Expression],
-    increments: &[Expression],
-    statements: &[Statement],
+    initializations: &'ast [Expression<'arena>],
+    conditions: &'ast [Expression<'arena>],
+    increments: &'ast [Expression<'arena>],
+    statements: &'ast [Statement<'arena>],
     span: Span,
     infinite_loop: bool,
 ) -> Result<(), AnalysisError> {
@@ -109,11 +110,11 @@ fn analyze_for_or_while_loop<'a>(
     Ok(())
 }
 
-fn inherit_loop_block_context<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
-    loop_block_context: BlockContext<'a>,
-    inner_loop_block_context: BlockContext<'a>,
+fn inherit_loop_block_context<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
+    loop_block_context: BlockContext<'ctx>,
+    inner_loop_block_context: BlockContext<'ctx>,
     loop_scope: LoopScope,
     always_enters_loop: bool,
     known_infinite_loop: bool,
@@ -143,13 +144,7 @@ fn inherit_loop_block_context<'a>(
             if let Some(possible_type) = loop_scope.possibly_defined_loop_parent_variables.get(&variable) {
                 block_context.locals.insert(
                     variable,
-                    Rc::new(ttype::combine_union_types(
-                        &variable_type,
-                        possible_type,
-                        context.codebase,
-                        context.interner,
-                        false,
-                    )),
+                    Rc::new(ttype::combine_union_types(&variable_type, possible_type, context.codebase, false)),
                 );
             }
         }
@@ -163,20 +158,19 @@ fn inherit_loop_block_context<'a>(
     }
 }
 
-fn analyze<'a, 'b>(
-    context: &'a mut Context<'b>,
-    statements: &[Statement],
-    pre_conditions: Vec<&Expression>,
-    post_expressions: Vec<&Expression>,
+fn analyze<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    statements: &'ast [Statement<'arena>],
+    pre_conditions: Vec<&'ast Expression<'arena>>,
+    post_expressions: Vec<&'ast Expression<'arena>>,
     mut loop_scope: LoopScope,
-    loop_context: &'a mut BlockContext<'b>,
-    loop_parent_context: &'a mut BlockContext<'b>,
-    artifacts: &'a mut AnalysisArtifacts,
+    loop_context: &mut BlockContext<'ctx>,
+    loop_parent_context: &mut BlockContext<'ctx>,
+    artifacts: &mut AnalysisArtifacts,
     is_do: bool,
     always_enters_loop: bool,
-) -> Result<(BlockContext<'b>, LoopScope), AnalysisError> {
-    let (assignment_map, first_variable_id) =
-        get_assignment_map(context.interner, &pre_conditions, &post_expressions, statements);
+) -> Result<(BlockContext<'ctx>, LoopScope), AnalysisError> {
+    let (assignment_map, first_variable_id) = get_assignment_map(&pre_conditions, &post_expressions, statements);
     let assignment_depth = if let Some(first_variable_id) = first_variable_id {
         get_assignment_map_depth(&first_variable_id, &mut assignment_map.clone())
     } else {
@@ -406,18 +400,11 @@ fn analyze<'a, 'b>(
                                 &continue_context_type,
                                 parent_context_type,
                                 context.codebase,
-                                context.interner,
                                 false,
                             )),
                         );
 
-                        pre_loop_context.remove_variable_from_conflicting_clauses(
-                            context.interner,
-                            context.codebase,
-                            &mut context.collector,
-                            &variable_id,
-                            None,
-                        );
+                        pre_loop_context.remove_variable_from_conflicting_clauses(context, &variable_id, None);
 
                         loop_parent_context.possibly_assigned_variable_ids.insert(variable_id.clone());
                     }
@@ -430,23 +417,11 @@ fn analyze<'a, 'b>(
                         // widen the foreach context type with the initial context type
                         continue_context.locals.insert(
                             variable_id.clone(),
-                            Rc::new(combine_union_types(
-                                &continue_context_type,
-                                loop_context_type,
-                                codebase,
-                                context.interner,
-                                false,
-                            )),
+                            Rc::new(combine_union_types(&continue_context_type, loop_context_type, codebase, false)),
                         );
 
                         // if there's a change, invalidate related clauses
-                        pre_loop_context.remove_variable_from_conflicting_clauses(
-                            context.interner,
-                            context.codebase,
-                            &mut context.collector,
-                            &variable_id,
-                            None,
-                        );
+                        pre_loop_context.remove_variable_from_conflicting_clauses(context, &variable_id, None);
                     }
                 } else {
                     if !recorded_issues.is_empty() {
@@ -603,7 +578,6 @@ fn analyze<'a, 'b>(
                             possibly_redefined_variable_type,
                             do_context_type,
                             codebase,
-                            context.interner,
                             always_enters_loop,
                         ))
                     };
@@ -620,7 +594,6 @@ fn analyze<'a, 'b>(
                         variable_type,
                         loop_parent_context_type,
                         codebase,
-                        context.interner,
                         always_enters_loop,
                     ));
                 }
@@ -635,22 +608,10 @@ fn analyze<'a, 'b>(
             if loop_context_type != variable_type {
                 loop_parent_context.locals.insert(
                     variable_id.clone(),
-                    Rc::new(combine_union_types(
-                        variable_type,
-                        loop_context_type,
-                        codebase,
-                        context.interner,
-                        always_enters_loop,
-                    )),
+                    Rc::new(combine_union_types(variable_type, loop_context_type, codebase, always_enters_loop)),
                 );
 
-                loop_parent_context.remove_variable_from_conflicting_clauses(
-                    context.interner,
-                    context.codebase,
-                    &mut context.collector,
-                    variable_id,
-                    None,
-                );
+                loop_parent_context.remove_variable_from_conflicting_clauses(context, variable_id, None);
             } else if let Some(loop_parent_context_type) = loop_parent_context.locals.get_mut(variable_id)
                 && loop_parent_context_type != loop_context_type
             {
@@ -666,13 +627,7 @@ fn analyze<'a, 'b>(
                     *continue_context_type = Rc::new((**continue_context_type).clone());
 
                     loop_parent_context.locals.insert(variable_id.clone(), continue_context_type.clone());
-                    loop_parent_context.remove_variable_from_conflicting_clauses(
-                        context.interner,
-                        context.codebase,
-                        &mut context.collector,
-                        &variable_id,
-                        None,
-                    );
+                    loop_parent_context.remove_variable_from_conflicting_clauses(context, &variable_id, None);
                 } else if continue_context_type != &variable_type {
                     loop_parent_context.locals.insert(
                         variable_id.clone(),
@@ -680,17 +635,10 @@ fn analyze<'a, 'b>(
                             &variable_type,
                             continue_context_type,
                             codebase,
-                            context.interner,
                             always_enters_loop,
                         )),
                     );
-                    loop_parent_context.remove_variable_from_conflicting_clauses(
-                        context.interner,
-                        context.codebase,
-                        &mut context.collector,
-                        &variable_id,
-                        None,
-                    );
+                    loop_parent_context.remove_variable_from_conflicting_clauses(context, &variable_id, None);
                 } else if let Some(loop_parent_context_type) = loop_parent_context.locals.get_mut(&variable_id) {
                     *loop_parent_context_type = Rc::new((**continue_context_type).clone());
                 }
@@ -712,10 +660,9 @@ fn analyze<'a, 'b>(
 
         if !negated_pre_condition_types.is_empty() {
             let mut changed_variable_ids = HashSet::default();
-            let mut reconciliation_context = context.get_reconciliation_context();
 
             reconcile_keyed_types(
-                &mut reconciliation_context,
+                context,
                 &negated_pre_condition_types,
                 IndexMap::new(),
                 &mut continue_context,
@@ -736,13 +683,7 @@ fn analyze<'a, 'b>(
                         loop_parent_context.locals.insert(variable_id.clone(), reconciled_type.clone());
                     }
 
-                    loop_parent_context.remove_variable_from_conflicting_clauses(
-                        context.interner,
-                        context.codebase,
-                        &mut context.collector,
-                        &variable_id,
-                        None,
-                    );
+                    loop_parent_context.remove_variable_from_conflicting_clauses(context, &variable_id, None);
                 }
             }
         }
@@ -760,13 +701,7 @@ fn analyze<'a, 'b>(
                 {
                     loop_parent_context.locals.insert(
                         variable_id.clone(),
-                        Rc::new(combine_union_types(
-                            variable_type,
-                            possibly_defined_type,
-                            codebase,
-                            context.interner,
-                            true,
-                        )),
+                        Rc::new(combine_union_types(variable_type, possibly_defined_type, codebase, true)),
                     );
                 }
             } else {
@@ -809,12 +744,12 @@ fn get_assignment_map_depth(
     max_depth
 }
 
-fn apply_pre_condition_to_loop_context<'a>(
-    context: &mut Context<'a>,
-    pre_condition: &Expression,
+fn apply_pre_condition_to_loop_context<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    pre_condition: &Expression<'arena>,
     pre_condition_clauses: &[Clause],
-    loop_context: &mut BlockContext<'a>,
-    loop_parent_context: &mut BlockContext<'a>,
+    loop_context: &mut BlockContext<'ctx>,
+    loop_parent_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
     is_do: bool,
     first_application: bool,
@@ -864,10 +799,8 @@ fn apply_pre_condition_to_loop_context<'a>(
     );
 
     if !reconcilable_while_types.is_empty() {
-        let mut reconciliation_context = context.get_reconciliation_context();
-
         reconcile_keyed_types(
-            &mut reconciliation_context,
+            context,
             &reconcilable_while_types,
             active_while_types,
             loop_context,
@@ -887,14 +820,7 @@ fn apply_pre_condition_to_loop_context<'a>(
         let mut loop_context_clauses = loop_context.clauses.clone();
 
         for variable_id in &always_assigned_before_loop_body_variables {
-            loop_context_clauses = BlockContext::filter_clauses(
-                context.interner,
-                context.codebase,
-                &mut context.collector,
-                variable_id,
-                loop_context_clauses,
-                None,
-            );
+            loop_context_clauses = BlockContext::filter_clauses(context, variable_id, loop_context_clauses, None);
         }
 
         loop_context.clauses = loop_context_clauses;
@@ -903,12 +829,12 @@ fn apply_pre_condition_to_loop_context<'a>(
     Ok(always_assigned_before_loop_body_variables)
 }
 
-fn update_loop_scope_contexts(
+fn update_loop_scope_contexts<'ctx, 'arena>(
     loop_scope: &mut LoopScope,
-    loop_context: &mut BlockContext,
-    continue_context: &mut BlockContext,
-    pre_outer_context: &BlockContext,
-    context: &Context<'_>,
+    loop_context: &mut BlockContext<'ctx>,
+    continue_context: &mut BlockContext<'ctx>,
+    pre_outer_context: &BlockContext<'ctx>,
+    context: &Context<'ctx, 'arena>,
 ) {
     if !loop_scope.final_actions.contains(&ControlAction::Continue) {
         loop_context.locals = pre_outer_context.locals.clone();
@@ -928,7 +854,6 @@ fn update_loop_scope_contexts(
                         },
                         variable_type,
                         context.codebase,
-                        context.interner,
                         false,
                     )),
                 );
@@ -937,12 +862,12 @@ fn update_loop_scope_contexts(
     }
 }
 
-fn get_and_expressions(cond: &Expression) -> Vec<&Expression> {
+fn get_and_expressions<'ast, 'arena>(cond: &'ast Expression<'arena>) -> Vec<&'ast Expression<'arena>> {
     if let Expression::Binary(binary) = &cond
         && let BinaryOperator::Or(_) | BinaryOperator::LowOr(_) = binary.operator
     {
-        let mut anded = get_and_expressions(&binary.lhs);
-        anded.extend(get_and_expressions(&binary.rhs));
+        let mut anded = get_and_expressions(binary.lhs);
+        anded.extend(get_and_expressions(binary.rhs));
         return anded;
     }
 
@@ -960,13 +885,13 @@ fn get_and_expressions(cond: &Expression) -> Vec<&Expression> {
 /// - `TUnion`: The combined type of the values produced by the iterator.
 ///
 /// Reports issues if the iterator type is problematic (e.g., null, scalar, non-traversable object).
-fn analyze_iterator<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn analyze_iterator<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    iterator: &Expression,
+    iterator: &'ast Expression<'arena>,
     iterator_variable_id: Option<&String>,
-    foreach: &Foreach,
+    foreach: &'ast Foreach<'arena>,
 ) -> Result<(bool, TUnion, TUnion), AnalysisError> {
     let was_inside_general_use = block_context.inside_general_use;
     block_context.inside_general_use = true;
@@ -1031,7 +956,7 @@ fn analyze_iterator<'a>(
     if iterator_type.is_nullable() && !iterator_type.ignore_nullable_issues {
         context.collector.report_with_code(
             IssueCode::PossiblyNullIterator,
-            Issue::warning(format!("Expression being iterated (type `{}`) might be `null` at runtime.", iterator_type.get_id(Some(context.interner))))
+            Issue::warning(format!("Expression being iterated (type `{}`) might be `null` at runtime.", iterator_type.get_id()))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `null`"))
                 .with_annotation(Annotation::secondary(foreach.span()).with_message("This `foreach` might not be executed"))
                 .with_note("If this expression is `null`, it will be treated as an empty array, and the loop body will not execute.")
@@ -1042,7 +967,7 @@ fn analyze_iterator<'a>(
     if iterator_type.is_falsable() && !iterator_type.ignore_falsable_issues {
         context.collector.report_with_code(
             IssueCode::PossiblyFalseIterator,
-            Issue::warning(format!("Expression being iterated (type `{}`) might be `false` at runtime.", iterator_type.get_id(Some(context.interner))))
+            Issue::warning(format!("Expression being iterated (type `{}`) might be `false` at runtime.", iterator_type.get_id()))
                 .with_annotation(Annotation::primary(iterator.span()).with_message("This might be `false`"))
                 .with_annotation(Annotation::secondary(foreach.span()).with_message("This `foreach` might not be executed"))
                 .with_note("If this expression is `false`, it will be treated as an empty array, and the loop body will not execute.")
@@ -1073,7 +998,7 @@ fn analyze_iterator<'a>(
                     has_at_least_one_entry = true;
                 }
 
-                let (k, v) = get_array_parameters(array, context.codebase, context.interner);
+                let (k, v) = get_array_parameters(array, context.codebase);
                 collected_key_atomics.extend(k.types.into_owned());
                 collected_value_atomics.extend(v.types.into_owned());
             }
@@ -1098,13 +1023,11 @@ fn analyze_iterator<'a>(
                         (get_string(), get_mixed())
                     }
                     TObject::Named(atomic_object) => {
-                        if let Some((k, v)) =
-                            get_iterable_parameters(iterator_atomic, context.codebase, context.interner)
-                        {
+                        if let Some((k, v)) = get_iterable_parameters(iterator_atomic, context.codebase) {
                             (k, v)
                         } else {
-                            let class_name = context.interner.lookup(&atomic_object.name);
-                            let iterator_atomic_str = iterator_atomic.get_id(Some(context.interner));
+                            let class_name = atomic_object.name;
+                            let iterator_atomic_str = iterator_atomic.get_id();
 
                             context.collector.report_with_code(
                                 IssueCode::NonIterableObjectIteration,
@@ -1126,10 +1049,9 @@ fn analyze_iterator<'a>(
                     TObject::Enum(enum_instance) => {
                         has_at_least_one_entry = true;
 
-                        let enum_name = context.interner.lookup(&enum_instance.get_name());
-                        let enum_backing_type =
-                            get_enum(context.codebase, context.interner, enum_instance.get_name_ref())
-                                .and_then(|class_like| class_like.enum_type.as_ref());
+                        let enum_name = enum_instance.get_name();
+                        let enum_backing_type = get_enum(context.codebase, enum_instance.get_name_ref())
+                            .and_then(|class_like| class_like.enum_type.as_ref());
 
                         context.collector.report_with_code(
                             IssueCode::EnumIteration,
@@ -1152,15 +1074,15 @@ fn analyze_iterator<'a>(
                         match enum_backing_type {
                             Some(backing_type) => (
                                 TUnion::from_vec(vec![
-                                    TAtomic::Scalar(TScalar::literal_string("name".to_owned())),
-                                    TAtomic::Scalar(TScalar::literal_string("value".to_owned())),
+                                    TAtomic::Scalar(TScalar::literal_string(atom("name"))),
+                                    TAtomic::Scalar(TScalar::literal_string(atom("value"))),
                                 ]),
                                 TUnion::from_vec(vec![
                                     TAtomic::Scalar(TScalar::non_empty_string()),
                                     backing_type.clone(),
                                 ]),
                             ),
-                            None => (get_literal_string("name".to_owned()), get_non_empty_string()),
+                            None => (get_literal_string(atom("name")), get_non_empty_string()),
                         }
                     }
                 };
@@ -1171,14 +1093,14 @@ fn analyze_iterator<'a>(
                 collected_value_atomics.extend(obj_value_type.types.into_owned());
             }
             _ => {
-                let iterator_atomic_id = iterator_atomic.get_id(Some(context.interner));
-                invalid_atomic_ids.push(iterator_atomic_id);
+                let iterator_atomic_id = iterator_atomic.get_id();
+                invalid_atomic_ids.push(iterator_atomic_id.as_str());
             }
         }
     }
 
     if !has_valid_iterable_type {
-        let iterator_type_id_str = iterator_type.get_id(Some(context.interner));
+        let iterator_type_id_str = iterator_type.get_id();
         let problematic_types_str = if invalid_atomic_ids.is_empty() {
             format!("resolved to type `{iterator_type_id_str}` which is not iterable in this context")
         } else if invalid_atomic_ids.len() == 1 {
@@ -1213,7 +1135,7 @@ fn analyze_iterator<'a>(
 
         return Ok((false, get_never(), get_never()));
     } else if !invalid_atomic_ids.is_empty() {
-        let iterator_type_id_str = iterator_type.get_id(Some(context.interner));
+        let iterator_type_id_str = iterator_type.get_id();
         let problematic_types_list_str = invalid_atomic_ids.join("`, `");
 
         context.collector.report_with_code(
@@ -1239,13 +1161,13 @@ fn analyze_iterator<'a>(
     let final_key_type = if collected_key_atomics.is_empty() {
         get_mixed()
     } else {
-        TUnion::from_vec(combine(collected_key_atomics, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(collected_key_atomics, context.codebase, false))
     };
 
     let final_value_type = if collected_value_atomics.is_empty() {
         get_mixed()
     } else {
-        TUnion::from_vec(combine(collected_value_atomics, context.codebase, context.interner, false))
+        TUnion::from_vec(combine(collected_value_atomics, context.codebase, false))
     };
 
     Ok((has_at_least_one_entry, final_key_type, final_value_type))
@@ -1256,45 +1178,44 @@ fn analyze_iterator<'a>(
 ///
 /// # Arguments
 ///
-/// * `context` - Provides access to the interner for looking up string names.
 /// * `expression` - The AST expression node to scrape.
 ///
 /// # Returns
 ///
 /// A `HashSet<String>` contains the string names of all `Variable::Direct` found.
-fn scrape_variables_from_expression(context: &Context<'_>, expression: &Expression) -> HashSet<String> {
+fn scrape_variables_from_expression<'arena>(expression: &Expression<'arena>) -> HashSet<&'arena str> {
     let mut set = HashSet::default();
 
-    fn walk<'a>(context: &'a Context<'_>, current_expression: &'a Expression, current_set: &mut HashSet<String>) {
+    fn walk<'arena>(current_expression: &Expression<'arena>, current_set: &mut HashSet<&'arena str>) {
         match current_expression {
             Expression::UnaryPrefix(UnaryPrefix { operand, .. }) => {
-                walk(context, operand, current_set);
+                walk(operand, current_set);
             }
             Expression::Access(access) => match access {
                 Access::Property(property_access) => {
-                    walk(context, &property_access.object, current_set);
+                    walk(property_access.object, current_set);
                 }
                 Access::NullSafeProperty(null_safe_property_access) => {
-                    walk(context, &null_safe_property_access.object, current_set);
+                    walk(null_safe_property_access.object, current_set);
                 }
                 Access::StaticProperty(static_property_access) => {
-                    walk(context, &static_property_access.class, current_set);
+                    walk(static_property_access.class, current_set);
                 }
                 _ => {}
             },
             Expression::Variable(Variable::Direct(var)) => {
-                current_set.insert(context.interner.lookup(&var.name).to_owned());
+                current_set.insert(var.name);
             }
             Expression::List(List { elements, .. })
             | Expression::Array(Array { elements, .. })
             | Expression::LegacyArray(LegacyArray { elements, .. }) => {
                 for element in elements.iter() {
                     if let Some(key_expression) = element.get_key() {
-                        walk(context, key_expression, current_set);
+                        walk(key_expression, current_set);
                     }
 
                     if let Some(value_expression) = element.get_value() {
-                        walk(context, value_expression, current_set);
+                        walk(value_expression, current_set);
                     }
                 }
             }
@@ -1302,7 +1223,7 @@ fn scrape_variables_from_expression(context: &Context<'_>, expression: &Expressi
         }
     }
 
-    walk(context, expression, &mut set);
+    walk(expression, &mut set);
 
     set
 }

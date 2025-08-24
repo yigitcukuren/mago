@@ -1,3 +1,5 @@
+use bumpalo::vec;
+
 use mago_span::*;
 use mago_syntax::ast::*;
 
@@ -7,12 +9,12 @@ use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::misc;
 
-pub(super) fn print_function_like_parameters<'a>(
-    f: &mut FormatterState<'a>,
-    parameter_list: &'a FunctionLikeParameterList,
-) -> Document<'a> {
+pub(super) fn print_function_like_parameters<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    parameter_list: &'arena FunctionLikeParameterList<'arena>,
+) -> Document<'arena> {
     if parameter_list.parameters.is_empty() {
-        let mut contents = vec![Document::String("(")];
+        let mut contents = vec![in f.arena; Document::String("(")];
         if f.settings.space_within_parameter_list_parenthesis {
             contents.push(Document::space());
         }
@@ -35,7 +37,7 @@ pub(super) fn print_function_like_parameters<'a>(
 
         if f.settings.preserve_breaking_parameter_list
             && misc::has_new_line_in_range(
-                &f.file.contents,
+                f.source_text,
                 parameter_list.left_parenthesis.start.offset,
                 parameter_list.parameters.as_slice()[0].span().start.offset,
             )
@@ -53,12 +55,12 @@ pub(super) fn print_function_like_parameters<'a>(
 
     let should_hug_the_parameters = !should_break && should_hug_the_only_parameter(f, parameter_list);
 
-    let mut parts = vec![Document::String("(")];
+    let mut parts = vec![in f.arena; Document::String("(")];
     if f.settings.space_within_parameter_list_parenthesis {
         parts.push(Document::space());
     }
 
-    let mut printed = vec![];
+    let mut printed = vec![in f.arena; ];
     let len = parameter_list.parameters.len();
     for (i, parameter) in parameter_list.parameters.iter().enumerate() {
         printed.push(parameter.format(f));
@@ -87,12 +89,12 @@ pub(super) fn print_function_like_parameters<'a>(
     }
 
     if !parameter_list.parameters.is_empty() {
-        let mut contents = vec![Document::Line(Line::soft())];
+        let mut contents = vec![in f.arena; Document::Line(Line::soft())];
         contents.extend(printed);
         parts.push(Document::Indent(contents));
 
         if f.settings.trailing_comma {
-            parts.push(Document::IfBreak(IfBreak::then(Document::String(","))));
+            parts.push(Document::IfBreak(IfBreak::then(f.arena, Document::String(","))));
         }
     }
 
@@ -113,9 +115,9 @@ pub(super) fn print_function_like_parameters<'a>(
     Document::Group(Group::new(parts).with_break(should_break))
 }
 
-fn should_hug_the_only_parameter<'a>(
-    f: &mut FormatterState<'a>,
-    parameter_list: &'a FunctionLikeParameterList,
+fn should_hug_the_only_parameter<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    parameter_list: &'arena FunctionLikeParameterList<'arena>,
 ) -> bool {
     if parameter_list.parameters.len() != 1 {
         return false;

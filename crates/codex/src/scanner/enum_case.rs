@@ -1,3 +1,4 @@
+use mago_atom::atom;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
@@ -8,7 +9,10 @@ use crate::scanner::attribute::scan_attribute_lists;
 use crate::scanner::inference::infer;
 
 #[inline]
-pub fn scan_enum_case(case: &EnumCase, context: &mut Context<'_>) -> EnumCaseMetadata {
+pub fn scan_enum_case<'ctx, 'ast, 'arena>(
+    case: &'ast EnumCase<'arena>,
+    context: &mut Context<'ctx, 'ast, 'arena>,
+) -> EnumCaseMetadata {
     let span = case.span();
     let attributes = scan_attribute_lists(&case.attribute_lists, context);
 
@@ -21,7 +25,7 @@ pub fn scan_enum_case(case: &EnumCase, context: &mut Context<'_>) -> EnumCaseMet
                 flags |= MetadataFlags::BUILTIN;
             }
 
-            let mut meta = EnumCaseMetadata::new(item.name.value, item.name.span, span, flags);
+            let mut meta = EnumCaseMetadata::new(atom(item.name.value), item.name.span, span, flags);
 
             meta.attributes = attributes;
             meta.value_type = None;
@@ -35,11 +39,10 @@ pub fn scan_enum_case(case: &EnumCase, context: &mut Context<'_>) -> EnumCaseMet
                 flags |= MetadataFlags::BUILTIN;
             }
 
-            let mut meta = EnumCaseMetadata::new(item.name.value, item.name.span, span, flags);
+            let mut meta = EnumCaseMetadata::new(atom(item.name.value), item.name.span, span, flags);
 
             meta.attributes = attributes;
-            meta.value_type =
-                infer(context.interner, context.resolved_names, &item.value).map(|u| u.get_single_owned());
+            meta.value_type = infer(context.resolved_names, &item.value).map(|u| u.get_single_owned());
 
             meta
         }

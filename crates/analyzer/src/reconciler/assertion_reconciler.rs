@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use mago_atom::Atom;
+use mago_atom::atom;
 use mago_codex::assertion::Assertion;
 use mago_codex::interface_exists;
 use mago_codex::is_instance_of;
@@ -28,16 +30,15 @@ use mago_codex::ttype::get_mixed_maybe_from_loop;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
-use mago_interner::ThreadedInterner;
 use mago_span::Span;
 
-use crate::reconciler::ReconciliationContext;
+use crate::context::Context;
 use crate::reconciler::negated_assertion_reconciler;
 use crate::reconciler::simple_assertion_reconciler;
 use crate::reconciler::trigger_issue_for_impossible;
 
-pub fn reconcile(
-    context: &mut ReconciliationContext<'_, '_>,
+pub fn reconcile<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     assertion: &Assertion,
     existing_var_type: Option<&TUnion>,
     possibly_undefined: bool,
@@ -53,10 +54,10 @@ pub fn reconcile(
     let existing_var_type = if let Some(existing_var_type) = existing_var_type {
         existing_var_type
     } else {
-        return get_missing_type(context.interner, assertion, inside_loop);
+        return get_missing_type(assertion, inside_loop);
     };
 
-    let old_var_type_string = existing_var_type.get_id(Some(context.interner));
+    let old_var_type_atom = existing_var_type.get_id();
 
     if is_negation {
         return negated_assertion_reconciler::reconcile(
@@ -65,7 +66,7 @@ pub fn reconcile(
             existing_var_type,
             possibly_undefined,
             key,
-            old_var_type_string,
+            old_var_type_atom,
             if can_report_issues { span } else { None },
             negated,
         );
@@ -80,7 +81,7 @@ pub fn reconcile(
             assertion_type,
             existing_var_type,
             key,
-            old_var_type_string,
+            old_var_type_atom,
             if can_report_issues { span } else { None },
             negated,
         );
@@ -107,16 +108,15 @@ pub fn reconcile(
         if can_report_issues && let (Some(key), Some(span)) = (key, span) {
             if existing_var_type.types == refined_type.types {
                 if !assertion.has_equality() && !assertion_type.is_mixed() {
-                    trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, span);
+                    trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, true, negated, span);
                 }
             } else if refined_type.is_never() {
-                trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, false, negated, span);
+                trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, false, negated, span);
             }
         }
 
         expander::expand_union(
             codebase,
-            context.interner,
             &mut refined_type,
             &TypeExpansionOptions { expand_generic: true, ..Default::default() },
         );
@@ -128,14 +128,14 @@ pub fn reconcile(
 }
 
 pub(crate) fn refine_atomic_with_union(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     new_type: &TAtomic,
     existing_var_type: &TUnion,
 ) -> TUnion {
     let intersection_type = intersect_union_with_atomic(context, existing_var_type, new_type);
     if let Some(mut intersection_type) = intersection_type {
         for intersection_atomic_type in intersection_type.types.to_mut() {
-            intersection_atomic_type.remove_placeholders(context.interner);
+            intersection_atomic_type.remove_placeholders();
         }
 
         return intersection_type;
@@ -145,7 +145,7 @@ pub(crate) fn refine_atomic_with_union(
 }
 
 fn intersect_union_with_atomic(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     existing_var_type: &TUnion,
     new_type: &TAtomic,
 ) -> Option<TUnion> {
@@ -160,7 +160,7 @@ fn intersect_union_with_atomic(
 
     if !acceptable_types.is_empty() {
         if acceptable_types.len() > 1 {
-            acceptable_types = combiner::combine(acceptable_types, context.codebase, context.interner, false);
+            acceptable_types = combiner::combine(acceptable_types, context.codebase, false);
         }
 
         return Some(TUnion::from_vec(acceptable_types));
@@ -170,14 +170,13 @@ fn intersect_union_with_atomic(
 }
 
 pub(crate) fn intersect_atomic_with_atomic(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     first_type: &TAtomic,
     second_type: &TAtomic,
 ) -> Option<TAtomic> {
     let mut atomic_comparison_results = ComparisonResult::new();
     if atomic_comparator::is_contained_by(
         context.codebase,
-        context.interner,
         second_type,
         first_type,
         true,
@@ -200,7 +199,6 @@ pub(crate) fn intersect_atomic_with_atomic(
     atomic_comparison_results = ComparisonResult::new();
     if atomic_comparator::is_contained_by(
         context.codebase,
-        context.interner,
         first_type,
         second_type,
         false,
@@ -230,7 +228,7 @@ pub(crate) fn intersect_atomic_with_atomic(
 
     match (first_type, second_type) {
         (TAtomic::Object(TObject::Enum(first_enum)), TAtomic::Object(TObject::Enum(second_enum))) => {
-            if is_instance_of(context.codebase, context.interner, &first_enum.name, &second_enum.name)
+            if is_instance_of(context.codebase, &first_enum.name, &second_enum.name)
                 && first_enum.case == second_enum.case
             {
                 return Some(first_type.clone());
@@ -242,9 +240,9 @@ pub(crate) fn intersect_atomic_with_atomic(
             let first_object_name = first_object.get_name_ref();
             let second_object_name = second_object.get_name_ref();
 
-            if (interface_exists(context.codebase, context.interner, first_object_name)
+            if (interface_exists(context.codebase, first_object_name)
                 && context.codebase.is_inheritable(second_object_name))
-                || (interface_exists(context.codebase, context.interner, second_object_name)
+                || (interface_exists(context.codebase, second_object_name)
                     && context.codebase.is_inheritable(first_object_name))
             {
                 let mut first_type = first_type.clone();
@@ -291,11 +289,7 @@ pub(crate) fn intersect_atomic_with_atomic(
     None
 }
 
-fn intersect_list_arrays(
-    context: &mut ReconciliationContext<'_, '_>,
-    first_list: &TList,
-    second_list: &TList,
-) -> Option<TAtomic> {
+fn intersect_list_arrays(context: &mut Context<'_, '_>, first_list: &TList, second_list: &TList) -> Option<TAtomic> {
     let element_type = intersect_union_with_union(context, &first_list.element_type, &second_list.element_type);
 
     match (first_list.known_elements.as_ref(), second_list.known_elements.as_ref()) {
@@ -379,7 +373,7 @@ fn intersect_list_arrays(
 }
 
 fn intersect_keyed_arrays(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     first_keyed_array: &TKeyedArray,
     second_keyed_array: &TKeyedArray,
 ) -> Option<TAtomic> {
@@ -404,7 +398,7 @@ fn intersect_keyed_arrays(
             for (second_key, second_value) in second_known_items {
                 if let Some(first_value) = first_known_items.get(second_key) {
                     intersected_items.insert(
-                        second_key.clone(),
+                        *second_key,
                         (
                             second_value.0 && first_value.0,
                             intersect_union_with_union(context, &first_value.1, &second_value.1)?,
@@ -412,7 +406,7 @@ fn intersect_keyed_arrays(
                     );
                 } else if let Some(first_parameters) = &first_keyed_array.parameters {
                     intersected_items.insert(
-                        second_key.clone(),
+                        *second_key,
                         (second_value.0, intersect_union_with_union(context, &first_parameters.1, &second_value.1)?),
                     );
                 } else if !second_value.0 {
@@ -465,7 +459,7 @@ fn intersect_keyed_arrays(
 }
 
 pub(crate) fn intersect_union_with_union(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     type_1_param: &TUnion,
     type_2_param: &TUnion,
 ) -> Option<TUnion> {
@@ -487,8 +481,7 @@ pub(crate) fn intersect_union_with_union(
                     })
                     .collect::<Vec<_>>();
 
-                let combined_union =
-                    TUnion::from_vec(combiner::combine(new_types, context.codebase, context.interner, false));
+                let combined_union = TUnion::from_vec(combiner::combine(new_types, context.codebase, false));
 
                 if combined_union.is_never() { None } else { Some(combined_union) }
             }
@@ -497,7 +490,7 @@ pub(crate) fn intersect_union_with_union(
 }
 
 fn intersect_contained_atomic_with_another(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     super_atomic: &TAtomic,
     sub_atomic: &TAtomic,
     generic_coercion: bool,
@@ -556,14 +549,14 @@ fn intersect_contained_atomic_with_another(
     Some(sub_atomic.clone())
 }
 
-fn get_missing_type(interner: &ThreadedInterner, assertion: &Assertion, inside_loop: bool) -> TUnion {
+fn get_missing_type(assertion: &Assertion, inside_loop: bool) -> TUnion {
     if matches!(assertion, Assertion::IsIsset | Assertion::IsEqualIsset) {
         return get_mixed_maybe_from_loop(inside_loop);
     }
 
     if let Assertion::IsIdentical(atomic) | Assertion::IsType(atomic) = assertion {
         let mut atomic = atomic.clone();
-        atomic.remove_placeholders(interner);
+        atomic.remove_placeholders();
         return wrap_atomic(atomic.clone());
     }
 
@@ -571,12 +564,12 @@ fn get_missing_type(interner: &ThreadedInterner, assertion: &Assertion, inside_l
 }
 
 fn handle_literal_equality(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
     assertion_type: &TAtomic,
     existing_var_type: &TUnion,
     key: Option<&String>,
-    old_var_type_string: String,
+    old_var_type_atom: Atom,
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
@@ -587,7 +580,7 @@ fn handle_literal_equality(
             *i,
             existing_var_type,
             key,
-            old_var_type_string,
+            old_var_type_atom,
             span,
             negated,
         ),
@@ -598,7 +591,7 @@ fn handle_literal_equality(
                 assertion_str.as_ref(),
                 existing_var_type,
                 key,
-                old_var_type_string,
+                old_var_type_atom,
                 span,
                 negated,
             )
@@ -609,7 +602,7 @@ fn handle_literal_equality(
             (*assertion_float).into(),
             existing_var_type,
             key,
-            old_var_type_string,
+            old_var_type_atom,
             span,
             negated,
         ),
@@ -619,7 +612,7 @@ fn handle_literal_equality(
             *assertion_bool,
             existing_var_type,
             key,
-            old_var_type_string,
+            old_var_type_atom,
             span,
             negated,
         ),
@@ -630,12 +623,12 @@ fn handle_literal_equality(
 }
 
 fn handle_literal_equality_with_int(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
     assertion_integer: i64,
     existing_var_type: &TUnion,
     key: Option<&String>,
-    old_var_type_string: String,
+    old_var_type_atom: Atom,
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
@@ -659,7 +652,7 @@ fn handle_literal_equality_with_int(
                     && let Some(key) = &key
                     && let Some(span) = span
                 {
-                    trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, span);
+                    trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, true, negated, span);
                 }
 
                 return TUnion::from_atomic(literal_asserted_type);
@@ -682,7 +675,7 @@ fn handle_literal_equality_with_int(
             }
             TAtomic::Scalar(TScalar::String(TString {
                 literal: Some(TStringLiteral::Value(string_value)), ..
-            })) if is_loose_equality && string_value.as_ref() == assertion_integer.to_string() => {
+            })) if is_loose_equality && string_value.as_str() == assertion_integer.to_string() => {
                 return TUnion::from_atomic(existing_var_atomic_type.clone());
             }
             _ => {}
@@ -709,23 +702,23 @@ fn handle_literal_equality_with_int(
     if let Some(key) = &key
         && let Some(span) = span
     {
-        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, false, negated, span);
+        trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, false, negated, span);
     }
 
     get_never()
 }
 
 fn handle_literal_equality_with_str(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
     assertion_str_val: &str,
     existing_var_type: &TUnion,
     key: Option<&String>,
-    old_var_type_string: String,
+    old_var_type_atom: Atom,
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
-    let literal_asserted_type = TAtomic::Scalar(TScalar::literal_string(assertion_str_val.to_owned()));
+    let literal_asserted_type = TAtomic::Scalar(TScalar::literal_string(atom(assertion_str_val)));
     let is_loose_equality = matches!(assertion, Assertion::IsEqual(_));
 
     if existing_var_type.has_scalar() || existing_var_type.has_array_key() || existing_var_type.has_mixed() {
@@ -744,7 +737,7 @@ fn handle_literal_equality_with_str(
                     && let Some(key) = &key
                     && let Some(span) = span
                 {
-                    trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, true, negated, span);
+                    trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, true, negated, span);
                 }
 
                 return TUnion::from_atomic(literal_asserted_type);
@@ -790,19 +783,19 @@ fn handle_literal_equality_with_str(
     if let Some(key) = &key
         && let Some(span) = span
     {
-        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, false, negated, span);
+        trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, false, negated, span);
     }
 
     get_never()
 }
 
 fn handle_literal_equality_with_float(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
     assertion_float_val: f64,
     existing_var_type: &TUnion,
     key: Option<&String>,
-    old_var_type_string: String,
+    old_var_type_atom: Atom,
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
@@ -826,7 +819,7 @@ fn handle_literal_equality_with_float(
                     {
                         trigger_issue_for_impossible(
                             context,
-                            &old_var_type_string,
+                            old_var_type_atom,
                             k_str,
                             assertion,
                             true,
@@ -880,19 +873,19 @@ fn handle_literal_equality_with_float(
     if let Some(k_str) = &key
         && let Some(s_ref) = span
     {
-        trigger_issue_for_impossible(context, &old_var_type_string, k_str, assertion, false, negated, s_ref);
+        trigger_issue_for_impossible(context, old_var_type_atom, k_str, assertion, false, negated, s_ref);
     }
 
     get_never()
 }
 
 fn handle_literal_equality_with_bool(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
     assertion_bool_val: bool,
     existing_var_type: &TUnion,
     key: Option<&String>,
-    old_var_type_string: String,
+    old_var_type_atom: Atom,
     span: Option<&Span>,
     negated: bool,
 ) -> TUnion {
@@ -916,7 +909,7 @@ fn handle_literal_equality_with_bool(
                     {
                         trigger_issue_for_impossible(
                             context,
-                            &old_var_type_string,
+                            old_var_type_atom,
                             k_str,
                             assertion,
                             true,
@@ -975,7 +968,7 @@ fn handle_literal_equality_with_bool(
     if let Some(k_str) = &key
         && let Some(s_ref) = span
     {
-        trigger_issue_for_impossible(context, &old_var_type_string, k_str, assertion, false, negated, s_ref);
+        trigger_issue_for_impossible(context, old_var_type_atom, k_str, assertion, false, negated, s_ref);
     }
 
     get_never()

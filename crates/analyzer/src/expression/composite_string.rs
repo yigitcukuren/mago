@@ -1,3 +1,4 @@
+use mago_atom::atom;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::string::TString;
@@ -18,11 +19,11 @@ use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::expression::unary::cast_type_to_string;
 
-impl Analyzable for CompositeString {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for CompositeString<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let mut non_empty = false;
@@ -33,11 +34,9 @@ impl Analyzable for CompositeString {
         for part in self.parts().as_slice() {
             let part_type = match part {
                 StringPart::Literal(literal_string_part) => {
-                    let value_str = context.interner.lookup(&literal_string_part.value);
-
-                    non_empty = non_empty || !value_str.is_empty();
+                    non_empty = non_empty || !literal_string_part.value.is_empty();
                     if let Some(resulting_string) = resulting_string.as_mut() {
-                        resulting_string.push_str(value_str);
+                        resulting_string.push_str(literal_string_part.value);
                     }
 
                     continue;
@@ -141,7 +140,7 @@ impl Analyzable for CompositeString {
         let resulting_type = if impossible {
             get_never()
         } else if let Some(literal_string) = resulting_string {
-            get_literal_string(literal_string)
+            get_literal_string(atom(literal_string.as_ref()))
         } else if non_empty {
             if all_literals { get_non_empty_unspecified_literal_string() } else { get_non_empty_string() }
         } else if all_literals {

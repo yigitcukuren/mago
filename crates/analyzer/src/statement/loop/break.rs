@@ -20,11 +20,11 @@ use crate::context::block::BlockContext;
 use crate::context::scope::control_action::ControlAction;
 use crate::error::AnalysisError;
 
-impl Analyzable for Break {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Break<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let levels = match self.level.as_ref() {
@@ -43,8 +43,8 @@ impl Analyzable for Break {
                                 "Expected an integer literal here, found an expression of type `{}`.",
                                 artifacts
                                     .get_expression_type(expression)
-                                    .map(|union| union.get_id(Some(context.interner)))
-                                    .unwrap_or_else(|| "unknown".to_string())
+                                    .map(|union| union.get_id().as_str())
+                                    .unwrap_or_else(|| "unknown")
                             )),
                         ),
                     );
@@ -91,7 +91,6 @@ impl Analyzable for Break {
                         var_type,
                         loop_scope.possibly_redefined_loop_parent_variables.get(&var_id).map(|rc| rc.as_ref()),
                         context.codebase,
-                        context.interner,
                     )),
                 );
             }
@@ -105,7 +104,6 @@ impl Analyzable for Break {
                                 var_type.as_ref().clone(),
                                 loop_scope.possibly_defined_loop_parent_variables.get(var_id),
                                 context.codebase,
-                                context.interner,
                             ),
                         );
                     }
@@ -116,13 +114,7 @@ impl Analyzable for Break {
                 let mut finally_scope = (*finally_scope).borrow_mut();
                 for (var_id, var_type) in &block_context.locals {
                     if let Some(finally_type) = finally_scope.locals.get_mut(var_id) {
-                        *finally_type = Rc::new(combine_union_types(
-                            finally_type,
-                            var_type,
-                            context.codebase,
-                            context.interner,
-                            false,
-                        ));
+                        *finally_type = Rc::new(combine_union_types(finally_type, var_type, context.codebase, false));
                     } else {
                         finally_scope.locals.insert(var_id.clone(), var_type.clone());
                     }
@@ -137,12 +129,7 @@ impl Analyzable for Break {
                 for (var_id, var_type) in &block_context.locals {
                     new_break_vars.insert(
                         var_id.clone(),
-                        combine_optional_union_types(
-                            Some(var_type),
-                            new_break_vars.get(var_id),
-                            context.codebase,
-                            context.interner,
-                        ),
+                        combine_optional_union_types(Some(var_type), new_break_vars.get(var_id), context.codebase),
                     );
                 }
 

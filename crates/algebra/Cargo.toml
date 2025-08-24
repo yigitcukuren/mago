@@ -14,8 +14,8 @@ workspace = true
 
 [dependencies]
 mago-codex = { workspace = true }
-mago-interner = { workspace = true }
 mago-span = { workspace = true }
+mago-atom = { workspace = true }
 ahash = { workspace = true }
 itertools = { workspace = true }
 indexmap = { workspace = true }

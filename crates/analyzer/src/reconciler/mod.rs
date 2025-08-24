@@ -6,16 +6,18 @@ use std::sync::LazyLock;
 use ahash::HashMap;
 use ahash::HashSet;
 use indexmap::IndexMap;
+use mago_atom::atom;
+use mago_atom::concat_atom;
 use regex::Regex;
 
 use mago_algebra::assertion_set::AssertionSet;
+use mago_atom::Atom;
 use mago_codex::assertion::Assertion;
 use mago_codex::class_like_exists;
 use mago_codex::class_or_interface_exists;
 use mago_codex::get_class_constant_type;
 use mago_codex::get_declaring_class_for_property;
 use mago_codex::get_property;
-use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
@@ -37,14 +39,12 @@ use mago_codex::ttype::get_null;
 use mago_codex::ttype::get_string;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
-use mago_collector::Collector;
-use mago_interner::StringIdentifier;
-use mago_interner::ThreadedInterner;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
 
 use crate::code::IssueCode;
+use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::context::scope::var_has_root;
 
@@ -55,28 +55,11 @@ pub mod simple_negated_assertion_reconciler;
 
 mod macros;
 
-#[derive(Debug)]
-pub struct ReconciliationContext<'a, 's> {
-    pub interner: &'a ThreadedInterner,
-    pub codebase: &'a CodebaseMetadata,
-    pub collector: &'a mut Collector<'s>,
-}
-
-impl<'a, 's> ReconciliationContext<'a, 's> {
-    pub fn new(
-        interner: &'a ThreadedInterner,
-        codebase: &'a CodebaseMetadata,
-        collector: &'a mut Collector<'s>,
-    ) -> Self {
-        Self { interner, codebase, collector }
-    }
-}
-
-pub fn reconcile_keyed_types(
-    context: &mut ReconciliationContext<'_, '_>,
+pub fn reconcile_keyed_types<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     new_types: &IndexMap<String, AssertionSet>,
     mut active_new_types: IndexMap<String, HashSet<usize>>,
-    block_context: &mut BlockContext<'_>,
+    block_context: &mut BlockContext<'ctx>,
     changed_var_ids: &mut HashSet<String>,
     referenced_var_ids: &HashSet<String>,
     span: &Span,
@@ -201,12 +184,8 @@ pub fn reconcile_keyed_types(
                     negated,
                 );
 
-                orred_type = Some(add_optional_union_type(
-                    result_type_candidate,
-                    orred_type.as_ref(),
-                    context.codebase,
-                    context.interner,
-                ));
+                orred_type =
+                    Some(add_optional_union_type(result_type_candidate, orred_type.as_ref(), context.codebase));
             }
 
             result_type = orred_type;
@@ -301,9 +280,9 @@ pub fn reconcile_keyed_types(
     }
 }
 
-fn adjust_array_type(
+fn adjust_array_type<'ctx>(
     mut key_parts: Vec<String>,
-    context: &mut BlockContext<'_>,
+    context: &mut BlockContext<'ctx>,
     changed_var_ids: &mut HashSet<String>,
     result_type: &TUnion,
 ) {
@@ -338,7 +317,7 @@ fn adjust_array_type(
         match base_atomic_type {
             TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, .. })) => {
                 let dictkey = if has_string_offset {
-                    ArrayKey::String(Cow::Owned(arraykey_offset.clone()))
+                    ArrayKey::String(atom(&arraykey_offset))
                 } else if let Ok(arraykey_value) = arraykey_offset.parse::<i64>() {
                     ArrayKey::Integer(arraykey_value)
                 } else {
@@ -413,10 +392,10 @@ static INTEGER_REGEX: LazyLock<Regex> = LazyLock::new(|| unsafe {
     Regex::new(r"^[0-9]+$").unwrap_unchecked()
 });
 
-fn add_nested_assertions(
+fn add_nested_assertions<'ctx>(
     new_types: &mut IndexMap<String, AssertionSet>,
     active_new_types: &mut IndexMap<String, HashSet<usize>>,
-    context: &BlockContext<'_>,
+    context: &BlockContext<'ctx>,
 ) {
     let mut keys_to_remove = vec![];
 
@@ -472,7 +451,7 @@ fn add_nested_assertions(
                     let entry = new_types.entry(base_key.clone()).or_default();
 
                     let new_key = if array_key.starts_with('\'') {
-                        Some(ArrayKey::String(Cow::Owned(array_key[1..(array_key.len() - 1)].to_string())))
+                        Some(ArrayKey::String(atom(&array_key[1..(array_key.len() - 1)])))
                     } else if array_key.starts_with('$') {
                         None
                     } else if let Ok(arraykey_value) = array_key.parse::<i64>() {
@@ -628,10 +607,10 @@ pub fn break_up_path_into_parts(path: &str) -> Vec<String> {
     parts
 }
 
-fn get_value_for_key(
-    context: &mut ReconciliationContext<'_, '_>,
+fn get_value_for_key<'ctx>(
+    context: &mut Context<'_, '_>,
     key: String,
-    block_context: &mut BlockContext<'_>,
+    block_context: &mut BlockContext<'ctx>,
     new_assertions: &IndexMap<String, AssertionSet>,
     has_isset: bool,
     has_inverted_isset: bool,
@@ -675,19 +654,14 @@ fn get_value_for_key(
     if !block_context.locals.contains_key(&base_key) {
         if base_key.contains("::") {
             let base_key_parts = &base_key.split("::").collect::<Vec<&str>>();
-            let fq_class_name = base_key_parts[0].to_string();
-            let const_name = base_key_parts[1].to_string();
+            let fq_class_name = &base_key_parts[0];
+            let const_name = &base_key_parts[1];
 
-            let fq_class_name = context.interner.intern(fq_class_name.as_str());
-            if !class_like_exists(context.codebase, context.interner, &fq_class_name) {
+            if !class_like_exists(context.codebase, fq_class_name) {
                 return None;
             }
 
-            let class_constant = if let Some(const_name) = context.interner.get(&const_name) {
-                get_class_constant_type(context.codebase, context.interner, &fq_class_name, &const_name)
-            } else {
-                None
-            };
+            let class_constant = get_class_constant_type(context.codebase, fq_class_name, const_name);
 
             if let Some(class_constant) = class_constant {
                 let class_constant = Rc::new(match class_constant {
@@ -723,7 +697,7 @@ fn get_value_for_key(
             let array_key_type = if let Some(array_key_offset) = array_key_offset {
                 ArrayKey::Integer(array_key_offset as i64)
             } else {
-                ArrayKey::String(Cow::Owned(array_key.replace('\'', "").to_string()))
+                ArrayKey::String(atom(&array_key.replace('\'', "")))
             };
 
             let new_base_key = base_key.clone() + "[" + array_key.as_str() + "]";
@@ -767,11 +741,8 @@ fn get_value_for_key(
                                 return None;
                             }
 
-                            new_base_type_candidate = get_iterable_value_parameter(
-                                &existing_key_type_part,
-                                context.codebase,
-                                context.interner,
-                            )?;
+                            new_base_type_candidate =
+                                get_iterable_value_parameter(&existing_key_type_part, context.codebase)?;
 
                             if new_base_type_candidate.is_mixed()
                                 && !has_isset
@@ -785,13 +756,8 @@ fn get_value_for_key(
                                 && new_assertions.contains_key(&new_base_key)
                             {
                                 if has_inverted_isset && new_base_key.eq(&key) {
-                                    new_base_type_candidate = add_union_type(
-                                        new_base_type_candidate,
-                                        &get_null(),
-                                        context.codebase,
-                                        context.interner,
-                                        false,
-                                    );
+                                    new_base_type_candidate =
+                                        add_union_type(new_base_type_candidate, &get_null(), context.codebase, false);
                                 }
 
                                 *possibly_undefined = true;
@@ -817,23 +783,15 @@ fn get_value_for_key(
                                 *possibly_undefined = true;
                             }
                         } else {
-                            new_base_type_candidate = get_iterable_value_parameter(
-                                &existing_key_type_part,
-                                context.codebase,
-                                context.interner,
-                            )?;
+                            new_base_type_candidate =
+                                get_iterable_value_parameter(&existing_key_type_part, context.codebase)?;
 
                             if (has_isset || has_inverted_isset || has_inverted_key_exists)
                                 && new_assertions.contains_key(&new_base_key)
                             {
                                 if has_inverted_isset && new_base_key.eq(&key) {
-                                    new_base_type_candidate = add_union_type(
-                                        new_base_type_candidate,
-                                        &get_null(),
-                                        context.codebase,
-                                        context.interner,
-                                        false,
-                                    );
+                                    new_base_type_candidate =
+                                        add_union_type(new_base_type_candidate, &get_null(), context.codebase, false);
                                 }
 
                                 *possibly_undefined = true;
@@ -857,13 +815,7 @@ fn get_value_for_key(
                     }
 
                     let resulting_type = Rc::new(if let Some(new_base_type) = &new_base_type {
-                        add_union_type(
-                            new_base_type_candidate,
-                            new_base_type,
-                            context.codebase,
-                            context.interner,
-                            false,
-                        )
+                        add_union_type(new_base_type_candidate, new_base_type, context.codebase, false)
                     } else {
                         new_base_type_candidate.clone()
                     });
@@ -899,8 +851,9 @@ fn get_value_for_key(
                         class_property_type = get_mixed();
                     } else if let TAtomic::Object(TObject::Named(named_object)) = existing_key_type_part {
                         let fq_class_name = named_object.get_name_ref();
-                        if context.interner.lookup(fq_class_name).eq_ignore_ascii_case("stdClass")
-                            || !class_or_interface_exists(context.codebase, context.interner, fq_class_name)
+
+                        if fq_class_name.eq_ignore_ascii_case("stdClass")
+                            || !class_or_interface_exists(context.codebase, fq_class_name)
                         {
                             class_property_type = get_mixed();
                         } else {
@@ -914,7 +867,6 @@ fn get_value_for_key(
                         class_property_type,
                         new_base_type.as_deref(),
                         context.codebase,
-                        context.interner,
                     ));
 
                     new_base_type = Some(resulting_type.clone());
@@ -931,27 +883,20 @@ fn get_value_for_key(
     block_context.locals.get(&base_key).map(|t| (**t).clone())
 }
 
-fn get_property_type(
-    context: &ReconciliationContext<'_, '_>,
-    classlike_name: &StringIdentifier,
-    property_name_str: &str,
-) -> Option<TUnion> {
+fn get_property_type(context: &Context<'_, '_>, classlike_name: &Atom, property_name_str: &str) -> Option<TUnion> {
     // Add `$` prefix
-    let prefixed_property_name = "$".to_owned() + property_name_str;
-    let property_name = context.interner.intern(&prefixed_property_name);
+    let property_name = concat_atom!("$", property_name_str);
 
-    let declaring_property_class =
-        get_declaring_class_for_property(context.codebase, context.interner, classlike_name, &property_name)?;
-    let property_metadata = get_property(context.codebase, context.interner, classlike_name, &property_name)?;
+    let declaring_property_class = get_declaring_class_for_property(context.codebase, classlike_name, &property_name)?;
+    let property_metadata = get_property(context.codebase, classlike_name, &property_name)?;
     let property_type = property_metadata.type_metadata.as_ref().map(|metadata| metadata.type_union.clone());
 
     let property_type = if let Some(mut property_type) = property_type {
         expander::expand_union(
             context.codebase,
-            context.interner,
             &mut property_type,
             &TypeExpansionOptions {
-                self_class: Some(&declaring_property_class),
+                self_class: Some(declaring_property_class),
                 static_class_type: StaticClassType::Name(declaring_property_class),
                 ..Default::default()
             },
@@ -966,19 +911,19 @@ fn get_property_type(
 }
 
 pub(crate) fn trigger_issue_for_impossible(
-    context: &mut ReconciliationContext<'_, '_>,
-    old_var_type_string: &String,
+    context: &mut Context<'_, '_>,
+    old_var_type_string: Atom,
     key: &String,
     assertion: &Assertion,
     redundant: bool,
     negated: bool,
     span: &Span,
 ) {
-    let mut assertion_string = assertion.as_string(Some(context.interner));
-    let mut not_operator = assertion_string.starts_with('!');
+    let mut assertion_atom = assertion.to_atom();
+    let mut not_operator = assertion_atom.starts_with('!');
 
     if not_operator {
-        assertion_string = assertion_string[1..].to_string();
+        assertion_atom = atom(&assertion_atom[1..]);
     }
 
     let mut redundant = redundant;
@@ -989,34 +934,34 @@ pub(crate) fn trigger_issue_for_impossible(
 
     if redundant {
         if not_operator {
-            if assertion_string == "falsy" {
+            if assertion_atom == "falsy" {
                 not_operator = false;
-                assertion_string = "truthy".to_string();
-            } else if assertion_string == "truthy" {
+                assertion_atom = atom("truthy");
+            } else if assertion_atom == "truthy" {
                 not_operator = false;
-                assertion_string = "falsy".to_string();
+                assertion_atom = atom("falsy");
             }
         }
 
         if not_operator {
-            report_impossible_issue(context, assertion, &assertion_string, key, span, old_var_type_string)
+            report_impossible_issue(context, assertion, assertion_atom, key, span, old_var_type_string)
         } else {
-            report_redundant_issue(context, assertion, &assertion_string, key, span, old_var_type_string)
+            report_redundant_issue(context, assertion, assertion_atom, key, span, old_var_type_string)
         }
     } else if not_operator {
-        report_redundant_issue(context, assertion, &assertion_string, key, span, old_var_type_string)
+        report_redundant_issue(context, assertion, assertion_atom, key, span, old_var_type_string)
     } else {
-        report_impossible_issue(context, assertion, &assertion_string, key, span, old_var_type_string)
+        report_impossible_issue(context, assertion, assertion_atom, key, span, old_var_type_string)
     }
 }
 
 fn report_impossible_issue(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
-    assertion_string: &String,
+    assertion_atom: Atom,
     key: &String,
     span: &Span,
-    old_var_type_string: &String,
+    old_var_type_string: Atom,
 ) {
     let subject_desc = if old_var_type_string.is_empty() || old_var_type_string.len() > 50 {
         format!("`{key}`")
@@ -1071,8 +1016,8 @@ fn report_impossible_issue(
         ),
         _ => (
             IssueCode::ImpossibleTypeComparison,
-            format!("can never be `{assertion_string}`"),
-            format!("The type of variable {subject_desc} is incompatible with the assertion that it is `{assertion_string}`."),
+            format!("can never be `{assertion_atom}`"),
+            format!("The type of variable {subject_desc} is incompatible with the assertion that it is `{assertion_atom}`."),
             "This condition is impossible and the associated code block will never execute. Review the types and condition logic.".to_owned(),
         ),
     };
@@ -1089,12 +1034,12 @@ fn report_impossible_issue(
 }
 
 fn report_redundant_issue(
-    context: &mut ReconciliationContext<'_, '_>,
+    context: &mut Context<'_, '_>,
     assertion: &Assertion,
-    assertion_string: &String,
+    assertion_atom: Atom,
     key: &String,
     span: &Span,
-    old_var_type_string: &String,
+    old_var_type_string: Atom,
 ) {
     let subject_desc = if old_var_type_string.is_empty() || old_var_type_string.len() > 50 {
         format!("`{key}`")
@@ -1153,8 +1098,8 @@ fn report_redundant_issue(
         ),
         _ => (
             IssueCode::RedundantTypeComparison,
-            format!("is already known to be `{assertion_string}`"),
-            format!("The type of variable {subject_desc} already satisfies the condition that it is `{assertion_string}`. This check is redundant."),
+            format!("is already known to be `{assertion_atom}`"),
+            format!("The type of variable {subject_desc} already satisfies the condition that it is `{assertion_atom}`. This check is redundant."),
             "This condition is always true and the associated code block will always execute if reached. Consider simplifying.".to_owned()
         ),
     };

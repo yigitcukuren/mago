@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use ahash::HashMap;
 use ahash::HashSet;
 use indexmap::IndexMap;
 
@@ -12,6 +11,8 @@ use mago_algebra::assertion_set::add_and_assertion;
 use mago_algebra::assertion_set::add_and_clause;
 use mago_algebra::find_satisfying_assignments;
 use mago_algebra::saturate_clauses;
+use mago_atom::Atom;
+use mago_atom::AtomMap;
 use mago_codex::assertion::Assertion;
 use mago_codex::get_function_like_thrown_types;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
@@ -23,7 +24,6 @@ use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::template::TemplateResult;
 use mago_codex::ttype::union::TUnion;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -46,14 +46,14 @@ use crate::reconciler;
 use crate::reconciler::assertion_reconciler::intersect_union_with_union;
 use crate::utils::expression::get_expression_id;
 
-pub fn post_invocation_process<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub fn post_invocation_process<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invoication: &Invocation,
+    invoication: &Invocation<'ctx, 'ast, 'arena>,
     this_variable: Option<String>,
     template_result: &TemplateResult,
-    parameters: &HashMap<StringIdentifier, TUnion>,
+    parameters: &AtomMap<TUnion>,
     apply_assertions: bool,
 ) -> Result<(), AnalysisError> {
     update_by_reference_argument_types(context, block_context, artifacts, invoication, template_result, parameters)?;
@@ -67,11 +67,10 @@ pub fn post_invocation_process<'a>(
     };
 
     let (callable_kind_str, full_callable_name) = match identifier {
-        FunctionLikeIdentifier::Function(name_id) => ("function", format!("`{}`", context.interner.lookup(name_id))),
-        FunctionLikeIdentifier::Method(class_name_id, method_name_id) => (
-            "method",
-            format!("`{}::{}`", context.interner.lookup(class_name_id), context.interner.lookup(method_name_id)),
-        ),
+        FunctionLikeIdentifier::Function(name) => ("function", format!("`{name}`")),
+        FunctionLikeIdentifier::Method(class_name, method_name) => {
+            ("method", format!("`{}::{}`", class_name, method_name))
+        }
         FunctionLikeIdentifier::Closure(file_id, position) => (
             "closure",
             format!(
@@ -204,15 +203,15 @@ pub fn post_invocation_process<'a>(
     Ok(())
 }
 
-fn apply_assertion_to_call_context<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn apply_assertion_to_call_context<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invocation: &Invocation,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
     this_variable: &Option<String>,
-    assertions: &BTreeMap<StringIdentifier, Conjunction<Assertion>>,
+    assertions: &BTreeMap<Atom, Conjunction<Assertion>>,
     template_result: &TemplateResult,
-    parameters: &HashMap<StringIdentifier, TUnion>,
+    parameters: &AtomMap<TUnion>,
 ) {
     let type_assertions = resolve_invocation_assertion(
         context,
@@ -237,7 +236,7 @@ fn apply_assertion_to_call_context<'a>(
     }
 
     reconciler::reconcile_keyed_types(
-        &mut context.get_reconciliation_context(),
+        context,
         &type_assertions,
         active_type_assertions,
         block_context,
@@ -249,13 +248,13 @@ fn apply_assertion_to_call_context<'a>(
     );
 }
 
-fn update_by_reference_argument_types<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn update_by_reference_argument_types<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invocation: &Invocation,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
     template_result: &TemplateResult,
-    parameters: &HashMap<StringIdentifier, TUnion>,
+    parameters: &AtomMap<TUnion>,
 ) -> Result<(), AnalysisError> {
     let constraint_type = invocation.target.is_method_call();
 
@@ -316,15 +315,15 @@ fn update_by_reference_argument_types<'a>(
     Ok(())
 }
 
-fn resolve_invocation_assertion<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn resolve_invocation_assertion<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invocation: &Invocation,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
     this_variable: &Option<String>,
-    assertions: &BTreeMap<StringIdentifier, Disjunction<Assertion>>,
+    assertions: &BTreeMap<Atom, Disjunction<Assertion>>,
     template_result: &TemplateResult,
-    parameters: &HashMap<StringIdentifier, TUnion>,
+    parameters: &AtomMap<TUnion>,
 ) -> IndexMap<String, AssertionSet> {
     let mut type_assertions: IndexMap<String, AssertionSet> = IndexMap::new();
     if assertions.is_empty() {
@@ -364,7 +363,6 @@ fn resolve_invocation_assertion<'a>(
                             Assertion::IsType(_) => {
                                 if !can_expression_types_be_identical(
                                     context.codebase,
-                                    context.interner,
                                     asserted_type,
                                     &resolved_assertion_type,
                                     false,
@@ -381,7 +379,7 @@ fn resolve_invocation_assertion<'a>(
                             }
                             Assertion::IsIdentical(_) => {
                                 let intersection = match intersect_union_with_union(
-                                    &mut context.get_reconciliation_context(),
+                                    context,
                                     asserted_type,
                                     &resolved_assertion_type,
                                 ) {
@@ -498,15 +496,15 @@ fn resolve_invocation_assertion<'a>(
 /// * If a special target is resolved, the tuple is `(None, Some(resolved_id))`.
 /// * If a regular argument is found, it returns the result from `get_argument_for_parameter`.
 /// * If nothing is found, it returns `(None, None)`.
-fn resolve_argument_or_special_target<'a>(
-    context: &mut Context<'_>,
-    block_context: &mut BlockContext,
-    invocation: &Invocation<'a>,
-    parameter_name: &StringIdentifier,
+fn resolve_argument_or_special_target<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
+    parameter_name: &Atom,
     this_variable: &Option<String>,
-) -> (Option<&'a Expression>, Option<String>) {
+) -> (Option<&'ast Expression<'arena>>, Option<String>) {
     // First, check if the name refers to a special assertion target like `$this->...`
-    if let Some(resolved_id) = resolve_special_assertion_target(context, block_context, parameter_name, this_variable) {
+    if let Some(resolved_id) = resolve_special_assertion_target(block_context, parameter_name, this_variable) {
         return (None, Some(resolved_id));
     }
 
@@ -523,7 +521,6 @@ fn resolve_argument_or_special_target<'a>(
 /// targets do not correspond to passed arguments.
 ///
 /// # Arguments
-/// * `context`: The analysis context, used for looking up string identifiers.
 /// * `block_context`: The context of the current block, used to get class scope information.
 /// * `target_name`: The string identifier for the assertion target (e.g., `'$this->prop'`).
 /// * `this_variable`: The name of the variable holding the object instance (`$this`), if any.
@@ -531,25 +528,21 @@ fn resolve_argument_or_special_target<'a>(
 /// # Returns
 /// * `Some(String)`: If the target is a special `$this` or `self` reference, containing the resolved variable ID.
 /// * `None`: If the target is not a special reference and should be treated as a regular parameter.
-fn resolve_special_assertion_target(
-    context: &Context<'_>,
-    block_context: &BlockContext,
-    target_name: &StringIdentifier,
+fn resolve_special_assertion_target<'ctx>(
+    block_context: &BlockContext<'ctx>,
+    target_name: &Atom,
     this_variable: &Option<String>,
 ) -> Option<String> {
-    let variable = context.interner.lookup(target_name);
-
     if let Some(this_variable) = this_variable
-        && variable.starts_with("$this")
+        && target_name.starts_with("$this")
     {
-        return Some(variable.replacen("$this", this_variable, 1));
+        return Some(target_name.replacen("$this", this_variable, 1));
     }
 
     if let Some(class) = block_context.scope.get_class_like_name()
-        && variable.starts_with("self::")
+        && target_name.starts_with("self::")
     {
-        let class_name = context.interner.lookup(class);
-        return Some(variable.replacen("self::", class_name, 1));
+        return Some(target_name.replacen("self::", &class, 1));
     }
 
     None
@@ -574,13 +567,13 @@ fn resolve_special_assertion_target(
 /// A tuple containing:
 /// * `Option<&'a Expression>`: The argument's expression AST node, if found.
 /// * `Option<String>`: The unique ID of the argument expression (e.g., a variable name), if it can be determined.
-fn get_argument_for_parameter<'a>(
-    context: &mut Context<'_>,
-    block_context: &mut BlockContext,
-    invocation: &Invocation<'a>,
+fn get_argument_for_parameter<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
     mut parameter_offset: Option<usize>,
-    mut parameter_name: Option<StringIdentifier>,
-) -> (Option<&'a Expression>, Option<String>) {
+    mut parameter_name: Option<Atom>,
+) -> (Option<&'ast Expression<'arena>>, Option<String>) {
     // If neither name nor offset is provided, we can't do anything.
     if parameter_name.is_none() && parameter_offset.is_none() {
         return (None, None);
@@ -611,15 +604,12 @@ fn get_argument_for_parameter<'a>(
 
     // a. Look for a named argument first.
     let find_by_name = || {
-        let name = parameter_name?;
-
-        let variable = context.interner.lookup(&name);
-        let variable_name = if let Some(variable) = variable.strip_prefix('$') { variable } else { variable };
-        let variable_name_id = context.interner.intern(variable_name);
+        let variable = parameter_name?;
+        let variable_name = if let Some(variable) = variable.strip_prefix('$') { variable } else { variable.as_str() };
 
         arguments.iter().find(|argument| {
             if let Some(named_argument) = argument.get_named_argument() {
-                named_argument.name.value == variable_name_id
+                named_argument.name.value == variable_name
             } else {
                 false
             }
@@ -641,7 +631,6 @@ fn get_argument_for_parameter<'a>(
         argument_expression,
         block_context.scope.get_class_like_name(),
         context.resolved_names,
-        context.interner,
         Some(context.codebase),
     );
 

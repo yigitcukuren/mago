@@ -1,7 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_interner::ThreadedInterner;
+use mago_atom::Atom;
+use mago_atom::atom;
 
 use crate::ttype::TType;
 
@@ -65,11 +66,11 @@ impl TType for TBool {
         false
     }
 
-    fn get_id(&self, _interner: Option<&ThreadedInterner>) -> String {
+    fn get_id(&self) -> Atom {
         match self.value {
-            Some(true) => "true".to_string(),
-            Some(false) => "false".to_string(),
-            None => "bool".to_string(),
+            Some(true) => atom("true"),
+            Some(false) => atom("false"),
+            None => atom("bool"),
         }
     }
 }

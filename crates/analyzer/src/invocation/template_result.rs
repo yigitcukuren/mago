@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use ahash::RandomState;
 use indexmap::IndexMap;
 
+use mago_atom::Atom;
 use mago_codex::get_class_like;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::metadata::function_like::FunctionLikeMetadata;
@@ -16,7 +17,6 @@ use mago_codex::ttype::template::TemplateResult;
 use mago_codex::ttype::template::standin_type_replacer::get_most_specific_type_from_bounds;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::*;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::Span;
@@ -45,9 +45,9 @@ use crate::utils::template::get_template_types_for_class_member;
 ///
 /// This function assumes that the `TemplateResult` is initially empty and will be populated with
 /// template types and bounds derived from the invocation's target metadata.
-pub fn populate_template_result_from_invocation(
-    context: &mut Context<'_>,
-    invocation: &Invocation<'_>,
+pub fn populate_template_result_from_invocation<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
     template_result: &mut TemplateResult,
 ) {
     let InvocationTarget::FunctionLike { metadata, method_context, .. } = &invocation.target else {
@@ -98,7 +98,7 @@ pub fn populate_template_result_from_invocation(
         return;
     };
 
-    let Some(metadata) = get_class_like(context.codebase, context.interner, identifier.get_class_name()) else {
+    let Some(metadata) = get_class_like(context.codebase, identifier.get_class_name()) else {
         return;
     };
 
@@ -112,7 +112,7 @@ pub fn populate_template_result_from_invocation(
 /// it calculates the most specific type derived from its lower bounds using
 /// `get_most_specific_type_from_bounds`.
 ///
-/// The result is a map where keys are template parameter names (`StringIdentifier`) and
+/// The result is a map where keys are template parameter names (`Atom`) and
 /// values are vectors containing pairs of the defining class (`GenericParent`) and the
 /// resolved concrete type (`TUnion`) for that template in the context of that class.
 ///
@@ -122,23 +122,22 @@ pub fn populate_template_result_from_invocation(
 /// # Arguments
 ///
 /// * `template_result` - The template result containing the inferred lower bounds.
-/// * `context` - The analysis context, providing access to codebase and interner needed for type resolution.
+/// * `context` - The analysis context, providing access to codebase metadata needed for type resolution.
 ///
 /// # Returns
 ///
 /// An `IndexMap` mapping class template parameter names to a vector of (Defining Entity, Resolved Type).
-pub(super) fn get_class_template_parameters_from_result(
+pub(super) fn get_class_template_parameters_from_result<'ctx, 'arena>(
     template_result: &TemplateResult,
-    context: &Context<'_>,
-) -> IndexMap<StringIdentifier, Vec<(GenericParent, TUnion)>, RandomState> {
-    let mut class_generic_parameters: IndexMap<StringIdentifier, Vec<(GenericParent, TUnion)>, RandomState> =
+    context: &Context<'ctx, 'arena>,
+) -> IndexMap<Atom, Vec<(GenericParent, TUnion)>, RandomState> {
+    let mut class_generic_parameters: IndexMap<Atom, Vec<(GenericParent, TUnion)>, RandomState> =
         IndexMap::with_hasher(RandomState::new());
 
     for (template_name, type_map) in &template_result.lower_bounds {
         for (generic_parent, lower_bounds) in type_map {
             if matches!(generic_parent, GenericParent::ClassLike(_)) && !lower_bounds.is_empty() {
-                let specific_bound_type =
-                    get_most_specific_type_from_bounds(lower_bounds, context.codebase, context.interner);
+                let specific_bound_type = get_most_specific_type_from_bounds(lower_bounds, context.codebase);
 
                 class_generic_parameters
                     .entry(*template_name)
@@ -163,14 +162,14 @@ pub(super) fn get_class_template_parameters_from_result(
 /// **Note:** If `template_result.template_types` already contains entries (perhaps from
 /// analyzing generic class types), this function currently does *not* merge or overwrite them.
 /// It only initializes the map if it's empty.
-pub(super) fn refine_template_result_for_function_like(
+pub(super) fn refine_template_result_for_function_like<'ctx, 'arena>(
     template_result: &mut TemplateResult,
-    context: &Context<'_>,
-    method_target_context: Option<&MethodTargetContext<'_>>,
-    base_class_metadata: Option<&ClassLikeMetadata>,
-    calling_class_like_metadata: Option<&ClassLikeMetadata>,
-    function_like_metadata: &FunctionLikeMetadata,
-    class_template_parameters: &IndexMap<StringIdentifier, Vec<(GenericParent, TUnion)>, RandomState>,
+    context: &Context<'ctx, 'arena>,
+    method_target_context: Option<&MethodTargetContext<'ctx>>,
+    base_class_metadata: Option<&'ctx ClassLikeMetadata>,
+    calling_class_like_metadata: Option<&'ctx ClassLikeMetadata>,
+    function_like_metadata: &'ctx FunctionLikeMetadata,
+    class_template_parameters: &IndexMap<Atom, Vec<(GenericParent, TUnion)>, RandomState>,
 ) {
     if !template_result.template_types.is_empty() {
         return;
@@ -179,7 +178,7 @@ pub(super) fn refine_template_result_for_function_like(
     let resolved_template_types = get_template_types_for_class_member(
         context,
         base_class_metadata,
-        method_target_context.as_ref().map(|mci| &mci.class_like_metadata.name),
+        method_target_context.as_ref().map(|mci| mci.class_like_metadata.name),
         calling_class_like_metadata,
         &function_like_metadata.template_types,
         class_template_parameters,
@@ -207,16 +206,19 @@ pub(super) fn refine_template_result_for_function_like(
 ///
 /// # Arguments
 ///
-/// * `context` - The analysis context, providing access to the codebase and interner.
+/// * `context` - The analysis context, providing access to the codebase metadata.
 /// * `template_result` - The result containing the bounds to check (will be mutated if bounds are added).
 /// * `span` - The span (location) to associate with any reported errors (e.g., the call site).
-pub(super) fn check_template_result(context: &mut Context<'_>, template_result: &mut TemplateResult, span: Span) {
+pub(super) fn check_template_result<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    template_result: &mut TemplateResult,
+    span: Span,
+) {
     if template_result.lower_bounds.is_empty() {
         return;
     }
 
     let codebase = context.codebase;
-    let interner = context.interner;
 
     for (template_name, defining_map) in &template_result.upper_bounds {
         for (defining_entity, upper_bound) in defining_map {
@@ -234,7 +236,7 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
                 )
             } else {
                 (
-                    Cow::Owned(get_most_specific_type_from_bounds(lower_bounds, codebase, interner)),
+                    Cow::Owned(get_most_specific_type_from_bounds(lower_bounds, codebase)),
                     Cow::Borrowed(&upper_bound.bound_type),
                 )
             };
@@ -242,7 +244,6 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
             let mut comparison_result = ComparisonResult::new();
             let is_contained = union_comparator::is_contained_by(
                 codebase,
-                interner,
                 &lower_bound_type,
                 &upper_bound_type,
                 false,
@@ -262,16 +263,13 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
 
                 context.collector.report_with_code(
                     issue_kind,
-                    Issue::error(format!("Incompatible template bounds for `{}`.", interner.lookup(template_name)))
+                    Issue::error(format!("Incompatible template bounds for `{template_name}`."))
                         .with_annotation(Annotation::primary(span).with_message(format!(
                             "Inferred type `{}` is not compatible with declared bound `{}`",
-                            lower_bound_type.get_id(Some(interner)),
-                            upper_bound_type.get_id(Some(interner)),
+                            lower_bound_type.get_id(),
+                            upper_bound_type.get_id(),
                         )))
-                        .with_note(format!(
-                            "Could not reconcile bounds for template parameter `{}`.",
-                            interner.lookup(template_name),
-                        ))
+                        .with_note(format!("Could not reconcile bounds for template parameter `{template_name}`."))
                         .with_help(
                             "Check the types used for arguments or properties related to this template parameter.",
                         ),
@@ -290,19 +288,17 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
                 lower_bounds.iter().filter(|bound| bound.equality_bound_classlike.is_some()).collect();
 
             if !bounds_with_equality.is_empty() {
-                let equality_types: Vec<String> =
-                    unique_vec(bounds_with_equality.iter().map(|bound| bound.bound_type.get_id(Some(interner))));
+                let equality_types: Vec<_> =
+                    unique_vec(bounds_with_equality.iter().map(|bound| bound.bound_type.get_id().as_str()));
 
                 if equality_types.len() > 1 {
                     context.collector.report_with_code(
                         IssueCode::ConflictingTemplateEqualityBounds,
                         Issue::error(format!(
-                            "Conflicting equality requirements found for template `{}`.",
-                            interner.lookup(template_name)
+                            "Conflicting equality requirements found for template `{template_name}`.",
                         ))
                         .with_annotation(Annotation::primary(span).with_message(format!(
-                            "Template `{}` cannot be equal to all of: `{}`.",
-                            interner.lookup(template_name),
+                            "Template `{template_name}` cannot be equal to all of: `{}`.",
                             equality_types.join("`, `"),
                         )))
                         .with_help(
@@ -322,7 +318,6 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
 
                     let is_contained = union_comparator::is_contained_by(
                         codebase,
-                        interner,
                         &lower_bound.bound_type,
                         &first_equality_bound.bound_type,
                         false,
@@ -335,13 +330,12 @@ pub(super) fn check_template_result(context: &mut Context<'_>, template_result: 
                         context.collector.report_with_code(
                             IssueCode::IncompatibleTemplateLowerBound,
                             Issue::error(format!(
-                                "Incompatible bounds found for template `{}`.",
-                                interner.lookup(template_name)
+                                "Incompatible bounds found for template `{template_name}`.",
                             ))
                             .with_annotation(Annotation::primary(span).with_message(format!(
                                 "Type `{}` required by a lower bound is not compatible with the required equality type `{}`.",
-                                lower_bound.bound_type.get_id(Some(interner)),
-                                first_equality_bound.bound_type.get_id(Some(interner)),
+                                lower_bound.bound_type.get_id(),
+                                first_equality_bound.bound_type.get_id(),
                             )))
                             .with_help(
                                 "Check the argument types provided; they must satisfy all lower and equality bounds simultaneously."

@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use mago_atom::atom;
 use mago_codex::ttype::add_union_type;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -31,11 +31,11 @@ use crate::utils::expression::array::get_array_target_type_given_index;
 use crate::utils::expression::get_expression_id;
 use crate::utils::expression::get_index_id;
 
-pub(crate) fn analyze<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub(crate) fn analyze<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    array_target: ArrayTarget<'_>,
+    array_target: ArrayTarget<'ast, 'arena>,
     assign_value_type: TUnion,
 ) -> Result<(), AnalysisError> {
     let mut array_target_expressions = vec![array_target];
@@ -75,7 +75,6 @@ pub(crate) fn analyze<'a>(
         root_array_expression,
         block_context.scope.get_class_like_name(),
         context.resolved_names,
-        context.interner,
         Some(context.codebase),
     );
 
@@ -136,7 +135,7 @@ pub(crate) fn analyze<'a>(
 }
 
 pub(crate) fn update_type_with_key_values(
-    context: &Context<'_>,
+    context: &Context<'_, '_>,
     mut new_type: TUnion,
     current_type: TUnion,
     key_values: &Vec<TAtomic>,
@@ -164,7 +163,7 @@ pub(crate) fn update_type_with_key_values(
 }
 
 fn update_atomic_given_key(
-    context: &Context<'_>,
+    context: &Context<'_, '_>,
     mut atomic_type: TAtomic,
     key_values: &Vec<TAtomic>,
     key_type: Option<Rc<TUnion>>,
@@ -188,7 +187,7 @@ fn update_atomic_given_key(
         for key_value in key_values {
             if let TAtomic::Array(array) = &mut atomic_type {
                 let array_key = if let Some(str) = key_value.get_literal_string_value() {
-                    ArrayKey::String(Cow::Owned(str.to_owned()))
+                    ArrayKey::String(atom(str))
                 } else if let Some(int) = key_value.get_literal_int_value() {
                     ArrayKey::Integer(int)
                 } else {
@@ -236,9 +235,7 @@ fn update_atomic_given_key(
             }
         }
     } else {
-        let Some((array_key_type, array_value_type)) =
-            get_iterable_parameters(&atomic_type, context.codebase, context.interner)
-        else {
+        let Some((array_key_type, array_value_type)) = get_iterable_parameters(&atomic_type, context.codebase) else {
             return atomic_type;
         };
 
@@ -246,8 +243,7 @@ fn update_atomic_given_key(
             return atomic_type;
         };
 
-        let combined_value_type =
-            add_union_type(array_value_type, current_type, context.codebase, context.interner, false);
+        let combined_value_type = add_union_type(array_value_type, current_type, context.codebase, false);
 
         if array.is_empty() && key_type.is_none() {
             *array = TArray::List(TList {
@@ -271,7 +267,6 @@ fn update_atomic_given_key(
                             array_key_type,
                             &key_type.unwrap_or_else(|| Rc::new(get_int())),
                             context.codebase,
-                            context.interner,
                             false,
                         )),
                         Box::new(combined_value_type),
@@ -287,9 +282,9 @@ fn update_atomic_given_key(
     atomic_type
 }
 
-fn update_array_assignment_child_type(
-    context: &mut Context<'_>,
-    block_context: &mut BlockContext,
+fn update_array_assignment_child_type<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     key_type: Option<Rc<TUnion>>,
     value_type: TUnion,
     root_type: TUnion,
@@ -316,7 +311,7 @@ fn update_array_assignment_child_type(
                             known_items: keyed_array.get_known_items().map(|known_items| {
                                 known_items
                                     .iter()
-                                    .map(|(k, v)| (k.clone(), (v.0, value_type.clone())))
+                                    .map(|(k, v)| (*k, (v.0, value_type.clone())))
                                     .collect::<BTreeMap<_, _>>()
                             }),
                             non_empty: true,
@@ -401,22 +396,21 @@ fn update_array_assignment_child_type(
         return root_type;
     }
 
-    let collection_type =
-        TUnion::from_vec(combiner::combine(collection_types, context.codebase, context.interner, false));
+    let collection_type = TUnion::from_vec(combiner::combine(collection_types, context.codebase, false));
 
-    add_union_type(root_type, &collection_type, context.codebase, context.interner, true)
+    add_union_type(root_type, &collection_type, context.codebase, true)
 }
 
-pub(crate) fn analyze_nested_array_assignment<'a, 's>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub(crate) fn analyze_nested_array_assignment<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    mut array_target_expressions: Vec<ArrayTarget<'s>>,
+    mut array_target_expressions: Vec<ArrayTarget<'ast, 'arena>>,
     assign_value_type: TUnion,
     root_var_id: Option<String>,
     root_type: &mut TUnion,
     last_array_expr_type: &mut TUnion,
-) -> Result<Option<&'s Expression>, AnalysisError> {
+) -> Result<Option<&'ast Expression<'arena>>, AnalysisError> {
     let mut var_id_additions = Vec::new();
     let mut last_array_expression_index = None;
     let mut extended_var_id = None;
@@ -442,7 +436,6 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
                     index,
                     block_context.scope.get_class_like_name(),
                     context.resolved_names,
-                    context.interner,
                     Some(context.codebase),
                 ) {
                     format!("[{index_expression_id}]")
@@ -564,7 +557,6 @@ pub(crate) fn analyze_nested_array_assignment<'a, 's>(
             array_target.get_array(),
             block_context.scope.get_class_like_name(),
             context.resolved_names,
-            context.interner,
             Some(context.codebase),
         )
         .map(|var_var_id| {

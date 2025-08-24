@@ -1,4 +1,5 @@
-use mago_interner::StringIdentifier;
+use mago_atom::Atom;
+use mago_atom::atom;
 use mago_names::scope::NamespaceScope;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -19,12 +20,12 @@ use crate::ttype::resolution::TypeResolutionContext;
 use crate::visibility::Visibility;
 
 #[inline]
-pub fn scan_class_like_constants(
+pub fn scan_class_like_constants<'ctx, 'ast, 'arena>(
     class_like_metadata: &mut ClassLikeMetadata,
-    constant: &ClassLikeConstant,
-    classname: Option<&StringIdentifier>,
+    constant: &'ast ClassLikeConstant<'arena>,
+    classname: Option<Atom>,
     type_context: &TypeResolutionContext,
-    context: &mut Context<'_>,
+    context: &mut Context<'ctx, 'ast, 'arena>,
     scope: &NamespaceScope,
 ) -> Vec<ClassLikeConstantMetadata> {
     let attributes = scan_attribute_lists(&constant.attribute_lists, context);
@@ -32,7 +33,7 @@ pub fn scan_class_like_constants(
         constant.modifiers.get_first_visibility().and_then(|m| Visibility::try_from(m).ok()).unwrap_or_default();
     let is_final = constant.modifiers.contains_final();
     let type_declaration =
-        constant.hint.as_ref().map(|h| get_type_metadata_from_hint(h, Some(&class_like_metadata.name), context));
+        constant.hint.as_ref().map(|h| get_type_metadata_from_hint(h, Some(class_like_metadata.name), context));
 
     let mut flags = if is_final { MetadataFlags::FINAL } else { MetadataFlags::empty() };
     if context.file.file_type.is_host() {
@@ -60,14 +61,13 @@ pub fn scan_class_like_constants(
         .items
         .iter()
         .map(|item| {
-            let mut meta = ClassLikeConstantMetadata::new(item.name.value, item.span(), visibility, flags);
+            let mut meta = ClassLikeConstantMetadata::new(atom(item.name.value), item.span(), visibility, flags);
             if let Some(type_declaration) = type_declaration.as_ref().cloned() {
                 meta.set_type_declaration(type_declaration);
             }
 
             meta.attributes = attributes.clone();
-            meta.inferred_type =
-                infer(context.interner, context.resolved_names, &item.value).map(|u| u.get_single_owned());
+            meta.inferred_type = infer(context.resolved_names, &item.value).map(|u| u.get_single_owned());
 
             if let Some(ref docblock) = docblock {
                 if docblock.is_deprecated {
@@ -83,7 +83,7 @@ pub fn scan_class_like_constants(
                 }
 
                 if let Some(type_string) = &docblock.type_string {
-                    match get_type_metadata_from_type_string(type_string, classname, type_context, context, scope) {
+                    match get_type_metadata_from_type_string(type_string, classname, type_context, scope) {
                         Ok(type_metadata) => {
                             meta.type_metadata = Some(type_metadata);
                         }

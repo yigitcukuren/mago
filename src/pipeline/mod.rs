@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use ahash::HashSet;
+use bumpalo::Bump;
+use mago_atom::AtomSet;
 use rayon::prelude::*;
 
 use mago_codex::metadata::CodebaseMetadata;
@@ -11,7 +13,6 @@ use mago_database::DatabaseReader;
 use mago_database::ReadDatabase;
 use mago_database::file::File;
 use mago_database::file::FileType;
-use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
 use mago_syntax::parser::parse_file;
 
@@ -63,10 +64,9 @@ pub trait StatelessReducer<I, R>: Debug {
 /// 3.  **Phase 3 (Finalize):** The user-provided [`Reducer`] aggregates the results
 ///     from the analysis phase into a final output.
 #[derive(Debug)]
-pub struct ParallelPipeline<'a, T, I, R> {
+pub struct ParallelPipeline<T, I, R> {
     task_name: &'static str,
     database: Arc<ReadDatabase>,
-    interner: &'a ThreadedInterner,
     shared_context: T,
     reducer: Box<dyn Reducer<I, R> + Send + Sync>,
 }
@@ -76,15 +76,14 @@ pub struct ParallelPipeline<'a, T, I, R> {
 /// This struct is designed for tasks like formatting that can process each file
 /// in isolation without needing a shared, global view of the entire codebase.
 #[derive(Debug)]
-pub struct StatelessParallelPipeline<'a, T, I, R> {
+pub struct StatelessParallelPipeline<T, I, R> {
     task_name: &'static str,
     database: Arc<ReadDatabase>,
-    interner: &'a ThreadedInterner,
     shared_context: T,
     reducer: Box<dyn StatelessReducer<I, R> + Send + Sync>,
 }
 
-impl<'a, T, I, R> ParallelPipeline<'a, T, I, R>
+impl<T, I, R> ParallelPipeline<T, I, R>
 where
     T: Clone + Send + Sync + 'static,
     I: Send + 'static,
@@ -94,11 +93,10 @@ where
     pub fn new(
         task_name: &'static str,
         database: ReadDatabase,
-        interner: &'a ThreadedInterner,
         shared_context: T,
         reducer: Box<dyn Reducer<I, R> + Send + Sync>,
     ) -> Self {
-        Self { task_name, database: Arc::new(database), interner, shared_context, reducer }
+        Self { task_name, database: Arc::new(database), shared_context, reducer }
     }
 
     /// Executes the full pipeline with a given map function.
@@ -110,7 +108,7 @@ where
     ///   fully populated codebase, and returns an intermediate result.
     pub fn run<F>(&self, map_function: F) -> Result<R, Error>
     where
-        F: Fn(T, ThreadedInterner, Arc<File>, Arc<CodebaseMetadata>) -> Result<I, Error> + Send + Sync,
+        F: Fn(T, &Bump, Arc<File>, Arc<CodebaseMetadata>) -> Result<I, Error> + Send + Sync,
     {
         let all_files = self.database.files().collect::<Vec<_>>();
         if all_files.is_empty() {
@@ -121,10 +119,12 @@ where
 
         let partial_codebases: Vec<CodebaseMetadata> = all_files
             .into_par_iter()
-            .map(|file| {
-                let interner = self.interner.clone();
-                let metadata = scan_file_for_metadata(&file, &interner);
+            .map_init(Bump::new, |arena, file| {
+                let metadata = scan_file_for_metadata(&file, arena);
+
+                arena.reset();
                 compiling_bar.inc(1);
+
                 metadata
             })
             .collect();
@@ -135,13 +135,7 @@ where
         }
 
         let mut symbol_references = SymbolReferences::new();
-        populate_codebase(
-            &mut merged_codex,
-            self.interner,
-            &mut symbol_references,
-            HashSet::default(),
-            HashSet::default(),
-        );
+        populate_codebase(&mut merged_codex, &mut symbol_references, AtomSet::default(), HashSet::default());
 
         remove_progress_bar(compiling_bar);
 
@@ -162,12 +156,14 @@ where
 
         let results: Vec<I> = host_files
             .into_par_iter()
-            .map(|file| {
+            .map_init(Bump::new, |arena, file| {
                 let context = self.shared_context.clone();
-                let interner = self.interner.clone();
                 let codebase = Arc::clone(&final_codebase);
-                let result = map_function(context, interner, file, codebase)?;
+                let result = map_function(context, arena, file, codebase)?;
+
+                arena.reset();
                 main_task_bar.inc(1);
+
                 Ok(result)
             })
             .collect::<Result<Vec<I>, Error>>()?;
@@ -180,39 +176,37 @@ where
 }
 
 /// The "map" function for the compilation phase: extracts `CodebaseMetadata` from a single file.
-fn scan_file_for_metadata(source_file: &File, interner: &ThreadedInterner) -> CodebaseMetadata {
-    let (program, parse_issues) = parse_file(interner, source_file);
+fn scan_file_for_metadata(source_file: &File, arena: &Bump) -> CodebaseMetadata {
+    let (program, parse_issues) = parse_file(arena, source_file);
     if parse_issues.is_some() {
         tracing::warn!("Parsing issues in '{}'. Codebase analysis may be incomplete.", source_file.name);
     }
 
-    let resolver = NameResolver::new(interner);
-    let resolved_names = resolver.resolve(&program);
+    let resolver = NameResolver::new(arena);
+    let resolved_names = resolver.resolve(program);
 
-    scan_program(interner, source_file, &program, &resolved_names)
+    scan_program(arena, source_file, program, &resolved_names)
 }
 
-impl<'a, T, I, R> StatelessParallelPipeline<'a, T, I, R>
+impl<T, I, R> StatelessParallelPipeline<T, I, R>
 where
     T: Clone + Send + Sync + 'static,
     I: Send + 'static,
     R: Send + 'static,
 {
-    /// Creates a new `StatelessParallelPipeline`.
     pub fn new(
         task_name: &'static str,
         database: ReadDatabase,
-        interner: &'a ThreadedInterner,
         shared_context: T,
         reducer: Box<dyn StatelessReducer<I, R> + Send + Sync>,
     ) -> Self {
-        Self { task_name, database: Arc::new(database), interner, shared_context, reducer }
+        Self { task_name, database: Arc::new(database), shared_context, reducer }
     }
 
     /// Executes the pipeline with a given map function on all `Host` files.
     pub fn run<F>(&self, map_function: F) -> Result<R, Error>
     where
-        F: Fn(T, ThreadedInterner, Arc<File>) -> Result<I, Error> + Send + Sync,
+        F: Fn(T, &Bump, Arc<File>) -> Result<I, Error> + Send + Sync,
     {
         let host_files = self
             .database
@@ -229,11 +223,13 @@ where
 
         let results: Vec<I> = host_files
             .into_par_iter()
-            .map(|file| {
+            .map_init(Bump::new, |arena, file| {
                 let context = self.shared_context.clone();
-                let interner = self.interner.clone();
-                let result = map_function(context, interner, file)?;
+                let result = map_function(context, arena, file)?;
+
+                arena.reset();
                 progress_bar.inc(1);
+
                 Ok(result)
             })
             .collect::<Result<Vec<I>, Error>>()?;

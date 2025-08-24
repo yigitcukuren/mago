@@ -109,7 +109,7 @@ impl LintRule for ExcessiveNestingRule {
         Self { meta: Self::meta(), cfg: settings.config }
     }
 
-    fn check(&self, ctx: &mut LintContext, node: Node) {
+    fn check<'ast, 'arena>(&self, ctx: &mut LintContext<'_, 'arena>, node: Node<'ast, 'arena>) {
         let Node::Program(program) = node else {
             return;
         };
@@ -160,8 +160,8 @@ impl NestingWalker {
     }
 }
 
-impl<'a> MutWalker<LintContext<'a>> for NestingWalker {
-    fn walk_block<'ast>(&mut self, block: &'ast Block, ctx: &mut LintContext<'a>) {
+impl<'ctx, 'ast, 'arena> MutWalker<'ast, 'arena, LintContext<'ctx, 'arena>> for NestingWalker {
+    fn walk_block(&mut self, block: &'ast Block<'arena>, ctx: &mut LintContext<'ctx, 'arena>) {
         self.level += 1;
 
         if !self.check_depth(block, ctx) {

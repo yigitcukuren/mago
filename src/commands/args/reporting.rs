@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
 
+use bumpalo::Bump;
 use clap::Parser;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -15,7 +16,6 @@ use mago_database::file::FileId;
 use mago_fixer::FixPlan;
 use mago_fixer::SafetyClassification;
 use mago_formatter::Formatter;
-use mago_interner::ThreadedInterner;
 use mago_reporting::IssueCollection;
 use mago_reporting::Level;
 use mago_reporting::reporter::Reporter;
@@ -113,7 +113,6 @@ impl ReportingArgs {
     /// * `self`: The configured reporting arguments from the command line.
     /// * `issues`: The collection of issues detected by the preceding command.
     /// * `configuration`: The application's global configuration.
-    /// * `interner`: The shared string interner.
     /// * `database`: The mutable database containing all source files.
     ///
     /// # Returns
@@ -124,11 +123,10 @@ impl ReportingArgs {
         self,
         issues: IssueCollection,
         configuration: Configuration,
-        interner: ThreadedInterner,
         database: Database,
     ) -> Result<ExitCode, Error> {
         if self.fix {
-            self.handle_fix_mode(issues, configuration, interner, database)
+            self.handle_fix_mode(issues, configuration, database)
         } else {
             self.handle_report_mode(issues, database)
         }
@@ -139,11 +137,10 @@ impl ReportingArgs {
         self,
         issues: IssueCollection,
         configuration: Configuration,
-        interner: ThreadedInterner,
         mut database: Database,
     ) -> Result<ExitCode, Error> {
         let (applied_fixes, skipped_unsafe, skipped_potentially_unsafe) =
-            self.apply_fixes(issues, &configuration, &interner, &mut database)?;
+            self.apply_fixes(issues, &configuration, &mut database)?;
 
         if skipped_unsafe > 0 {
             tracing::warn!("Skipped {} unsafe fixes. Use `--unsafe` to apply them.", skipped_unsafe);
@@ -249,7 +246,6 @@ impl ReportingArgs {
         &self,
         issues: IssueCollection,
         configuration: &Configuration,
-        interner: &ThreadedInterner,
         database: &mut Database,
     ) -> Result<(usize, usize, usize), Error> {
         let read_database = Arc::new(database.read_only());
@@ -265,19 +261,24 @@ impl ReportingArgs {
 
         let changed_results: Vec<bool> = fix_plans
             .into_par_iter()
-            .map(|(file_id, plan)| {
+            .map_init(Bump::new, |arena, (file_id, plan)| {
+                arena.reset();
+
                 let file = read_database.get_ref(&file_id)?;
-                let mut fixed_content = plan.execute(&file.contents).get_fixed();
+                let fixed_content = plan.execute(&file.contents).get_fixed();
+                let final_content = if self.format_after_fix {
+                    let formatter = Formatter::new(arena, configuration.php_version, configuration.formatter.settings);
 
-                if self.format_after_fix {
-                    let formatter =
-                        Formatter::new(interner, configuration.php_version, configuration.formatter.settings);
                     if let Ok(content) = formatter.format_code(file.name.clone(), Cow::Owned(fixed_content.clone())) {
-                        fixed_content = content;
+                        Cow::Borrowed(content)
+                    } else {
+                        Cow::Owned(fixed_content)
                     }
-                }
+                } else {
+                    Cow::Owned(fixed_content)
+                };
 
-                let changed = utils::apply_update(&change_log, file, fixed_content, self.dry_run, false)?;
+                let changed = utils::apply_update(&change_log, file, final_content.as_ref(), self.dry_run, false)?;
                 progress_bar.inc(1);
                 Ok(changed)
             })

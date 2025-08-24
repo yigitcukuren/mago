@@ -1,7 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_interner::ThreadedInterner;
+use mago_atom::Atom;
+use mago_atom::concat_atom;
 
 use crate::metadata::CodebaseMetadata;
 use crate::ttype::TType;
@@ -31,7 +32,6 @@ impl TKeyOf {
     pub fn get_key_of_targets(
         target_types: &[TAtomic],
         codebase: &CodebaseMetadata,
-        interner: &ThreadedInterner,
         retain_generics: bool,
     ) -> Option<TUnion> {
         let mut key_types = vec![];
@@ -39,7 +39,7 @@ impl TKeyOf {
         for target in target_types {
             match target {
                 TAtomic::Array(array) => {
-                    let (array_key_type, _) = get_array_parameters(array, codebase, interner);
+                    let (array_key_type, _) = get_array_parameters(array, codebase);
 
                     key_types.extend(array_key_type.types.iter().cloned());
                 }
@@ -49,12 +49,9 @@ impl TKeyOf {
                 TAtomic::GenericParameter(parameter) => {
                     if retain_generics {
                         key_types.push(TAtomic::GenericParameter(parameter.clone()));
-                    } else if let Some(generic_key_types) = Self::get_key_of_targets(
-                        parameter.get_constraint().types.as_ref(),
-                        codebase,
-                        interner,
-                        retain_generics,
-                    ) {
+                    } else if let Some(generic_key_types) =
+                        Self::get_key_of_targets(parameter.get_constraint().types.as_ref(), codebase, retain_generics)
+                    {
                         key_types.extend(generic_key_types.types.into_owned());
                     }
                 }
@@ -81,11 +78,7 @@ impl TType for TKeyOf {
         true
     }
 
-    fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
-        let mut id = String::new();
-        id += "key-of<";
-        id += &self.0.get_id(interner);
-        id += ">";
-        id
+    fn get_id(&self) -> Atom {
+        concat_atom!("key-of<", self.0.get_id().as_str(), ">")
     }
 }

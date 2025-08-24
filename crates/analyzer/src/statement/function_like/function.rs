@@ -1,3 +1,4 @@
+use mago_atom::atom;
 use mago_codex::context::ScopeContext;
 use mago_codex::get_function;
 use mago_span::HasSpan;
@@ -14,11 +15,11 @@ use crate::statement::attributes::analyze_attributes;
 use crate::statement::function_like::FunctionLikeBody;
 use crate::statement::function_like::analyze_function_like;
 
-impl Analyzable for Function {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Function<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         analyze_attributes(
@@ -29,15 +30,15 @@ impl Analyzable for Function {
             AttributeTarget::Function,
         )?;
 
-        let function_name = context.resolved_names.get(&self.name);
+        let function_name = atom(context.resolved_names.get(&self.name));
 
-        if context.settings.diff && context.codebase.safe_symbols.contains(function_name) {
+        if context.settings.diff && context.codebase.safe_symbols.contains(&function_name) {
             return Ok(());
         }
 
-        let Some(function_metadata) = get_function(context.codebase, context.interner, function_name) else {
+        let Some(function_metadata) = get_function(context.codebase, &function_name) else {
             return Err(AnalysisError::InternalError(
-                format!("Function metadata for `{}` not found.", context.interner.lookup(function_name)),
+                format!("Function metadata for `{function_name}` not found."),
                 self.span(),
             ));
         };

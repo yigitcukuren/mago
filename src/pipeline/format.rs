@@ -2,9 +2,7 @@ use mago_database::ReadDatabase;
 use mago_database::change::ChangeLog;
 use mago_formatter::Formatter;
 use mago_formatter::settings::FormatSettings;
-use mago_interner::ThreadedInterner;
 use mago_php_version::PHPVersion;
-use mago_syntax::parser::parse_file;
 
 use crate::error::Error;
 use crate::pipeline::StatelessParallelPipeline;
@@ -55,37 +53,31 @@ pub struct FormatContext {
 ///
 /// # Arguments
 ///
-/// * `interner`: The shared string interner.
 /// * `database`: The read-only database containing the files to format.
 /// * `context`: The shared [`FormatContext`] for the formatting run.
 ///
 /// # Returns
 ///
 /// A `Result` containing the total number of files that were changed, or an [`Error`].
-pub fn run_format_pipeline(
-    interner: &ThreadedInterner,
-    database: ReadDatabase,
-    context: FormatContext,
-) -> Result<usize, Error> {
-    StatelessParallelPipeline::new("✨ Formatting", database, interner, context, Box::new(FormatReducer)).run(
-        |context, interner, file| {
-            let (program, error) = parse_file(&interner, &file);
+pub fn run_format_pipeline(database: ReadDatabase, context: FormatContext) -> Result<usize, Error> {
+    StatelessParallelPipeline::new("✨ Formatting", database, context, Box::new(FormatReducer)).run(
+        |context, arena, file| {
+            let formatter = Formatter::new(arena, context.php_version, context.settings);
 
-            if let Some(error) = error {
-                tracing::error!("Skipping formatting for '{}': {}.", file.name, error);
-                return Ok(false);
+            match formatter.format_file(&file) {
+                Ok(formatted_content) => utils::apply_update(
+                    &context.change_log,
+                    &file,
+                    formatted_content,
+                    matches!(context.mode, FormatMode::DryRun),
+                    matches!(context.mode, FormatMode::Check),
+                ),
+                Err(parse_error) => {
+                    tracing::error!("Formatting failed for '{}': {}.", file.name, parse_error);
+
+                    Ok(false)
+                }
             }
-
-            let formatter = Formatter::new(&interner, context.php_version, context.settings);
-            let formatted_content = formatter.format(&file, &program);
-
-            utils::apply_update(
-                &context.change_log,
-                &file,
-                formatted_content,
-                matches!(context.mode, FormatMode::DryRun),
-                matches!(context.mode, FormatMode::Check),
-            )
         },
     )
 }

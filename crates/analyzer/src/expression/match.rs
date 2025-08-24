@@ -4,6 +4,7 @@ use std::rc::Rc;
 use ahash::HashSet;
 
 use mago_algebra::saturate_clauses;
+use mago_atom::atom;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::combine_optional_union_types;
 use mago_codex::ttype::combine_union_types;
@@ -30,11 +31,11 @@ use crate::formula::negate_or_synthesize;
 use crate::reconciler::reconcile_keyed_types;
 use crate::utils::expression::get_expression_id;
 
-impl Analyzable for Match {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Match<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         MatchAnalyzer::new(self, context, block_context, artifacts).analyze()
@@ -48,21 +49,21 @@ enum ArmExecutionStatus {
     Conditional,
 }
 
-struct MatchAnalyzer<'s, 'a, 'b> {
-    stmt: &'s Match,
-    context: &'b mut Context<'a>,
-    block_context: &'b mut BlockContext<'a>,
-    artifacts: &'b mut AnalysisArtifacts,
+struct MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
+    stmt: &'ast Match<'arena>,
+    context: &'anlyz mut Context<'ctx, 'arena>,
+    block_context: &'anlyz mut BlockContext<'ctx>,
+    artifacts: &'anlyz mut AnalysisArtifacts,
 }
 
-impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
+impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
     const SYNTHETIC_MATCH_VAR_PREFIX: &'static str = "$-tmp-match-";
 
     fn new(
-        stmt: &'s Match,
-        context: &'b mut Context<'a>,
-        block_context: &'b mut BlockContext<'a>,
-        artifacts: &'b mut AnalysisArtifacts,
+        stmt: &'ast Match<'arena>,
+        context: &'anlyz mut Context<'ctx, 'arena>,
+        block_context: &'anlyz mut BlockContext<'ctx>,
+        artifacts: &'anlyz mut AnalysisArtifacts,
     ) -> Self {
         Self { stmt, context, block_context, artifacts }
     }
@@ -119,7 +120,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
         let (is_synthetic, subject_id, subject_for_conditions) = self.get_subject_info(&subject_type);
 
         let mut arm_body_types: Vec<Rc<TUnion>> = Vec::new();
-        let mut arm_exit_contexts: Vec<BlockContext<'a>> = Vec::new();
+        let mut arm_exit_contexts: Vec<BlockContext<'ctx>> = Vec::new();
         let mut running_else_context = self.block_context.clone();
         let last_expression_arm_index = expression_arms.len().saturating_sub(1);
         let mut previous_arms_executed = ArmExecutionStatus::Never;
@@ -153,7 +154,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
             if !reconcilable_else_types.is_empty() {
                 reconcile_keyed_types(
-                    &mut self.context.get_reconciliation_context(),
+                    self.context,
                     &reconcilable_else_types,
                     Default::default(),
                     &mut running_else_context,
@@ -197,13 +198,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
         }
 
         let final_type = arm_body_types.into_iter().reduce(|acc, item| {
-            Rc::new(combine_union_types(
-                acc.as_ref(),
-                item.as_ref(),
-                self.context.codebase,
-                self.context.interner,
-                false,
-            ))
+            Rc::new(combine_union_types(acc.as_ref(), item.as_ref(), self.context.codebase, false))
         });
 
         self.artifacts.set_rc_expression_type(self.stmt, final_type.unwrap_or_else(|| Rc::new(get_mixed())));
@@ -211,33 +206,32 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
         Ok(())
     }
 
-    fn get_subject_info(&mut self, subject_type: &Rc<TUnion>) -> (bool, String, Expression) {
+    fn get_subject_info(&mut self, subject_type: &Rc<TUnion>) -> (bool, String, Expression<'arena>) {
         if let Some(id) = get_expression_id(
-            self.stmt.expression.as_ref(),
+            self.stmt.expression,
             self.block_context.scope.get_class_like_name(),
             self.context.resolved_names,
-            self.context.interner,
             Some(self.context.codebase),
         ) {
-            (false, id, self.stmt.expression.as_ref().clone())
+            (false, id, self.stmt.expression.clone())
         } else {
             let subject_id =
                 format!("{}{}", Self::SYNTHETIC_MATCH_VAR_PREFIX, self.stmt.expression.span().start.offset);
             self.block_context.locals.insert(subject_id.clone(), subject_type.clone());
             let subject_for_conditions =
-                new_synthetic_variable(self.context.interner, &subject_id, self.stmt.expression.span());
+                new_synthetic_variable(self.context.arena, &subject_id, self.stmt.expression.span());
             (true, subject_id, subject_for_conditions)
         }
     }
 
     fn analyze_expression_arm(
         &mut self,
-        subject_expr: &Expression,
+        subject_expr: &Expression<'arena>,
         subject_id: &str,
-        expression_arm: &'s MatchExpressionArm,
-        running_else_context: &mut BlockContext<'a>,
+        expression_arm: &MatchExpressionArm<'arena>,
+        running_else_context: &mut BlockContext<'ctx>,
         arm_body_types: &mut Vec<Rc<TUnion>>,
-        arm_exit_contexts: &mut Vec<BlockContext<'a>>,
+        arm_exit_contexts: &mut Vec<BlockContext<'ctx>>,
         is_last: bool,
     ) -> Result<ArmExecutionStatus, AnalysisError> {
         let subject_type = running_else_context.locals.get(subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
@@ -251,6 +245,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
         }
 
         let arm_condition = new_synthetic_disjunctive_identity(
+            self.context.arena,
             subject_expr,
             expression_arm.conditions.get(0).unwrap(),
             expression_arm.conditions.iter().skip(1).collect(),
@@ -308,7 +303,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
         if !reconcilable_types.is_empty() {
             reconcile_keyed_types(
-                &mut self.context.get_reconciliation_context(),
+                self.context,
                 &reconcilable_types,
                 active_types,
                 &mut arm_body_context,
@@ -348,10 +343,10 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
     fn analyze_default_arm(
         &mut self,
         subject_id: &str,
-        default_arm: &'s MatchDefaultArm,
-        running_else_context: &mut BlockContext<'a>,
+        default_arm: &'ast MatchDefaultArm<'arena>,
+        running_else_context: &mut BlockContext<'ctx>,
         arm_body_types: &mut Vec<Rc<TUnion>>,
-        arm_exit_contexts: &mut Vec<BlockContext<'a>>,
+        arm_exit_contexts: &mut Vec<BlockContext<'ctx>>,
         previous_arms_executed: ArmExecutionStatus,
     ) -> Result<(), AnalysisError> {
         if previous_arms_executed == ArmExecutionStatus::Never {
@@ -381,21 +376,20 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
     fn set_unhandled_match_error(
         &mut self,
-        block_context: Option<&mut BlockContext<'a>>,
+        block_context: Option<&mut BlockContext<'ctx>>,
         span: Span,
         always_throws: bool,
     ) {
         let block_context = block_context.unwrap_or(self.block_context);
 
-        let error_name = self.context.interner.intern("UnhandledMatchError");
-        block_context.possibly_thrown_exceptions.entry(error_name).or_default().insert(span);
+        block_context.possibly_thrown_exceptions.entry(atom("UnhandledMatchError")).or_default().insert(span);
 
         if always_throws {
             block_context.has_returned = true;
         }
     }
 
-    fn merge_match_contexts(&mut self, arm_exit_contexts: &[BlockContext<'a>]) {
+    fn merge_match_contexts(&mut self, arm_exit_contexts: &[BlockContext<'ctx>]) {
         let reachable_contexts: Vec<_> = arm_exit_contexts.iter().filter(|c| !c.has_returned).collect();
 
         if reachable_contexts.is_empty() {
@@ -417,12 +411,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
 
             for arm_context in &reachable_contexts {
                 let arm_type = arm_context.locals.get(&var_id).map(|rc| rc.as_ref());
-                final_type = Some(combine_optional_union_types(
-                    final_type.as_ref(),
-                    arm_type,
-                    self.context.codebase,
-                    self.context.interner,
-                ));
+                final_type = Some(combine_optional_union_types(final_type.as_ref(), arm_type, self.context.codebase));
             }
 
             if let Some(final_type) = final_type {
@@ -527,11 +516,11 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
             IssueCode::MatchNotExhaustive,
             Issue::error(format!(
                 "Non-exhaustive `match` expression: subject of type `{}` is not fully handled.",
-                subject_type.get_id(Some(self.context.interner))
+                subject_type.get_id()
             ))
             .with_annotation(Annotation::primary(self.stmt.expression.span()).with_message(format!(
                 "Unhandled portion of subject: `{}`",
-                unhandled_type.get_id(Some(self.context.interner))
+                unhandled_type.get_id()
             )))
             .with_annotation(
                 Annotation::secondary(self.stmt.span()).with_message(
@@ -543,7 +532,7 @@ impl<'s, 'a, 'b> MatchAnalyzer<'s, 'a, 'b> {
             )
             .with_help(format!(
                 "Add conditional arms to cover type(s) `{}` or include a `default` arm to handle all other possibilities.",
-                unhandled_type.get_id(Some(self.context.interner))
+                unhandled_type.get_id()
             )),
         );
     }

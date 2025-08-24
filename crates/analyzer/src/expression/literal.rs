@@ -1,3 +1,5 @@
+use mago_atom::atom;
+use mago_codex::ttype::get_empty_string;
 use mago_codex::ttype::get_false;
 use mago_codex::ttype::get_int_or_float;
 use mago_codex::ttype::get_literal_float;
@@ -14,22 +16,24 @@ use crate::context::Context;
 use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 
-impl Analyzable for Literal {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        _block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Literal<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        _context: &mut Context<'ctx, 'arena>,
+        _block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         artifacts.set_expression_type(
             &self,
             match self {
-                Literal::String(literal_string) => match literal_string.value.as_deref() {
-                    Some(value) => get_literal_string(value.to_owned()),
+                Literal::String(literal_string) => match literal_string.value {
+                    Some(value) => get_literal_string(atom(value)),
                     None => {
-                        let raw = context.interner.lookup(&literal_string.raw);
-
-                        if raw.len() >= 3 { get_non_empty_string() } else { get_literal_string(String::new()) }
+                        if literal_string.raw.len() >= 3 {
+                            get_non_empty_string()
+                        } else {
+                            get_empty_string()
+                        }
                     }
                 },
                 Literal::Integer(literal_integer) => match literal_integer.value {

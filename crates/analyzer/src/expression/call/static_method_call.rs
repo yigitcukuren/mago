@@ -15,24 +15,23 @@ use crate::invocation::InvocationTarget;
 use crate::invocation::MethodTargetContext;
 use crate::resolver::static_method::resolve_static_method_targets;
 
-impl Analyzable for StaticMethodCall {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for StaticMethodCall<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let method_resolution =
-            resolve_static_method_targets(context, block_context, artifacts, &self.class, &self.method)?;
+            resolve_static_method_targets(context, block_context, artifacts, self.class, &self.method)?;
 
         let mut invocation_targets = vec![];
         for resolved_method in method_resolution.resolved_methods {
-            let metadata = get_class_like(context.codebase, context.interner, &resolved_method.classname)
+            let metadata = get_class_like(context.codebase, &resolved_method.classname)
                 .expect("class-like metadata should exist for resolved method");
 
-            let method_metadata =
-                get_method_by_id(context.codebase, context.interner, &resolved_method.method_identifier)
-                    .expect("method metadata should exist for resolved method");
+            let method_metadata = get_method_by_id(context.codebase, &resolved_method.method_identifier)
+                .expect("method metadata should exist for resolved method");
 
             let method_target_context = MethodTargetContext {
                 declaring_method_id: Some(resolved_method.method_identifier),

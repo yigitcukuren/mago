@@ -3,6 +3,9 @@ use std::borrow::Cow;
 use ahash::HashMap;
 use itertools::Itertools;
 
+use mago_atom::Atom;
+use mago_atom::AtomMap;
+use mago_atom::concat_atom;
 use mago_codex::get_class_like;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::ttype::atomic::TAtomic;
@@ -13,7 +16,6 @@ use mago_codex::ttype::template::TemplateResult;
 use mago_codex::ttype::template::inferred_type_replacer;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::*;
-use mago_interner::StringIdentifier;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_span::HasSpan;
@@ -49,25 +51,22 @@ use crate::invocation::template_result::refine_template_result_for_function_like
 /// * `invocation` - The invocation being analyzed.
 /// * `calling_class_like` - Optional info about the class context if called via `parent::` etc.
 /// * `template_result` - Stores inferred template types; assumed empty initially, populated during analysis.
-pub fn analyze_invocation<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub fn analyze_invocation<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invocation: &Invocation<'_>,
-    calling_class_like: Option<(StringIdentifier, Option<&TAtomic>)>,
+    invocation: &Invocation<'ctx, 'ast, 'arena>,
+    calling_class_like: Option<(Atom, Option<&TAtomic>)>,
     template_result: &mut TemplateResult,
-    parameter_types: &mut HashMap<StringIdentifier, TUnion>,
+    parameter_types: &mut AtomMap<TUnion>,
 ) -> Result<(), AnalysisError> {
-    fn get_parameter_of_argument<'r>(
-        context: &Context<'_>,
-        parameters: &[InvocationTargetParameter<'r>],
-        argument: &InvocationArgument<'_>,
+    fn get_parameter_of_argument<'invocation, 'ast, 'arena>(
+        parameters: &[InvocationTargetParameter<'invocation>],
+        argument: &InvocationArgument<'ast, 'arena>,
         mut argument_offset: usize,
-    ) -> Option<(usize, InvocationTargetParameter<'r>)> {
+    ) -> Option<(usize, InvocationTargetParameter<'invocation>)> {
         if let Some(named_argument) = argument.get_named_argument() {
-            let argument_name_str = context.interner.lookup(&named_argument.name.value);
-            let argument_variable_name_str = format!("${argument_name_str}");
-            let argument_variable_name = context.interner.intern(&argument_variable_name_str);
+            let argument_variable_name = concat_atom!("$", named_argument.name.value);
 
             let named_offset = parameters.iter().position(|parameter| {
                 let Some(parameter_name) = parameter.get_name() else {
@@ -95,9 +94,9 @@ pub fn analyze_invocation<'a>(
     let parameter_refs = invocation.target.get_parameters();
     let mut analyzed_argument_types: HashMap<usize, (TUnion, Span)> = HashMap::default();
 
-    let mut non_closure_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
-    let mut closure_arguments: Vec<(usize, InvocationArgument<'_>)> = Vec::new();
-    let mut unpacked_arguments: Vec<InvocationArgument<'_>> = Vec::new();
+    let mut non_closure_arguments: Vec<(usize, InvocationArgument<'ast, 'arena>)> = Vec::new();
+    let mut closure_arguments: Vec<(usize, InvocationArgument<'ast, 'arena>)> = Vec::new();
+    let mut unpacked_arguments: Vec<InvocationArgument<'ast, 'arena>> = Vec::new();
     for (offset, argument) in invocation.arguments_source.get_arguments().into_iter().enumerate() {
         if argument.is_unpacked() {
             unpacked_arguments.push(argument);
@@ -108,15 +107,14 @@ pub fn analyze_invocation<'a>(
         }
     }
 
-    let calling_class_like_metadata =
-        calling_class_like.and_then(|(id, _)| get_class_like(context.codebase, context.interner, &id));
+    let calling_class_like_metadata = calling_class_like.and_then(|(id, _)| get_class_like(context.codebase, &id));
     let base_class_metadata =
         invocation.target.get_method_context().map(|ctx| ctx.class_like_metadata).or(calling_class_like_metadata);
     let method_call_context = invocation.target.get_method_context();
 
     for (argument_offset, argument) in &non_closure_arguments {
         let argument_expression = argument.value();
-        let parameter = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
+        let parameter = get_parameter_of_argument(&parameter_refs, argument, *argument_offset);
 
         analyze_and_store_argument_type(
             context,
@@ -157,7 +155,7 @@ pub fn analyze_invocation<'a>(
 
     for (argument_offset, argument) in &closure_arguments {
         let argument_expression = argument.value();
-        let parameter = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
+        let parameter = get_parameter_of_argument(&parameter_refs, argument, *argument_offset);
         let mut parameter_type_had_template_types = false;
         let parameter_type = if let Some((_, parameter_ref)) = parameter {
             let base_parameter_type = get_parameter_type(
@@ -171,12 +169,7 @@ pub fn analyze_invocation<'a>(
             if base_parameter_type.has_template_types() {
                 parameter_type_had_template_types = true;
 
-                Some(inferred_type_replacer::replace(
-                    &base_parameter_type,
-                    template_result,
-                    context.codebase,
-                    context.interner,
-                ))
+                Some(inferred_type_replacer::replace(&base_parameter_type, template_result, context.codebase))
             } else {
                 Some(base_parameter_type)
             }
@@ -229,7 +222,7 @@ pub fn analyze_invocation<'a>(
     let mut assigned_parameters_by_position = HashMap::default();
 
     let target_kind_str = invocation.target.guess_kind();
-    let target_name_str = invocation.target.guess_name(context.interner);
+    let target_name_str = invocation.target.guess_name();
     let mut has_too_many_arguments = false;
     let mut last_argument_offset: isize = -1;
     for (argument_offset, argument) in
@@ -241,7 +234,7 @@ pub fn analyze_invocation<'a>(
             .cloned()
             .unwrap_or_else(|| (get_mixed(), argument_expression.span()));
 
-        let parameter_ref = get_parameter_of_argument(context, &parameter_refs, argument, *argument_offset);
+        let parameter_ref = get_parameter_of_argument(&parameter_refs, argument, *argument_offset);
         if let Some((parameter_offset, parameter_ref)) = parameter_ref {
             if let Some(parameter_name) = parameter_ref.get_name() {
                 parameter_types.insert(parameter_name.0, argument_value_type.clone());
@@ -253,9 +246,7 @@ pub fn analyze_invocation<'a>(
                         IssueCode::DuplicateNamedArgument,
                         Issue::error(format!(
                             "Duplicate named argument `${}` in call to {} `{}`.",
-                            context.interner.lookup(&named_argument.name.value),
-                            target_kind_str,
-                            target_name_str
+                            named_argument.name.value, target_kind_str, target_name_str
                         ))
                         .with_annotation(
                             Annotation::primary(named_argument.name.span()).with_message("Duplicate argument name"),
@@ -273,7 +264,7 @@ pub fn analyze_invocation<'a>(
                                 IssueCode::NamedArgumentOverridesPositional,
                                 Issue::error(format!(
                                     "Named argument `${}` for {} `{}` targets a parameter already provided positionally.",
-                                    context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
+                                    named_argument.name.value, target_kind_str, target_name_str
                                 ))
                                 .with_annotation(Annotation::primary(named_argument.name.span()).with_message("This named argument"))
                                 .with_annotation(Annotation::secondary(*previous_span).with_message("Parameter already filled by positional argument here"))
@@ -284,7 +275,7 @@ pub fn analyze_invocation<'a>(
                                 IssueCode::NamedArgumentAfterPositional,
                                  Issue::warning(format!(
                                     "Named argument `${}` for {} `{}` targets a variadic parameter that has already captured positional arguments.",
-                                    context.interner.lookup(&named_argument.name.value), target_kind_str, target_name_str
+                                    named_argument.name.value, target_kind_str, target_name_str
                                 ))
                                 .with_annotation(Annotation::primary(named_argument.name.span()).with_message("Named argument for variadic parameter"))
                                 .with_annotation(Annotation::secondary(*previous_span).with_message("Positional arguments already captured by variadic here"))
@@ -309,12 +300,7 @@ pub fn analyze_invocation<'a>(
             );
 
             let final_parameter_type = if template_result.has_template_types() {
-                inferred_type_replacer::replace(
-                    &base_parameter_type,
-                    template_result,
-                    context.codebase,
-                    context.interner,
-                )
+                inferred_type_replacer::replace(&base_parameter_type, template_result, context.codebase)
             } else {
                 base_parameter_type
             };
@@ -328,7 +314,7 @@ pub fn analyze_invocation<'a>(
                 &invocation.target,
             );
         } else if let Some(named_argument) = argument.get_named_argument() {
-            let argument_name = context.interner.lookup(&named_argument.name.value);
+            let argument_name = named_argument.name.value;
 
             context.collector.report_with_code(
                 IssueCode::InvalidNamedArgument,
@@ -351,7 +337,7 @@ pub fn analyze_invocation<'a>(
                         parameter_refs
                             .iter()
                             .filter_map(|p| p.get_name())
-                            .map(|n| context.interner.lookup(&n.0).trim_start_matches('$'))
+                            .map(|n| n.0.trim_start_matches('$'))
                             .collect::<Vec<_>>()
                             .join("`, `")
                     )
@@ -424,12 +410,8 @@ pub fn analyze_invocation<'a>(
                     calling_class_like.and_then(|(_, atomic)| atomic),
                 );
 
-                let final_variadic_parameter_type = inferred_type_replacer::replace(
-                    &base_variadic_parameter_type,
-                    template_result,
-                    context.codebase,
-                    context.interner,
-                );
+                let final_variadic_parameter_type =
+                    inferred_type_replacer::replace(&base_variadic_parameter_type, template_result, context.codebase);
 
                 for unpacked_argument in unpacked_arguments {
                     let argument_expression = unpacked_argument.value();
@@ -481,7 +463,7 @@ pub fn analyze_invocation<'a>(
                     Issue::error(format!(
                         "Cannot unpack arguments into non-variadic {} `{}`.",
                         invocation.target.guess_kind(),
-                        invocation.target.guess_name(context.interner),
+                        invocation.target.guess_name(),
                     ))
                     .with_annotation(
                         Annotation::primary(unpacked_arguments[0].span())
@@ -497,7 +479,7 @@ pub fn analyze_invocation<'a>(
                 Issue::error(format!(
                     "Cannot unpack arguments into {} `{}` which expects no arguments.",
                     invocation.target.guess_kind(),
-                    invocation.target.guess_name(context.interner)
+                    invocation.target.guess_name()
                 ))
                 .with_annotation(
                     Annotation::primary(unpacked_arguments[0].span()).with_message("Unexpected argument unpacking"),
@@ -602,7 +584,7 @@ pub fn analyze_invocation<'a>(
 ///
 /// # Arguments
 ///
-/// * `context` - The analysis context, providing codebase and interner access.
+/// * `context` - The analysis context, providing codebase metadata.
 /// * `parameter_ref` - An optional reference to the parameter's definition (either `FunctionLike` or `Callable`).
 /// * `base_class_metadata` - Optional metadata for the class where the method is *defined*. Used for resolving `self::` and `parent::`.
 /// * `calling_class_like_metadata` - Optional metadata for the class context from which the call is made. Used for resolving `static::`.
@@ -611,11 +593,11 @@ pub fn analyze_invocation<'a>(
 /// # Returns
 ///
 /// A `TUnion` representing the resolved type of the parameter in the context of the call.
-fn get_parameter_type(
-    context: &Context<'_>,
+fn get_parameter_type<'ctx, 'arena>(
+    context: &Context<'ctx, 'arena>,
     invocation_target_parameter: Option<InvocationTargetParameter<'_>>,
-    base_class_metadata: Option<&ClassLikeMetadata>,
-    calling_class_like_metadata: Option<&ClassLikeMetadata>,
+    base_class_metadata: Option<&'ctx ClassLikeMetadata>,
+    calling_class_like_metadata: Option<&'ctx ClassLikeMetadata>,
     calling_instance_type: Option<&TAtomic>,
 ) -> TUnion {
     let Some(invocation_target_parameter) = invocation_target_parameter else {
@@ -630,10 +612,9 @@ fn get_parameter_type(
 
     expander::expand_union(
         context.codebase,
-        context.interner,
         &mut resolved_parameter_type,
         &TypeExpansionOptions {
-            self_class: base_class_metadata.map(|meta| &meta.name),
+            self_class: base_class_metadata.map(|meta| meta.name),
             static_class_type: match calling_class_like_metadata {
                 Some(calling_meta) => {
                     if let Some(TAtomic::Object(instance_type)) = calling_instance_type {
@@ -644,7 +625,7 @@ fn get_parameter_type(
                 }
                 None => StaticClassType::None,
             },
-            parent_class: base_class_metadata.and_then(|meta| meta.direct_parent_class.as_ref()),
+            parent_class: base_class_metadata.and_then(|meta| meta.direct_parent_class),
             function_is_final: calling_class_like_metadata.is_some_and(|meta| meta.flags.is_final()),
             ..Default::default()
         },

@@ -1,6 +1,8 @@
-use mago_interner::ThreadedInterner;
 use serde::Deserialize;
 use serde::Serialize;
+
+use mago_atom::Atom;
+use mago_atom::atom;
 
 use crate::ttype::TType;
 
@@ -46,11 +48,11 @@ impl TType for TResource {
         false
     }
 
-    fn get_id(&self, _interner: Option<&ThreadedInterner>) -> String {
+    fn get_id(&self) -> Atom {
         match self.closed {
-            Some(true) => "closed-resource".to_string(),
-            Some(false) => "open-resource".to_string(),
-            None => "resource".to_string(),
+            Some(true) => atom("closed-resource"),
+            Some(false) => atom("open-resource"),
+            None => atom("resource"),
         }
     }
 }

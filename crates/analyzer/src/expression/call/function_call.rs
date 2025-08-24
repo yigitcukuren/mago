@@ -1,3 +1,4 @@
+use mago_atom::atom;
 use mago_codex::identifier::function_like::FunctionLikeIdentifier;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::callable::TCallable;
@@ -19,16 +20,16 @@ use crate::expression::call::get_function_like_target;
 use crate::invocation::InvocationArgumentsSource;
 use crate::invocation::InvocationTarget;
 
-impl Analyzable for FunctionCall {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for FunctionCall<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let mut template_result = TemplateResult::default();
         let (invocation_targets, encountered_invalid_targets) =
-            resolve_targets(context, block_context, artifacts, &self.function, &mut template_result)?;
+            resolve_targets(context, block_context, artifacts, self.function, &mut template_result)?;
 
         analyze_invocation_targets(
             context,
@@ -45,20 +46,20 @@ impl Analyzable for FunctionCall {
     }
 }
 
-pub(super) fn resolve_targets<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub(super) fn resolve_targets<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    expression: &Expression,
+    expression: &Expression<'arena>,
     template_result: &mut TemplateResult,
-) -> Result<(Vec<InvocationTarget<'a>>, bool), AnalysisError> {
+) -> Result<(Vec<InvocationTarget<'ctx>>, bool), AnalysisError> {
     if let Expression::Identifier(function_name) = expression {
-        let name = context.resolved_names.get(function_name);
-        let unqualified_name = function_name.value();
+        let name = atom(context.resolved_names.get(function_name));
+        let unqualified_name = atom(function_name.value());
 
-        let identifier = FunctionLikeIdentifier::Function(*name);
+        let identifier = FunctionLikeIdentifier::Function(name);
         let alternative = if function_name.is_local() && unqualified_name != name {
-            Some(FunctionLikeIdentifier::Function(*unqualified_name))
+            Some(FunctionLikeIdentifier::Function(unqualified_name))
         } else {
             None
         };
@@ -80,9 +81,7 @@ pub(super) fn resolve_targets<'a>(
     let mut encountered_invalid_targets = false;
     let mut targets = vec![];
     for atomic in expression_type.types.as_ref() {
-        if let Some(callable) =
-            cast_atomic_to_callable(atomic, context.codebase, context.interner, Some(template_result))
-        {
+        if let Some(callable) = cast_atomic_to_callable(atomic, context.codebase, Some(template_result)) {
             match callable.as_ref() {
                 TCallable::Signature(callable_signature) => {
                     if let Some(id) = callable_signature.get_source() {
@@ -108,7 +107,7 @@ pub(super) fn resolve_targets<'a>(
                 }
             };
         } else {
-            let type_name = atomic.get_id(Some(context.interner));
+            let type_name = atomic.get_id();
 
             context.collector.report_with_code(
                 IssueCode::InvalidCallable,

@@ -1,8 +1,10 @@
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ahash::HashSet;
 
+use mago_atom::AtomSet;
+use mago_atom::atom;
+use mago_atom::empty_atom;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
@@ -47,11 +49,11 @@ use crate::error::AnalysisError;
 ///    'key2' => 'value2',
 /// ];
 /// ```
-impl Analyzable for Array {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Array<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         analyze_array_elements(context, block_context, artifacts, self.span(), self.elements.as_slice())
@@ -65,11 +67,11 @@ impl Analyzable for Array {
 /// ```php
 /// $array = array('key1' => 'value1', 'key2' => 'value2');
 /// ```
-impl Analyzable for LegacyArray {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for LegacyArray<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         analyze_array_elements(context, block_context, artifacts, self.span(), self.elements.as_slice())
@@ -81,7 +83,7 @@ struct ArrayCreationInfo {
     item_key_atomic_types: Vec<TAtomic>,
     item_value_atomic_types: Vec<TAtomic>,
     property_types: BTreeMap<ArrayKey, (bool, TUnion)>,
-    class_strings: HashSet<String>,
+    class_strings: AtomSet,
     can_create_objectlike: bool,
     array_keys: HashSet<ArrayKey>,
     int_offset: i64,
@@ -89,12 +91,12 @@ struct ArrayCreationInfo {
     can_be_empty: bool,
 }
 
-fn analyze_array_elements<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn analyze_array_elements<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
     expression_span: Span,
-    elements: &[ArrayElement],
+    elements: &[ArrayElement<'arena>],
 ) -> Result<(), AnalysisError> {
     if elements.is_empty() {
         artifacts.set_expression_type(&expression_span, get_empty_keyed_array());
@@ -106,7 +108,7 @@ fn analyze_array_elements<'a>(
         item_key_atomic_types: Vec::new(),
         item_value_atomic_types: Vec::new(),
         property_types: BTreeMap::default(),
-        class_strings: HashSet::default(),
+        class_strings: AtomSet::default(),
         can_create_objectlike: true,
         array_keys: HashSet::default(),
         int_offset: -1,
@@ -123,10 +125,10 @@ fn analyze_array_elements<'a>(
                 block_context.inside_general_use = was_inside_general_use;
 
                 let (item_key_value, key_type) = artifacts
-                    .get_expression_type(key_value_array_element.key.as_ref())
+                    .get_expression_type(key_value_array_element.key)
                     .map(|item_key_type| {
                         let key_type = if item_key_type.is_null() {
-                            get_literal_string("".to_string())
+                            get_literal_string(empty_atom())
                         } else if item_key_type.is_true() {
                             get_literal_int(1)
                         } else if item_key_type.is_false() {
@@ -136,7 +138,7 @@ fn analyze_array_elements<'a>(
                         } else if item_key_type.is_float() {
                             get_int()
                         } else if !item_key_type.is_always_array_key(true) {
-                            let item_key_type_id = item_key_type.get_id(Some(context.interner));
+                            let item_key_type_id = item_key_type.get_id();
 
                             context.collector.report_with_code(
                                 IssueCode::InvalidArrayElementKey,
@@ -163,7 +165,7 @@ fn analyze_array_elements<'a>(
 
                                 Some(match string_to_int {
                                     Some(integer) => ArrayKey::Integer(integer),
-                                    None => ArrayKey::String(Cow::Owned(item_key_literal_type.to_owned())),
+                                    None => ArrayKey::String(atom(item_key_literal_type)),
                                 })
                             } else if let Some(literal_integer) = key_type.get_single_literal_int_value() {
                                 // The most recent integer key becomes the next available integer key
@@ -171,11 +173,9 @@ fn analyze_array_elements<'a>(
 
                                 Some(ArrayKey::Integer(literal_integer))
                             } else if let Some(class_string) = key_type.get_single_class_string_value() {
-                                let class_string = context.interner.lookup(&class_string).to_string();
+                                array_creation_info.class_strings.insert(class_string);
 
-                                array_creation_info.class_strings.insert(class_string.clone());
-
-                                Some(ArrayKey::String(Cow::Owned(class_string)))
+                                Some(ArrayKey::String(class_string))
                             } else {
                                 None
                             };
@@ -184,7 +184,7 @@ fn analyze_array_elements<'a>(
                     })
                     .unwrap_or((None, get_mixed()));
 
-                (item_key_value, key_type, false, key_value_array_element.value.as_ref())
+                (item_key_value, key_type, false, key_value_array_element.value)
             }
             ArrayElement::Value(value_array_element) => {
                 // check if we have reached PHP_INT_MAX
@@ -218,7 +218,7 @@ fn analyze_array_elements<'a>(
                     Some(ArrayKey::Integer(array_creation_info.int_offset)),
                     get_literal_int(array_creation_info.int_offset),
                     true,
-                    value_array_element.value.as_ref(),
+                    value_array_element.value,
                 )
             }
             ArrayElement::Variadic(variadic_array_element) => {
@@ -273,7 +273,7 @@ fn analyze_array_elements<'a>(
         array_creation_info.can_be_empty = false;
         array_creation_info.is_list &= item_is_list_item;
 
-        if let Some(item_key_value) = item_key_value.clone() {
+        if let Some(item_key_value) = item_key_value {
             if array_creation_info.array_keys.contains(&item_key_value) {
                 context.collector.report_with_code(
                     IssueCode::DuplicateArrayKey,
@@ -323,23 +323,13 @@ fn analyze_array_elements<'a>(
     }
 
     let item_key_type = if !array_creation_info.item_key_atomic_types.is_empty() {
-        Some(TUnion::from_vec(combine(
-            array_creation_info.item_key_atomic_types,
-            context.codebase,
-            context.interner,
-            false,
-        )))
+        Some(TUnion::from_vec(combine(array_creation_info.item_key_atomic_types, context.codebase, false)))
     } else {
         None
     };
 
     let item_value_type = if !array_creation_info.item_value_atomic_types.is_empty() {
-        Some(TUnion::from_vec(combine(
-            array_creation_info.item_value_atomic_types,
-            context.codebase,
-            context.interner,
-            false,
-        )))
+        Some(TUnion::from_vec(combine(array_creation_info.item_value_atomic_types, context.codebase, false)))
     } else {
         None
     };
@@ -418,10 +408,10 @@ fn get_numeric_key_from_string(key: &str) -> Option<i64> {
     key.parse::<i64>().ok()
 }
 
-fn handle_variadic_array_element(
-    context: &mut Context<'_>,
+fn handle_variadic_array_element<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     array_creation_info: &mut ArrayCreationInfo,
-    variadic_array_element: &VariadicArrayElement,
+    variadic_array_element: &'ast VariadicArrayElement<'arena>,
     variadic_array_element_type: &TUnion,
 ) {
     let mut all_non_empty = true;
@@ -471,14 +461,14 @@ fn handle_variadic_array_element(
                                 }
                                 ArrayKey::String(string_key) => {
                                     array_creation_info.is_list = false;
-                                    array_creation_info.item_key_atomic_types.push(TAtomic::Scalar(TScalar::String(
-                                        TString::known_literal(string_key.clone()),
-                                    )));
-                                    ArrayKey::String(string_key.clone())
+                                    array_creation_info
+                                        .item_key_atomic_types
+                                        .push(TAtomic::Scalar(TScalar::String(TString::known_literal(*string_key))));
+                                    ArrayKey::String(*string_key)
                                 }
                             };
 
-                            array_creation_info.array_keys.insert(new_offset_key.clone());
+                            array_creation_info.array_keys.insert(new_offset_key);
                             array_creation_info.property_types.insert(new_offset_key, (false, value_type.clone()));
                         }
                     }
@@ -532,7 +522,7 @@ fn handle_variadic_array_element(
 
                             array_creation_info.int_offset += 1;
                             let new_key = ArrayKey::Integer(array_creation_info.int_offset);
-                            array_creation_info.array_keys.insert(new_key.clone());
+                            array_creation_info.array_keys.insert(new_key);
                             array_creation_info
                                 .item_key_atomic_types
                                 .push(TAtomic::Scalar(TScalar::literal_int(array_creation_info.int_offset)));
@@ -584,7 +574,6 @@ fn handle_variadic_array_element(
 
             if !is_contained_by(
                 context.codebase,
-                context.interner,
                 key_type,
                 &get_arraykey(),
                 key_type.ignore_nullable_issues,
@@ -617,7 +606,6 @@ fn handle_variadic_array_element(
 
                 if !is_contained_by(
                     context.codebase,
-                    context.interner,
                     &k.to_union(),
                     key_type,
                     key_type.ignore_nullable_issues,
@@ -628,7 +616,7 @@ fn handle_variadic_array_element(
                     continue;
                 }
 
-                *v = (false, combine_union_types(&v.1, value_type, context.codebase, context.interner, false))
+                *v = (false, combine_union_types(&v.1, value_type, context.codebase, false))
             }
 
             array_creation_info.item_key_atomic_types.extend(key_type.types.clone().into_owned());

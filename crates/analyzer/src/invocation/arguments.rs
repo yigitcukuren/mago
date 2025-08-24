@@ -43,12 +43,12 @@ use crate::invocation::InvocationTarget;
 ///
 /// * `Ok(())` if analysis completes successfully.
 /// * `Err(AnalysisError)` if an error occurs during the analysis of the argument's value.
-pub fn analyze_and_store_argument_type<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub fn analyze_and_store_argument_type<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    invocation_target: &InvocationTarget<'_>,
-    argument_expression: &Expression,
+    invocation_target: &InvocationTarget<'ctx>,
+    argument_expression: &Expression<'arena>,
     argument_offset: usize,
     analyzed_argument_types: &mut HashMap<usize, (TUnion, Span)>,
     referenced_parameter: bool,
@@ -106,7 +106,7 @@ pub fn analyze_and_store_argument_type<'a>(
 
         if !is_referenceable {
             let target_kind_str = invocation_target.guess_kind();
-            let target_name_str = invocation_target.guess_name(context.interner);
+            let target_name_str = invocation_target.guess_name();
 
             context.collector.report_with_code(
                 IssueCode::InvalidPassByReference,
@@ -142,16 +142,16 @@ pub fn analyze_and_store_argument_type<'a>(
 /// (e.g., invalid type, possibly invalid, mixed argument, less specific argument)
 /// with appropriate severity and context. It also adds data flow edges from the argument
 /// sources to the parameter representation in the data flow graph.
-pub fn verify_argument_type(
-    context: &mut Context<'_>,
+pub fn verify_argument_type<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     input_type: &TUnion,
     parameter_type: &TUnion,
     argument_offset: usize,
-    input_expression: &Expression,
+    input_expression: &'ast Expression<'arena>,
     invocation_target: &InvocationTarget<'_>,
 ) {
     let target_kind_str = invocation_target.guess_kind();
-    let target_name_str = invocation_target.guess_name(context.interner);
+    let target_name_str = invocation_target.guess_name();
 
     if input_type.is_never() {
         context.collector.report_with_code(
@@ -183,8 +183,8 @@ pub fn verify_argument_type(
     let call_site = Annotation::secondary(invocation_target.span())
         .with_message(format!("Arguments to this {} are incorrect", invocation_target.guess_kind()));
 
-    let input_type_str = input_type.get_id(Some(context.interner));
-    let parameter_type_str = parameter_type.get_id(Some(context.interner));
+    let input_type_str = input_type.get_id();
+    let parameter_type_str = parameter_type.get_id();
 
     if !parameter_type.accepts_null() {
         if input_type.is_null() {
@@ -269,16 +269,8 @@ pub fn verify_argument_type(
     }
 
     let mut union_comparison_result = ComparisonResult::new();
-    let type_match_found = is_contained_by(
-        context.codebase,
-        context.interner,
-        input_type,
-        parameter_type,
-        true,
-        true,
-        false,
-        &mut union_comparison_result,
-    );
+    let type_match_found =
+        is_contained_by(context.codebase, input_type, parameter_type, true, true, false, &mut union_comparison_result);
 
     if type_match_found {
         return;
@@ -338,14 +330,8 @@ pub fn verify_argument_type(
             .with_help(format!("Provide a value that more precisely matches `{parameter_type_str}` or adjust the parameter type.")),
         );
     } else if !union_comparison_result.type_coerced.unwrap_or(false) {
-        let types_can_be_identical = can_expression_types_be_identical(
-            context.codebase,
-            context.interner,
-            input_type,
-            parameter_type,
-            false,
-            false,
-        );
+        let types_can_be_identical =
+            can_expression_types_be_identical(context.codebase, input_type, parameter_type, false, false);
 
         if types_can_be_identical {
             context.collector.report_with_code(
@@ -397,19 +383,23 @@ pub fn verify_argument_type(
 ///
 /// # Arguments
 ///
-/// * `context` - Analysis context, used for reporting issues and accessing codebase/interner.
+/// * `context` - Analysis context, used for reporting issues and accessing codebase.
 /// * `argument_value_type` - The inferred type union of the expression being unpacked.
 /// * `span` - The span of the unpacked argument expression (`...$arg`) for error reporting.
 ///
 /// # Returns
 ///
 /// A `TUnion` representing the combined type of the elements within the unpacked iterable.
-pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type: &TUnion, span: Span) -> TUnion {
+pub fn get_unpacked_argument_type<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    argument_value_type: &TUnion,
+    span: Span,
+) -> TUnion {
     let mut potential_element_types = Vec::new();
     let mut reported_an_error = false;
 
     for atomic_type in argument_value_type.types.as_ref() {
-        if let Some(value_parameter) = get_iterable_value_parameter(atomic_type, context.codebase, context.interner) {
+        if let Some(value_parameter) = get_iterable_value_parameter(atomic_type, context.codebase) {
             potential_element_types.push(value_parameter);
 
             continue;
@@ -425,7 +415,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
                         IssueCode::MixedArgument,
                         Issue::error(format!(
                             "Cannot unpack argument of type `{}` because it is not guaranteed to be iterable.",
-                            atomic_type.get_id(Some(context.interner))
+                            atomic_type.get_id()
                         ))
                         .with_annotation(Annotation::primary(span).with_message("Expected an `iterable` for unpacking"))
                         .with_note("Argument unpacking `...` requires an `iterable` (e.g., `array` or `Traversable`).")
@@ -439,7 +429,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
             }
             _ => {
                 if !reported_an_error {
-                    let type_str = atomic_type.get_id(Some(context.interner));
+                    let type_str = atomic_type.get_id();
                     context.collector.report_with_code(
                         IssueCode::InvalidArgument,
                         Issue::error(format!(
@@ -462,7 +452,7 @@ pub fn get_unpacked_argument_type(context: &mut Context<'_>, argument_value_type
 
     if let Some(mut combined_type) = potential_element_types.pop() {
         for element_type in potential_element_types {
-            combined_type = add_union_type(combined_type, &element_type, context.codebase, context.interner, false);
+            combined_type = add_union_type(combined_type, &element_type, context.codebase, false);
         }
 
         combined_type

@@ -20,11 +20,11 @@ use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::utils::expression::get_expression_id;
 
-impl Analyzable for Unset {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Unset<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         let was_inside_unset = block_context.inside_unset;
@@ -40,18 +40,11 @@ impl Analyzable for Unset {
                 value,
                 block_context.scope.get_class_like_name(),
                 context.resolved_names,
-                context.interner,
                 Some(context.codebase),
             );
 
             if let Some(value_id) = &value_id {
-                block_context.remove_variable(
-                    value_id,
-                    true,
-                    context.interner,
-                    context.codebase,
-                    &mut context.collector,
-                );
+                block_context.remove_variable(value_id, true, context);
             }
 
             'array_access: {
@@ -60,16 +53,15 @@ impl Analyzable for Unset {
                 };
 
                 let Some(array_id) = get_expression_id(
-                    &array_access.array,
+                    array_access.array,
                     block_context.scope.get_class_like_name(),
                     context.resolved_names,
-                    context.interner,
                     Some(context.codebase),
                 ) else {
                     break 'array_access;
                 };
 
-                let Some(key_type) = artifacts.get_expression_type(array_access.index.as_ref()) else {
+                let Some(key_type) = artifacts.get_expression_type(array_access.index) else {
                     break 'array_access;
                 };
 
@@ -82,7 +74,7 @@ impl Analyzable for Unset {
                 let array_key = key_type.get_single_array_key();
                 for atomic in Rc::unwrap_or_clone(array_variable).types.into_owned() {
                     if let TAtomic::Scalar(scalar) = &atomic {
-                        let scalar_str = scalar.get_id(Some(context.interner));
+                        let scalar_str = scalar.get_id();
 
                         context.collector.report_with_code(
                             IssueCode::InvalidUnset,
@@ -311,13 +303,7 @@ impl Analyzable for Unset {
                 let rc = Rc::new(TUnion::from_vec(atomics));
 
                 block_context.locals.insert(array_id.clone(), rc.clone());
-                block_context.remove_variable_from_conflicting_clauses(
-                    context.interner,
-                    context.codebase,
-                    &mut context.collector,
-                    &array_id,
-                    Some(rc.as_ref()),
-                );
+                block_context.remove_variable_from_conflicting_clauses(context, &array_id, Some(rc.as_ref()));
             };
         }
 

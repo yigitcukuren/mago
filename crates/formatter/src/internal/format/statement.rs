@@ -1,3 +1,10 @@
+use std::cmp::Ordering;
+
+use bumpalo::collections::CollectIn;
+use bumpalo::collections::Vec;
+use bumpalo::vec;
+
+use bumpalo::Bump;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
@@ -10,15 +17,21 @@ use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 
-pub fn print_statement_sequence<'a>(f: &mut FormatterState<'a>, stmts: &'a Sequence<Statement>) -> Vec<Document<'a>> {
-    let stmts = stmts.nodes.iter().collect::<Vec<_>>();
+pub fn print_statement_sequence<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    stmts: &'arena Sequence<'arena, Statement<'arena>>,
+) -> Vec<'arena, Document<'arena>> {
+    let statements = stmts.nodes.iter().collect_in::<Vec<_>>(f.arena);
 
-    print_statement_slice(f, &stmts)
+    print_statement_slice(f, statements.as_slice())
 }
 
-fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]) -> Vec<Document<'a>> {
-    let mut use_statements: Vec<&'a Use> = Vec::new();
-    let mut parts = vec![];
+fn print_statement_slice<'ctx, 'arena>(
+    f: &mut FormatterState<'ctx, 'arena>,
+    stmts: &[&'arena Statement<'arena>],
+) -> Vec<'arena, Document<'arena>> {
+    let mut use_statements: std::vec::Vec<&'arena Use<'arena>> = std::vec::Vec::new();
+    let mut parts = vec![in f.arena;];
 
     let last_statement_index = if stmts.is_empty() { None } else { stmts.len().checked_sub(1) };
     let mut i = 0;
@@ -34,7 +47,8 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
         if let Some(last_use) = use_statements.last() {
             let (should_add_line, should_add_space) = should_add_new_line_after_use(f, stmts, i, last_use);
 
-            parts.extend(print_use_statements(f, std::mem::take(&mut use_statements)));
+            parts.extend(print_use_statements(f, use_statements.as_slice()));
+            use_statements.clear();
 
             if should_add_line {
                 parts.push(Document::Line(Line::hard()));
@@ -54,11 +68,11 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
             let line = f.file.line_number(offset);
 
             if let Some(line_start_offset) = f.file.get_line_start_offset(line) {
-                let c = &f.file.contents[line_start_offset as usize..offset as usize];
+                let c = &f.source_text[line_start_offset as usize..offset as usize];
                 let ws = c.chars().take_while(|c| c.is_whitespace()).collect::<String>();
                 if !ws.is_empty() {
                     let mut j = i + 1;
-                    let mut stmts_to_format = vec![];
+                    let mut stmts_to_format = vec![in f.arena];
                     while j < stmts.len() {
                         let next_stmt = stmts[j];
                         stmts_to_format.push(next_stmt);
@@ -69,10 +83,10 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
                         j += 1;
                     }
 
-                    parts.push(Document::Group(Group::new(vec![Document::Align(Align {
+                    parts.push(Document::Group(Group::new(vec![in f.arena; Document::Align(Align {
                         alignment: f.as_str(&ws),
                         contents: {
-                            formatted_statement.extend(print_statement_slice(f, &stmts_to_format));
+                            formatted_statement.extend(print_statement_slice(f, stmts_to_format.as_slice()));
 
                             formatted_statement
                         },
@@ -91,22 +105,22 @@ fn print_statement_slice<'a>(f: &mut FormatterState<'a>, stmts: &[&'a Statement]
     }
 
     if !use_statements.is_empty() {
-        parts.extend(print_use_statements(f, use_statements));
+        parts.extend(print_use_statements(f, &use_statements));
     }
 
     parts
 }
 
 // New function to format statements with spacing and newlines
-fn format_statement_with_spacing<'a>(
-    f: &mut FormatterState<'a>,
+fn format_statement_with_spacing<'ctx, 'arena>(
+    f: &mut FormatterState<'ctx, 'arena>,
     i: usize,
-    stmt: &'a Statement,
-    stmts: &[&'a Statement],
+    stmt: &'arena Statement<'arena>,
+    stmts: &[&'arena Statement<'arena>],
     last_statement_index: Option<usize>,
     is_first_statement: bool,
-) -> Vec<Document<'a>> {
-    let mut statement_parts = vec![];
+) -> Vec<'arena, Document<'arena>> {
+    let mut statement_parts = vec![in f.arena;];
 
     let (should_add_new_line, should_add_space) = should_add_new_line_or_space_after_stmt(f, stmts, i, stmt);
 
@@ -130,6 +144,7 @@ fn format_statement_with_spacing<'a>(
         statement_parts.insert(
             0,
             Document::Array(vec![
+                in f.arena;
                 Document::Trim(Trim::Newlines),
                 Document::Line(Line::hard()),
                 Document::Line(Line::hard()),
@@ -141,7 +156,7 @@ fn format_statement_with_spacing<'a>(
 }
 
 #[inline]
-const fn should_add_empty_line_after<'a>(f: &FormatterState<'a>, stmt: &'a Statement) -> bool {
+const fn should_add_empty_line_after<'arena>(f: &FormatterState<'_, 'arena>, stmt: &'arena Statement<'arena>) -> bool {
     match stmt {
         Statement::OpeningTag(_) => f.settings.empty_line_after_opening_tag,
         Statement::Namespace(_) => f.settings.empty_line_after_namespace,
@@ -165,18 +180,18 @@ const fn should_add_empty_line_after<'a>(f: &FormatterState<'a>, stmt: &'a State
 }
 
 #[inline]
-fn should_add_empty_line_before<'a>(f: &FormatterState<'a>, stmt: &'a Statement) -> bool {
+fn should_add_empty_line_before<'arena>(f: &FormatterState<'_, 'arena>, stmt: &'arena Statement<'arena>) -> bool {
     match stmt {
         Statement::Return(_) => f.settings.empty_line_before_return,
         _ => false,
     }
 }
 
-fn should_add_new_line_or_space_after_stmt<'a>(
-    f: &mut FormatterState<'a>,
-    stmts: &[&'a Statement],
+fn should_add_new_line_or_space_after_stmt<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    stmts: &[&'arena Statement<'arena>],
     i: usize,
-    stmt: &'a Statement,
+    stmt: &'arena Statement<'arena>,
 ) -> (bool, bool) {
     if stmt.terminates_scripting() {
         return (false, false);
@@ -225,11 +240,11 @@ fn should_add_new_line_or_space_after_stmt<'a>(
     (should_add_line, should_add_space)
 }
 
-fn should_add_new_line_after_use<'a>(
-    f: &mut FormatterState<'a>,
-    stmts: &[&'a Statement],
+fn should_add_new_line_after_use<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    stmts: &[&'arena Statement<'arena>],
     i: usize,
-    last_use: &'a Use,
+    last_use: &'arena Use<'arena>,
 ) -> (bool, bool) {
     let mut should_add_space = false;
     let should_add_line = if last_use.terminator.is_closing_tag() {
@@ -247,12 +262,41 @@ fn should_add_new_line_after_use<'a>(
     (should_add_line, should_add_space)
 }
 
-fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> Vec<Document<'a>> {
+fn print_use_statements<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    stmts: &[&'arena Use<'arena>],
+) -> Vec<'arena, Document<'arena>> {
+    use std::vec::Vec;
+
+    use bumpalo::collections::Vec as BumpVec;
+
+    fn join_item_name<'arena>(arena: &'arena Bump, namespace: &[&'arena str], name: &'arena str) -> &'arena str {
+        if namespace.is_empty() {
+            return name;
+        }
+
+        let total_len = namespace.iter().map(|s| s.len()).sum::<usize>() + namespace.len();
+        let mut bytes = BumpVec::with_capacity_in(total_len, arena);
+
+        for (i, part) in namespace.iter().enumerate() {
+            bytes.extend_from_slice(part.as_bytes());
+            if i < namespace.len() {
+                // Add a separator after every part
+                bytes.push(b'\\');
+            }
+        }
+
+        bytes.extend_from_slice(name.as_bytes());
+
+        // SAFETY: We are joining valid UTF-8 slices with an ASCII separator.
+        unsafe { std::str::from_utf8_unchecked(bytes.into_bump_slice()) }
+    }
+
     let should_sort = f.settings.sort_uses;
     let should_separate = f.settings.separate_use_types;
     let should_expand = f.settings.expand_use_groups;
 
-    let mut all_expanded_items: Vec<ExpandedUseItem<'a>> = Vec::new();
+    let mut all_expanded_items: Vec<ExpandedUseItem<'arena>> = Vec::new();
     for use_stmt in stmts {
         all_expanded_items.extend(expand_use(f, use_stmt, should_expand));
     }
@@ -269,6 +313,7 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
                     }
                 }
             };
+
             let b_type_order = match b.use_type {
                 None => 0,
                 Some(ty) => {
@@ -284,23 +329,27 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
                 return a_type_order.cmp(&b_type_order);
             }
 
-            let mut a_full_name = a.namespace.join("\\");
-            if !a_full_name.is_empty() {
-                a_full_name.push('\\');
-            }
-            a_full_name.push_str(a.name);
+            let a_full_name = join_item_name(f.arena, &a.namespace, a.name);
+            let b_full_name = join_item_name(f.arena, &b.namespace, b.name);
 
-            let mut b_full_name = b.namespace.join("\\");
-            if !b_full_name.is_empty() {
-                b_full_name.push('\\');
-            }
-            b_full_name.push_str(b.name);
+            let mut a_chars = a_full_name.chars().flat_map(|c| c.to_lowercase());
+            let mut b_chars = b_full_name.chars().flat_map(|c| c.to_lowercase());
 
-            a_full_name.to_lowercase().cmp(&b_full_name.to_lowercase())
+            loop {
+                match (a_chars.next(), b_chars.next()) {
+                    (Some(ac), Some(bc)) => match ac.cmp(&bc) {
+                        Ordering::Equal => continue,
+                        other => return other,
+                    },
+                    (None, Some(_)) => return Ordering::Less,
+                    (Some(_), None) => return Ordering::Greater,
+                    (None, None) => return Ordering::Equal,
+                }
+            }
         });
     }
 
-    let mut grouped_items: Vec<Vec<ExpandedUseItem<'a>>> = Vec::new();
+    let mut grouped_items: Vec<Vec<ExpandedUseItem<'arena>>> = Vec::new();
     if should_separate {
         #[derive(PartialEq, Eq)]
         enum UseTypeDiscriminant {
@@ -308,7 +357,7 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
             Const,
         }
 
-        let mut current_group: Vec<ExpandedUseItem<'a>> = Vec::new();
+        let mut current_group: Vec<ExpandedUseItem<'arena>> = Vec::new();
         let mut current_type: Option<UseTypeDiscriminant> = None;
 
         for item in all_expanded_items {
@@ -332,7 +381,7 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
         grouped_items.push(all_expanded_items);
     }
 
-    let mut result_docs: Vec<Document<'a>> = Vec::new();
+    let mut result_docs: BumpVec<'arena, Document<'arena>> = vec![in f.arena];
     let grouped_items_count = grouped_items.len();
     for (index, group) in grouped_items.into_iter().enumerate() {
         let is_last_grouped_items = index + 1 == grouped_items_count;
@@ -342,7 +391,7 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
             let is_last_group = item_index + 1 == group_count;
 
             if should_expand {
-                let mut parts = vec![];
+                let mut parts = vec![in f.arena;];
                 parts.push(item.original_node.r#use.format(f));
                 parts.push(Document::space());
 
@@ -351,14 +400,7 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
                     parts.push(Document::space());
                 }
 
-                let joined_namespace = item.namespace.join("\\");
-
-                if !joined_namespace.is_empty() {
-                    parts.push(Document::String(f.as_str(joined_namespace)));
-                    parts.push(Document::String("\\"));
-                }
-
-                parts.push(Document::String(item.name));
+                parts.push(Document::String(join_item_name(f.arena, &item.namespace, item.name)));
 
                 if let Some(alias) = item.alias {
                     parts.push(Document::space());
@@ -381,28 +423,33 @@ fn print_use_statements<'a>(f: &mut FormatterState<'a>, stmts: Vec<&'a Use>) -> 
             result_docs.push(Document::Line(Line::hard()));
         }
     }
+
     result_docs
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-struct ExpandedUseItem<'a> {
-    use_type: Option<&'a UseType>,
-    namespace: Vec<&'a str>,
-    name: &'a str,
-    alias: Option<&'a str>,
-    original_node: &'a Use,
+struct ExpandedUseItem<'arena> {
+    use_type: Option<&'arena UseType<'arena>>,
+    namespace: Vec<'arena, &'arena str>,
+    name: &'arena str,
+    alias: Option<&'arena str>,
+    original_node: &'arena Use<'arena>,
 }
 
-fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: bool) -> Vec<ExpandedUseItem<'a>> {
-    let mut expanded_items = Vec::new();
+fn expand_use<'arena>(
+    f: &mut FormatterState<'_, 'arena>,
+    use_stmt: &'arena Use<'arena>,
+    should_expand: bool,
+) -> std::vec::Vec<ExpandedUseItem<'arena>> {
+    let mut expanded_items = std::vec::Vec::new();
 
-    fn expand_items<'a>(
-        f: &mut FormatterState<'a>,
-        items: &'a UseItems,
-        current_namespace: Vec<&'a str>,
-        use_type: Option<&'a UseType>,
-        expanded_items: &mut Vec<ExpandedUseItem<'a>>,
-        original_node: &'a Use,
+    fn expand_items<'arena>(
+        f: &mut FormatterState<'_, 'arena>,
+        items: &'arena UseItems<'arena>,
+        current_namespace: Vec<'arena, &'arena str>,
+        use_type: Option<&'arena UseType<'arena>>,
+        expanded_items: &mut std::vec::Vec<ExpandedUseItem<'arena>>,
+        original_node: &'arena Use<'arena>,
         should_expand: bool,
     ) {
         match items {
@@ -447,7 +494,7 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
             UseItems::TypedList(list) => {
                 if should_expand {
                     let mut new_namespace = current_namespace.clone();
-                    new_namespace.push(f.interner.lookup(list.namespace.value()));
+                    new_namespace.push(list.namespace.value());
                     for item in list.items.iter() {
                         expand_single_item(
                             f,
@@ -471,7 +518,7 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
             UseItems::MixedList(list) => {
                 if should_expand {
                     let mut new_namespace = current_namespace.clone();
-                    new_namespace.push(f.interner.lookup(list.namespace.value()));
+                    new_namespace.push(list.namespace.value());
                     for maybe_typed_item in list.items.iter() {
                         expand_single_item(
                             f,
@@ -495,15 +542,15 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
         }
     }
 
-    fn expand_single_item<'a>(
-        f: &mut FormatterState<'a>,
-        item: &'a UseItem,
-        mut current_namespace: Vec<&'a str>,
-        use_type: Option<&'a UseType>,
-        expanded_items: &mut Vec<ExpandedUseItem<'a>>,
-        original_node: &'a Use,
+    fn expand_single_item<'arena>(
+        f: &mut FormatterState<'_, 'arena>,
+        item: &'arena UseItem<'arena>,
+        mut current_namespace: Vec<'arena, &'arena str>,
+        use_type: Option<&'arena UseType<'arena>>,
+        expanded_items: &mut std::vec::Vec<ExpandedUseItem<'arena>>,
+        original_node: &'arena Use<'arena>,
     ) {
-        let mut parts = f.interner.lookup(item.name.value()).split("\\").collect::<Vec<_>>();
+        let mut parts = item.name.value().split("\\").collect_in::<Vec<_>>(f.arena);
         // SAFETY: split always returns at least one element
         let name = unsafe { parts.pop().unwrap_unchecked() };
         current_namespace.extend(parts);
@@ -512,32 +559,28 @@ fn expand_use<'a>(f: &mut FormatterState<'a>, use_stmt: &'a Use, should_expand: 
             use_type,
             namespace: current_namespace,
             name,
-            alias: item.alias.as_ref().map(|a| f.interner.lookup(&a.identifier.value)),
+            alias: item.alias.as_ref().map(|a| a.identifier.value),
             original_node,
         });
     }
 
-    expand_items(f, &use_stmt.items, Vec::new(), None, &mut expanded_items, use_stmt, should_expand); // Pass should_expand
+    expand_items(f, &use_stmt.items, vec![in f.arena], None, &mut expanded_items, use_stmt, should_expand); // Pass should_expand
+
     expanded_items
 }
 
-pub fn sort_use_items<'a>(f: &mut FormatterState<'a>, items: impl Iterator<Item = &'a UseItem>) -> Vec<&'a UseItem> {
-    let mut items = items.collect::<Vec<_>>();
-    items.sort_by(|a, b| {
-        let a_name = f.interner.lookup(a.name.value());
-        let b_name = f.interner.lookup(b.name.value());
-
-        a_name.to_lowercase().cmp(&b_name.to_lowercase())
-    });
-
+pub fn sort_use_items<'arena>(
+    items: impl Iterator<Item = &'arena UseItem<'arena>>,
+) -> std::vec::Vec<&'arena UseItem<'arena>> {
+    let mut items = items.collect::<std::vec::Vec<_>>();
+    items.sort_by(|a, b| a.name.value().to_lowercase().cmp(&b.name.value().to_lowercase()));
     items
 }
 
-pub fn sort_maybe_typed_use_items<'a>(
-    f: &mut FormatterState<'a>,
-    items: impl Iterator<Item = &'a MaybeTypedUseItem>,
-) -> Vec<&'a MaybeTypedUseItem> {
-    let mut items = items.collect::<Vec<_>>();
+pub fn sort_maybe_typed_use_items<'arena>(
+    items: impl Iterator<Item = &'arena MaybeTypedUseItem<'arena>>,
+) -> std::vec::Vec<&'arena MaybeTypedUseItem<'arena>> {
+    let mut items = items.collect::<std::vec::Vec<_>>();
     items.sort_by(|a, b| {
         let a_type_order = match &a.r#type {
             None => 0,
@@ -565,10 +608,7 @@ pub fn sort_maybe_typed_use_items<'a>(
             return a_type_order.cmp(&b_type_order);
         }
 
-        let a_name = f.interner.lookup(a.item.name.value());
-        let b_name = f.interner.lookup(b.item.name.value());
-
-        a_name.to_lowercase().cmp(&b_name.to_lowercase())
+        a.item.name.value().to_lowercase().cmp(&b.item.name.value().to_lowercase())
     });
 
     items

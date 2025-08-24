@@ -19,10 +19,10 @@ use crate::context::block::BlockContext;
 /// * `context`: The current analysis context, used for reporting issues.
 /// * `destination_context`: The context into which properties are being merged.
 /// * `source_context`: The context from which properties are being inherited.
-pub(crate) fn inherit_branch_context_properties<'a>(
-    context: &mut Context<'a>,
-    destination_context: &mut BlockContext<'a>,
-    source_context: &BlockContext<'a>,
+pub(crate) fn inherit_branch_context_properties<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    destination_context: &mut BlockContext<'ctx>,
+    source_context: &BlockContext<'ctx>,
 ) {
     for (variable, constraint) in &source_context.by_reference_constraints {
         let Some(outer_constraint) = destination_context.by_reference_constraints.get(variable) else {
@@ -47,7 +47,6 @@ pub(crate) fn inherit_branch_context_properties<'a>(
 
         if !union_comparator::is_contained_by(
             context.codebase,
-            context.interner,
             constraint_type,
             outer_constraint_type,
             false,
@@ -55,8 +54,8 @@ pub(crate) fn inherit_branch_context_properties<'a>(
             false,
             &mut ComparisonResult::default(),
         ) {
-            let constraint_type_str = constraint_type.get_id(Some(context.interner));
-            let outer_constraint_type_str = outer_constraint_type.get_id(Some(context.interner));
+            let constraint_type_str = constraint_type.get_id();
+            let outer_constraint_type_str = outer_constraint_type.get_id();
 
             context.collector.report_with_code(
                 IssueCode::ConflictingReferenceConstraint,

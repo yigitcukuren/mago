@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use mago_atom::atom;
 use mago_codex::ttype::atomic::TAtomic;
 use mago_codex::ttype::atomic::array::TArray;
 use mago_codex::ttype::atomic::array::keyed::TKeyedArray;
@@ -22,17 +23,17 @@ use crate::invocation::special_function_like_handler::utils::get_argument;
 pub struct TypeComponentFunctionsHandler;
 
 impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
-    fn get_return_type<'a>(
+    fn get_return_type<'ctx, 'ast, 'arena>(
         &self,
-        context: &mut Context<'a>,
-        _block_context: &BlockContext<'a>,
+        _context: &mut Context<'ctx, 'arena>,
+        _block_context: &BlockContext<'ctx>,
         artifacts: &AnalysisArtifacts,
         function_like_name: &str,
-        invocation: &Invocation,
+        invocation: &Invocation<'ctx, 'ast, 'arena>,
     ) -> Option<TUnion> {
         match function_like_name {
             "psl\\type\\shape" => {
-                let elements = get_argument(context, invocation.arguments_source, 0, vec!["elements"])?;
+                let elements = get_argument(invocation.arguments_source, 0, vec!["elements"])?;
                 let elements_type = artifacts.get_expression_type(elements)?;
 
                 let argument_array = if let Some(argument_array) = elements_type.get_single_array()
@@ -44,7 +45,7 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
                 };
 
                 let allows_unknown_elements = if let Some(argument) =
-                    get_argument(context, invocation.arguments_source, 1, vec!["allow_unknown_fields"])
+                    get_argument(invocation.arguments_source, 1, vec!["allow_unknown_fields"])
                 {
                     artifacts
                         .get_expression_type(argument)
@@ -73,7 +74,7 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
 
                         Some(TUnion::from_atomic(TAtomic::Object(TObject::Named(
                             TNamedObject::new_with_type_parameters(
-                                context.interner.intern("Psl\\Type\\TypeInterface"),
+                                atom("Psl\\Type\\TypeInterface"),
                                 Some(vec![TUnion::from_atomic(TAtomic::Array(TArray::List(TList {
                                     element_type: if allows_unknown_elements {
                                         Box::new(get_mixed())
@@ -99,12 +100,12 @@ impl SpecialFunctionLikeHandlerTrait for TypeComponentFunctionsHandler {
 
                             let possibly_undefined = *possibly_undefined || item.possibly_undefined;
 
-                            known_items.insert(key.clone(), (possibly_undefined, inner_type));
+                            known_items.insert(*key, (possibly_undefined, inner_type));
                         }
 
                         Some(TUnion::from_atomic(TAtomic::Object(TObject::Named(
                             TNamedObject::new_with_type_parameters(
-                                context.interner.intern("Psl\\Type\\TypeInterface"),
+                                atom("Psl\\Type\\TypeInterface"),
                                 Some(vec![TUnion::from_atomic(TAtomic::Array(TArray::Keyed(TKeyedArray {
                                     parameters: if allows_unknown_elements {
                                         Some((Box::new(get_arraykey()), Box::new(get_mixed())))

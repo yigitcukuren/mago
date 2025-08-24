@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+use bumpalo::Bump;
 use mago_database::file::FileId;
 use mago_database::file::HasFileId;
-use mago_interner::ThreadedInterner;
 use mago_span::Position;
 use mago_span::Span;
 
@@ -36,41 +36,41 @@ mod internal;
 /// and produces tokens incrementally. This allows for efficient processing of large source files and
 /// minimizes memory usage.
 #[derive(Debug)]
-pub struct Lexer<'a, 'i> {
-    interner: &'i ThreadedInterner,
-    input: Input<'a>,
-    mode: LexerMode<'a>,
+pub struct Lexer<'input, 'arena> {
+    arena: &'arena Bump,
+    input: Input<'input>,
+    mode: LexerMode<'arena>,
     interpolating: bool,
-    buffer: VecDeque<Token>,
+    buffer: VecDeque<Token<'arena>>,
 }
 
-impl<'a, 'i> Lexer<'a, 'i> {
+impl<'input, 'arena> Lexer<'input, 'arena> {
     /// Creates a new `Lexer` instance.
     ///
     /// # Parameters
     ///
-    /// - `interner`: The interner to use for string interning.
+    /// - `arena`: The arena to use for allocating tokens.
     /// - `input`: The input source code to tokenize.
     ///
     /// # Returns
     ///
     /// A new `Lexer` instance that reads from the provided byte slice.
-    pub fn new(interner: &'i ThreadedInterner, input: Input<'a>) -> Lexer<'a, 'i> {
-        Lexer { interner, input, mode: LexerMode::Inline, interpolating: false, buffer: VecDeque::new() }
+    pub fn new(arena: &'arena Bump, input: Input<'input>) -> Lexer<'input, 'arena> {
+        Lexer { arena, input, mode: LexerMode::Inline, interpolating: false, buffer: VecDeque::new() }
     }
 
     /// Creates a new `Lexer` instance for parsing a script block.
     ///
     /// # Parameters
     ///
-    /// - `interner`: The interner to use for string interning.
+    /// - `arena`: The arena to use for allocating tokens.
     /// - `input`: The input source code to tokenize.
     ///
     /// # Returns
     ///
     /// A new `Lexer` instance that reads from the provided byte slice.
-    pub fn scripting(interner: &'i ThreadedInterner, input: Input<'a>) -> Lexer<'a, 'i> {
-        Lexer { interner, input, mode: LexerMode::Script, interpolating: false, buffer: VecDeque::new() }
+    pub fn scripting(arena: &'arena Bump, input: Input<'input>) -> Lexer<'input, 'arena> {
+        Lexer { arena, input, mode: LexerMode::Script, interpolating: false, buffer: VecDeque::new() }
     }
 
     /// Check if the lexer has reached the end of the input.
@@ -118,7 +118,7 @@ impl<'a, 'i> Lexer<'a, 'i> {
     /// - [`Token`]: Represents a lexical token with its kind, value, and span.
     /// - [`SyntaxError`]: Represents errors that can occur during lexing.
     #[inline]
-    pub fn advance(&mut self) -> Option<Result<Token, SyntaxError>> {
+    pub fn advance(&mut self) -> Option<Result<Token<'arena>, SyntaxError>> {
         if !self.interpolating
             && let Some(token) = self.buffer.pop_front()
         {
@@ -580,9 +580,11 @@ impl<'a, 'i> Lexer<'a, 'i> {
                     TokenKind::Backtick => LexerMode::ShellExecuteString(Interpolation::None),
                     TokenKind::CloseTag => LexerMode::Inline,
                     TokenKind::HaltCompiler => LexerMode::Halt(HaltStage::LookingForLeftParenthesis),
-                    TokenKind::DocumentStart(document_kind) => {
-                        LexerMode::DocumentString(document_kind, document_label, Interpolation::None)
-                    }
+                    TokenKind::DocumentStart(document_kind) => LexerMode::DocumentString(
+                        document_kind,
+                        self.arena.alloc_slice_copy(document_label),
+                        Interpolation::None,
+                    ),
                     _ => LexerMode::Script,
                 };
 
@@ -944,20 +946,24 @@ impl<'a, 'i> Lexer<'a, 'i> {
     }
 
     #[inline]
-    fn token(&mut self, kind: TokenKind, v: &[u8], from: Position, to: Position) -> Option<Result<Token, SyntaxError>> {
-        Some(Ok(Token {
-            kind,
-            value: self.interner.intern(String::from_utf8_lossy(v)),
-            span: Span::new(self.file_id(), from, to),
-        }))
+    fn token(
+        &mut self,
+        kind: TokenKind,
+        v: &[u8],
+        from: Position,
+        to: Position,
+    ) -> Option<Result<Token<'arena>, SyntaxError>> {
+        let string = String::from_utf8_lossy(v);
+
+        Some(Ok(Token { kind, value: self.arena.alloc_str(&string), span: Span::new(self.file_id(), from, to) }))
     }
 
     #[inline]
     fn interpolation(
         &mut self,
         end_offset: u32,
-        post_interpolation_mode: LexerMode<'a>,
-    ) -> Option<Result<Token, SyntaxError>> {
+        post_interpolation_mode: LexerMode<'arena>,
+    ) -> Option<Result<Token<'arena>, SyntaxError>> {
         self.mode = LexerMode::Script;
 
         let was_interpolating = self.interpolating;

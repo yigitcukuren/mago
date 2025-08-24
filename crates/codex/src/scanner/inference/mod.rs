@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
-use mago_interner::ThreadedInterner;
+use mago_atom::atom;
+use mago_atom::concat_atom;
 use mago_names::ResolvedNames;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
@@ -41,18 +43,16 @@ use crate::ttype::wrap_atomic;
 use crate::utils::str_is_numeric;
 
 #[inline]
-pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expression: &Expression) -> Option<TUnion> {
+pub fn infer<'arena>(resolved_names: &ResolvedNames<'arena>, expression: &Expression<'arena>) -> Option<TUnion> {
     match expression {
         Expression::Literal(literal) => match literal {
             Literal::String(literal_string) => {
-                Some(match literal_string.value.as_deref() {
+                Some(match literal_string.value {
                     Some(value) => {
                         if value.is_empty() {
                             get_empty_string()
                         } else if value.len() < 1000 {
-                            wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(Cow::Owned(
-                                value.to_owned(),
-                            )))))
+                            wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(atom(value)))))
                         } else {
                             wrap_atomic(TAtomic::Scalar(TScalar::String(TString::unspecified_literal_with_props(
                                 str_is_numeric(value),
@@ -93,7 +93,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             if contains_content { Some(get_non_empty_string()) } else { Some(get_string()) }
         }
         Expression::UnaryPrefix(UnaryPrefix { operator, operand }) => {
-            let operand_type = infer(interner, resolved_names, operand)?;
+            let operand_type = infer(resolved_names, operand)?;
 
             match operator {
                 UnaryPrefixOperator::Plus(_) => {
@@ -120,8 +120,8 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             }
         }
         Expression::Binary(Binary { operator: BinaryOperator::StringConcat(_), lhs, rhs }) => {
-            let Some(lhs_type) = infer(interner, resolved_names, lhs) else { return Some(get_string()) };
-            let Some(rhs_type) = infer(interner, resolved_names, rhs) else { return Some(get_string()) };
+            let Some(lhs_type) = infer(resolved_names, lhs) else { return Some(get_string()) };
+            let Some(rhs_type) = infer(resolved_names, rhs) else { return Some(get_string()) };
 
             let lhs_string = match lhs_type.get_single_owned() {
                 TAtomic::Scalar(TScalar::String(s)) => s.clone(),
@@ -136,10 +136,8 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             if let (Some(left_val), Some(right_val)) =
                 (lhs_string.get_known_literal_value(), rhs_string.get_known_literal_value())
             {
-                let combined_value = format!("{left_val}{right_val}");
-
-                return Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(Cow::Owned(
-                    combined_value,
+                return Some(wrap_atomic(TAtomic::Scalar(TScalar::String(TString::known_literal(concat_atom!(
+                    left_val, right_val
                 ))))));
             }
 
@@ -157,8 +155,8 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             Some(wrap_atomic(TAtomic::Scalar(TScalar::String(final_string_type))))
         }
         Expression::Binary(Binary { operator, lhs, rhs }) if operator.is_bitwise() => {
-            let lhs = infer(interner, resolved_names, lhs);
-            let rhs = infer(interner, resolved_names, rhs);
+            let lhs = infer(resolved_names, lhs);
+            let rhs = infer(resolved_names, rhs);
 
             Some(wrap_atomic(
                 match (
@@ -189,24 +187,22 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
             Construct::Print(_) => Some(get_literal_int(1)),
             _ => None,
         },
-        Expression::ConstantAccess(access) => infer_constant(interner, resolved_names, &access.name),
+        Expression::ConstantAccess(access) => infer_constant(resolved_names, &access.name),
         Expression::Access(Access::ClassConstant(ClassConstantAccess {
             class,
             constant: ClassLikeConstantSelector::Identifier(identifier),
             ..
         })) => {
-            let class_name = if let Expression::Identifier(identifier) = class.as_ref() {
+            let class_name_str = if let Expression::Identifier(identifier) = class {
                 resolved_names.get(identifier)
             } else {
                 return None;
             };
 
-            let class_name_str = interner.lookup(class_name);
-            let member_name = interner.lookup(&identifier.value);
-            Some(wrap_atomic(if member_name.eq_ignore_ascii_case("class") {
-                TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(*class_name)))
+            Some(wrap_atomic(if identifier.value.eq_ignore_ascii_case("class") {
+                TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(atom(class_name_str))))
             } else if class_name_str.eq_ignore_ascii_case("Attribute") {
-                let bits = match member_name {
+                let bits = match identifier.value {
                     "TARGET_CLASS" => Some(AttributeFlags::TARGET_CLASS.bits()),
                     "TARGET_FUNCTION" => Some(AttributeFlags::TARGET_FUNCTION.bits()),
                     "TARGET_METHOD" => Some(AttributeFlags::TARGET_METHOD.bits()),
@@ -222,14 +218,14 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                 match bits {
                     Some(bits) => return Some(get_literal_int(bits as i64)),
                     None => TAtomic::Reference(TReference::Member {
-                        class_like_name: *class_name,
-                        member_selector: TReferenceMemberSelector::Identifier(identifier.value),
+                        class_like_name: atom(class_name_str),
+                        member_selector: TReferenceMemberSelector::Identifier(atom(identifier.value)),
                     }),
                 }
             } else {
                 TAtomic::Reference(TReference::Member {
-                    class_like_name: *class_name,
-                    member_selector: TReferenceMemberSelector::Identifier(identifier.value),
+                    class_like_name: atom(class_name_str),
+                    member_selector: TReferenceMemberSelector::Identifier(atom(identifier.value)),
                 })
             }))
         }
@@ -243,7 +239,7 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                     return None;
                 };
 
-                entries.insert(i, (false, infer(interner, resolved_names, &element.value)?));
+                entries.insert(i, (false, infer(resolved_names, element.value)?));
             }
 
             Some(wrap_atomic(TAtomic::Array(TArray::List(TList {
@@ -262,8 +258,8 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
                     return None;
                 };
 
-                let key_type = infer(interner, resolved_names, &element.key).and_then(|v| v.get_single_array_key())?;
-                known_items.insert(key_type, (false, infer(interner, resolved_names, &element.value)?));
+                let key_type = infer(resolved_names, element.key).and_then(|v| v.get_single_array_key())?;
+                known_items.insert(key_type, (false, infer(resolved_names, element.value)?));
 
                 if known_items.len() > 100 {
                     return None;
@@ -297,31 +293,36 @@ pub fn infer(interner: &ThreadedInterner, resolved_names: &ResolvedNames, expres
 }
 
 #[inline]
-fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: &Identifier) -> Option<TUnion> {
-    const DIR_SEPARATOR_SLICE: &[TAtomic] = &[
-        TAtomic::Scalar(TScalar::String(TString {
-            literal: Some(TStringLiteral::Value(Cow::Borrowed("/"))),
-            is_numeric: false,
-            is_truthy: true,
-            is_non_empty: true,
-            is_lowercase: true,
-        })),
-        TAtomic::Scalar(TScalar::String(TString {
-            literal: Some(TStringLiteral::Value(Cow::Borrowed("\\"))),
-            is_numeric: false,
-            is_truthy: true,
-            is_non_empty: true,
-            is_lowercase: true,
-        })),
-    ];
+fn infer_constant(names: &ResolvedNames, constant: &Identifier) -> Option<TUnion> {
+    static DIR_SEPARATOR_SLICE: LazyLock<[TAtomic; 2]> = LazyLock::new(|| {
+        [
+            TAtomic::Scalar(TScalar::String(TString {
+                literal: Some(TStringLiteral::Value(atom("/"))),
+                is_numeric: false,
+                is_truthy: true,
+                is_non_empty: true,
+                is_lowercase: true,
+            })),
+            TAtomic::Scalar(TScalar::String(TString {
+                literal: Some(TStringLiteral::Value(atom("\\"))),
+                is_numeric: false,
+                is_truthy: true,
+                is_non_empty: true,
+                is_lowercase: true,
+            })),
+        ]
+    });
+
     const PHP_INT_MAX_SLICE: &[TAtomic] = &[
         TAtomic::Scalar(TScalar::Integer(TInteger::Literal(9223372036854775807))),
         TAtomic::Scalar(TScalar::Integer(TInteger::Literal(2147483647))),
     ];
+
     const PHP_INT_MIN_SLICE: &[TAtomic] = &[
         TAtomic::Scalar(TScalar::Integer(TInteger::Literal(-9223372036854775808))),
         TAtomic::Scalar(TScalar::Integer(TInteger::Literal(-2147483648))),
     ];
+
     const PHP_MAJOR_VERSION_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(8, 9)));
     const PHP_ZTS_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)));
     const PHP_DEBUG_ATOMIC: &TAtomic = &TAtomic::Scalar(TScalar::Integer(TInteger::Range(0, 1)));
@@ -336,18 +337,11 @@ fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: 
     ];
 
     let (short_name, _) = if names.is_imported(constant) {
-        let name = interner.lookup(names.get(constant));
-
-        (name, name)
+        (names.get(constant), names.get(constant))
+    } else if let Some(stripped) = constant.value().strip_prefix('\\') {
+        (stripped, names.get(constant))
     } else {
-        let short_name = interner.lookup(constant.value());
-        let imported_name = interner.lookup(names.get(constant));
-
-        if let Some(stripped) = short_name.strip_prefix('\\') {
-            (stripped, imported_name)
-        } else {
-            (short_name, imported_name)
-        }
+        (constant.value(), names.get(constant))
     };
 
     Some(match short_name {
@@ -389,7 +383,7 @@ fn infer_constant(interner: &ThreadedInterner, names: &ResolvedNames, constant: 
         "PHP_DEBUG" => TUnion::from_single(Cow::Borrowed(PHP_DEBUG_ATOMIC)),
         "PHP_INT_SIZE" => TUnion::from_single(Cow::Borrowed(PHP_INT_SIZE_ATOMIC)),
         "PHP_WINDOWS_VERSION_MAJOR" => TUnion::from_single(Cow::Borrowed(PHP_WINDOWS_VERSION_MAJOR_ATOMIC)),
-        "DIRECTORY_SEPARATOR" => TUnion::new(Cow::Borrowed(DIR_SEPARATOR_SLICE)),
+        "DIRECTORY_SEPARATOR" => TUnion::new(Cow::Borrowed(DIR_SEPARATOR_SLICE.as_slice())),
         "PHP_INT_MAX" => TUnion::new(Cow::Borrowed(PHP_INT_MAX_SLICE)),
         "PHP_INT_MIN" => TUnion::new(Cow::Borrowed(PHP_INT_MIN_SLICE)),
         "PHP_WINDOWS_VERSION_MINOR" => TUnion::new(Cow::Borrowed(PHP_WINDOWS_VERSION_MINOR_SLICE)),

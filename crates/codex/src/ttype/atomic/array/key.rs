@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use mago_atom::Atom;
+use mago_atom::i64_atom;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -18,12 +20,12 @@ use crate::ttype::union::TUnion;
 /// PHP automatically casts other scalar types (float, bool, null) and resources to int or string
 /// when used as array keys. Objects used as keys usually result in errors or use spl_object_hash.
 /// This enum focuses on the valid resulting key types after potential casting.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ArrayKey {
     /// An integer array key.
     Integer(i64),
     /// A string array key.
-    String(Cow<'static, str>),
+    String(Atom),
 }
 
 impl ArrayKey {
@@ -59,6 +61,16 @@ impl ArrayKey {
         matches!(self, ArrayKey::String(_))
     }
 
+    /// Converts the array key into an `Atom` representing the key *value*.
+    /// Preserves the literal value (e.g., `10`, `"abc"`).
+    #[inline]
+    pub fn to_atom(&self) -> Atom {
+        match self {
+            ArrayKey::Integer(i) => i64_atom(*i),
+            ArrayKey::String(s) => *s,
+        }
+    }
+
     /// Converts the array key into a specific literal atomic type representing the key *value*.
     /// Preserves the literal value (e.g., `10`, `"abc"`).
     ///
@@ -67,7 +79,7 @@ impl ArrayKey {
     pub fn to_atomic(&self) -> TAtomic {
         match &self {
             ArrayKey::Integer(i) => TAtomic::Scalar(TScalar::Integer(TInteger::literal(*i))),
-            ArrayKey::String(s) => TAtomic::Scalar(TScalar::String(TString::known_literal(s.clone()))),
+            ArrayKey::String(s) => TAtomic::Scalar(TScalar::String(TString::known_literal(*s))),
         }
     }
 
@@ -112,24 +124,14 @@ impl std::fmt::Display for ArrayKey {
     }
 }
 
-impl From<i64> for ArrayKey {
-    /// Converts an `i64` to an `ArrayKey::Integer`.
+impl<T> From<T> for ArrayKey
+where
+    T: AsRef<str>,
+{
+    /// Converts any type that can be referenced as a `str` to an `ArrayKey::String`.
+    /// The string is cloned into a `Atom`.
     #[inline]
-    fn from(i: i64) -> Self {
-        ArrayKey::Integer(i)
-    }
-}
-
-impl From<String> for ArrayKey {
-    #[inline]
-    fn from(s: String) -> Self {
-        ArrayKey::String(Cow::Owned(s))
-    }
-}
-
-impl From<&'static str> for ArrayKey {
-    #[inline]
-    fn from(s: &'static str) -> Self {
-        ArrayKey::String(Cow::Borrowed(s))
+    fn from(s: T) -> Self {
+        ArrayKey::String(Atom::from(s.as_ref()))
     }
 }

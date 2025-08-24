@@ -1,3 +1,4 @@
+use mago_atom::ascii_lowercase_atom;
 use mago_codex::get_class_like;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_fixer::SafetyClassification;
@@ -8,9 +9,12 @@ use mago_syntax::ast::*;
 use crate::code::IssueCode;
 use crate::context::Context;
 
-pub fn check_override_attribute(metadata: &ClassLikeMetadata, members: &[ClassLikeMember], context: &mut Context<'_>) {
-    let class_name = context.interner.lookup(&metadata.original_name);
-
+pub fn check_override_attribute<'ctx, 'arena>(
+    metadata: &'ctx ClassLikeMetadata,
+    members: &[ClassLikeMember<'arena>],
+    context: &mut Context<'ctx, 'arena>,
+) {
+    let class_name = metadata.original_name;
     for member in members {
         let ClassLikeMember::Method(method) = member else {
             continue;
@@ -19,8 +23,7 @@ pub fn check_override_attribute(metadata: &ClassLikeMetadata, members: &[ClassLi
         let (override_attribute, attribute_list_index) = 'outer: {
             for (index, attribute_list) in method.attribute_lists.iter().enumerate() {
                 for attribute in attribute_list.attributes.iter() {
-                    let fqcn_id = context.resolved_names.get(&attribute.name);
-                    let fqcn = context.interner.lookup(fqcn_id);
+                    let fqcn = context.resolved_names.get(&attribute.name);
 
                     if fqcn.eq_ignore_ascii_case("Override") {
                         break 'outer (Some(attribute), index);
@@ -31,7 +34,7 @@ pub fn check_override_attribute(metadata: &ClassLikeMetadata, members: &[ClassLi
             (None, 0)
         };
 
-        let name = context.interner.lookup(&method.name.value);
+        let name = method.name.value.to_lowercase();
         if name.eq_ignore_ascii_case("__construct") {
             if let Some(attribute) = override_attribute {
                 let issue = Issue::error("Invalid `#[Override]` attribute on constructor.")
@@ -56,7 +59,7 @@ pub fn check_override_attribute(metadata: &ClassLikeMetadata, members: &[ClassLi
             continue;
         }
 
-        let lowercase_name = context.interner.lowered(&method.name.value);
+        let lowercase_name = ascii_lowercase_atom(method.name.value);
         let Some(parent_class_names) = metadata.overridden_method_ids.get(&lowercase_name) else {
             if let Some(attribute) = override_attribute {
                 let issue = Issue::error(format!("Invalid `#[Override]` attribute on `{class_name}::{name}`."))
@@ -85,15 +88,13 @@ pub fn check_override_attribute(metadata: &ClassLikeMetadata, members: &[ClassLi
             continue;
         }
 
-        let Some(parents_metadata) = parent_class_names
-            .iter()
-            .filter_map(|parent_class| get_class_like(context.codebase, context.interner, parent_class))
-            .next()
+        let Some(parents_metadata) =
+            parent_class_names.iter().filter_map(|parent_class| get_class_like(context.codebase, parent_class)).next()
         else {
             continue;
         };
 
-        let parent_classname = context.interner.lookup(&parents_metadata.original_name);
+        let parent_classname = parents_metadata.original_name;
 
         let issue =
             Issue::error(format!("Missing `#[Override]` attribute on overriding method `{class_name}::{name}`."))

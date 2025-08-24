@@ -28,10 +28,10 @@ use crate::error::AnalysisError;
 /// - If the LHS is nullable (can be `null` or other types), the result type is the union of the
 ///   non-null parts of the LHS and the type of the RHS.
 /// - If the LHS type is unknown (`mixed`), the result type is `mixed`.
-pub fn analyze_null_coalesce_operation<'a>(
-    binary: &Binary,
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub fn analyze_null_coalesce_operation<'ctx, 'arena>(
+    binary: &Binary<'arena>,
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
 ) -> Result<(), AnalysisError> {
     let was_inside_isset = block_context.inside_isset;
@@ -77,7 +77,7 @@ pub fn analyze_null_coalesce_operation<'a>(
             )
             .with_annotation(Annotation::primary(binary.lhs.span()).with_message(format!(
                 "This expression (type `{}`) is never `null` or undefined",
-                lhs_type.get_id(Some(context.interner))
+                lhs_type.get_id()
             )))
             .with_annotation(
                 Annotation::secondary(binary.rhs.span()).with_message("This right-hand side will never be evaluated"),
@@ -96,7 +96,7 @@ pub fn analyze_null_coalesce_operation<'a>(
         let rhs_type =
             artifacts.get_expression_type(&binary.rhs).map(Cow::Borrowed).unwrap_or_else(|| Cow::Owned(get_mixed()));
 
-        result_type = combine_union_types(&non_null_lhs_type, &rhs_type, context.codebase, context.interner, false);
+        result_type = combine_union_types(&non_null_lhs_type, &rhs_type, context.codebase, false);
     }
 
     artifacts.expression_types.insert(get_expression_range(binary), Rc::new(result_type));

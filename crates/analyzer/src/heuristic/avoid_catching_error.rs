@@ -9,14 +9,12 @@ use crate::statement::r#try::get_caught_classes;
 
 const ERROR_CLASS: &str = "Error";
 
-pub fn check_for_caught_error(r#try: &Try, context: &mut Context<'_>) {
-    let error_class_id = context.interner.intern(ERROR_CLASS);
-
+pub fn check_for_caught_error<'ctx, 'ast, 'arena>(r#try: &'ast Try<'arena>, context: &mut Context<'ctx, 'arena>) {
     for catch_clause in r#try.catch_clauses.iter() {
         let caught_classes = get_caught_classes(context, &catch_clause.hint);
 
         for caught in caught_classes {
-            if !is_instance_of(context.codebase, context.interner, &caught, &error_class_id) {
+            if !is_instance_of(context.codebase, &caught, ERROR_CLASS) {
                 continue;
             }
 

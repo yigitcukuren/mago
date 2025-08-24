@@ -19,10 +19,10 @@ use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConstructInput<'ast> {
-    ArgumentList(Option<&'ast ArgumentList>),
-    Expression(&'ast Expression),
-    ExpressionList(&'ast [Expression]),
+pub enum ConstructInput<'ast, 'arena> {
+    ArgumentList(Option<&'ast ArgumentList<'arena>>),
+    Expression(&'ast Expression<'arena>),
+    ExpressionList(&'ast [Expression<'arena>]),
 }
 
 /// Analyzes inputs for a language construct (e.g., `echo`, `exit`, `return`).
@@ -31,13 +31,13 @@ pub enum ConstructInput<'ast> {
 /// on the `ConstructInput` enum. It dispatches to the type verifier for each
 /// provided value and correctly sets the `is_argument` flag to ensure error
 /// messages use the appropriate terminology ("argument" vs. "value").
-pub fn analyze_construct_inputs<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub fn analyze_construct_inputs<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
     construct_kind: &'static str,
     construct_keyword: Span,
-    inputs: ConstructInput<'_>,
+    inputs: ConstructInput<'ast, 'arena>,
     expected_type: TUnion,
     is_variadic: bool,
     has_default: bool,
@@ -174,12 +174,12 @@ pub fn analyze_construct_inputs<'a>(
 /// * `construct_kind` - A string name of the construct (e.g., "echo", "exit").
 /// * `construct_keyword` - The span of the construct's keyword for highlighting.
 /// * `is_argument` - Controls terminology in errors. `true` uses "argument", `false` uses "value".
-fn verify_construct_input_type(
-    context: &mut Context<'_>,
+fn verify_construct_input_type<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     input_type: &TUnion,
     parameter_type: &TUnion,
     argument_offset: usize,
-    input_expression: &Expression,
+    input_expression: &'ast Expression<'arena>,
     construct_kind: &'static str,
     construct_keyword: &Span,
     is_argument: bool,
@@ -195,8 +195,8 @@ fn verify_construct_input_type(
         );
     }
 
-    let input_type_str = input_type.get_id(Some(context.interner));
-    let parameter_type_str = parameter_type.get_id(Some(context.interner));
+    let input_type_str = input_type.get_id();
+    let parameter_type_str = parameter_type.get_id();
 
     if !parameter_type.accepts_null() {
         if input_type.is_null() {
@@ -253,7 +253,6 @@ fn verify_construct_input_type(
     let mut comparison = ComparisonResult::new();
     if union_comparator::is_contained_by(
         context.codebase,
-        context.interner,
         input_type,
         parameter_type,
         true,
@@ -314,7 +313,12 @@ fn get_ordinal(index: usize) -> Cow<'static, str> {
     }
 }
 
-fn report_missing_input(context: &mut Context<'_>, kind: &str, keyword: &Span, is_argument: bool) {
+fn report_missing_input<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    kind: &str,
+    keyword: &Span,
+    is_argument: bool,
+) {
     let term = if is_argument { "argument" } else { "value" };
     context.collector.report_with_code(
         IssueCode::TooFewArguments,
@@ -323,8 +327,8 @@ fn report_missing_input(context: &mut Context<'_>, kind: &str, keyword: &Span, i
     );
 }
 
-fn report_too_many_inputs(
-    context: &mut Context<'_>,
+fn report_too_many_inputs<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
     keyword: &Span,
     input_span: Span,
@@ -341,10 +345,10 @@ fn report_too_many_inputs(
     );
 }
 
-fn report_never_input(
-    context: &mut Context<'_>,
+fn report_never_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     keyword: &Span,
     is_argument: bool,
@@ -360,10 +364,10 @@ fn report_never_input(
     );
 }
 
-fn report_null_input(
-    context: &mut Context<'_>,
+fn report_null_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     param_type: &str,
     keyword: &Span,
@@ -382,10 +386,10 @@ fn report_null_input(
     );
 }
 
-fn report_possibly_null_input(
-    context: &mut Context<'_>,
+fn report_possibly_null_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     in_type: &str,
     param_type: &str,
@@ -406,10 +410,10 @@ fn report_possibly_null_input(
     );
 }
 
-fn report_false_input(
-    context: &mut Context<'_>,
+fn report_false_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     param_type: &str,
     keyword: &Span,
@@ -429,10 +433,10 @@ fn report_false_input(
     );
 }
 
-fn report_possibly_false_input(
-    context: &mut Context<'_>,
+fn report_possibly_false_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     in_type: &str,
     param_type: &str,
@@ -454,10 +458,10 @@ fn report_possibly_false_input(
     );
 }
 
-fn report_mixed_input(
-    context: &mut Context<'_>,
+fn report_mixed_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     in_type: &str,
     param_type: &str,
@@ -477,11 +481,11 @@ fn report_mixed_input(
     );
 }
 
-fn report_less_specific_input(
-    context: &mut Context<'_>,
+fn report_less_specific_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     comparison: &ComparisonResult,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     in_type: &str,
     param_type: &str,
@@ -507,12 +511,12 @@ fn report_less_specific_input(
     );
 }
 
-fn report_invalid_or_possibly_invalid_input(
-    context: &mut Context<'_>,
+fn report_invalid_or_possibly_invalid_input<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     in_type: &TUnion,
     param_type: &TUnion,
     kind: &str,
-    expr: &Expression,
+    expr: &'ast Expression<'arena>,
     offset: usize,
     in_type_str: &str,
     param_type_str: &str,
@@ -522,31 +526,25 @@ fn report_invalid_or_possibly_invalid_input(
     let term = if is_argument { "argument" } else { "value" };
     let position = get_ordinal(offset);
 
-    let issue = if union_comparator::can_expression_types_be_identical(
-        context.codebase,
-        context.interner,
-        in_type,
-        param_type,
-        false,
-        false,
-    ) {
-        Issue::error(format!("The {position} {term} for `{kind}` might have the wrong type."))
-            .with_code(IssueCode::PossiblyInvalidArgument)
-            .with_annotation(Annotation::primary(expr.span()).with_message(format!(
-                "This is `{in_type_str}`, which only sometimes overlaps with `{param_type_str}`"
-            )))
-            .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
-            .with_help("Add a type check to ensure the value is what you expect.")
-    } else {
-        Issue::error(format!("Invalid type for the {position} {term}."))
-            .with_code(IssueCode::InvalidArgument)
-            .with_annotation(
-                Annotation::primary(expr.span())
-                    .with_message(format!("This is type `{in_type_str}`, but expected `{param_type_str}`")),
-            )
-            .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
-            .with_help("Adjust the value to match the expected type.")
-    };
+    let issue =
+        if union_comparator::can_expression_types_be_identical(context.codebase, in_type, param_type, false, false) {
+            Issue::error(format!("The {position} {term} for `{kind}` might have the wrong type."))
+                .with_code(IssueCode::PossiblyInvalidArgument)
+                .with_annotation(Annotation::primary(expr.span()).with_message(format!(
+                    "This is `{in_type_str}`, which only sometimes overlaps with `{param_type_str}`"
+                )))
+                .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
+                .with_help("Add a type check to ensure the value is what you expect.")
+        } else {
+            Issue::error(format!("Invalid type for the {position} {term}."))
+                .with_code(IssueCode::InvalidArgument)
+                .with_annotation(
+                    Annotation::primary(expr.span())
+                        .with_message(format!("This is type `{in_type_str}`, but expected `{param_type_str}`")),
+                )
+                .with_annotation(Annotation::secondary(keyword.span()).with_message(format!("`{kind}` called here")))
+                .with_help("Adjust the value to match the expected type.")
+        };
 
     context.collector.report(issue);
 }

@@ -32,32 +32,24 @@ use crate::reconciler::reconcile_keyed_types;
 use crate::utils::conditional;
 use crate::utils::expression::is_derived_access_path;
 
-impl Analyzable for Conditional {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Conditional<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
-        analyze_conditional(
-            context,
-            block_context,
-            artifacts,
-            self.condition.as_ref(),
-            self.then.as_deref(),
-            self.r#else.as_ref(),
-            self.span(),
-        )
+        analyze_conditional(context, block_context, artifacts, self.condition, self.then, self.r#else, self.span())
     }
 }
 
-pub(super) fn analyze_conditional<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub(super) fn analyze_conditional<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    condition: &Expression,
-    then: Option<&Expression>,
-    r#else: &Expression,
+    condition: &'ast Expression<'arena>,
+    then: Option<&'ast Expression<'arena>>,
+    r#else: &'ast Expression<'arena>,
     span: Span,
 ) -> Result<(), AnalysisError> {
     let mut if_scope = IfScope::new();
@@ -173,10 +165,9 @@ pub(super) fn analyze_conditional<'a>(
 
     if !reconcilable_if_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
-        let mut reconciliation_context = context.get_reconciliation_context();
 
         reconcile_keyed_types(
-            &mut reconciliation_context,
+            context,
             &reconcilable_if_types,
             active_if_types,
             &mut if_block_context,
@@ -206,10 +197,9 @@ pub(super) fn analyze_conditional<'a>(
 
     if !if_scope.negated_types.is_empty() {
         let mut changed_variable_ids = HashSet::default();
-        let mut reconciliation_context = context.get_reconciliation_context();
 
         reconcile_keyed_types(
-            &mut reconciliation_context,
+            context,
             &if_scope.negated_types,
             Default::default(), // todo: this is sort of a hack, we should probably pass the active types here
             &mut else_block_context,
@@ -251,13 +241,7 @@ pub(super) fn analyze_conditional<'a>(
 
         block_context.locals.insert(
             assigned_variable,
-            Rc::new(combine_union_types(
-                if_type.as_ref(),
-                else_type.as_ref(),
-                context.codebase,
-                context.interner,
-                false,
-            )),
+            Rc::new(combine_union_types(if_type.as_ref(), else_type.as_ref(), context.codebase, false)),
         );
     }
 
@@ -284,7 +268,6 @@ pub(super) fn analyze_conditional<'a>(
             if_type.map(|rc| rc.as_ref()),
             else_type.map(|rc| rc.as_ref()),
             context.codebase,
-            context.interner,
         );
 
         block_context.locals.insert(redefined_variable_id, Rc::new(combined_type));
@@ -302,12 +285,8 @@ pub(super) fn analyze_conditional<'a>(
             continue;
         };
 
-        let combined_type = combine_optional_union_types(
-            Some(if_type.as_ref()),
-            Some(previous_type.as_ref()),
-            context.codebase,
-            context.interner,
-        );
+        let combined_type =
+            combine_optional_union_types(Some(if_type.as_ref()), Some(previous_type.as_ref()), context.codebase);
 
         block_context.locals.insert(if_redefined_variable, Rc::new(combined_type));
     }
@@ -321,12 +300,8 @@ pub(super) fn analyze_conditional<'a>(
             continue;
         };
 
-        let combined_type = combine_optional_union_types(
-            Some(else_type.as_ref()),
-            Some(previous_type.as_ref()),
-            context.codebase,
-            context.interner,
-        );
+        let combined_type =
+            combine_optional_union_types(Some(else_type.as_ref()), Some(previous_type.as_ref()), context.codebase);
 
         block_context.locals.insert(else_redefined_variable, Rc::new(combined_type));
     }
@@ -346,10 +321,8 @@ pub(super) fn analyze_conditional<'a>(
             then_type = Some(rc_then_type);
         }
     } else if let Some(condition_type) = condition_type.as_ref() {
-        let mut reconciliation_context = context.get_reconciliation_context();
-
         let if_return_type_reconciled = assertion_reconciler::reconcile(
-            &mut reconciliation_context,
+            context,
             &Assertion::Truthy,
             Some(condition_type.as_ref()),
             false,
@@ -369,31 +342,31 @@ pub(super) fn analyze_conditional<'a>(
         if condition_type.is_always_truthy() {
             is_condition_truthy = true;
 
-            let issue = if let Some(then) = then {
-                // `$A ? $B : $C` where `$A` is always truthy
-                Issue::help("Redundant ternary operator: condition is always truthy.")
-                    .with_annotation(Annotation::primary(condition.span()).with_message(format!(
-                        "This condition (type `{}`) is always truthy",
-                        condition_type.get_id(Some(context.interner))
-                    )))
-                    .with_annotation(
-                        Annotation::secondary(then.span()).with_message(
+            let issue =
+                if let Some(then) = then {
+                    // `$A ? $B : $C` where `$A` is always truthy
+                    Issue::help("Redundant ternary operator: condition is always truthy.")
+                        .with_annotation(Annotation::primary(condition.span()).with_message(format!(
+                            "This condition (type `{}`) is always truthy",
+                            condition_type.get_id()
+                        )))
+                        .with_annotation(Annotation::secondary(then.span()).with_message(
                             "This `then` branch is always evaluated, making it the result of the expression",
-                        ),
-                    )
-                    .with_annotation(
-                        Annotation::secondary(r#else.span()).with_message("This `else` branch will never be evaluated"),
-                    )
-                    .with_note(
-                        "The ternary operator `? :` evaluates the `else` branch only when the condition is falsy.",
-                    )
-                    .with_help("Consider replacing the entire expression with just this `then` branch.")
-            } else {
-                // `$A ?: $C` where `$A` is always truthy
-                Issue::help("Redundant Elvis operator: left-hand side is always truthy.")
+                        ))
+                        .with_annotation(
+                            Annotation::secondary(r#else.span())
+                                .with_message("This `else` branch will never be evaluated"),
+                        )
+                        .with_note(
+                            "The ternary operator `? :` evaluates the `else` branch only when the condition is falsy.",
+                        )
+                        .with_help("Consider replacing the entire expression with just this `then` branch.")
+                } else {
+                    // `$A ?: $C` where `$A` is always truthy
+                    Issue::help("Redundant Elvis operator: left-hand side is always truthy.")
                     .with_annotation(Annotation::primary(condition.span()).with_message(format!(
                         "This expression (type `{}`) is always truthy",
-                        condition_type.get_id(Some(context.interner))
+                        condition_type.get_id()
                     )))
                     .with_annotation(
                         Annotation::secondary(r#else.span())
@@ -403,38 +376,38 @@ pub(super) fn analyze_conditional<'a>(
                         "The Elvis operator `?:` evaluates the right-hand side only if the left-hand side is falsy.",
                     )
                     .with_help("Consider removing the `?:` operator and the right-hand side expression.")
-            };
+                };
 
             context.collector.report_with_code(IssueCode::RedundantCondition, issue);
         } else if condition_type.is_always_falsy() {
             is_condition_falsy = true;
 
             // https://en.wikipedia.org/wiki/Ternary_conditional_operator
-            let issue = if let Some(then) = then {
-                // `$A ? $B : $C` where `$A` is always falsy
-                Issue::warning("Redundant ternary operator: condition is always falsy.")
-                    .with_annotation(Annotation::primary(condition.span()).with_message(format!(
-                        "This condition (type `{}`) is always falsy",
-                        condition_type.get_id(Some(context.interner))
-                    )))
-                    .with_annotation(
-                        Annotation::secondary(then.span()).with_message("This `then` branch will never be evaluated"),
-                    )
-                    .with_annotation(
-                        Annotation::secondary(r#else.span()).with_message(
+            let issue =
+                if let Some(then) = then {
+                    // `$A ? $B : $C` where `$A` is always falsy
+                    Issue::warning("Redundant ternary operator: condition is always falsy.")
+                        .with_annotation(Annotation::primary(condition.span()).with_message(format!(
+                            "This condition (type `{}`) is always falsy",
+                            condition_type.get_id()
+                        )))
+                        .with_annotation(
+                            Annotation::secondary(then.span())
+                                .with_message("This `then` branch will never be evaluated"),
+                        )
+                        .with_annotation(Annotation::secondary(r#else.span()).with_message(
                             "This `else` branch is always evaluated, making it the result of the expression",
-                        ),
-                    )
-                    .with_note(
-                        "The ternary operator `? :` evaluates the `then` branch only when the condition is truthy.",
-                    )
-                    .with_help("Consider replacing the entire expression with just this `else` branch.")
-            } else {
-                // `$A ?: $C` where `$A` is always falsy
-                Issue::warning("Redundant Elvis operator: left-hand side is always falsy.")
+                        ))
+                        .with_note(
+                            "The ternary operator `? :` evaluates the `then` branch only when the condition is truthy.",
+                        )
+                        .with_help("Consider replacing the entire expression with just this `else` branch.")
+                } else {
+                    // `$A ?: $C` where `$A` is always falsy
+                    Issue::warning("Redundant Elvis operator: left-hand side is always falsy.")
                     .with_annotation(Annotation::primary(condition.span()).with_message(format!(
                         "This expression (type `{}`) is always falsy",
-                        condition_type.get_id(Some(context.interner))
+                        condition_type.get_id()
                     )))
                     .with_annotation(Annotation::secondary(r#else.span()).with_message(
                         "This right-hand side is always evaluated, making it the result of the expression",
@@ -443,7 +416,7 @@ pub(super) fn analyze_conditional<'a>(
                         "The Elvis operator `?:` evaluates the right-hand side only if the left-hand side is falsy.",
                     )
                     .with_help("Consider replacing the entire expression with just the right-hand side.")
-            };
+                };
 
             context.collector.report_with_code(IssueCode::ImpossibleCondition, issue);
         }
@@ -460,13 +433,7 @@ pub(super) fn analyze_conditional<'a>(
                 Rc::new(get_mixed())
             }
         } else if let (Some(then_type), Some(else_type)) = (then_type, artifacts.get_rc_expression_type(r#else)) {
-            Rc::new(combine_union_types(
-                then_type.as_ref(),
-                else_type.as_ref(),
-                context.codebase,
-                context.interner,
-                false,
-            ))
+            Rc::new(combine_union_types(then_type.as_ref(), else_type.as_ref(), context.codebase, false))
         } else {
             Rc::new(get_mixed())
         },

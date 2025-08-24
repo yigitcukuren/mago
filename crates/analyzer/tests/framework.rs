@@ -3,15 +3,16 @@ use std::collections::BTreeMap;
 
 use ahash::HashSet;
 
+use bumpalo::Bump;
 use mago_analyzer::Analyzer;
 use mago_analyzer::analysis_result::AnalysisResult;
 use mago_analyzer::settings::Settings;
+use mago_atom::AtomSet;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::populator::populate_codebase;
 use mago_codex::reference::SymbolReferences;
 use mago_codex::scanner::scan_program;
 use mago_database::file::File;
-use mago_interner::ThreadedInterner;
 use mago_names::resolver::NameResolver;
 use mago_syntax::parser::parse_file;
 
@@ -32,31 +33,31 @@ impl<'a> TestCase<'a> {
 }
 
 fn run_test_case_inner(config: TestCase) {
-    let interner = ThreadedInterner::new();
+    let arena = Bump::new();
     let source_file = File::ephemeral(Cow::Owned(config.name.to_string()), Cow::Owned(config.content.to_string()));
 
-    let (program, parse_issues) = parse_file(&interner, &source_file);
+    let (program, parse_issues) = parse_file(&arena, &source_file);
     if parse_issues.is_some() {
         panic!("Test '{}' failed during parsing:\n{:#?}", config.name, parse_issues);
     }
 
-    let resolver = NameResolver::new(&interner);
-    let resolved_names = resolver.resolve(&program);
-    let mut codebase = scan_program(&interner, &source_file, &program, &resolved_names);
+    let resolver = NameResolver::new(&arena);
+    let resolved_names = resolver.resolve(program);
+    let mut codebase = scan_program(&arena, &source_file, program, &resolved_names);
     let mut symbol_references = SymbolReferences::new();
 
-    populate_codebase(&mut codebase, &interner, &mut symbol_references, HashSet::default(), HashSet::default());
+    populate_codebase(&mut codebase, &mut symbol_references, AtomSet::default(), HashSet::default());
 
     let mut analysis_result = AnalysisResult::new(symbol_references);
     let analyzer = Analyzer::new(
+        &arena,
         &source_file,
         &resolved_names,
         &codebase,
-        &interner,
         Settings { find_unused_expressions: true, check_throws: true, ..Default::default() },
     );
 
-    let analysis_run_result = analyzer.analyze(&program, &mut analysis_result);
+    let analysis_run_result = analyzer.analyze(program, &mut analysis_result);
 
     if let Err(err) = analysis_run_result {
         panic!("Test '{}': Expected analysis to succeed, but it failed with an error: {}", config.name, err);

@@ -21,11 +21,18 @@ mod macros;
 mod pipeline;
 mod utils;
 
-#[cfg(any(target_os = "macos", target_os = "windows", target_env = "musl"))]
+#[cfg(all(not(feature = "dhat-heap"), any(target_os = "macos", target_os = "windows", target_env = "musl"),))]
 #[global_allocator]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
 
 pub fn main() -> ExitCode {
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
+
     initialize_logger(if cfg!(debug_assertions) { LevelFilter::DEBUG } else { LevelFilter::INFO }, "MAGO_LOG");
 
     let result = run();
@@ -73,7 +80,6 @@ pub fn run() -> Result<ExitCode, Error> {
         MagoCommand::Format(cmd) => commands::format::execute(cmd, configuration),
         MagoCommand::Ast(cmd) => commands::ast::execute(cmd, configuration),
         MagoCommand::Analyze(cmd) => commands::analyze::execute(cmd, configuration),
-        MagoCommand::Find(cmd) => commands::find::execute(cmd, configuration),
         MagoCommand::SelfUpdate(_) => {
             unreachable!("The self-update command should have been handled before this point.")
         }

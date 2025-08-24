@@ -19,21 +19,16 @@ use crate::context::block::BlockContext;
 use crate::error::AnalysisError;
 use crate::resolver::static_property::resolve_static_properties;
 
-pub(crate) fn analyze<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+pub(crate) fn analyze<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    property_access: &StaticPropertyAccess,
+    property_access: &StaticPropertyAccess<'arena>,
     assigned_value_type: &TUnion,
     property_access_id: &Option<String>,
 ) -> Result<(), AnalysisError> {
-    let property_resolution = resolve_static_properties(
-        context,
-        block_context,
-        artifacts,
-        &property_access.class,
-        &property_access.property,
-    )?;
+    let property_resolution =
+        resolve_static_properties(context, block_context, artifacts, property_access.class, &property_access.property)?;
 
     let mut resolved_property_type = None;
     let mut matched_all_properties = true;
@@ -48,7 +43,6 @@ pub(crate) fn analyze<'a>(
 
         let type_match_found = union_comparator::is_contained_by(
             context.codebase,
-            context.interner,
             assigned_value_type,
             &resolved_property.property_type,
             assigned_value_type.ignore_nullable_issues,
@@ -63,10 +57,10 @@ pub(crate) fn analyze<'a>(
                 Issue::error("Invalid property assignment value").with_annotation(
                     Annotation::primary(property_access.class.span()).with_message(format!(
                         "{}::{} with declared type {}, cannot be assigned type {}",
-                        context.interner.lookup(&resolved_property.declaring_class_id),
-                        context.interner.lookup(&resolved_property.property_name),
-                        resolved_property.property_type.get_id(Some(context.interner)),
-                        assigned_value_type.get_id(Some(context.interner)),
+                        resolved_property.declaring_class_id,
+                        resolved_property.property_name,
+                        resolved_property.property_type.get_id(),
+                        assigned_value_type.get_id(),
                     )),
                 ),
             );
@@ -80,8 +74,8 @@ pub(crate) fn analyze<'a>(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
                             property_access_id.clone().unwrap_or("This property".to_string()),
-                            resolved_property.property_type.get_id(Some(context.interner)),
-                            assigned_value_type.get_id(Some(context.interner)),
+                            resolved_property.property_type.get_id(),
+                            assigned_value_type.get_id(),
                         )),
                     ),
                 );
@@ -92,8 +86,8 @@ pub(crate) fn analyze<'a>(
                         Annotation::primary(property_access.class.span()).with_message(format!(
                             "{} expects {}, parent type {} provided",
                             property_access_id.clone().unwrap_or("This property".to_string()),
-                            resolved_property.property_type.get_id(Some(context.interner)),
-                            assigned_value_type.get_id(Some(context.interner)),
+                            resolved_property.property_type.get_id(),
+                            assigned_value_type.get_id(),
                         )),
                     ),
                 );
@@ -108,7 +102,6 @@ pub(crate) fn analyze<'a>(
             resolved_property.property_type,
             resolved_property_type.as_ref(),
             context.codebase,
-            context.interner,
         ));
 
         matched_all_properties &= type_match_found;
@@ -124,16 +117,14 @@ pub(crate) fn analyze<'a>(
         || property_resolution.encountered_mixed
         || property_resolution.has_possibly_defined_property
     {
-        resulting_type =
-            Some(add_optional_union_type(get_mixed(), resulting_type.as_ref(), context.codebase, context.interner));
+        resulting_type = Some(add_optional_union_type(get_mixed(), resulting_type.as_ref(), context.codebase));
     }
 
     if property_resolution.has_error_path
         || property_resolution.has_invalid_path
         || property_resolution.encountered_null
     {
-        resulting_type =
-            Some(add_optional_union_type(get_never(), resulting_type.as_ref(), context.codebase, context.interner));
+        resulting_type = Some(add_optional_union_type(get_never(), resulting_type.as_ref(), context.codebase));
     }
 
     let resulting_type = Rc::new(resulting_type.unwrap_or_else(get_never));

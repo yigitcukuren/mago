@@ -1,10 +1,8 @@
-use std::borrow::Cow;
-
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_interner::StringIdentifier;
-use mago_interner::ThreadedInterner;
+use mago_atom::Atom;
+use mago_atom::atom;
 
 use crate::ttype::TType;
 use crate::ttype::TypeRef;
@@ -127,14 +125,8 @@ impl TScalar {
 
     /// Creates a literal `string` type with a known value (e.g., `"hello"`).
     #[inline]
-    pub fn literal_string(value: String) -> Self {
-        TScalar::String(TString::known_literal(Cow::Owned(value)))
-    }
-
-    /// Creates a literal `string` type with a known value from a static string slice (e.g., `"hello"`).
-    #[inline]
-    pub fn static_literal_string(value: &'static str) -> Self {
-        TScalar::String(TString::known_literal(Cow::Borrowed(value)))
+    pub fn literal_string(value: Atom) -> Self {
+        TScalar::String(TString::known_literal(value))
     }
 
     /// Creates a literal `string` type with an unspecified value
@@ -383,7 +375,7 @@ impl TScalar {
         }
     }
 
-    pub fn get_literal_class_string_value(&self) -> Option<StringIdentifier> {
+    pub fn get_literal_class_string_value(&self) -> Option<Atom> {
         match self {
             TScalar::ClassLikeString(s) => s.literal_value(),
             _ => None,
@@ -546,16 +538,16 @@ impl TType for TScalar {
         }
     }
 
-    fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
+    fn get_id(&self) -> Atom {
         match self {
-            TScalar::Bool(t) => t.get_id(interner),
-            TScalar::Float(t) => t.get_id(interner),
-            TScalar::String(t) => t.get_id(interner),
-            TScalar::ClassLikeString(t) => t.get_id(interner),
-            TScalar::Integer(t) => t.get_id(interner),
-            TScalar::Generic => "scalar".to_string(),
-            TScalar::ArrayKey => "array-key".to_string(),
-            TScalar::Numeric => "numeric".to_string(),
+            TScalar::Bool(t) => t.get_id(),
+            TScalar::Float(t) => t.get_id(),
+            TScalar::String(t) => t.get_id(),
+            TScalar::ClassLikeString(t) => t.get_id(),
+            TScalar::Integer(t) => t.get_id(),
+            TScalar::Generic => atom("scalar"),
+            TScalar::ArrayKey => atom("array-key"),
+            TScalar::Numeric => atom("numeric"),
         }
     }
 }

@@ -1,7 +1,7 @@
+use mago_atom::Atom;
+use mago_atom::concat_atom;
 use serde::Deserialize;
 use serde::Serialize;
-
-use mago_interner::ThreadedInterner;
 
 use crate::ttype::TType;
 use crate::ttype::TypeRef;
@@ -64,17 +64,11 @@ impl TType for TPropertiesOf {
         true
     }
 
-    fn get_id(&self, interner: Option<&ThreadedInterner>) -> String {
-        let mut id = String::new();
+    fn get_id(&self) -> Atom {
         if let Some(visibility) = &self.visibility {
-            id += visibility.as_str();
-            id += "-";
+            concat_atom!(visibility.as_str(), "-properties-of<", self.target_type.get_id().as_str(), ">")
+        } else {
+            concat_atom!("properties-of<", self.target_type.get_id().as_str(), ">")
         }
-
-        id += "properties-of<";
-        id += &self.target_type.get_id(interner);
-        id += ">";
-
-        id
     }
 }

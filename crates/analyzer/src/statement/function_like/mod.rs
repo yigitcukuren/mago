@@ -1,8 +1,8 @@
-use std::borrow::Cow;
 use std::rc::Rc;
 
 use ahash::HashMap;
 
+use mago_atom::concat_atom;
 use mago_codex::get_class_like;
 use mago_codex::get_function_like_thrown_types;
 use mago_codex::get_interface;
@@ -51,18 +51,18 @@ use crate::utils::expression::get_variable_id;
 pub mod function;
 
 #[derive(Debug, Clone, Copy)]
-pub enum FunctionLikeBody<'a> {
-    Statements(&'a [Statement]),
-    Expression(&'a Expression),
+pub enum FunctionLikeBody<'ast, 'arena> {
+    Statements(&'ast [Statement<'arena>]),
+    Expression(&'ast Expression<'arena>),
 }
 
-pub fn analyze_function_like<'a, 'ast>(
-    context: &mut Context<'a>,
+pub fn analyze_function_like<'ctx, 'ast, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     parent_artifacts: &mut AnalysisArtifacts,
-    block_context: &mut BlockContext<'a>,
-    function_like_metadata: &'a FunctionLikeMetadata,
-    parameter_list: &'ast FunctionLikeParameterList,
-    body: FunctionLikeBody<'ast>,
+    block_context: &mut BlockContext<'ctx>,
+    function_like_metadata: &'ctx FunctionLikeMetadata,
+    parameter_list: &'ast FunctionLikeParameterList<'arena>,
+    body: FunctionLikeBody<'ast, 'arena>,
     inferred_parameter_types: Option<HashMap<usize, TUnion>>,
 ) -> Result<AnalysisArtifacts, AnalysisError> {
     let mut previous_type_resolution_context = std::mem::replace(
@@ -101,15 +101,15 @@ pub fn analyze_function_like<'a, 'ast>(
             };
 
             for variable in global.variables.iter() {
-                if let Some(var_id) = get_variable_id(variable, context.interner) {
-                    block_context.conditionally_referenced_variable_ids.insert(var_id);
+                if let Some(var_id) = get_variable_id(variable) {
+                    block_context.conditionally_referenced_variable_ids.insert(var_id.to_string());
                 }
             }
         }
     }
 
     if let Some(calling_class) = block_context.scope.get_class_like_name()
-        && let Some(class_like_metadata) = get_class_like(context.codebase, context.interner, calling_class)
+        && let Some(class_like_metadata) = get_class_like(context.codebase, &calling_class)
     {
         add_properties_to_context(context, block_context, class_like_metadata, function_like_metadata)?;
     }
@@ -141,16 +141,16 @@ pub fn analyze_function_like<'a, 'ast>(
     Ok(artifacts)
 }
 
-fn add_parameter_types_to_context<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn add_parameter_types_to_context<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    function_like_metadata: &FunctionLikeMetadata,
-    parameter_list: &FunctionLikeParameterList,
+    function_like_metadata: &'ctx FunctionLikeMetadata,
+    parameter_list: &FunctionLikeParameterList<'arena>,
     mut inferred_parameter_types: Option<HashMap<usize, TUnion>>,
 ) -> Result<(), AnalysisError> {
     for (i, parameter_metadata) in function_like_metadata.parameters.iter().enumerate() {
-        let parameter_variable_str = context.interner.lookup(&parameter_metadata.get_name().0);
+        let parameter_variable_str = parameter_metadata.get_name().0;
 
         let declared_parameter_type = if let Some(type_metadata) = parameter_metadata.get_type_metadata() {
             expand_type_metadata(context, block_context, artifacts, function_like_metadata, type_metadata)
@@ -222,9 +222,9 @@ fn add_parameter_types_to_context<'a>(
     Ok(())
 }
 
-fn expand_type_metadata<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn expand_type_metadata<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
     function_like_metadata: &FunctionLikeMetadata,
     type_metadata: &TypeMetadata,
@@ -241,12 +241,11 @@ fn expand_type_metadata<'a>(
 
     expander::expand_union(
         context.codebase,
-        context.interner,
         &mut signature_union,
         &TypeExpansionOptions {
             self_class: calling_class,
             static_class_type: if let Some(calling_class) = calling_class {
-                StaticClassType::Name(*calling_class)
+                StaticClassType::Name(calling_class)
             } else {
                 StaticClassType::None
             },
@@ -266,27 +265,27 @@ fn expand_type_metadata<'a>(
     signature_union
 }
 
-fn add_properties_to_context<'a>(
-    context: &Context<'a>,
-    block_context: &mut BlockContext<'a>,
-    class_like_metadata: &ClassLikeMetadata,
-    function_like_metadata: &FunctionLikeMetadata,
+fn add_properties_to_context<'ctx, 'arena>(
+    context: &Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
+    class_like_metadata: &'ctx ClassLikeMetadata,
+    function_like_metadata: &'ctx FunctionLikeMetadata,
 ) -> Result<(), AnalysisError> {
     let Some(calling_class) = block_context.scope.get_class_like_name() else {
         return Ok(());
     };
 
-    for (property_name_id, declaring_class) in &class_like_metadata.declaring_property_ids {
-        let Some(property_class_metadata) = get_class_like(context.codebase, context.interner, declaring_class) else {
+    for (property_name, declaring_class) in &class_like_metadata.declaring_property_ids {
+        let Some(property_class_metadata) = get_class_like(context.codebase, declaring_class) else {
             return Err(AnalysisError::InternalError(
-                format!("Could not load property class metadata for `{}`.", context.interner.lookup(declaring_class)),
+                format!("Could not load property class metadata for `{}`.", declaring_class),
                 class_like_metadata.span,
             ));
         };
 
-        let Some(property_metadata) = property_class_metadata.properties.get(property_name_id) else {
+        let Some(property_metadata) = property_class_metadata.properties.get(property_name) else {
             return Err(AnalysisError::InternalError(
-                format!("Could not load property metadata for `{}`.", context.interner.lookup(property_name_id)),
+                format!("Could not load property metadata for `{}`.", property_name),
                 class_like_metadata.span,
             ));
         };
@@ -298,11 +297,10 @@ fn add_properties_to_context<'a>(
             .cloned()
             .unwrap_or_else(get_mixed);
 
-        let property_name = context.interner.lookup(property_name_id);
         let raw_property_name = property_name.strip_prefix("$").unwrap_or(property_name);
 
         let expression_id = if property_metadata.flags.is_static() {
-            format!("{}::${raw_property_name}", context.interner.lookup(&class_like_metadata.name),)
+            format!("{}::${raw_property_name}", class_like_metadata.name)
         } else {
             let this_type = get_this_type(context, class_like_metadata, function_like_metadata);
 
@@ -319,11 +317,10 @@ fn add_properties_to_context<'a>(
 
         expander::expand_union(
             context.codebase,
-            context.interner,
             &mut property_type,
             &TypeExpansionOptions {
                 self_class: Some(calling_class),
-                static_class_type: StaticClassType::Name(*calling_class),
+                static_class_type: StaticClassType::Name(calling_class),
                 function_is_final: if let Some(method_metadata) = &function_like_metadata.method_metadata {
                     method_metadata.is_final
                 } else {
@@ -341,7 +338,7 @@ fn add_properties_to_context<'a>(
 }
 
 fn get_this_type(
-    context: &Context<'_>,
+    context: &Context<'_, '_>,
     class_like_metadata: &ClassLikeMetadata,
     function_like_metadata: &FunctionLikeMetadata,
 ) -> TObject {
@@ -351,7 +348,7 @@ fn get_this_type(
 
     let mut intersections = vec![];
     for required_interface in &class_like_metadata.require_implements {
-        let Some(interface_metadata) = get_interface(context.codebase, context.interner, required_interface) else {
+        let Some(interface_metadata) = get_interface(context.codebase, required_interface) else {
             continue;
         };
 
@@ -370,7 +367,7 @@ fn get_this_type(
     }
 
     for required_class in &class_like_metadata.require_extends {
-        let Some(parent_class_metadata) = get_class_like(context.codebase, context.interner, required_class) else {
+        let Some(parent_class_metadata) = get_class_like(context.codebase, required_class) else {
             continue;
         };
 
@@ -469,11 +466,11 @@ fn add_symbol_references(
     }
 }
 
-fn check_thrown_types<'a>(
-    context: &mut Context<'a>,
-    block_context: &mut BlockContext<'a>,
+fn check_thrown_types<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    block_context: &mut BlockContext<'ctx>,
     artifacts: &mut AnalysisArtifacts,
-    function_like_metadata: &FunctionLikeMetadata,
+    function_like_metadata: &'ctx FunctionLikeMetadata,
 ) -> Result<(), AnalysisError> {
     if !context.settings.check_throws {
         // If the setting is disabled, we skip the check.
@@ -485,7 +482,7 @@ fn check_thrown_types<'a>(
         return Ok(());
     }
 
-    let Some(function_name_id) = function_like_metadata.original_name.as_ref() else {
+    let Some(function_name) = function_like_metadata.original_name.as_ref() else {
         return Ok(());
     };
 
@@ -495,15 +492,11 @@ fn check_thrown_types<'a>(
                 return Ok(());
             };
 
-            let name = Cow::Owned(format!(
-                "{}::{}",
-                context.interner.lookup(&class_like_metadata.original_name),
-                context.interner.lookup(function_name_id),
-            ));
+            let name = concat_atom!(&class_like_metadata.original_name, "::", function_name);
 
             ("method", name)
         }
-        false => ("function", Cow::Borrowed(context.interner.lookup(function_name_id))),
+        false => ("function", *function_name),
     };
 
     let expected_throw_types =
@@ -521,7 +514,6 @@ fn check_thrown_types<'a>(
         for expected_type in &expected_throw_types {
             if union_comparator::is_contained_by(
                 context.codebase,
-                context.interner,
                 &thrown_type_union,
                 expected_type,
                 false,
@@ -538,10 +530,8 @@ fn check_thrown_types<'a>(
             continue;
         }
 
-        let thrown_type_name = context.interner.lookup(thrown_type);
-
         let mut issue =
-            Issue::error(format!("Potentially unhandled exception `{}` in `{}`.", thrown_type_name, function_name));
+            Issue::error(format!("Potentially unhandled exception `{}` in `{}`.", thrown_type, function_name));
 
         for span in thrown_spans {
             issue = issue.with_annotation(Annotation::primary(*span).with_message("Exception may be thrown here"));
@@ -550,14 +540,14 @@ fn check_thrown_types<'a>(
         issue = issue
             .with_annotation(
                 Annotation::secondary(function_like_metadata.span)
-                    .with_message(format!("This {function_kind} does not declare that it throws `{}`", thrown_type_name)),
+                    .with_message(format!("This {function_kind} does not declare that it throws `{}`", thrown_type)),
             )
             .with_note(format!(
                 "All possible exceptions must be caught or declared in a `@throws` tag in the {function_kind}'s docblock.",
             ))
             .with_help(format!(
                 "You can add `@throws {}` to the {function_kind}'s docblock or wrap the throwing code in a `try-catch` block.",
-                thrown_type_name
+                thrown_type
             ));
 
         context.collector.report_with_code(IssueCode::UnhandledThrownType, issue);

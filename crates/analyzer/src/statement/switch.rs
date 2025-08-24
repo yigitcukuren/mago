@@ -45,11 +45,11 @@ use crate::statement::analyze_statements;
 use crate::utils::expression::get_expression_id;
 use crate::utils::misc::check_for_paradox;
 
-impl Analyzable for Switch {
-    fn analyze<'a>(
-        &self,
-        context: &mut Context<'a>,
-        block_context: &mut BlockContext<'a>,
+impl<'ast, 'arena> Analyzable<'ast, 'arena> for Switch<'arena> {
+    fn analyze<'ctx>(
+        &'ast self,
+        context: &mut Context<'ctx, 'arena>,
+        block_context: &mut BlockContext<'ctx>,
         artifacts: &mut AnalysisArtifacts,
     ) -> Result<(), AnalysisError> {
         SwitchAnalyzer::new(context, block_context, artifacts).analyze(self)
@@ -57,15 +57,15 @@ impl Analyzable for Switch {
 }
 
 #[derive(Debug)]
-struct SwitchAnalyzer<'a, 'b> {
-    context: &'b mut Context<'a>,
-    block_context: &'b mut BlockContext<'a>,
-    artifacts: &'b mut AnalysisArtifacts,
+struct SwitchAnalyzer<'anlyz, 'ctx, 'arena> {
+    context: &'anlyz mut Context<'ctx, 'arena>,
+    block_context: &'anlyz mut BlockContext<'ctx>,
+    artifacts: &'anlyz mut AnalysisArtifacts,
     new_locals: Option<BTreeMap<String, Rc<TUnion>>>,
     redefined_variables: Option<HashMap<String, Rc<TUnion>>>,
     possibly_redefined_variables: Option<BTreeMap<String, TUnion>>,
-    leftover_statements: Vec<Statement>,
-    leftover_case_equality_expression: Option<Expression>,
+    leftover_statements: Vec<Statement<'arena>>,
+    leftover_case_equality_expression: Option<Expression<'arena>>,
     negated_clauses: Vec<Clause>,
     new_assigned_variable_ids: HashMap<String, u32>,
     last_case_exit_type: ControlAction,
@@ -74,13 +74,13 @@ struct SwitchAnalyzer<'a, 'b> {
     has_default_case: bool,
 }
 
-impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
+impl<'anlyz, 'ctx, 'arena> SwitchAnalyzer<'anlyz, 'ctx, 'arena> {
     const SYNTHETIC_SWITCH_VAR_PREFIX: &'static str = "$-tmp-switch-";
 
     pub fn new(
-        context: &'b mut Context<'a>,
-        block_context: &'b mut BlockContext<'a>,
-        artifacts: &'b mut AnalysisArtifacts,
+        context: &'anlyz mut Context<'ctx, 'arena>,
+        block_context: &'anlyz mut BlockContext<'ctx>,
+        artifacts: &'anlyz mut AnalysisArtifacts,
     ) -> Self {
         Self {
             context,
@@ -100,17 +100,16 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         }
     }
 
-    pub fn analyze(mut self, switch: &Switch) -> Result<(), AnalysisError> {
+    pub fn analyze<'ast>(mut self, switch: &'ast Switch<'arena>) -> Result<(), AnalysisError> {
         let was_inside_conditional = self.block_context.inside_conditional;
         self.block_context.inside_conditional = true;
         switch.expression.analyze(self.context, self.block_context, self.artifacts)?;
         self.block_context.inside_conditional = was_inside_conditional;
 
         let switch_var_id = if let Some(switch_var_id) = get_expression_id(
-            &switch.expression,
+            switch.expression,
             self.block_context.scope.get_class_like_name(),
             self.context.resolved_names,
-            self.context.interner,
             Some(self.context.codebase),
         ) {
             switch_var_id
@@ -158,7 +157,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         let synthetic_switch_condition = if switch_var_id.starts_with(Self::SYNTHETIC_SWITCH_VAR_PREFIX) {
             condition_is_synthetic = true;
 
-            Some(new_synthetic_variable(self.context.interner, &switch_var_id, switch.expression.span()))
+            Some(new_synthetic_variable(self.context.arena, &switch_var_id, switch.expression.span()))
         } else {
             None
         };
@@ -183,7 +182,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
             let is_matching = self.analyze_case(
                 switch,
-                synthetic_switch_condition.as_ref().unwrap_or(&switch.expression),
+                synthetic_switch_condition.as_ref().unwrap_or(switch.expression),
                 condition_is_synthetic,
                 &switch_var_id,
                 case,
@@ -216,13 +215,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             if let Some(context_type) = self.block_context.locals.get(&var_id).cloned() {
                 self.block_context.locals.insert(
                     var_id.clone(),
-                    Rc::new(combine_union_types(
-                        &var_type,
-                        &context_type,
-                        self.context.codebase,
-                        self.context.interner,
-                        false,
-                    )),
+                    Rc::new(combine_union_types(&var_type, &context_type, self.context.codebase, false)),
                 );
             }
         }
@@ -234,15 +227,15 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         Ok(())
     }
 
-    pub(crate) fn analyze_case(
+    pub(crate) fn analyze_case<'ast>(
         &mut self,
         switch: &Switch,
-        switch_condition: &Expression,
+        switch_condition: &'ast Expression<'arena>,
         condition_is_synthetic: bool,
         switch_var_id: &String,
-        switch_case: &SwitchCase,
-        previous_empty_cases: &Vec<&SwitchExpressionCase>,
-        original_block_context: &BlockContext<'a>,
+        switch_case: &'ast SwitchCase<'arena>,
+        previous_empty_cases: &Vec<&'ast SwitchExpressionCase<'arena>>,
+        original_block_context: &BlockContext<'ctx>,
         is_last: bool,
         case_index: usize,
         previously_matching_case: Option<(bool, Span)>,
@@ -338,7 +331,6 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 if (switch_condition_type.is_true() && condition_type.is_always_falsy())
                     || !can_expression_types_be_identical(
                         self.context.codebase,
-                        self.context.interner,
                         switch_condition_type.as_ref(),
                         condition_type.as_ref(),
                         false,
@@ -352,12 +344,14 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                         Issue::error("Switch case condition will never match")
                             .with_annotation(Annotation::primary(case_condition.span()).with_message(format!(
                                 "This case with type `{}` will never match the subject type.",
-                                condition_type.get_id(Some(self.context.interner))
+                                condition_type.get_id()
                             )))
-                            .with_annotation(Annotation::secondary(switch.expression.span()).with_message(format!(
-                                "Switch subject has type `{}`.",
-                                switch_condition_type.get_id(Some(self.context.interner))
-                            )))
+                            .with_annotation(
+                                Annotation::secondary(switch.expression.span()).with_message(format!(
+                                    "Switch subject has type `{}`.",
+                                    switch_condition_type.get_id()
+                                )),
+                            )
                             .with_note("This case condition will never match the switch subject's type.")
                             .with_help("Remove this case or ensure that the switch subject's type can still match it."),
                     );
@@ -374,10 +368,12 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                                 Annotation::primary(case_condition.span())
                                     .with_message("This case will always match the subject."),
                             )
-                            .with_annotation(Annotation::secondary(switch.expression.span()).with_message(format!(
-                                "Switch subject has type `{}`.",
-                                switch_condition_type.get_id(Some(self.context.interner))
-                            )))
+                            .with_annotation(
+                                Annotation::secondary(switch.expression.span()).with_message(format!(
+                                    "Switch subject has type `{}`.",
+                                    switch_condition_type.get_id()
+                                )),
+                            )
                             .with_note("All subsequent `case` and `default` statements are unreachable.")
                             .with_help(
                                 "Remove this case or rearrange the switch cases to ensure that this case is last.",
@@ -392,14 +388,15 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 }
 
                 new_synthetic_disjunctive_equality(
+                    self.context.arena,
                     switch_condition,
                     case_condition,
-                    previous_empty_cases.clone().into_iter().map(|c| c.expression.as_ref()).collect::<Vec<_>>(),
+                    previous_empty_cases.clone().into_iter().map(|c| c.expression).collect::<Vec<_>>(),
                 )
             } else if switch_condition_type.is_true() {
                 case_condition.clone()
             } else {
-                new_synthetic_equals(switch_condition, case_condition)
+                new_synthetic_equals(self.context.arena, switch_condition, case_condition)
             });
         } else if result.is_none() {
             result = Some(true);
@@ -417,7 +414,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
             self.leftover_case_equality_expression =
                 Some(if let Some(leftover_case_equality_expr) = &self.leftover_case_equality_expression {
-                    new_synthetic_or(leftover_case_equality_expr, &case_equality_expression)
+                    new_synthetic_or(self.context.arena, leftover_case_equality_expr, &case_equality_expression)
                 } else {
                     case_equality_expression
                 });
@@ -431,8 +428,10 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
         if let Some(leftover_case_equality_expr) = &self.leftover_case_equality_expression {
             case_equality_expression = Some(new_synthetic_or(
+                self.context.arena,
                 leftover_case_equality_expr,
-                &case_equality_expression.unwrap_or_else(|| new_synthetic_equals(switch_condition, switch_condition)),
+                &case_equality_expression
+                    .unwrap_or_else(|| new_synthetic_equals(self.context.arena, switch_condition, switch_condition)),
             ));
         }
 
@@ -468,7 +467,6 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
         case_block_context.clauses = if !case_clauses.is_empty() {
             if let Some(case_condition) = switch_case.expression() {
                 check_for_paradox(
-                    self.context.interner,
                     &mut self.context.collector,
                     &entry_clauses.iter().map(|v| Rc::new(v.clone())).collect::<Vec<_>>(),
                     &case_clauses,
@@ -502,7 +500,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
             let mut changed_var_ids = HashSet::default();
 
             reconcile_keyed_types(
-                &mut self.context.get_reconciliation_context(),
+                self.context,
                 &reconcilable_if_types,
                 IndexMap::new(),
                 &mut case_block_context,
@@ -567,7 +565,6 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                             Some(var_type),
                             possibly_redefined_var_ids.get(var_id),
                             self.context.codebase,
-                            self.context.interner,
                         ),
                     );
                 }
@@ -587,13 +584,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                         if case_block_context.locals.contains_key(&var_id) {
                             new_locals.insert(
                                 var_id.clone(),
-                                Rc::new(combine_union_types(
-                                    break_var_type,
-                                    &var_type,
-                                    self.context.codebase,
-                                    self.context.interner,
-                                    false,
-                                )),
+                                Rc::new(combine_union_types(break_var_type, &var_type, self.context.codebase, false)),
                             );
                         } else {
                             new_locals.remove(&var_id);
@@ -609,13 +600,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                     if let Some(break_var_type) = break_vars.get(&var_id) {
                         redefined_vars.insert(
                             var_id.clone(),
-                            Rc::new(combine_union_types(
-                                break_var_type,
-                                &var_type,
-                                self.context.codebase,
-                                self.context.interner,
-                                false,
-                            )),
+                            Rc::new(combine_union_types(break_var_type, &var_type, self.context.codebase, false)),
                         );
                     } else {
                         redefined_vars.remove(&var_id);
@@ -629,8 +614,8 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
 
     fn handle_non_returning_case(
         &mut self,
-        case_block_context: &BlockContext<'_>,
-        original_block_context: &BlockContext<'_>,
+        case_block_context: &BlockContext<'ctx>,
+        original_block_context: &BlockContext<'ctx>,
         case_exit_type: ControlAction,
     ) -> Result<(), AnalysisError> {
         if matches!(case_exit_type, ControlAction::Continue) {
@@ -649,7 +634,6 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                         Some(var_type),
                         possibly_redefined_var_ids.get(var_id),
                         self.context.codebase,
-                        self.context.interner,
                     ),
                 );
             }
@@ -668,13 +652,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 if let Some(break_var_type) = case_redefined_vars.get(&var_id) {
                     redefined_vars.insert(
                         var_id.clone(),
-                        Rc::new(combine_union_types(
-                            break_var_type,
-                            &var_type,
-                            self.context.codebase,
-                            self.context.interner,
-                            false,
-                        )),
+                        Rc::new(combine_union_types(break_var_type, &var_type, self.context.codebase, false)),
                     );
                 } else {
                     redefined_vars.remove(&var_id);
@@ -689,13 +667,7 @@ impl<'a, 'b> SwitchAnalyzer<'a, 'b> {
                 if let Some(existing_var_type) = case_block_context.locals.get(&var_id) {
                     new_locals.insert(
                         var_id.clone(),
-                        Rc::new(combine_union_types(
-                            existing_var_type,
-                            &var_type,
-                            self.context.codebase,
-                            self.context.interner,
-                            false,
-                        )),
+                        Rc::new(combine_union_types(existing_var_type, &var_type, self.context.codebase, false)),
                     );
                 } else {
                     new_locals.remove(&var_id);

@@ -6,9 +6,9 @@ use ahash::HashMap;
 use ahash::HashSet;
 
 use mago_algebra::clause::Clause;
+use mago_atom::AtomMap;
 use mago_codex::assertion::Assertion;
 use mago_codex::context::ScopeContext;
-use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::ttype::TType;
 use mago_codex::ttype::add_optional_union_type;
 use mago_codex::ttype::atomic::TAtomic;
@@ -18,16 +18,12 @@ use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::union::TUnion;
-use mago_collector::Collector;
-use mago_interner::StringIdentifier;
-use mago_interner::ThreadedInterner;
 use mago_span::Span;
 
 use crate::context::Context;
 use crate::context::scope::control_action::ControlAction;
 use crate::context::scope::finally_scope::FinallyScope;
 use crate::context::scope::var_has_root;
-use crate::reconciler::ReconciliationContext;
 use crate::reconciler::assertion_reconciler;
 use crate::reconciler::negated_assertion_reconciler;
 
@@ -53,8 +49,8 @@ pub struct ReferenceConstraint {
 }
 
 #[derive(Clone, Debug)]
-pub struct BlockContext<'a> {
-    pub scope: ScopeContext<'a>,
+pub struct BlockContext<'ctx> {
+    pub scope: ScopeContext<'ctx>,
     pub locals: BTreeMap<String, Rc<TUnion>>,
     pub static_locals: HashSet<String>,
     pub variables_possibly_in_scope: HashSet<String>,
@@ -108,7 +104,7 @@ pub struct BlockContext<'a> {
     pub loop_bounds: (u32, u32),
     pub if_body_context: Option<Rc<RefCell<Self>>>,
     pub control_actions: HashSet<ControlAction>,
-    pub possibly_thrown_exceptions: HashMap<StringIdentifier, HashSet<Span>>,
+    pub possibly_thrown_exceptions: AtomMap<HashSet<Span>>,
 }
 
 impl BreakContext {
@@ -143,8 +139,8 @@ impl ReferenceConstraint {
     }
 }
 
-impl<'a> BlockContext<'a> {
-    pub fn new(scope: ScopeContext<'a>) -> Self {
+impl<'ctx> BlockContext<'ctx> {
+    pub fn new(scope: ScopeContext<'ctx>) -> Self {
         Self {
             scope,
             locals: BTreeMap::new(),
@@ -182,7 +178,7 @@ impl<'a> BlockContext<'a> {
             loop_bounds: (0, 0),
             if_body_context: None,
             control_actions: HashSet::default(),
-            possibly_thrown_exceptions: HashMap::default(),
+            possibly_thrown_exceptions: AtomMap::default(),
         }
     }
 
@@ -190,7 +186,7 @@ impl<'a> BlockContext<'a> {
         self.scope.is_global()
     }
 
-    pub fn update_references_possibly_from_confusing_scope(&mut self, confusing_scope_context: &BlockContext<'_>) {
+    pub fn update_references_possibly_from_confusing_scope(&mut self, confusing_scope_context: &BlockContext<'ctx>) {
         let references = confusing_scope_context
             .references_in_scope
             .keys()
@@ -309,10 +305,8 @@ impl<'a> BlockContext<'a> {
         (included_clauses, rejected_clauses)
     }
 
-    pub(crate) fn filter_clauses(
-        interner: &ThreadedInterner,
-        codebase: &CodebaseMetadata,
-        collector: &mut Collector<'_>,
+    pub(crate) fn filter_clauses<'arena>(
+        context: &mut Context<'ctx, 'arena>,
         remove_var_id: &str,
         clauses: Vec<Rc<Clause>>,
         new_type: Option<&TUnion>,
@@ -353,9 +347,8 @@ impl<'a> BlockContext<'a> {
                         break;
                     }
 
-                    let mut context = ReconciliationContext::new(interner, codebase, collector);
                     let result_type = assertion_reconciler::reconcile(
-                        &mut context,
+                        context,
                         assertion,
                         Some(&new_type.clone()),
                         false,
@@ -381,33 +374,26 @@ impl<'a> BlockContext<'a> {
         clauses_to_keep
     }
 
-    pub(crate) fn remove_variable_from_conflicting_clauses(
+    pub(crate) fn remove_variable_from_conflicting_clauses<'arena>(
         &mut self,
-        interner: &ThreadedInterner,
-        codebase: &CodebaseMetadata,
-        collector: &mut Collector<'_>,
+        context: &mut Context<'ctx, 'arena>,
         remove_var_id: &str,
         new_type: Option<&TUnion>,
     ) {
-        self.clauses =
-            BlockContext::filter_clauses(interner, codebase, collector, remove_var_id, self.clauses.clone(), new_type);
+        self.clauses = BlockContext::filter_clauses(context, remove_var_id, self.clauses.clone(), new_type);
 
         self.parent_conflicting_clause_variables.insert(remove_var_id.to_owned());
     }
 
-    pub(crate) fn remove_descendants(
+    pub(crate) fn remove_descendants<'arena>(
         &mut self,
-        interner: &ThreadedInterner,
-        codebase: &CodebaseMetadata,
-        collector: &mut Collector<'_>,
+        context: &mut Context<'ctx, 'arena>,
         remove_var_id: &str,
         existing_type: &TUnion,
         new_type: Option<&TUnion>,
     ) {
         self.remove_variable_from_conflicting_clauses(
-            interner,
-            codebase,
-            collector,
+            context,
             remove_var_id,
             if existing_type.is_mixed() {
                 None
@@ -464,18 +450,16 @@ impl<'a> BlockContext<'a> {
         self.locals.contains_key(var_name)
     }
 
-    pub(crate) fn remove_variable(
+    pub(crate) fn remove_variable<'arena>(
         &mut self,
         var_name: &String,
         remove_descendants: bool,
-        interner: &ThreadedInterner,
-        codebase: &CodebaseMetadata,
-        collector: &mut Collector<'_>,
+        context: &mut Context<'ctx, 'arena>,
     ) {
         if let Some(existing_type) = self.locals.remove(var_name)
             && remove_descendants
         {
-            self.remove_descendants(interner, codebase, collector, var_name, &existing_type, None);
+            self.remove_descendants(context, var_name, &existing_type, None);
         }
 
         self.assigned_variable_ids.remove(var_name);
@@ -532,7 +516,7 @@ impl<'a> BlockContext<'a> {
 
     pub fn update(
         &mut self,
-        context: &mut Context<'a>,
+        context: &mut Context<'ctx, '_>,
         start_block_context: &Self,
         end_block_context: &mut Self,
         has_leaving_statements: bool,
@@ -611,8 +595,8 @@ impl std::fmt::Display for ReferenceConstraintSource {
     }
 }
 
-fn substitute_types(
-    context: &mut Context<'_>,
+fn substitute_types<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
     existing_type: TUnion,
     old_type: TUnion,
     new_type: Option<&TUnion>,
@@ -624,7 +608,7 @@ fn substitute_types(
     let updated_type =
         if existing_type.eq(&old_type) { get_mixed() } else { subtract_union_types(context, existing_type, old_type) };
 
-    add_optional_union_type(updated_type, new_type, context.codebase, context.interner)
+    add_optional_union_type(updated_type, new_type, context.codebase)
 }
 
 /// Subtracts the types in `type_to_remove` from `existing_type`.
@@ -639,14 +623,18 @@ fn substitute_types(
 ///
 /// # Arguments
 ///
-/// * `context` - The reconciliation context, providing access to codebase and interner.
+/// * `context` - The reconciliation context, and providing access to codebase.
 /// * `existing_type` - The initial `TUnion` type (the minuend).
 /// * `type_to_remove` - The `TUnion` type whose components should be subtracted from `existing_type`.
 ///
 /// # Returns
 ///
 /// A new `TUnion` representing `existing_type - type_to_remove`.
-pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, type_to_remove: TUnion) -> TUnion {
+pub fn subtract_union_types<'ctx, 'arena>(
+    context: &mut Context<'ctx, 'arena>,
+    existing_type: TUnion,
+    type_to_remove: TUnion,
+) -> TUnion {
     if existing_type == type_to_remove {
         return get_never();
     }
@@ -654,7 +642,6 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
     if !(existing_type.has_literal_value() && type_to_remove.has_literal_value())
         && union_comparator::is_contained_by(
             context.codebase,
-            context.interner,
             &existing_type,
             &type_to_remove,
             false,
@@ -666,22 +653,12 @@ pub fn subtract_union_types(context: &mut Context<'_>, existing_type: TUnion, ty
         return existing_type;
     }
 
-    let mut reconciliation_context = context.get_reconciliation_context();
     let mut result = existing_type;
     for atomic in type_to_remove.types.into_owned() {
         let assertion = Assertion::IsNotType(atomic);
-        let key = result.get_id(Some(reconciliation_context.interner));
-        result = negated_assertion_reconciler::reconcile(
-            &mut reconciliation_context,
-            &assertion,
-            &result,
-            false,
-            None,
-            key,
-            None,
-            true,
-        );
+        let key = result.get_id();
 
+        result = negated_assertion_reconciler::reconcile(context, &assertion, &result, false, None, key, None, true);
         if result.is_never() {
             break;
         }
