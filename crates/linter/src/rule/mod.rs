@@ -112,6 +112,7 @@ pub mod too_many_enum_cases;
 pub mod too_many_methods;
 pub mod too_many_properties;
 pub mod trait_name;
+pub mod use_compound_assignment;
 pub mod valid_docblock;
 
 pub use ambiguous_function_call::*;
@@ -215,6 +216,7 @@ pub use too_many_enum_cases::*;
 pub use too_many_methods::*;
 pub use too_many_properties::*;
 pub use trait_name::*;
+pub use use_compound_assignment::*;
 pub use valid_docblock::*;
 
 mod utils;
@@ -415,4 +417,5 @@ define_rules! {
     StrictAssertions(strict_assertions @ StrictAssertionsRule),
     NoRequestAll(no_request_all @ NoRequestAllRule),
     MiddlewareInRoutes(middleware_in_routes @ MiddlewareInRoutesRule),
+    UseCompoundAssignment(use_compound_assignment @ UseCompoundAssignmentRule),
 }
