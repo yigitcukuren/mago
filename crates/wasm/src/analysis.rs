@@ -6,8 +6,10 @@
 //! and formatter.
 
 use std::borrow::Cow;
+use std::sync::LazyLock;
 
 use bumpalo::Bump;
+use mago_prelude::Prelude;
 use serde::Serialize;
 
 use mago_analyzer::Analyzer;
@@ -22,6 +24,8 @@ use mago_semantics::SemanticsChecker;
 use mago_syntax::parser::parse_file;
 
 use crate::settings::WasmSettings;
+
+static STATIC_PRELUDE: LazyLock<Prelude> = LazyLock::new(Prelude::build);
 
 /// Represents the result of a full analysis pass.
 ///
@@ -39,6 +43,8 @@ pub struct WasmAnalysisResults {
 
 /// Runs the complete analysis pipeline on a string of PHP code.
 pub fn analyze_code(code: String, settings: WasmSettings) -> WasmAnalysisResults {
+    let Prelude { database: _, mut metadata, mut symbol_references } = LazyLock::force(&STATIC_PRELUDE).clone();
+
     let arena = Bump::new();
     let source_file = File::ephemeral(Cow::Borrowed("code.php"), Cow::Owned(code));
 
@@ -47,18 +53,17 @@ pub fn analyze_code(code: String, settings: WasmSettings) -> WasmAnalysisResults
 
     let semantic_issues = SemanticsChecker::new(settings.php_version).check(&source_file, program, &resolved_names);
 
-    let mut codebase = mago_codex::scanner::scan_program(&arena, &source_file, program, &resolved_names);
-    let mut symbol_references = SymbolReferences::new();
+    metadata.extend(mago_codex::scanner::scan_program(&arena, &source_file, program, &resolved_names));
 
     mago_codex::populator::populate_codebase(
-        &mut codebase,
+        &mut metadata,
         &mut symbol_references,
         Default::default(),
         Default::default(),
     );
 
     let analyzer_settings = settings.analyzer.to_analyzer_settings(settings.php_version);
-    let analyzer = Analyzer::new(&arena, &source_file, &resolved_names, &codebase, analyzer_settings);
+    let analyzer = Analyzer::new(&arena, &source_file, &resolved_names, &metadata, analyzer_settings);
     let mut analyzer_analysis_result = mago_analyzer::analysis_result::AnalysisResult::new(Default::default());
     analyzer.analyze(program, &mut analyzer_analysis_result).unwrap();
     let analyzer_issues = analyzer_analysis_result.issues;

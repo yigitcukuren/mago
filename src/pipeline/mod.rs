@@ -67,6 +67,8 @@ pub trait StatelessReducer<I, R>: Debug {
 pub struct ParallelPipeline<T, I, R> {
     task_name: &'static str,
     database: Arc<ReadDatabase>,
+    codebase: CodebaseMetadata,
+    symbol_references: SymbolReferences,
     shared_context: T,
     reducer: Box<dyn Reducer<I, R> + Send + Sync>,
 }
@@ -93,10 +95,12 @@ where
     pub fn new(
         task_name: &'static str,
         database: ReadDatabase,
+        codebase: CodebaseMetadata,
+        symbol_references: SymbolReferences,
         shared_context: T,
         reducer: Box<dyn Reducer<I, R> + Send + Sync>,
     ) -> Self {
-        Self { task_name, database: Arc::new(database), shared_context, reducer }
+        Self { task_name, database: Arc::new(database), codebase, symbol_references, shared_context, reducer }
     }
 
     /// Executes the full pipeline with a given map function.
@@ -106,18 +110,20 @@ where
     /// * `map_function`: The core logic to be applied in parallel to each `Host` file
     ///   during the analysis phase. It receives the shared context, file data, and the
     ///   fully populated codebase, and returns an intermediate result.
-    pub fn run<F>(&self, map_function: F) -> Result<R, Error>
+    pub fn run<F>(self, map_function: F) -> Result<R, Error>
     where
         F: Fn(T, &Bump, Arc<File>, Arc<CodebaseMetadata>) -> Result<I, Error> + Send + Sync,
     {
-        let all_files = self.database.files().collect::<Vec<_>>();
-        if all_files.is_empty() {
-            return self.reducer.reduce(CodebaseMetadata::new(), SymbolReferences::new(), Vec::new());
+        let source_files = self.database.files().filter(|f| f.file_type != FileType::Builtin).collect::<Vec<_>>();
+        if source_files.is_empty() {
+            tracing::info!("No source files found for analysis.");
+
+            return self.reducer.reduce(self.codebase, self.symbol_references, Vec::new());
         }
 
-        let compiling_bar = create_progress_bar(all_files.len(), "Compiling", ProgressBarTheme::Magenta);
+        let compiling_bar = create_progress_bar(source_files.len(), "Compiling", ProgressBarTheme::Magenta);
 
-        let partial_codebases: Vec<CodebaseMetadata> = all_files
+        let partial_codebases: Vec<CodebaseMetadata> = source_files
             .into_par_iter()
             .map_init(Bump::new, |arena, file| {
                 let metadata = scan_file_for_metadata(&file, arena);
@@ -129,14 +135,13 @@ where
             })
             .collect();
 
-        let mut merged_codex = CodebaseMetadata::new();
+        let mut merged_codex = self.codebase;
         for partial in partial_codebases {
             merged_codex.extend(partial);
         }
 
-        let mut symbol_references = SymbolReferences::new();
+        let mut symbol_references = self.symbol_references;
         populate_codebase(&mut merged_codex, &mut symbol_references, AtomSet::default(), HashSet::default());
-
         remove_progress_bar(compiling_bar);
 
         let host_files = self
@@ -147,6 +152,8 @@ where
             .collect::<Result<Vec<_>, _>>()?;
 
         if host_files.is_empty() {
+            tracing::warn!("No host files found for analysis after compilation.");
+
             return self.reducer.reduce(merged_codex, symbol_references, Vec::new());
         }
 
@@ -171,6 +178,7 @@ where
         remove_progress_bar(main_task_bar);
 
         let final_codebase = Arc::unwrap_or_clone(final_codebase);
+
         self.reducer.reduce(final_codebase, symbol_references, results)
     }
 }

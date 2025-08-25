@@ -6,6 +6,8 @@ use std::sync::Arc;
 
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::change::Change;
 use crate::change::ChangeLog;
@@ -32,7 +34,13 @@ mod operation;
 /// for efficient additions, updates, and deletions. Once you have loaded all
 /// files and performed any initial modifications, you can create a high-performance,
 /// immutable snapshot for fast querying by calling [`read_only`](Self::read_only).
-#[derive(Debug, Default)]
+///
+/// While this structure implements [`Clone`](std::clone::Clone), it is not intended
+/// for frequent cloning. Instead, it is designed to be used as a single mutable
+/// instance that you modify in place. Cloning is provided for scenarios where
+/// you need to create a backup or checkpoint of the current state before making
+/// further changes.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Database {
     /// Maps a file's logical name to its `File` object for fast name-based access.
     files: HashMap<Cow<'static, str>, Arc<File>>,

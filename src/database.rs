@@ -1,72 +1,96 @@
+//! Utilities for loading files into the `mago_database`.
+//!
+//! This module provides high-level functions for creating a `Database` instance
+//! from either a `SourceConfiguration` or a direct list of file paths.
+
+use std::mem;
 use std::path::Path;
 use std::path::PathBuf;
 
 use mago_database::Database;
 use mago_database::exclusion::Exclusion;
-use mago_database::file::FileType;
 use mago_database::loader::DatabaseLoader;
 
 use crate::config::source::SourceConfiguration;
-use crate::consts::PHP_STUBS;
 use crate::error::Error;
 
-pub fn from_paths(
-    configuration: &SourceConfiguration,
+/// Loads files into a `Database` from a list of specified paths.
+///
+/// This function is useful for one-off analysis of specific files provided
+/// via the command line.
+///
+/// # Arguments
+///
+/// * `configuration`: The source configuration, used for workspace root and extensions.
+/// * `paths`: An explicit list of file or directory paths to load.
+/// * `existing_db`: An optional existing `Database` to extend.
+pub fn load_from_paths(
+    configuration: &mut SourceConfiguration,
     paths: Vec<PathBuf>,
-    include_stubs: bool,
+    existing_db: Option<Database>,
 ) -> Result<Database, Error> {
-    let SourceConfiguration { workspace, extensions, .. } = configuration;
-
-    let mut loader = DatabaseLoader::new(workspace.clone(), paths, vec![], vec![], extensions.clone());
-    if include_stubs {
-        for (stub_name, stub_content) in PHP_STUBS {
-            loader.add_memory_source(stub_name, stub_content, FileType::Builtin);
-        }
-    }
-
-    loader.load().map_err(Error::Database)
-}
-
-pub fn load(
-    configuration: &SourceConfiguration,
-    include_externals: bool,
-    include_stubs: bool,
-) -> Result<Database, Error> {
-    let SourceConfiguration { workspace, paths, includes, excludes, extensions } = configuration;
-
     let mut loader = DatabaseLoader::new(
-        workspace.clone(),
-        paths.clone(),
-        if include_externals { includes.clone() } else { vec![] },
-        create_excludes_set(excludes, workspace),
-        extensions.clone(),
+        configuration.workspace.clone(),
+        paths,
+        vec![],
+        vec![],
+        mem::take(&mut configuration.extensions),
     );
 
-    if include_stubs {
-        for (stub_name, stub_content) in PHP_STUBS {
-            loader.add_memory_source(stub_name, stub_content, FileType::Builtin);
-        }
+    if let Some(db) = existing_db {
+        loader = loader.with_database(db);
     }
 
     loader.load().map_err(Error::Database)
 }
 
-fn create_excludes_set(excludes: &[String], root: &Path) -> Vec<Exclusion> {
-    excludes
-        .iter()
-        .map(|exclude| {
-            // if it contains a wildcard, treat it as a pattern
-            if exclude.contains('*') {
-                let mut exclude = exclude.clone();
-                // if it starts with `./`, replace it with the root path
-                if exclude.starts_with("./") {
-                    exclude.replace_range(..1, root.to_string_lossy().trim_end_matches('/'));
-                }
+/// Loads files into a `Database` based on the full source configuration.
+///
+/// This is the primary function for loading a project according to the rules
+/// defined in a `mago.toml` file. To avoid expensive clones, this function
+/// takes ownership of the vector fields from the configuration.
+///
+/// # Arguments
+///
+/// * `configuration`: A mutable reference to the source configuration.
+/// * `include_externals`: Whether to include paths from the `includes` configuration.
+/// * `existing_db`: An optional existing `Database` to extend.
+pub fn load_from_configuration(
+    configuration: &mut SourceConfiguration,
+    include_externals: bool,
+    existing_db: Option<Database>,
+) -> Result<Database, Error> {
+    let mut loader = DatabaseLoader::new(
+        configuration.workspace.clone(),
+        mem::take(&mut configuration.paths),
+        if include_externals { mem::take(&mut configuration.includes) } else { vec![] },
+        create_excludes_from_patterns(mem::take(&mut configuration.excludes), &configuration.workspace),
+        mem::take(&mut configuration.extensions),
+    );
 
-                Exclusion::Pattern(exclude)
+    if let Some(db) = existing_db {
+        loader = loader.with_database(db);
+    }
+
+    loader.load().map_err(Error::Database)
+}
+
+/// Converts string patterns from the configuration into `Exclusion` types.
+fn create_excludes_from_patterns(patterns: Vec<String>, root: &Path) -> Vec<Exclusion> {
+    patterns
+        .into_iter()
+        .map(|pattern| {
+            if pattern.contains('*') {
+                if let Some(stripped) = pattern.strip_prefix("./") {
+                    let rooted_pattern = root.join(stripped).to_string_lossy().into_owned();
+
+                    Exclusion::Pattern(rooted_pattern)
+                } else {
+                    Exclusion::Pattern(pattern)
+                }
             } else {
-                let path = Path::new(&exclude);
-                let path_buf = if path.is_absolute() { path.to_path_buf() } else { root.join(path) };
+                let path = PathBuf::from(pattern);
+                let path_buf = if path.is_absolute() { path } else { root.join(path) };
 
                 Exclusion::Path(path_buf.canonicalize().unwrap_or(path_buf))
             }

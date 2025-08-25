@@ -4,6 +4,8 @@ use std::process::ExitCode;
 use clap::Parser;
 
 use mago_database::DatabaseReader;
+use mago_database::file::FileType;
+use mago_prelude::Prelude;
 
 use crate::commands::args::reporting::ReportingArgs;
 use crate::config::Configuration;
@@ -29,7 +31,7 @@ pub struct AnalyzeCommand {
     /// Specific files or directories to analyze.
     /// If provided, this overrides the source configuration from `mago.toml`.
     #[arg(help = "Analyze specific files or directories, overriding source configuration")]
-    pub path: Vec<PathBuf>,
+    pub paths: Vec<PathBuf>,
 
     /// Disable the use of stubs (e.g., for built-in PHP functions or popular libraries).
     /// Disabling stubs might lead to more reported issues if type information for external symbols is missing.
@@ -49,24 +51,44 @@ pub struct AnalyzeCommand {
 /// 2. Compiling a codebase model from these files (with progress).
 /// 3. Analyzing the user-defined sources against the compiled codebase (with progress).
 /// 4. Reporting any found issues.
-pub fn execute(command: AnalyzeCommand, configuration: Configuration) -> Result<ExitCode, Error> {
-    let database = if !command.path.is_empty() {
-        database::from_paths(&configuration.source, command.path, !command.no_stubs)?
+pub fn execute(command: AnalyzeCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+    // 1. Establish the base prelude data. We deconstruct the prelude to get the
+    //    database and the already-analyzed metadata separately.
+    let (base_db, codebase_metadata, symbol_references) = if command.no_stubs {
+        (Default::default(), Default::default(), Default::default())
     } else {
-        database::load(&configuration.source, true, !command.no_stubs)?
+        const PRELUDE_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/prelude.bin"));
+
+        let prelude = Prelude::decode(PRELUDE_BYTES).expect("Failed to decode embedded prelude");
+
+        (prelude.database, prelude.metadata, prelude.symbol_references)
     };
 
-    if database.is_empty() {
-        tracing::info!("No files found to analyze.");
+    // 2. Load the user's codebase, passing the `base_db` to be extended.
+    let final_database = if !command.paths.is_empty() {
+        database::load_from_paths(&mut configuration.source, command.paths, Some(base_db))?
+    } else {
+        database::load_from_configuration(&mut configuration.source, /* include externals */ true, Some(base_db))?
+    };
+
+    // Check if any user-specified files were actually added to the database.
+    if !final_database.files().any(|f| f.file_type == FileType::Host) {
+        tracing::warn!("No files found to analyze.");
 
         return Ok(ExitCode::SUCCESS);
     }
 
-    let analyzer_settings = configuration.analyzer.to_setttings(configuration.php_version);
-    let analysis_results = run_analysis_pipeline(database.read_only(), analyzer_settings)?;
+    // 3. Run the analysis pipeline with the combined database and the prelude's metadata.
+    let analysis_results = run_analysis_pipeline(
+        final_database.read_only(),
+        codebase_metadata,
+        symbol_references,
+        configuration.analyzer.to_setttings(configuration.php_version),
+    )?;
 
+    // 4. Filter and report any found issues.
     let mut issues = analysis_results.issues;
     issues.filter_out_ignored(&configuration.analyzer.ignore);
 
-    command.reporting.process_issues(issues, configuration, database)
+    command.reporting.process_issues(issues, configuration, final_database)
 }

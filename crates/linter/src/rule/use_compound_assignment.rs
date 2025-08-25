@@ -1,16 +1,20 @@
 use indoc::indoc;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use mago_fixer::SafetyClassification;
 use mago_php_version::PHPVersionRange;
-use mago_reporting::{Annotation, Issue, Level};
+use mago_reporting::Annotation;
+use mago_reporting::Issue;
+use mago_reporting::Level;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
 use crate::category::Category;
 use crate::context::LintContext;
 use crate::integration::IntegrationSet;
-use crate::rule::{Config, LintRule};
+use crate::rule::Config;
+use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
 use crate::settings::RuleSettings;
 

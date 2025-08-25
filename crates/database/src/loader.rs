@@ -33,7 +33,6 @@ impl DatabaseLoader {
     ///
     /// All provided exclusion paths are canonicalized relative to the workspace
     /// upon creation to ensure they are matched correctly.
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         workspace: PathBuf,
         paths: Vec<PathBuf>,
@@ -62,6 +61,12 @@ impl DatabaseLoader {
             .collect();
 
         Self { workspace, paths, includes, excludes, memory_sources: vec![], extensions, database: None }
+    }
+
+    /// Sets a pre-existing database to populate.
+    pub fn with_database(mut self, database: Database) -> Self {
+        self.database = Some(database);
+        self
     }
 
     /// Adds a memory source to the loader.

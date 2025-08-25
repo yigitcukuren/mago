@@ -100,9 +100,9 @@ pub fn execute(command: FormatCommand, mut configuration: Configuration) -> Resu
     }
 
     let mut database = if !command.path.is_empty() {
-        database::from_paths(&configuration.source, command.path, false)?
+        database::load_from_paths(&mut configuration.source, command.path, None)?
     } else {
-        database::load(&configuration.source, false, false)?
+        database::load_from_configuration(&mut configuration.source, false, None)?
     };
 
     // 1. Create the shared ChangeLog and context for the pipeline.

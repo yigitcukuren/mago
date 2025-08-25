@@ -42,7 +42,7 @@ pub enum FileType {
 ///
 /// This struct encapsulates all the necessary information about a file, including its content,
 /// location, and metadata for change detection.
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct File {
     /// A stable, unique identifier for the file, generated from its logical name.
     /// This ID persists across application runs and content modifications.

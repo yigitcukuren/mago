@@ -82,11 +82,11 @@ pub struct LintCommand {
     pub reporting: ReportingArgs,
 }
 
-pub fn execute(command: LintCommand, configuration: Configuration) -> Result<ExitCode, Error> {
+pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
     let database = if !command.path.is_empty() {
-        database::from_paths(&configuration.source, command.path, false)?
+        database::load_from_paths(&mut configuration.source, command.path, None)?
     } else {
-        database::load(&configuration.source, false, false)?
+        database::load_from_configuration(&mut configuration.source, false, None)?
     };
 
     let registry = RuleRegistry::build(

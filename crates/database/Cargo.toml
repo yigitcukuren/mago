@@ -14,9 +14,9 @@ workspace = true
 
 [dependencies]
 memchr = { workspace = true }
-glob =  { workspace = true }
+glob = { workspace = true }
 tracing = { workspace = true }
 walkdir = { workspace = true }
 globset = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["rc"] }
 rayon = { workspace = true }

@@ -49,7 +49,7 @@ pub struct InvalidSymbols {
 ///
 /// This is primarily used for dependency analysis, understanding code structure,
 /// and potentially for tasks like dead code detection or impact analysis.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)] // Added PartialEq
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct SymbolReferences {
     /// Maps a referencing symbol/member `(RefSymbol, RefMember)` to a set of referenced symbols/members `(Symbol, Member)`
     /// found within the *body* of the referencing context.
