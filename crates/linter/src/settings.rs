@@ -62,6 +62,7 @@ pub struct RulesSettings {
     pub no_redundant_string_concat: RuleSettings<NoRedundantStringConcatConfig>,
     pub no_redundant_parentheses: RuleSettings<NoRedundantParenthesesConfig>,
     pub no_redundant_method_override: RuleSettings<NoRedundantMethodOverrideConfig>,
+    pub no_redundant_nullsafe: RuleSettings<NoRedundantNullsafeConfig>,
     pub no_redundant_math: RuleSettings<NoRedundantMathConfig>,
     pub no_redundant_label: RuleSettings<NoRedundantLabelConfig>,
     pub no_redundant_final: RuleSettings<NoRedundantFinalConfig>,

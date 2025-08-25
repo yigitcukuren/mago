@@ -211,46 +211,6 @@ mod tests {
     }
 
     test_analysis! {
-        name = redundant_nullsafe_property_access_in_null_coalesce,
-        code = indoc! {r#"
-                <?php
-
-                class Foo {
-                    public string $bar = '';
-                }
-
-                function test(?Foo $foo): void {
-                    $bar = $foo?->bar ?? 'default';
-
-                    echo $bar;
-                }
-            "#},
-        issues = [
-            IssueCode::RedundantNullsafeOperator, // redundant inside `??` operator
-        ]
-    }
-
-    test_analysis! {
-        name = redundant_nullsafe_property_access_in_isset,
-        code = indoc! {r#"
-                <?php
-
-                class Foo {
-                    public string $bar = '';
-                }
-
-                function test(?Foo $foo): void {
-                    if (isset($foo?->bar)) {
-                       echo "Property exists";
-                    }
-                }
-            "#},
-        issues = [
-            IssueCode::RedundantNullsafeOperator, // redundant inside `isset`
-        ]
-    }
-
-    test_analysis! {
         name = accessing_property_on_null,
         code = indoc! {r#"
             <?php

@@ -69,6 +69,7 @@ pub mod no_redundant_final;
 pub mod no_redundant_label;
 pub mod no_redundant_math;
 pub mod no_redundant_method_override;
+pub mod no_redundant_nullsafe;
 pub mod no_redundant_parentheses;
 pub mod no_redundant_string_concat;
 pub mod no_redundant_write_visibility;
@@ -171,6 +172,7 @@ pub use no_redundant_final::*;
 pub use no_redundant_label::*;
 pub use no_redundant_math::*;
 pub use no_redundant_method_override::*;
+pub use no_redundant_nullsafe::*;
 pub use no_redundant_parentheses::*;
 pub use no_redundant_string_concat::*;
 pub use no_redundant_write_visibility::*;
@@ -347,6 +349,7 @@ define_rules! {
     NoRedundantStringConcat(no_redundant_string_concat @ NoRedundantStringConcatRule),
     NoRedundantParentheses(no_redundant_parentheses @ NoRedundantParenthesesRule),
     NoRedundantMethodOverride(no_redundant_method_override @ NoRedundantMethodOverrideRule),
+    NoRedundantNullsafe(no_redundant_nullsafe @ NoRedundantNullsafeRule),
     NoRedundantMath(no_redundant_math @ NoRedundantMathRule),
     NoRedundantLabel(no_redundant_label @ NoRedundantLabelRule),
     NoRedundantFinal(no_redundant_final @ NoRedundantFinalRule),

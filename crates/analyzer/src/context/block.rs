@@ -81,7 +81,6 @@ pub struct BlockContext<'ctx> {
     pub by_reference_constraints: HashMap<String, ReferenceConstraint>,
 
     pub inside_conditional: bool,
-    pub inside_coalescing: bool,
     pub inside_isset: bool,
     pub inside_unset: bool,
     pub inside_general_use: bool,
@@ -155,7 +154,6 @@ impl<'ctx> BlockContext<'ctx> {
             references_possibly_from_confusing_scope: HashSet::default(),
             by_reference_constraints: HashMap::default(),
             inside_conditional: false,
-            inside_coalescing: false,
             inside_isset: false,
             inside_unset: false,
             inside_general_use: false,

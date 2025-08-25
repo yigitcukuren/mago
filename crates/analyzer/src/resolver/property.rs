@@ -90,14 +90,8 @@ pub fn resolve_instance_properties<'ctx, 'ast, 'arena>(
     let is_all_void = object_type.is_void();
     let is_all_null = object_type.is_null() || is_all_void;
 
-    if is_null_safe {
-        if !is_nullable {
-            report_redundant_nullsafe(context, operator_span, object_expression, &object_type, false, false);
-        } else if block_context.inside_coalescing {
-            report_redundant_nullsafe(context, operator_span, object_expression, &object_type, true, false);
-        } else if block_context.inside_isset {
-            report_redundant_nullsafe(context, operator_span, object_expression, &object_type, true, true);
-        }
+    if is_null_safe && !is_nullable {
+        report_redundant_nullsafe(context, operator_span, object_expression, &object_type);
     }
 
     let mut property_names = Vec::new();
@@ -478,27 +472,8 @@ fn report_redundant_nullsafe<'ctx, 'ast, 'arena>(
     operator_span: Span,
     object_expr: &'ast Expression<'arena>,
     object_type: &TUnion,
-    in_coalescing: bool,
-    in_isset: bool,
 ) {
     let object_type_str = object_type.get_id();
-
-    let (note, help) = if in_isset {
-        (
-            "When used inside `isset()`, the standard property access (`->`) is already null-safe. `isset()` correctly returns `false` for null objects without causing an error.",
-            "You can safely change `?->` to `->` inside an `isset()` check for better clarity.",
-        )
-    } else if in_coalescing {
-        (
-            "The null coalescing operator (`??`) already provides a fallback for `null` values, making the nullsafe operator (`?->`) redundant in this context.",
-            "Consider changing `?->` to `->` and letting the `??` operator handle the null case.",
-        )
-    } else {
-        (
-            "The nullsafe operator (`?->`) short-circuits the access if the object is `null`. Since this expression is guaranteed not to be `null`, this check is unnecessary.",
-            "Consider using the direct property access operator (`->`) for clarity.",
-        )
-    };
 
     context.collector.report_with_code(
         IssueCode::RedundantNullsafeOperator,
@@ -510,8 +485,8 @@ fn report_redundant_nullsafe<'ctx, 'ast, 'arena>(
                 Annotation::secondary(object_expr.span())
                     .with_message(format!("This expression (type `{object_type_str}`) is never `null`")),
             )
-            .with_note(note)
-            .with_help(help),
+            .with_note("The nullsafe operator (`?->`) short-circuits the access if the object is `null`. Since this expression is guaranteed not to be `null`, this check is unnecessary.")
+            .with_help("Consider using the direct property access operator (`->`) for clarity."),
     );
 }
 
