@@ -29,7 +29,8 @@ impl ConfigurationEntry for LinterConfiguration {
 
         let builder = builder
             .set_default("linter.excludes", Value::new(None, ValueKind::Array(vec![])))?
-            .set_default("linter.integrations", Value::new(None, ValueKind::Array(vec![])))?;
+            .set_default("linter.integrations", Value::new(None, ValueKind::Array(vec![])))?
+            .set_default("linter.rules", Value::new(None, ValueKind::Table(Default::default())))?;
 
         Ok(builder)
     }

@@ -319,7 +319,7 @@ mod tests {
         std::fs::create_dir_all(&workspace_path).unwrap();
         std::fs::create_dir_all(&config_path).unwrap();
 
-        create_tmp_file("threads = 2\nphp_version = \"7.4.0\"", &workspace_path);
+        create_tmp_file("threads = 2\nphp-version = \"7.4.0\"", &workspace_path);
 
         let config_file_path = create_tmp_file("threads = 1", &config_path);
         let config = temp_env::with_vars(
@@ -346,7 +346,7 @@ mod tests {
         std::fs::create_dir_all(&xdg_config_home_path).unwrap();
         std::fs::create_dir_all(&workspace_path).unwrap();
 
-        create_tmp_file("threads = 3\nphp_version = \"7.4.0\"", &home_path);
+        create_tmp_file("threads = 3\nphp-version = \"7.4.0\"", &home_path);
         create_tmp_file("threads = 2", &workspace_path);
         create_tmp_file("source.excludes = [\"yes\"]", &xdg_config_home_path);
 
