@@ -1,0 +1,802 @@
+---
+title: BestPractices Rules
+---
+
+# BestPractices Rules
+
+This document details the rules available in the `BestPractices` category.
+
+## Available Rules
+
+| Rule | Code |
+| :--- | :---------- |
+| Combine Consecutive Issets | [`combine-consecutive-issets`](#combine-consecutive-issets) |
+| Loop Does Not Iterate | [`loop-does-not-iterate`](#loop-does-not-iterate) |
+| Middleware In Routes | [`middleware-in-routes`](#middleware-in-routes) |
+| No Sprintf Concat | [`no-sprintf-concat`](#no-sprintf-concat) |
+| Prefer Anonymous Migration | [`prefer-anonymous-migration`](#prefer-anonymous-migration) |
+| Prefer Interface | [`prefer-interface`](#prefer-interface) |
+| Prefer View Array | [`prefer-view-array`](#prefer-view-array) |
+| Prefer While Loop | [`prefer-while-loop`](#prefer-while-loop) |
+| Psl Array Functions | [`psl-array-functions`](#psl-array-functions) |
+| Psl Data Structures | [`psl-data-structures`](#psl-data-structures) |
+| Psl DateTime | [`psl-datetime`](#psl-datetime) |
+| Psl Math Functions | [`psl-math-functions`](#psl-math-functions) |
+| Psl Output | [`psl-output`](#psl-output) |
+| Psl Randomness Functions | [`psl-randomness-functions`](#psl-randomness-functions) |
+| Psl Regex Functions | [`psl-regex-functions`](#psl-regex-functions) |
+| Psl Sleep Functions | [`psl-sleep-functions`](#psl-sleep-functions) |
+| Psl String Functions | [`psl-string-functions`](#psl-string-functions) |
+| Use Compound Assignment | [`use-compound-assignment`](#use-compound-assignment) |
+
+---
+
+## <a id="combine-consecutive-issets"></a>`combine-consecutive-issets`
+
+Suggests combining consecutive calls to `isset()` when they are joined by a logical AND.
+
+For example, `isset($a) && isset($b)` can be turned into `isset($a, $b)`, which is more concise
+and avoids repeated function calls. If one or both `isset()` calls are wrapped in parentheses,
+the rule will still warn, but it will not attempt an automated fix.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+if (isset($a, $b)) {
+    // ...
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+if (isset($a) && isset($b)) {
+    // ...
+}
+```
+
+---
+
+## <a id="loop-does-not-iterate"></a>`loop-does-not-iterate`
+
+Detects loops (for, foreach, while, do-while) that unconditionally break or return
+before executing even a single iteration. Such loops are misleading or redundant
+since they give the impression of iteration but never actually do so.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+for ($i = 0; $i < 3; $i++) {
+    echo $i;
+    if ($some_condition) {
+        break; // This break is conditional.
+    }
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+for ($i = 0; $i < 3; $i++) {
+    break; // The loop never truly iterates, as this break is unconditional.
+}
+```
+
+---
+
+## <a id="middleware-in-routes"></a>`middleware-in-routes`
+
+This rule warns against applying middlewares in controllers.
+
+Middlewares should be applied in the routes file, not in the controller.
+
+
+### Requirements
+
+- **Integration:** `Laravel`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+// routes/web.php
+Route::get('/user', 'UserController@index')->middleware('auth');
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+class UserController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+}
+```
+
+---
+
+## <a id="no-sprintf-concat"></a>`no-sprintf-concat`
+
+Disallows string concatenation with the result of an `sprintf` call.
+
+Concatenating with `sprintf` is less efficient and can be less readable than
+incorporating the string directly into the format template. This pattern
+creates an unnecessary intermediate string and can make the final output
+harder to see at a glance.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$name = 'World';
+$greeting = sprintf('Hello, %s!', $name);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$name = 'World';
+$greeting = 'Hello, ' . sprintf('%s!', $name);
+```
+
+---
+
+## <a id="prefer-anonymous-migration"></a>`prefer-anonymous-migration`
+
+Prefer using anonymous classes for Laravel migrations instead of named classes.
+Anonymous classes are more concise and reduce namespace pollution,
+making them the recommended approach for migrations.
+
+
+### Requirements
+
+- **Integration:** `Laravel`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('flights', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+                $table->string('airline');
+                $table->timestamps();
+        });
+    }
+
+    public function down(): void {
+        Schema::drop('flights');
+    }
+};
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class MyMigration extends Migration {
+    public function up(): void {
+        Schema::create('flights', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('airline');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void {
+        Schema::drop('flights');
+    }
+}
+
+return new MyMigration();
+```
+
+---
+
+## <a id="prefer-interface"></a>`prefer-interface`
+
+Detects when an implementation class is used instead of the interface.
+
+
+### Requirements
+
+- **Integration:** `Symfony`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+use Symfony\Component\Serializer\SerializerInterface;
+
+class UserController
+{
+    public function __construct(SerializerInterface $serializer)
+    {
+        $this->serializer = $serializer;
+    }
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+use Symfony\Component\Serializer\Serializer;
+
+class UserController
+{
+    public function __construct(Serializer $serializer)
+    {
+        $this->serializer = $serializer;
+    }
+}
+```
+
+---
+
+## <a id="prefer-view-array"></a>`prefer-view-array`
+
+Prefer passing data to views using the array parameter in the `view()` function,
+rather than chaining the `with()` method.`
+
+Using the array parameter directly is more concise and readable.
+
+
+### Requirements
+
+- **Integration:** `Laravel`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+return view('user.profile', [
+    'user' => $user,
+    'profile' => $profile,
+]);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+return view('user.profile')->with([
+    'user' => $user,
+    'profile' => $profile,
+]);
+```
+
+---
+
+## <a id="prefer-while-loop"></a>`prefer-while-loop`
+
+Suggests using a `while` loop instead of a `for` loop when the `for` loop does not have any
+initializations or increments. This can make the code more readable and concise.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+while ($i < 10) {
+    echo $i;
+
+    $i++;
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+for (; $i < 10;) {
+    echo $i;
+
+    $i++;
+}
+```
+
+---
+
+## <a id="psl-array-functions"></a>`psl-array-functions`
+
+This rule enforces the usage of Psl array functions over their PHP counterparts.
+Psl array functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$filtered = Psl\Vec\filter($xs, fn($x) => $x > 2);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$filtered = array_filter($xs, fn($x) => $x > 2);
+```
+
+---
+
+## <a id="psl-data-structures"></a>`psl-data-structures`
+
+This rule enforces the usage of Psl data structures over their SPL counterparts.
+
+Psl data structures are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Psl\DataStructure\Stack;
+
+$stack = new Stack();
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+declare(strict_types=1);
+
+$stack = new SplStack();
+```
+
+---
+
+## <a id="psl-datetime"></a>`psl-datetime`
+
+This rule enforces the usage of Psl DateTime classes and functions over their PHP counterparts.
+
+Psl DateTime classes and functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$dateTime = new Psl\DateTime\DateTime();
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$dateTime = new DateTime();
+```
+
+---
+
+## <a id="psl-math-functions"></a>`psl-math-functions`
+
+This rule enforces the usage of Psl math functions over their PHP counterparts.
+Psl math functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$abs = Psl\Math\abs($number);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$abs = abs($number);
+```
+
+---
+
+## <a id="psl-output"></a>`psl-output`
+
+This rule enforces the usage of Psl output functions over their PHP counterparts.
+Psl output functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"error"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+Psl\IO\write_line("Hello, world!");
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+echo "Hello, world!";
+```
+
+---
+
+## <a id="psl-randomness-functions"></a>`psl-randomness-functions`
+
+This rule enforces the usage of Psl randomness functions over their PHP counterparts.
+
+Psl randomness functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$randomInt = Psl\SecureRandom\int(0, 10);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$randomInt = random_int(0, 10);
+```
+
+---
+
+## <a id="psl-regex-functions"></a>`psl-regex-functions`
+
+This rule enforces the usage of Psl regex functions over their PHP counterparts.
+
+Psl regex functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$result = Psl\Regex\matches('Hello, World!', '/\w+/');
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$result = preg_match('/\w+/', 'Hello, World!');
+```
+
+---
+
+## <a id="psl-sleep-functions"></a>`psl-sleep-functions`
+
+This rule enforces the usage of Psl sleep functions over their PHP counterparts.
+
+Psl sleep functions are preferred because they are type-safe, provide more consistent behavior,
+and allow other tasks within the event loop to continue executing while the current Fiber pauses.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+use Psl\Async;
+use Psl\DateTime;
+
+Async\sleep(DateTime\Duration::seconds(1));
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+sleep(1);
+```
+
+---
+
+## <a id="psl-string-functions"></a>`psl-string-functions`
+
+                This rule enforces the usage of Psl string functions over their PHP counterparts.
+
+Psl string functions are preferred because they are type-safe and provide more consistent behavior.
+
+
+### Requirements
+
+- **Integration:** `Psl`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$capitalized = Psl\Str\capitalize($string);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$capitalized = ucfirst($string);
+```
+
+---
+
+## <a id="use-compound-assignment"></a>`use-compound-assignment`
+
+Enforces the use of compound assignment operators (e.g., `+=`, `.=`)
+over their more verbose equivalents (`$var = $var + ...`).
+
+Using compound assignments is more concise and idiomatic. For string
+concatenation (`.=`), it can also be more performant as it avoids
+creating an intermediate copy of the string.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$count += 1;
+$message .= ' Hello';
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$count = $count + 1;
+$message = $message . ' Hello';
+```

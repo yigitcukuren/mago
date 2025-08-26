@@ -21,7 +21,7 @@ mod macros;
 mod pipeline;
 mod utils;
 
-#[cfg(all(not(feature = "dhat-heap"), any(target_os = "macos", target_os = "windows", target_env = "musl"),))]
+#[cfg(all(not(feature = "dhat-heap"), any(target_os = "macos", target_os = "windows", target_env = "musl")))]
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
@@ -76,6 +76,7 @@ pub fn run() -> Result<ExitCode, Error> {
 
     match command {
         MagoCommand::Init(cmd) => commands::init::execute(cmd, configuration, config),
+        MagoCommand::Config(cmd) => commands::config::execute(cmd, configuration),
         MagoCommand::Lint(cmd) => commands::lint::execute(cmd, configuration),
         MagoCommand::Format(cmd) => commands::format::execute(cmd, configuration),
         MagoCommand::Ast(cmd) => commands::ast::execute(cmd, configuration),

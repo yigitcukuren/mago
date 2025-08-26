@@ -49,15 +49,18 @@ impl LintRule for NoRequestVariableRule {
         const META: RuleMeta = RuleMeta {
             name: "No Request Variable",
             code: "no-request-variable",
-            description: indoc! {"                Detects the use of the `$_REQUEST` variable, which is considered unsafe.
+            description: indoc! {"
+                Detects the use of the `$_REQUEST` variable, which is considered unsafe.
 
                 Use `$_GET`, `$_POST`, or `$_COOKIE` instead for better clarity.
             "},
-            good_example: indoc! {r#"                <?php
+            good_example: indoc! {r#"
+                <?php
 
                 $identifier = $_GET['id'];
             "#},
-            bad_example: indoc! {r#"                <?php
+            bad_example: indoc! {r#"
+                <?php
 
                 $identifier = $_REQUEST['id'];
             "#},

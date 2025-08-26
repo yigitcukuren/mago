@@ -1499,11 +1499,11 @@ const UPLOAD_ERR_CANT_WRITE = 7;
 
 const UPLOAD_ERR_EXTENSION = 8;
 
-const STDIN = fopen('php://stdin', 'r');
+const STDIN = STDIN;
 
-const STDOUT = fopen('php://stdout', 'w');
+const STDOUT = STDOUT;
 
-const STDERR = fopen('php://stderr', 'w');
+const STDERR = STDERR;
 
 const PHP_FD_SETSIZE = 1024;
 
@@ -1529,4 +1529,6 @@ const PHP_OUTPUT_HANDLER_DISABLED = 8192;
 
 const PHP_MANDIR = '/usr/local/php/php/man';
 
-const PHP_SBINDIR = '/usr/local/sbin', PHP_OUTPUT_HANDLER_PROCESSED = 16384;
+const PHP_SBINDIR = '/usr/local/sbin';
+
+const PHP_OUTPUT_HANDLER_PROCESSED = 16384;

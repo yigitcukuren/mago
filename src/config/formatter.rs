@@ -12,7 +12,7 @@ use crate::error::Error;
 
 /// Configuration options for formatting source code.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct FormatterConfiguration {
     /// A list of patterns to exclude from formatting.
     ///

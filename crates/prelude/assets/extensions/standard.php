@@ -2113,6 +2113,8 @@ function escapeshellarg(string $arg): string
 }
 
 /**
+ * @param-out int $result_code
+ *
  * @pure
  */
 function passthru(string $command, &$result_code): null|false

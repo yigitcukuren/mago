@@ -14,6 +14,7 @@ use config::builder::BuilderState;
 use serde::Deserialize;
 
 use mago_php_version::PHPVersion;
+use serde::Serialize;
 
 use crate::config::formatter::FormatterConfiguration;
 use crate::config::linter::LinterConfiguration;
@@ -27,8 +28,8 @@ pub mod linter;
 pub mod source;
 
 /// Configuration options for mago.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Configuration {
     /// The number of threads to use.
     pub threads: usize,
@@ -67,6 +68,7 @@ pub struct Configuration {
     ///
     /// If this field is to be removed, serde will complain about an unknown field in the configuration
     /// when `MAGO_LOG` is set due to the `deny_unknown_fields` attribute and the use of `Environment` source.
+    #[serde(skip_serializing)]
     log: Value,
 }
 
@@ -194,9 +196,9 @@ impl ConfigurationEntry for Configuration {
     fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
         let mut builder = builder
             .set_default("threads", Value::new(None, ValueKind::U64(self.threads as u64)))?
-            .set_default("stack_size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
-            .set_default("php_version", Value::new(None, ValueKind::String(self.php_version.to_string())))?
-            .set_default("allow_unsupported_php_version", self.allow_unsupported_php_version)?
+            .set_default("stack-size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
+            .set_default("php-version", Value::new(None, ValueKind::String(self.php_version.to_string())))?
+            .set_default("allow-unsupported-php-version", self.allow_unsupported_php_version)?
             .set_default("log", self.log)?;
 
         builder = self.source.configure(builder)?;

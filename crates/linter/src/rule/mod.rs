@@ -259,7 +259,6 @@ macro_rules! define_rules {
 
         impl AnyRule {
             pub fn get_all_for(settings: Settings, only: Option<&[String]>) -> Vec<Self> {
-                let integrations = IntegrationSet::from_slice(&settings.integrations);
                 let mut rules = Vec::new();
 
                 $(
@@ -270,7 +269,7 @@ macro_rules! define_rules {
                         if only_codes.iter().any(|c| c == meta.code) {
                             rules.push(AnyRule::$variant($rule::build(settings.rules.$module)));
                         }
-                    } else if settings.rules.$module.enabled && $rule::is_enabled_for(settings.php_version, integrations) {
+                    } else if settings.rules.$module.enabled && $rule::is_enabled_for(settings.php_version, settings.integrations) {
                         rules.push(AnyRule::$variant($rule::build(settings.rules.$module)));
                     }
                 )*

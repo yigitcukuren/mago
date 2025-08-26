@@ -1,0 +1,666 @@
+---
+title: Consistency Rules
+---
+
+# Consistency Rules
+
+This document details the rules available in the `Consistency` category.
+
+## Available Rules
+
+| Rule | Code |
+| :--- | :---------- |
+| Array Style | [`array-style`](#array-style) |
+| Assertion Style | [`assertion-style`](#assertion-style) |
+| Block Statement | [`block-statement`](#block-statement) |
+| Braced String Interpolation | [`braced-string-interpolation`](#braced-string-interpolation) |
+| Class Name | [`class-name`](#class-name) |
+| Constant Name | [`constant-name`](#constant-name) |
+| Enum Name | [`enum-name`](#enum-name) |
+| Function Name | [`function-name`](#function-name) |
+| Interface Name | [`interface-name`](#interface-name) |
+| Lowercase Keyword | [`lowercase-keyword`](#lowercase-keyword) |
+| Lowercase Type Hint | [`lowercase-type-hint`](#lowercase-type-hint) |
+| No Alias Function | [`no-alias-function`](#no-alias-function) |
+| No Hash Comment | [`no-hash-comment`](#no-hash-comment) |
+| No Php Tag Terminator | [`no-php-tag-terminator`](#no-php-tag-terminator) |
+| No Trailing Space | [`no-trailing-space`](#no-trailing-space) |
+| Trait Name | [`trait-name`](#trait-name) |
+
+---
+
+## <a id="array-style"></a>`array-style`
+
+Suggests using the short array style `[..]` instead of the long array style `array(..)`,
+or vice versa, depending on the configuration. The short array style is more concise and
+is the preferred way to define arrays in PHP.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+| `style` | `string` | `"short"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+// By default, `style` is 'short', so this snippet is valid:
+$arr = [1, 2, 3];
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+// By default, 'short' is enforced, so array(...) triggers a warning:
+$arr = array(1, 2, 3);
+```
+
+---
+
+## <a id="assertion-style"></a>`assertion-style`
+
+Enforces a consistent style for PHPUnit assertion calls within test methods.
+
+Maintaining a consistent style (e.g., always using `static::` or `$this->`)
+improves code readability and helps enforce team-wide coding standards in test suites.
+This rule can be configured to enforce the preferred style.
+
+
+### Requirements
+
+- **Integration:** `PHPUnit`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+| `style` | `string` | `"static"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+// configured style: "static"
+final class SomeTest extends TestCase
+{
+    public function testSomething(): void
+    {
+        static::assertTrue(true);
+    }
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+// configured style: "static"
+final class SomeTest extends TestCase
+{
+    public function testSomething(): void
+    {
+        $this->assertTrue(true); // Incorrect style
+        self::assertFalse(false); // Incorrect style
+    }
+}
+```
+
+---
+
+## <a id="block-statement"></a>`block-statement`
+
+Enforces that `if`, `else`, `for`, `foreach`, `while`, `do-while` statements always use a block
+statement body (`{ ... }`) even if they contain only a single statement.
+
+This improves readability and prevents potential errors when adding new statements.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+if (true) {
+    echo "Hello";
+}
+
+for ($i = 0; $i < 10; $i++) {
+    echo $i;
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+if (true)
+    echo "Hello";
+
+for ($i = 0; $i < 10; $i++)
+    echo $i;
+```
+
+---
+
+## <a id="braced-string-interpolation"></a>`braced-string-interpolation`
+
+Enforces the use of curly braces around variables within string interpolation.
+
+Using curly braces (`{$variable}`) within interpolated strings ensures clarity and avoids potential ambiguity,
+especially when variables are followed by alphanumeric characters. This rule promotes consistent and predictable code.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$a = "Hello, {$name}!";
+$b = "Hello, {$name}!";
+$c = "Hello, {$$name}!";
+$d = "Hello, {${$object->getMethod()}}!";
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$a = "Hello, $name!";
+$b = "Hello, ${name}!";
+$c = "Hello, ${$name}!";
+$d = "Hello, ${$object->getMethod()}!";
+```
+
+---
+
+## <a id="class-name"></a>`class-name`
+
+Detects class declarations that do not follow class naming convention.
+
+Class names should be in class case, also known as PascalCase.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+| `psr` | `boolean` | `true` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+class MyClass {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+class my_class {}
+
+class myClass {}
+
+class MY_CLASS {}
+```
+
+---
+
+## <a id="constant-name"></a>`constant-name`
+
+Detects constant declarations that do not follow constant naming convention.
+
+Constant names should be in constant case, also known as UPPER_SNAKE_CASE.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+const MY_CONSTANT = 42;
+
+class MyClass {
+    public const int MY_CONSTANT = 42;
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+const myConstant = 42;
+const my_constant = 42;
+const My_Constant = 42;
+
+class MyClass {
+    public const int myConstant = 42;
+    public const int my_constant = 42;
+    public const int My_Constant = 42;
+}
+```
+
+---
+
+## <a id="enum-name"></a>`enum-name`
+
+Detects enum declarations that do not follow class naming convention.
+
+Enum names should be in class case, also known as PascalCase.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+enum MyEnum {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+enum my_enum {}
+enum myEnum {}
+enum MY_ENUM {}
+```
+
+---
+
+## <a id="function-name"></a>`function-name`
+
+Detects function declarations that do not follow camel or snake naming convention.
+
+Function names should be in camel case or snake case, depending on the configuration.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+| `camel` | `boolean` | `false` |
+| `either` | `boolean` | `false` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+function my_function() {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+function MyFunction() {}
+
+function My_Function() {}
+```
+
+---
+
+## <a id="interface-name"></a>`interface-name`
+
+Detects interface declarations that do not follow class naming convention.
+
+Interface names should be in class case and suffixed with `Interface`, depending on the configuration.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+| `psr` | `boolean` | `true` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+interface MyInterface {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+interface myInterface {}
+interface my_interface {}
+interface MY_INTERFACE {}
+```
+
+---
+
+## <a id="lowercase-keyword"></a>`lowercase-keyword`
+
+Enforces that PHP keywords (like `if`, `else`, `return`, `function`, etc.) be written
+in lowercase. Using uppercase or mixed case is discouraged for consistency and readability.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+if (true) {
+    echo "All keywords in lowercase";
+} else {
+    return;
+}
+```
+
+#### Incorrect Code
+
+```php
+<?PHP
+
+IF (TRUE) {
+    ECHO "Keywords not in lowercase";
+} ELSE {
+    RETURN;
+}
+```
+
+---
+
+## <a id="lowercase-type-hint"></a>`lowercase-type-hint`
+
+Enforces that PHP type hints (like `void`, `bool`, `int`, `float`, etc.) be written
+in lowercase. Using uppercase or mixed case is discouraged for consistency
+and readability.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+function example(int $param): void {
+    return;
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+function example(Int $param): VOID {
+    return;
+}
+```
+
+---
+
+## <a id="no-alias-function"></a>`no-alias-function`
+
+Detects usage of function aliases (e.g., `diskfreespace` instead of `disk_free_space`)
+and suggests calling the canonical (original) function name instead.
+This is primarily for consistency and clarity.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+// 'disk_free_space' is the proper name instead of 'diskfreespace'
+$freeSpace = disk_free_space("/");
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+// 'diskfreespace' is an alias for 'disk_free_space'
+$freeSpace = diskfreespace("/");
+```
+
+---
+
+## <a id="no-hash-comment"></a>`no-hash-comment`
+
+Detects shell-style comments ('#') in PHP code. Double slash comments ('//') are preferred
+in PHP, as they are more consistent with the language's syntax and are easier to read.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+// This is a good comment.
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+# This is a shell-style comment.
+```
+
+---
+
+## <a id="no-php-tag-terminator"></a>`no-php-tag-terminator`
+
+Discourages the use of `?><?php` as a statement terminator. Recommends using a semicolon
+(`;`) instead for clarity and consistency.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+echo "Hello World";
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+echo "Hello World" ?><?php
+```
+
+---
+
+## <a id="no-trailing-space"></a>`no-trailing-space`
+
+Detects trailing whitespace at the end of comments. Trailing whitespace can cause unnecessary
+diffs and formatting issues, so it is recommended to remove it.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"note"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+// This is a good comment.
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+// This is a comment with trailing whitespace.
+```
+
+---
+
+## <a id="trait-name"></a>`trait-name`
+
+Detects trait declarations that do not follow class naming convention.
+Trait names should be in class case and suffixed with `Trait`, depending on the configuration.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+| `psr` | `boolean` | `true` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+trait MyTrait {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+trait myTrait {}
+trait my_trait {}
+trait MY_TRAIT {}
+```

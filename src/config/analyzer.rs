@@ -12,7 +12,7 @@ use crate::error::Error;
 
 /// Configuration options for the static analyzer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AnalyzerConfiguration {
     /// A list of patterns to exclude from analysis.
     pub excludes: Vec<String>,
@@ -147,32 +147,32 @@ impl ConfigurationEntry for AnalyzerConfiguration {
                 "analyze.ignore",
                 Value::new(None, ValueKind::Array(self.ignore.into_iter().map(Value::from).collect::<Vec<_>>())),
             )?
-            .set_default("analyze.mixed_issues", defaults.mixed_issues)?
-            .set_default("analyze.falsable_issues", defaults.falsable_issues)?
-            .set_default("analyze.nullable_issues", defaults.nullable_issues)?
-            .set_default("analyze.redundancy_issues", defaults.redundancy_issues)?
-            .set_default("analyze.reference_issues", defaults.reference_issues)?
-            .set_default("analyze.unreachable_issues", defaults.unreachable_issues)?
-            .set_default("analyze.deprecation_issues", defaults.deprecation_issues)?
-            .set_default("analyze.impossibility_issues", defaults.impossibility_issues)?
-            .set_default("analyze.ambiguity_issues", defaults.ambiguity_issues)?
-            .set_default("analyze.existence_issues", defaults.existence_issues)?
-            .set_default("analyze.template_issues", defaults.template_issues)?
-            .set_default("analyze.argument_issues", defaults.argument_issues)?
-            .set_default("analyze.operand_issues", defaults.operand_issues)?
-            .set_default("analyze.property_issues", defaults.property_issues)?
-            .set_default("analyze.generator_issues", defaults.generator_issues)?
-            .set_default("analyze.array_issues", defaults.array_issues)?
-            .set_default("analyze.return_issues", defaults.return_issues)?
-            .set_default("analyze.method_issues", defaults.method_issues)?
-            .set_default("analyze.iterator_issues", defaults.iterator_issues)?
-            .set_default("analyze.find_unused_definitions", defaults.find_unused_definitions)?
-            .set_default("analyze.find_unused_expressions", defaults.find_unused_expressions)?
-            .set_default("analyze.analyze_dead_code", defaults.analyze_dead_code)?
-            .set_default("analyze.memoize_properties", defaults.memoize_properties)?
-            .set_default("analyze.allow_possibly_undefined_array_keys", defaults.allow_possibly_undefined_array_keys)?
-            .set_default("analyze.check_throws", defaults.check_throws)?
-            .set_default("analyze.perform_heuristic_checks", defaults.perform_heuristic_checks)
+            .set_default("analyze.mixed-issues", defaults.mixed_issues)?
+            .set_default("analyze.falsable-issues", defaults.falsable_issues)?
+            .set_default("analyze.nullable-issues", defaults.nullable_issues)?
+            .set_default("analyze.redundancy-issues", defaults.redundancy_issues)?
+            .set_default("analyze.reference-issues", defaults.reference_issues)?
+            .set_default("analyze.unreachable-issues", defaults.unreachable_issues)?
+            .set_default("analyze.deprecation-issues", defaults.deprecation_issues)?
+            .set_default("analyze.impossibility-issues", defaults.impossibility_issues)?
+            .set_default("analyze.ambiguity-issues", defaults.ambiguity_issues)?
+            .set_default("analyze.existence-issues", defaults.existence_issues)?
+            .set_default("analyze.template-issues", defaults.template_issues)?
+            .set_default("analyze.argument-issues", defaults.argument_issues)?
+            .set_default("analyze.operand-issues", defaults.operand_issues)?
+            .set_default("analyze.property-issues", defaults.property_issues)?
+            .set_default("analyze.generator-issues", defaults.generator_issues)?
+            .set_default("analyze.array-issues", defaults.array_issues)?
+            .set_default("analyze.return-issues", defaults.return_issues)?
+            .set_default("analyze.method-issues", defaults.method_issues)?
+            .set_default("analyze.iterator-issues", defaults.iterator_issues)?
+            .set_default("analyze.find-unused-definitions", defaults.find_unused_definitions)?
+            .set_default("analyze.find-unused-expressions", defaults.find_unused_expressions)?
+            .set_default("analyze.analyze-dead-code", defaults.analyze_dead_code)?
+            .set_default("analyze.memoize-properties", defaults.memoize_properties)?
+            .set_default("analyze.allow-possibly-undefined-array-keys", defaults.allow_possibly_undefined_array_keys)?
+            .set_default("analyze.check-throws", defaults.check_throws)?
+            .set_default("analyze.perform-heuristic-checks", defaults.perform_heuristic_checks)
             .map_err(Error::from)
     }
 }

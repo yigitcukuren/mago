@@ -9,14 +9,15 @@ use serde::Deserialize;
 use mago_analyzer::settings::Settings as AnalyzerSettings;
 use mago_formatter::settings::FormatSettings;
 use mago_linter::integration::Integration;
+use mago_linter::integration::IntegrationSet;
 use mago_linter::settings::RulesSettings;
+use mago_linter::settings::Settings as LinterSettings;
 use mago_php_version::PHPVersion;
 
 /// The root settings object for the Mago WASM API.
 #[derive(Debug, Deserialize, Default)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct WasmSettings {
-    #[serde(rename = "phpVersion")]
     pub php_version: PHPVersion,
     pub linter: WasmLinterSettings,
     pub analyzer: WasmAnalyzerSettings,
@@ -25,26 +26,14 @@ pub struct WasmSettings {
 
 /// WASM-specific settings for the linter.
 #[derive(Debug, Deserialize, Default, Clone)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct WasmLinterSettings {
     pub integrations: Vec<Integration>,
     pub rules: RulesSettings,
 }
 
-impl WasmLinterSettings {
-    /// Converts WASM linter settings into the core linter settings struct.
-    pub fn to_linter_settings(&self, php_version: PHPVersion) -> mago_linter::settings::Settings {
-        mago_linter::settings::Settings {
-            php_version,
-            integrations: self.integrations.clone(),
-            rules: self.rules.clone(),
-        }
-    }
-}
-
-/// WASM-specific settings for the analyzer.
 #[derive(Debug, Deserialize, Default, Clone)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct WasmAnalyzerSettings {
     pub ignore: Vec<String>,
     pub mixed_issues: bool,
@@ -73,6 +62,17 @@ pub struct WasmAnalyzerSettings {
     pub allow_possibly_undefined_array_keys: bool,
     pub check_throws: bool,
     pub perform_heuristic_checks: bool,
+}
+
+impl WasmLinterSettings {
+    /// Converts WASM linter settings into the core linter settings struct.
+    pub fn to_linter_settings(&self, php_version: PHPVersion) -> LinterSettings {
+        LinterSettings {
+            php_version,
+            integrations: IntegrationSet::from_slice(&self.integrations),
+            rules: self.rules.clone(),
+        }
+    }
 }
 
 impl WasmAnalyzerSettings {

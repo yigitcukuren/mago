@@ -1,0 +1,138 @@
+* {
+    border-radius: 0 !important;
+}
+
+:root {
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: -webkit-linear-gradient(
+        120deg,
+        #0b5a76 30%,
+        #3c8d58
+    );
+
+    --vp-button-brand-border: #3c8d58;
+    --vp-button-brand-text: #fff;
+    --vp-button-brand-bg: #3c8d58;
+    --vp-button-brand-hover-border: #3c8d58;
+    --vp-button-brand-hover-text: #fff;
+    --vp-button-brand-hover-bg: #32784a;
+    --vp-button-brand-active-border: #3c8d58;
+
+    --vp-c-brand-1: #3c8d58;
+    --vp-c-brand-2: #47a467;
+    --vp-c-brand-3: #32784a;
+
+    /* --- Typography Variables --- */
+    --heading-text-color: #32784a;
+    --heading-underline-color: #0b5a76;
+}
+
+.VPDoc h1,
+.VPDoc h2,
+.VPDoc h3,
+.VPDoc h4,
+.VPDoc h5,
+.VPDoc h6 {
+    color: var(--heading-text-color);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+.VPDoc h1 {
+    font-size: 2.25em;
+    padding-bottom: 0.5rem;
+    text-decoration: underline;
+    text-decoration-thickness: 4px;
+    text-decoration-color: var(--heading-underline-color);
+    margin-bottom: 2rem;
+}
+
+.VPDoc h2 {
+    font-size: 1.5em;
+    padding-bottom: 0.4rem;
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-decoration-color: var(--heading-underline-color);
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+.VPDoc h3 {
+    font-size: 1.25em;
+    padding-bottom: 0.3rem;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--heading-underline-color);
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.VPDoc h4 {
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.VPDoc h5 {
+    font-size: 1em;
+    font-weight: 600;
+}
+
+.VPDoc h6 {
+    font-size: 0.9em;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.dark {
+    --heading-text-color: #47a467;
+    --heading-underline-color: #1aa0d2;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-8px) rotate(0.5deg);
+    }
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+}
+
+#mago-logo {
+    position: relative;
+    top: 0;
+    left: 0;
+    animation: float 6s ease-in-out infinite;
+    transition: transform 0.3s ease-out;
+}
+
+#mago-logo.is-interactive {
+    animation: none;
+}
+
+.consulting-container,
+.sponsor-container {
+    text-align: center;
+}
+
+.consulting-container h2,
+.sponsor-container h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.consulting-container p,
+.sponsor-container p {
+    color: var(--vp-c-text-2);
+}
+
+.consulting-container p a {
+    color: var(--vp-c-brand-1);
+}
+
+.consulting-container p.description {
+    margin: 0 auto 1rem auto;
+}

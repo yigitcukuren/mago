@@ -10,6 +10,7 @@ use mago_php_version::PHPVersion;
 
 use crate::commands::analyze::AnalyzeCommand;
 use crate::commands::ast::AstCommand;
+use crate::commands::config::ConfigCommand;
 use crate::commands::format::FormatCommand;
 use crate::commands::init::InitCommand;
 use crate::commands::lint::LintCommand;
@@ -20,6 +21,7 @@ mod args;
 
 pub mod analyze;
 pub mod ast;
+pub mod config;
 pub mod format;
 pub mod init;
 pub mod lint;
@@ -41,13 +43,16 @@ pub enum MagoCommand {
     /// Initialize the configuration for Mago.
     #[command(name = "init")]
     Init(InitCommand),
+    /// Display the final, merged configuration that Mago is using.
+    #[command(name = "config")]
+    Config(ConfigCommand),
     /// Analyze the abstract syntax tree (AST) of PHP code.
     #[command(name = "ast")]
     Ast(AstCommand),
     /// Lint PHP code using Mago's linter.
     #[command(name = "lint")]
     Lint(LintCommand),
-    /// Analyze PHP code using Mago's type checker.
+    /// Analyze PHP code using Mago's analyzer.
     #[command(name = "analyze")]
     Analyze(AnalyzeCommand),
     /// Format PHP code using Mago's formatter.
@@ -74,6 +79,7 @@ Features:
 * **Linting:** Identify and fix code style issues and potential bugs.
 * **Formatting:** Format your code consistently and automatically.
 * **Analyzing:** Analyze your code for structure, complexity, and dependencies.
+* **AST Inspection:** Dive deep into the structure of your PHP code with Abstract Syntax Tree (AST) visualization.
 
 Get started by exploring the commands below!
 "#

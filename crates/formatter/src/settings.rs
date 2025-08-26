@@ -5,6 +5,7 @@ use serde::Serialize;
 
 /// Format settings for the PHP printer.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct FormatSettings {
     /// Maximum line length that the printer will wrap on.
     ///

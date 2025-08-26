@@ -165,7 +165,7 @@ final class InstallMagoBinaryCommand extends BaseCommand
                  * @return array<string, array{'file': string, 'url': string}>
                  */
                 static function (null|array $downloadMap, array $asset): array {
-                    $downloadMap = $downloadMap ?? [];
+                    $downloadMap ??= [];
 
                     if (!str_ends_with($asset['name'], '.tar.gz') && !str_ends_with($asset['name'], '.zip')) {
                         return $downloadMap;

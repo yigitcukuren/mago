@@ -4,14 +4,14 @@ use serde::de::DeserializeOwned;
 
 use mago_php_version::PHPVersion;
 
-use crate::integration::Integration;
+use crate::integration::IntegrationSet;
 use crate::rule::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Settings {
     pub php_version: PHPVersion,
-    pub integrations: Vec<Integration>,
+    pub integrations: IntegrationSet,
     pub rules: RulesSettings,
 }
 
@@ -144,7 +144,7 @@ impl<C: Default> RuleSettings<C> {
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { php_version: PHPVersion::PHP80, integrations: vec![], rules: RulesSettings::default() }
+        Self { php_version: PHPVersion::PHP80, integrations: IntegrationSet::empty(), rules: RulesSettings::default() }
     }
 }
 

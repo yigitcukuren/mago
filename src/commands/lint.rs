@@ -6,6 +6,7 @@ use clap::Parser;
 use colored::Colorize;
 
 use mago_database::DatabaseReader;
+use mago_linter::integration::IntegrationSet;
 use mago_linter::registry::RuleRegistry;
 use mago_linter::rule::AnyRule;
 use mago_linter::settings::Settings;
@@ -71,6 +72,14 @@ pub struct LintCommand {
     pub list_rules: bool,
 
     #[arg(
+        long,
+        help = "Output rule information in JSON format for documentation purposes, requires --list-rules",
+        requires = "list_rules",
+        hide = true
+    )]
+    pub json_docs: bool,
+
+    #[arg(
         short,
         long,
         help = "Specify rules to run, overriding the configuration file",
@@ -92,7 +101,11 @@ pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result
     let registry = RuleRegistry::build(
         Settings {
             php_version: configuration.php_version,
-            integrations: configuration.linter.integrations.clone(),
+            integrations: if command.json_docs {
+                IntegrationSet::all()
+            } else {
+                IntegrationSet::from_slice(&configuration.linter.integrations)
+            },
             rules: configuration.linter.rules.clone(),
         },
         if command.only.is_empty() { None } else { Some(&command.only) },
@@ -103,7 +116,7 @@ pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result
     }
 
     if command.list_rules {
-        return list_rules(registry.rules());
+        return list_rules(registry.rules(), command.json_docs);
     }
 
     if database.is_empty() {
@@ -130,6 +143,7 @@ pub fn explain_rule(registry: &RuleRegistry, code: &str) -> Result<ExitCode, Err
         println!("  {}", format!("Could not find a rule with the code '{}'.", code).bright_black());
         println!("  {}", "Please check the spelling and try again.".bright_black());
         println!();
+
         return Ok(ExitCode::FAILURE);
     };
 
@@ -168,9 +182,17 @@ pub fn explain_rule(registry: &RuleRegistry, code: &str) -> Result<ExitCode, Err
     Ok(ExitCode::SUCCESS)
 }
 
-pub fn list_rules(rules: &[AnyRule]) -> Result<ExitCode, Error> {
-    if rules.is_empty() {
+pub fn list_rules(rules: &[AnyRule], json: bool) -> Result<ExitCode, Error> {
+    if rules.is_empty() && !json {
         println!("{}", "No rules are currently enabled.".yellow());
+
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    if json {
+        let metas: Vec<_> = rules.iter().map(|r| r.meta()).collect();
+        println!("{}", serde_json::to_string_pretty(&metas)?);
+
         return Ok(ExitCode::SUCCESS);
     }
 
