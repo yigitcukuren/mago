@@ -6,9 +6,9 @@ title: Updating Mago
 
 Keeping **Mago** up-to-date is simple. We provide a built-in command to handle the entire update process for you, ensuring you always have the latest features and performance improvements.
 
-### The `self-update` Command
+## Recommended Method (`self-update`)
 
-To update Mago to the latest version, run the following command in your terminal:
+If you installed Mago using the shell script, `brew`, `cargo`, or by manually downloading the binary, the easiest way to update is with the built-in `self-update` command.
 
 ```bash
 mago self-update
@@ -22,7 +22,19 @@ This command will:
 
 It's the easiest and recommended way to stay current.
 
-### Verifying the Update
+## Updating with Composer
+
+If you installed Mago as a project dependency using `composer`, you should also use `composer` to manage its updates. The `self-update` command is not intended for `composer`-managed installations.
+
+To update the `mago` package to the latest version allowed by your `composer.json` constraints, run:
+
+```bash
+composer update carthage-software/mago
+```
+
+This ensures that your project's `composer.lock` file is updated correctly.
+
+## Verifying the Update
 
 After the update process completes, you can verify that you have the latest version by running:
 

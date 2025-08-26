@@ -13,13 +13,13 @@ This is the recommended method for most macOS and Linux users. Our script automa
 #### Using `curl`
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf [https://carthage.software/mago.sh](https://carthage.software/mago.sh) | bash
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
 ```
 
 #### Using `wget`
 
 ```sh
-wget -qO- [https://carthage.software/mago.sh](https://carthage.software/mago.sh) | bash
+wget -qO- https://carthage.software/mago.sh | bash
 ```
 
 ---
