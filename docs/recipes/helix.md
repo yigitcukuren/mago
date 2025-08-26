@@ -8,7 +8,7 @@ Integrate Mago directly with the [Helix editor](https://helix-editor.com/) for f
 
 ## Prerequisites
 
-1.  **Mago Installed**: Ensure you have installed Mago. If not, please follow the [Installation Guide](./installation.md).
+1.  **Mago Installed**: Ensure you have installed Mago. If not, please follow the [Installation Guide](./../guide/installation.md).
 2.  **`PATH` Configured**: The `mago` executable must be available in your system's `PATH`. The recommended installation scripts handle this for you. You can verify this by running `which mago` in your terminal.
 
 ## Configuration

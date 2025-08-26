@@ -10,7 +10,7 @@ This guide uses the [Custom Local Formatters](https://marketplace.visualstudio.c
 
 ## Prerequisites
 
-1.  **Mago Installed**: Ensure you have installed Mago by following the [Installation Guide](./installation.md).
+1.  **Mago Installed**: Ensure you have installed Mago by following the [Installation Guide](./../guide/installation.md).
 2.  **`PATH` Configured**: The `mago` executable must be available in your system's `PATH`. The recommended installation methods configure this for you.
 
 ## Configuration
