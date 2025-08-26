@@ -22,7 +22,6 @@
     --vp-c-brand-2: #47a467;
     --vp-c-brand-3: #32784a;
 
-    /* --- Typography Variables --- */
     --heading-text-color: #32784a;
     --heading-underline-color: #0b5a76;
 }
@@ -41,18 +40,12 @@
 .VPDoc h1 {
     font-size: 2.25em;
     padding-bottom: 0.5rem;
-    text-decoration: underline;
-    text-decoration-thickness: 4px;
-    text-decoration-color: var(--heading-underline-color);
     margin-bottom: 2rem;
 }
 
 .VPDoc h2 {
     font-size: 1.5em;
     padding-bottom: 0.4rem;
-    text-decoration: underline;
-    text-decoration-thickness: 3px;
-    text-decoration-color: var(--heading-underline-color);
     margin-top: 3rem;
     margin-bottom: 1.5rem;
 }
@@ -90,20 +83,20 @@
 
 @keyframes float {
     0% {
-        transform: translateY(0px) rotate(0deg);
+        transform: translateY(0px);
     }
     50% {
-        transform: translateY(-8px) rotate(0.5deg);
+        transform: translateY(-8px);
     }
     100% {
-        transform: translateY(0px) rotate(0deg);
+        transform: translateY(0px);
     }
 }
 
 #mago-logo {
     position: relative;
-    top: 0;
-    left: 0;
+    top: 50px;
+    left: 50px;
     animation: float 6s ease-in-out infinite;
     transition: transform 0.3s ease-out;
 }

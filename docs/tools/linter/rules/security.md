@@ -253,3 +253,5 @@ echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES, 'UTF-8');
 // This is considered unsafe:
 echo $_GET['name'] ?? '';
 ```
+
+---

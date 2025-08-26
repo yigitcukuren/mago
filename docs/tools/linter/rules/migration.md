@@ -141,3 +141,5 @@ if (strpos($a, $b) === 0) {
 echo 'Found';
 }
 ```
+
+---

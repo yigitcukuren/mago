@@ -1,5 +1,7 @@
+## README.md
+
 <p align="center">
-    <img src="assets/banner.svg" alt="Mago Banner" width="600" />
+  <img src="docs/public/assets/banner.svg" alt="Mago Banner" width="600" />
 </p>
 
 <div align="center">
@@ -31,43 +33,11 @@
 - [Inspiration & Acknowledgements](#inspiration--acknowledgements)
 - [License](#license)
 
-## How to Install
+## Installation
 
-### Shell (Linux, macOS)
+For detailed instructions on how to install Mago, please refer to our official **[Installation Guide](https://mago.carthage.software/guide/installation)**.
 
-```sh
-# with curl
-curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
-
-# with wget
-wget -qO- https://carthage.software/mago.sh | bash
-```
-
-### Package Managers
-
-#### Homebrew (macOS)
-
-```sh
-brew install mago
-
-mago self-update
-```
-
-#### Composer (PHP Project)
-
-```sh
-composer require --dev carthage-software/mago
-```
-
-#### Cargo (Rust Toolchain)
-
-```sh
-cargo install mago
-```
-
-### Manual Download
-
-You can download pre-compiled binaries for your system from the [GitHub Releases](https://github.com/carthage-software/mago/releases) page.
+We support various installation methods, including shell scripts, Homebrew, Composer, and Cargo.
 
 ## Getting Started
 
@@ -75,15 +45,15 @@ Once installed, you can start using Mago immediately.
 
 1. Lint your project:
 
-```sh
-mago lint src/
-```
+   ```sh
+   mago lint src/
+   ```
 
 2. Format your code:
 
-```sh
-mago format src/
-```
+   ```sh
+   mago format src/
+   ```
 
 For detailed usage, configuration options, and available rules, please visit the [Mago Documentation](https://mago.carthage.software/).
 
@@ -111,7 +81,7 @@ Mago stands on the shoulders of giants. Our design and functionality are heavily
 ### Inspirations:
 
 - [Clippy](https://github.com/rust-lang/rust-clippy): For its comprehensive linting approach.
-- [OXC](https://github.com/oxc-project/oxc/): A major inspiration for building a high-performancetoolchain in Rust.
+- [OXC](https://github.com/oxc-project/oxc/): A major inspiration for building a high-performance toolchain in Rust.
 - [Hakana](https://github.com/slackhq/hakana/): For its deep static analysis capabilities.
 
 ### Acknowledgements:

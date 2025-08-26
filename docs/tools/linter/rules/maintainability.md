@@ -470,3 +470,5 @@ class ComplexClass {
     public $f; public $g; public $h; public $i; public $j; public $k;
 }
 ```
+
+---

@@ -48,3 +48,5 @@ function foo(string $required, ?string $optional = null): void {}
 
 function foo(?string $optional = null, string $required): void {}
 ```
+
+---

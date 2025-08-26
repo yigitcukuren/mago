@@ -4,29 +4,71 @@ title: Installation
 
 # Installation
 
-Installing **Mago** is designed to be a quick and simple process.
+Installing **Mago** is a quick process with several options to suit your environment and preferences.
 
-## Automatic Installation (macOS & Linux)
+## Shell Installer (macOS & Linux)
 
-The easiest way to install Mago is by using our installer script. Open your terminal and run the following command:
+This is the recommended method for most macOS and Linux users. Our script automatically downloads the correct binary for your system and adds it to your path.
 
-```bash
-curl -sSL https://install.carthage.software/mago | bash
+#### Using `curl`
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf [https://carthage.software/mago.sh](https://carthage.software/mago.sh) | bash
 ```
 
-This script will download the latest pre-compiled binary for your system, make it executable, and move it to a standard location (`/usr/local/bin`) so you can run `mago` from anywhere.
+#### Using `wget`
 
-## Manual Installation (Windows & Other Systems)
+```sh
+wget -qO- [https://carthage.software/mago.sh](https://carthage.software/mago.sh) | bash
+```
 
-If you're on Windows or prefer to install manually, you can download the latest release from our GitHub page.
+---
 
-1.  Go to the **[Mago Releases Page](https://github.com/carthage-software/mago/releases)**.
-2.  Download the appropriate binary for your operating system (e.g., `mago-x86_64-pc-windows-msvc.zip` for Windows).
+## Package Managers
+
+### Homebrew (macOS)
+
+If you're using Homebrew on macOS, you can install Mago with a single command:
+
+```sh
+brew install mago
+```
+
+You can later update Mago by running `mago self-update`.
+
+### Composer (PHP Project)
+
+To add Mago as a development dependency to your PHP project via Composer:
+
+```sh
+composer require --dev carthage-software/mago
+```
+
+### Cargo (Rust)
+
+If you have the Rust toolchain installed, you can install Mago directly from Crates.io:
+
+```sh
+cargo install mago
+```
+
+---
+
+## Manual Download
+
+You can always download a pre-compiled binary directly from our GitHub Releases page. This is the recommended method for **Windows** and other systems not covered above.
+
+1.  Navigate to the **[Mago Releases Page](https://github.com/carthage-software/mago/releases)**.
+2.  Download the appropriate archive for your operating system (e.g., `mago-x86_64-pc-windows-msvc.zip` for Windows).
 3.  Unzip the archive.
-4.  Place the `mago.exe` (or `mago`) binary in a directory that is included in your system's `PATH`.
+4.  Place the `mago.exe` (or `mago`) executable in a directory that is part of your system's `PATH` environment variable.
 
-Once installed, you can verify it's working by running:
+---
 
-```bash
+## Verify Installation
+
+Once installed, you can verify that Mago is working correctly by checking its version:
+
+```sh
 mago --version
 ```

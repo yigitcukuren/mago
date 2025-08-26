@@ -1,5 +1,8 @@
 import { defineConfig } from "vitepress";
 
+// A placeholder for your site's domain
+const site = "https://mago.carthage.software";
+
 export default defineConfig({
   srcDir: ".",
 
@@ -18,6 +21,30 @@ export default defineConfig({
       { rel: "icon", href: "/assets/favicon-16x16.png", sizes: "16x16" },
     ],
     ["link", { rel: "icon", href: "/assets/favicon.ico" }],
+    // Open Graph
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:title", content: "Mago" }],
+    [
+      "meta",
+      {
+        property: "og:description",
+        content:
+          "The Oxidized PHP Toolchain: Blazing fast linter, formatter, and static analyzer for PHP, written in Rust.",
+      },
+    ],
+    ["meta", { property: "og:image", content: `${site}/assets/banner.svg` }],
+    ["meta", { property: "og:url", content: site }],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    ["meta", { name: "twitter:title", content: "Mago" }],
+    [
+      "meta",
+      {
+        name: "twitter:description",
+        content:
+          "The Oxidized PHP Toolchain: Blazing fast linter, formatter, and static analyzer for PHP, written in Rust.",
+      },
+    ],
+    ["meta", { name: "twitter:image", content: `${site}/assets/banner.svg` }],
   ],
   lastUpdated: true,
   cleanUrls: true,
@@ -147,6 +174,16 @@ export default defineConfig({
               },
             ],
           },
+        ],
+      },
+      {
+        text: "🧩 Recipes",
+        collapsed: false,
+        items: [
+          { text: "GitHub Actions", link: "/recipes/github-actions" },
+          { text: "Zed", link: "/recipes/zed" },
+          { text: "Helix", link: "/recipes/helix" },
+          { text: "Visual Studio Code", link: "/recipes/vscode" },
         ],
       },
       { text: "🤝 Contributing", link: "/contributing" },

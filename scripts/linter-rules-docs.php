@@ -379,6 +379,7 @@ function create_category_markdown_content(string $category_name, array $rules, a
         $content .= "\n" . generate_rule_docs_section($rule, $rule_config) . "\n\n---\n";
     }
 
+    return $content;
     /** @var string */
     return preg_replace('/\\s*---\\s*$/', "\n", $content);
 }
