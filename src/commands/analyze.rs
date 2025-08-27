@@ -83,7 +83,7 @@ pub fn execute(command: AnalyzeCommand, mut configuration: Configuration) -> Res
         final_database.read_only(),
         codebase_metadata,
         symbol_references,
-        configuration.analyzer.to_setttings(configuration.php_version),
+        configuration.analyzer.to_settings(configuration.php_version),
     )?;
 
     // 4. Filter and report any found issues.

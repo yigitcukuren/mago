@@ -99,7 +99,7 @@ pub fn execute(
         }
     }
 
-    let InitalizationProjectSettings { php_version, paths, includes, excludes } = setup_project(&theme)?;
+    let InitializationProjectSettings { php_version, paths, includes, excludes } = setup_project(&theme)?;
 
     let integrations = setup_linter(&theme)?;
     let (print_width, tab_width, use_tabs) = setup_formatter(&theme)?;
@@ -131,7 +131,7 @@ pub fn execute(
 }
 
 #[derive(Debug)]
-struct InitalizationProjectSettings {
+struct InitializationProjectSettings {
     php_version: String,
     paths: Vec<String>,
     includes: Vec<String>,
@@ -139,7 +139,7 @@ struct InitalizationProjectSettings {
 }
 
 #[derive(Debug)]
-struct InitalizationAnalyzerSettings {
+struct InitializationAnalyzerSettings {
     ignore: Vec<String>,
     disabled_categories: Vec<String>,
     find_unused_definitions: bool,
@@ -180,7 +180,7 @@ fn print_final_summary() {
     println!();
 }
 
-fn setup_project(theme: &ColorfulTheme) -> Result<InitalizationProjectSettings, Error> {
+fn setup_project(theme: &ColorfulTheme) -> Result<InitializationProjectSettings, Error> {
     print_step_header(1, "Project Setup");
     let composer_file = Path::new(COMPOSER_JSON_FILE);
     if composer_file.exists()
@@ -206,7 +206,7 @@ fn setup_project(theme: &ColorfulTheme) -> Result<InitalizationProjectSettings, 
         println!("  │  {}", "Project settings detected!".green());
         println!("  ╰─");
 
-        Ok(InitalizationProjectSettings { php_version, paths, includes, excludes })
+        Ok(InitializationProjectSettings { php_version, paths, includes, excludes })
     } else {
         println!("  │");
         let paths = prompt_for_paths(theme, "Source code paths (e.g., src,tests)", Some("src,tests"))?;
@@ -215,7 +215,7 @@ fn setup_project(theme: &ColorfulTheme) -> Result<InitalizationProjectSettings, 
         let php_version = prompt_for_php_version(theme)?;
         println!("  ╰─");
 
-        Ok(InitalizationProjectSettings { php_version, paths, includes, excludes })
+        Ok(InitializationProjectSettings { php_version, paths, includes, excludes })
     }
 }
 
@@ -277,7 +277,7 @@ fn setup_formatter(theme: &ColorfulTheme) -> Result<(u16, u8, bool), Error> {
     }
 }
 
-fn setup_analyzer(theme: &ColorfulTheme) -> Result<InitalizationAnalyzerSettings, Error> {
+fn setup_analyzer(theme: &ColorfulTheme) -> Result<InitializationAnalyzerSettings, Error> {
     print_step_header(4, "Analyzer Configuration");
     println!("  │  {}", "The Analyzer finds logical bugs and type errors before you run your code.".bright_black());
     println!("  │  {}", "This is the most powerful part of Mago.".bright_black());
@@ -319,7 +319,7 @@ fn setup_analyzer(theme: &ColorfulTheme) -> Result<InitalizationAnalyzerSettings
         let disabled_categories = prompt_for_disabled_categories(theme)?;
 
         println!("  ╰─");
-        Ok(InitalizationAnalyzerSettings {
+        Ok(InitializationAnalyzerSettings {
             ignore,
             disabled_categories,
             find_unused_definitions,
@@ -344,7 +344,7 @@ fn setup_analyzer(theme: &ColorfulTheme) -> Result<InitalizationAnalyzerSettings
             .default(true)
             .interact()?;
         println!("  ╰─");
-        Ok(InitalizationAnalyzerSettings {
+        Ok(InitializationAnalyzerSettings {
             ignore: Vec::new(),
             disabled_categories: Vec::new(),
             find_unused_definitions,
@@ -546,7 +546,7 @@ fn quote_format_strings(items: &[String]) -> String {
     items.iter().map(|p| format!("\"{}\"", p)).collect::<Vec<_>>().join(", ")
 }
 
-fn build_analyzer_settings_string(settings: &InitalizationAnalyzerSettings) -> String {
+fn build_analyzer_settings_string(settings: &InitializationAnalyzerSettings) -> String {
     let mut lines = Vec::new();
 
     if !settings.ignore.is_empty() {

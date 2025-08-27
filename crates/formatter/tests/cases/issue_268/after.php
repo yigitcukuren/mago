@@ -4,7 +4,7 @@ $permitted =
     is_user_authenticated() && // check is the user is authenticated in the system
     (
         is_user_granted('ROLE_EDIT') || // And has `ROLE_EDIT` role
-            is_user_admin() // Or is an adminstrator
+            is_user_admin() // Or is an administrator
     );
 
 function sample(string $sql, int $time)

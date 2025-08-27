@@ -14,11 +14,11 @@ pub fn is_contained_by(
     atomic_comparison_result: &mut ComparisonResult,
 ) -> bool {
     if let TAtomic::Derived(derived_container) = container_type_part {
-        let TAtomic::Derived(dervied_input) = input_type_part else {
+        let TAtomic::Derived(derived_input) = input_type_part else {
             return false;
         };
 
-        return match (derived_container, dervied_input) {
+        return match (derived_container, derived_input) {
             (TDerived::KeyOf(key_of_container), TDerived::KeyOf(key_of_input)) => atomic_comparator::is_contained_by(
                 codebase,
                 key_of_input.get_target_type(),
@@ -48,11 +48,11 @@ pub fn is_contained_by(
         };
     }
 
-    let TAtomic::Derived(dervied_input) = input_type_part else {
+    let TAtomic::Derived(derived_input) = input_type_part else {
         return false;
     };
 
-    let input_union = match dervied_input {
+    let input_union = match derived_input {
         TDerived::KeyOf(key_of_input) => {
             TKeyOf::get_key_of_targets(std::slice::from_ref(key_of_input.get_target_type()), codebase, false)
         }

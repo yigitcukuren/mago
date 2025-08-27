@@ -100,7 +100,7 @@ pub struct AnalyzerConfiguration {
 }
 
 impl AnalyzerConfiguration {
-    pub fn to_setttings(&self, php_version: PHPVersion) -> Settings {
+    pub fn to_settings(&self, php_version: PHPVersion) -> Settings {
         Settings {
             version: php_version,
             mixed_issues: self.mixed_issues,

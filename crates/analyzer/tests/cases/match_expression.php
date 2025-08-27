@@ -158,25 +158,25 @@ function test_happy_path_with_default(int $value): string
 
 function test_happy_path_complex_logic(): string
 {
-    $is_user_adminstrator = get_bool();
+    $is_user_administrator = get_bool();
     $is_user_logged_in = get_bool();
 
     return match (true) {
         !$is_user_logged_in => 'User not logged in.',
-        !$is_user_adminstrator => 'User is not an admin.',
+        !$is_user_administrator => 'User is not an admin.',
         default => 'User is an admin!',
     };
 }
 
 function test_happy_path_complex_logic_no_default(): string
 {
-    $is_user_adminstrator = get_bool();
+    $is_user_administrator = get_bool();
     $is_user_logged_in = get_bool();
 
     return match (true) {
         !$is_user_logged_in => 'User not logged in.',
-        !$is_user_adminstrator => 'User is not an admin.',
-        $is_user_adminstrator => 'User is an admin!',
+        !$is_user_administrator => 'User is not an admin.',
+        $is_user_administrator => 'User is an admin!',
     };
 }
 
