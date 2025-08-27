@@ -2,6 +2,7 @@ use indoc::indoc;
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_fixer::SafetyClassification;
 use mago_php_version::PHPVersionRange;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -94,26 +95,32 @@ impl LintRule for ArrayStyleRule {
     fn check<'ast, 'arena>(&self, ctx: &mut LintContext<'_, 'arena>, node: Node<'ast, 'arena>) {
         match node {
             Node::LegacyArray(arr) if ArrayStyleOption::Short == self.cfg.style => {
-                ctx.collector.report(
-                    Issue::new(self.cfg.level(), "Short array style `[..]` is preferred over `array(..)`.")
-                        .with_code(self.meta.code)
-                        .with_annotation(
-                            Annotation::primary(arr.span())
-                                .with_message("This array uses the long array style `array(..)`"),
-                        )
-                        .with_help("Use the short array style `[..]` instead."),
-                );
+                let issue = Issue::new(self.cfg.level(), "Short array style `[..]` is preferred over `array(..)`.")
+                    .with_code(self.meta.code)
+                    .with_annotation(
+                        Annotation::primary(arr.span())
+                            .with_message("This array uses the long array style `array(..)`"),
+                    )
+                    .with_help("Use the short array style `[..]` instead.");
+
+                ctx.collector.propose(issue, |plan| {
+                    plan.delete(arr.array.span.to_range(), SafetyClassification::Safe);
+                    plan.replace(arr.left_parenthesis.to_range(), "[", SafetyClassification::Safe);
+                    plan.replace(arr.right_parenthesis.to_range(), "]", SafetyClassification::Safe);
+                });
             }
             Node::Array(arr) if ArrayStyleOption::Long == self.cfg.style => {
-                ctx.collector.report(
-                    Issue::new(self.cfg.level(), "Long array style `array(..)` is preferred over `[..]`.")
-                        .with_code(self.meta.code)
-                        .with_annotation(
-                            Annotation::primary(arr.span())
-                                .with_message("This array uses the short array style `[..]`"),
-                        )
-                        .with_help("Use the long array style `array(..)` instead."),
-                );
+                let issue = Issue::new(self.cfg.level(), "Long array style `array(..)` is preferred over `[..]`.")
+                    .with_code(self.meta.code)
+                    .with_annotation(
+                        Annotation::primary(arr.span()).with_message("This array uses the short array style `[..]`"),
+                    )
+                    .with_help("Use the long array style `array(..)` instead.");
+
+                ctx.collector.propose(issue, |plan| {
+                    plan.replace(arr.left_bracket.to_range(), "array(", SafetyClassification::Safe);
+                    plan.replace(arr.right_bracket.to_range(), ")", SafetyClassification::Safe);
+                });
             }
             _ => {}
         }

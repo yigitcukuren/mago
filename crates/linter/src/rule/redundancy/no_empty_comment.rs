@@ -2,6 +2,7 @@ use indoc::indoc;
 use serde::Deserialize;
 use serde::Serialize;
 
+use mago_fixer::SafetyClassification;
 use mago_php_version::PHPVersionRange;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -103,15 +104,24 @@ impl LintRule for NoEmptyCommentRule {
             }
 
             let is_empty = comment_lines(trivia).iter().all(|(_, line)| line.trim().is_empty());
-
-            if is_empty {
-                let issue = Issue::new(self.cfg.level(), "Empty comments are not allowed.")
-                    .with_code(self.meta.code)
-                    .with_annotation(Annotation::primary(trivia.span).with_message("This is an empty comment"))
-                    .with_help("Consider removing this comment.");
-
-                ctx.collector.report(issue);
+            if !is_empty {
+                continue;
             }
+
+            let issue = Issue::new(self.cfg.level(), "Empty comments are not allowed.")
+                .with_code(self.meta.code)
+                .with_annotation(Annotation::primary(trivia.span).with_message("This is an empty comment"))
+                .with_help("Consider removing this comment.");
+
+            if trivia.kind.is_single_line_comment() {
+                ctx.collector.report(issue);
+
+                continue;
+            }
+
+            ctx.collector.propose(issue, |plan| {
+                plan.delete(trivia.span.to_range(), SafetyClassification::Safe);
+            });
         }
     }
 }

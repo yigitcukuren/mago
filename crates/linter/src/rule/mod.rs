@@ -155,6 +155,7 @@ define_rules! {
     OptionalParamOrder(optional_param_order @ OptionalParamOrderRule),
     PreferInterface(prefer_interface @ PreferInterfaceRule),
     PreferAnonymousMigration(prefer_anonymous_migration @ PreferAnonymousMigrationRule),
+    PreferFirstClassCallable(prefer_first_class_callable @ PreferFirstClassCallableRule),
     NoVoidReferenceReturn(no_void_reference_return @ NoVoidReferenceReturnRule),
     NoUnderscoreClass(no_underscore_class @ NoUnderscoreClassRule),
     NoTrailingSpace(no_trailing_space @ NoTrailingSpaceRule),

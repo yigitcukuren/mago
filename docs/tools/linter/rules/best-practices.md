@@ -15,6 +15,7 @@ This document details the rules available in the `BestPractices` category.
 | Middleware In Routes | [`middleware-in-routes`](#middleware-in-routes) |
 | No Sprintf Concat | [`no-sprintf-concat`](#no-sprintf-concat) |
 | Prefer Anonymous Migration | [`prefer-anonymous-migration`](#prefer-anonymous-migration) |
+| Prefer First Class Callable | [`prefer-first-class-callable`](#prefer-first-class-callable) |
 | Prefer Interface | [`prefer-interface`](#prefer-interface) |
 | Prefer View Array | [`prefer-view-array`](#prefer-view-array) |
 | Prefer While Loop | [`prefer-while-loop`](#prefer-while-loop) |
@@ -271,6 +272,48 @@ class MyMigration extends Migration {
 }
 
 return new MyMigration();
+```
+
+---
+
+## <a id="prefer-first-class-callable"></a>`prefer-first-class-callable`
+
+Promotes the use of first-class callable syntax (`...`) for creating closures.
+
+This rule identifies closures and arrow functions that do nothing but forward their arguments to another function or method.
+In such cases, the more concise and modern first-class callable syntax, introduced in PHP 8.1, can be used instead.
+This improves readability by reducing boilerplate code.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.1.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+$names = ['Alice', 'Bob', 'Charlie'];
+$uppercased_names = array_map(strtoupper(...), $names);
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+$names = ['Alice', 'Bob', 'Charlie'];
+$uppercased_names = array_map(fn($name) => strtoupper($name), $names);
 ```
 
 ---

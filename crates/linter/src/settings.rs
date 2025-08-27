@@ -55,6 +55,7 @@ pub struct RulesSettings {
     pub no_sprintf_concat: RuleSettings<NoSprintfConcatConfig>,
     pub optional_param_order: RuleSettings<OptionalParamOrderConfig>,
     pub prefer_anonymous_migration: RuleSettings<PreferAnonymousMigrationConfig>,
+    pub prefer_first_class_callable: RuleSettings<PreferFirstClassCallableConfig>,
     pub no_void_reference_return: RuleSettings<NoVoidReferenceReturnConfig>,
     pub no_underscore_class: RuleSettings<NoUnderscoreClassConfig>,
     pub no_trailing_space: RuleSettings<NoTrailingSpaceConfig>,
