@@ -201,8 +201,7 @@ export default defineConfig({
       copyright: `Copyright © 2024-present <a href="https://carthage.software">carthage.software</a>`,
     },
     editLink: {
-      pattern:
-        "https://github.com/carthage-software/mago/edit/main/docs/content/:path",
+      pattern: "https://github.com/carthage-software/mago/edit/main/docs/:path",
     },
     search: {
       provider: "local",
