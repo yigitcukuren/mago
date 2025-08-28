@@ -1394,7 +1394,6 @@ name = "mago"
 version = "1.0.0-alpha.12"
 dependencies = [
  "ahash",
- "blake3",
  "bumpalo",
  "clap",
  "colored",

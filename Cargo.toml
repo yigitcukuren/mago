@@ -134,7 +134,6 @@ tracing-subscriber = { workspace = true }
 indicatif = { workspace = true }
 colored = { workspace = true }
 dialoguer = { workspace = true }
-blake3 = { workspace = true }
 rayon = { workspace = true }
 indoc = { workspace = true }
 bumpalo = { workspace = true }

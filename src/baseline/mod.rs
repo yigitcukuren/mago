@@ -17,14 +17,11 @@ use crate::error::Error;
 pub struct BaselineSourceIssue {
     pub code: String,
     pub start_line: u32,
-    pub start_column: u32,
     pub end_line: u32,
-    pub end_column: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BaselineEntry {
-    pub hash: String,
     pub issues: Vec<BaselineSourceIssue>,
 }
 
@@ -49,17 +46,12 @@ pub fn generate_baseline_from_issues(issues: IssueCollection, database: &ReadDat
         let end = annotation.span.end;
         let source_file = database.get(&annotation.span.file_id)?;
 
-        let entry = baseline.entries.entry(source_file.name.clone()).or_insert_with(|| {
-            let content_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
-            BaselineEntry { hash: content_hash, issues: vec![] }
-        });
+        let entry = baseline.entries.entry(source_file.name.clone()).or_default();
 
         entry.issues.push(BaselineSourceIssue {
             code: code.to_string(),
             start_line: source_file.line_number(start.offset),
-            start_column: source_file.column_number(start.offset),
             end_line: source_file.line_number(end.offset),
-            end_column: source_file.column_number(end.offset),
         });
     }
 
@@ -110,11 +102,8 @@ pub fn filter_issues(
     issues: IssueCollection,
     database: &ReadDatabase,
 ) -> Result<(IssueCollection, usize, bool), Error> {
-    let baseline_sets: HashMap<Cow<'static, str>, (String, HashSet<BaselineSourceIssue>)> = baseline
-        .entries
-        .iter()
-        .map(|(path, entry)| (path.clone(), (entry.hash.clone(), entry.issues.iter().cloned().collect())))
-        .collect();
+    let baseline_sets: HashMap<Cow<'static, str>, HashSet<BaselineSourceIssue>> =
+        baseline.entries.iter().map(|(path, entry)| (path.clone(), entry.issues.iter().cloned().collect())).collect();
 
     let mut filtered_issues = IssueCollection::new();
     let mut seen_baseline_issues: HashMap<Cow<'static, str>, HashSet<BaselineSourceIssue>> = HashMap::new();
@@ -127,19 +116,11 @@ pub fn filter_issues(
 
         let source_file = database.get(&annotation.span.file_id)?;
 
-        let Some((baseline_hash, baseline_issue_set)) = baseline_sets.get(&source_file.name) else {
+        let Some(baseline_issue_set) = baseline_sets.get(&source_file.name) else {
             // File is not in the baseline, so the issue is new.
             filtered_issues.push(issue);
             continue;
         };
-
-        // Check if the file has been modified.
-        let current_hash = blake3::hash(source_file.contents.as_bytes()).to_hex().to_string();
-        if &current_hash != baseline_hash {
-            // File has changed, so all issues are considered new.
-            filtered_issues.push(issue);
-            continue;
-        }
 
         let Some(code) = &issue.code else {
             filtered_issues.push(issue);
@@ -149,9 +130,7 @@ pub fn filter_issues(
         let issue_to_check = BaselineSourceIssue {
             code: code.to_string(),
             start_line: source_file.line_number(annotation.span.start.offset),
-            start_column: source_file.column_number(annotation.span.start.offset),
             end_line: source_file.line_number(annotation.span.end.offset),
-            end_column: source_file.column_number(annotation.span.end.offset),
         };
 
         if baseline_issue_set.contains(&issue_to_check) {
@@ -167,7 +146,7 @@ pub fn filter_issues(
 
     // Check for dead issues (in baseline but not "seen").
     let mut has_dead_issues = false;
-    for (path, (_, baseline_issue_set)) in &baseline_sets {
+    for (path, baseline_issue_set) in &baseline_sets {
         if let Some(seen_set) = seen_baseline_issues.get(path) {
             if seen_set.len() != baseline_issue_set.len() {
                 has_dead_issues = true;
