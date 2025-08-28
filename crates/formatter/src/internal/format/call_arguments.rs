@@ -191,10 +191,14 @@ pub(super) fn print_argument_list<'arena>(
                 clone_in_arena(f.arena, &left_parenthesis),
                 Document::IndentIfBreak(IndentIfBreak::new(vec![
                     in f.arena;
-                    Document::Line(Line::default()),
+                    Document::Line(Line::soft()),
                     Document::Group(Group::new(vec![in f.arena; clone_in_arena(f.arena, &single_argument)])),
-                    if f.settings.trailing_comma { Document::String(",") } else { Document::empty() },
                 ])),
+                if f.settings.trailing_comma {
+                    Document::IfBreak(IfBreak::new(f.arena, Document::String(","), Document::empty()))
+                } else {
+                    Document::empty()
+                },
                 clone_in_arena(f.arena, &right_parenthesis)
             ])),
             Document::Group(Group::new(vec![in f.arena; left_parenthesis, single_argument, right_parenthesis])),
