@@ -21,6 +21,9 @@ pub const ARCHIVE_EXTENSION: &str = "zip";
 #[cfg(not(target_os = "windows"))]
 pub const ARCHIVE_EXTENSION: &str = "tar.gz";
 
+/// The extension for PHP files.
+pub const PHP_EXTENSION: &str = "php";
+
 /// The name of the repository owner.
 pub const REPO_OWNER: &str = "carthage-software";
 

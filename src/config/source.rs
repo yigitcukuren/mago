@@ -1,14 +1,10 @@
 use std::path::PathBuf;
 
-use config::ConfigBuilder;
-use config::Value;
-use config::ValueKind;
-use config::builder::BuilderState;
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::CURRENT_DIR;
-use crate::config::ConfigurationEntry;
+use crate::consts::PHP_EXTENSION;
 use crate::error::Error;
 
 /// Configuration options for source discovery.
@@ -25,21 +21,25 @@ pub struct SourceConfiguration {
     /// If empty, all files in the workspace directory are included.
     ///
     /// Defaults to `[]`.
+    #[serde(default)]
     pub paths: Vec<PathBuf>,
 
     /// Paths to non-user defined files to include in the scan.
     ///
     /// Defaults to `[]`.
+    #[serde(default)]
     pub includes: Vec<PathBuf>,
 
     /// Patterns to exclude from the scan.
     ///
     /// Defaults to `[]`.
+    #[serde(default)]
     pub excludes: Vec<String>,
 
     /// File extensions to filter by.
     ///
     /// Defaults to `[".php"]`.
+    #[serde(default = "default_extensions")]
     pub extensions: Vec<String>,
 }
 
@@ -54,28 +54,18 @@ impl SourceConfiguration {
     ///
     /// A new `SourceConfiguration` with the given workspace directory.
     pub fn from_workspace(workspace: PathBuf) -> Self {
-        Self { workspace, paths: vec![], includes: vec![], excludes: vec![], extensions: vec![] }
+        Self {
+            workspace,
+            paths: vec![],
+            includes: vec![],
+            excludes: vec![],
+            extensions: vec![PHP_EXTENSION.to_string()],
+        }
     }
 }
 
-impl ConfigurationEntry for SourceConfiguration {
-    fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
-        builder
-            .set_default(
-                "source.workspace",
-                Value::new(None, ValueKind::String(self.workspace.to_string_lossy().to_string())),
-            )?
-            .set_default("source.paths", Value::new(None, ValueKind::Array(vec![])))?
-            .set_default("source.includes", Value::new(None, ValueKind::Array(vec![])))?
-            .set_default("source.excludes", Value::new(None, ValueKind::Array(vec![])))?
-            .set_default(
-                "source.extensions",
-                Value::new(None, ValueKind::Array(vec![Value::new(None, ValueKind::String("php".to_string()))])),
-            )
-            .map_err(Error::from)
-    }
-
-    fn normalize(&mut self) -> Result<(), Error> {
+impl SourceConfiguration {
+    pub fn normalize(&mut self) -> Result<(), Error> {
         // Make workspace absolute if not already
         let workspace =
             if !self.workspace.is_absolute() { (*CURRENT_DIR).join(&self.workspace) } else { self.workspace.clone() };
@@ -84,4 +74,8 @@ impl ConfigurationEntry for SourceConfiguration {
 
         Ok(())
     }
+}
+
+fn default_extensions() -> Vec<String> {
+    vec![PHP_EXTENSION.to_string()]
 }

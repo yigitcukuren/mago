@@ -1,14 +1,7 @@
-use config::ConfigBuilder;
-use config::Value;
-use config::ValueKind;
-use config::builder::BuilderState;
 use serde::Deserialize;
 use serde::Serialize;
 
 use mago_formatter::settings::*;
-
-use crate::config::ConfigurationEntry;
-use crate::error::Error;
 
 /// Configuration options for formatting source code.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,10 +14,4 @@ pub struct FormatterConfiguration {
 
     #[serde(flatten)]
     pub settings: FormatSettings,
-}
-
-impl ConfigurationEntry for FormatterConfiguration {
-    fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
-        builder.set_default("format.excludes", Value::new(None, ValueKind::Array(vec![]))).map_err(Error::from)
-    }
 }

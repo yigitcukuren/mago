@@ -25,7 +25,7 @@ use crate::error::Error;
 use crate::utils::version::extract_minimum_php_version;
 
 const CONFIGURATION_TEMPLATE: &str = r#"# Welcome to Mago!
-# For full documentation, see https://mago.carthage.software/
+# For full documentation, see https://mago.carthage.software/tools/overview
 php_version = "{php_version}"
 
 [source]

@@ -2,20 +2,18 @@ use std::env::home_dir;
 use std::path::Path;
 use std::path::PathBuf;
 
-use analyzer::AnalyzerConfiguration;
 use config::Config;
-use config::ConfigBuilder;
 use config::Environment;
 use config::File;
 use config::FileFormat;
 use config::Value;
 use config::ValueKind;
-use config::builder::BuilderState;
 use serde::Deserialize;
-
-use mago_php_version::PHPVersion;
 use serde::Serialize;
 
+use mago_php_version::PHPVersion;
+
+use crate::config::analyzer::AnalyzerConfiguration;
 use crate::config::formatter::FormatterConfiguration;
 use crate::config::linter::LinterConfiguration;
 use crate::config::source::SourceConfiguration;
@@ -48,17 +46,14 @@ pub struct Configuration {
 
     /// Configuration options for the linter.
     #[serde(default)]
-    #[serde(alias = "lint")]
     pub linter: LinterConfiguration,
 
     /// Configuration options for the formatter.
     #[serde(default)]
-    #[serde(alias = "format")]
     pub formatter: FormatterConfiguration,
 
     /// Configuration options for the analyzer.
     #[serde(default)]
-    #[serde(alias = "analyser", alias = "analyze", alias = "analyse")]
     pub analyzer: AnalyzerConfiguration,
 
     /// The log filter.
@@ -68,7 +63,8 @@ pub struct Configuration {
     ///
     /// If this field is to be removed, serde will complain about an unknown field in the configuration
     /// when `MAGO_LOG` is set due to the `deny_unknown_fields` attribute and the use of `Environment` source.
-    #[serde(skip_serializing)]
+    #[serde(default, skip_serializing)]
+    #[allow(dead_code)]
     log: Value,
 }
 
@@ -106,29 +102,38 @@ impl Configuration {
         allow_unsupported_php_version: bool,
     ) -> Result<Configuration, Error> {
         let workspace_dir = workspace.clone().unwrap_or_else(|| CURRENT_DIR.to_path_buf());
-
-        let mut builder = Config::builder();
-        if let Some(file) = file {
-            builder = builder.add_source(File::from(file).required(true).format(FileFormat::Toml));
-        } else {
-            let global_config_roots =
-                [std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from), home_dir()].into_iter().flatten();
-
-            for global_config_root in global_config_roots {
-                builder = builder.add_source(
-                    File::from(global_config_root.join(CONFIGURATION_FILE)).required(false).format(FileFormat::Toml),
-                );
-            }
-
-            builder = builder
-                .add_source(File::from(workspace_dir.join(CONFIGURATION_FILE)).required(false).format(FileFormat::Toml))
-        }
-
-        builder = builder.add_source(Environment::with_prefix(ENVIRONMENT_PREFIX));
+        let workspace_config_path = workspace_dir.join(CONFIGURATION_FILE);
 
         let mut configuration = Configuration::from_workspace(workspace_dir);
+        let mut builder = Config::builder().add_source(Config::try_from(&configuration)?);
 
-        configuration = configuration.configure(builder)?.build()?.try_deserialize::<Configuration>()?;
+        if let Some(file) = file {
+            tracing::debug!("Sourcing configuration from {}.", file.display());
+
+            builder = builder.add_source(File::from(file).required(true).format(FileFormat::Toml));
+        } else {
+            let global_config_roots = [std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from), home_dir()];
+            for global_config_root in global_config_roots {
+                let Some(global_config_root) = global_config_root else {
+                    continue;
+                };
+
+                let global_config_path = global_config_root.join(CONFIGURATION_FILE);
+
+                tracing::debug!("Sourcing global configuration from {}.", global_config_path.display());
+
+                builder = builder.add_source(File::from(global_config_path).required(false).format(FileFormat::Toml));
+            }
+
+            tracing::debug!("Sourcing workspace configuration from {}.", workspace_config_path.display());
+
+            builder = builder.add_source(File::from(workspace_config_path).required(false).format(FileFormat::Toml));
+        }
+
+        configuration = builder
+            .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX))
+            .build()?
+            .try_deserialize::<Configuration>()?;
 
         if allow_unsupported_php_version && !configuration.allow_unsupported_php_version {
             tracing::warn!("Allowing unsupported PHP versions.");
@@ -183,32 +188,7 @@ impl Configuration {
     }
 }
 
-trait ConfigurationEntry {
-    /// Configures the builder with the entry.
-    fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error>;
-
-    fn normalize(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-}
-
-impl ConfigurationEntry for Configuration {
-    fn configure<St: BuilderState>(self, builder: ConfigBuilder<St>) -> Result<ConfigBuilder<St>, Error> {
-        let mut builder = builder
-            .set_default("threads", Value::new(None, ValueKind::U64(self.threads as u64)))?
-            .set_default("stack-size", Value::new(None, ValueKind::U64(self.stack_size as u64)))?
-            .set_default("php-version", Value::new(None, ValueKind::String(self.php_version.to_string())))?
-            .set_default("allow-unsupported-php-version", self.allow_unsupported_php_version)?
-            .set_default("log", self.log)?;
-
-        builder = self.source.configure(builder)?;
-        builder = self.linter.configure(builder)?;
-        builder = self.formatter.configure(builder)?;
-        builder = self.analyzer.configure(builder)?;
-
-        Ok(builder)
-    }
-
+impl Configuration {
     fn normalize(&mut self) -> Result<(), Error> {
         match self.threads {
             0 => {
@@ -252,9 +232,6 @@ impl ConfigurationEntry for Configuration {
         }
 
         self.source.normalize()?;
-        self.linter.normalize()?;
-        self.formatter.normalize()?;
-        self.analyzer.normalize()?;
 
         Ok(())
     }
