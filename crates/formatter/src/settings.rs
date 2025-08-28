@@ -399,8 +399,8 @@ pub struct FormatSettings {
     ///
     /// Note: If the right side has a leading comment, this setting is always false.
     ///
-    /// Default: false
-    #[serde(default = "default_false")]
+    /// Default: true
+    #[serde(default = "default_true")]
     pub line_before_binary_operator: bool,
 
     /// Whether to always break named argument lists into multiple lines.
@@ -869,7 +869,7 @@ impl Default for FormatSettings {
             null_type_hint: NullTypeHint::default(),
             break_promoted_properties_list: true,
             method_chain_breaking_style: MethodChainBreakingStyle::NextLine,
-            line_before_binary_operator: false,
+            line_before_binary_operator: true,
             sort_uses: true,
             separate_use_types: true,
             expand_use_groups: true,

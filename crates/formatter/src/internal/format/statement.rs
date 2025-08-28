@@ -5,6 +5,7 @@ use bumpalo::collections::Vec;
 use bumpalo::vec;
 
 use bumpalo::Bump;
+use mago_span::HasPosition;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
@@ -214,7 +215,7 @@ fn should_add_new_line_or_space_after_stmt<'arena>(
             DeclareBody::ColonDelimited(_) => true,
         },
         Statement::OpeningTag(_) => {
-            if let Some(index) = f.skip_to_line_end(Some(stmt.span().end_position().offset))
+            if let Some(index) = f.skip_to_line_end(Some(stmt.end_position().offset()))
                 && f.has_newline(index, false)
             {
                 return (true, false);
@@ -225,7 +226,7 @@ fn should_add_new_line_or_space_after_stmt<'arena>(
             false
         }
         _ => {
-            if f.has_newline(stmt.span().end_position().offset, false) {
+            if f.has_newline(stmt.end_position().offset(), false) {
                 true
             } else if let Some(Statement::ClosingTag(_)) = stmts.get(i + 1) {
                 should_add_space = !f.has_comment(stmt.span(), CommentFlags::Trailing);

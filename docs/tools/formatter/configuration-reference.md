@@ -46,7 +46,7 @@ use-tabs = true
 | `preserve-breaking-attribute-list` | `boolean` | `false` | Preserve existing line breaks in attribute lists. |
 | `preserve-breaking-conditional-expression` | `boolean` | `false` | Preserve existing line breaks in ternary expressions. |
 | `break-promoted-properties-list` | `boolean` | `true` | Always break parameter lists with promoted properties. |
-| `line-before-binary-operator` | `boolean` | `false` | Place the binary operator on the next line when breaking. |
+| `line-before-binary-operator` | `boolean` | `true` | Place the binary operator on the next line when breaking. |
 | `always-break-named-arguments-list` | `boolean` | `true` | Always break named argument lists into multiple lines. |
 | `always-break-attribute-named-argument-lists` | `boolean` | `false` | Always break named argument lists in attributes. |
 | `array-table-style-alignment` | `boolean` | `true` | Use table-style alignment for arrays. |

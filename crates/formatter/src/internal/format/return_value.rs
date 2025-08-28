@@ -29,10 +29,15 @@ pub fn format_return_value<'arena>(
     }
 
     if return_argument_has_leading_comment(f, value) {
+        let was_inside_parens = f.is_wrapped_in_parens;
+        f.is_wrapped_in_parens = true;
+        let value_doc = value.format(f);
+        f.is_wrapped_in_parens = was_inside_parens;
+
         return Document::Array(vec![
             in f.arena;
             (Document::String("(")),
-            (Document::Indent(vec![in f.arena; Document::Line(Line::hard()), value.format(f)])),
+            (Document::Indent(vec![in f.arena; Document::Line(Line::hard()), value_doc])),
             (Document::Line(Line::hard())),
             (Document::String(")")),
         ]);
@@ -40,14 +45,19 @@ pub fn format_return_value<'arena>(
 
     match value {
         Expression::Binary(binary)
-            if (!is_simple_expression(binary.lhs) && !is_simple_expression(binary.rhs))
+            if (!is_simple_expression(binary.lhs) || !is_simple_expression(binary.rhs))
                 || (binary.lhs.is_binary() || binary.rhs.is_binary()) =>
         {
+            let was_inside_parens = f.is_wrapped_in_parens;
+            f.is_wrapped_in_parens = true;
+            let value_doc = value.format(f);
+            f.is_wrapped_in_parens = was_inside_parens;
+
             Document::Group(Group::new(vec![
                 in f.arena;
                 Document::IfBreak(IfBreak::then(f.arena, Document::String("("))),
                 Document::IndentIfBreak(IndentIfBreak::new(
-                    vec![in f.arena; Document::Line(Line::soft()), value.format(f)],
+                    vec![in f.arena; Document::Line(Line::soft()), value_doc],
                 )),
                 Document::Line(Line::soft()),
                 Document::IfBreak(IfBreak::then(f.arena, Document::String(")"))),
@@ -58,11 +68,16 @@ pub fn format_return_value<'arena>(
                 || (matches!(conditional.then.as_ref(), Some(Expression::Conditional(_)))
                     && matches!(conditional.r#else, Expression::Conditional(_))) =>
         {
+            let was_inside_parens = f.is_wrapped_in_parens;
+            f.is_wrapped_in_parens = true;
+            let value_doc = value.format(f);
+            f.is_wrapped_in_parens = was_inside_parens;
+
             Document::Group(Group::new(vec![
                 in f.arena;
                 Document::IfBreak(IfBreak::then(f.arena, Document::String("("))),
                 Document::IndentIfBreak(IndentIfBreak::new(
-                    vec![in f.arena; Document::Line(Line::soft()), value.format(f)],
+                    vec![in f.arena; Document::Line(Line::soft()), value_doc],
                 )),
                 Document::Line(Line::soft()),
                 Document::IfBreak(IfBreak::then(f.arena, Document::String(")"))),

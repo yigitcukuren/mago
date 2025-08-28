@@ -29,18 +29,19 @@ pub(super) fn print_binaryish_expression<'arena>(
 
     let grandparent = f.grandparent_node();
 
-    let is_inside_parenthesis = matches!(
-        grandparent,
-        Some(
-            Node::If(_)
-                | Node::IfStatementBodyElseIfClause(_)
-                | Node::IfColonDelimitedBodyElseIfClause(_)
-                | Node::While(_)
-                | Node::Switch(_)
-                | Node::DoWhile(_)
-                | Node::Match(_)
-        )
-    );
+    let is_inside_parenthesis = f.is_wrapped_in_parens
+        || matches!(
+            grandparent,
+            Some(
+                Node::If(_)
+                    | Node::IfStatementBodyElseIfClause(_)
+                    | Node::IfColonDelimitedBodyElseIfClause(_)
+                    | Node::While(_)
+                    | Node::Switch(_)
+                    | Node::DoWhile(_)
+                    | Node::Match(_)
+            )
+        );
 
     let parts = print_binaryish_expressions(f, left, operator, right, is_inside_parenthesis, false);
 
@@ -55,7 +56,7 @@ pub(super) fn print_binaryish_expression<'arena>(
     //     $this->lookahead()->type === $tt->parenLeft
     //   ) {
     if is_inside_parenthesis {
-        return Document::Indent(parts);
+        return Document::Array(parts);
     }
 
     // Break between the parens in
@@ -74,12 +75,17 @@ pub(super) fn print_binaryish_expression<'arena>(
         ]));
     }
 
-    let should_not_indent = matches!(grandparent, Some(Node::Return(_) | Node::Throw(_)))
-        || matches!(grandparent, Some(Node::ArrowFunction(func)) if func.arrow.is_before(operator.span()))
-        || matches!(grandparent, Some(Node::For(r#for)) if r#for.body.span().is_after(operator.span()))
-        || (matches!(grandparent, Some(Node::Conditional(_)))
-            && !matches!(f.great_grandparent_node(), Some(Node::Return(_) | Node::Throw(_)))
-            && !is_at_call_like_expression(f));
+    let should_not_indent = if let Some(Node::Binary(parent_binary)) = grandparent {
+        (parent_binary.operator.is_comparison() && operator.is_comparison())
+            || (parent_binary.operator.is_logical() && operator.is_logical())
+    } else {
+        matches!(grandparent, Some(Node::Return(_) | Node::Throw(_)))
+            || matches!(grandparent, Some(Node::ArrowFunction(func)) if func.arrow.is_before(operator.span()))
+            || matches!(grandparent, Some(Node::For(r#for)) if r#for.body.span().is_after(operator.span()))
+            || (matches!(grandparent, Some(Node::Conditional(_)))
+                && !matches!(f.great_grandparent_node(), Some(Node::Return(_) | Node::Throw(_)))
+                && !is_at_call_like_expression(f))
+    };
 
     let should_indent_if_inlining =
         matches!(grandparent, Some(Node::Assignment(_) | Node::PropertyItem(_) | Node::ConstantItem(_)))
@@ -197,6 +203,7 @@ pub(super) fn should_inline_binary_expression<'arena>(expression: &'arena Expres
 
 pub(super) fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperator) -> bool {
     match unwrap_parenthesized(rhs) {
+        Expression::Assignment(_) => true,
         Expression::Array(Array { elements, .. })
         | Expression::List(List { elements, .. })
         | Expression::LegacyArray(LegacyArray { elements, .. }) => {

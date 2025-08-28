@@ -1,7 +1,7 @@
 <?php
 
 $v =
-    $a . // comment
-    $b;
+    $a // comment
+    . $b;
 
 $v = $a; // comment

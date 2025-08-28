@@ -51,6 +51,7 @@ pub struct FormatterState<'ctx, 'arena> {
     in_pipe_chain_arrow_segment: bool,
     in_script_terminating_statement: bool,
     in_condition: bool,
+    is_wrapped_in_parens: bool,
     halted_compilation: bool,
 }
 
@@ -85,6 +86,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             parameter_state: ParameterState::default(),
             in_pipe_chain_arrow_segment: false,
             in_condition: false,
+            is_wrapped_in_parens: false,
             halted_compilation: false,
             in_script_terminating_statement: false,
         }

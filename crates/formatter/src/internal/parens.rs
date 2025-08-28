@@ -8,56 +8,45 @@ use mago_syntax::token::Precedence;
 
 use crate::document::Document;
 use crate::document::Group;
+use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::internal::FormatterState;
 
 impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
-    pub(crate) fn wrap_parens(&mut self, document: Document<'arena>, node: Node<'arena, 'arena>) -> Document<'arena> {
-        if self.need_parens(node) {
-            if self.should_indent(node) {
-                Document::Group(Group::new(vec![
+    pub(crate) fn add_parens(&mut self, document: Document<'arena>, node: Node<'arena, 'arena>) -> Document<'arena> {
+        if self.should_indent(node) {
+            Document::Group(Group::new(vec![
+                in self.arena;
+                Document::String("("),
+                Document::IndentIfBreak(IndentIfBreak::new(vec![
                     in self.arena;
-                    Document::String("("),
-                    Document::Indent(vec![
-                        in self.arena;
-                        if self.settings.space_within_grouping_parenthesis {
-                            Document::Line(Line::default())
-                        } else {
-                            Document::Line(Line::soft())
-                        },
-                        document,
-                    ]),
                     if self.settings.space_within_grouping_parenthesis {
                         Document::Line(Line::default())
                     } else {
                         Document::Line(Line::soft())
                     },
-                    Document::String(")"),
-                ]))
-            } else {
-                Document::Group(Group::new(vec![
-                    in self.arena;
-                    Document::String("("),
-                    if self.settings.space_within_grouping_parenthesis { Document::space() } else { Document::empty() },
                     document,
-                    if self.settings.space_within_grouping_parenthesis { Document::space() } else { Document::empty() },
-                    Document::String(")"),
-                ]))
-            }
+                ])),
+                if self.settings.space_within_grouping_parenthesis {
+                    Document::Line(Line::default())
+                } else {
+                    Document::Line(Line::soft())
+                },
+                Document::String(")"),
+            ]))
         } else {
-            document
+            Document::Group(Group::new(vec![
+                in self.arena;
+                Document::String("("),
+                if self.settings.space_within_grouping_parenthesis { Document::space() } else { Document::empty() },
+                document,
+                if self.settings.space_within_grouping_parenthesis { Document::space() } else { Document::empty() },
+                Document::String(")"),
+            ]))
         }
     }
 
-    fn should_indent(&self, node: Node<'arena, 'arena>) -> bool {
-        if matches!(node, Node::Program(_)) || node.is_statement() {
-            return false;
-        }
-
-        self.is_unary_or_binary_or_ternary(node)
-    }
-
-    fn need_parens(&mut self, node: Node<'arena, 'arena>) -> bool {
+    pub(crate) fn need_parens(&mut self, node: Node<'arena, 'arena>) -> bool {
         if matches!(node, Node::Program(_)) || node.is_statement() {
             return false;
         }
@@ -68,6 +57,14 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             || self.conditional_or_assignment_needs_parenthesis(node)
             || self.literal_needs_parens(node)
             || self.pipe_node_needs_parens(node)
+    }
+
+    pub(crate) fn should_indent(&self, node: Node<'arena, 'arena>) -> bool {
+        if matches!(node, Node::Program(_)) || node.is_statement() {
+            return false;
+        }
+
+        self.is_unary_or_binary_or_ternary(node)
     }
 
     fn literal_needs_parens(&self, node: Node<'arena, 'arena>) -> bool {
