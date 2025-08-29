@@ -34,9 +34,9 @@ includes = [{includes}]
 excludes = [{excludes}]
 
 [formatter]
-print_width = {print_width}
-tab_width = {tab_width}
-use_tabs = {use_tabs}
+print-width = {print_width}
+tab-width = {tab_width}
+use-tabs = {use_tabs}
 
 [linter]
 integrations = [{integrations}]
@@ -558,7 +558,7 @@ fn build_analyzer_settings_string(settings: &InitializationAnalyzerSettings) -> 
     if !settings.disabled_categories.is_empty() {
         lines.push("# Disabled Issue Categories".to_string());
         for category in &settings.disabled_categories {
-            lines.push(format!("{}_issues = false", category));
+            lines.push(format!("{}-issues = false", category));
         }
         lines.push("".to_string());
     }
@@ -566,12 +566,12 @@ fn build_analyzer_settings_string(settings: &InitializationAnalyzerSettings) -> 
     if !lines.is_empty() {
         lines.push("# Analyzer Settings".to_string());
     }
-    lines.push(format!("find_unused_definitions = {}", settings.find_unused_definitions));
-    lines.push(format!("find_unused_expressions = {}", settings.find_unused_expressions));
-    lines.push(format!("analyze_dead_code = {}", settings.analyze_dead_code));
-    lines.push(format!("check_throws = {}", settings.check_throws));
-    lines.push(format!("allow_possibly_undefined_array_keys = {}", settings.allow_possibly_undefined_array_keys));
-    lines.push(format!("perform_heuristic_checks = {}", settings.perform_heuristic_checks));
+    lines.push(format!("find-unused-definitions = {}", settings.find_unused_definitions));
+    lines.push(format!("find-unused-expressions = {}", settings.find_unused_expressions));
+    lines.push(format!("analyze-dead-code = {}", settings.analyze_dead_code));
+    lines.push(format!("check-throws = {}", settings.check_throws));
+    lines.push(format!("allow-possibly-undefined-array-keys = {}", settings.allow_possibly_undefined_array_keys));
+    lines.push(format!("perform-heuristic-checks = {}", settings.perform_heuristic_checks));
 
     lines.join("\n")
 }
