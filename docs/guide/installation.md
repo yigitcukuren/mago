@@ -40,7 +40,7 @@ These methods are convenient but may be managed by the community or experience s
 To add Mago as a development dependency to your PHP project via Composer:
 
 ```sh
-composer require --dev carthage-software/mago:1.0.0-beta.1
+composer require --dev carthage-software/mago:1.0.0-beta.2
 ```
 
 ### Homebrew (macOS)
