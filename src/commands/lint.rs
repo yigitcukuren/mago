@@ -93,6 +93,8 @@ pub struct LintCommand {
 }
 
 pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+    configuration.source.excludes.extend(std::mem::take(&mut configuration.linter.excludes));
+
     let database = if !command.path.is_empty() {
         database::load_from_paths(&mut configuration.source, command.path, None)?
     } else {

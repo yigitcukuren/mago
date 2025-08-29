@@ -52,6 +52,8 @@ pub struct AnalyzeCommand {
 /// 3. Analyzing the user-defined sources against the compiled codebase (with progress).
 /// 4. Reporting any found issues.
 pub fn execute(command: AnalyzeCommand, mut configuration: Configuration) -> Result<ExitCode, Error> {
+    configuration.source.excludes.extend(std::mem::take(&mut configuration.analyzer.excludes));
+
     // 1. Establish the base prelude data. We deconstruct the prelude to get the
     //    database and the already-analyzed metadata separately.
     let (base_db, codebase_metadata, symbol_references) = if command.no_stubs {

@@ -71,7 +71,7 @@ pub fn analyze_code(code: String, settings: WasmSettings) -> WasmAnalysisResults
     symbol_references.extend(analyzer_analysis_result.symbol_references);
 
     let linter_settings = settings.linter.to_linter_settings(settings.php_version);
-    let linter = Linter::new(&arena, linter_settings, None);
+    let linter = Linter::new(&arena, linter_settings, None, false);
     let linter_issues = linter.lint(&source_file, program, &resolved_names);
 
     let formatted_code = if parse_error.is_none() {
