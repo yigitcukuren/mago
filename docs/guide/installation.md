@@ -41,7 +41,7 @@ You can later update Mago by running `mago self-update`.
 To add Mago as a development dependency to your PHP project via Composer:
 
 ```sh
-composer require --dev carthage-software/mago
+composer require --dev carthage-software/mago:1.0.0-beta.1
 ```
 
 ### Cargo (Rust)
