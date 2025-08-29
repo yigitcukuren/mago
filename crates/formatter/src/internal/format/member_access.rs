@@ -99,7 +99,7 @@ impl<'arena> MemberAccessChain<'arena> {
             {
                 let (is_breaking_argument, is_string_word_type) = match argument_list.arguments.first() {
                     Some(argument) => {
-                        (is_breaking_expression(argument.value(), true), is_string_word_type(argument.value()))
+                        (is_breaking_expression(f, argument.value(), true), is_string_word_type(argument.value()))
                     }
                     None => (false, false),
                 };
@@ -132,10 +132,10 @@ impl<'arena> MemberAccessChain<'arena> {
                     .arguments
                     .first()
                     .map(|argument| argument.value())
-                    .is_some_and(|e| is_breaking_expression(e, true))
+                    .is_some_and(|e| is_breaking_expression(f, e, true))
             } else if argument_list.arguments.len() > 1 {
                 argument_list.arguments.iter().all(|arg| !arg.is_positional())
-                    && argument_list.arguments.iter().any(|arg| is_breaking_expression(arg.value(), false))
+                    && argument_list.arguments.iter().any(|arg| is_breaking_expression(f, arg.value(), false))
             } else {
                 false
             };
@@ -159,6 +159,10 @@ impl<'arena> MemberAccessChain<'arena> {
     #[inline]
     pub fn is_eligible_for_chaining(&self, f: &FormatterState<'_, 'arena>) -> bool {
         if self.has_comments_in_chain(f) {
+            return true;
+        }
+
+        if f.settings.preserve_breaking_member_access_chain && self.is_already_broken(f) {
             return true;
         }
 
@@ -219,12 +223,15 @@ impl<'arena> MemberAccessChain<'arena> {
 
     #[inline]
     fn is_already_broken(&self, f: &FormatterState) -> bool {
+        let accesses_len = self.accesses.len();
+        let mut broken_links = 0;
+
         if let Some(first_access) = self.accesses.first() {
             let base_end = self.base.span().end;
             let first_op_start = first_access.get_operator_span().start;
 
             if misc::has_new_line_in_range(f.source_text, base_end.offset, first_op_start.offset) {
-                return true;
+                broken_links += 1;
             }
         }
 
@@ -243,11 +250,24 @@ impl<'arena> MemberAccessChain<'arena> {
             let current_op_span = access.get_operator_span();
 
             if misc::has_new_line_in_range(f.source_text, prev_selector_end.offset, current_op_span.start.offset) {
-                return true;
+                broken_links += 1;
             }
         }
 
-        false
+        if broken_links == 0 {
+            return false;
+        }
+
+        if broken_links == accesses_len || broken_links >= 2 {
+            return true;
+        }
+
+        if accesses_len <= 3 {
+            // we must have at least 2 breaks for chains of length 3 or less
+            return false;
+        }
+
+        true
     }
 
     #[inline]

@@ -13,6 +13,7 @@ use crate::document::Separator;
 use crate::internal::FormatterState;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
+use crate::internal::format::call_arguments::should_break_all_arguments;
 use crate::internal::format::format_token;
 use crate::internal::format::member_access::collect_member_access_chain;
 use crate::internal::format::statement::print_statement_sequence;
@@ -79,6 +80,10 @@ pub(super) fn should_hug_expression<'arena>(
         return false;
     }
 
+    if is_breaking_expression(f, expression, arrow_function_recursion) {
+        return true;
+    }
+
     if let Expression::Call(_) | Expression::Access(_) = expression {
         // Don't hug calls/accesses if they are part of a member access chain
         return collect_member_access_chain(f.arena, expression).is_none_or(|chain| !chain.is_eligible_for_chaining(f));
@@ -106,7 +111,7 @@ pub(super) fn should_hug_expression<'arena>(
     }
 
     let Expression::Instantiation(instantiation) = expression else {
-        return is_breaking_expression(expression, arrow_function_recursion);
+        return false;
     };
 
     // Hug instantiations if it is a simple class instantiation
@@ -145,17 +150,33 @@ pub(super) fn should_hug_expression<'arena>(
     }
 }
 
-pub fn is_breaking_expression<'arena>(node: &'arena Expression<'arena>, arrow_function_recursion: bool) -> bool {
+pub fn is_breaking_expression<'arena>(
+    f: &FormatterState<'_, 'arena>,
+    node: &'arena Expression<'arena>,
+    arrow_function_recursion: bool,
+) -> bool {
     if let Expression::Parenthesized(inner) = node {
-        return is_breaking_expression(inner.expression, arrow_function_recursion);
+        return is_breaking_expression(f, inner.expression, arrow_function_recursion);
     }
 
     if let Expression::UnaryPrefix(operation) = node {
-        return is_breaking_expression(operation.operand, arrow_function_recursion);
+        return is_breaking_expression(f, operation.operand, arrow_function_recursion);
     }
 
     if let Expression::ArrowFunction(arrow_function) = node {
-        return !arrow_function_recursion && is_breaking_expression(arrow_function.expression, true);
+        return !arrow_function_recursion && is_breaking_expression(f, arrow_function.expression, true);
+    }
+
+    if let Expression::Instantiation(Instantiation { argument_list: Some(args), .. }) = node
+        && should_break_all_arguments(f, args, false)
+    {
+        return true;
+    }
+
+    if let Expression::Call(call) = node
+        && should_break_all_arguments(f, call.get_argument_list(), false)
+    {
+        return true;
     }
 
     matches!(

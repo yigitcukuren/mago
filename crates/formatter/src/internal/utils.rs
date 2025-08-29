@@ -177,7 +177,7 @@ pub fn could_expand_value<'arena>(
         Expression::Binary(operation) => could_expand_value(f, operation.lhs, nested_args),
         Expression::ArrowFunction(arrow_function) => match arrow_function.expression {
             Expression::Call(_) | Expression::Conditional(_) => true,
-            other => is_breaking_expression(other, true),
+            other => is_breaking_expression(f, other, true),
         },
         Expression::Instantiation(instantiation) => {
             let Expression::Identifier(_) = instantiation.class else {

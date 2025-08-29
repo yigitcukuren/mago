@@ -59,19 +59,24 @@ pub(super) fn print_argument_list<'arena>(
     argument_list: &'arena ArgumentList<'arena>,
     for_attribute: bool,
 ) -> Document<'arena> {
-    let mut should_break = false;
+    let mut force_break = false;
     let left_parenthesis = {
         let mut contents = vec![
             in f.arena;
-            Document::String("("),
+            Document::String("(")
         ];
+
+        if let Some(trailing_comment) = f.print_trailing_comments(argument_list.left_parenthesis) {
+            contents.push(trailing_comment);
+            force_break = true;
+        }
 
         if let Some(argument) = argument_list.arguments.first()
             && let Some(trailing_comments) =
                 f.print_dangling_comments_between_nodes(argument_list.left_parenthesis, argument.span())
         {
             contents.push(trailing_comments);
-            should_break = true;
+            force_break = true;
         }
 
         Document::Array(contents)
@@ -80,11 +85,11 @@ pub(super) fn print_argument_list<'arena>(
     let mut contents = vec![in f.arena; clone_in_arena(f.arena, &left_parenthesis)];
 
     // First, run all the decision functions with unformatted arguments
-    let should_break_all = should_break || should_break_all_arguments(f, argument_list, for_attribute);
-    let should_inline = !should_break && should_inline_breaking_arguments(f, argument_list);
-    let should_expand_first = !should_break && should_expand_first_arg(f, argument_list, false);
-    let should_expand_last = !should_break && should_expand_last_arg(f, argument_list, false);
-    let is_single_late_breaking_argument = !should_break && is_single_late_breaking_argument(f, argument_list);
+    let should_break_all = force_break || should_break_all_arguments(f, argument_list, for_attribute);
+    let should_inline = !force_break && should_inline_breaking_arguments(f, argument_list);
+    let should_expand_first = !force_break && should_expand_first_arg(f, argument_list, false);
+    let should_expand_last = !force_break && should_expand_last_arg(f, argument_list, false);
+    let is_single_late_breaking_argument = !force_break && is_single_late_breaking_argument(f, argument_list);
 
     let arguments_count = argument_list.arguments.len();
     let mut formatted_arguments: Vec<'arena, Document<'arena>> = Vec::with_capacity_in(arguments_count, f.arena);
@@ -347,7 +352,7 @@ fn argument_has_surrounding_comments(f: &FormatterState, argument: &Argument) ->
 }
 
 #[inline]
-fn should_break_all_arguments(f: &FormatterState, argument_list: &ArgumentList, for_attributes: bool) -> bool {
+pub fn should_break_all_arguments(f: &FormatterState, argument_list: &ArgumentList, for_attributes: bool) -> bool {
     if f.settings.always_break_named_arguments_list
         && (!for_attributes || f.settings.always_break_attribute_named_argument_lists)
         && argument_list.arguments.len() >= 2
@@ -430,8 +435,8 @@ fn should_inline_breaking_arguments<'arena>(
             let first_expression = first_argument.value();
             let second_expression = second_argument.value();
 
-            let is_first_breaking = is_breaking_expression(first_expression, false);
-            let is_second_breaking = is_breaking_expression(second_expression, false);
+            let is_first_breaking = is_breaking_expression(f, first_expression, false);
+            let is_second_breaking = is_breaking_expression(f, second_expression, false);
             if is_first_breaking && is_second_breaking {
                 return true;
             }

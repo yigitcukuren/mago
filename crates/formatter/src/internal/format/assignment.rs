@@ -189,7 +189,7 @@ fn choose_layout<'arena>(
             return Layout::NeverBreakAfterOperator;
         }
 
-        if is_breaking_expression(binary.rhs, false) {
+        if is_breaking_expression(f, binary.rhs, false) {
             return Layout::NeverBreakAfterOperator;
         }
     }
