@@ -33,7 +33,9 @@ pub struct AssertionStyleRule {
 #[serde(rename_all = "lowercase")]
 pub enum AssertionStyle {
     Static,
+    #[serde(alias = "self")]
     Self_,
+    #[serde(alias = "$this")]
     This,
 }
 
