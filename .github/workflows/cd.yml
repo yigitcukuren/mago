@@ -173,15 +173,7 @@ jobs:
           cargo -V
           rustc -V
 
-      - name: build (Windows)
-        if: contains(matrix.job.target, '-pc-windows-')
-        shell: bash
-        env:
-          RUSTFLAGS: "-C link-arg=/STACK:8388608"
-        run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
-
       - name: build
-        if: "!(contains(matrix.job.target, '-pc-windows-'))"
         shell: bash
         run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
 

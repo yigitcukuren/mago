@@ -536,7 +536,7 @@ fn prompt_for_disabled_categories(theme: &ColorfulTheme) -> Result<Vec<String>, 
 
     let selections = MultiSelect::with_theme(theme)
         .with_prompt(" │  Select issue categories to disable (all are enabled by default)")
-        .items(&CATEGORIES)
+        .items(CATEGORIES)
         .interact()?;
 
     Ok(selections.into_iter().map(|i| CATEGORIES[i].to_string()).collect())
