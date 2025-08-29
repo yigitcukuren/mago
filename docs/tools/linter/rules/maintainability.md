@@ -42,7 +42,6 @@ Cyclomatic complexity is a measure of the number of linearly independent paths t
 
 
 
----
 
 ## <a id="excessive-nesting"></a>`excessive-nesting`
 
@@ -99,7 +98,6 @@ if ($a) {
 }
 ```
 
----
 
 ## <a id="excessive-parameter-list"></a>`excessive-parameter-list`
 
@@ -119,7 +117,6 @@ If the number of parameters exceeds a configurable threshold, an issue is report
 
 
 
----
 
 ## <a id="halstead"></a>`halstead`
 
@@ -142,7 +139,6 @@ For more info: https://en.wikipedia.org/wiki/Halstead_complexity_measures
 
 
 
----
 
 ## <a id="kan-defect"></a>`kan-defect`
 
@@ -168,7 +164,6 @@ References:
 
 
 
----
 
 ## <a id="no-boolean-flag-parameter"></a>`no-boolean-flag-parameter`
 
@@ -212,7 +207,6 @@ function get_difference(string $a, string $b, bool $ignore_case): string {
 }
 ```
 
----
 
 ## <a id="no-else-clause"></a>`no-else-clause`
 
@@ -264,7 +258,6 @@ function process($user) {
 }
 ```
 
----
 
 ## <a id="no-goto"></a>`no-goto`
 
@@ -313,7 +306,6 @@ goto loop;
 end:
 ```
 
----
 
 ## <a id="too-many-enum-cases"></a>`too-many-enum-cases`
 
@@ -371,7 +363,6 @@ enum LargeEnum {
 }
 ```
 
----
 
 ## <a id="too-many-methods"></a>`too-many-methods`
 
@@ -432,7 +423,6 @@ class ComplexClass {
 }
 ```
 
----
 
 ## <a id="too-many-properties"></a>`too-many-properties`
 
@@ -471,4 +461,3 @@ class ComplexClass {
 }
 ```
 
----

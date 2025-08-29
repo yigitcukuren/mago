@@ -6,7 +6,6 @@ includes = ["vendor"]
 excludes = ["scripts/local"]
 
 [linter.rules]
-ambiguous-function-call = { enabled = false }
 cyclomatic-complexity = { threshold = 20 }
 kan-defect = { threshold = 1.9 }
 halstead = { effort-threshold = 7000 }

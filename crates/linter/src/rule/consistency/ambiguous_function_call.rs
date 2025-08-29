@@ -36,6 +36,10 @@ impl Default for AmbiguousFunctionCallConfig {
 }
 
 impl Config for AmbiguousFunctionCallConfig {
+    fn default_enabled() -> bool {
+        false
+    }
+
     fn level(&self) -> Level {
         self.level
     }

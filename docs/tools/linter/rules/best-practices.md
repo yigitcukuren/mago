@@ -71,7 +71,6 @@ if (isset($a) && isset($b)) {
 }
 ```
 
----
 
 ## <a id="loop-does-not-iterate"></a>`loop-does-not-iterate`
 
@@ -113,7 +112,6 @@ for ($i = 0; $i < 3; $i++) {
 }
 ```
 
----
 
 ## <a id="middleware-in-routes"></a>`middleware-in-routes`
 
@@ -160,7 +158,6 @@ class UserController extends Controller
 }
 ```
 
----
 
 ## <a id="no-sprintf-concat"></a>`no-sprintf-concat`
 
@@ -200,7 +197,6 @@ $name = 'World';
 $greeting = 'Hello, ' . sprintf('%s!', $name);
 ```
 
----
 
 ## <a id="prefer-anonymous-migration"></a>`prefer-anonymous-migration`
 
@@ -274,7 +270,6 @@ class MyMigration extends Migration {
 return new MyMigration();
 ```
 
----
 
 ## <a id="prefer-first-class-callable"></a>`prefer-first-class-callable`
 
@@ -316,7 +311,6 @@ $names = ['Alice', 'Bob', 'Charlie'];
 $uppercased_names = array_map(fn($name) => strtoupper($name), $names);
 ```
 
----
 
 ## <a id="prefer-interface"></a>`prefer-interface`
 
@@ -368,7 +362,6 @@ class UserController
 }
 ```
 
----
 
 ## <a id="prefer-view-array"></a>`prefer-view-array`
 
@@ -413,7 +406,6 @@ return view('user.profile')->with([
 ]);
 ```
 
----
 
 ## <a id="prefer-while-loop"></a>`prefer-while-loop`
 
@@ -455,7 +447,6 @@ for (; $i < 10;) {
 }
 ```
 
----
 
 ## <a id="psl-array-functions"></a>`psl-array-functions`
 
@@ -492,7 +483,6 @@ $filtered = Psl\Vec\filter($xs, fn($x) => $x > 2);
 $filtered = array_filter($xs, fn($x) => $x > 2);
 ```
 
----
 
 ## <a id="psl-data-structures"></a>`psl-data-structures`
 
@@ -536,7 +526,6 @@ declare(strict_types=1);
 $stack = new SplStack();
 ```
 
----
 
 ## <a id="psl-datetime"></a>`psl-datetime`
 
@@ -574,7 +563,6 @@ $dateTime = new Psl\DateTime\DateTime();
 $dateTime = new DateTime();
 ```
 
----
 
 ## <a id="psl-math-functions"></a>`psl-math-functions`
 
@@ -611,7 +599,6 @@ $abs = Psl\Math\abs($number);
 $abs = abs($number);
 ```
 
----
 
 ## <a id="psl-output"></a>`psl-output`
 
@@ -648,7 +635,6 @@ Psl\IO\write_line("Hello, world!");
 echo "Hello, world!";
 ```
 
----
 
 ## <a id="psl-randomness-functions"></a>`psl-randomness-functions`
 
@@ -686,7 +672,6 @@ $randomInt = Psl\SecureRandom\int(0, 10);
 $randomInt = random_int(0, 10);
 ```
 
----
 
 ## <a id="psl-regex-functions"></a>`psl-regex-functions`
 
@@ -724,7 +709,6 @@ $result = Psl\Regex\matches('Hello, World!', '/\w+/');
 $result = preg_match('/\w+/', 'Hello, World!');
 ```
 
----
 
 ## <a id="psl-sleep-functions"></a>`psl-sleep-functions`
 
@@ -766,7 +750,6 @@ Async\sleep(DateTime\Duration::seconds(1));
 sleep(1);
 ```
 
----
 
 ## <a id="psl-string-functions"></a>`psl-string-functions`
 
@@ -804,7 +787,6 @@ $capitalized = Psl\Str\capitalize($string);
 $capitalized = ucfirst($string);
 ```
 
----
 
 ## <a id="use-compound-assignment"></a>`use-compound-assignment`
 
@@ -844,4 +826,3 @@ $count = $count + 1;
 $message = $message . ' Hello';
 ```
 
----

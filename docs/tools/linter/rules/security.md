@@ -60,7 +60,6 @@ allowed_function(); // Not flagged
 curl_init(); // Error: part of a disallowed extension
 ```
 
----
 
 ## <a id="no-debug-symbols"></a>`no-debug-symbols`
 
@@ -101,7 +100,6 @@ function process_request(array $data) {
 }
 ```
 
----
 
 ## <a id="no-insecure-comparison"></a>`no-insecure-comparison`
 
@@ -141,7 +139,6 @@ if ($storedToken == $userToken) {
 }
 ```
 
----
 
 ## <a id="no-literal-password"></a>`no-literal-password`
 
@@ -176,7 +173,6 @@ $password = getenv('DB_PASSWORD');
 $password = "supersecret";
 ```
 
----
 
 ## <a id="no-short-opening-tag"></a>`no-short-opening-tag`
 
@@ -215,7 +211,6 @@ echo "Hello, World!";
 echo "Hello, World!";
 ```
 
----
 
 ## <a id="tainted-data-to-sink"></a>`tainted-data-to-sink`
 
@@ -254,4 +249,3 @@ echo htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES, 'UTF-8');
 echo $_GET['name'] ?? '';
 ```
 
----

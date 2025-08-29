@@ -10,15 +10,11 @@ The `mago ast` command is a powerful inspection tool that tokenizes and parses a
 Usage: mago ast [OPTIONS] <FILE>
 ```
 
----
-
 ## Arguments
 
 ### `<FILE>`
 
 **Required.** The path to the single PHP file you want to inspect.
-
----
 
 ## Options
 

@@ -1,6 +1,13 @@
 #!/usr/bin/env php
 <?php
 
+/**
+ * A PHP script to generate markdown documentation for linter rules from the Mago CLI tool.
+ *
+ * It fetches rule data and configuration, organizes rules by category and integration,
+ * and creates markdown files in the specified documentation directory.
+ */
+
 declare(strict_types=1);
 
 /**
@@ -99,7 +106,7 @@ function main(): void
 function fetch_rules_from_mago(string $mago_executable): array
 {
     writeln('🔍', 'Fetching rule data from Mago...');
-    $command = "{$mago_executable} lint --list-rules --json-docs";
+    $command = "{$mago_executable} lint --pedantic --list-rules --json";
     $json_output = shell_exec($command);
 
     if ($json_output === null || $json_output === false) {
@@ -376,12 +383,10 @@ function create_category_markdown_content(string $category_name, array $rules, a
 
     foreach ($rules as $rule) {
         $rule_config = $linter_config['rules'][$rule['code']] ?? ['enabled' => true, 'level' => 'error'];
-        $content .= "\n" . generate_rule_docs_section($rule, $rule_config) . "\n\n---\n";
+        $content .= "\n" . generate_rule_docs_section($rule, $rule_config) . "\n\n";
     }
 
     return $content;
-    /** @var string */
-    return preg_replace('/\\s*---\\s*$/', "\n", $content);
 }
 
 /**

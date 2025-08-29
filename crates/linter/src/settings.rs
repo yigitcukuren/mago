@@ -17,7 +17,7 @@ pub struct Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields, bound = "C: Serialize + DeserializeOwned")]
-pub struct RuleSettings<C: Default> {
+pub struct RuleSettings<C: Config> {
     pub enabled: bool,
 
     #[serde(flatten)]
@@ -134,13 +134,13 @@ pub struct RulesSettings {
     pub use_compound_assignment: RuleSettings<UseCompoundAssignmentConfig>,
 }
 
-impl<C: Default> RuleSettings<C> {
+impl<C: Config> RuleSettings<C> {
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
     pub fn default_enabled() -> bool {
-        true
+        C::default_enabled()
     }
 }
 
@@ -150,8 +150,8 @@ impl Default for Settings {
     }
 }
 
-impl<C: Default> Default for RuleSettings<C> {
+impl<C: Config> Default for RuleSettings<C> {
     fn default() -> Self {
-        Self { enabled: true, config: C::default() }
+        Self { enabled: C::default_enabled(), config: C::default() }
     }
 }

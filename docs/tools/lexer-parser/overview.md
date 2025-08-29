@@ -15,8 +15,6 @@ While these components are mostly used internally, Mago exposes them through the
 - Understanding exactly how PHP interprets a piece of syntax.
 - Integrating with other tools that need a robust PHP parser, delegating the hard work to Mago.
 
----
-
 ## For Rust Developers
 
 If you're building your own tools in Rust and need a high-performance PHP parser, you can use Mago's core crates directly:

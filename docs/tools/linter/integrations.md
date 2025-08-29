@@ -8,8 +8,6 @@ title: Integrations
 
 When an integration is enabled, Mago will automatically activate all the rules associated with it. You can still configure or disable individual rules from an integration in your `[linter.rules]` table if needed.
 
----
-
 ## Available Integrations
 
 Mago is built with the broader PHP ecosystem in mind and includes support for a wide range of tools.
@@ -54,8 +52,6 @@ Mago is built with the broader PHP ecosystem in mind and includes support for a 
 
 - Cycle
 - Doctrine
-
----
 
 ## Enabling Integrations
 

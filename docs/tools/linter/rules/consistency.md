@@ -10,6 +10,7 @@ This document details the rules available in the `Consistency` category.
 
 | Rule | Code |
 | :--- | :---------- |
+| Ambiguous Function Call | [`ambiguous-function-call`](#ambiguous-function-call) |
 | Array Style | [`array-style`](#array-style) |
 | Assertion Style | [`assertion-style`](#assertion-style) |
 | Block Statement | [`block-statement`](#block-statement) |
@@ -28,6 +29,60 @@ This document details the rules available in the `Consistency` category.
 | Trait Name | [`trait-name`](#trait-name) |
 
 ---
+
+## <a id="ambiguous-function-call"></a>`ambiguous-function-call`
+
+Enforces that all function calls made from within a namespace are explicit.
+
+When an unqualified function like `strlen()` is called from within a namespace, PHP
+performs a runtime fallback check (current namespace -> global namespace). This
+ambiguity prevents PHP from performing powerful compile-time optimizations,
+such as replacing a call to `strlen()` with the highly efficient `STRLEN` opcode.
+
+Making calls explicit improves readability, prevents bugs, and allows for significant
+performance gains in some cases.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `false` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+namespace App;
+
+use function strlen;
+
+// OK: Explicitly imported
+$length1 = strlen("hello");
+
+// OK: Explicitly global
+$length2 = \strlen("hello");
+
+// OK: Explicitly namespaced
+$value = namespace\my_function();
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+namespace App;
+
+// Ambiguous: could be App\strlen or \strlen
+$length = strlen("hello");
+```
+
 
 ## <a id="array-style"></a>`array-style`
 
@@ -65,7 +120,6 @@ $arr = [1, 2, 3];
 $arr = array(1, 2, 3);
 ```
 
----
 
 ## <a id="assertion-style"></a>`assertion-style`
 
@@ -119,7 +173,6 @@ final class SomeTest extends TestCase
 }
 ```
 
----
 
 ## <a id="block-statement"></a>`block-statement`
 
@@ -165,7 +218,6 @@ for ($i = 0; $i < 10; $i++)
     echo $i;
 ```
 
----
 
 ## <a id="braced-string-interpolation"></a>`braced-string-interpolation`
 
@@ -207,7 +259,6 @@ $c = "Hello, ${$name}!";
 $d = "Hello, ${$object->getMethod()}!";
 ```
 
----
 
 ## <a id="class-name"></a>`class-name`
 
@@ -247,7 +298,6 @@ class myClass {}
 class MY_CLASS {}
 ```
 
----
 
 ## <a id="constant-name"></a>`constant-name`
 
@@ -294,7 +344,6 @@ class MyClass {
 }
 ```
 
----
 
 ## <a id="enum-name"></a>`enum-name`
 
@@ -331,7 +380,6 @@ enum myEnum {}
 enum MY_ENUM {}
 ```
 
----
 
 ## <a id="function-name"></a>`function-name`
 
@@ -370,7 +418,6 @@ function MyFunction() {}
 function My_Function() {}
 ```
 
----
 
 ## <a id="interface-name"></a>`interface-name`
 
@@ -408,7 +455,6 @@ interface my_interface {}
 interface MY_INTERFACE {}
 ```
 
----
 
 ## <a id="lowercase-keyword"></a>`lowercase-keyword`
 
@@ -450,7 +496,6 @@ IF (TRUE) {
 }
 ```
 
----
 
 ## <a id="lowercase-type-hint"></a>`lowercase-type-hint`
 
@@ -489,7 +534,6 @@ function example(Int $param): VOID {
 }
 ```
 
----
 
 ## <a id="no-alias-function"></a>`no-alias-function`
 
@@ -526,7 +570,6 @@ $freeSpace = disk_free_space("/");
 $freeSpace = diskfreespace("/");
 ```
 
----
 
 ## <a id="no-hash-comment"></a>`no-hash-comment`
 
@@ -560,7 +603,6 @@ in PHP, as they are more consistent with the language's syntax and are easier to
 # This is a shell-style comment.
 ```
 
----
 
 ## <a id="no-php-tag-terminator"></a>`no-php-tag-terminator`
 
@@ -594,7 +636,6 @@ echo "Hello World";
 echo "Hello World" ?><?php
 ```
 
----
 
 ## <a id="no-trailing-space"></a>`no-trailing-space`
 
@@ -628,7 +669,6 @@ diffs and formatting issues, so it is recommended to remove it.
 // This is a comment with trailing whitespace.
 ```
 
----
 
 ## <a id="trait-name"></a>`trait-name`
 
@@ -665,4 +705,3 @@ trait my_trait {}
 trait MY_TRAIT {}
 ```
 
----

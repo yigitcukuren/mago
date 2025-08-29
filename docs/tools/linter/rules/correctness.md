@@ -11,6 +11,7 @@ This document details the rules available in the `Correctness` category.
 | Rule | Code |
 | :--- | :---------- |
 | Assert Description | [`assert-description`](#assert-description) |
+| Constant Type | [`constant-type`](#constant-type) |
 | Identity Comparison | [`identity-comparison`](#identity-comparison) |
 | Invalid Open Tag | [`invalid-open-tag`](#invalid-open-tag) |
 | No Assign In Condition | [`no-assign-in-condition`](#no-assign-in-condition) |
@@ -58,7 +59,69 @@ assert($user->isActivated(), 'User MUST be activated at this point.');
 assert($user->isActivated());
 ```
 
----
+
+## <a id="constant-type"></a>`constant-type`
+
+Detects class constants that are missing a type hint.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.3.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Psl\IO\Internal;
+
+use Psl\IO;
+
+class ResourceHandle implements IO\CloseSeekReadWriteStreamHandleInterface {
+    use IO\ReadHandleConvenienceMethodsTrait;
+    use IO\WriteHandleConvenienceMethodsTrait;
+
+    public const int DEFAULT_READ_BUFFER_SIZE = 4096;
+    public const int MAXIMUM_READ_BUFFER_SIZE = 786432;
+
+    // ...
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Psl\IO\Internal;
+
+use Psl\IO;
+
+class ResourceHandle implements IO\CloseSeekReadWriteStreamHandleInterface {
+    use IO\ReadHandleConvenienceMethodsTrait;
+    use IO\WriteHandleConvenienceMethodsTrait;
+
+    public const DEFAULT_READ_BUFFER_SIZE = 4096;
+    public const MAXIMUM_READ_BUFFER_SIZE = 786432;
+
+    // ...
+}
+```
+
 
 ## <a id="identity-comparison"></a>`identity-comparison`
 
@@ -95,7 +158,6 @@ if ($a == $b) {
 }
 ```
 
----
 
 ## <a id="invalid-open-tag"></a>`invalid-open-tag`
 
@@ -133,7 +195,6 @@ echo 'Hello, world!';
 echo 'Hello, world!';
 ```
 
----
 
 ## <a id="no-assign-in-condition"></a>`no-assign-in-condition`
 
@@ -172,7 +233,6 @@ if ($x = 1) {
 }
 ```
 
----
 
 ## <a id="no-boolean-literal-comparison"></a>`no-boolean-literal-comparison`
 
@@ -211,7 +271,6 @@ if ($x === true) { /* ... */ }
 if ($y != false) { /* ... */ }
 ```
 
----
 
 ## <a id="no-empty-catch-clause"></a>`no-empty-catch-clause`
 
@@ -257,7 +316,6 @@ try {
 }
 ```
 
----
 
 ## <a id="parameter-type"></a>`parameter-type`
 
@@ -301,7 +359,6 @@ function foo($bar): void
 }
 ```
 
----
 
 ## <a id="property-type"></a>`property-type`
 
@@ -343,7 +400,6 @@ class Foo
 }
 ```
 
----
 
 ## <a id="return-type"></a>`return-type`
 
@@ -385,7 +441,6 @@ function foo() {
 }
 ```
 
----
 
 ## <a id="strict-assertions"></a>`strict-assertions`
 
@@ -443,7 +498,6 @@ final class SomeTest extends TestCase
 }
 ```
 
----
 
 ## <a id="strict-behavior"></a>`strict-behavior`
 
@@ -481,7 +535,6 @@ in_array(1, ['foo', 'bar', 'baz'], strict: true);
 in_array(1, ['foo', 'bar', 'baz']);
 ```
 
----
 
 ## <a id="strict-types"></a>`strict-types`
 
@@ -520,4 +573,3 @@ echo "Hello, World!";
 echo "Hello, World!";
 ```
 
----

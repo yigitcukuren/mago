@@ -58,7 +58,6 @@ try {
 $result = @file_get_contents('example.txt');
 ```
 
----
 
 ## <a id="no-eval"></a>`no-eval`
 
@@ -93,7 +92,6 @@ $result = json_decode($jsonString);
 eval('echo "Hello, world!";');
 ```
 
----
 
 ## <a id="no-ffi"></a>`no-ffi`
 
@@ -136,7 +134,6 @@ $ffi = FFI::cdef(\"void* malloc(size_t size);\");
 $ffi->malloc(1024); // Allocate memory but never free it
 ```
 
----
 
 ## <a id="no-global"></a>`no-global`
 
@@ -176,7 +173,6 @@ function foo(): void {
 }
 ```
 
----
 
 ## <a id="no-request-all"></a>`no-request-all`
 
@@ -247,7 +243,6 @@ class UserController extends Controller
 }
 ```
 
----
 
 ## <a id="no-request-variable"></a>`no-request-variable`
 
@@ -282,7 +277,6 @@ $identifier = $_GET['id'];
 $identifier = $_REQUEST['id'];
 ```
 
----
 
 ## <a id="no-shell-execute-string"></a>`no-shell-execute-string`
 
@@ -315,7 +309,6 @@ $output = shell_exec('ls -l');
 $output = `ls -l`;
 ```
 
----
 
 ## <a id="no-unsafe-finally"></a>`no-unsafe-finally`
 
@@ -363,4 +356,3 @@ function example(): int {
 }
 ```
 
----

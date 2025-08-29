@@ -34,6 +34,12 @@ pub use security::*;
 mod utils;
 
 pub trait Config: Default + DeserializeOwned {
+    /// Whether the rule is enabled by default.
+    fn default_enabled() -> bool {
+        true
+    }
+
+    /// The severity level of the rule.
     fn level(&self) -> Level;
 }
 
@@ -70,7 +76,7 @@ macro_rules! define_rules {
         )*}
 
         impl AnyRule {
-            pub fn get_all_for(settings: Settings, only: Option<&[String]>) -> Vec<Self> {
+            pub fn get_all_for(settings: Settings, only: Option<&[String]>, include_disabled: bool) -> Vec<Self> {
                 let mut rules = Vec::new();
 
                 $(
@@ -81,8 +87,15 @@ macro_rules! define_rules {
                         if only_codes.iter().any(|c| c == meta.code) {
                             rules.push(AnyRule::$variant($rule::build(settings.rules.$module)));
                         }
-                    } else if settings.rules.$module.enabled && $rule::is_enabled_for(settings.php_version, settings.integrations) {
-                        rules.push(AnyRule::$variant($rule::build(settings.rules.$module)));
+                    } else {
+                        let is_enabled = include_disabled || (
+                            settings.rules.$module.is_enabled()
+                            && $rule::is_enabled_for(settings.php_version, settings.integrations)
+                        );
+
+                        if is_enabled {
+                            rules.push(AnyRule::$variant($rule::build(settings.rules.$module)));
+                        }
                     }
                 )*
 

@@ -44,8 +44,13 @@ impl<'arena> Linter<'arena> {
     /// * `settings` - The settings to use for configuring the linter.
     /// * `only` - If `Some`, only the rules with the specified codes will be loaded.
     ///   If `None`, all rules enabled by the settings will be loaded.
-    pub fn new(arena: &'arena Bump, settings: Settings, only: Option<&[String]>) -> Self {
-        Self { arena, php_version: settings.php_version, registry: Arc::new(RuleRegistry::build(settings, only)) }
+    /// * `include_disabled` - If `true`, includes rules that are disabled in the settings.
+    pub fn new(arena: &'arena Bump, settings: Settings, only: Option<&[String]>, include_disabled: bool) -> Self {
+        Self {
+            arena,
+            php_version: settings.php_version,
+            registry: Arc::new(RuleRegistry::build(settings, only, include_disabled)),
+        }
     }
 
     /// Creates a new Linter instance from an existing RuleRegistry.

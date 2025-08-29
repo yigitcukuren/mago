@@ -12,15 +12,11 @@ The `mago analyze` command is the entry point for running Mago's static type che
 Usage: mago analyze [OPTIONS] [PATHS]...
 ```
 
----
-
 ## Arguments
 
 ### `[PATHS]...`
 
 Optional. A list of specific files or directories to analyze. If you provide paths here, they will be used instead of the `paths` defined in your `mago.toml` configuration.
-
----
 
 ## Options
 

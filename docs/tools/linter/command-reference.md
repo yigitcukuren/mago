@@ -10,21 +10,21 @@ The `mago lint` command is the entry point for all linting-related tasks.
 Usage: mago lint [OPTIONS] [PATH]...
 ```
 
----
-
 ## Arguments
 
 ### `[PATH]...`
 
 Optional. A list of specific files or directories to lint. If you provide paths here, they will be used instead of the `paths` defined in your `mago.toml` configuration.
 
----
-
 ## Options
 
 ### `--list-rules`
 
 List all enabled linter rules and their descriptions.
+
+### `--json`
+
+Used with `--list-rules` to output the rule information in a machine-readable JSON format. This is primarily intended for documentation generation.
 
 ### `--explain <RULE_CODE>`
 
@@ -34,7 +34,13 @@ Provide detailed documentation for a specific linter rule (e.g., `no-redundant-n
 
 Run only a specific, comma-separated list of rules, overriding the configuration file.
 
-### `-s`, `--semantics-only`
+### `--pedantic`
+
+Enable all linter rules for the most exhaustive analysis possible. This overrides your configuration, ignores PHP version constraints, and enables rules that are disabled by default.
+
+> **Warning:** This mode is extremely noisy, not recommended for general use.
+
+### `-s`, `--semantics`
 
 Perform only the parsing and basic semantic checks without running any lint rules.
 

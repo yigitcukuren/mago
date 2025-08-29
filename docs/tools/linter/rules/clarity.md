@@ -11,6 +11,7 @@ This document details the rules available in the `Clarity` category.
 | Rule | Code |
 | :--- | :---------- |
 | Explicit Octal | [`explicit-octal`](#explicit-octal) |
+| Literal Named Argument | [`literal-named-argument`](#literal-named-argument) |
 | No Empty | [`no-empty`](#no-empty) |
 | No Hash Emoji | [`no-hash-emoji`](#no-hash-emoji) |
 | No Multi Assignments | [`no-multi-assignments`](#no-multi-assignments) |
@@ -57,7 +58,50 @@ $a = 0o123;
 $a = 0123;
 ```
 
----
+
+## <a id="literal-named-argument"></a>`literal-named-argument`
+
+Enforces that literal values used as arguments in function or method calls
+are passed as **named arguments**.
+
+This improves readability by clarifying the purpose of the literal value at the call site.
+It is particularly helpful for boolean flags, numeric constants, and `null` values
+where the intent is often ambiguous without the parameter name.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.0.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `false` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+function set_option(string $key, bool $enable_feature) {}
+
+set_option(key: 'feature_x', enable_feature: true); // ✅ clear intent
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+function set_option(string $key, bool $enable_feature) {}
+
+set_option('feature_x', true); // ❌ intent unclear
+```
+
 
 ## <a id="no-empty"></a>`no-empty`
 
@@ -98,7 +142,6 @@ if (!empty($myArray)) {
 }
 ```
 
----
 
 ## <a id="no-hash-emoji"></a>`no-hash-emoji`
 
@@ -141,7 +184,6 @@ class Foo {}
 class Foo {}
 ```
 
----
 
 ## <a id="no-multi-assignments"></a>`no-multi-assignments`
 
@@ -176,7 +218,6 @@ $a = $b;
 $a = $b = 0;
 ```
 
----
 
 ## <a id="no-shorthand-ternary"></a>`no-shorthand-ternary`
 
@@ -212,7 +253,6 @@ $value = $foo ?: $default;
 $value = $foo ? : $default;
 ```
 
----
 
 ## <a id="str-contains"></a>`str-contains`
 
@@ -259,7 +299,6 @@ if (strpos($a, $b) !== false) {
 }
 ```
 
----
 
 ## <a id="str-starts-with"></a>`str-starts-with`
 
@@ -304,7 +343,6 @@ if (strpos($a, $b) === 0) {
 }
 ```
 
----
 
 ## <a id="tagged-fixme"></a>`tagged-fixme`
 
@@ -341,7 +379,6 @@ issue reference ensures that the issue is tracked and resolved.
 // FIXME: This is an invalid FIXME comment.
 ```
 
----
 
 ## <a id="tagged-todo"></a>`tagged-todo`
 
@@ -378,7 +415,6 @@ makes it easier to track progress and ensures that tasks are not forgotten.
 // TODO: This is an invalid TODO comment.
 ```
 
----
 
 ## <a id="valid-docblock"></a>`valid-docblock`
 
@@ -423,4 +459,3 @@ function foo($a) {
 }
 ```
 
----

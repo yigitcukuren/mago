@@ -10,9 +10,134 @@ This document details the rules available in the `Deprecation` category.
 
 | Rule | Code |
 | :--- | :---------- |
+| Explicit Nullable Param | [`explicit-nullable-param`](#explicit-nullable-param) |
+| No Underscore Class | [`no-underscore-class`](#no-underscore-class) |
+| No Void Reference Return | [`no-void-reference-return`](#no-void-reference-return) |
 | Optional Parameter Before Required | [`optional-param-order`](#optional-param-order) |
 
 ---
+
+## <a id="explicit-nullable-param"></a>`explicit-nullable-param`
+
+Detects parameters that are implicitly nullable and rely on a deprecated feature.
+
+Such parameters are considered deprecated; an explicit nullable type hint is recommended.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.4.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+function foo(?string $param) {}
+
+function bar(null|string $param) {}
+
+function baz(null|object $param = null) {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+function foo(string $param = null) {}
+
+function bar(string $param = NULL) {}
+
+function baz(object $param = null) {}
+```
+
+
+## <a id="no-underscore-class"></a>`no-underscore-class`
+
+Detects class, interface, trait, or enum declarations named `_`.
+
+Such names are considered deprecated; a more descriptive identifier is recommended.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.4.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+class MyService {}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+class _ {}
+```
+
+
+## <a id="no-void-reference-return"></a>`no-void-reference-return`
+
+Detects functions, methods, closures, arrow functions, and set property hooks that return by reference from a void function.
+Such functions are considered deprecated; returning by reference from a void function is deprecated since PHP 8.0.
+
+
+### Requirements
+
+- **PHP Version:** PHP `>= 8.2.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct Code
+
+```php
+<?php
+
+function &foo(): string {
+    // ...
+}
+```
+
+#### Incorrect Code
+
+```php
+<?php
+
+function &foo(): void {
+    // ...
+}
+```
+
 
 ## <a id="optional-param-order"></a>`optional-param-order`
 
@@ -49,4 +174,3 @@ function foo(string $required, ?string $optional = null): void {}
 function foo(?string $optional = null, string $required): void {}
 ```
 
----

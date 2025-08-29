@@ -23,16 +23,12 @@ no-else-clause = { level = "warning" }
 cyclomatic-complexity = { threshold = 20 }
 ```
 
----
-
 ## `[linter]` Table
 
 | Option         | Type       | Default | Description                                                                  |
 | :------------- | :--------- | :------ | :--------------------------------------------------------------------------- |
 | `excludes`     | `string[]` | `[]`    | A list of glob patterns to exclude from linting.                             |
 | `integrations` | `string[]` | `[]`    | A list of framework integrations to enable (e.g., `"symfony"`, `"laravel"`). |
-
----
 
 ## `[linter.rules]` Table
 

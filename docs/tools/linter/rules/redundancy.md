@@ -71,7 +71,6 @@ if (false) {
 }
 ```
 
----
 
 ## <a id="no-closing-tag"></a>`no-closing-tag`
 
@@ -106,7 +105,6 @@ echo "Hello, world!";
 ?>
 ```
 
----
 
 ## <a id="no-empty-comment"></a>`no-empty-comment`
 
@@ -147,7 +145,6 @@ to keep the codebase clean and maintainable.
 /**/
 ```
 
----
 
 ## <a id="no-empty-loop"></a>`no-empty-loop`
 
@@ -185,7 +182,6 @@ while (should_wait()) {
 }
 ```
 
----
 
 ## <a id="no-noop"></a>`no-noop`
 
@@ -218,7 +214,6 @@ echo "Hello, world!";
 ;
 ```
 
----
 
 ## <a id="no-redundant-block"></a>`no-redundant-block`
 
@@ -253,7 +248,6 @@ echo "Hello, world!";
 }
 ```
 
----
 
 ## <a id="no-redundant-continue"></a>`no-redundant-continue`
 
@@ -291,7 +285,6 @@ while (true) {
 }
 ```
 
----
 
 ## <a id="no-redundant-file"></a>`no-redundant-file`
 
@@ -329,7 +322,6 @@ declare(strict_types=1);
 // This file is redundant.
 ```
 
----
 
 ## <a id="no-redundant-final"></a>`no-redundant-final`
 
@@ -370,7 +362,6 @@ final class Foo {
 }
 ```
 
----
 
 ## <a id="no-redundant-label"></a>`no-redundant-label`
 
@@ -406,7 +397,6 @@ label:
 echo "Hello, world!";
 ```
 
----
 
 ## <a id="no-redundant-math"></a>`no-redundant-math`
 
@@ -447,7 +437,6 @@ $remainder = $x % 1;
 $negative = $value * -1;
 ```
 
----
 
 ## <a id="no-redundant-method-override"></a>`no-redundant-method-override`
 
@@ -510,7 +499,6 @@ class Child extends Parent
 }
 ```
 
----
 
 ## <a id="no-redundant-nullsafe"></a>`no-redundant-nullsafe`
 
@@ -558,7 +546,6 @@ if (isset($user?->profile)) {
 }
 ```
 
----
 
 ## <a id="no-redundant-parentheses"></a>`no-redundant-parentheses`
 
@@ -591,7 +578,6 @@ $foo = 42;
 $foo = (42);
 ```
 
----
 
 ## <a id="no-redundant-string-concat"></a>`no-redundant-string-concat`
 
@@ -624,7 +610,6 @@ $foo = "Hello World";
 $foo = "Hello" . " World";
 ```
 
----
 
 ## <a id="no-redundant-write-visibility"></a>`no-redundant-write-visibility`
 
@@ -663,4 +648,3 @@ final class User
 }
 ```
 
----

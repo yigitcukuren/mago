@@ -9,6 +9,7 @@ use mago_database::DatabaseReader;
 use mago_linter::integration::IntegrationSet;
 use mago_linter::registry::RuleRegistry;
 use mago_linter::rule::AnyRule;
+use mago_linter::settings::RulesSettings;
 use mago_linter::settings::Settings;
 use mago_reporting::Level;
 
@@ -55,36 +56,36 @@ pub struct LintCommand {
         help = "Perform only parsing and semantic checks",
         conflicts_with_all = ["list_rules", "explain", "only"],
     )]
-    pub semantics_only: bool,
+    pub semantics: bool,
+
+    #[arg(
+        long,
+        help = "Enable all linter rules for the most exhaustive analysis possible. This overrides your configuration, ignores PHP version constraints, and enables rules that are disabled by default. It is extremely noisy and not recommended for general use."
+    )]
+    pub pedantic: bool,
 
     #[arg(
         long,
         help = "Provide documentation for a specific linter rule, e.g. 'prefer-while-loop'",
-        conflicts_with_all = ["list_rules", "sort", "fixable_only", "semantics_only", "reporting_target", "reporting_format"]
+        conflicts_with_all = ["list_rules", "sort", "fixable_only", "semantics", "reporting_target", "reporting_format"]
     )]
     pub explain: Option<String>,
 
     #[arg(
         long,
         help = "List all the enabled rules alongside their descriptions",
-        conflicts_with_all = ["explain", "sort", "fixable_only", "semantics_only", "reporting_target", "reporting_format"]
+        conflicts_with_all = ["explain", "sort", "fixable_only", "semantics", "reporting_target", "reporting_format"]
     )]
     pub list_rules: bool,
 
     #[arg(
         long,
         help = "Output rule information in JSON format for documentation purposes, requires --list-rules",
-        requires = "list_rules",
-        hide = true
+        requires = "list_rules"
     )]
-    pub json_docs: bool,
+    pub json: bool,
 
-    #[arg(
-        short,
-        long,
-        help = "Specify rules to run, overriding the configuration file",
-        conflicts_with = "semantics_only"
-    )]
+    #[arg(short, long, help = "Specify rules to run, overriding the configuration file", conflicts_with = "semantics")]
     pub only: Vec<String>,
 
     #[clap(flatten)]
@@ -98,25 +99,34 @@ pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result
         database::load_from_configuration(&mut configuration.source, false, None)?
     };
 
-    let registry = RuleRegistry::build(
-        Settings {
-            php_version: configuration.php_version,
-            integrations: if command.json_docs {
-                IntegrationSet::all()
-            } else {
-                IntegrationSet::from_slice(&configuration.linter.integrations)
+    let registry = if command.pedantic {
+        RuleRegistry::build(
+            Settings {
+                php_version: configuration.php_version,
+                integrations: IntegrationSet::all(),
+                rules: RulesSettings::default(),
             },
-            rules: configuration.linter.rules.clone(),
-        },
-        if command.only.is_empty() { None } else { Some(&command.only) },
-    );
+            None,
+            true, // Include disabled rules.
+        )
+    } else {
+        RuleRegistry::build(
+            Settings {
+                php_version: configuration.php_version,
+                integrations: IntegrationSet::from_slice(&configuration.linter.integrations),
+                rules: configuration.linter.rules.clone(),
+            },
+            if command.only.is_empty() { None } else { Some(&command.only) },
+            false,
+        )
+    };
 
     if let Some(explain_code) = command.explain {
         return explain_rule(&registry, &explain_code);
     }
 
     if command.list_rules {
-        return list_rules(registry.rules(), command.json_docs);
+        return list_rules(registry.rules(), command.json);
     }
 
     if database.is_empty() {
@@ -128,7 +138,7 @@ pub fn execute(command: LintCommand, mut configuration: Configuration) -> Result
     let shared_context = LintContext {
         registry: Arc::new(registry),
         php_version: configuration.php_version,
-        mode: if command.semantics_only { LintMode::SemanticsOnly } else { LintMode::Full },
+        mode: if command.semantics { LintMode::SemanticsOnly } else { LintMode::Full },
     };
 
     let issues = run_lint_pipeline(database.read_only(), shared_context)?;
