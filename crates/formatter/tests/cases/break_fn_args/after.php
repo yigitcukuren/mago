@@ -13,9 +13,10 @@ $path = $this->viewCache->getCachedViewPath(
     $superLonnnnnnnnnnnnnnnnnnnngVariableNameeeeeeeeeeeee->path,
     compiledView: function ( /* Hehe */ ) {},
 );
-$path = $this->viewCache->getCachedViewPath($superLonnnnnnnngVariableNameeeeeeeeeeeee->path, compiledView: function (
-    /* Hehe */
-) {});
+$path = $this->viewCache->getCachedViewPath(
+    $superLonnnnnnnngVariableNameeeeeeeeeeeee->path,
+    compiledView: function ( /* Hehe */ ) {},
+);
 
 function shortFunName(): void
 {

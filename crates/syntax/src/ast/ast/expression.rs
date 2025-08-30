@@ -240,6 +240,15 @@ impl<'arena> Expression<'arena> {
     }
 
     #[inline]
+    pub const fn is_call(&self) -> bool {
+        if let Expression::Parenthesized(expression) = self {
+            expression.expression.is_call()
+        } else {
+            matches!(&self, Expression::Call(_))
+        }
+    }
+
+    #[inline]
     pub const fn is_variable(&self) -> bool {
         if let Expression::Parenthesized(expression) = self {
             expression.expression.is_variable()

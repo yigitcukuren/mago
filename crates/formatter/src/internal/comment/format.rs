@@ -256,6 +256,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
 
         comment.with_line_suffix(false)
     }
+
     #[must_use]
     pub(crate) fn print_inner_comment(&mut self, range: Span, should_indent: bool) -> Option<Document<'arena>> {
         let mut parts = vec![in self.arena];

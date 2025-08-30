@@ -4,8 +4,7 @@ $data = [
     'response_body' =>
         false !== $responseBody
         && '' !== $responseBody
-        && 'GET'
-            !== $request->getMethod()
+        && 'GET' !== $request->getMethod()
             ? $responseBody
             : null,
 ];

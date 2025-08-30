@@ -57,6 +57,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
         }
 
         self.called_or_accessed_node_needs_parenthesis(node)
+            || self.is_nested_ternary(node)
             || self.binary_node_needs_parens(node)
             || self.unary_node_needs_parens(node)
             || self.conditional_or_assignment_needs_parenthesis(node)
@@ -84,6 +85,18 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
         }
 
         false
+    }
+
+    fn is_nested_ternary(&self, node: Node<'arena, 'arena>) -> bool {
+        if !matches!(node, Node::Conditional(_) | Node::Binary(Binary { operator: BinaryOperator::Elvis(_), .. })) {
+            return false;
+        }
+
+        let Some(parent_node) = self.nth_parent_kind(2) else {
+            return false;
+        };
+
+        matches!(parent_node, Node::Conditional(_) | Node::Binary(Binary { operator: BinaryOperator::Elvis(_), .. }))
     }
 
     fn conditional_or_assignment_needs_parenthesis(&self, node: Node<'arena, 'arena>) -> bool {
@@ -132,6 +145,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             _ => return false,
         };
 
+        let precedence = operator.precedence();
         let parent_precedence = match self.nth_parent_kind(2) {
             Some(
                 Node::Clone(_)
@@ -143,18 +157,24 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
                 return true;
             }
             Some(Node::Binary(e)) => {
-                let parent_op_precedence = e.operator.precedence();
+                let parent_precedence = e.operator.precedence();
 
-                if parent_op_precedence == operator.precedence()
-                    && ((parent_op_precedence.is_right_associative()
-                        && node.end_position() < e.operator.start_position())
-                        || (parent_op_precedence.is_left_associative()
-                            && node.start_position() > e.operator.end_position()))
-                {
-                    return true;
+                if parent_precedence == precedence {
+                    if parent_precedence.is_non_associative() {
+                        return true;
+                    }
+
+                    if parent_precedence.is_right_associative() && node.end_position() < e.operator.start_position() {
+                        return true;
+                    }
+
+                    if parent_precedence.is_left_associative() && node.start_position() > e.operator.end_position() {
+                        return true;
+                    }
                 }
 
-                if (operator.is_arithmetic() && !e.operator.is_arithmetic())
+                if (operator.is_elvis() && e.operator.is_elvis())
+                    || (operator.is_arithmetic() && !e.operator.is_arithmetic())
                     || (operator.is_multiplicative() || e.operator.is_multiplicative())
                     || (operator.is_bit_shift() && !e.operator.is_bit_shift())
                     || (operator.is_bitwise() && e.operator.is_bitwise() && !e.operator.is_same_as(operator))
@@ -162,7 +182,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
                     return true;
                 }
 
-                e.operator.precedence()
+                parent_precedence
             }
             Some(Node::Pipe(_)) => Precedence::Pipe,
             Some(Node::ArrowFunction(_)) => {
@@ -173,7 +193,13 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
 
                 return false;
             }
-            Some(Node::Conditional(_)) => Precedence::ElvisOrConditional,
+            Some(Node::Conditional(_)) => {
+                if operator.is_elvis() {
+                    return true;
+                }
+
+                Precedence::ElvisOrConditional
+            }
             Some(Node::ArrayAccess(access)) => {
                 // we add parentheses if the parent is an array access and the child is a binaryish node
                 //
@@ -202,35 +228,35 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             }
         };
 
-        let precedence = operator.precedence();
-
         precedence < parent_precedence
     }
 
     fn unary_node_needs_parens(&self, node: Node<'arena, 'arena>) -> bool {
-        let unary_span = node.span();
         let precedence = match node {
             Node::UnaryPrefix(e) => {
-                if e.operator.is_error_control() {
-                    return match self.nth_parent_kind(2) {
-                        Some(Node::Binary(binary)) => {
-                            let operator_span = binary.operator.span();
+                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2)
+                    && node.end_position() < binary.operator.start_position()
+                {
+                    if e.operator.is_error_control() || e.operator.is_cast() {
+                        return true;
+                    }
 
-                            unary_span.end < operator_span.start
-                        }
-                        _ => false,
-                    };
+                    if e.operator.is_arithmetic() || e.operator.is_not() {
+                        return false;
+                    }
+                };
+
+                if e.operator.is_error_control() {
+                    return false;
                 }
 
                 if e.operator.is_not() { Precedence::Bang } else { Precedence::IncDec }
             }
             Node::UnaryPostfix(e) => {
-                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2) {
-                    let operator_span = binary.operator.span();
-
-                    if unary_span.end < operator_span.start {
-                        return false;
-                    }
+                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2)
+                    && node.end_position() < binary.operator.start_position()
+                {
+                    return false;
                 };
 
                 e.operator.precedence()
@@ -240,14 +266,14 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
 
         let parent_precedence = match self.nth_parent_kind(2) {
             Some(Node::Binary(e)) => {
-                if e.operator.span().end.offset <= unary_span.start.offset {
+                if e.operator.end_position() <= node.start_position() {
                     return false;
                 }
 
                 e.operator.precedence()
             }
             Some(Node::Conditional(e)) => {
-                if e.question_mark.end <= unary_span.start {
+                if e.question_mark.end_position() <= node.start_position() {
                     return false;
                 }
 

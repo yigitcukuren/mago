@@ -150,6 +150,10 @@ test_case!(inline_empty_braces_swapped);
 test_case!(pipe_operator);
 test_case!(disabled_class_like_member_separations);
 test_case!(unary_parens);
+test_case!(predictable_conditional);
+test_case!(preserve_predictable_conditional);
+test_case!(predictable_arguments);
+test_case!(preserve_predictable_arguments);
 
 // A special test case for regressions in the Psl codebase
 test_case!(psl_regressions);
@@ -207,3 +211,5 @@ test_case!(issue_317);
 test_case!(issue_238);
 test_case!(issue_204);
 test_case!(issue_332);
+test_case!(issue_334);
+test_case!(issue_336);

@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use bumpalo::collections::Vec;
 use bumpalo::vec;
 
+use mago_span::HasPosition;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
 
@@ -898,11 +899,11 @@ impl<'arena> Format<'arena> for MatchExpressionArm<'arena> {
                 format_token(f, self.arrow, "=> "),
             ])));
 
-            Document::Array(vec![
+            Document::Group(Group::new(vec![
                 in f.arena;
                 Document::Group(Group::new(contents)),
-                Document::Group(Group::new(vec![in f.arena; self.expression.format(f)])),
-            ])
+                self.expression.format(f),
+            ]))
         })
     }
 }
@@ -930,36 +931,52 @@ impl<'arena> Format<'arena> for Match<'arena> {
                 }
             };
 
-            contents.push(Document::String("{"));
-            if let Some(comments) = f.print_trailing_comments(self.left_brace) {
-                contents.push(comments);
-            }
+            contents.push(format_token(f, self.left_brace, "{"));
+
+            let should_break = self.arms.len() > 1
+                || self.arms.iter().any(|arm| {
+                    misc::has_new_line_in_range(
+                        f.source_text,
+                        arm.start_position().offset(),
+                        arm.end_position().offset(),
+                    )
+                });
 
             if !self.arms.is_empty() {
-                let mut inner_contents =
-                    Document::join(f.arena, self.arms.iter().map(|arm| arm.format(f)), Separator::CommaLine);
+                let mut arms_document = Document::join(
+                    f.arena,
+                    self.arms.iter().map(|arm| arm.format(f)),
+                    if should_break { Separator::CommaHardLine } else { Separator::CommaLine },
+                );
 
                 if f.settings.trailing_comma {
-                    inner_contents.push(Document::IfBreak(IfBreak::then(f.arena, Document::String(","))));
+                    if should_break {
+                        arms_document.push(Document::String(","));
+                    } else {
+                        arms_document.push(Document::IfBreak(IfBreak::then(f.arena, Document::String(","))));
+                    }
                 }
 
-                contents.push(Document::Indent(
-                    vec![in f.arena; Document::Line(Line::default()), Document::Array(inner_contents)],
-                ));
+                contents.push(Document::Indent(vec![
+                    in f.arena;
+                    if should_break { Document::Line(Line::hard()) } else { Document::Line(Line::default()) },
+                    Document::Array(arms_document),
+                ]));
             }
 
             if let Some(comments) = f.print_dangling_comments(self.left_brace.join(self.right_brace), true) {
                 contents.push(comments);
-            } else if !self.arms.is_empty() {
-                contents.push(Document::Line(Line::default()));
+            } else {
+                contents.push(if should_break {
+                    Document::Line(Line::hard())
+                } else {
+                    Document::Line(Line::default())
+                });
             }
 
-            contents.push(Document::String("}"));
-            if let Some(comments) = f.print_trailing_comments(self.right_brace) {
-                contents.push(comments);
-            }
+            contents.push(format_token(f, self.right_brace, "}"));
 
-            Document::Group(Group::new(contents).with_break(true))
+            Document::Group(Group::new(contents))
         })
     }
 }
@@ -968,13 +985,14 @@ impl<'arena> Format<'arena> for Conditional<'arena> {
     fn format(&'arena self, f: &mut FormatterState<'_, 'arena>) -> Document<'arena> {
         wrap!(f, self, Conditional, {
             let must_break = f.settings.preserve_breaking_conditional_expression && {
-                misc::has_new_line_in_range(
-                    f.source_text,
-                    self.condition.span().end.offset,
-                    self.question_mark.start.offset,
-                ) || self.then.as_ref().is_some_and(|t| {
-                    misc::has_new_line_in_range(f.source_text, self.question_mark.start.offset, t.span().start.offset)
-                })
+                misc::has_new_line_in_range(f.source_text, self.condition.span().end.offset, self.colon.start.offset)
+                    || self.then.as_ref().is_some_and(|t| {
+                        misc::has_new_line_in_range(
+                            f.source_text,
+                            self.question_mark.start.offset,
+                            t.span().start.offset,
+                        )
+                    })
             };
 
             match &self.then {

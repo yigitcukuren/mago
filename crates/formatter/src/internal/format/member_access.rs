@@ -115,17 +115,40 @@ impl<'arena> MemberAccessChain<'arena> {
             }
         }
 
+        if self.accesses.len() <= 2 && always_account_for_simple_calls {
+            score -= 1;
+        }
+
         for member_access in &self.accesses {
-            let argument_list = match member_access {
+            let (method_selector, argument_list) = match member_access {
                 MemberAccess::PropertyAccess(_) | MemberAccess::NullSafePropertyAccess(_) => {
                     score += 1;
 
                     continue;
                 }
-                MemberAccess::MethodCall(MethodCall { argument_list, .. })
-                | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. })
-                | MemberAccess::StaticMethodCall(StaticMethodCall { argument_list, .. }) => argument_list,
+                MemberAccess::MethodCall(MethodCall { method, argument_list, .. })
+                | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { method, argument_list, .. })
+                | MemberAccess::StaticMethodCall(StaticMethodCall { method, argument_list, .. }) => {
+                    (method, argument_list)
+                }
             };
+
+            // Arbitrarily reduce score for very short method names
+            // see: https://github.com/carthage-software/mago/issues/334
+            if let ClassLikeMemberSelector::Identifier(method_name) = method_selector {
+                if method_name.value.len() <= 2 {
+                    score -= 2;
+                } else if method_name.value.len() == 3 {
+                    score -= 1;
+                }
+            }
+
+            if (!account_for_simple_calls && !always_account_for_simple_calls) || argument_list.arguments.is_empty() {
+                score += 2;
+                account_for_simple_calls = false;
+
+                continue;
+            }
 
             let breaking_arguments = if argument_list.arguments.len() == 1 {
                 argument_list
@@ -133,14 +156,12 @@ impl<'arena> MemberAccessChain<'arena> {
                     .first()
                     .map(|argument| argument.value())
                     .is_some_and(|e| is_breaking_expression(f, e, true))
-            } else if argument_list.arguments.len() > 1 {
+            } else {
                 argument_list.arguments.iter().all(|arg| !arg.is_positional())
                     && argument_list.arguments.iter().any(|arg| is_breaking_expression(f, arg.value(), false))
-            } else {
-                false
             };
 
-            if (account_for_simple_calls || always_account_for_simple_calls) && breaking_arguments {
+            if breaking_arguments {
                 score += 1;
             } else {
                 score += 2;
@@ -223,9 +244,12 @@ impl<'arena> MemberAccessChain<'arena> {
 
     #[inline]
     fn is_already_broken(&self, f: &FormatterState) -> bool {
-        let accesses_len = self.accesses.len();
-        let mut broken_links = 0;
+        let mut accesses_len = self.accesses.len();
+        if should_inline_first_access(f, self) {
+            accesses_len -= 1; // First access is inline, so we don't count it for broken links
+        }
 
+        let mut broken_links = 0;
         if let Some(first_access) = self.accesses.first() {
             let base_end = self.base.span().end;
             let first_op_start = first_access.get_operator_span().start;
@@ -258,7 +282,7 @@ impl<'arena> MemberAccessChain<'arena> {
             return false;
         }
 
-        if broken_links == accesses_len || broken_links >= 2 {
+        if broken_links >= accesses_len || broken_links >= 2 {
             return true;
         }
 
@@ -473,10 +497,8 @@ pub(super) fn print_member_access_chain<'arena>(
 
     let mut last_element_end = member_access_chain.base.span().end;
     // Handle the first access
-    if (!f.settings.method_chain_breaking_style.is_next_line()
-        || member_access_chain.is_first_link_static_method_call()
-        || matches!(member_access_chain.base, Expression::Variable(Variable::Direct(variable)) if variable.name == "$this"))
-        && fluent_access_chain_start.is_none_or(|start| start != 0)
+
+    if should_inline_first_access(f, member_access_chain)
         && let Some((_, first_chain_link)) = accesses_iter.next()
     {
         // Format the base object and first method call together
@@ -554,6 +576,31 @@ pub(super) fn print_member_access_chain<'arena>(
 
     // Wrap everything in a group to manage line breaking
     Document::Group(Group::new(parts).with_id(group_id))
+}
+
+fn should_inline_first_access<'arena>(
+    f: &FormatterState<'_, 'arena>,
+    member_access_chain: &MemberAccessChain<'arena>,
+) -> bool {
+    if member_access_chain.find_fluent_access_chain_start().is_some_and(|start| start == 0) {
+        return false;
+    }
+
+    if !f.settings.method_chain_breaking_style.is_next_line() {
+        return true;
+    }
+
+    if member_access_chain.is_first_link_static_method_call() {
+        return true;
+    }
+
+    if let Expression::Variable(Variable::Direct(variable)) = member_access_chain.base
+        && variable.name == "$this"
+    {
+        return true;
+    }
+
+    false
 }
 
 fn base_needs_parens<'arena>(f: &FormatterState<'_, 'arena>, base: &'arena Expression<'arena>) -> bool {

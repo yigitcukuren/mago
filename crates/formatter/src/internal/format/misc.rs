@@ -191,6 +191,43 @@ pub fn is_breaking_expression<'arena>(
     )
 }
 
+pub fn is_expandable_expression<'arena>(node: &'arena Expression<'arena>, include_calls: bool) -> bool {
+    if let Expression::Parenthesized(inner) = node {
+        return is_expandable_expression(inner.expression, include_calls);
+    }
+
+    if let Expression::UnaryPrefix(operation) = node {
+        return is_expandable_expression(operation.operand, include_calls);
+    }
+
+    let argument_list = match node {
+        Expression::Call(call) => Some(call.get_argument_list()),
+        Expression::Instantiation(instantiation) => instantiation.argument_list.as_ref(),
+        _ => None,
+    };
+
+    if let Some(argument_list) = argument_list
+        && argument_list.arguments.iter().any(|arg| is_expandable_expression(arg.value(), include_calls))
+    {
+        return true;
+    }
+
+    if let Expression::Call(_) | Expression::Instantiation(_) = node {
+        return include_calls;
+    }
+
+    matches!(
+        node,
+        Expression::Array(_)
+            | Expression::LegacyArray(_)
+            | Expression::List(_)
+            | Expression::Closure(_)
+            | Expression::ClosureCreation(_)
+            | Expression::AnonymousClass(_)
+            | Expression::Match(_)
+    )
+}
+
 pub fn is_simple_expression<'arena>(node: &'arena Expression<'arena>) -> bool {
     if let Expression::Parenthesized(inner) = node {
         return is_simple_expression(inner.expression);
@@ -238,6 +275,29 @@ pub fn is_simple_single_line_expression<'arena>(
     if let Expression::Literal(Literal::String(literal_string)) = node {
         return f.file.line_number(literal_string.span.start.offset)
             == f.file.line_number(literal_string.span.end.offset);
+    }
+
+    if let Expression::ArrayAccess(ArrayAccess { array, index, .. }) = node {
+        return is_simple_single_line_expression(f, array) && is_simple_single_line_expression(f, index);
+    }
+
+    if let Expression::Call(call) = node {
+        if !call.get_argument_list().arguments.is_empty() {
+            return false;
+        }
+
+        return match call {
+            Call::Function(function_call) => is_simple_single_line_expression(f, function_call.function),
+            Call::Method(method_call) => {
+                is_simple_single_line_expression(f, method_call.object) && method_call.method.is_identifier()
+            }
+            Call::NullSafeMethod(method_call) => {
+                is_simple_single_line_expression(f, method_call.object) && method_call.method.is_identifier()
+            }
+            Call::StaticMethod(method_call) => {
+                is_simple_single_line_expression(f, method_call.class) && method_call.method.is_identifier()
+            }
+        };
     }
 
     matches!(
@@ -460,18 +520,30 @@ pub(super) fn print_condition<'arena>(
     let was_in_condition = f.in_condition;
     f.in_condition = true;
 
-    let condition = Document::Group(Group::new(vec![
-        in f.arena;
-        Document::space(),
-        format_token(f, left_parenthesis, "("),
-        Document::IndentIfBreak(IndentIfBreak::new(vec![
+    let condition = if is_expandable_expression(condition, true)
+        && !f.has_comment(condition.span(), CommentFlags::Leading | CommentFlags::Trailing)
+    {
+        Document::Group(Group::new(vec![
             in f.arena;
-            Document::Line(Line::soft()),
+            Document::space(),
+            format_token(f, left_parenthesis, "("),
             condition.format(f),
-        ])),
-        Document::Line(Line::soft()),
-        format_token(f, right_parenthesis, ")"),
-    ]));
+            format_token(f, right_parenthesis, ")"),
+        ]))
+    } else {
+        Document::Group(Group::new(vec![
+            in f.arena;
+            Document::space(),
+            format_token(f, left_parenthesis, "("),
+            Document::IndentIfBreak(IndentIfBreak::new(vec![
+                in f.arena;
+                Document::Line(Line::soft()),
+                condition.format(f),
+            ])),
+            Document::Line(Line::soft()),
+            format_token(f, right_parenthesis, ")"),
+        ]))
+    };
 
     f.in_condition = was_in_condition;
 

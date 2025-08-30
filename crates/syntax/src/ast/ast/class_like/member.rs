@@ -76,6 +76,23 @@ impl ClassLikeMember<'_> {
     }
 }
 
+impl<'arena> ClassLikeMemberSelector<'arena> {
+    #[inline]
+    pub const fn is_identifier(&self) -> bool {
+        matches!(self, ClassLikeMemberSelector::Identifier(_))
+    }
+
+    #[inline]
+    pub const fn is_variable(&self) -> bool {
+        matches!(self, ClassLikeMemberSelector::Variable(_))
+    }
+
+    #[inline]
+    pub const fn is_expression(&self) -> bool {
+        matches!(self, ClassLikeMemberSelector::Expression(_))
+    }
+}
+
 impl<'arena> Sequence<'arena, ClassLikeMember<'arena>> {
     pub fn contains_trait_uses(&self) -> bool {
         self.iter().any(|member| matches!(member, ClassLikeMember::TraitUse(_)))

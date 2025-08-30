@@ -2,6 +2,10 @@ use mago_syntax::ast::BinaryOperator;
 use mago_syntax::token::GetPrecedence;
 
 pub fn should_flatten<'arena>(operator: &'arena BinaryOperator, parent_op: &'arena BinaryOperator) -> bool {
+    if operator.is_elvis() && parent_op.is_elvis() {
+        return false;
+    }
+
     if operator.is_low_precedence() {
         return false;
     }

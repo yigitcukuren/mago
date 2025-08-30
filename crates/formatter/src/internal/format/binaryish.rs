@@ -40,6 +40,8 @@ pub(super) fn print_binaryish_expression<'arena>(
                     | Node::Switch(_)
                     | Node::DoWhile(_)
                     | Node::Match(_)
+                    | Node::PositionalArgument(_)
+                    | Node::NamedArgument(_)
             )
         );
 
@@ -127,8 +129,9 @@ pub(super) fn print_binaryish_expressions<'arena>(
 ) -> Vec<'arena, Document<'arena>> {
     let left = unwrap_parenthesized(left);
     let right = unwrap_parenthesized(right);
-    let should_break =
-        f.has_comment(operator.span(), CommentFlags::Trailing | CommentFlags::Leading | CommentFlags::Line);
+    let should_break = f
+        .has_comment(operator.span(), CommentFlags::Trailing | CommentFlags::Leading | CommentFlags::Line)
+        || f.has_comment(left.span(), CommentFlags::Trailing | CommentFlags::Line);
 
     let mut parts = vec![in f.arena];
     if let Expression::Binary(binary) = left {
@@ -143,7 +146,7 @@ pub(super) fn print_binaryish_expressions<'arena>(
         parts.push(left.format(f));
     }
 
-    let should_inline = should_inline_binary_rhs_expression(right, operator);
+    let should_inline = !should_break && should_inline_binary_rhs_expression(right, operator);
 
     let has_space_around = match operator {
         BinaryOperator::StringConcat(_) => f.settings.space_around_concatenation_binary_operator,
@@ -156,10 +159,12 @@ pub(super) fn print_binaryish_expressions<'arena>(
         in f.arena;
         if line_before_operator && !should_inline {
             Document::Line(if has_space_around { Line::default() } else { Line::soft() })
-        } else if has_space_around { Document::space() } else { Document::empty() },
+        } else {
+            Document::String(if has_space_around { " " } else { "" })
+        },
         format_token(f, operator.span(), operator.as_str()),
         if line_before_operator || should_inline {
-            if has_space_around { Document::space() } else { Document::empty() }
+            Document::String(if has_space_around { " " } else { "" })
         } else {
             Document::Line(if has_space_around { Line::default() } else { Line::soft() })
         },
@@ -185,34 +190,39 @@ pub(super) fn print_binaryish_expressions<'arena>(
     parts
 }
 
-pub(super) fn should_inline_binary_expression<'arena>(expression: &'arena Expression<'arena>) -> bool {
+pub(super) fn should_inline_binary_expression(expression: &Expression) -> bool {
     match unwrap_parenthesized(expression) {
         Expression::Binary(operation) => {
-            if should_inline_binary_rhs_expression(operation.rhs, &operation.operator) {
-                return true;
+            if operation.lhs.is_binary() || operation.rhs.is_binary() {
+                return false;
             }
 
-            match operation.lhs {
-                Expression::Binary(_) => should_inline_binary_expression(operation.lhs),
-                left => should_inline_binary_rhs_expression(left, &operation.operator),
-            }
+            should_inline_binary_rhs_expression(operation.rhs, &operation.operator)
         }
         _ => false,
     }
 }
 
-pub(super) fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperator) -> bool {
+fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperator) -> bool {
+    let always_inline_operator = operator.is_null_coalesce() || operator.is_equality() || operator.is_comparison();
+
     match unwrap_parenthesized(rhs) {
         Expression::Assignment(_) => true,
         Expression::Array(Array { elements, .. })
         | Expression::List(List { elements, .. })
         | Expression::LegacyArray(LegacyArray { elements, .. }) => {
-            !elements.is_empty() && (operator.is_logical() || operator.is_null_coalesce())
+            !elements.is_empty() && (always_inline_operator || operator.is_logical())
         }
-        Expression::Match(_) => operator.is_elvis() || operator.is_null_coalesce() || operator.is_concatenation(),
+        Expression::Match(_) => always_inline_operator || operator.is_elvis() || operator.is_concatenation(),
         Expression::Instantiation(_) | Expression::Closure(_) | Expression::Call(_) => {
-            operator.is_elvis() || operator.is_null_coalesce()
+            always_inline_operator || operator.is_elvis()
         }
+        Expression::Binary(binary) => {
+            should_flatten(operator, &binary.operator)
+                || (operator.is_elvis() && binary.operator.is_elvis())
+                || (operator.is_concatenation() && binary.operator.is_concatenation())
+        }
+        Expression::Throw(_) => operator.is_null_coalesce(),
         _ => false,
     }
 }

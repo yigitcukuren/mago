@@ -232,7 +232,7 @@ pub(super) fn print_argument_list<'arena>(
                     vec![
                         in f.arena;
                         clone_in_arena(f.arena, &left_parenthesis),
-                        Document::Group(Group::new(vec![in f.arena; first_doc]).with_break(true)),
+                        Document::Group(Group::new(vec![in f.arena; first_doc])),
                         Document::String(", "),
                         last_doc,
                         print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
@@ -267,7 +267,7 @@ pub(super) fn print_argument_list<'arena>(
                         in f.arena;
                         clone_in_arena(f.arena, &left_parenthesis),
                         Document::Array(printed_arguments),
-                        Document::Group(Group::new(vec![in f.arena; last_doc]).with_break(true)),
+                        Document::Group(Group::new(vec![in f.arena; last_doc])),
                         print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                     ],
                     vec![in f.arena; all_arguments_broken_out(f)],
@@ -298,7 +298,7 @@ pub(super) fn print_argument_list<'arena>(
                     } else {
                         Document::empty()
                     },
-                    Document::Group(Group::new(vec![in f.arena; last_doc_clone]).with_break(true)),
+                    Document::Group(Group::new(vec![in f.arena; last_doc_clone])),
                     print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                 ]),
                 all_arguments_broken_out(f),

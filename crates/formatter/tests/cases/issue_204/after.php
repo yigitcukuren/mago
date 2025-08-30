@@ -22,11 +22,10 @@ function a()
 function b()
 {
     Psl\invariant(
-        null
-            === Iter\search(
-                Vec\concat(...Vec\map($this->section->getRows(), static fn(ProductRow $row): array => $row->getFields())),
-                static fn(ProductField $existing): bool => $existing->getName() === $field->getName(),
-            ),
+        null === Iter\search(
+            Vec\concat(...Vec\map($this->section->getRows(), static fn(ProductRow $row): array => $row->getFields())),
+            static fn(ProductField $existing): bool => $existing->getName() === $field->getName(),
+        ),
         'Field names need to be unique per section.',
     );
 }
@@ -51,8 +50,7 @@ function d()
                 $existing->getSubLocation()->getLocation()->getUuid()->equals($location->getUuid())
                 && $existing->getSubLocation()->getNumber() === $subLocationNumber
             ),
-        )
-        ?? Iter\search(
+        ) ?? Iter\search(
             $infos,
             static fn(ProductCommercialPropertyInfo $existing): bool => (
                 $existing->getSubLocation()->getLocation()->getNumber() === $location->getNumber()
@@ -66,8 +64,7 @@ function e()
 {
     foreach ($target->getQuoteTemplateDefaults()->getFormSpecifications() as $formSpecification) {
         if (
-            null
-            === Iter\search(
+            null === Iter\search(
                 $selectedFormSpecifications,
                 static fn(FormSpecificationDTO $possible): bool => $formSpecification->getDocumentTemplateConfiguration() === $possible->documentTemplateConfiguration,
             )
@@ -86,7 +83,7 @@ function getFormsStep(Division $division): int
 {
     return (
         3 + // foo
-        (+\count([1, 2, 3]))
+        +\count([1, 2, 3])
         + 1 // bar
         + 1 // baz
         + getProductCount($division)
