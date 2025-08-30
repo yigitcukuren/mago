@@ -73,6 +73,7 @@ pub struct RulesSettings {
     pub no_php_tag_terminator: RuleSettings<NoPhpTagTerminatorConfig>,
     pub no_noop: RuleSettings<NoNoopConfig>,
     pub no_multi_assignments: RuleSettings<NoMultiAssignmentsConfig>,
+    pub no_nested_ternary: RuleSettings<NoNestedTernaryConfig>,
     pub no_hash_emoji: RuleSettings<NoHashEmojiConfig>,
     pub no_hash_comment: RuleSettings<NoHashCommentConfig>,
     pub no_goto: RuleSettings<NoGotoConfig>,

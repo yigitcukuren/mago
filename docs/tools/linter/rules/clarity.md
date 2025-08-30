@@ -14,6 +14,7 @@ This document details the rules available in the `Clarity` category.
 | No Empty | [`no-empty`](#no-empty) |
 | No Hash Emoji | [`no-hash-emoji`](#no-hash-emoji) |
 | No Multi Assignments | [`no-multi-assignments`](#no-multi-assignments) |
+| No Nested Ternary | [`no-nested-ternary`](#no-nested-ternary) |
 | No Shorthand Ternary | [`no-shorthand-ternary`](#no-shorthand-ternary) |
 | Str Contains | [`str-contains`](#str-contains) |
 | Str Starts With | [`str-starts-with`](#str-starts-with) |
@@ -214,6 +215,44 @@ $a = $b;
 <?php
 
 $a = $b = 0;
+```
+
+
+## <a id="no-nested-ternary"></a>`no-nested-ternary`
+
+Nested ternary expressions are disallowed to improve code clarity and prevent potential bugs arising from confusion over operator associativity.
+
+In PHP 8.0 and later, the ternary operator (`? :`) is non-associative. Before PHP 8.0, it was left-associative, which is now deprecated. Most other programming languages treat it as right-associative. This inconsistency across versions and languages can make nested ternaries hard to reason about, even when using parentheses.
+
+
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"warning"` |
+
+### Examples
+
+#### Correct code
+
+```php
+<?php
+
+if ($user->isAdmin()) {
+    $allowed = true;
+} else {
+    $allowed = $user->isEditor();
+}
+```
+
+#### Incorrect code
+
+```php
+<?php
+
+$allowed = $user->isAdmin() ? true : ($user->isEditor() ? true : false);
 ```
 
 
