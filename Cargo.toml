@@ -8,6 +8,7 @@ description = "A comprehensive suite of PHP tooling inspired by Rust’s approac
 homepage = "https://mago.carthage.software"
 repository = "https://github.com/carthage-software/mago"
 rust-version = "1.89.0"
+exclude = ["docs", "composer", "scripts"]
 
 [workspace]
 package.edition = "2024"
