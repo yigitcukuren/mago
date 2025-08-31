@@ -29,6 +29,7 @@
 - [Installation](#installation)
 - [Getting Started](#getting-started)
 - [Features](#features)
+- [Our Sponsors](#our-sponsors)
 - [Contributing](#contributing)
 - [Inspiration & Acknowledgements](#inspiration--acknowledgements)
 - [License](#license)
