@@ -74,6 +74,9 @@ Mago is a community-driven project, and we welcome contributions! Whether you're
 - See our [Contributing Guide](./CONTRIBUTING.md) to get started.
 - Join the discussion on [Discord](https://discord.gg/mwyyjr27eu).
 
+<!-- START-SPONSORS -->
+<!-- END-SPONSORS -->
+
 ## Inspiration & Acknowledgements
 
 Mago stands on the shoulders of giants. Our design and functionality are heavily inspired by pioneering tools in both the Rust and PHP ecosystems.
