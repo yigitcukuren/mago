@@ -24,13 +24,9 @@ pub enum Associativity {
 #[serde(tag = "type", content = "value")]
 pub enum Precedence {
     Lowest,
-    LowLogicalOr,
-    LowLogicalXor,
-    LowLogicalAnd,
     Print,
-    Yield,
     YieldFrom,
-    IncDec,
+    Yield,
     KeyOr,
     KeyXor,
     KeyAnd,
@@ -44,7 +40,6 @@ pub enum Precedence {
     BitwiseAnd,
     Equality,
     Comparison,
-    Concat,
     // NOTE(azjezz): the RFC does not really specify the precedence of the `|>` operator
     // clearly, the current precedence position handles the examples shown in the RFC,
     // but will need to be verified with the actual implementation once its merged into php-src.
@@ -52,18 +47,21 @@ pub enum Precedence {
     // RFC: https://wiki.php.net/rfc/pipe-operator-v3
     // PR: https://github.com/php/php-src/pull/17118
     Pipe,
+    Concat,
     BitShift,
     AddSub,
     MulDivMod,
-    Bang,
+    Unary,
     Instanceof,
-    Prefix,
+    ErrorControl,
     Pow,
     Clone,
+    IncDec,
     CallDim,
     New,
     ArrayDim,
     ObjectAccess,
+    Highest,
 }
 
 pub trait GetPrecedence {
@@ -235,7 +233,6 @@ pub enum TokenKind {
     PublicSet,                   // `public(set)`
     QualifiedIdentifier,         // `Namespace\Class`
     Question,                    // `?`
-    QuestionColon,               // `?:`
     Require,                     // `require`
     RequireOnce,                 // `require_once`
     Return,                      // `return`
@@ -291,7 +288,7 @@ impl Precedence {
             T!["&&"] => Precedence::And,
             T!["||"] => Precedence::Or,
             T!["??"] => Precedence::NullCoalesce,
-            T!["?" | "?:"] => Precedence::ElvisOrConditional,
+            T!["?"] => Precedence::ElvisOrConditional,
             T!["="
                 | "+="
                 | "-="
@@ -311,6 +308,7 @@ impl Precedence {
             T!["and"] => Precedence::KeyAnd,
             T!["or"] => Precedence::KeyOr,
             T!["xor"] => Precedence::KeyXor,
+            T!["print"] => Precedence::Print,
             T!["|>"] => Precedence::Pipe,
             _ => Precedence::Lowest,
         }
@@ -319,7 +317,7 @@ impl Precedence {
     #[inline]
     pub const fn postfix(kind: &TokenKind) -> Self {
         match kind {
-            T!["++" | "--"] => Self::Prefix,
+            T!["++" | "--"] => Self::IncDec,
             T!["("] => Self::CallDim,
             T!["["] => Self::ArrayDim,
             T!["->" | "?->" | "::"] => Self::ObjectAccess,
@@ -330,22 +328,23 @@ impl Precedence {
     #[inline]
     pub const fn associativity(&self) -> Option<Associativity> {
         Some(match self {
-            Self::Instanceof
-            | Self::MulDivMod
+            Self::MulDivMod
             | Self::AddSub
-            | Self::BitShift
             | Self::Concat
+            | Self::BitShift
             | Self::BitwiseAnd
             | Self::BitwiseOr
             | Self::BitwiseXor
             | Self::And
             | Self::Or
             | Self::KeyAnd
-            | Self::KeyOr
             | Self::KeyXor
-            | Self::Pipe => Associativity::Left,
-            Self::Pow | Self::NullCoalesce | Self::Assignment => Associativity::Right,
-            Self::ElvisOrConditional | Self::Equality | Self::Comparison => Associativity::NonAssociative,
+            | Self::KeyOr
+            | Self::Pipe
+            | Self::ElvisOrConditional
+            | Self::ObjectAccess => Associativity::Left,
+            Self::Pow | Self::NullCoalesce | Self::Assignment | Self::Unary | Self::New => Associativity::Right,
+            Self::Equality | Self::Comparison | Self::Instanceof => Associativity::NonAssociative,
             _ => return None,
         })
     }
@@ -502,7 +501,6 @@ impl TokenKind {
                 | "!=="
                 | "<>"
                 | "?"
-                | "?:"
                 | "&&"
                 | "||"
                 | "="

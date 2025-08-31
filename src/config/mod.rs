@@ -2,6 +2,7 @@ use std::env::home_dir;
 use std::path::Path;
 use std::path::PathBuf;
 
+use config::Case;
 use config::Config;
 use config::Environment;
 use config::File;
@@ -131,7 +132,7 @@ impl Configuration {
         }
 
         configuration = builder
-            .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX))
+            .add_source(Environment::with_prefix(ENVIRONMENT_PREFIX).convert_case(Case::Kebab))
             .build()?
             .try_deserialize::<Configuration>()?;
 

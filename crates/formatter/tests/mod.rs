@@ -154,6 +154,8 @@ test_case!(predictable_conditional);
 test_case!(preserve_predictable_conditional);
 test_case!(predictable_arguments);
 test_case!(preserve_predictable_arguments);
+test_case!(unary_prefix_prec);
+test_case!(rescue);
 
 // A special test case for regressions in the Psl codebase
 test_case!(psl_regressions);

@@ -343,12 +343,8 @@ fn should_break_after_operator<'arena>(
     }
 
     match rhs_expression {
-        Expression::Binary(Binary { lhs, operator: BinaryOperator::Elvis(_), .. }) => {
-            return !should_inline_binary_expression(rhs_expression)
-                || (lhs.is_binary() && !should_inline_binary_expression(unwrap_parenthesized(lhs)));
-        }
         Expression::Binary(Binary { lhs, operator: BinaryOperator::NullCoalesce(_), rhs }) => {
-            if should_inline_binary_expression(rhs_expression) {
+            if should_inline_binary_expression(f, rhs_expression) {
                 return false;
             }
 
@@ -359,7 +355,7 @@ fn should_break_after_operator<'arena>(
             return !collect_member_access_chain(f.arena, rhs).is_some_and(|c| c.is_eligible_for_chaining(f))
                 && !matches!(unwrap_parenthesized(rhs), Expression::Instantiation(_));
         }
-        Expression::Binary(_) if !should_inline_binary_expression(rhs_expression) => {
+        Expression::Binary(_) if !should_inline_binary_expression(f, rhs_expression) => {
             return true;
         }
         Expression::Conditional(conditional) => {
@@ -370,7 +366,7 @@ fn should_break_after_operator<'arena>(
                     return false;
                 }
 
-                return !should_inline_binary_expression(binary);
+                return !should_inline_binary_expression(f, binary);
             }
 
             return false;

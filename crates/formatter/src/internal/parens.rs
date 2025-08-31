@@ -3,6 +3,7 @@ use bumpalo::vec;
 use mago_php_version::feature::Feature;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
+use mago_syntax::token::Associativity;
 use mago_syntax::token::GetPrecedence;
 use mago_syntax::token::Precedence;
 
@@ -11,6 +12,7 @@ use crate::document::Group;
 use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::internal::FormatterState;
+use crate::internal::utils::unwrap_parenthesized;
 
 impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
     pub(crate) fn add_parens(
@@ -56,11 +58,11 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             return false;
         }
 
-        self.called_or_accessed_node_needs_parenthesis(node)
-            || self.is_nested_ternary(node)
+        self.called_or_accessed_node_needs_parens(node)
+            || self.conditional_needs_parens(node)
             || self.binary_node_needs_parens(node)
             || self.unary_node_needs_parens(node)
-            || self.conditional_or_assignment_needs_parenthesis(node)
+            || self.assignment_needs_parens(node)
             || self.literal_needs_parens(node)
             || self.pipe_node_needs_parens(node)
     }
@@ -87,20 +89,59 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
         false
     }
 
-    fn is_nested_ternary(&self, node: Node<'arena, 'arena>) -> bool {
-        if !matches!(node, Node::Conditional(_) | Node::Binary(Binary { operator: BinaryOperator::Elvis(_), .. })) {
+    fn conditional_needs_parens(&self, node: Node) -> bool {
+        let Node::Conditional(conditional) = node else {
             return false;
-        }
+        };
 
         let Some(parent_node) = self.nth_parent_kind(2) else {
             return false;
         };
 
-        matches!(parent_node, Node::Conditional(_) | Node::Binary(Binary { operator: BinaryOperator::Elvis(_), .. }))
+        // Handle the most specific case first: a conditional nested inside another conditional.
+        if let Node::Conditional(parent_conditional) = parent_node {
+            let node_is_elvis = conditional.then.is_none();
+            let parent_is_elvis = parent_conditional.then.is_none();
+
+            if parent_is_elvis && node_is_elvis {
+                // This is a nested elvis operator (`?:`). Since Elvis is left-associative,
+                // parentheses are ONLY needed to override the default grouping, which happens
+                // when a nested Elvis is on the RIGHT side of its parent.
+                //
+                // Example:
+                //
+                // `($a ?: $b) ?: $c` -> Left side, follows associativity, NO parens needed.
+                // `$a ?: ($b ?: $c)` -> Right side, overrides associativity, YES parens needed.
+
+                // To determine the position, we check if the current node (`conditional`)
+                // is the same as the parent's `condition` node.
+                let parent_condition = unwrap_parenthesized(parent_conditional.condition);
+                if let Expression::Conditional(parent_cond_as_conditional) = parent_condition
+                    && std::ptr::eq(conditional, parent_cond_as_conditional)
+                {
+                    // It's the left-hand side child, no parens needed.
+                    return false;
+                }
+
+                // If it's not the left-hand side, it must be the right-hand side,
+                // which requires parentheses to preserve the AST structure.
+                return true;
+            }
+
+            // All other combinations of nested ternaries (e.g., `? :` inside `?:` or vice-versa)
+            // require parentheses because PHP considers them ambiguous and throws a fatal error.
+            return true;
+        }
+
+        if let Node::ArrowFunction(_) = parent_node {
+            return matches!(self.nth_parent_kind(3), Some(Node::Pipe(_)));
+        }
+
+        self.is_unary_or_binary_or_ternary(parent_node) || matches!(parent_node, Node::VariadicArrayElement(_))
     }
 
-    fn conditional_or_assignment_needs_parenthesis(&self, node: Node<'arena, 'arena>) -> bool {
-        if !matches!(node, Node::Assignment(_) | Node::Conditional(_)) {
+    fn assignment_needs_parens(&self, node: Node<'arena, 'arena>) -> bool {
+        if !matches!(node, Node::Assignment(_)) {
             return false;
         }
 
@@ -147,15 +188,10 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
 
         let precedence = operator.precedence();
         let parent_precedence = match self.nth_parent_kind(2) {
-            Some(
-                Node::Clone(_)
-                | Node::ArrayAppend(_)
-                | Node::VariadicArrayElement(_)
-                | Node::UnaryPrefix(_)
-                | Node::UnaryPostfix(_),
-            ) => {
+            Some(Node::Clone(_) | Node::ArrayAppend(_) | Node::VariadicArrayElement(_) | Node::UnaryPostfix(_)) => {
                 return true;
             }
+            Some(Node::UnaryPrefix(u)) => u.operator.precedence(),
             Some(Node::Binary(e)) => {
                 let parent_precedence = e.operator.precedence();
 
@@ -173,8 +209,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
                     }
                 }
 
-                if (operator.is_elvis() && e.operator.is_elvis())
-                    || (operator.is_arithmetic() && !e.operator.is_arithmetic())
+                if (operator.is_arithmetic() && !e.operator.is_arithmetic())
                     || (operator.is_multiplicative() || e.operator.is_multiplicative())
                     || (operator.is_bit_shift() && !e.operator.is_bit_shift())
                     || (operator.is_bitwise() && e.operator.is_bitwise() && !e.operator.is_same_as(operator))
@@ -193,13 +228,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
 
                 return false;
             }
-            Some(Node::Conditional(_)) => {
-                if operator.is_elvis() {
-                    return true;
-                }
-
-                Precedence::ElvisOrConditional
-            }
+            Some(Node::Conditional(_)) => Precedence::ElvisOrConditional,
             Some(Node::ArrayAccess(access)) => {
                 // we add parentheses if the parent is an array access and the child is a binaryish node
                 //
@@ -232,67 +261,76 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
     }
 
     fn unary_node_needs_parens(&self, node: Node<'arena, 'arena>) -> bool {
-        let precedence = match node {
-            Node::UnaryPrefix(e) => {
-                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2)
-                    && node.end_position() < binary.operator.start_position()
-                {
-                    if e.operator.is_error_control() || e.operator.is_cast() {
-                        return true;
-                    }
+        if let Node::UnaryPrefix(unary) = node
+            && unary.operator.is_error_control()
+        {
+            let is_include_like = matches!(
+                unary.operand,
+                Expression::Construct(
+                    Construct::Include(_)
+                        | Construct::IncludeOnce(_)
+                        | Construct::Require(_)
+                        | Construct::RequireOnce(_)
+                )
+            );
 
-                    if e.operator.is_arithmetic() || e.operator.is_not() {
-                        return false;
-                    }
-                };
-
-                if e.operator.is_error_control() {
-                    return false;
+            if is_include_like && let Some(Node::Binary(parent_bin)) = self.nth_parent_kind(2) {
+                let is_lhs = node.end_position() < parent_bin.operator.start_position();
+                if is_lhs {
+                    return true;
                 }
-
-                if e.operator.is_not() { Precedence::Bang } else { Precedence::IncDec }
             }
-            Node::UnaryPostfix(e) => {
-                if let Some(Node::Binary(binary)) = self.nth_parent_kind(2)
-                    && node.end_position() < binary.operator.start_position()
-                {
-                    return false;
-                };
+        }
 
-                e.operator.precedence()
-            }
+        let current_precedence = match node {
+            Node::UnaryPrefix(u) => u.operator.precedence(),
+            Node::UnaryPostfix(u) => u.operator.precedence(),
             _ => return false,
         };
 
-        let parent_precedence = match self.nth_parent_kind(2) {
-            Some(Node::Binary(e)) => {
-                if e.operator.end_position() <= node.start_position() {
-                    return false;
-                }
-
-                e.operator.precedence()
-            }
-            Some(Node::Conditional(e)) => {
-                if e.question_mark.end_position() <= node.start_position() {
-                    return false;
-                }
-
-                Precedence::ElvisOrConditional
-            }
-            Some(Node::Pipe(_)) => Precedence::Pipe,
-            Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_)) => Precedence::IncDec,
-            Some(Node::VariadicArrayElement(_)) => {
-                return true;
-            }
-            _ => {
-                return false;
-            }
+        let Some(parent) = self.nth_parent_kind(2) else {
+            return false;
         };
 
-        precedence < parent_precedence
+        if matches!(parent, Node::VariadicArrayElement(_)) {
+            return true;
+        }
+
+        let (parent_precedence, parent_associativity, parent_op_start) = match parent {
+            Node::Binary(bin) => {
+                let precedence = bin.operator.precedence();
+                let associativity = match precedence.associativity() {
+                    Some(assoc) => assoc,
+                    None => return false,
+                };
+
+                (precedence, associativity, bin.operator.start_position())
+            }
+            Node::Conditional(cond) => {
+                (Precedence::ElvisOrConditional, Associativity::Left, cond.question_mark.start_position())
+            }
+            Node::Pipe(pipe) => (Precedence::Pipe, Associativity::Left, pipe.operator.start_position()),
+            _ => return false, // Other parent types don't require parens on their children.
+        };
+
+        if current_precedence < parent_precedence {
+            return true;
+        }
+
+        if current_precedence == parent_precedence {
+            let is_lhs = node.end_position() < parent_op_start;
+
+            match parent_associativity {
+                Associativity::Left => !is_lhs,
+                Associativity::Right => is_lhs,
+                Associativity::NonAssociative => true,
+            }
+        } else {
+            false
+        }
     }
 
-    fn called_or_accessed_node_needs_parenthesis(&self, node: Node<'arena, 'arena>) -> bool {
+    fn called_or_accessed_node_needs_parens(&self, node: Node<'arena, 'arena>) -> bool {
         let Node::Expression(expression) = node else {
             return false;
         };
@@ -415,7 +453,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
     }
 
     const fn is_unary_or_binary_or_ternary(&self, node: Node<'arena, 'arena>) -> bool {
-        self.is_unary(node) || self.is_binaryish(node) || self.is_conditional(node)
+        self.is_unary(node) || self.is_binaryish(node) || self.is_ternary_conditional(node)
     }
 
     const fn is_binaryish(&self, node: Node<'arena, 'arena>) -> bool {
@@ -431,7 +469,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
         matches!(node, Node::UnaryPrefix(_) | Node::UnaryPostfix(_))
     }
 
-    const fn is_conditional(&self, node: Node<'arena, 'arena>) -> bool {
+    const fn is_ternary_conditional(&self, node: Node<'arena, 'arena>) -> bool {
         if let Node::Conditional(op) = node { op.then.is_some() } else { false }
     }
 }

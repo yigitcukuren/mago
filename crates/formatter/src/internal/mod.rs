@@ -15,7 +15,6 @@ use crate::document::group::GroupIdentifier;
 use crate::document::group::GroupIdentifierBuilder;
 use crate::settings::FormatSettings;
 
-pub mod binaryish;
 pub mod comment;
 pub mod format;
 pub mod macros;
@@ -52,6 +51,7 @@ pub struct FormatterState<'ctx, 'arena> {
     in_script_terminating_statement: bool,
     in_condition: bool,
     is_wrapped_in_parens: bool,
+    is_in_inlined_binary_chain: bool,
     halted_compilation: bool,
 }
 
@@ -87,6 +87,7 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
             in_pipe_chain_arrow_segment: false,
             in_condition: false,
             is_wrapped_in_parens: false,
+            is_in_inlined_binary_chain: false,
             halted_compilation: false,
             in_script_terminating_statement: false,
         }

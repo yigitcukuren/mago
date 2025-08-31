@@ -1483,7 +1483,6 @@ impl<'ast, 'arena> Node<'ast, 'arena> {
                 BinaryOperator::StringConcat(_) => vec![],
                 BinaryOperator::And(_) => vec![],
                 BinaryOperator::Or(_) => vec![],
-                BinaryOperator::Elvis(_) => vec![],
                 BinaryOperator::Instanceof(keyword) => vec![Node::Keyword(keyword)],
                 BinaryOperator::LowAnd(keyword) => vec![Node::Keyword(keyword)],
                 BinaryOperator::LowOr(keyword) => vec![Node::Keyword(keyword)],

@@ -43,7 +43,6 @@ pub enum BinaryOperator<'arena> {
     LowAnd(Keyword<'arena>),     // `and`
     LowOr(Keyword<'arena>),      // `or`
     LowXor(Keyword<'arena>),     // `xor`
-    Elvis(Span),                 // `?:`
 }
 
 /// Represents a PHP binary operation.
@@ -59,7 +58,7 @@ pub struct Binary<'arena> {
 impl<'arena> BinaryOperator<'arena> {
     #[inline]
     pub const fn is_constant(&self) -> bool {
-        !matches!(self, Self::Elvis(_) | Self::Instanceof(_))
+        !matches!(self, Self::Instanceof(_))
     }
 
     #[inline]
@@ -154,11 +153,6 @@ impl<'arena> BinaryOperator<'arena> {
     }
 
     #[inline]
-    pub const fn is_elvis(&self) -> bool {
-        matches!(self, Self::Elvis(_))
-    }
-
-    #[inline]
     pub const fn is_instanceof(&self) -> bool {
         matches!(self, Self::Instanceof(_))
     }
@@ -191,7 +185,6 @@ impl<'arena> BinaryOperator<'arena> {
             Self::StringConcat(_) => ".",
             Self::And(_) => "&&",
             Self::Or(_) => "||",
-            Self::Elvis(_) => "?:",
             Self::Instanceof(keyword) => keyword.value,
             Self::LowAnd(keyword) => keyword.value,
             Self::LowOr(keyword) => keyword.value,
@@ -232,7 +225,6 @@ impl<'arena> BinaryOperator<'arena> {
                 | (Self::LowAnd(_), Self::LowAnd(_))
                 | (Self::LowOr(_), Self::LowOr(_))
                 | (Self::LowXor(_), Self::LowXor(_))
-                | (Self::Elvis(_), Self::Elvis(_))
         )
     }
 }
@@ -265,7 +257,6 @@ impl GetPrecedence for BinaryOperator<'_> {
             Self::LowOr(_) => Precedence::KeyOr,
             Self::LowXor(_) => Precedence::KeyXor,
             Self::Instanceof(_) => Precedence::Instanceof,
-            Self::Elvis(_) => Precedence::ElvisOrConditional,
         }
     }
 }
@@ -302,7 +293,6 @@ impl HasSpan for BinaryOperator<'_> {
             Self::LowAnd(keyword) => keyword.span(),
             Self::LowOr(keyword) => keyword.span(),
             Self::LowXor(keyword) => keyword.span(),
-            Self::Elvis(span) => *span,
         }
     }
 }

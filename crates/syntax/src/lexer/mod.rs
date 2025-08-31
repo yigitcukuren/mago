@@ -209,7 +209,6 @@ impl<'input, 'arena> Lexer<'input, 'arena> {
                     [b'&', b'=', ..] => (TokenKind::AmpersandEqual, 2),
                     [b'.', b'=', ..] => (TokenKind::DotEqual, 2),
                     [b'?', b'?', ..] => (TokenKind::QuestionQuestion, 2),
-                    [b'?', b':', ..] => (TokenKind::QuestionColon, 2),
                     [b'?', b'>', ..] => (TokenKind::CloseTag, 2),
                     [b'=', b'>', ..] => (TokenKind::EqualGreaterThan, 2),
                     [b'=', b'=', ..] => (TokenKind::EqualEqual, 2),

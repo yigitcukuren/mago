@@ -73,7 +73,7 @@ impl LintRule for NoShorthandTernaryRule {
     }
 
     fn targets() -> &'static [NodeKind] {
-        const TARGETS: &[NodeKind] = &[NodeKind::BinaryOperator, NodeKind::Conditional];
+        const TARGETS: &[NodeKind] = &[NodeKind::Conditional];
 
         TARGETS
     }
@@ -84,11 +84,6 @@ impl LintRule for NoShorthandTernaryRule {
 
     fn check<'ast, 'arena>(&self, ctx: &mut LintContext<'_, 'arena>, node: Node<'ast, 'arena>) {
         let issue = match node {
-            Node::BinaryOperator(BinaryOperator::Elvis(_)) => {
-                Issue::new(self.cfg.level(), "Use of the elvis operator.").with_code(self.meta.code).with_annotation(
-                    Annotation::primary(node.span()).with_message("Ambiguous check due to `?:` loose comparison"),
-                )
-            }
             Node::Conditional(Conditional { then: None, .. }) => {
                 Issue::new(self.cfg.level(), "Use of the shorthand ternary operator.")
                     .with_code(self.meta.code)

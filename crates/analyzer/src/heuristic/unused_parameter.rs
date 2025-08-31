@@ -461,7 +461,7 @@ mod utils {
             ) {
                 self.walk_expression(binary.lhs, context);
 
-                if !binary.operator.is_elvis() && !binary.operator.is_null_coalesce() && !binary.operator.is_logical() {
+                if !binary.operator.is_null_coalesce() && !binary.operator.is_logical() {
                     self.walk_expression(binary.rhs, context);
                     return;
                 };

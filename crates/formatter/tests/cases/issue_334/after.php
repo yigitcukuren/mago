@@ -6,12 +6,14 @@ $a = ((string) $f) ** 2;
 
 function getRunCommand(string $script): string
 {
-    return $this->getBinaryName() . ' ' . match ($this) {
-        self::BUN => $script,
-        self::NPM => "run {$script}",
-        self::YARN => $script,
-        self::PNPM => $script,
-    };
+    return (
+        $this->getBinaryName() . ' ' . match ($this) {
+            self::BUN => $script,
+            self::NPM => "run {$script}",
+            self::YARN => $script,
+            self::PNPM => $script,
+        }
+    );
 }
 
 function initializeStreamFactory(): StreamFactoryInterface
@@ -50,7 +52,7 @@ return new RocketReachException(
     message: rescue(
         callback: fn () => json_encode($response->json('error') ?: [], flags: \JSON_PRETTY_PRINT),
         report: false,
-    ) ?: ($exception?->getMessage() ?: 'Unknown RocketReach API error'),
+    ) ?: $exception?->getMessage() ?: 'Unknown RocketReach API error',
 );
 
 return $this->pipedrive->send(new UpdateDealRequest(new UpdateDealData(

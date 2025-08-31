@@ -2,7 +2,10 @@ use bumpalo::collections::Vec;
 use bumpalo::vec;
 
 use mago_span::HasSpan;
+use mago_span::Span;
 use mago_syntax::ast::*;
+use mago_syntax::token::GetPrecedence;
+use mago_syntax::token::Precedence;
 use node::NodeKind;
 
 use crate::document::Document;
@@ -10,7 +13,6 @@ use crate::document::Group;
 use crate::document::IndentIfBreak;
 use crate::document::Line;
 use crate::internal::FormatterState;
-use crate::internal::binaryish::should_flatten;
 use crate::internal::comment::CommentFlags;
 use crate::internal::format::Format;
 use crate::internal::format::format_token;
@@ -18,10 +20,88 @@ use crate::internal::utils::is_at_call_like_expression;
 use crate::internal::utils::is_at_callee;
 use crate::internal::utils::unwrap_parenthesized;
 
+/// An internal-only enum to represent operators that should be formatted
+/// like binary operators. This allows us to reuse the same complex formatting
+/// logic for both true `BinaryOperator`s and other constructs like the
+/// Elvis operator (`?:`) from a `Conditional` node, without polluting
+/// the public AST in `mago_syntax`.
+#[derive(Clone, Copy)]
+pub(super) enum BinaryishOperator<'arena> {
+    Binary(&'arena BinaryOperator<'arena>),
+    Elvis(Span),
+}
+
+impl<'arena> BinaryishOperator<'arena> {
+    fn precedence(self) -> Precedence {
+        match self {
+            Self::Binary(op) => op.precedence(),
+            Self::Elvis(_) => Precedence::ElvisOrConditional,
+        }
+    }
+
+    fn as_str(self) -> &'arena str {
+        match self {
+            Self::Binary(op) => op.as_str(),
+            Self::Elvis(_) => "?:",
+        }
+    }
+
+    fn span(self) -> Span {
+        match self {
+            Self::Binary(op) => op.span(),
+            Self::Elvis(span) => span,
+        }
+    }
+
+    fn is_elvis(self) -> bool {
+        matches!(self, Self::Elvis(_))
+    }
+
+    fn is_comparison(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_comparison())
+    }
+
+    fn is_logical(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_logical())
+    }
+
+    fn is_null_coalesce(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_null_coalesce())
+    }
+
+    fn is_equality(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_equality())
+    }
+
+    fn is_concatenation(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_concatenation())
+    }
+
+    fn is_bitwise(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_bitwise())
+    }
+
+    fn is_bit_shift(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_bit_shift())
+    }
+
+    fn is_same_as(self, other: &BinaryishOperator<'arena>) -> bool {
+        match (self, other) {
+            (Self::Binary(op1), Self::Binary(op2)) => op1.is_same_as(op2),
+            (Self::Elvis(_), Self::Elvis(_)) => true,
+            _ => false,
+        }
+    }
+
+    fn is_low_precedence(self) -> bool {
+        matches!(self, Self::Binary(op) if op.is_low_precedence())
+    }
+}
+
 pub(super) fn print_binaryish_expression<'arena>(
     f: &mut FormatterState<'_, 'arena>,
     left: &'arena Expression<'arena>,
-    operator: &'arena BinaryOperator<'arena>,
+    operator: BinaryishOperator<'arena>,
     right: &'arena Expression<'arena>,
 ) -> Document<'arena> {
     let left = unwrap_parenthesized(left);
@@ -45,30 +125,12 @@ pub(super) fn print_binaryish_expression<'arena>(
             )
         );
 
-    let parts = print_binaryish_expressions(f, left, operator, right, is_inside_parenthesis, false);
+    let parts = print_binaryish_expression_parts(f, left, operator, right, is_inside_parenthesis, false);
 
-    //   if (
-    //     $this->hasPlugin("dynamicImports") && $this->lookahead()->type === $tt->parenLeft
-    //   ) {
-    //
-    // looks super weird, we want to break the children if the parent breaks
-    //
-    //   if (
-    //     $this->hasPlugin("dynamicImports") &&
-    //     $this->lookahead()->type === $tt->parenLeft
-    //   ) {
     if is_inside_parenthesis {
         return Document::Array(parts);
     }
 
-    // Break between the parens in
-    // unaries or in a member or specific call expression, i.e.
-    //
-    //   (
-    //     a &&
-    //     b &&
-    //     c
-    //   ).call()
     if is_at_callee(f) || matches!(f.grandparent_node(), Some(Node::UnaryPrefix(_) | Node::UnaryPostfix(_))) {
         return Document::Group(Group::new(vec![
             in f.arena;
@@ -93,10 +155,15 @@ pub(super) fn print_binaryish_expression<'arena>(
         matches!(grandparent, Some(Node::Assignment(_) | Node::PropertyItem(_) | Node::ConstantItem(_)))
             || matches!(grandparent, Some(Node::KeyValueArrayElement(_)));
 
-    let same_precedence_sub_expression =
-        matches!(left, Expression::Binary(binary) if should_flatten(operator, &binary.operator));
+    let same_precedence_sub_expression = match left {
+        Expression::Binary(binary) => should_flatten(&BinaryishOperator::Binary(&binary.operator), &operator),
+        Expression::Conditional(conditional @ Conditional { then: None, .. }) => {
+            should_flatten(&BinaryishOperator::Elvis(conditional.question_mark.join(conditional.colon)), &operator)
+        }
+        _ => false,
+    };
 
-    let should_inline_logical_or_coalesce_rhs = should_inline_binary_rhs_expression(right, operator);
+    let should_inline_logical_or_coalesce_rhs = should_inline_binary_rhs_expression(f, right, &operator);
     if should_not_indent
         || (should_inline_logical_or_coalesce_rhs && !same_precedence_sub_expression)
         || (!should_inline_logical_or_coalesce_rhs && should_indent_if_inlining)
@@ -106,23 +173,19 @@ pub(super) fn print_binaryish_expression<'arena>(
 
     let first_group_index = parts.iter().position(|part| matches!(part, Document::Group(_)));
 
-    // Separate the leftmost expression, possibly with its leading comments.
     let split_index = first_group_index.unwrap_or(0);
     let mut head_parts = parts;
     let tail_parts = head_parts.split_off(split_index);
 
-    // Don't include the initial expression in the indentation
-    // level. The first item is guaranteed to be the first
-    // left-most expression.
     head_parts.push(Document::IndentIfBreak(IndentIfBreak::new(tail_parts)));
 
     Document::Group(Group::new(head_parts))
 }
 
-pub(super) fn print_binaryish_expressions<'arena>(
+fn print_binaryish_expression_parts<'arena>(
     f: &mut FormatterState<'_, 'arena>,
     left: &'arena Expression<'arena>,
-    operator: &'arena BinaryOperator<'arena>,
+    operator: BinaryishOperator<'arena>,
     right: &'arena Expression<'arena>,
     is_inside_parenthesis: bool,
     is_nested: bool,
@@ -133,23 +196,52 @@ pub(super) fn print_binaryish_expressions<'arena>(
         .has_comment(operator.span(), CommentFlags::Trailing | CommentFlags::Leading | CommentFlags::Line)
         || f.has_comment(left.span(), CommentFlags::Trailing | CommentFlags::Line);
 
-    let mut parts = vec![in f.arena];
-    if let Expression::Binary(binary) = left {
-        if should_flatten(operator, &binary.operator) {
-            // Flatten them out by recursively calling this function.
-            parts =
-                print_binaryish_expressions(f, binary.lhs, &binary.operator, binary.rhs, is_inside_parenthesis, true);
-        } else {
-            parts.push(left.format(f));
-        }
-    } else {
-        parts.push(left.format(f));
-    }
+    let mut should_inline_this_level = !should_break && should_inline_binary_rhs_expression(f, right, &operator);
+    should_inline_this_level = should_inline_this_level || f.is_in_inlined_binary_chain;
 
-    let should_inline = !should_break && should_inline_binary_rhs_expression(right, operator);
+    let old_inlined_chain_state = f.is_in_inlined_binary_chain;
+    f.is_in_inlined_binary_chain = should_inline_this_level;
+
+    let mut parts = match left {
+        Expression::Binary(binary) => {
+            let binaryish_operator = BinaryishOperator::Binary(&binary.operator);
+            if should_flatten(&operator, &binaryish_operator) {
+                print_binaryish_expression_parts(
+                    f,
+                    binary.lhs,
+                    binaryish_operator,
+                    binary.rhs,
+                    is_inside_parenthesis,
+                    true,
+                )
+            } else {
+                vec![in f.arena; left.format(f)]
+            }
+        }
+        Expression::Conditional(conditional @ Conditional { then: None, .. }) => {
+            let binaryish_operator = BinaryishOperator::Elvis(conditional.question_mark.join(conditional.colon));
+            if should_flatten(&operator, &binaryish_operator) {
+                print_binaryish_expression_parts(
+                    f,
+                    conditional.condition,
+                    binaryish_operator,
+                    conditional.r#else,
+                    is_inside_parenthesis,
+                    true,
+                )
+            } else {
+                vec![in f.arena; left.format(f)]
+            }
+        }
+        _ => vec![in f.arena; left.format(f)],
+    };
+
+    f.is_in_inlined_binary_chain = old_inlined_chain_state;
 
     let has_space_around = match operator {
-        BinaryOperator::StringConcat(_) => f.settings.space_around_concatenation_binary_operator,
+        BinaryishOperator::Binary(BinaryOperator::StringConcat(_)) => {
+            f.settings.space_around_concatenation_binary_operator
+        }
         _ => true,
     };
 
@@ -157,22 +249,24 @@ pub(super) fn print_binaryish_expressions<'arena>(
 
     let right_document = vec![
         in f.arena;
-        if line_before_operator && !should_inline {
+        if line_before_operator && !should_inline_this_level {
             Document::Line(if has_space_around { Line::default() } else { Line::soft() })
         } else {
             Document::String(if has_space_around { " " } else { "" })
         },
         format_token(f, operator.span(), operator.as_str()),
-        if line_before_operator || should_inline {
+        if line_before_operator || should_inline_this_level {
             Document::String(if has_space_around { " " } else { "" })
         } else {
             Document::Line(if has_space_around { Line::default() } else { Line::soft() })
         },
-        if should_inline { Document::Group(Group::new(vec![in f.arena; right.format(f)])) } else { right.format(f) },
+        if should_inline_this_level {
+             Document::Group(Group::new(vec![in f.arena; right.format(f)]))
+        } else {
+            right.format(f)
+        },
     ];
 
-    // If there's only a single binary expression, we want to create a group
-    // in order to avoid having a small right part like -1 be on its own line.
     let parent = f.parent_node();
     let should_group = !is_nested
         && (should_break
@@ -190,20 +284,74 @@ pub(super) fn print_binaryish_expressions<'arena>(
     parts
 }
 
-pub(super) fn should_inline_binary_expression(expression: &Expression) -> bool {
+pub(super) fn should_inline_binary_expression(f: &FormatterState, expression: &Expression) -> bool {
     match unwrap_parenthesized(expression) {
         Expression::Binary(operation) => {
             if operation.lhs.is_binary() || operation.rhs.is_binary() {
                 return false;
             }
-
-            should_inline_binary_rhs_expression(operation.rhs, &operation.operator)
+            should_inline_binary_rhs_expression(f, operation.rhs, &BinaryishOperator::Binary(&operation.operator))
         }
+        Expression::Conditional(conditional @ Conditional { then: None, .. }) => should_inline_binary_rhs_expression(
+            f,
+            conditional.condition,
+            &BinaryishOperator::Elvis(conditional.question_mark.join(conditional.colon)),
+        ),
         _ => false,
     }
 }
 
-fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperator) -> bool {
+fn should_flatten<'arena>(operator: &BinaryishOperator<'arena>, parent_op: &BinaryishOperator<'arena>) -> bool {
+    if operator.is_elvis() && parent_op.is_elvis() {
+        return true;
+    }
+
+    if operator.is_low_precedence() {
+        return false;
+    }
+
+    let self_precedence = operator.precedence();
+    let parent_precedence = parent_op.precedence();
+
+    if self_precedence != parent_precedence {
+        return false;
+    }
+
+    if let BinaryishOperator::Binary(operator) = operator
+        && let BinaryishOperator::Binary(parent_op) = parent_op
+    {
+        if operator.is_concatenation() && parent_op.is_concatenation() {
+            return true;
+        }
+
+        if operator.is_arithmetic() && parent_op.is_arithmetic() {
+            if matches!((operator, parent_op), (BinaryOperator::Exponentiation(_), BinaryOperator::Exponentiation(_))) {
+                return false;
+            }
+            if matches!(operator, BinaryOperator::Subtraction(_) | BinaryOperator::Division(_))
+                || matches!(parent_op, BinaryOperator::Subtraction(_) | BinaryOperator::Division(_))
+            {
+                return false;
+            }
+        }
+    }
+
+    if operator.is_bitwise() && parent_op.is_bitwise() && (operator.is_bit_shift() || parent_op.is_bit_shift()) {
+        return false;
+    }
+
+    operator.is_same_as(parent_op)
+}
+
+fn should_inline_binary_rhs_expression(
+    f: &FormatterState<'_, '_>,
+    rhs: &Expression<'_>,
+    operator: &BinaryishOperator<'_>,
+) -> bool {
+    if f.is_in_inlined_binary_chain {
+        return true;
+    }
+
     let always_inline_operator = operator.is_null_coalesce() || operator.is_equality() || operator.is_comparison();
 
     match unwrap_parenthesized(rhs) {
@@ -217,11 +365,8 @@ fn should_inline_binary_rhs_expression(rhs: &Expression, operator: &BinaryOperat
         Expression::Instantiation(_) | Expression::Closure(_) | Expression::Call(_) => {
             always_inline_operator || operator.is_elvis()
         }
-        Expression::Binary(binary) => {
-            should_flatten(operator, &binary.operator)
-                || (operator.is_elvis() && binary.operator.is_elvis())
-                || (operator.is_concatenation() && binary.operator.is_concatenation())
-        }
+        Expression::Binary(binary) => should_flatten(operator, &BinaryishOperator::Binary(&binary.operator)),
+        Expression::Conditional(Conditional { then: None, .. }) => operator.is_elvis(),
         Expression::Throw(_) => operator.is_null_coalesce(),
         _ => false,
     }

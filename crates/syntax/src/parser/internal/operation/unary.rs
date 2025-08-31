@@ -4,13 +4,12 @@ use crate::error::ParseError;
 use crate::parser::internal::expression::parse_expression_with_precedence;
 use crate::parser::internal::token_stream::TokenStream;
 use crate::parser::internal::utils;
-use crate::token::Precedence;
+use crate::token::GetPrecedence;
 
 pub fn parse_unary_prefix_operation<'arena>(
     stream: &mut TokenStream<'_, 'arena>,
 ) -> Result<UnaryPrefix<'arena>, ParseError> {
     let token = utils::expect_any(stream)?;
-    let mut precedence = Precedence::Prefix;
 
     let operator = match token.kind {
         T!["(array)"] => UnaryPrefixOperator::ArrayCast(token.span, token.value),
@@ -27,21 +26,13 @@ pub fn parse_unary_prefix_operation<'arena>(
         T!["(string)"] => UnaryPrefixOperator::StringCast(token.span, token.value),
         T!["(void)"] => UnaryPrefixOperator::VoidCast(token.span, token.value),
         T!["@"] => UnaryPrefixOperator::ErrorControl(token.span),
-        T!["!"] => {
-            precedence = Precedence::Bang;
-
-            UnaryPrefixOperator::Not(token.span)
-        }
+        T!["!"] => UnaryPrefixOperator::Not(token.span),
         T!["~"] => UnaryPrefixOperator::BitwiseNot(token.span),
         T!["-"] => UnaryPrefixOperator::Negation(token.span),
         T!["+"] => UnaryPrefixOperator::Plus(token.span),
         T!["++"] => UnaryPrefixOperator::PreIncrement(token.span),
         T!["--"] => UnaryPrefixOperator::PreDecrement(token.span),
-        T!["&"] => {
-            precedence = Precedence::BitwiseAnd;
-
-            UnaryPrefixOperator::Reference(token.span)
-        }
+        T!["&"] => UnaryPrefixOperator::Reference(token.span),
         _ => {
             return Err(utils::unexpected(
                 stream,
@@ -72,7 +63,7 @@ pub fn parse_unary_prefix_operation<'arena>(
         }
     };
 
-    let operand = parse_expression_with_precedence(stream, precedence)?;
+    let operand = parse_expression_with_precedence(stream, operator.precedence())?;
 
     Ok(UnaryPrefix { operator, operand: stream.alloc(operand) })
 }

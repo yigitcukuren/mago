@@ -15,7 +15,6 @@ pub mod utils;
 mod arithmetic;
 mod comparison;
 mod concat;
-mod elvis_ternary;
 mod logical;
 mod null_coalesce;
 mod spaceship;
@@ -56,7 +55,6 @@ impl<'ast, 'arena> Analyzable<'ast, 'arena> for Binary<'arena> {
             BinaryOperator::NullCoalesce(_) => {
                 null_coalesce::analyze_null_coalesce_operation(self, context, block_context, artifacts)
             }
-            BinaryOperator::Elvis(_) => elvis_ternary::analyze_elvis_operation(self, context, block_context, artifacts),
             BinaryOperator::Spaceship(_) => {
                 spaceship::analyze_spaceship_operation(self, context, block_context, artifacts)
             }

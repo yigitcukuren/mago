@@ -471,9 +471,6 @@ macro_rules! T {
     ("?") => {
         $crate::token::TokenKind::Question
     };
-    ("?:") => {
-        $crate::token::TokenKind::QuestionColon
-    };
     ("require") => {
         $crate::token::TokenKind::Require
     };

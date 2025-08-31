@@ -95,6 +95,11 @@ impl<'arena> UnaryPrefixOperator<'arena> {
     }
 
     #[inline]
+    pub const fn is_reference(&self) -> bool {
+        matches!(self, Self::Reference(_))
+    }
+
+    #[inline]
     pub const fn is_arithmetic(&self) -> bool {
         matches!(self, Self::Plus(_) | Self::Negation(_) | Self::PreIncrement(_) | Self::PreDecrement(_))
     }
@@ -165,6 +170,17 @@ impl<'arena> UnaryPrefixOperator<'arena> {
     }
 }
 
+impl GetPrecedence for UnaryPrefixOperator<'_> {
+    fn precedence(&self) -> Precedence {
+        match self {
+            Self::Reference(_) => Precedence::BitwiseAnd,
+            Self::ErrorControl(_) => Precedence::ErrorControl,
+            Self::PreIncrement(_) | Self::PreDecrement(_) => Precedence::IncDec,
+            _ => Precedence::Unary,
+        }
+    }
+}
+
 impl UnaryPostfixOperator {
     #[inline]
     pub const fn is_constant(&self) -> bool {
@@ -193,7 +209,7 @@ impl UnaryPostfixOperator {
 impl GetPrecedence for UnaryPostfixOperator {
     fn precedence(&self) -> Precedence {
         match self {
-            Self::PostIncrement(_) | Self::PostDecrement(_) => Precedence::IncDec,
+            Self::PostIncrement(_) | Self::PostDecrement(_) => Precedence::Unary,
         }
     }
 }

@@ -21,6 +21,7 @@ use crate::internal::format::array::print_array_like;
 use crate::internal::format::assignment::AssignmentLikeNode;
 use crate::internal::format::assignment::print_assignment;
 use crate::internal::format::binaryish;
+use crate::internal::format::binaryish::BinaryishOperator;
 use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::format::call_node::CallLikeNode;
 use crate::internal::format::call_node::print_call_like_node;
@@ -109,7 +110,9 @@ impl<'arena> Format<'arena> for Expression<'arena> {
 
 impl<'arena> Format<'arena> for Binary<'arena> {
     fn format(&'arena self, f: &mut FormatterState<'_, 'arena>) -> Document<'arena> {
-        wrap!(f, self, Binary, { binaryish::print_binaryish_expression(f, self.lhs, &self.operator, self.rhs) })
+        wrap!(f, self, Binary, {
+            binaryish::print_binaryish_expression(f, self.lhs, BinaryishOperator::Binary(&self.operator), self.rhs)
+        })
     }
 }
 
@@ -976,7 +979,7 @@ impl<'arena> Format<'arena> for Match<'arena> {
 
             contents.push(format_token(f, self.right_brace, "}"));
 
-            Document::Group(Group::new(contents))
+            Document::Group(Group::new(contents).with_break(should_break))
         })
     }
 }
@@ -1045,20 +1048,12 @@ impl<'arena> Format<'arena> for Conditional<'arena> {
                         .with_id(conditional_id),
                     )
                 }
-                None => Document::Group(Group::new(vec![
-                    in f.arena;
-                    self.condition.format(f),
-                    Document::Indent(vec![
-                        in f.arena;
-                        Document::Line(if must_break { Line::hard() } else { Line::default() }),
-                        Document::Group(Group::new(vec![
-                            in f.arena;
-                            format_token(f, self.question_mark, "?"),
-                            format_token(f, self.colon, ": "),
-                            self.r#else.format(f),
-                        ])),
-                    ]),
-                ])),
+                None => binaryish::print_binaryish_expression(
+                    f,
+                    self.condition,
+                    BinaryishOperator::Elvis(self.question_mark.join(self.colon)),
+                    self.r#else,
+                ),
             }
         })
     }

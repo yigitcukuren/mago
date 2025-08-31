@@ -27,6 +27,7 @@ use crate::parser::internal::utils;
 use crate::parser::internal::variable;
 use crate::parser::internal::r#yield::parse_yield;
 use crate::token::Associativity;
+use crate::token::GetPrecedence;
 use crate::token::Precedence;
 
 pub fn parse_expression<'arena>(stream: &mut TokenStream<'_, 'arena>) -> Result<Expression<'arena>, ParseError> {
@@ -371,7 +372,7 @@ fn parse_infix_expression<'arena>(
                     then: None,
                     colon: utils::expect_any(stream)?.span,
                     r#else: {
-                        let expression = parse_expression(stream)?;
+                        let expression = parse_expression_with_precedence(stream, Precedence::ElvisOrConditional)?;
 
                         stream.alloc(expression)
                     },
@@ -387,22 +388,12 @@ fn parse_infix_expression<'arena>(
                     }),
                     colon: utils::expect_span(stream, T![":"])?,
                     r#else: {
-                        let expression = parse_expression(stream)?;
+                        let expression = parse_expression_with_precedence(stream, Precedence::ElvisOrConditional)?;
 
                         stream.alloc(expression)
                     },
                 })
             }
-        }
-        T!["?:"] => {
-            let question_colon = utils::expect_any(stream)?.span;
-            let rhs = parse_expression_with_precedence(stream, Precedence::ElvisOrConditional)?;
-
-            Expression::Binary(Binary {
-                lhs: stream.alloc(lhs),
-                operator: BinaryOperator::Elvis(question_colon),
-                rhs: stream.alloc(rhs),
-            })
         }
         T!["+"] => Expression::Binary(Binary {
             lhs: stream.alloc(lhs),
@@ -454,7 +445,19 @@ fn parse_infix_expression<'arena>(
         }),
         T!["="] => {
             let operator = AssignmentOperator::Assign(utils::expect_any(stream)?.span);
-            let rhs = parse_expression_with_precedence(stream, Precedence::Assignment)?;
+
+            let by_ref = if let Some(token) = utils::maybe_peek(stream)? { token.kind == T!["&"] } else { false };
+
+            let rhs = if by_ref {
+                let ampersand = utils::expect(stream, T!["&"])?;
+                let referenced_expr = parse_expression_with_precedence(stream, Precedence::New)?;
+                Expression::UnaryPrefix(UnaryPrefix {
+                    operator: UnaryPrefixOperator::Reference(ampersand.span),
+                    operand: stream.alloc(referenced_expr),
+                })
+            } else {
+                parse_expression_with_precedence(stream, Precedence::Assignment)?
+            };
 
             create_assignment_expression(stream, lhs, operator, rhs)
         }
@@ -708,7 +711,7 @@ fn parse_infix_expression<'arena>(
         }
         T!["and"] => {
             let and = utils::expect_any_keyword(stream)?;
-            let rhs = parse_expression_with_precedence(stream, Precedence::LowLogicalAnd)?;
+            let rhs = parse_expression_with_precedence(stream, Precedence::KeyAnd)?;
 
             Expression::Binary(Binary {
                 lhs: stream.alloc(lhs),
@@ -718,7 +721,7 @@ fn parse_infix_expression<'arena>(
         }
         T!["or"] => {
             let or = utils::expect_any_keyword(stream)?;
-            let rhs = parse_expression_with_precedence(stream, Precedence::LowLogicalOr)?;
+            let rhs = parse_expression_with_precedence(stream, Precedence::KeyOr)?;
 
             Expression::Binary(Binary {
                 lhs: stream.alloc(lhs),
@@ -728,7 +731,7 @@ fn parse_infix_expression<'arena>(
         }
         T!["xor"] => {
             let xor = utils::expect_any_keyword(stream)?;
-            let rhs = parse_expression_with_precedence(stream, Precedence::LowLogicalXor)?;
+            let rhs = parse_expression_with_precedence(stream, Precedence::KeyXor)?;
 
             Expression::Binary(Binary {
                 lhs: stream.alloc(lhs),
@@ -789,16 +792,28 @@ fn create_assignment_expression<'arena>(
     rhs: Expression<'arena>,
 ) -> Expression<'arena> {
     match lhs {
-        Expression::UnaryPrefix(prefix) => Expression::UnaryPrefix(UnaryPrefix {
-            operator: prefix.operator,
-            operand: stream.alloc(create_assignment_expression(stream, prefix.operand.clone(), operator, rhs)),
-        }),
+        Expression::UnaryPrefix(prefix) => {
+            if !prefix.operator.is_increment_or_decrement() && Precedence::Assignment < prefix.operator.precedence() {
+                // make `(--$x) = $y` into `--($x = $y)`
+                let UnaryPrefix { operator: prefix_operator, operand } = prefix;
+
+                Expression::UnaryPrefix(UnaryPrefix {
+                    operator: prefix_operator,
+                    operand: stream.alloc(create_assignment_expression(stream, operand.clone(), operator, rhs)),
+                })
+            } else {
+                Expression::Assignment(Assignment {
+                    lhs: stream.alloc(Expression::UnaryPrefix(prefix)),
+                    operator,
+                    rhs: stream.alloc(rhs),
+                })
+            }
+        }
         Expression::Binary(operation) => {
-            if operation.operator.is_comparison()
-                || operation.operator.is_logical()
-                || operation.operator.is_bitwise()
-                || operation.operator.is_arithmetic()
-            {
+            let assignment_precedence = Precedence::Assignment;
+            let binary_precedence = operation.operator.precedence();
+
+            if assignment_precedence < binary_precedence {
                 // make `($x == $y) = $z` into `$x == ($y = $z)`
                 let Binary { lhs: binary_lhs, operator: binary_operator, rhs: binary_rhs } = operation;
 
@@ -814,6 +829,17 @@ fn create_assignment_expression<'arena>(
                     rhs: stream.alloc(rhs),
                 })
             }
+        }
+        Expression::Conditional(conditional) => {
+            let Conditional { condition, question_mark, then, colon, r#else } = conditional;
+
+            Expression::Conditional(Conditional {
+                condition,
+                question_mark,
+                then,
+                colon,
+                r#else: stream.alloc(create_assignment_expression(stream, r#else.clone(), operator, rhs)),
+            })
         }
         _ => Expression::Assignment(Assignment { lhs: stream.alloc(lhs), operator, rhs: stream.alloc(rhs) }),
     }

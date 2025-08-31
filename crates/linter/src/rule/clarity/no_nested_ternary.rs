@@ -77,7 +77,7 @@ impl LintRule for NoNestedTernaryRule {
     }
 
     fn targets() -> &'static [NodeKind] {
-        const TARGETS: &[NodeKind] = &[NodeKind::Conditional, NodeKind::Binary];
+        const TARGETS: &[NodeKind] = &[NodeKind::Conditional];
 
         TARGETS
     }
@@ -87,20 +87,16 @@ impl LintRule for NoNestedTernaryRule {
     }
 
     fn check<'ast, 'arena>(&self, ctx: &mut LintContext<'_, 'arena>, node: Node<'ast, 'arena>) {
-        match node {
-            Node::Conditional(expr) => {
-                self.check_for_nested(ctx, expr.question_mark.span(), expr.condition);
-                if let Some(then) = expr.then {
-                    self.check_for_nested(ctx, expr.question_mark.span(), then);
-                }
-                self.check_for_nested(ctx, expr.question_mark.span(), expr.r#else);
-            }
-            Node::Binary(Binary { lhs, operator: BinaryOperator::Elvis(elvis), rhs }) => {
-                self.check_for_nested(ctx, elvis.span(), lhs);
-                self.check_for_nested(ctx, elvis.span(), rhs);
-            }
-            _ => {}
+        let Node::Conditional(expr) = node else {
+            return;
+        };
+
+        self.check_for_nested(ctx, expr.question_mark.span(), expr.condition);
+        if let Some(then) = expr.then {
+            self.check_for_nested(ctx, expr.question_mark.span(), then);
         }
+
+        self.check_for_nested(ctx, expr.question_mark.span(), expr.r#else);
     }
 }
 
@@ -116,9 +112,6 @@ impl NoNestedTernaryRule {
                 self.check_for_nested(ctx, outer_op_span, expression);
             }
             Expression::Conditional(_) => {
-                self.report_issue(ctx, outer_op_span, expr.span());
-            }
-            Expression::Binary(Binary { operator: BinaryOperator::Elvis(_), .. }) => {
                 self.report_issue(ctx, outer_op_span, expr.span());
             }
             _ => {}
