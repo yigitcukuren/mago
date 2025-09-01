@@ -39,16 +39,16 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
 
         Ok(vec![Token::Line { content, span: span.subspan(content_start, content_end) }])
     } else {
-        let lines: Vec<&'a str> = content.lines().collect();
+        let lines_with_positions: Vec<(&'a str, u32)> = content
+            .split('\n')
+            .map(|line| {
+                let cleaned_line = line.strip_suffix('\r').unwrap_or(line);
 
-        let mut lines_with_positions = Vec::new();
-        let mut pos_in_content = 0u32;
+                let start_offset = (cleaned_line.as_ptr() as usize - content.as_ptr() as usize) as u32;
 
-        for line in lines {
-            let line_len = line.len() as u32;
-            lines_with_positions.push((line, pos_in_content));
-            pos_in_content += line_len + 1;
-        }
+                (cleaned_line, start_offset)
+            })
+            .collect();
 
         let mut comment_lines = Vec::new();
         for (line, line_start_in_content) in lines_with_positions {
@@ -58,17 +58,15 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
                 continue;
             }
 
-            // Find the byte length of the whitespace prefix.
             let line_indent_length = trimmed_line.find(|c: char| !c.is_whitespace()).unwrap_or(trimmed_line.len());
             let line_content_after_indent = &trimmed_line[line_indent_length..];
 
             let mut content_start_in_line = line_indent_length as u32;
-            let line_after_asterisk = if let Some(line_after_asterisk) = line_content_after_indent.strip_prefix("*") {
-                content_start_in_line += 1; // Skip the asterisk
-
+            let line_after_asterisk = if let Some(line_after_asterisk) = line_content_after_indent.strip_prefix('*') {
+                content_start_in_line += 1;
                 line_after_asterisk
             } else {
-                line_content_after_indent // No asterisk, use the whole line
+                line_content_after_indent
             };
 
             if let Some(first_char) = line_after_asterisk.chars().next() {
@@ -89,8 +87,6 @@ pub fn tokenize<'a>(comment: &'a str, span: Span) -> Result<Vec<Token<'a>>, Pars
                 comment_lines.push(Token::EmptyLine {
                     span: span.subspan(content_start + line_start_in_content, content_start + line_start_in_content),
                 });
-
-                continue;
             }
         }
 
@@ -378,6 +374,32 @@ mod tests {
             }
             Err(e) => {
                 panic!("Unexpected error: {e:?}");
+            }
+        }
+    }
+
+    /// ref: https://github.com/carthage-software/mago/issues/345
+    #[test]
+    fn test_lex_multi_line_comment_crlf_with_multibyte_char() {
+        let comment = "/**\r\n * blah blah ‰©\r\n */";
+        let span = Span::new(FileId::zero(), Position::new(0), Position::new(comment.len() as u32));
+
+        match tokenize(comment, span) {
+            Ok(tokens) => {
+                assert_eq!(tokens.len(), 1, "Should have parsed exactly one line of content");
+
+                let Token::Line { content, span: token_span } = &tokens[0] else {
+                    panic!("Expected a Token::Line");
+                };
+
+                let expected_content = "blah blah ‰©";
+                assert_eq!(*content, expected_content);
+
+                let sliced = &comment[token_span.start.offset as usize..token_span.end.offset as usize];
+                assert_eq!(sliced, expected_content);
+            }
+            Err(e) => {
+                panic!("Failed to tokenize comment with CRLF endings: {:?}", e);
             }
         }
     }
