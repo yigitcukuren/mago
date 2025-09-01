@@ -84,7 +84,7 @@ final class MagoPlugin implements PluginInterface, EventSubscriberInterface, Cap
 
         $command_executor->executeTty(implode(' ', [
             (new PhpExecutableFinder())->find() ?: 'php',
-            ...array_map(static fn(string $argument): string => ProcessExecutor::escape($argument), [
+            ...array_map(ProcessExecutor::escape(...), [
                 getenv('COMPOSER_BINARY') ?: 'composer',
                 'mago:install-binary',
             ]),

@@ -205,7 +205,7 @@ function clean_and_prepare_directories(string $rules_target_dir): void
  *      }
  *    }>
  *  }>,
- *  array<string, list<array{
+ *  array<string, array<string, array{
  *    name: string,
  *    code: string,
  *    description: string,
@@ -258,7 +258,7 @@ function group_rules(array $rules): array
         $rules_by_category[$rule['category']]['kebab'] = $categoryKebab;
         $rules_by_category[$rule['category']]['rules'][] = $rule;
 
-        if (!empty($rule['requirements']['integrations'])) {
+        if ([] !== $rule['requirements']['integrations']) {
             foreach ($rule['requirements']['integrations'] as $integration_set) {
                 if ($integration_set > 0) {
                     foreach (Integration::cases() as $case) {
@@ -270,14 +270,6 @@ function group_rules(array $rules): array
             }
         }
     }
-
-    // Convert back to simple lists for consistency.
-    foreach ($rules_by_integration as &$integration_rules) {
-        $integration_rules = array_values($integration_rules);
-        usort($integration_rules, fn(array $a, array $b): int => $a['code'] <=> $b['code']);
-    }
-
-    unset($integration_rules);
 
     ksort($rules_by_category);
     ksort($rules_by_integration);
@@ -329,7 +321,7 @@ function generate_category_files(array $rules_by_category, string $rules_target_
  *   }
  * }>}> $rules_by_category
  *
- * @param array<string, list<array{
+ * @param array<string, array<string, array{
  *   name: string,
  *   code: string,
  *   description: string,
@@ -441,6 +433,8 @@ function create_category_markdown_content(string $category_name, array $rules, a
  *
  * @mago-expect lint:no-else-clause
  * @mago-expect lint:halstead
+ * @mago-expect lint:cyclomatic-complexity
+ * @mago-expect lint:kan-defect
  */
 function generate_rule_docs_section(array $rule, array $config): string
 {
@@ -455,6 +449,9 @@ function generate_rule_docs_section(array $rule, array $config): string
     $php_versions = $requirements['php-versions'];
     $integration_sets = $requirements['integrations'];
 
+    /**
+     * @var list<string>
+     */
     $php_version_strings = [];
     foreach ($php_versions as $range) {
         $min = $range['min'];
@@ -468,8 +465,14 @@ function generate_rule_docs_section(array $rule, array $config): string
         }
     }
 
-    $integration_dnf = []; // Disjunctive Normal Form (groups of ANDs)
+    /**
+     * @var list<list<string>>
+     */
+    $integration_dnf = [];
     foreach ($integration_sets as $set_mask) {
+        /**
+         * @var list<string>
+         */
         $integrations_in_set = [];
         if ($set_mask > 0) {
             foreach (Integration::cases() as $case) {
@@ -478,7 +481,8 @@ function generate_rule_docs_section(array $rule, array $config): string
                 }
             }
         }
-        if (!empty($integrations_in_set)) {
+
+        if ([] !== $integrations_in_set) {
             $integration_dnf[] = $integrations_in_set;
         }
     }
@@ -486,22 +490,22 @@ function generate_rule_docs_section(array $rule, array $config): string
     $requirements_items = [];
 
     if (count($php_version_strings) > 1 || count($integration_dnf) > 1) {
-        if (!empty($php_version_strings)) {
+        if ([] !== $php_version_strings) {
             $php_version_str = implode(', or ', $php_version_strings);
             $requirements_items[] = "- **PHP Version:** {$php_version_str}";
         }
-        if (!empty($integration_dnf)) {
+        if ([] !== $integration_dnf) {
             $requirements_items[] = '- **Integrations, any of:**';
             foreach ($integration_dnf as $set) {
                 $requirements_items[] = '  - ' . implode(' and ', $set);
             }
         }
     } else {
-        if (!empty($php_version_strings)) {
+        if ([] !== $php_version_strings) {
             $requirements_items[] = '- **PHP version:** ' . $php_version_strings[0];
         }
 
-        if (!empty($integration_dnf)) {
+        if ([] !== $integration_dnf) {
             $integrations_str = implode(', ', $integration_dnf[0]);
             $plural = count($integration_dnf[0]) > 1 ? 's' : '';
             $requirements_items[] = "- **Integration{$plural}:** {$integrations_str}";
@@ -509,7 +513,7 @@ function generate_rule_docs_section(array $rule, array $config): string
     }
 
     $requirements_section = '';
-    if (!empty($requirements_items)) {
+    if ([] !== $requirements_items) {
         $requirements_section = "### Requirements\n\n" . implode("\n", $requirements_items) . "\n";
     }
 
