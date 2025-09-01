@@ -162,13 +162,10 @@ impl<'input, 'arena> Lexer<'input, 'arena> {
                 }
             }
             LexerMode::Script => {
+                let start = self.input.current_position();
                 let whitespaces = self.input.consume_whitespaces();
                 if !whitespaces.is_empty() {
-                    let start = self.input.current_position();
-                    let buffer = whitespaces;
-                    let end = self.input.current_position();
-
-                    return self.token(TokenKind::Whitespace, buffer, start, end);
+                    return self.token(TokenKind::Whitespace, whitespaces, start, self.input.current_position());
                 }
 
                 let mut document_label: &[u8] = &[];
@@ -587,7 +584,6 @@ impl<'input, 'arena> Lexer<'input, 'arena> {
                     _ => LexerMode::Script,
                 };
 
-                let start = self.input.current_position();
                 let buffer = self.input.consume(len);
                 let end = self.input.current_position();
 

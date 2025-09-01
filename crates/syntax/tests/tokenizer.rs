@@ -1084,6 +1084,9 @@ fn test_lexer(code: &[u8], expected_kinds: Vec<TokenKind>) -> Result<(), SyntaxE
 
     let mut found = String::new();
     for token in tokens.iter() {
+        let length = token.span.end.offset - token.span.start.offset;
+        assert_eq!(length as usize, token.value.len());
+
         found.push_str(token.value);
     }
 
