@@ -22,12 +22,17 @@ title: Rules & categories
 ## Integration-specific rules
 
 
+### CakePHP
+
+- [`final-controller`](./rules/best-practices#final-controller)
+
 ### Laravel
 
-- [`middleware-in-routes`](./rules/best-practices#middleware-in-routes)
-- [`no-request-all`](./rules/safety#no-request-all)
+- [`final-controller`](./rules/best-practices#final-controller)
 - [`prefer-anonymous-migration`](./rules/best-practices#prefer-anonymous-migration)
 - [`prefer-view-array`](./rules/best-practices#prefer-view-array)
+- [`no-request-all`](./rules/safety#no-request-all)
+- [`middleware-in-routes`](./rules/best-practices#middleware-in-routes)
 
 ### PHPUnit
 
@@ -46,6 +51,19 @@ title: Rules & categories
 - [`psl-sleep-functions`](./rules/best-practices#psl-sleep-functions)
 - [`psl-string-functions`](./rules/best-practices#psl-string-functions)
 
+### Spiral
+
+- [`final-controller`](./rules/best-practices#final-controller)
+
 ### Symfony
 
+- [`final-controller`](./rules/best-practices#final-controller)
 - [`prefer-interface`](./rules/best-practices#prefer-interface)
+
+### Tempest
+
+- [`final-controller`](./rules/best-practices#final-controller)
+
+### Yii
+
+- [`final-controller`](./rules/best-practices#final-controller)

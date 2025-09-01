@@ -152,6 +152,7 @@ define_rules! {
     EnumName(enum_name @ EnumNameRule),
     ExcessiveNesting(excessive_nesting @ ExcessiveNestingRule),
     ExcessiveParameterList(excessive_parameter_list @ ExcessiveParameterListRule),
+    FinalController(final_controller @ FinalControllerRule),
     Halstead(halstead @ HalsteadRule),
     KanDefect(kan_defect @ KanDefectRule),
     LiteralNamedArgument(literal_named_argument @ LiteralNamedArgumentRule),

@@ -1,4 +1,5 @@
 pub mod combine_consecutive_issets;
+pub mod final_controller;
 pub mod loop_does_not_iterate;
 pub mod middleware_in_routes;
 pub mod no_sprintf_concat;
@@ -19,6 +20,7 @@ pub mod psl_string_functions;
 pub mod use_compound_assignment;
 
 pub use combine_consecutive_issets::*;
+pub use final_controller::*;
 pub use loop_does_not_iterate::*;
 pub use middleware_in_routes::*;
 pub use no_sprintf_concat::*;

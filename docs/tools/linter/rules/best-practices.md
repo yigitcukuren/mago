@@ -10,6 +10,7 @@ This document details the rules available in the `BestPractices` category.
 | Rule | Code |
 | :--- | :---------- |
 | Combine Consecutive Issets | [`combine-consecutive-issets`](#combine-consecutive-issets) |
+| Final Controller | [`final-controller`](#final-controller) |
 | Loop Does Not Iterate | [`loop-does-not-iterate`](#loop-does-not-iterate) |
 | Middleware In Routes | [`middleware-in-routes`](#middleware-in-routes) |
 | No Sprintf Concat | [`no-sprintf-concat`](#no-sprintf-concat) |
@@ -65,6 +66,63 @@ if (isset($a, $b)) {
 <?php
 
 if (isset($a) && isset($b)) {
+    // ...
+}
+```
+
+
+## <a id="final-controller"></a>`final-controller`
+
+Enforces that controller classes are declared as `final`.
+
+In modern MVC frameworks, controllers should be treated as entry points that orchestrate the application's response to a request. They are not designed to be extension points.
+
+Extending controllers can lead to deep inheritance chains, making the codebase rigid and difficult to maintain. It's a best practice to favor composition (injecting services for shared logic) over inheritance.
+
+If a controller is intended as a base for others, it should be explicitly marked as `abstract`. All other concrete controllers should be `final` to prevent extension.
+
+
+### Requirements
+
+- **Integrations, any of:**
+  - `Symfony`
+  - `Laravel`
+  - `Tempest`
+  - `Spiral`
+  - `CakePHP`
+  - `Yii`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"error"` |
+
+### Examples
+
+#### Correct code
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+final class UserController
+{
+    // ...
+}
+```
+
+#### Incorrect code
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+class UserController
+{
     // ...
 }
 ```

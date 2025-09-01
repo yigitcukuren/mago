@@ -10,15 +10,7 @@ When an integration is enabled, Mago will automatically activate all the rules a
 
 ## Available integrations
 
-Mago is built with the broader PHP ecosystem in mind and includes support for a wide range of tools. Currently, the linter has rules dedicated to:
-- Laravel
-- PHPUnit
-- PSL
-- Symfony
-
-## Future integrations
-
-The following integrations are planned for future releases:
+Mago is built with the broader PHP ecosystem in mind and includes support for a wide range of tools.
 
 ### Frameworks
 
@@ -58,6 +50,12 @@ The following integrations are planned for future releases:
 
 - Cycle
 - Doctrine
+
+:::info
+While Mago supports a wide range of integrations, please note that not all of them have specific linter rules yet. Many are included as placeholders for future development.
+
+For a complete list of integrations that currently have specific rules, please see the [Integration-specific rules list](./rules-and-categories.md#integration-specific-rules).
+:::
 
 ## Enabling integrations
 

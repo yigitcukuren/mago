@@ -42,6 +42,7 @@ pub struct RulesSettings {
     pub enum_name: RuleSettings<EnumNameConfig>,
     pub excessive_nesting: RuleSettings<ExcessiveNestingConfig>,
     pub excessive_parameter_list: RuleSettings<ExcessiveParameterListConfig>,
+    pub final_controller: RuleSettings<FinalControllerConfig>,
     pub halstead: RuleSettings<HalsteadConfig>,
     pub kan_defect: RuleSettings<KanDefectConfig>,
     pub literal_named_argument: RuleSettings<LiteralNamedArgumentConfig>,
