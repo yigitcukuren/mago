@@ -13,7 +13,7 @@ use mago_syntax::ast::*;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule::utils::call::function_call_matches;
@@ -79,8 +79,7 @@ impl LintRule for StrContainsRule {
                 }
             "#},
             category: Category::Clarity,
-            php: PHPVersionRange::from(PHPVersion::PHP80),
-            requires: IntegrationSet::empty(),
+            requirements: RuleRequirements::PHPVersion(PHPVersionRange::from(PHPVersion::PHP80)),
         };
 
         &META

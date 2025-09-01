@@ -3,7 +3,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use mago_fixer::SafetyClassification;
-use mago_php_version::PHPVersionRange;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
@@ -11,7 +10,7 @@ use mago_syntax::ast::*;
 use crate::category::Category;
 use crate::context::LintContext;
 use crate::integration::Integration;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule::utils::phpunit::find_all_assertion_references_in_method;
@@ -88,8 +87,8 @@ impl LintRule for StrictAssertionsRule {
                 }
             "#},
             category: Category::Correctness,
-            php: PHPVersionRange::any(),
-            requires: IntegrationSet::only(Integration::PHPUnit),
+
+            requirements: RuleRequirements::Integration(Integration::PHPUnit),
         };
 
         &META

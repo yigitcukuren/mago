@@ -2,7 +2,6 @@ use indoc::indoc;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_php_version::PHPVersionRange;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
@@ -11,7 +10,7 @@ use mago_syntax::utils::control_flow::find_control_flows_in_block;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -77,8 +76,8 @@ impl LintRule for NoUnsafeFinallyRule {
                 }
             "#},
             category: Category::Safety,
-            php: PHPVersionRange::any(),
-            requires: IntegrationSet::empty(),
+
+            requirements: RuleRequirements::None,
         };
 
         &META

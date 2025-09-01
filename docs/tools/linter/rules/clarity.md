@@ -30,7 +30,7 @@ Detects implicit octal numeral notation and suggests replacing it with explicit 
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.1.0`
+- **PHP version:** >= `8.1.0`
 
 ### Configuration
 
@@ -70,7 +70,7 @@ where the intent is often ambiguous without the parameter name.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.0.0`
+- **PHP version:** >= `8.0.0`
 
 ### Configuration
 
@@ -299,7 +299,7 @@ for improved readability and intent clarity.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.0.0`
+- **PHP version:** >= `8.0.0`
 
 ### Configuration
 
@@ -345,7 +345,7 @@ for improved readability and intent clarity.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.0.0`
+- **PHP version:** >= `8.0.0`
 
 ### Configuration
 

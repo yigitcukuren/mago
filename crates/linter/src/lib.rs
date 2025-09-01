@@ -21,6 +21,7 @@ pub mod context;
 pub mod integration;
 pub mod legacy_rule_mappings;
 pub mod registry;
+pub mod requirements;
 pub mod rule;
 pub mod rule_meta;
 pub mod scope;
@@ -79,7 +80,14 @@ impl<'arena> Linter<'arena> {
         // Set legacy rule code mappings for compatibility with the old linter.
         collector.set_aliases(LEGACY_RULE_CODE_MAPPINGS);
 
-        let mut context = LintContext::new(self.php_version, self.arena, source_file, resolved_names, collector);
+        let mut context = LintContext::new(
+            self.php_version,
+            self.arena,
+            self.registry.integrations(),
+            source_file,
+            resolved_names,
+            collector,
+        );
 
         walk(Node::Program(program), &mut context, &self.registry);
 

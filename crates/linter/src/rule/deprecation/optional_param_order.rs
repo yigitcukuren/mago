@@ -12,7 +12,7 @@ use mago_syntax::ast::*;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -61,8 +61,7 @@ impl LintRule for OptionalParamOrderRule {
                 function foo(?string $optional = null, string $required): void {}
             "#},
             category: Category::Deprecation,
-            php: PHPVersionRange::from(PHPVersion::PHP80),
-            requires: IntegrationSet::empty(),
+            requirements: RuleRequirements::PHPVersion(PHPVersionRange::from(PHPVersion::PHP80)),
         };
 
         &META

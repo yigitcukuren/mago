@@ -13,7 +13,7 @@ use mago_syntax::ast::*;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -70,8 +70,7 @@ impl LintRule for PreferFirstClassCallableRule {
                 $uppercased_names = array_map(fn($name) => strtoupper($name), $names);
             "#},
             category: Category::BestPractices,
-            php: PHPVersionRange::from(PHPVersion::PHP81),
-            requires: IntegrationSet::empty(),
+            requirements: RuleRequirements::PHPVersion(PHPVersionRange::from(PHPVersion::PHP81)),
         };
         &META
     }

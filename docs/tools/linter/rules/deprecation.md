@@ -24,7 +24,7 @@ Such parameters are considered deprecated; an explicit nullable type hint is rec
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.4.0`
+- **PHP version:** >= `8.4.0`
 
 ### Configuration
 
@@ -69,7 +69,7 @@ Such names are considered deprecated; a more descriptive identifier is recommend
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.4.0`
+- **PHP version:** >= `8.4.0`
 
 ### Configuration
 
@@ -105,7 +105,7 @@ Such functions are considered deprecated; returning by reference from a void fun
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.2.0`
+- **PHP version:** >= `8.2.0`
 
 ### Configuration
 
@@ -145,7 +145,7 @@ Such parameter order is considered deprecated; required parameters should preced
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.0.0`
+- **PHP version:** >= `8.0.0`
 
 ### Configuration
 

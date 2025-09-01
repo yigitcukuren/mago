@@ -24,10 +24,10 @@ title: Rules & categories
 
 ### Laravel
 
+- [`middleware-in-routes`](./rules/best-practices#middleware-in-routes)
+- [`no-request-all`](./rules/safety#no-request-all)
 - [`prefer-anonymous-migration`](./rules/best-practices#prefer-anonymous-migration)
 - [`prefer-view-array`](./rules/best-practices#prefer-view-array)
-- [`no-request-all`](./rules/safety#no-request-all)
-- [`middleware-in-routes`](./rules/best-practices#middleware-in-routes)
 
 ### PHPUnit
 

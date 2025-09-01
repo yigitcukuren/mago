@@ -1,12 +1,9 @@
-use serde::Deserialize;
 use serde::Serialize;
 
-use mago_php_version::PHPVersionRange;
-
 use crate::category::Category;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 
-#[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, PartialOrd, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Ord, Copy, Clone, PartialOrd, Serialize)]
 pub struct RuleMeta {
     pub name: &'static str,
     pub code: &'static str,
@@ -14,6 +11,5 @@ pub struct RuleMeta {
     pub good_example: &'static str,
     pub bad_example: &'static str,
     pub category: Category,
-    pub requires: IntegrationSet,
-    pub php: PHPVersionRange,
+    pub requirements: RuleRequirements,
 }

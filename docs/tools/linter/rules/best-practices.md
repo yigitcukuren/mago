@@ -280,7 +280,7 @@ This improves readability by reducing boilerplate code.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.1.0`
+- **PHP version:** >= `8.1.0`
 
 ### Configuration
 

@@ -12,7 +12,7 @@ use mago_syntax::ast::*;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -63,8 +63,7 @@ impl LintRule for ExplicitOctalRule {
                 $a = 0123;
             "#},
             category: Category::Clarity,
-            php: PHPVersionRange::from(PHPVersion::PHP81),
-            requires: IntegrationSet::empty(),
+            requirements: RuleRequirements::PHPVersion(PHPVersionRange::from(PHPVersion::PHP81)),
         };
 
         &META

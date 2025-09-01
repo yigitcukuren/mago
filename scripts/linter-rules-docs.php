@@ -91,14 +91,16 @@ function main(): void
  * Fetches the list of all linter rules from the Mago CLI.
  *
  * @return list<array{
- *  name: string,
- *  code: string,
- *  description: string,
- *  good_example: string,
- *  bad_example: string,
- *  category: string,
- *  requires: int,
- *  php: array{min: ?string, max: ?string}
+ *   name: string,
+ *   code: string,
+ *   description: string,
+ *   good_example: string,
+ *   bad_example: string,
+ *   category: string,
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }>
  *
  * @mago-expect lint:no-boolean-literal-comparison
@@ -121,8 +123,10 @@ function fetch_rules_from_mago(string $mago_executable): array
      *   good_example: string,
      *   bad_example: string,
      *   category: string,
-     *   requires: int,
-     *   php: array{min: ?string, max: ?string}
+     *   requirements: array{
+     *     'php-versions': list<array{min: ?string, max: ?string}>,
+     *     'integrations': list<int>
+     *   }
      * }>
      */
     $rules = json_decode($json_output, true, 512, JSON_THROW_ON_ERROR);
@@ -179,8 +183,10 @@ function clean_and_prepare_directories(string $rules_target_dir): void
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }> $rules
  *
  * @return list{
@@ -193,8 +199,10 @@ function clean_and_prepare_directories(string $rules_target_dir): void
  *      good_example: string,
  *      bad_example: string,
  *      category: string,
- *      requires: int,
- *      php: array{min: ?string, max: ?string}
+ *      requirements: array{
+ *        'php-versions': list<array{min: ?string, max: ?string}>,
+ *        'integrations': list<int>
+ *      }
  *    }>
  *  }>,
  *  array<string, list<array{
@@ -204,8 +212,10 @@ function clean_and_prepare_directories(string $rules_target_dir): void
  *    good_example: string,
  *    bad_example: string,
  *    category: string,
- *    requires: int,
- *    php: array{min: ?string, max: ?string}
+ *    requirements: array{
+ *      'php-versions': list<array{min: ?string, max: ?string}>,
+ *      'integrations': list<int>
+ *    }
  *  }>>
  * }
  */
@@ -219,22 +229,26 @@ function group_rules(array $rules): array
      *   good_example: string,
      *   bad_example: string,
      *   category: string,
-     *   requires: int,
-     *   php: array{min: ?string, max: ?string}
+     *   requirements: array{
+     *     'php-versions': list<array{min: ?string, max: ?string}>,
+     *     'integrations': list<int>
+     *   }
      * }>}>
      */
     $rules_by_category = [];
 
     /**
-     * @var array<string, list<array{
+     * @var array<string, array<string, array{
      *   name: string,
      *   code: string,
      *   description: string,
      *   good_example: string,
      *   bad_example: string,
      *   category: string,
-     *   requires: int,
-     *   php: array{min: ?string, max: ?string}
+     *   requirements: array{
+     *     'php-versions': list<array{min: ?string, max: ?string}>,
+     *     'integrations': list<int>
+     *   }
      * }>>
      */
     $rules_by_integration = [];
@@ -244,14 +258,26 @@ function group_rules(array $rules): array
         $rules_by_category[$rule['category']]['kebab'] = $categoryKebab;
         $rules_by_category[$rule['category']]['rules'][] = $rule;
 
-        if ($rule['requires'] > 0) {
-            foreach (Integration::cases() as $case) {
-                if (($rule['requires'] >> $case->value) & 1) {
-                    $rules_by_integration[$case->name][] = $rule;
+        if (!empty($rule['requirements']['integrations'])) {
+            foreach ($rule['requirements']['integrations'] as $integration_set) {
+                if ($integration_set > 0) {
+                    foreach (Integration::cases() as $case) {
+                        if (($integration_set >> $case->value) & 1) {
+                            $rules_by_integration[$case->name][$rule['code']] = $rule;
+                        }
+                    }
                 }
             }
         }
     }
+
+    // Convert back to simple lists for consistency.
+    foreach ($rules_by_integration as &$integration_rules) {
+        $integration_rules = array_values($integration_rules);
+        usort($integration_rules, fn(array $a, array $b): int => $a['code'] <=> $b['code']);
+    }
+
+    unset($integration_rules);
 
     ksort($rules_by_category);
     ksort($rules_by_integration);
@@ -269,8 +295,10 @@ function group_rules(array $rules): array
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }>}> $rules_by_category
  *
  * @param array{rules: array<string, array<string, scalar|array<scalar>>>} $linter_config
@@ -295,8 +323,10 @@ function generate_category_files(array $rules_by_category, string $rules_target_
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }>}> $rules_by_category
  *
  * @param array<string, list<array{
@@ -306,8 +336,10 @@ function generate_category_files(array $rules_by_category, string $rules_target_
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }>> $rules_by_integration
  *
  * @mago-expect lint:no-else-clause
@@ -350,8 +382,10 @@ function generate_overview_page(string $docs_dir, array $rules_by_category, arra
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * }> $rules
  *
  * @param array{rules: array<string, array<string, scalar|array<scalar>>>} $linter_config
@@ -398,8 +432,10 @@ function create_category_markdown_content(string $category_name, array $rules, a
  *   good_example: string,
  *   bad_example: string,
  *   category: string,
- *   requires: int,
- *   php: array{min: ?string, max: ?string}
+ *   requirements: array{
+ *     'php-versions': list<array{min: ?string, max: ?string}>,
+ *     'integrations': list<int>
+ *   }
  * } $rule
  * @param array<string, scalar|array<scalar>> $config
  *
@@ -415,37 +451,65 @@ function generate_rule_docs_section(array $rule, array $config): string
         writeln('⚠️ ', 'Missing examples for rule: %s', $rule['code']);
     }
 
-    $requirements_items = [];
-    $requiredIntegrations = [];
-    if ($rule['requires'] > 0) {
-        foreach (Integration::cases() as $case) {
-            if (($rule['requires'] >> $case->value) & 1) {
-                $requiredIntegrations[] = '`' . $case->name . '`';
-            }
+    $requirements = $rule['requirements'];
+    $php_versions = $requirements['php-versions'];
+    $integration_sets = $requirements['integrations'];
+
+    $php_version_strings = [];
+    foreach ($php_versions as $range) {
+        $min = $range['min'];
+        $max = $range['max'];
+        if (null !== $min && null !== $max) {
+            $php_version_strings[] = "`{$min}` - `{$max}`";
+        } elseif (null !== $min) {
+            $php_version_strings[] = ">= `{$min}`";
+        } elseif (null !== $max) {
+            $php_version_strings[] = "< `{$max}`";
         }
     }
 
-    $phpMin = $rule['php']['min'];
-    $phpMax = $rule['php']['max'];
-    $phpVersion = '';
-    if (null !== $phpMin && null !== $phpMax) {
-        $phpVersion = "PHP `{$phpMin}` - `{$phpMax}`";
-    } elseif (null !== $phpMin) {
-        $phpVersion = "PHP `>= {$phpMin}`";
-    } elseif (null !== $phpMax) {
-        $phpVersion = "PHP `< {$phpMax}`";
+    $integration_dnf = []; // Disjunctive Normal Form (groups of ANDs)
+    foreach ($integration_sets as $set_mask) {
+        $integrations_in_set = [];
+        if ($set_mask > 0) {
+            foreach (Integration::cases() as $case) {
+                if (($set_mask >> $case->value) & 1) {
+                    $integrations_in_set[] = '`' . $case->name . '`';
+                }
+            }
+        }
+        if (!empty($integrations_in_set)) {
+            $integration_dnf[] = $integrations_in_set;
+        }
     }
 
-    if ($phpVersion) {
-        $requirements_items[] = "- **PHP version:** {$phpVersion}";
-    }
-    if ([] !== $requiredIntegrations) {
-        $plural = count($requiredIntegrations) > 1 ? 's' : '';
-        $requirements_items[] = "- **Integration{$plural}:** " . implode(', ', $requiredIntegrations);
+    $requirements_items = [];
+
+    if (count($php_version_strings) > 1 || count($integration_dnf) > 1) {
+        if (!empty($php_version_strings)) {
+            $php_version_str = implode(', or ', $php_version_strings);
+            $requirements_items[] = "- **PHP Version:** {$php_version_str}";
+        }
+        if (!empty($integration_dnf)) {
+            $requirements_items[] = '- **Integrations, any of:**';
+            foreach ($integration_dnf as $set) {
+                $requirements_items[] = '  - ' . implode(' and ', $set);
+            }
+        }
+    } else {
+        if (!empty($php_version_strings)) {
+            $requirements_items[] = '- **PHP version:** ' . $php_version_strings[0];
+        }
+
+        if (!empty($integration_dnf)) {
+            $integrations_str = implode(', ', $integration_dnf[0]);
+            $plural = count($integration_dnf[0]) > 1 ? 's' : '';
+            $requirements_items[] = "- **Integration{$plural}:** {$integrations_str}";
+        }
     }
 
     $requirements_section = '';
-    if ([] !== $requirements_items) {
+    if (!empty($requirements_items)) {
         $requirements_section = "### Requirements\n\n" . implode("\n", $requirements_items) . "\n";
     }
 

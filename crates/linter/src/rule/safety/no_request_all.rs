@@ -2,7 +2,6 @@ use indoc::indoc;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_php_version::PHPVersionRange;
 use mago_reporting::*;
 use mago_span::HasSpan;
 use mago_syntax::ast::*;
@@ -11,7 +10,7 @@ use mago_syntax::utils::reference::*;
 use crate::category::Category;
 use crate::context::LintContext;
 use crate::integration::Integration;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule::utils::call::function_call_matches;
@@ -105,8 +104,8 @@ impl LintRule for NoRequestAllRule {
                 }
             "#},
             category: Category::Safety,
-            php: PHPVersionRange::any(),
-            requires: IntegrationSet::only(Integration::Laravel),
+
+            requirements: RuleRequirements::Integration(Integration::Laravel),
         };
 
         &META

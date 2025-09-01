@@ -15,7 +15,7 @@ use mago_syntax::ast::NodeKind;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -75,8 +75,7 @@ impl LintRule for LiteralNamedArgumentRule {
                 set_option('feature_x', true); // ❌ intent unclear
             "#},
             category: Category::Clarity,
-            php: PHPVersionRange::from(PHPVersion::PHP80),
-            requires: IntegrationSet::empty(),
+            requirements: RuleRequirements::PHPVersion(PHPVersionRange::from(PHPVersion::PHP80)),
         };
         &META
     }

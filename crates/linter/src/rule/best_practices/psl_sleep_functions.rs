@@ -5,7 +5,6 @@ use indoc::indoc;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_php_version::PHPVersionRange;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_reporting::Level;
@@ -15,7 +14,7 @@ use mago_syntax::ast::*;
 use crate::category::Category;
 use crate::context::LintContext;
 use crate::integration::Integration;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule::utils::call::function_call_matches_any;
@@ -74,8 +73,8 @@ impl LintRule for PslSleepFunctionsRule {
                 sleep(1);
             "#},
             category: Category::BestPractices,
-            php: PHPVersionRange::any(),
-            requires: IntegrationSet::only(Integration::Psl),
+
+            requirements: RuleRequirements::Integration(Integration::Psl),
         };
 
         &META

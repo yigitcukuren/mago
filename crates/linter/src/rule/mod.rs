@@ -51,10 +51,8 @@ pub trait LintRule {
     fn targets() -> &'static [NodeKind];
 
     #[inline]
-    fn is_enabled_for(php_version: PHPVersion, libs: IntegrationSet) -> bool {
-        let meta = Self::meta();
-
-        meta.php.includes(php_version) && libs.is_superset_of(meta.requires)
+    fn is_enabled_for(php_version: PHPVersion, integrations: IntegrationSet) -> bool {
+        Self::meta().requirements.are_met_by(php_version, integrations)
     }
 
     fn build(settings: RuleSettings<Self::Config>) -> Self;

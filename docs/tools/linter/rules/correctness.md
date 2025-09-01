@@ -65,7 +65,7 @@ Detects class constants that are missing a type hint.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 8.3.0`
+- **PHP version:** >= `8.3.0`
 
 ### Configuration
 
@@ -322,7 +322,7 @@ Detects parameters that are missing a type hint.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 7.0.0`
+- **PHP version:** >= `7.0.0`
 
 ### Configuration
 
@@ -365,7 +365,7 @@ Detects class-like properties that are missing a type hint.
 
 ### Requirements
 
-- **PHP version:** PHP `>= 7.4.0`
+- **PHP version:** >= `7.4.0`
 
 ### Configuration
 
@@ -406,7 +406,7 @@ Detects functions, methods, closures, and arrow functions that are missing a ret
 
 ### Requirements
 
-- **PHP version:** PHP `>= 7.0.0`
+- **PHP version:** >= `7.0.0`
 
 ### Configuration
 
@@ -505,7 +505,7 @@ The use of loose comparison for these functions may lead to hard-to-debug, unexp
 
 ### Requirements
 
-- **PHP version:** PHP `>= 7.0.0`
+- **PHP version:** >= `7.0.0`
 
 ### Configuration
 
@@ -541,7 +541,7 @@ Detects missing `declare(strict_types=1);` statement at the beginning of the fil
 
 ### Requirements
 
-- **PHP version:** PHP `>= 7.0.0`
+- **PHP version:** >= `7.0.0`
 
 ### Configuration
 

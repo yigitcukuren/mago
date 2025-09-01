@@ -5,7 +5,6 @@ use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mago_php_version::PHPVersionRange;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
 use mago_reporting::Level;
@@ -14,7 +13,7 @@ use mago_syntax::comments::comment_lines;
 
 use crate::category::Category;
 use crate::context::LintContext;
-use crate::integration::IntegrationSet;
+use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule_meta::RuleMeta;
@@ -71,8 +70,8 @@ impl LintRule for TaggedFixmeRule {
                 // FIXME: This is an invalid FIXME comment.
             "},
             category: Category::Clarity,
-            php: PHPVersionRange::any(),
-            requires: IntegrationSet::empty(),
+
+            requirements: RuleRequirements::None,
         };
 
         &META

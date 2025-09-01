@@ -65,6 +65,18 @@ impl IntegrationSet {
         (self.0 & (1 << (lib as u32))) != 0
     }
 
+    /// Checks if this set has any integrations in common with another set.
+    #[inline]
+    pub const fn intersects(&self, other: IntegrationSet) -> bool {
+        (self.0 & other.0) != 0
+    }
+
+    /// Creates a new set containing all integrations from both sets.
+    #[inline]
+    pub const fn union(&self, other: IntegrationSet) -> Self {
+        Self(self.0 | other.0)
+    }
+
     #[inline]
     pub const fn is_superset_of(&self, other: IntegrationSet) -> bool {
         (self.0 & other.0) == other.0
