@@ -45,8 +45,8 @@ pub const COMPOSER_JSON_FILE: &str = "composer.json";
 /// The minimum stack size for each thread (8 MB).
 pub const MINIMUM_STACK_SIZE: usize = 8 * 1024 * 1024;
 
-/// The default stack size for each thread (36 MB).
-pub const DEFAULT_STACK_SIZE: usize = 36 * 1024 * 1024;
+/// The default stack size for each thread (12 MB).
+pub const DEFAULT_STACK_SIZE: usize = 12 * 1024 * 1024;
 
 /// The maximum stack size for each thread (256 MB).
 pub const MAXIMUM_STACK_SIZE: usize = 256 * 1024 * 1024;
