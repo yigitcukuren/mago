@@ -450,7 +450,8 @@ fn parse_infix_expression<'arena>(
 
             let rhs = if by_ref {
                 let ampersand = utils::expect(stream, T!["&"])?;
-                let referenced_expr = parse_expression_with_precedence(stream, Precedence::New)?;
+                let referenced_expr = parse_expression_with_precedence(stream, Precedence::Reference)?;
+
                 Expression::UnaryPrefix(UnaryPrefix {
                     operator: UnaryPrefixOperator::Reference(ampersand.span),
                     operand: stream.alloc(referenced_expr),

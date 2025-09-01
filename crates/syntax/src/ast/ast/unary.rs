@@ -173,7 +173,7 @@ impl<'arena> UnaryPrefixOperator<'arena> {
 impl GetPrecedence for UnaryPrefixOperator<'_> {
     fn precedence(&self) -> Precedence {
         match self {
-            Self::Reference(_) => Precedence::BitwiseAnd,
+            Self::Reference(_) => Precedence::Reference,
             Self::ErrorControl(_) => Precedence::ErrorControl,
             Self::PreIncrement(_) | Self::PreDecrement(_) => Precedence::IncDec,
             _ => Precedence::Unary,

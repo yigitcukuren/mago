@@ -57,6 +57,7 @@ pub enum Precedence {
     Pow,
     Clone,
     IncDec,
+    Reference,
     CallDim,
     New,
     ArrayDim,

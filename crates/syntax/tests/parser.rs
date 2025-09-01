@@ -9,9 +9,41 @@ mod runner {
     use mago_syntax::parser::parse_file;
 
     pub fn run_expression_test(name: &'static str, expression: &'static str, expected: &'static str) {
+        fn format_variable(var: &Variable<'_>) -> String {
+            match var {
+                Variable::Direct(direct_variable) => direct_variable.name.to_string(),
+                Variable::Indirect(indirect_variable) => {
+                    format!("${{{}}}", format_expression(indirect_variable.expression))
+                }
+                Variable::Nested(nested_variable) => {
+                    format!("${}", format_variable(nested_variable.variable))
+                }
+            }
+        }
+
+        fn format_member_selector(selector: &ClassLikeMemberSelector) -> String {
+            match selector {
+                ClassLikeMemberSelector::Identifier(identifier) => identifier.value.to_string(),
+                ClassLikeMemberSelector::Variable(variable) => format_variable(variable),
+                ClassLikeMemberSelector::Expression(s) => {
+                    format!("{{{}}}", format_expression(s.expression))
+                }
+            }
+        }
+
+        fn format_constant_selector(selector: &ClassLikeConstantSelector) -> String {
+            match selector {
+                ClassLikeConstantSelector::Identifier(local_identifier) => local_identifier.value.to_string(),
+                ClassLikeConstantSelector::Expression(s) => {
+                    format!("{{{}}}", format_expression(s.expression))
+                }
+            }
+        }
+
         fn format_expression(expr: &Expression<'_>) -> String {
             match expr {
                 Expression::Parenthesized(parenthesized) => format_expression(parenthesized.expression),
+                Expression::Variable(variable) => format_variable(variable),
                 Expression::Binary(binary) => {
                     format!(
                         "({} {} {})",
@@ -55,7 +87,6 @@ mod runner {
                         format_expression(conditional.r#else)
                     ),
                 },
-                Expression::Variable(Variable::Direct(variable)) => variable.name.to_string(),
                 Expression::ConstantAccess(ConstantAccess { name }) => name.value().to_string(),
                 Expression::Identifier(identifier) => identifier.value().to_string(),
                 Expression::Construct(Construct::Print(construct)) => {
@@ -94,6 +125,60 @@ mod runner {
                 Expression::Construct(Construct::IncludeOnce(include_once_construct)) => {
                     format!("(include_once {})", format_expression(include_once_construct.value))
                 }
+                Expression::Call(call) => match call {
+                    Call::Function(function_call) => format!("({}())", format_expression(function_call.function)),
+                    Call::Method(method_call) => {
+                        format!(
+                            "({}->{}())",
+                            format_expression(method_call.object),
+                            format_member_selector(&method_call.method),
+                        )
+                    }
+                    Call::NullSafeMethod(null_safe_method_call) => {
+                        format!(
+                            "({}?->{}())",
+                            format_expression(null_safe_method_call.object),
+                            format_member_selector(&null_safe_method_call.method),
+                        )
+                    }
+                    Call::StaticMethod(static_method_call) => {
+                        format!(
+                            "({}::{}())",
+                            format_expression(static_method_call.class),
+                            format_member_selector(&static_method_call.method),
+                        )
+                    }
+                },
+                Expression::Access(access) => match access {
+                    Access::Property(property_access) => {
+                        format!(
+                            "({}->{})",
+                            format_expression(property_access.object),
+                            format_member_selector(&property_access.property),
+                        )
+                    }
+                    Access::NullSafeProperty(null_safe_property_access) => {
+                        format!(
+                            "({}?->{})",
+                            format_expression(null_safe_property_access.object),
+                            format_member_selector(&null_safe_property_access.property),
+                        )
+                    }
+                    Access::StaticProperty(static_property_access) => {
+                        format!(
+                            "({}::{})",
+                            format_expression(static_property_access.class),
+                            format_variable(&static_property_access.property),
+                        )
+                    }
+                    Access::ClassConstant(class_constant_access) => {
+                        format!(
+                            "({}::{})",
+                            format_expression(class_constant_access.class),
+                            format_constant_selector(&class_constant_access.constant),
+                        )
+                    }
+                },
                 _ => {
                     let expression_kind = Node::Expression(expr)
                         .children()
@@ -122,11 +207,7 @@ mod runner {
 
         let formatted_ast = format_expression(expression.expression);
 
-        assert_eq!(
-            formatted_ast, expected,
-            "Test case '{}' failed. Expression does not match expected output.\n--- Expected ---\n{}\n--- Actual ---\n{}",
-            name, expected, formatted_ast
-        );
+        assert_eq!(formatted_ast, expected, "Test case '{}' failed. Expression does not match expected output.", name);
     }
 }
 
@@ -140,6 +221,10 @@ mod parser {
         };
     }
 
+    test_expression!(assign_ref_static_call, "$a = &B::c()", "($a = (& (B::c())))");
+    test_expression!(assign_ref_func_call, "$a = &b()", "($a = (& (b())))");
+    test_expression!(assign_ref_method_call, "$a = &$b->c()", "($a = (& ($b->c())))");
+    test_expression!(assign_ref_null_method_call, "$a = &$b?->c()", "($a = (& ($b?->c())))");
     test_expression!(unary_minus_vs_mul, "$a = -$b * $c", "($a = ((- $b) * $c))");
     test_expression!(unary_minus_vs_add, "$a = -$b + $c", "($a = ((- $b) + $c))");
     test_expression!(unary_minus_vs_div, "$a = -$b / $c", "($a = ((- $b) / $c))");

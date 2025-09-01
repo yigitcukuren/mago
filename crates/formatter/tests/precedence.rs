@@ -57,6 +57,10 @@ mod precedence {
         "($value = &$data[$field->getName()]) ?? null"
     );
 
+    test_expression_format!(assign_ref_static_call, "$a = &B::c()", "$a = &B::c()");
+    test_expression_format!(assign_ref_func_call, "$a = &b()", "$a = &b()");
+    test_expression_format!(assign_ref_method_call, "$a = &$b->c()", "$a = &$b->c()");
+    test_expression_format!(assign_ref_null_method_call, "$a = &$b?->c()", "$a = &$b?->c()");
     test_expression_format!(as_is, "$a * $b", "$a * $b");
     test_expression_format!(keep_parens_on_assignment_lhs_of_logical_word, "($a = $b) and $c", "($a = $b) and $c");
     test_expression_format!(remove_parens_for_logical_precedence_1, "($a || $b) xor $c", "$a || $b xor $c");
