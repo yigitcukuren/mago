@@ -1,5 +1,3 @@
-## README.md
-
 <p align="center">
   <img src="docs/public/assets/banner.svg" alt="Mago Banner" width="600" />
 </p>
@@ -36,27 +34,17 @@
 
 ## Installation
 
-For detailed instructions on how to install Mago, please refer to our official **[Installation Guide](https://mago.carthage.software/guide/installation)**.
+The most common way to install Mago on macOS and Linux is by using our shell script:
 
-We support various installation methods, including shell scripts, Homebrew, Composer, and Cargo.
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://carthage.software/mago.sh | bash
+```
+
+For all other installation methods, including Homebrew, Composer, and Cargo, please refer to our official **[Installation Guide](https://mago.carthage.software/guide/installation)**.
 
 ## Getting Started
 
-Once installed, you can start using Mago immediately.
-
-1. Lint your project:
-
-   ```sh
-   mago lint src/
-   ```
-
-2. Format your code:
-
-   ```sh
-   mago format src/
-   ```
-
-For detailed usage, configuration options, and available rules, please visit the [Mago Documentation](https://mago.carthage.software/).
+To get started with Mago and learn how to configure your project, please visit our **[Getting Started Guide](https://mago.carthage.software/guide/getting-started)** in the official documentation.
 
 ## Features
 
@@ -69,13 +57,6 @@ For detailed usage, configuration options, and available rules, please visit the
 - 🌳 AST Visualization: Explore your code’s structure with Abstract Syntax Tree (AST) parsing.
 
 <!-- START-SPONSORS -->
-
-## Our Sponsors
-
-<p align="center"><a href="https://github.com/jasonrm" title="Jason R. McNeil"><kbd><img src="https://avatars.githubusercontent.com/u/39949?u=69c0e4fb08c439250978d41dbc3371d2f0609b98&v=4&s=160" width="80" height="80" alt="Jason R. McNeil" /></kbd></a><a href="https://github.com/vvvinceocam" title="Vincent Berset"><kbd><img src="https://avatars.githubusercontent.com/u/5173120?u=95efc76cd8fc804536dc6dd25781a95b650bf902&v=4&s=160" width="80" height="80" alt="Vincent Berset" /></kbd></a></p><p align="center"><a href="https://github.com/TicketSwap" title="TicketSwap"><kbd><img src="https://avatars.githubusercontent.com/u/5766233?v=4&s=120" width="60" height="60" alt="TicketSwap" /></kbd></a></p>
-
-[See all sponsors](SPONSORS.md)
-
 <!-- END-SPONSORS -->
 
 ## Contributing
