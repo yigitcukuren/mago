@@ -84,6 +84,9 @@ impl<'arena> Formatter<'arena> {
     pub fn format<'ctx>(&self, file: &'ctx File, program: &'arena Program<'arena>) -> &'arena str {
         let document = self.build(file, program);
 
+        // #[cfg(debug_assertions)]
+        // println!("Document: {}", print_document_to_string(self.arena, &document));
+
         self.print(document, Some(file.size as usize))
     }
 

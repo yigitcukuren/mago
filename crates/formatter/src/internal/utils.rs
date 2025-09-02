@@ -115,25 +115,21 @@ pub fn will_break<'arena>(document: &'arena Document<'arena>) -> bool {
 
     match document {
         Document::BreakParent => true,
+        Document::Line(doc) => doc.hard,
         Document::Group(group) => {
             if *group.should_break.borrow() {
                 return true;
             }
-            if let Some(expanded_states) = &group.expanded_states
-                && expanded_states.iter().rev().any(will_break)
-            {
-                return true;
-            }
+
             check_array(&group.contents)
         }
-        Document::IfBreak(d) => will_break(d.break_contents),
+        Document::IfBreak(d) => will_break(d.flat_content) || will_break(d.break_contents),
         Document::Array(contents)
         | Document::Indent(contents)
         | Document::LineSuffix(contents)
         | Document::IndentIfBreak(IndentIfBreak { contents, .. })
         | Document::Align(Align { contents, .. }) => check_array(contents),
         Document::Fill(doc) => check_array(&doc.parts),
-        Document::Line(doc) => doc.hard,
         _ => false,
     }
 }
