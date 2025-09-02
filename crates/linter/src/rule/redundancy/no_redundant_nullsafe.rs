@@ -104,7 +104,7 @@ impl LintRule for NoRedundantNullsafeRule {
                 let issue = Issue::new(self.cfg.level(), "The nullsafe operator (`?->`) is redundant when used with `??`.")
                     .with_code(self.meta.code)
                     .with_annotation(
-                        Annotation::primary(null_safe.question_mark_arrow.span())
+                        Annotation::primary(null_safe.question_mark_arrow)
                             .with_message("This nullsafe operator is redundant..."),
                     )
                     .with_annotation(
@@ -115,7 +115,7 @@ impl LintRule for NoRedundantNullsafeRule {
                     .with_help("Replace `?->` with the standard `->` operator for clarity.");
 
                 ctx.collector.propose(issue, |plan| {
-                    plan.replace(op.to_range(), "->", SafetyClassification::Safe);
+                    plan.replace(null_safe.question_mark_arrow.to_range(), "->", SafetyClassification::Safe);
                 });
             }
             Node::IssetConstruct(construct) => {
