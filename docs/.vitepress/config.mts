@@ -1,13 +1,13 @@
 import { defineConfig } from "vitepress";
 
-const site = "https://mago.carthage.software";
+const hostname = "https://mago.carthage.software";
 
 export default defineConfig({
   srcDir: ".",
-
   title: "Mago",
   description:
     "The Oxidized PHP Toolchain: Blazing fast linter, formatter, and static analyzer for PHP, written in Rust.",
+  sitemap: { hostname },
   lang: "en-US",
   head: [
     ["link", { rel: "apple-touch-icon", href: "/assets/apple-touch-icon.png" }],
@@ -31,8 +31,11 @@ export default defineConfig({
           "The Oxidized PHP Toolchain: Blazing fast linter, formatter, and static analyzer for PHP, written in Rust.",
       },
     ],
-    ["meta", { property: "og:image", content: `${site}/assets/banner.svg` }],
-    ["meta", { property: "og:url", content: site }],
+    [
+      "meta",
+      { property: "og:image", content: `${hostname}/assets/banner.svg` },
+    ],
+    ["meta", { property: "og:url", content: hostname }],
     ["meta", { name: "twitter:card", content: "summary_large_image" }],
     ["meta", { name: "twitter:title", content: "Mago" }],
     [
@@ -43,7 +46,10 @@ export default defineConfig({
           "The Oxidized PHP Toolchain: Blazing fast linter, formatter, and static analyzer for PHP, written in Rust.",
       },
     ],
-    ["meta", { name: "twitter:image", content: `${site}/assets/banner.svg` }],
+    [
+      "meta",
+      { name: "twitter:image", content: `${hostname}/assets/banner.svg` },
+    ],
   ],
   lastUpdated: true,
   cleanUrls: true,
@@ -189,7 +195,6 @@ export default defineConfig({
       { text: "⚡️ Benchmarks", link: "/benchmarks" },
       { text: "⭐ Projects using Mago", link: "/projects-using-mago" },
     ],
-
     socialLinks: [
       { icon: "github", link: "https://github.com/carthage-software/mago" },
       { icon: "twitter", link: "https://twitter.com/azjezz" },
