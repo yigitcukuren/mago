@@ -404,7 +404,7 @@ pub fn get_class_name_from_atomic(codebase: &CodebaseMetadata, atomic: &TAtomic)
                     TClassLikeString::Literal { value } => ResolvedClassname::new(
                         Some(*value),
                         ResolutionOrigin::LiteralClassString,
-                        is_enum_or_final_class(codebase, &value),
+                        is_enum_or_final_class(codebase, value),
                     ),
                 }
             }
