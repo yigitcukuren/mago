@@ -492,6 +492,20 @@ pub fn analyze_assignment_to_variable<'ctx, 'arena>(
         assigned_type.by_reference = true;
     }
 
+    if block_context.references_possibly_from_confusing_scope.contains(variable_id) {
+        context.collector.report_with_code(
+            IssueCode::ReferenceReusedFromConfusingScope,
+            Issue::warning("Potential unintended modification: This variable may still hold a reference to another variable from a preceding scope.")
+                .with_annotation(
+                    Annotation::primary(variable_span)
+                        .with_message("Assigning a new value here may unintentionally modify the variable this reference points to.")
+                )
+                .with_note("In PHP, a reference assigned within a block (e.g., an `if` statement or a `foreach` loop) remains active after the block has finished executing.")
+                .with_note("Reusing the variable without `unset()` can lead to unexpected side effects.")
+                .with_help("To safely reuse this variable, first break the reference by calling `unset()`. For example: `unset($value);`"),
+        );
+    }
+
     if variable_id.eq("$this") {
         context.collector.report_with_code(
             IssueCode::AssignmentToThis,

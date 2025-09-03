@@ -92,7 +92,11 @@ impl<'ast, 'arena> Analyzable<'ast, 'arena> for Foreach<'arena> {
             }
         }
 
-        let value_expression = self.target.value();
+        let value_expression = match self.target.value() {
+            Expression::UnaryPrefix(UnaryPrefix { operator: UnaryPrefixOperator::Reference(_), operand }) => operand,
+            value => value,
+        };
+
         let value_expression_id = get_expression_id(
             value_expression,
             block_context.scope.get_class_like_name(),

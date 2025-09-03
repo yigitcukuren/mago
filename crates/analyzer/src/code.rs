@@ -199,6 +199,7 @@ pub enum IssueCode {
     RedundantNullsafeOperator,
     RedundantTypeComparison,
     ReferenceConstraintViolation,
+    ReferenceReusedFromConfusingScope,
     ReferenceToUndefinedVariable,
     SelfOutsideClassScope,
     SkipInKeyedDestructuring,
@@ -445,6 +446,7 @@ impl IssueCode {
             Self::RedundantNullsafeOperator => "redundant-nullsafe-operator",
             Self::RedundantTypeComparison => "redundant-type-comparison",
             Self::ReferenceConstraintViolation => "reference-constraint-violation",
+            Self::ReferenceReusedFromConfusingScope => "reference-reused-from-confusing-scope",
             Self::ReferenceToUndefinedVariable => "reference-to-undefined-variable",
             Self::SelfOutsideClassScope => "self-outside-class-scope",
             Self::SkipInKeyedDestructuring => "skip-in-keyed-destructuring",
@@ -627,20 +629,22 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_reference_issue_codes() -> [Self; 4] {
+    pub const fn get_reference_issue_codes() -> [Self; 5] {
         [
             Self::ConflictingReferenceConstraint,
             Self::InvalidPassByReference,
             Self::ReferenceConstraintViolation,
+            Self::ReferenceReusedFromConfusingScope,
             Self::ReferenceToUndefinedVariable,
         ]
     }
 
-    pub const fn get_reference_issue_code_values() -> [&'static str; 4] {
+    pub const fn get_reference_issue_code_values() -> [&'static str; 5] {
         [
             "conflicting-reference-constraint",
             "invalid-pass-by-reference",
             "reference-constraint-violation",
+            "reference-reused-from-confusing-scope",
             "reference-to-undefined-variable",
         ]
     }
@@ -1265,6 +1269,7 @@ impl std::str::FromStr for IssueCode {
             "redundant-nullsafe-operator" => Ok(Self::RedundantNullsafeOperator),
             "redundant-type-comparison" => Ok(Self::RedundantTypeComparison),
             "reference-constraint-violation" => Ok(Self::ReferenceConstraintViolation),
+            "reference-reused-from-confusing-scope" => Ok(Self::ReferenceReusedFromConfusingScope),
             "reference-to-undefined-variable" => Ok(Self::ReferenceToUndefinedVariable),
             "self-outside-class-scope" => Ok(Self::SelfOutsideClassScope),
             "skip-in-keyed-destructuring" => Ok(Self::SkipInKeyedDestructuring),
