@@ -29,7 +29,7 @@ pub enum OtherValuePosition {
 
 pub fn scrape_assertions(
     expression: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
@@ -221,10 +221,7 @@ pub fn scrape_assertions(
     if if_types.is_empty() { vec![] } else { vec![if_types] }
 }
 
-fn process_custom_assertions(
-    expression_span: Span,
-    artifacts: &mut AnalysisArtifacts,
-) -> HashMap<String, AssertionSet> {
+fn process_custom_assertions(expression_span: Span, artifacts: &AnalysisArtifacts) -> HashMap<String, AssertionSet> {
     let mut if_true_assertions = artifacts
         .if_true_assertions
         .get(&(expression_span.start.offset, expression_span.end.offset))
@@ -303,9 +300,19 @@ pub(super) fn scrape_equality_assertions(
     left: &Expression,
     is_identity: bool,
     right: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
+    if let Some(assertions) = scrape_class_constant_equality_assertions(
+        left,
+        right,
+        artifacts,
+        assertion_context,
+        false, // negated = false
+    ) {
+        return assertions;
+    }
+
     match resolve_count_comparison(left, right, artifacts) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -379,6 +386,16 @@ fn scrape_inequality_assertions(
     artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
+    if let Some(assertions) = scrape_class_constant_equality_assertions(
+        left,
+        right,
+        artifacts,
+        assertion_context,
+        true, // negated = true
+    ) {
+        return assertions;
+    }
+
     match resolve_count_comparison(left, right, artifacts) {
         (None, Some(number_on_right)) => {
             let mut if_types = HashMap::default();
@@ -449,6 +466,108 @@ fn scrape_inequality_assertions(
     }
 
     vec![]
+}
+
+/// Scrapes assertions for comparisons like `$foo::class === Bar::class`.
+/// This is treated as equivalent to an `instanceof` check.
+fn scrape_class_constant_equality_assertions(
+    left: &Expression,
+    right: &Expression,
+    artifacts: &AnalysisArtifacts,
+    assertion_context: AssertionContext<'_, '_>,
+    negated: bool,
+) -> Option<Vec<HashMap<String, AssertionSet>>> {
+    let left_class_part = is_class_constant_access(left);
+    let right_class_part = is_class_constant_access(right);
+
+    let (variable_expr, class_name_expr) = match (left_class_part, right_class_part) {
+        // Case 1: Both sides are `::class` expressions (e.g., `$var::class === Foo::class`)
+        (Some(left_part), Some(right_part)) => {
+            let left_is_static = is_static_class_reference(left_part);
+            let right_is_static = is_static_class_reference(right_part);
+
+            if !left_is_static && right_is_static {
+                // $var::class === Foo::class  =>  $var is the variable, Foo::class is the type
+                (left_part, right)
+            } else if left_is_static && !right_is_static {
+                // Foo::class === $var::class  =>  $var is the variable, Foo::class is the type
+                (right_part, left)
+            } else {
+                // Both are dynamic ($a::class === $b::class) or both static (A::class === B::class).
+                // Let the standard reconciler handle these comparisons.
+                return None;
+            }
+        }
+        // Case 2: Only the left side is `::class`
+        (Some(part), None) => (part, right),
+        // Case 3: Only the right side is `::class`
+        (None, Some(part)) => (part, left),
+        // Case 4: Neither side is `::class`
+        (None, None) => return None,
+    };
+
+    let variable_id = get_expression_id(
+        variable_expr,
+        assertion_context.this_class_name,
+        assertion_context.resolved_names,
+        Some(assertion_context.codebase),
+    )?;
+
+    let class_name_type = artifacts.get_expression_type(class_name_expr)?;
+
+    let mut assertions = vec![];
+    for atomic in class_name_type.types.iter() {
+        if let Some(resolved_class) = get_class_name_from_atomic(assertion_context.codebase, atomic) {
+            let object_type = resolved_class.get_object_type(assertion_context.codebase);
+
+            assertions.push(if negated {
+                if resolved_class.is_final {
+                    Assertion::IsNotType(object_type)
+                } else {
+                    Assertion::IsNotIdentical(object_type)
+                }
+            } else {
+                if resolved_class.is_final {
+                    Assertion::IsType(object_type)
+                } else {
+                    Assertion::IsIdentical(object_type)
+                }
+            });
+        }
+    }
+
+    if assertions.is_empty() {
+        return None;
+    }
+
+    let mut if_types = HashMap::default();
+    if_types.insert(variable_id, vec![assertions]);
+    Some(vec![if_types])
+}
+
+/// Helper to check if an expression is a `::class` constant access.
+/// Returns the expression for the class part (e.g., `$foo` in `$foo::class`).
+#[inline]
+fn is_class_constant_access<'arena>(expr: &'arena Expression<'arena>) -> Option<&'arena Expression<'arena>> {
+    if let Expression::Access(Access::ClassConstant(ClassConstantAccess {
+        class,
+        constant: ClassLikeConstantSelector::Identifier(LocalIdentifier { value: "class", .. }),
+        ..
+    })) = unwrap_expression(expr)
+    {
+        Some(class)
+    } else {
+        None
+    }
+}
+
+/// Helper to determine if the class part of a `::class` expression is a static reference.
+#[inline]
+fn is_static_class_reference(expr: &Expression) -> bool {
+    matches!(
+        unwrap_expression(expr),
+        Expression::Identifier(_) | Expression::Self_(_) | Expression::Static(_) | Expression::Parent(_)
+    )
 }
 
 fn get_empty_array_equality_assertions(
@@ -681,7 +800,7 @@ fn scrape_lesser_than_assertions(
     left: &Expression,
     operator: &BinaryOperator,
     right: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts) {
@@ -835,7 +954,7 @@ fn scrape_greater_than_assertions(
     left: &Expression,
     operator: &BinaryOperator,
     right: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
     match resolve_count_comparison(left, right, artifacts) {
@@ -988,7 +1107,7 @@ fn scrape_greater_than_assertions(
 fn scrape_instanceof_assertions(
     left: &Expression,
     right: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     context: AssertionContext<'_, '_>,
 ) -> Vec<HashMap<String, AssertionSet>> {
     let mut if_types = HashMap::default();
@@ -1132,7 +1251,7 @@ fn get_true_equality_assertions(
     left: &Expression,
     is_identity: bool,
     right: &Expression,
-    artifacts: &mut AnalysisArtifacts,
+    artifacts: &AnalysisArtifacts,
     assertion_context: AssertionContext<'_, '_>,
     true_position: OtherValuePosition,
 ) -> Vec<HashMap<String, AssertionSet>> {

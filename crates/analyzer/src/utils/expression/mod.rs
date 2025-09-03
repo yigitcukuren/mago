@@ -232,7 +232,8 @@ pub fn get_root_expression_id<'ast, 'arena>(expression: &'ast Expression<'arena>
         Expression::Access(access) => match access {
             Access::Property(access) => get_root_expression_id(access.object),
             Access::NullSafeProperty(access) => get_root_expression_id(access.object),
-            _ => None,
+            Access::ClassConstant(access) => get_root_expression_id(access.class),
+            Access::StaticProperty(access) => get_root_expression_id(access.class),
         },
         _ => None,
     }

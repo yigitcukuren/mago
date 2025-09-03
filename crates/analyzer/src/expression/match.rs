@@ -30,6 +30,7 @@ use crate::formula::get_formula;
 use crate::formula::negate_or_synthesize;
 use crate::reconciler::reconcile_keyed_types;
 use crate::utils::expression::get_expression_id;
+use crate::utils::expression::get_root_expression_id;
 
 impl<'ast, 'arena> Analyzable<'ast, 'arena> for Match<'arena> {
     fn analyze<'ctx>(
@@ -117,7 +118,7 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
             return Ok(());
         }
 
-        let (is_synthetic, subject_id, subject_for_conditions) = self.get_subject_info(&subject_type);
+        let (is_synthetic, subject_id, root_subject_id, subject_for_conditions) = self.get_subject_info(&subject_type);
 
         let mut arm_body_types: Vec<Rc<TUnion>> = Vec::new();
         let mut arm_exit_contexts: Vec<BlockContext<'ctx>> = Vec::new();
@@ -170,6 +171,7 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
         if let Some(default_arm) = first_default_arm {
             self.analyze_default_arm(
                 &subject_id,
+                root_subject_id.as_deref(),
                 default_arm,
                 &mut running_else_context,
                 &mut arm_body_types,
@@ -179,10 +181,17 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
         }
 
         if first_default_arm.is_none() {
-            let unhandled_type =
-                running_else_context.locals.get(&subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
+            let is_exhaustive = {
+                running_else_context.locals.get(&subject_id).is_some_and(|t| t.is_never())
+                    || root_subject_id.is_some_and(|root_subject_id| {
+                        running_else_context.locals.get(&root_subject_id).is_some_and(|t| t.is_never())
+                    })
+            };
 
-            if !unhandled_type.is_never() {
+            if !is_exhaustive {
+                let unhandled_type =
+                    running_else_context.locals.get(&subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
+
                 self.report_non_exhaustive(&subject_type, &unhandled_type);
                 self.set_unhandled_match_error(Some(&mut running_else_context), self.stmt.span(), false);
             }
@@ -206,21 +215,22 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
         Ok(())
     }
 
-    fn get_subject_info(&mut self, subject_type: &Rc<TUnion>) -> (bool, String, Expression<'arena>) {
+    fn get_subject_info(&mut self, subject_type: &Rc<TUnion>) -> (bool, String, Option<String>, Expression<'arena>) {
         if let Some(id) = get_expression_id(
             self.stmt.expression,
             self.block_context.scope.get_class_like_name(),
             self.context.resolved_names,
             Some(self.context.codebase),
         ) {
-            (false, id, self.stmt.expression.clone())
+            (false, id, get_root_expression_id(self.stmt.expression), self.stmt.expression.clone())
         } else {
             let subject_id =
                 format!("{}{}", Self::SYNTHETIC_MATCH_VAR_PREFIX, self.stmt.expression.span().start.offset);
             self.block_context.locals.insert(subject_id.clone(), subject_type.clone());
             let subject_for_conditions =
                 new_synthetic_variable(self.context.arena, &subject_id, self.stmt.expression.span());
-            (true, subject_id, subject_for_conditions)
+
+            (true, subject_id, None, subject_for_conditions)
         }
     }
 
@@ -343,6 +353,7 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
     fn analyze_default_arm(
         &mut self,
         subject_id: &str,
+        root_subject_id: Option<&str>,
         default_arm: &'ast MatchDefaultArm<'arena>,
         running_else_context: &mut BlockContext<'ctx>,
         arm_body_types: &mut Vec<Rc<TUnion>>,
@@ -353,10 +364,16 @@ impl<'anlyz, 'ctx, 'ast, 'arena> MatchAnalyzer<'anlyz, 'ctx, 'ast, 'arena> {
             self.report_default_always_executed(default_arm);
         }
 
-        let subject_type = running_else_context.locals.get(subject_id).cloned().unwrap_or_else(|| Rc::new(get_mixed()));
+        let is_unreachable = {
+            running_else_context.locals.get(subject_id).is_some_and(|t| t.is_never())
+                || root_subject_id.is_some_and(|root_subject_id| {
+                    running_else_context.locals.get(root_subject_id).is_some_and(|t| t.is_never())
+                })
+        };
 
-        if subject_type.is_never() {
+        if is_unreachable {
             self.report_unreachable_default_arm(default_arm);
+
             return Ok(());
         }
 

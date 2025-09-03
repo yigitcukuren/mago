@@ -152,6 +152,8 @@ test_case!(throwing_exceptions);
 test_case!(reference_reused_from_confusing_scope);
 test_case!(reconcile_literl_class_string);
 test_case!(class_string_is_never_equal_to_literal_string);
+test_case!(narrow_class_string_match);
+test_case!(narrow_non_final_class_string_match);
 
 // Github Issues
 test_case!(issue_306);
