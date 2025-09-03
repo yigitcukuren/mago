@@ -3,6 +3,7 @@ use mago_atom::ascii_lowercase_atom;
 use mago_atom::atom;
 use mago_codex::get_class_like;
 use mago_codex::get_interface;
+use mago_codex::is_enum_or_final_class;
 use mago_codex::metadata::CodebaseMetadata;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::ttype::TType;
@@ -68,19 +69,21 @@ pub struct ResolvedClassname {
     pub origin: ResolutionOrigin,
     /// A list of other `ResolvedClassname` instances that this class name intersects with.
     pub intersections: Vec<ResolvedClassname>,
+    /// Indicates if the class name refers to a final class or an enum (which is implicitly final).
+    pub is_final: bool,
 }
 
 impl ResolvedClassname {
     /// Creates a new `ResolvedClassname`.
     #[inline]
-    const fn new(fq_class_id: Option<Atom>, origin: ResolutionOrigin) -> Self {
-        Self { fqcn: fq_class_id, origin, intersections: Vec::new() }
+    const fn new(fq_class_id: Option<Atom>, origin: ResolutionOrigin, is_final: bool) -> Self {
+        Self { fqcn: fq_class_id, origin, intersections: Vec::new(), is_final }
     }
 
     /// Creates a `ResolvedClassname` that is definitively invalid.
     #[inline]
     const fn invalid() -> Self {
-        Self { fqcn: None, origin: ResolutionOrigin::Invalid, intersections: Vec::new() }
+        Self { fqcn: None, origin: ResolutionOrigin::Invalid, intersections: Vec::new(), is_final: false }
     }
 
     /// Creates a `ResolvedClassname` that is definitively invalid.
@@ -129,6 +132,11 @@ impl ResolvedClassname {
                 | ResolutionOrigin::LiteralClassString
                 | ResolutionOrigin::SpecificClassLikeString(_)
         )
+    }
+
+    /// Checks if the resolution is from a literal `class-string` (e.g., `MyClass::class`).
+    pub const fn is_from_literal_class_string(&self) -> bool {
+        matches!(self.origin, ResolutionOrigin::LiteralClassString)
     }
 
     /// Checks if the resolution is from a generic `object` type,
@@ -213,13 +221,20 @@ pub fn resolve_classnames_from_expression<'ctx, 'arena>(
         Expression::Identifier(name_node) => {
             let fqcn = atom(context.resolved_names.get(name_node));
 
-            possible_types
-                .push(ResolvedClassname::new(Some(fqcn), ResolutionOrigin::Named { is_parent: false, is_self: false }));
+            possible_types.push(ResolvedClassname::new(
+                Some(fqcn),
+                ResolutionOrigin::Named { is_parent: false, is_self: false },
+                is_enum_or_final_class(context.codebase, &fqcn),
+            ));
         }
         Expression::Self_(self_keyword) => {
             if let Some(self_class) = block_context.scope.get_class_like() {
                 let origin = ResolutionOrigin::Named { is_parent: false, is_self: true };
-                let mut class_name = ResolvedClassname::new(Some(self_class.original_name), origin);
+                let mut class_name = ResolvedClassname::new(
+                    Some(self_class.original_name),
+                    origin,
+                    self_class.kind.is_enum() || self_class.flags.is_final(),
+                );
 
                 class_name.intersections = get_intersections_from_metadata(context, self_class);
 
@@ -237,7 +252,11 @@ pub fn resolve_classnames_from_expression<'ctx, 'arena>(
         Expression::Static(static_keyword) => {
             if let Some(self_class) = block_context.scope.get_class_like() {
                 let origin = ResolutionOrigin::Static { can_extend: !self_class.flags.is_final() };
-                let mut classname = ResolvedClassname::new(Some(self_class.original_name), origin);
+                let mut classname = ResolvedClassname::new(
+                    Some(self_class.original_name),
+                    origin,
+                    self_class.kind.is_enum() || self_class.flags.is_final(),
+                );
                 classname.intersections = get_intersections_from_metadata(context, self_class);
 
                 possible_types.push(classname);
@@ -259,7 +278,7 @@ pub fn resolve_classnames_from_expression<'ctx, 'arena>(
                     self_meta.direct_parent_class.as_ref().and_then(|id| get_class_like(context.codebase, id))
                 {
                     let origin = ResolutionOrigin::Named { is_parent: true, is_self: false };
-                    let mut classname = ResolvedClassname::new(Some(parent_metadata.original_name), origin);
+                    let mut classname = ResolvedClassname::new(Some(parent_metadata.original_name), origin, false);
                     classname.intersections = get_intersections_from_metadata(context, self_meta);
 
                     possible_types.push(classname);
@@ -302,7 +321,7 @@ pub fn resolve_classnames_from_expression<'ctx, 'arena>(
             let expression_type = artifacts.get_expression_type(expression);
 
             for atomic in expression_type.map(|u| u.types.iter()).unwrap_or_default() {
-                if let Some(resolved_classname) = get_class_name_from_atomic(atomic) {
+                if let Some(resolved_classname) = get_class_name_from_atomic(context.codebase, atomic) {
                     possible_types.push(resolved_classname);
                 } else {
                     possible_types.push(ResolvedClassname::invalid());
@@ -332,9 +351,10 @@ pub fn resolve_classnames_from_expression<'ctx, 'arena>(
 /// - `mixed`, `any`, `object`: Resolved with a corresponding generic origin.
 ///
 /// Returns `None` for atomic types that can never be a class name (e.g., int, bool, array).
-pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname> {
+pub fn get_class_name_from_atomic(codebase: &CodebaseMetadata, atomic: &TAtomic) -> Option<ResolvedClassname> {
     #[inline]
     fn get_class_name_from_atomic_impl(
+        codebase: &CodebaseMetadata,
         atomic: &TAtomic,
         active_class_string: Option<&TClassLikeString>,
     ) -> Option<ResolvedClassname> {
@@ -347,7 +367,7 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
                         ResolutionOrigin::AnyObject
                     };
 
-                    ResolvedClassname::new(None, origin)
+                    ResolvedClassname::new(None, origin, false)
                 }
                 TObject::Enum(enum_object) => {
                     let origin = if let Some(class_string) = active_class_string {
@@ -356,7 +376,7 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
                         ResolutionOrigin::Object { is_this: atomic.is_this() }
                     };
 
-                    ResolvedClassname::new(Some(enum_object.name), origin)
+                    ResolvedClassname::new(Some(enum_object.name), origin, true)
                 }
                 TObject::Named(named_object) => {
                     let origin = if let Some(class_string) = active_class_string {
@@ -365,19 +385,27 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
                         ResolutionOrigin::Object { is_this: atomic.is_this() }
                     };
 
-                    ResolvedClassname::new(Some(named_object.name), origin)
+                    ResolvedClassname::new(
+                        Some(named_object.name),
+                        origin,
+                        is_enum_or_final_class(codebase, &named_object.name),
+                    )
                 }
             },
             TAtomic::Scalar(TScalar::ClassLikeString(class_string)) => {
                 match class_string {
-                    TClassLikeString::Any { .. } => ResolvedClassname::new(None, ResolutionOrigin::AnyClassString),
+                    TClassLikeString::Any { .. } => {
+                        ResolvedClassname::new(None, ResolutionOrigin::AnyClassString, false)
+                    }
                     TClassLikeString::OfType { constraint, .. } | TClassLikeString::Generic { constraint, .. } => {
                         // This is a `class-string<T>`. We resolve `T` to get the class name.
-                        get_class_name_from_atomic_impl(constraint.as_ref(), Some(class_string))?
+                        get_class_name_from_atomic_impl(codebase, constraint.as_ref(), Some(class_string))?
                     }
-                    TClassLikeString::Literal { value } => {
-                        ResolvedClassname::new(Some(*value), ResolutionOrigin::LiteralClassString)
-                    }
+                    TClassLikeString::Literal { value } => ResolvedClassname::new(
+                        Some(*value),
+                        ResolutionOrigin::LiteralClassString,
+                        is_enum_or_final_class(codebase, &value),
+                    ),
                 }
             }
             TAtomic::Scalar(scalar) => {
@@ -387,14 +415,14 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
                     // It's different from `MyClass::class` which is guaranteed.
                     let class_id = atom(literal_string);
 
-                    ResolvedClassname::new(Some(class_id), ResolutionOrigin::AnyString)
+                    ResolvedClassname::new(Some(class_id), ResolutionOrigin::AnyString, false)
                 } else if scalar.is_string() {
-                    ResolvedClassname::new(None, ResolutionOrigin::AnyString)
+                    ResolvedClassname::new(None, ResolutionOrigin::AnyString, false)
                 } else {
                     return None; // This type cannot be interpreted as a class name.
                 }
             }
-            TAtomic::Mixed(_) => ResolvedClassname::new(None, ResolutionOrigin::Mixed),
+            TAtomic::Mixed(_) => ResolvedClassname::new(None, ResolutionOrigin::Mixed, false),
             _ => {
                 // This type cannot be interpreted as a class name.
                 return None;
@@ -404,7 +432,7 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
         if let Some(intersections) = atomic.get_intersection_types() {
             let intersection_class_names = intersections
                 .iter()
-                .filter_map(|intersection| get_class_name_from_atomic_impl(intersection, None))
+                .filter_map(|intersection| get_class_name_from_atomic_impl(codebase, intersection, None))
                 .collect::<Vec<_>>();
 
             class_name.intersections = intersection_class_names;
@@ -413,7 +441,7 @@ pub fn get_class_name_from_atomic(atomic: &TAtomic) -> Option<ResolvedClassname>
         Some(class_name)
     }
 
-    get_class_name_from_atomic_impl(atomic, None)
+    get_class_name_from_atomic_impl(codebase, atomic, None)
 }
 
 fn get_intersections_from_metadata(context: &Context<'_, '_>, metadata: &ClassLikeMetadata) -> Vec<ResolvedClassname> {
@@ -431,6 +459,7 @@ fn get_intersections_from_metadata(context: &Context<'_, '_>, metadata: &ClassLi
         intersections.push(ResolvedClassname::new(
             Some(interface_metadata.original_name),
             ResolutionOrigin::Named { is_parent: false, is_self: false },
+            false,
         ));
     }
 
@@ -443,6 +472,7 @@ fn get_intersections_from_metadata(context: &Context<'_, '_>, metadata: &ClassLi
         intersections.push(ResolvedClassname::new(
             Some(parent_class_metadata.original_name),
             ResolutionOrigin::Named { is_parent: true, is_self: false },
+            false,
         ));
     }
 

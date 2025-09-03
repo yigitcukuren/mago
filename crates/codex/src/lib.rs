@@ -127,6 +127,15 @@ pub fn class_like_exists(codebase: &CodebaseMetadata, name: &str) -> bool {
     codebase.symbols.contains(&lowercase_name)
 }
 
+/// Checks if the given name corresponds to an enum or a final class.
+///
+/// This lookup is case-insensitive.
+pub fn is_enum_or_final_class(codebase: &CodebaseMetadata, name: &str) -> bool {
+    let lowercase_name = ascii_lowercase_atom(name);
+
+    codebase.class_likes.get(&lowercase_name).is_some_and(|meta| meta.kind.is_enum() || meta.flags.is_final())
+}
+
 /// Checks if a method exists on a given class-like (including inherited methods).
 ///
 /// The lookup for both the class-like name and the method name is case-insensitive.

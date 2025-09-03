@@ -178,7 +178,10 @@ impl Assertion {
             | Assertion::IsNotType(atomic)
             | Assertion::IsEqual(atomic)
             | Assertion::IsNotEqual(atomic) => {
-                atomic.is_literal_int() || atomic.is_literal_float() || atomic.is_known_literal_string()
+                atomic.is_literal_int()
+                    || atomic.is_literal_float()
+                    || atomic.is_known_literal_string()
+                    || atomic.is_literal_class_string()
             }
 
             _ => false,

@@ -326,7 +326,7 @@ impl TType for TClassLikeString {
                 )
             }
             TClassLikeString::Literal { value } => {
-                concat_atom!("class-string<", value, ">")
+                concat_atom!("class-string('", value, "')")
             }
             TClassLikeString::OfType { kind, constraint } => {
                 concat_atom!(kind.as_str(), "<", constraint.get_id(), ">")

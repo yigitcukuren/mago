@@ -16,6 +16,7 @@ use mago_codex::ttype::atomic::object::r#enum::TEnum;
 use mago_codex::ttype::atomic::object::named::TNamedObject;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::bool::TBool;
+use mago_codex::ttype::atomic::scalar::class_like_string::TClassLikeString;
 use mago_codex::ttype::atomic::scalar::float::TFloat;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::atomic::scalar::string::TString;
@@ -23,6 +24,7 @@ use mago_codex::ttype::atomic::scalar::string::TStringLiteral;
 use mago_codex::ttype::combiner;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
+use mago_codex::ttype::comparator::atomic_comparator::is_contained_by;
 use mago_codex::ttype::expander;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::get_mixed;
@@ -616,6 +618,18 @@ fn handle_literal_equality(
             span,
             negated,
         ),
+        TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::Literal { value })) => {
+            handle_literal_equality_with_class_string(
+                context,
+                assertion,
+                *value,
+                existing_var_type,
+                key,
+                old_var_type_atom,
+                span,
+                negated,
+            )
+        }
         _ => {
             unreachable!("unexpected assertion type for literal equality: {:?}", assertion_type);
         }
@@ -777,6 +791,101 @@ fn handle_literal_equality_with_str(
                 }
                 _ => {}
             }
+        }
+    }
+
+    if let Some(key) = &key
+        && let Some(span) = span
+    {
+        trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, false, negated, span);
+    }
+
+    get_never()
+}
+
+fn handle_literal_equality_with_class_string(
+    context: &mut Context<'_, '_>,
+    assertion: &Assertion,
+    assertion_class_string_val: Atom,
+    existing_var_type: &TUnion,
+    key: Option<&String>,
+    old_var_type_atom: Atom,
+    span: Option<&Span>,
+    negated: bool,
+) -> TUnion {
+    let asserted_atomic =
+        TAtomic::Scalar(TScalar::ClassLikeString(TClassLikeString::literal(assertion_class_string_val)));
+
+    if existing_var_type.has_scalar() || existing_var_type.has_array_key() || existing_var_type.has_mixed() {
+        return TUnion::from_atomic(asserted_atomic);
+    }
+
+    for existing_var_atomic_type in existing_var_type.types.as_ref() {
+        match existing_var_atomic_type {
+            TAtomic::Scalar(TScalar::String(TString { literal: None | Some(TStringLiteral::Unspecified), .. })) => {
+                return TUnion::from_atomic(asserted_atomic);
+            }
+            TAtomic::Scalar(TScalar::ClassLikeString(class_like_string)) => {
+                let constraint = match class_like_string {
+                    TClassLikeString::Any { .. } => {
+                        return TUnion::from_atomic(asserted_atomic);
+                    }
+                    TClassLikeString::Literal { value } => {
+                        if value == &assertion_class_string_val {
+                            if existing_var_type.is_single()
+                                && let Some(key) = &key
+                                && let Some(span) = span
+                            {
+                                trigger_issue_for_impossible(
+                                    context,
+                                    old_var_type_atom,
+                                    key,
+                                    assertion,
+                                    true,
+                                    negated,
+                                    span,
+                                );
+                            }
+
+                            return TUnion::from_atomic(asserted_atomic);
+                        }
+
+                        continue;
+                    }
+                    TClassLikeString::Generic { constraint, .. } => constraint.as_ref(),
+                    TClassLikeString::OfType { constraint, .. } => constraint.as_ref(),
+                };
+
+                if is_contained_by(
+                    context.codebase,
+                    &TClassLikeString::literal(assertion_class_string_val).get_object_type(context.codebase),
+                    constraint,
+                    true,
+                    &mut ComparisonResult::new(),
+                ) {
+                    if existing_var_type.is_single()
+                        && let Some(key) = &key
+                        && let Some(span) = span
+                    {
+                        trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, true, negated, span);
+                    }
+
+                    return TUnion::from_atomic(asserted_atomic);
+                }
+            }
+            TAtomic::Scalar(TScalar::String(TString {
+                literal: Some(TStringLiteral::Value(existing_str)), ..
+            })) if existing_str.eq(&assertion_class_string_val) => {
+                if existing_var_type.is_single()
+                    && let Some(key) = &key
+                    && let Some(span) = span
+                {
+                    trigger_issue_for_impossible(context, old_var_type_atom, key, assertion, true, negated, span);
+                }
+
+                return TUnion::from_atomic(asserted_atomic);
+            }
+            _ => {}
         }
     }
 

@@ -150,6 +150,8 @@ test_case!(match_arm_reaching);
 test_case!(properties_added_to_context);
 test_case!(throwing_exceptions);
 test_case!(reference_reused_from_confusing_scope);
+test_case!(reconcile_literl_class_string);
+test_case!(class_string_is_never_equal_to_literal_string);
 
 // Github Issues
 test_case!(issue_306);

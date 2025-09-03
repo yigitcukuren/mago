@@ -166,7 +166,10 @@ fn handle_class_magic_constant<'ctx, 'ast, 'arena>(
         Some(fq_class_id) => {
             artifacts.symbol_references.add_reference_to_symbol(&block_context.scope, fq_class_id, false);
 
-            if class_resolution.is_named() {
+            if class_resolution.is_final
+                || class_resolution.is_from_literal_class_string()
+                || class_resolution.is_named()
+            {
                 TScalar::ClassLikeString(TClassLikeString::literal(fq_class_id))
             } else {
                 TScalar::ClassLikeString(TClassLikeString::of_type(

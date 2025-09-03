@@ -436,6 +436,14 @@ impl TAtomic {
         )
     }
 
+    #[inline]
+    pub const fn is_literal_class_string(&self) -> bool {
+        matches!(
+            self,
+            TAtomic::Scalar(scalar) if scalar.is_literal_class_string()
+        )
+    }
+
     pub const fn is_string_subtype(&self) -> bool {
         matches!(
             self,

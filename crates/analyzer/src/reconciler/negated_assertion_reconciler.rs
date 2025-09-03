@@ -378,6 +378,27 @@ fn handle_literal_negated_equality(
 
                 acceptable_types.push(existing_atomic_type);
             }
+            TAtomic::Scalar(TScalar::ClassLikeString(_)) => {
+                let existing_classlike_string = existing_atomic_type.get_class_string_value();
+                let assertion_value = assertion_type.get_class_string_value();
+
+                match (existing_classlike_string, assertion_value) {
+                    (Some(existing_value), Some(assertion_value)) => {
+                        if existing_value == assertion_value {
+                            did_remove_type = true;
+                        } else {
+                            acceptable_types.push(existing_atomic_type);
+                        }
+                    }
+                    (None, Some(_)) => {
+                        did_remove_type = true;
+                        acceptable_types.push(existing_atomic_type);
+                    }
+                    _ => {
+                        acceptable_types.push(existing_atomic_type);
+                    }
+                }
+            }
             _ => {
                 acceptable_types.push(existing_atomic_type);
             }

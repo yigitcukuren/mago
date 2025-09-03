@@ -129,6 +129,12 @@ impl TScalar {
         TScalar::String(TString::known_literal(value))
     }
 
+    /// Creates a literal `class-string` type with a known value (e.g., `"MyClass"`).
+    #[inline]
+    pub fn literal_class_string(value: Atom) -> Self {
+        TScalar::ClassLikeString(TClassLikeString::literal(value))
+    }
+
     /// Creates a literal `string` type with an unspecified value
     #[inline]
     pub const fn unspecified_literal_string(non_empty: bool) -> Self {
@@ -375,6 +381,15 @@ impl TScalar {
         }
     }
 
+    #[inline]
+    pub const fn is_literal_class_string(&self) -> bool {
+        match self {
+            TScalar::ClassLikeString(s) => s.is_literal(),
+            _ => false,
+        }
+    }
+
+    #[inline]
     pub fn get_literal_class_string_value(&self) -> Option<Atom> {
         match self {
             TScalar::ClassLikeString(s) => s.literal_value(),
