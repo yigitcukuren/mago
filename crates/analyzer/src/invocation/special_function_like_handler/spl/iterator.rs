@@ -33,17 +33,18 @@ impl SpecialFunctionLikeHandlerTrait for IteratorFunctionsHandler {
     ) -> Option<TUnion> {
         match function_like_name {
             "iterator_to_array" => {
-                let preserve_keys = get_argument(invocation.arguments_source, 0, vec!["preserve_keys"])
-                    .and_then(|arg| artifacts.get_expression_type(arg))
-                    .and_then(|arg_ty| {
-                        if arg_ty.is_always_truthy() {
+                let preserve_keys = match get_argument(invocation.arguments_source, 1, vec!["preserve_keys"]) {
+                    Some(argument) => artifacts.get_expression_type(argument).and_then(|argument_type| {
+                        if argument_type.is_always_truthy() {
                             Some(true)
-                        } else if arg_ty.is_always_falsy() {
+                        } else if argument_type.is_always_falsy() {
                             Some(false)
                         } else {
                             None
                         }
-                    });
+                    }),
+                    None => Some(true),
+                };
 
                 let iterator_argument = get_argument(invocation.arguments_source, 0, vec!["iterator"])
                     .and_then(|arg| artifacts.get_rc_expression_type(arg))
@@ -71,7 +72,7 @@ impl SpecialFunctionLikeHandlerTrait for IteratorFunctionsHandler {
                 let iterator_value_type = value_type.unwrap_or_else(get_mixed);
 
                 let Some(preserve_keys) = preserve_keys else {
-                    return Some(get_keyed_array(get_mixed(), iterator_value_type));
+                    return Some(get_keyed_array(get_arraykey(), iterator_value_type));
                 };
 
                 if !preserve_keys {
