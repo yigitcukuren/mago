@@ -526,12 +526,10 @@ fn scrape_class_constant_equality_assertions(
                 } else {
                     Assertion::IsNotIdentical(object_type)
                 }
+            } else if resolved_class.is_final {
+                Assertion::IsType(object_type)
             } else {
-                if resolved_class.is_final {
-                    Assertion::IsType(object_type)
-                } else {
-                    Assertion::IsIdentical(object_type)
-                }
+                Assertion::IsIdentical(object_type)
             });
         }
     }
