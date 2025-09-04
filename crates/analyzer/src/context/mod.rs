@@ -36,7 +36,7 @@ pub struct Context<'ctx, 'arena> {
     pub(super) source_file: &'ctx File,
     pub(super) resolved_names: &'ctx ResolvedNames<'arena>,
     pub(super) type_resolution_context: TypeResolutionContext,
-    pub(super) comments: &'ctx [Trivia<'arena>],
+    pub(super) comments: &'arena [Trivia<'arena>],
     pub(super) settings: &'ctx Settings,
     pub(super) scope: NamespaceScope,
     pub(super) collector: Collector<'ctx, 'arena>,
@@ -51,7 +51,7 @@ impl<'ctx, 'arena> Context<'ctx, 'arena> {
         resolved_names: &'ctx ResolvedNames<'arena>,
         settings: &'ctx Settings,
         statement_span: Span,
-        comments: &'ctx [Trivia<'arena>],
+        comments: &'arena [Trivia<'arena>],
         collector: Collector<'ctx, 'arena>,
     ) -> Self {
         Self {
@@ -132,7 +132,7 @@ impl<'ctx, 'arena> Context<'ctx, 'arena> {
         }
     }
 
-    pub fn get_docblock(&self) -> Option<&'ctx Trivia<'arena>> {
+    pub fn get_docblock(&self) -> Option<&'arena Trivia<'arena>> {
         comments::docblock::get_docblock_before_position(
             self.source_file,
             self.comments,

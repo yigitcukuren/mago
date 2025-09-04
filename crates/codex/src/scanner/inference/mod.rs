@@ -43,7 +43,7 @@ use crate::ttype::wrap_atomic;
 use crate::utils::str_is_numeric;
 
 #[inline]
-pub fn infer<'arena>(resolved_names: &ResolvedNames<'arena>, expression: &Expression<'arena>) -> Option<TUnion> {
+pub fn infer<'arena>(resolved_names: &ResolvedNames<'arena>, expression: &'arena Expression<'arena>) -> Option<TUnion> {
     match expression {
         Expression::Literal(literal) => match literal {
             Literal::String(literal_string) => {
@@ -293,7 +293,10 @@ pub fn infer<'arena>(resolved_names: &ResolvedNames<'arena>, expression: &Expres
 }
 
 #[inline]
-fn infer_constant(names: &ResolvedNames, constant: &Identifier) -> Option<TUnion> {
+fn infer_constant<'ctx, 'arena>(
+    names: &'ctx ResolvedNames<'arena>,
+    constant: &'ctx Identifier<'arena>,
+) -> Option<TUnion> {
     static DIR_SEPARATOR_SLICE: LazyLock<[TAtomic; 2]> = LazyLock::new(|| {
         [
             TAtomic::Scalar(TScalar::String(TString {

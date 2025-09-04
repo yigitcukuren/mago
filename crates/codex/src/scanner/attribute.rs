@@ -9,9 +9,9 @@ use crate::scanner::Context;
 use crate::scanner::inference::infer;
 
 #[inline]
-pub fn scan_attribute_lists<'ctx, 'ast, 'arena>(
-    attribute_lists: &'ast Sequence<'arena, AttributeList<'arena>>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+pub fn scan_attribute_lists<'ctx, 'arena>(
+    attribute_lists: &'arena Sequence<'arena, AttributeList<'arena>>,
+    context: &mut Context<'ctx, 'arena>,
 ) -> Vec<AttributeMetadata> {
     let mut metadata = vec![];
 
@@ -28,10 +28,10 @@ pub fn scan_attribute_lists<'ctx, 'ast, 'arena>(
 }
 
 #[inline]
-pub fn get_attribute_flags<'ctx, 'ast, 'arena>(
+pub fn get_attribute_flags<'ctx, 'arena>(
     class_like_name: Atom,
-    attribute_lists: &'ast Sequence<'arena, AttributeList<'arena>>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    attribute_lists: &'arena Sequence<'arena, AttributeList<'arena>>,
+    context: &mut Context<'ctx, 'arena>,
 ) -> Option<AttributeFlags> {
     if class_like_name.eq_ignore_ascii_case("Attribute") {
         return Some(AttributeFlags::TARGET_CLASS);

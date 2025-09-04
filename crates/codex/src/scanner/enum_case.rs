@@ -9,9 +9,9 @@ use crate::scanner::attribute::scan_attribute_lists;
 use crate::scanner::inference::infer;
 
 #[inline]
-pub fn scan_enum_case<'ctx, 'ast, 'arena>(
-    case: &'ast EnumCase<'arena>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+pub fn scan_enum_case<'ctx, 'arena>(
+    case: &'arena EnumCase<'arena>,
+    context: &mut Context<'ctx, 'arena>,
 ) -> EnumCaseMetadata {
     let span = case.span();
     let attributes = scan_attribute_lists(&case.attribute_lists, context);

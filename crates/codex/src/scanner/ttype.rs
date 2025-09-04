@@ -21,10 +21,10 @@ use crate::ttype::union::TUnion;
 use crate::ttype::*;
 
 #[inline]
-pub fn get_type_metadata_from_hint<'ast, 'arena>(
-    hint: &'ast Hint<'arena>,
+pub fn get_type_metadata_from_hint<'arena>(
+    hint: &'arena Hint<'arena>,
     classname: Option<Atom>,
-    context: &mut Context<'_, 'ast, 'arena>,
+    context: &mut Context<'_, 'arena>,
 ) -> TypeMetadata {
     let type_union = get_union_from_hint(hint, classname, context);
 
@@ -48,10 +48,10 @@ pub fn get_type_metadata_from_type_string(
 }
 
 #[inline]
-fn get_union_from_hint<'ast, 'arena>(
-    hint: &'ast Hint<'arena>,
+fn get_union_from_hint<'arena>(
+    hint: &'arena Hint<'arena>,
     classname: Option<Atom>,
-    context: &mut Context<'_, 'ast, 'arena>,
+    context: &mut Context<'_, 'arena>,
 ) -> TUnion {
     match hint {
         Hint::Parenthesized(parenthesized_hint) => get_union_from_hint(parenthesized_hint.hint, classname, context),
@@ -148,9 +148,9 @@ fn get_union_from_hint<'ast, 'arena>(
 }
 
 #[inline]
-fn get_union_from_identifier_hint<'ast, 'arena>(
-    identifier: &'ast Identifier<'arena>,
-    context: &mut Context<'_, 'ast, 'arena>,
+fn get_union_from_identifier_hint<'arena>(
+    identifier: &'arena Identifier<'arena>,
+    context: &mut Context<'_, 'arena>,
 ) -> TUnion {
     let name = context.resolved_names.get(identifier);
 

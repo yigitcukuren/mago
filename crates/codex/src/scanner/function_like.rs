@@ -30,11 +30,11 @@ use crate::ttype::resolution::TypeResolutionContext;
 use crate::visibility::Visibility;
 
 #[inline]
-pub fn scan_method<'ctx, 'ast, 'arena>(
+pub fn scan_method<'ctx, 'arena>(
     functionlike_id: (Atom, Atom),
-    method: &'ast Method<'arena>,
+    method: &'arena Method<'arena>,
     class_like_metadata: &ClassLikeMetadata,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    context: &mut Context<'ctx, 'arena>,
     scope: &mut NamespaceScope,
     type_resolution_context: Option<TypeResolutionContext>,
 ) -> FunctionLikeMetadata {
@@ -108,11 +108,11 @@ pub fn scan_method<'ctx, 'ast, 'arena>(
 }
 
 #[inline]
-pub fn scan_function<'ctx, 'ast, 'arena>(
+pub fn scan_function<'ctx, 'arena>(
     functionlike_id: (Atom, Atom),
-    function: &'ast Function<'arena>,
+    function: &'arena Function<'arena>,
     classname: Option<Atom>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    context: &mut Context<'ctx, 'arena>,
     scope: &mut NamespaceScope,
     type_resolution_context: TypeResolutionContext,
 ) -> FunctionLikeMetadata {
@@ -167,11 +167,11 @@ pub fn scan_function<'ctx, 'ast, 'arena>(
 }
 
 #[inline]
-pub fn scan_closure<'ctx, 'ast, 'arena>(
+pub fn scan_closure<'ctx, 'arena>(
     functionlike_id: (Atom, Atom),
-    closure: &'ast Closure<'arena>,
+    closure: &'arena Closure<'arena>,
     classname: Option<Atom>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    context: &mut Context<'ctx, 'arena>,
     scope: &mut NamespaceScope,
     type_resolution_context: TypeResolutionContext,
 ) -> FunctionLikeMetadata {
@@ -218,11 +218,11 @@ pub fn scan_closure<'ctx, 'ast, 'arena>(
 }
 
 #[inline]
-pub fn scan_arrow_function<'ctx, 'ast, 'arena>(
+pub fn scan_arrow_function<'ctx, 'arena>(
     functionlike_id: (Atom, Atom),
-    arrow_function: &'ast ArrowFunction<'arena>,
+    arrow_function: &'arena ArrowFunction<'arena>,
     classname: Option<Atom>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    context: &mut Context<'ctx, 'arena>,
     scope: &mut NamespaceScope,
     type_resolution_context: TypeResolutionContext,
 ) -> FunctionLikeMetadata {
@@ -268,12 +268,12 @@ pub fn scan_arrow_function<'ctx, 'ast, 'arena>(
     metadata
 }
 
-fn scan_function_like_docblock<'ctx, 'ast, 'arena>(
+fn scan_function_like_docblock<'ctx, 'arena>(
     span: Span,
     functionlike_id: (Atom, Atom),
     metadata: &mut FunctionLikeMetadata,
     classname: Option<Atom>,
-    context: &mut Context<'ctx, 'ast, 'arena>,
+    context: &mut Context<'ctx, 'arena>,
     scope: &mut NamespaceScope,
 ) {
     let docblock = match FunctionLikeDocblockComment::create(context, span, scope) {

@@ -81,7 +81,7 @@ pub struct TraitUseDocblockComment {
 
 impl ClassLikeDocblockComment {
     pub fn create(
-        context: &Context<'_, '_, '_>,
+        context: &Context<'_, '_>,
         class_like: impl HasSpan,
         scope: &mut NamespaceScope,
     ) -> Result<Option<ClassLikeDocblockComment>, ParseError> {
@@ -246,7 +246,7 @@ impl ClassLikeDocblockComment {
 
 impl FunctionLikeDocblockComment {
     pub fn create(
-        context: &Context<'_, '_, '_>,
+        context: &Context<'_, '_>,
         function: impl HasSpan,
         scope: &mut NamespaceScope,
     ) -> Result<Option<FunctionLikeDocblockComment>, ParseError> {
@@ -426,7 +426,7 @@ impl FunctionLikeDocblockComment {
 
 impl PropertyDocblockComment {
     pub fn create(
-        context: &Context<'_, '_, '_>,
+        context: &Context<'_, '_>,
         property: impl HasSpan,
     ) -> Result<Option<PropertyDocblockComment>, ParseError> {
         let Some(docblock) = context.get_docblock(property) else {
@@ -488,7 +488,7 @@ impl PropertyDocblockComment {
 
 impl ConstantDocblockComment {
     pub fn create(
-        context: &Context<'_, '_, '_>,
+        context: &Context<'_, '_>,
         constant: impl HasSpan,
     ) -> Result<Option<ConstantDocblockComment>, ParseError> {
         let Some(docblock) = context.get_docblock(constant) else {
@@ -551,7 +551,7 @@ impl ConstantDocblockComment {
 
 impl TraitUseDocblockComment {
     pub fn create(
-        context: &Context<'_, '_, '_>,
+        context: &Context<'_, '_>,
         trait_use: impl HasSpan,
     ) -> Result<Option<TraitUseDocblockComment>, ParseError> {
         let Some(docblock) = context.get_docblock(trait_use) else {

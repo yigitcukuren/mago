@@ -23,11 +23,11 @@ use crate::ttype::resolution::TypeResolutionContext;
 use crate::visibility::Visibility;
 
 #[inline]
-pub fn scan_promoted_property<'ast, 'arena>(
-    parameter: &'ast FunctionLikeParameter<'arena>,
+pub fn scan_promoted_property<'arena>(
+    parameter: &'arena FunctionLikeParameter<'arena>,
     parameter_metadata: &FunctionLikeParameterMetadata,
     class_metadata: &ClassLikeMetadata,
-    context: &mut Context<'_, 'ast, 'arena>,
+    context: &mut Context<'_, 'arena>,
 ) -> PropertyMetadata {
     debug_assert!(parameter.is_promoted_property(), "Parameter is not a promoted property");
 
@@ -96,12 +96,12 @@ pub fn scan_promoted_property<'ast, 'arena>(
 }
 
 #[inline]
-pub fn scan_properties<'ast, 'arena>(
-    property: &'ast Property<'arena>,
+pub fn scan_properties<'arena>(
+    property: &'arena Property<'arena>,
     class_like_metadata: &mut ClassLikeMetadata,
     classname: Option<Atom>,
     type_context: &TypeResolutionContext,
-    context: &mut Context<'_, 'ast, 'arena>,
+    context: &mut Context<'_, 'arena>,
     scope: &NamespaceScope,
 ) -> Vec<PropertyMetadata> {
     let docblock = match PropertyDocblockComment::create(context, property) {
@@ -273,9 +273,9 @@ pub fn scan_properties<'ast, 'arena>(
 }
 
 #[inline]
-pub fn scan_property_item<'ast, 'arena>(
-    property_item: &'ast PropertyItem<'arena>,
-    context: &mut Context<'_, 'ast, 'arena>,
+pub fn scan_property_item<'arena>(
+    property_item: &'arena PropertyItem<'arena>,
+    context: &mut Context<'_, 'arena>,
 ) -> (VariableIdentifier, Span, bool, Option<TypeMetadata>) {
     match property_item {
         PropertyItem::Abstract(property_abstract_item) => {

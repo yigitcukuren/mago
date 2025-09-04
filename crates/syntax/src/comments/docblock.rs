@@ -22,11 +22,11 @@ use crate::ast::TriviaKind;
 /// An `Option` containing a reference to the `Trivia` representing the docblock comment if found,
 /// or `None` if no suitable docblock comment exists before the node.
 #[inline]
-pub fn get_docblock_for_node<'ast, 'arena>(
-    program: &'ast Program<'arena>,
+pub fn get_docblock_for_node<'arena>(
+    program: &'arena Program<'arena>,
     file: &File,
     node: impl HasSpan,
-) -> Option<&'ast Trivia<'arena>> {
+) -> Option<&'arena Trivia<'arena>> {
     get_docblock_before_position(file, program.trivia.as_slice(), node.span().start.offset)
 }
 
@@ -45,11 +45,11 @@ pub fn get_docblock_for_node<'ast, 'arena>(
 /// # Returns
 ///
 /// An `Option` containing a reference to the `Trivia` representing the docblock comment if found,
-pub fn get_docblock_before_position<'ast, 'arena>(
+pub fn get_docblock_before_position<'arena>(
     file: &File,
-    trivias: &'ast [Trivia<'arena>],
+    trivias: &'arena [Trivia<'arena>],
     node_start_offset: u32,
-) -> Option<&'ast Trivia<'arena>> {
+) -> Option<&'arena Trivia<'arena>> {
     let candidate_partition_idx = trivias.partition_point(|trivia| trivia.span.start.offset < node_start_offset);
     if candidate_partition_idx == 0 {
         return None;
