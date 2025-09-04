@@ -2868,7 +2868,7 @@ function spl_object_id(object $object): int
 }
 
 /**
- * @template K as array-key
+ * @template K
  * @template V
  *
  * @param Traversable<K, V>|array<K, V> $iterator <p>

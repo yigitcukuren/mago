@@ -781,11 +781,7 @@ fn scan_class_like<'ctx, 'arena>(
                 Ok(inheritors_union) => {
                     for inheritor in inheritors_union.types.as_ref() {
                         match inheritor {
-                            TAtomic::Reference(TReference::Symbol {
-                                name,
-                                parameters: None,
-                                intersection_types: None,
-                            }) => {
+                            TAtomic::Reference(TReference::Symbol { name, intersection_types: None, .. }) => {
                                 class_like_metadata
                                     .permitted_inheritors
                                     .get_or_insert_default()

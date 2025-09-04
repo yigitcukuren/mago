@@ -158,3 +158,4 @@ test_case!(expand_class_constant_type);
 
 // Github Issues
 test_case!(issue_306);
+test_case!(issue_359);

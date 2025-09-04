@@ -746,6 +746,40 @@ fn get_reference_from_ast<'i>(
         type_parameters = Some(parameters);
     }
 
+    let is_generator = fq_reference_name_id.eq_ignore_ascii_case("Generator");
+
+    let is_iterator = is_generator
+        || fq_reference_name_id.eq_ignore_ascii_case("Iterator")
+        || fq_reference_name_id.eq_ignore_ascii_case("IteratorAggregate")
+        || fq_reference_name_id.eq_ignore_ascii_case("Traversable");
+
+    'iterator: {
+        if !is_iterator {
+            break 'iterator;
+        }
+
+        let Some(type_parameters) = &mut type_parameters else {
+            type_parameters = Some(vec![get_mixed(), get_mixed()]);
+
+            break 'iterator;
+        };
+
+        if type_parameters.len() == 1 {
+            type_parameters.insert(0, get_mixed());
+        } else if type_parameters.is_empty() {
+            type_parameters.push(get_mixed());
+            type_parameters.push(get_mixed());
+        }
+
+        if !is_generator {
+            break 'iterator;
+        }
+
+        while type_parameters.len() < 4 {
+            type_parameters.push(get_mixed());
+        }
+    }
+
     if is_named_object {
         Ok(TAtomic::Object(TObject::Named(TNamedObject {
             name: fq_reference_name_id,
