@@ -99,6 +99,7 @@ pub struct RulesSettings {
     pub function_name: RuleSettings<FunctionNameConfig>,
     pub explicit_nullable_param: RuleSettings<ExplicitNullableParamConfig>,
     pub explicit_octal: RuleSettings<ExplicitOctalConfig>,
+    pub prefer_arrow_function: RuleSettings<PreferArrowFunctionConfig>,
     pub prefer_interface: RuleSettings<PreferInterfaceConfig>,
     pub prefer_view_array: RuleSettings<PreferViewArrayConfig>,
     pub prefer_while_loop: RuleSettings<PreferWhileLoopConfig>,

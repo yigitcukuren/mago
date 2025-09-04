@@ -210,6 +210,7 @@ define_rules! {
     FunctionName(function_name @ FunctionNameRule),
     ExplicitOctal(explicit_octal @ ExplicitOctalRule),
     ExplicitNullableParam(explicit_nullable_param @ ExplicitNullableParamRule),
+    PreferArrowFunction(prefer_arrow_function @ PreferArrowFunctionRule),
     PreferViewArray(prefer_view_array @ PreferViewArrayRule),
     PreferWhileLoop(prefer_while_loop @ PreferWhileLoopRule),
     PslArrayFunctions(psl_array_functions @ PslArrayFunctionsRule),

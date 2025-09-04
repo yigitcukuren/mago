@@ -15,6 +15,7 @@ This document details the rules available in the `BestPractices` category.
 | Middleware In Routes | [`middleware-in-routes`](#middleware-in-routes) |
 | No Sprintf Concat | [`no-sprintf-concat`](#no-sprintf-concat) |
 | Prefer Anonymous Migration | [`prefer-anonymous-migration`](#prefer-anonymous-migration) |
+| Prefer Arrow Function | [`prefer-arrow-function`](#prefer-arrow-function) |
 | Prefer First Class Callable | [`prefer-first-class-callable`](#prefer-first-class-callable) |
 | Prefer Interface | [`prefer-interface`](#prefer-interface) |
 | Prefer View Array | [`prefer-view-array`](#prefer-view-array) |
@@ -324,6 +325,46 @@ class MyMigration extends Migration {
 }
 
 return new MyMigration();
+```
+
+
+## <a id="prefer-arrow-function"></a>`prefer-arrow-function`
+
+Promotes the use of arrow functions (`fn() => ...`) over traditional closures (`function() { ... }`).
+
+This rule identifies closures that consist solely of a single return statement
+and suggests converting them to arrow functions.
+
+
+### Requirements
+
+- **PHP version:** >= `7.4.0`
+
+### Configuration
+
+| Option | Type | Default |
+| :--- | :--- | :--- |
+| `enabled` | `boolean` | `true` |
+| `level` | `string` | `"help"` |
+
+### Examples
+
+#### Correct code
+
+```php
+<?php
+
+$a = fn($x) => $x + 1;
+```
+
+#### Incorrect code
+
+```php
+<?php
+
+$a = function($x) {
+    return $x + 1;
+};
 ```
 
 
