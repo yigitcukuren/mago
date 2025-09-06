@@ -1,16 +1,5 @@
 <?php
 
-namespace {
-    class Attribute
-    {
-    }
-
-    #[Attribute]
-    class Deprecated
-    {
-    }
-}
-
 namespace Fixture {
     class NotATrait
     {

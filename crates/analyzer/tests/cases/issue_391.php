@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @pure
- */
-function array_key_exists(string|int|float|bool|null $key, array $array): bool {}
-
 namespace Psl\Iter {
     /**
      * Returns true if the given iterable contains the key.
@@ -17,9 +12,10 @@ namespace Psl\Iter {
      * @param iterable<Tk, Tv> $iterable
      * @param Tk $key
      */
-    function contains_key(iterable $iterable, mixed $key): bool {}
+    function contains_key(iterable $iterable, mixed $key): bool
+    {
+    }
 }
-
 
 /**
  * @param array<string, int> $test
