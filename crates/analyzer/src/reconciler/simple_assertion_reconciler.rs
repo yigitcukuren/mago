@@ -277,6 +277,7 @@ pub(crate) fn reconcile(
     }
 
     match assertion {
+        Assertion::Any => Some(existing_var_type.clone()),
         Assertion::Truthy | Assertion::NonEmpty => {
             Some(reconcile_truthy_or_non_empty(context, assertion, existing_var_type, key, negated, span))
         }
