@@ -851,7 +851,10 @@ fn scrape_lesser_than_assertions(
                 } else if maximum_count == 0 {
                     if_types.insert(array_variable_id, vec![vec![Assertion::EmptyCountable]]);
                 } else {
-                    if_types.insert(array_variable_id, vec![vec![Assertion::HasAtMostCount(maximum_count as usize)]]);
+                    if_types.insert(
+                        array_variable_id,
+                        vec![vec![Assertion::DoesNotHasAtLeastCount(maximum_count as usize)]],
+                    );
                 }
             }
 
@@ -1024,7 +1027,10 @@ fn scrape_greater_than_assertions(
                 } else if maximum_count == 0 {
                     if_types.insert(array_variable_id, vec![vec![Assertion::EmptyCountable]]);
                 } else {
-                    if_types.insert(array_variable_id, vec![vec![Assertion::HasAtMostCount(maximum_count as usize)]]);
+                    if_types.insert(
+                        array_variable_id,
+                        vec![vec![Assertion::DoesNotHasAtLeastCount(maximum_count as usize)]],
+                    );
                 }
             }
 
