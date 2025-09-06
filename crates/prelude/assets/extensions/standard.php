@@ -5294,7 +5294,7 @@ function in_array(mixed $needle, array $haystack, bool $strict = false): bool
  * @template K of array-key
  * @template V
  *
- * @param K $needle
+ * @param V $needle
  * @param array<K, V> $haystack
  *
  * @return K|false
