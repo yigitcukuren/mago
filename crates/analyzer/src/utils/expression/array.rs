@@ -234,11 +234,7 @@ pub(crate) fn get_array_target_type_given_index<'ctx, 'arena>(
                 has_valid_expected_index = true;
             }
             TAtomic::Null => {
-                if array_like_type.ignore_nullable_issues {
-                    continue;
-                }
-
-                if !in_assignment {
+                if !array_like_type.ignore_nullable_issues && !in_assignment {
                     if !block_context.inside_isset {
                         context.collector.report_with_code(
                             IssueCode::PossiblyNullArrayAccess,
@@ -395,7 +391,7 @@ pub(crate) fn handle_array_access_on_list<'ctx, 'arena>(
         context.codebase,
         dim_type,
         &expected_key_type,
-        false,
+        true,
         false,
         false,
         &mut union_comparison_result,
@@ -559,15 +555,8 @@ pub(crate) fn handle_array_access_on_keyed_array<'ctx, 'arena>(
     };
 
     let mut union_comparison_result = ComparisonResult::new();
-    let index_type_contained_by_expected = is_contained_by(
-        context.codebase,
-        index_type,
-        &key_parameter,
-        false,
-        false,
-        false,
-        &mut union_comparison_result,
-    );
+    let index_type_contained_by_expected =
+        is_contained_by(context.codebase, index_type, &key_parameter, true, false, false, &mut union_comparison_result);
 
     if index_type_contained_by_expected {
         *has_valid_expected_index = true;

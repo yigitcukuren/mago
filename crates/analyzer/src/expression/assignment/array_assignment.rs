@@ -15,6 +15,7 @@ use mago_codex::ttype::get_int;
 use mago_codex::ttype::get_iterable_parameters;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_never;
+use mago_codex::ttype::get_non_negative_int;
 use mago_codex::ttype::union::TUnion;
 use mago_codex::ttype::wrap_atomic;
 use mago_span::HasSpan;
@@ -472,7 +473,7 @@ pub(crate) fn analyze_nested_array_assignment<'ctx, 'ast, 'arena>(
             array_expression_type = scoped_type;
         }
 
-        let new_index_type = array_target_index_type.clone().unwrap_or(Rc::new(get_int()));
+        let new_index_type = array_target_index_type.clone().unwrap_or(Rc::new(get_non_negative_int()));
 
         block_context.inside_assignment = true;
 
