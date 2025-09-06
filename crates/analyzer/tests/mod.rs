@@ -161,6 +161,7 @@ test_case!(arrow_function_inherits_method_templates);
 // Github Issues
 test_case!(issue_306);
 test_case!(issue_355);
+test_case!(issue_357);
 test_case!(issue_358);
 test_case!(issue_359);
 test_case!(issue_361);
