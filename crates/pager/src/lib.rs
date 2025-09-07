@@ -39,31 +39,37 @@
 use std::env;
 use std::ffi::OsStr;
 use std::ffi::OsString;
-use std::io::IsTerminal;
 use std::io::Result;
-use std::io::Write;
-use std::io::stdout;
-use std::process::Child;
-use std::process::Command;
-use std::process::Stdio;
 
 #[cfg(unix)]
 use std::fs::File;
 #[cfg(unix)]
 use std::io::Error;
 #[cfg(unix)]
+use std::io::IsTerminal;
+#[cfg(unix)]
+use std::io::Write;
+#[cfg(unix)]
+use std::io::stdout;
+#[cfg(unix)]
 use std::os::fd::AsRawFd;
 #[cfg(unix)]
 use std::os::fd::RawFd;
+#[cfg(unix)]
+use std::process::Child;
+#[cfg(unix)]
+use std::process::Command;
+#[cfg(unix)]
+use std::process::Stdio;
 
 /// Environment variable to specify a custom pager command.
-const DEFAULT_PAGER_ENV: &str = "MAGO_PAGER";
+pub const DEFAULT_PAGER_ENV: &str = "MAGO_PAGER";
 
 /// Environment variable to disable the pager.
-const NOPAGER_ENV: &str = "NOPAGER";
+pub const NOPAGER_ENV: &str = "NOPAGER";
 
 /// The fallback pager command if no other is specified.
-const DEFAULT_PAGER: &str = "more";
+pub const DEFAULT_PAGER: &str = "more";
 
 /// A builder for configuring and spawning a terminal pager.
 ///
