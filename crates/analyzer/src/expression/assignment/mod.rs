@@ -931,23 +931,23 @@ fn handle_assignment_with_boolean_logic<'ctx, 'arena>(
     );
 }
 
-const fn is_closure_expression<'arena>(expression: &'arena Expression) -> bool {
+const fn is_closure_expression<'arena>(expression: &'arena Expression<'arena>) -> bool {
     if let Expression::Parenthesized(parenthesized) = expression {
-        return is_closure_expression(&parenthesized.expression);
+        return is_closure_expression(parenthesized.expression);
     }
 
     matches!(expression, Expression::Closure(_))
 }
 
-fn get_closure_expression_span<'arena>(expression: &'arena Expression) -> Option<Span> {
+fn get_closure_expression_span<'arena>(expression: &'arena Expression<'arena>) -> Option<Span> {
     if let Expression::Parenthesized(parenthesized) = expression {
-        return get_closure_expression_span(&parenthesized.expression);
+        return get_closure_expression_span(parenthesized.expression);
     }
 
     if matches!(expression, Expression::Closure(_)) { Some(expression.span()) } else { None }
 }
 
-fn get_closure_expression_type<'ctx, 'arena>(expression: &'arena Expression) -> Option<TUnion> {
+fn get_closure_expression_type<'arena>(expression: &'arena Expression<'arena>) -> Option<TUnion> {
     let span = get_closure_expression_span(expression)?;
 
     Some(TUnion::from_atomic(TAtomic::Callable(TCallable::Alias(FunctionLikeIdentifier::Closure(
