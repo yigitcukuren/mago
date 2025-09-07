@@ -566,8 +566,7 @@ pub(crate) fn handle_array_access_on_keyed_array<'ctx, 'arena>(
 
     if let Some(known_items) = keyed_array.get_known_items() {
         if let Some(array_key) = index_type.get_single_array_key() {
-            let possible_value = known_items.get(&array_key).cloned();
-            if let Some((actual_possibly_undefined, actual_value)) = possible_value {
+            if let Some((actual_possibly_undefined, actual_value)) = known_items.get(&array_key).cloned() {
                 *has_valid_expected_index = true;
                 *has_matching_dict_key = true;
 
@@ -602,9 +601,14 @@ pub(crate) fn handle_array_access_on_keyed_array<'ctx, 'arena>(
                 }
 
                 return expression_type;
-            }
+            } else {
+                if in_assignment && !has_value_parameter {
+                    // In an assignment to a non-existent key, the value before assignment is effectively null.
+                    // This allows upstream logic to promote it to an array.
+                    return get_null();
+                }
 
-            if !in_assignment {
+                // This is a read access to a non-existent key.
                 if context.settings.allow_possibly_undefined_array_keys && has_value_parameter {
                     *has_possibly_undefined = true;
 
@@ -725,7 +729,7 @@ pub(crate) fn handle_array_access_on_keyed_array<'ctx, 'arena>(
             }
 
             value_parameter.into_owned()
-        } else if block_context.inside_assignment {
+        } else if in_assignment {
             get_never()
         } else {
             get_null()
