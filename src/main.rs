@@ -74,6 +74,11 @@ pub fn run() -> Result<ExitCode, Error> {
         .stack_size(configuration.stack_size)
         .build_global()?;
 
+    #[cfg(not(unix))]
+    if configuration.use_pager {
+        tracing::warn!("The pager is only supported on unix-like systems. Ignoring the `use-pager` configuration.");
+    }
+
     match command {
         MagoCommand::Init(cmd) => commands::init::execute(cmd, configuration, config),
         MagoCommand::Config(cmd) => commands::config::execute(cmd, configuration),

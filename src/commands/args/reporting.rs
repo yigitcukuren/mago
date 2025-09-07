@@ -243,7 +243,33 @@ impl ReportingArgs {
                 tracing::info!("No issues found.");
             }
         } else {
-            let use_pager = self.pager.unwrap_or(configuration.use_pager);
+            let use_pager = match self.pager {
+                Some(true) => {
+                    #[cfg(not(unix))]
+                    {
+                        tracing::warn!("Pager is only supported on unix-like systems. falling back to no pager.");
+                        false
+                    }
+
+                    #[cfg(unix)]
+                    true
+                }
+                Some(false) => false,
+                None => {
+                    // If this is true on non-unix systems, it would have been reported in
+                    // the main function during initialization.
+                    #[cfg(not(unix))]
+                    {
+                        false
+                    }
+
+                    #[cfg(unix)]
+                    {
+                        configuration.use_pager
+                    }
+                }
+            };
+
             let reporter = Reporter::new(
                 read_database,
                 self.reporting_target,
