@@ -142,6 +142,7 @@ impl Pager {
     /// 4. The hardcoded `DEFAULT_PAGER` ("more").
     ///
     /// If the `NOPAGER` environment variable is set, this method returns `None`.
+    #[cfg(unix)]
     fn determine_command(&self) -> Option<OsString> {
         if env::var_os(NOPAGER_ENV).is_some() {
             return None;
@@ -223,6 +224,59 @@ impl Pager {
 
             Ok(PagerSession::new_active(pager_process, original_stdout_fd))
         }
+    }
+
+    /// Executes a closure within a pager session, handling setup and teardown automatically.
+    ///
+    /// This is a convenience method that simplifies using the pager. It spawns a pager
+    /// session, executes the provided `action` closure, and then ensures the session
+    /// is closed, restoring the original standard output. This avoids the need to
+    /// manually manage the `PagerSession` guard variable.
+    ///
+    /// The closure receives a boolean argument, `is_active`, which is `true` if
+    /// the output is being piped to a pager, and `false` otherwise. This allows for
+    /// conditional logic within your application, such as printing a different header
+    /// or footer when paging is active.
+    ///
+    /// # Arguments
+    ///
+    /// * `action`: A closure to execute. It receives a boolean indicating if the
+    ///   pager is active and should return a `Result`.
+    ///
+    /// # Returns
+    ///
+    /// This method returns the `Result<T>` where `T` is the return type of the closure.
+    /// If spawning the pager fails, it returns an `std::io::Error`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use mago_pager::Pager;
+    /// use std::io::Result;
+    ///
+    /// fn main() -> Result<()> {
+    ///     Pager::new().page(|is_active| {
+    ///         if is_active {
+    ///             println!("--- Pager is active. Showing 1000 lines. ---");
+    ///         }
+    ///
+    ///         for i in 0..1000 {
+    ///             println!("This is line number {}", i);
+    ///         }
+    ///     })?;
+    ///
+    ///     // Pager is automatically closed here.
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn page<T, F>(self, action: F) -> Result<T>
+    where
+        F: FnOnce(bool) -> T,
+    {
+        let session = self.spawn()?;
+        let result = action(session.is_active());
+        drop(session);
+        Ok(result)
     }
 }
 

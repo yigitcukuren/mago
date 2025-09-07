@@ -98,21 +98,20 @@ impl Reporter {
                 pager = pager.command(pager_command);
             }
 
-            let session = pager.spawn()?;
-            let result = format.emit(&mut writer.lock(), &self.database, issues);
-
-            if let Err(error) = result {
-                if error.is_broken_pipe() && session.is_active() {
-                    // Silently ignore broken pipe errors when using a pager.
-                    // This usually means the user quit the pager before reading all the output.
-                    return Ok(highest_level);
-                } else {
-                    return Err(error);
+            return pager.page(|is_active| {
+                match format.emit(&mut writer.lock(), &self.database, issues) {
+                    Ok(_) => Ok(highest_level),
+                    Err(err) if is_active && err.is_broken_pipe() => {
+                        // Silently ignore broken pipe errors when using a pager.
+                        // This usually means the user quit the pager before reading all the output.
+                        Ok(highest_level)
+                    }
+                    Err(err) => Err(err),
                 }
-            }
-        } else {
-            format.emit(&mut writer.lock(), &self.database, issues)?;
+            })?;
         }
+
+        format.emit(&mut writer.lock(), &self.database, issues)?;
 
         Ok(highest_level)
     }
