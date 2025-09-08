@@ -69,7 +69,7 @@ pub const DEFAULT_PAGER_ENV: &str = "MAGO_PAGER";
 pub const NOPAGER_ENV: &str = "NOPAGER";
 
 /// The fallback pager command if no other is specified.
-pub const DEFAULT_PAGER: &str = "more";
+pub const DEFAULT_PAGER: &str = "less";
 
 /// A builder for configuring and spawning a terminal pager.
 ///
