@@ -51,5 +51,5 @@ Mago is organized into several tools and utility commands, each accessed via a s
 | Command                                | Description                                             |
 | :------------------------------------- | :------------------------------------------------------ |
 | [`mago config`](/guide/configuration)  | Displays the final, merged configuration Mago is using. |
-| [`mago init`](/guide/initalization)    | Initializes a new Mago configuration file.              |
+| [`mago init`](/guide/initialization)   | Initializes a new Mago configuration file.              |
 | [`mago self-update`](/guide/upgrading) | Updates Mago to the latest version.                     |

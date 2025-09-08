@@ -19,5 +19,5 @@ This guide will walk you through installing Mago and setting it up for your proj
 Ready to dive in? Here's where to go next:
 
 - **[Installation](/guide/installation.md)**: get Mago installed on your system.
-- **[Initialization](/guide/initalization.md)**: set up a new project with our interactive guide.
+- **[Initialization](/guide/initialization.md)**: set up a new project with our interactive guide.
 - **[Configuration](/guide/configuration.md)**: learn about all the available configuration options.

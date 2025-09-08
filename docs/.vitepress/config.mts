@@ -73,7 +73,7 @@ export default defineConfig({
             link: "/guide/installation",
             items: [{ text: "Upgrading", link: "/guide/upgrading" }],
           },
-          { text: "Initialization", link: "/guide/initalization" },
+          { text: "Initialization", link: "/guide/initialization" },
           { text: "Configuration", link: "/guide/configuration" },
           {
             text: "Environment Variables",

@@ -1,8 +1,8 @@
 ---
-title: "Initalization"
+title: "Initialization"
 ---
 
-# Initalization
+# Initialization
 
 The `mago init` command is the fastest way to get started with Mago on a new or existing project. Its purpose is to generate a `mago.toml` configuration file by guiding you through an interactive setup process.
 
