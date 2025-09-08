@@ -33,7 +33,7 @@
 //!
 //! ## Environment Variables
 //!
-//! - `MAGO_PAGER`: Overrides the default pager command.
+//! - `PAGER`: Overrides the default pager command.
 //! - `NOPAGER`: If set to any value, disables the pager entirely.
 
 use std::env;
@@ -63,7 +63,7 @@ use std::process::Command;
 use std::process::Stdio;
 
 /// Environment variable to specify a custom pager command.
-pub const DEFAULT_PAGER_ENV: &str = "MAGO_PAGER";
+pub const DEFAULT_PAGER_ENV: &str = "PAGER";
 
 /// Environment variable to disable the pager.
 pub const NOPAGER_ENV: &str = "NOPAGER";
@@ -80,7 +80,7 @@ pub struct Pager {
     /// A pager command explicitly set via a builder method.
     /// This takes precedence over environment variables or defaults.
     command: Option<OsString>,
-    /// A fallback command to use if `MAGO_PAGER` is not set.
+    /// A fallback command to use if `PAGER` is not set.
     default_command: Option<OsString>,
     /// Additional environment variables to pass to the pager process.
     envs: Vec<(OsString, OsString)>,
@@ -107,7 +107,7 @@ impl Pager {
 
     /// Sets a default pager command to use if no other pager is configured.
     ///
-    /// This is used as a fallback if `MAGO_PAGER` is not set and no explicit
+    /// This is used as a fallback if `PAGER` is not set and no explicit
     /// command was provided via `.command()`.
     ///
     /// # Arguments
@@ -137,7 +137,7 @@ impl Pager {
     ///
     /// The selection process follows this order of precedence:
     /// 1. The command set via `Pager::command()`.
-    /// 2. The `MAGO_PAGER` environment variable.
+    /// 2. The `PAGER` environment variable.
     /// 3. The command set via `Pager::default_command()`.
     /// 4. The hardcoded `DEFAULT_PAGER` ("more").
     ///
