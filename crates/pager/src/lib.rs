@@ -368,7 +368,7 @@ impl Drop for PagerSession {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use super::*;
     use std::sync::Mutex;
