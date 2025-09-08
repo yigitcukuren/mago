@@ -2895,7 +2895,7 @@ function is_array(mixed $value): bool
 /**
  * @assert-if-true list<mixed> $array
  *
- * @return ($array is list ? true : false)
+ * @return ($array is =list ? true : false)
  *
  * @pure
  */
