@@ -256,7 +256,8 @@ fn analyze_class_instantiation<'ctx, 'arena>(
 
     artifacts.symbol_references.add_reference_for_method_call(&block_context.scope, &constructor_id);
 
-    let mut has_inconsistent_constructor = !metadata.flags.is_final() && !metadata.flags.has_consistent_constructor();
+    let mut has_inconsistent_constructor =
+        !metadata.flags.is_final() && !metadata.name_span.is_none() && !metadata.flags.has_consistent_constructor();
     let mut constructor_span = None;
 
     let mut template_result = TemplateResult::new(
