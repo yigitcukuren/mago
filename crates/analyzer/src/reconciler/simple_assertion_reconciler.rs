@@ -17,15 +17,14 @@ use mago_codex::ttype::atomic::object::named::TNamedObject;
 use mago_codex::ttype::atomic::resource::TResource;
 use mago_codex::ttype::atomic::scalar::TScalar;
 use mago_codex::ttype::atomic::scalar::bool::TBool;
+use mago_codex::ttype::atomic::scalar::float::TFloat;
 use mago_codex::ttype::atomic::scalar::int::TInteger;
 use mago_codex::ttype::atomic::scalar::string::TString;
 use mago_codex::ttype::comparator::ComparisonResult;
 use mago_codex::ttype::comparator::atomic_comparator;
 use mago_codex::ttype::comparator::union_comparator;
 use mago_codex::ttype::get_arraykey;
-use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_closed_resource;
-use mago_codex::ttype::get_false;
 use mago_codex::ttype::get_float;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_iterable;
@@ -40,7 +39,6 @@ use mago_codex::ttype::get_open_resource;
 use mago_codex::ttype::get_resource;
 use mago_codex::ttype::get_scalar;
 use mago_codex::ttype::get_string_with_props;
-use mago_codex::ttype::get_true;
 use mago_codex::ttype::get_union_from_integer;
 use mago_codex::ttype::intersect_union_types;
 use mago_codex::ttype::shared::MIXED_KEYED_ARRAY_ATOMIC;
@@ -80,66 +78,6 @@ pub(crate) fn reconcile(
                     TAtomic::Mixed(_),
                     context,
                     get_scalar(),
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                );
-            }
-            TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_general() => {
-                return intersect_simple!(
-                    TAtomic::Scalar(TScalar::Bool(_)),
-                    TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic),
-                    context,
-                    get_bool(),
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                );
-            }
-            TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_false() => {
-                return intersect_simple!(
-                    TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_false(),
-                    atomic if
-                      matches!(atomic, TAtomic::Mixed(mixed) if mixed.is_isset_from_loop() || !mixed.is_truthy())
-                      || matches!(atomic, TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::Bool(TBool { value: None }))),
-                    context,
-                    get_false(),
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                );
-            }
-            TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_true() => {
-                return intersect_simple!(
-                    TAtomic::Scalar(TScalar::Bool(bool)) if bool.is_true(),
-                    atomic if
-                      matches!(atomic, TAtomic::Mixed(mixed) if mixed.is_isset_from_loop() || !mixed.is_falsy())
-                      || matches!(atomic, TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::Bool(TBool { value: None }))),
-                    context,
-                    get_true(),
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                );
-            }
-            TAtomic::Scalar(TScalar::Float(float)) if float.is_general() => {
-                return intersect_simple!(
-                    TAtomic::Scalar(TScalar::Float(float)) if float.is_general(),
-                    TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic),
-                    context,
-                    get_float(),
                     assertion,
                     existing_var_type,
                     key,
@@ -253,6 +191,30 @@ pub(crate) fn reconcile(
                     str.is_truthy,
                     str.is_numeric,
                     str.is_lowercase,
+                ));
+            }
+            TAtomic::Scalar(TScalar::Bool(bool)) => {
+                return Some(intersect_bool(
+                    context,
+                    assertion,
+                    existing_var_type,
+                    key,
+                    negated,
+                    span,
+                    assertion.has_equality(),
+                    bool,
+                ));
+            }
+            TAtomic::Scalar(TScalar::Float(float)) if float.is_general() => {
+                return Some(intersect_float(
+                    context,
+                    assertion,
+                    existing_var_type,
+                    key,
+                    negated,
+                    span,
+                    assertion.has_equality(),
+                    float,
                 ));
             }
             TAtomic::Scalar(TScalar::Integer(i)) if !i.is_literal() => {
@@ -1068,6 +1030,158 @@ fn intersect_string(
     get_never()
 }
 
+fn intersect_bool(
+    context: &mut Context<'_, '_>,
+    assertion: &Assertion,
+    existing_var_type: &TUnion,
+    key: Option<&String>,
+    negated: bool,
+    span: Option<&Span>,
+    is_equality: bool,
+    boolean: &TBool,
+) -> TUnion {
+    let mut acceptable_types = Vec::new();
+    let mut did_remove_type = false;
+
+    for atomic in existing_var_type.types.as_ref() {
+        match atomic {
+            TAtomic::Scalar(TScalar::Bool(existing_bool)) => {
+                if existing_bool.is_general() || existing_bool == boolean {
+                    acceptable_types.push(TAtomic::Scalar(TScalar::Bool(*boolean)));
+                } else {
+                    did_remove_type = true;
+                }
+            }
+            TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
+                return TUnion::from_atomic(TAtomic::Scalar(TScalar::Bool(*boolean)));
+            }
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+
+                if let Some(atomic) = map_generic_constraint_or_else(
+                    generic_parameter,
+                    || TUnion::from_atomic(TAtomic::Scalar(TScalar::Bool(*boolean))),
+                    |constraint| {
+                        intersect_bool(context, assertion, constraint, None, false, None, is_equality, boolean)
+                    },
+                ) {
+                    acceptable_types.push(atomic);
+                }
+            }
+            TAtomic::Variable(_) => {
+                acceptable_types.push(atomic.clone());
+                did_remove_type = true;
+            }
+            _ => {
+                if atomic_comparator::is_contained_by(
+                    context.codebase,
+                    atomic,
+                    &TAtomic::Scalar(TScalar::Bool(*boolean)),
+                    false,
+                    &mut ComparisonResult::new(),
+                ) {
+                    acceptable_types.push(atomic.clone());
+                } else {
+                    did_remove_type = true;
+                }
+            }
+        }
+    }
+
+    if (acceptable_types.is_empty() || (!did_remove_type && !is_equality))
+        && let Some(key) = key
+        && let Some(span) = span
+    {
+        trigger_issue_for_impossible(
+            context,
+            existing_var_type.get_id(),
+            key,
+            assertion,
+            !did_remove_type,
+            negated,
+            span,
+        );
+    }
+
+    if !acceptable_types.is_empty() {
+        return TUnion::from_vec(acceptable_types);
+    }
+
+    get_never()
+}
+
+fn intersect_float(
+    context: &mut Context<'_, '_>,
+    assertion: &Assertion,
+    existing_var_type: &TUnion,
+    key: Option<&String>,
+    negated: bool,
+    span: Option<&Span>,
+    is_equality: bool,
+    float: &TFloat,
+) -> TUnion {
+    let mut acceptable_types = Vec::new();
+    let mut did_remove_type = false;
+
+    for atomic in existing_var_type.types.as_ref() {
+        match atomic {
+            TAtomic::Scalar(TScalar::Float(_)) => {
+                acceptable_types.push(TAtomic::Scalar(TScalar::Float(*float)));
+            }
+            TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::Numeric) => {
+                return get_float();
+            }
+            TAtomic::GenericParameter(generic_parameter) => {
+                did_remove_type = true;
+
+                if let Some(atomic) = map_generic_constraint_or_else(generic_parameter, get_float, |constraint| {
+                    intersect_float(context, assertion, constraint, None, false, None, is_equality, float)
+                }) {
+                    acceptable_types.push(atomic);
+                }
+            }
+            TAtomic::Variable(_) => {
+                acceptable_types.push(atomic.clone());
+                did_remove_type = true;
+            }
+            _ => {
+                if atomic_comparator::is_contained_by(
+                    context.codebase,
+                    atomic,
+                    &TAtomic::Scalar(TScalar::Float(*float)),
+                    false,
+                    &mut ComparisonResult::new(),
+                ) {
+                    acceptable_types.push(atomic.clone());
+                } else {
+                    did_remove_type = true;
+                }
+            }
+        }
+    }
+
+    if (acceptable_types.is_empty() || (!did_remove_type && !is_equality))
+        && let Some(key) = key
+        && let Some(span) = span
+    {
+        trigger_issue_for_impossible(
+            context,
+            existing_var_type.get_id(),
+            key,
+            assertion,
+            !did_remove_type,
+            negated,
+            span,
+        );
+    }
+
+    if !acceptable_types.is_empty() {
+        return TUnion::from_vec(acceptable_types);
+    }
+
+    get_never()
+}
+
 fn intersect_int(
     context: &mut Context<'_, '_>,
     assertion: &Assertion,
@@ -1086,7 +1200,10 @@ fn intersect_int(
             TAtomic::Scalar(TScalar::Integer(_)) => {
                 acceptable_types.push(TAtomic::Scalar(TScalar::Integer(*integer)));
             }
-            TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
+            TAtomic::Mixed(_)
+            | TAtomic::Scalar(TScalar::Generic)
+            | TAtomic::Scalar(TScalar::ArrayKey)
+            | TAtomic::Scalar(TScalar::Numeric) => {
                 return get_union_from_integer(integer);
             }
             TAtomic::GenericParameter(generic_parameter) => {

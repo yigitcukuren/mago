@@ -161,6 +161,7 @@ test_case!(expand_class_constant_type);
 test_case!(iterator_to_array);
 test_case!(arrow_function_inherits_method_templates);
 test_case!(all_paths_return_value);
+test_case!(reconcile_scalars);
 
 // Github Issues
 test_case!(issue_275);

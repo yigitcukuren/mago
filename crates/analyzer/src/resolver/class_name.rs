@@ -359,6 +359,15 @@ pub fn get_class_name_from_atomic(codebase: &CodebaseMetadata, atomic: &TAtomic)
         active_class_string: Option<&TClassLikeString>,
     ) -> Option<ResolvedClassname> {
         let mut class_name = match atomic {
+            TAtomic::GenericParameter(parameter) => parameter
+                .constraint
+                .types
+                .iter()
+                .filter_map(|constraint_atomic| {
+                    get_class_name_from_atomic_impl(codebase, constraint_atomic, active_class_string)
+                })
+                .next()
+                .unwrap_or_else(ResolvedClassname::invalid),
             TAtomic::Object(object) => match object {
                 TObject::Any => {
                     let origin = if let Some(class_string) = active_class_string {
