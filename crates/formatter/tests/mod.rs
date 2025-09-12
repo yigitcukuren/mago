@@ -159,6 +159,7 @@ test_case!(predictable_arguments);
 test_case!(preserve_predictable_arguments);
 test_case!(unary_prefix_prec);
 test_case!(rescue);
+test_case!(yield_kv_closure);
 
 // A special test case for regressions in the Psl codebase
 test_case!(psl_regressions);

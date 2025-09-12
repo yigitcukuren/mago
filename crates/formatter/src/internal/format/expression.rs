@@ -1232,8 +1232,11 @@ impl<'arena> Format<'arena> for YieldPair<'arena> {
                 self.key.format(f),
                 Document::space(),
                 Document::String("=>"),
-                Document::space(),
-                self.value.format(f),
+                Document::IndentIfBreak(IndentIfBreak::new(vec![
+                    in f.arena;
+                    Document::Line(Line::default()),
+                    self.value.format(f),
+                ])),
             ]))
         })
     }
