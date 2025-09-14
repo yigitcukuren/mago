@@ -821,8 +821,27 @@ fn scan_class_like<'ctx, 'arena>(
 
         for property in &docblock.properties {
             let property_name = atom(&property.variable.name);
-            let type_metadata =
-                get_type_metadata_from_type_string(&property.type_string, Some(name), &type_context, scope).ok();
+            let type_metadata = if let Some(type_string) = &property.type_string {
+                match get_type_metadata_from_type_string(type_string, Some(name), &type_context, scope) {
+                    Ok(type_metadata) => Some(type_metadata),
+                    Err(typing_error) => {
+                        class_like_metadata.issues.push(
+                            Issue::error("Could not resolve the property type in the `@property` tag.")
+                                .with_code(ScanningIssueKind::InvalidPropertyTag)
+                                .with_annotation(
+                                    Annotation::primary(typing_error.span()).with_message(typing_error.to_string()),
+                                )
+                                .with_note(typing_error.note())
+                                .with_help(typing_error.help()),
+                        );
+
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
             let mut new_property = PropertyMetadata::new(VariableIdentifier(property_name), MetadataFlags::empty());
             if property.is_read {
                 new_property.read_visibility = Visibility::Public;
@@ -834,6 +853,8 @@ fn scan_class_like<'ctx, 'arena>(
 
             if property.is_read && !property.is_write {
                 new_property.flags.set(MetadataFlags::READONLY, true);
+            } else if !property.is_read && property.is_write {
+                new_property.flags.set(MetadataFlags::WRITEONLY_PROPERTY, true);
             }
 
             if let Some(type_metadata) = type_metadata {

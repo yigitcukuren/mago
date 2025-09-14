@@ -220,26 +220,17 @@ impl ClassLikeDocblockComment {
                         .push(TypeString { value: tag.description.to_string(), span: tag.description_span });
                 }
                 TagKind::Property | TagKind::PsalmProperty => {
-                    if let Some(mut property_tag) = parse_property_tag(tag.description, tag.description_span) {
-                        property_tag.is_read = true;
-                        property_tag.is_write = true;
-
+                    if let Some(property_tag) = parse_property_tag(tag.description, tag.description_span, true, true) {
                         properties.push(property_tag);
                     }
                 }
                 TagKind::PropertyRead | TagKind::PsalmPropertyRead => {
-                    if let Some(mut property_tag) = parse_property_tag(tag.description, tag.description_span) {
-                        property_tag.is_read = true;
-                        property_tag.is_write = false;
-
+                    if let Some(property_tag) = parse_property_tag(tag.description, tag.description_span, true, false) {
                         properties.push(property_tag);
                     }
                 }
                 TagKind::PropertyWrite | TagKind::PsalmPropertyWrite => {
-                    if let Some(mut property_tag) = parse_property_tag(tag.description, tag.description_span) {
-                        property_tag.is_read = false;
-                        property_tag.is_write = true;
-
+                    if let Some(property_tag) = parse_property_tag(tag.description, tag.description_span, false, true) {
                         properties.push(property_tag);
                     }
                 }

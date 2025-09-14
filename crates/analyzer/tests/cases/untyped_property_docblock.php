@@ -5,17 +5,17 @@ class A
 }
 
 /**
- * @property-read A|int $x
- * @property int $y
- * @property-write int $z
+ * @property-read  $x
+ * @property  $y
+ * @property-write      $z
  */
 class T
 {
-    private A|int $x;
 }
 
 /**
  * @mago-expect analysis:invalid-property-write
+ * @mago-expect analysis:mixed-assignment
  */
 function foo(): void
 {
@@ -24,6 +24,9 @@ function foo(): void
     $t->x = 10;
 }
 
+/**
+ * @mago-expect analysis:mixed-assignment
+ */
 function bar(): void
 {
     $t = new T();

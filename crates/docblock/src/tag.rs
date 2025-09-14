@@ -13,7 +13,7 @@ pub struct Variable {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct PropertyTag {
     pub span: Span,
-    pub type_string: TypeString,
+    pub type_string: Option<TypeString>,
     pub variable: Variable,
     pub is_read: bool,
     pub is_write: bool,
@@ -579,25 +579,36 @@ pub fn parse_import_type_tag(content: &str, span: Span) -> Option<ImportTypeTag>
     Some(ImportTypeTag { span, name: name.to_owned(), from: imported_from.to_owned(), alias })
 }
 
-pub fn parse_property_tag(content: &str, span: Span) -> Option<PropertyTag> {
-    let (type_string, rest_slice) = split_tag_content(content, span)?;
-
-    // Type must exist and be valid
-    if type_string.value.is_empty()
-        || type_string.value.starts_with('{')
-        || (type_string.value.starts_with('$') && type_string.value != "$this")
+pub fn parse_property_tag(content: &str, span: Span, is_read: bool, is_write: bool) -> Option<PropertyTag> {
+    // If we are at `$` and not `$this`, then no type is present:
+    let (type_string, variable) = if content.trim_start().starts_with('$') && !content.trim_start().starts_with("$this")
     {
-        return None;
-    }
+        let var_part = content.split_whitespace().next()?;
+        let variable = parse_var_ident(var_part)?;
 
-    if rest_slice.is_empty() {
-        return None;
-    }
+        (None, variable)
+    } else {
+        let (type_string, rest_slice) = split_tag_content(content, span)?;
 
-    let var_part = rest_slice.split_whitespace().next()?;
-    let variable = parse_var_ident(var_part)?;
+        // Type must exist and be valid
+        if type_string.value.is_empty()
+            || type_string.value.starts_with('{')
+            || (type_string.value.starts_with('$') && type_string.value != "$this")
+        {
+            return None;
+        }
 
-    Some(PropertyTag { span, type_string, variable, is_read: false, is_write: false })
+        if rest_slice.is_empty() {
+            return None;
+        }
+
+        let var_part = rest_slice.split_whitespace().next()?;
+        let variable = parse_var_ident(var_part)?;
+
+        (Some(type_string), variable)
+    };
+
+    Some(PropertyTag { span, type_string, variable, is_read, is_write })
 }
 
 /// Splits tag content into the type string part and the rest, respecting brackets/quotes.

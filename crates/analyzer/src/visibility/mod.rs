@@ -117,6 +117,30 @@ pub fn check_property_read_visibility<'ctx, 'arena>(
         return true;
     };
 
+    if property_metadata.flags.is_virtual_property() && property_metadata.flags.is_writeonly_property() {
+        let class_name = &declaring_class_metadata.original_name;
+
+        context.collector.report_with_code(
+            IssueCode::InvalidPropertyRead,
+            Issue::error(format!(
+                "Cannot read from write-only property `{}::{}`.",
+                class_name, property_name
+            ))
+            .with_annotation(
+                Annotation::primary(member_span.unwrap_or(access_span))
+                    .with_message("Attempt to read from a write-only property"),
+            )
+            .with_annotation(
+                Annotation::secondary(declaring_class_metadata.name_span.unwrap_or(declaring_class_metadata.span))
+                    .with_message(format!("Property is defined as write-only via a `@property-write` tag on class `{}`", class_name)),
+            )
+            .with_note("Properties defined with `@property-write` are 'magic' properties that can be assigned to, but not read from.")
+            .with_help("If this property should be readable, change its docblock definition from `@property-write` to `@property`."),
+        );
+
+        return false;
+    }
+
     let visibility = property_metadata.read_visibility;
     let is_visible =
         is_visible_from_scope(context, visibility, declaring_class_id, block_context.scope.get_class_like_name());

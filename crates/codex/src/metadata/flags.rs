@@ -33,6 +33,7 @@ bitflags::bitflags! {
         const VIRTUAL_PROPERTY          = 1 << 30;
         const ASYMMETRIC_PROPERTY       = 1 << 31;
         const STATIC                    = 1 << 32;
+        const WRITEONLY_PROPERTY        = 1 << 33;
     }
 }
 
@@ -101,6 +102,11 @@ impl MetadataFlags {
     #[inline]
     pub const fn is_readonly(self) -> bool {
         self.contains(Self::READONLY)
+    }
+
+    #[inline]
+    pub const fn is_writeonly_property(self) -> bool {
+        self.contains(Self::WRITEONLY_PROPERTY)
     }
 
     #[inline]

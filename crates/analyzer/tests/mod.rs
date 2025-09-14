@@ -165,6 +165,7 @@ test_case!(reconcile_scalars);
 test_case!(static_anonymous_class);
 test_case!(private_static_method);
 test_case!(property_docblock);
+test_case!(untyped_property_docblock);
 
 // Github Issues
 test_case!(issue_275);
