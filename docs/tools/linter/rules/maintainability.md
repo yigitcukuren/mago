@@ -36,7 +36,7 @@ Cyclomatic complexity is a measure of the number of linearly independent paths t
 | :--- | :--- | :--- |
 | `enabled` | `boolean` | `true` |
 | `level` | `string` | `"error"` |
-| `threshold` | `integer` | `6` |
+| `threshold` | `integer` | `15` |
 
 
 
@@ -133,7 +133,7 @@ For more info: https://en.wikipedia.org/wiki/Halstead_complexity_measures
 | `level` | `string` | `"warning"` |
 | `volume-threshold` | `double` | `1000` |
 | `difficulty-threshold` | `double` | `12` |
-| `effort-threshold` | `double` | `7000` |
+| `effort-threshold` | `double` | `5000` |
 
 
 
@@ -158,7 +158,7 @@ References:
 | :--- | :--- | :--- |
 | `enabled` | `boolean` | `true` |
 | `level` | `string` | `"error"` |
-| `threshold` | `double` | `1.9` |
+| `threshold` | `double` | `1.6` |
 
 
 
@@ -319,7 +319,7 @@ This rule checks the number of cases in enums. If the number of cases exceeds a 
 | :--- | :--- | :--- |
 | `enabled` | `boolean` | `true` |
 | `level` | `string` | `"error"` |
-| `threshold` | `integer` | `30` |
+| `threshold` | `integer` | `20` |
 
 ### Examples
 

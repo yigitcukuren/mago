@@ -1,14 +1,51 @@
 #!/usr/bin/env php
 <?php
 
+declare(strict_types=1);
+
 /**
  * A PHP script to generate markdown documentation for linter rules from the Mago CLI tool.
  *
  * It fetches rule data and configuration, organizes rules by category and integration,
  * and creates markdown files in the specified documentation directory.
  */
+namespace Mago\Scripts;
 
-declare(strict_types=1);
+use Exception;
+use RuntimeException;
+
+use function array_diff;
+use function array_keys;
+use function array_values;
+use function count;
+use function dirname;
+use function file_put_contents;
+use function fwrite;
+use function gettype;
+use function implode;
+use function is_dir;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function ksort;
+use function mkdir;
+use function passthru;
+use function preg_replace;
+use function realpath;
+use function rmdir;
+use function rtrim;
+use function scandir;
+use function shell_exec;
+use function sprintf;
+use function str_contains;
+use function str_ends_with;
+use function str_replace;
+use function str_starts_with;
+use function strtolower;
+use function trim;
+use function ucwords;
+use function unlink;
+use function usort;
 
 /**
  * This enum must stay in sync with the `Integration` enum in `crates/linter/src/integration.rs`.
@@ -42,9 +79,9 @@ enum Integration: int
 }
 
 try {
-    main();
+    namespace\main();
 } catch (Exception $e) {
-    writeln('❌', 'An unexpected error occurred: %s', $e->getMessage());
+    namespace\writeln('❌', 'An unexpected error occurred: %s', $e->getMessage());
     exit(1);
 }
 
@@ -65,26 +102,26 @@ function main(): void
     $rules_target_dir = $docs_dir . '/tools/linter/rules';
     $mago_executable = $project_root . '/target/release/mago';
 
-    writeln('✨', 'Starting linter rule documentation generation...');
+    namespace\writeln('✨', 'Starting linter rule documentation generation...');
 
     // Build the Mago executable first to ensure it's up-to-date.
-    writeln('🏗️ ', 'Building Mago executable in release mode...');
+    namespace\writeln('🏗️ ', 'Building Mago executable in release mode...');
     $build_result = -1;
     passthru('cargo build --release', $build_result);
     if ($build_result !== 0) {
         throw new RuntimeException('Failed to build Mago executable.');
     }
-    writeln('✅', 'Mago executable built successfully.');
+    namespace\writeln('✅', 'Mago executable built successfully.');
 
-    $rules = fetch_rules_from_mago($mago_executable);
-    $linter_config = fetch_linter_config($mago_executable);
-    clean_and_prepare_directories($rules_target_dir);
-    [$rules_by_category, $rules_by_integration] = group_rules($rules);
+    $rules = namespace\fetch_rules_from_mago($mago_executable);
+    $linter_config = namespace\fetch_linter_config($mago_executable);
+    namespace\clean_and_prepare_directories($rules_target_dir);
+    [$rules_by_category, $rules_by_integration] = namespace\group_rules($rules);
 
-    generate_category_files($rules_by_category, $rules_target_dir, $linter_config);
-    generate_overview_page($docs_dir, $rules_by_category, $rules_by_integration);
+    namespace\generate_category_files($rules_by_category, $rules_target_dir, $linter_config);
+    namespace\generate_overview_page($docs_dir, $rules_by_category, $rules_by_integration);
 
-    writeln('✅', 'All documentation files have been generated successfully.');
+    namespace\writeln('✅', 'All documentation files have been generated successfully.');
 }
 
 /**
@@ -107,7 +144,7 @@ function main(): void
  */
 function fetch_rules_from_mago(string $mago_executable): array
 {
-    writeln('🔍', 'Fetching rule data from Mago...');
+    namespace\writeln('🔍', 'Fetching rule data from Mago...');
     $command = "{$mago_executable} lint --pedantic --list-rules --json";
     $json_output = shell_exec($command);
 
@@ -131,7 +168,7 @@ function fetch_rules_from_mago(string $mago_executable): array
      */
     $rules = json_decode($json_output, true, 512, JSON_THROW_ON_ERROR);
 
-    writeln('✅', 'Fetched %d rules successfully.', count($rules));
+    namespace\writeln('✅', 'Fetched %d rules successfully.', count($rules));
 
     return $rules;
 }
@@ -145,8 +182,8 @@ function fetch_rules_from_mago(string $mago_executable): array
  */
 function fetch_linter_config(string $mago_executable): array
 {
-    writeln('⚙️ ', 'Fetching default linter configuration...');
-    $command = "{$mago_executable} config --show linter";
+    namespace\writeln('⚙️ ', 'Fetching default linter configuration...');
+    $command = "{$mago_executable} config --show linter --default";
     $json_output = shell_exec($command);
 
     if ($json_output === null || $json_output === false) {
@@ -162,15 +199,15 @@ function fetch_linter_config(string $mago_executable): array
  */
 function clean_and_prepare_directories(string $rules_target_dir): void
 {
-    writeln('🧹', 'Cleaning target directory: %s', $rules_target_dir);
+    namespace\writeln('🧹', 'Cleaning target directory: %s', $rules_target_dir);
 
     if (is_dir($rules_target_dir)) {
-        delete_directory($rules_target_dir);
+        namespace\delete_directory($rules_target_dir);
     }
 
     mkdir($rules_target_dir, 0o755, true);
 
-    writeln('✅', 'Cleaned and re-created directory: %s', $rules_target_dir);
+    namespace\writeln('✅', 'Cleaned and re-created directory: %s', $rules_target_dir);
 }
 
 /**
@@ -254,7 +291,7 @@ function group_rules(array $rules): array
     $rules_by_integration = [];
 
     foreach ($rules as $rule) {
-        $categoryKebab = to_kebab_case($rule['category']);
+        $categoryKebab = namespace\to_kebab_case($rule['category']);
         $rules_by_category[$rule['category']]['kebab'] = $categoryKebab;
         $rules_by_category[$rule['category']]['rules'][] = $rule;
 
@@ -297,10 +334,10 @@ function group_rules(array $rules): array
  */
 function generate_category_files(array $rules_by_category, string $rules_target_dir, array $linter_config): void
 {
-    writeln('✍️ ', 'Generating documentation file for each category...');
+    namespace\writeln('✍️ ', 'Generating documentation file for each category...');
     foreach ($rules_by_category as $category_name => $data) {
         $file_path = $rules_target_dir . '/' . $data['kebab'] . '.md';
-        $category_content = create_category_markdown_content($category_name, $data['rules'], $linter_config);
+        $category_content = namespace\create_category_markdown_content($category_name, $data['rules'], $linter_config);
         file_put_contents($file_path, $category_content);
     }
 }
@@ -339,7 +376,7 @@ function generate_category_files(array $rules_by_category, string $rules_target_
 function generate_overview_page(string $docs_dir, array $rules_by_category, array $rules_by_integration): void
 {
     $overviewPagePath = $docs_dir . '/tools/linter/rules-and-categories.md';
-    writeln('✍️ ', 'Generating main overview page: %s', $overviewPagePath);
+    namespace\writeln('✍️ ', 'Generating main overview page: %s', $overviewPagePath);
 
     $overviewContent = "---\nsidebar_position: 3\ntitle: Rules & categories\n---\n\n# Rules & categories\n\n";
     $overviewContent .= "**Mago**'s linter comes with a wide variety of rules, each designed to catch a specific type of issue.\n\n";
@@ -355,7 +392,7 @@ function generate_overview_page(string $docs_dir, array $rules_by_category, arra
         foreach ($rules_by_integration as $integrationName => $integrationRules) {
             $overviewContent .= "\n### {$integrationName}\n\n";
             foreach ($integrationRules as $rule) {
-                $categoryKebab = to_kebab_case($rule['category']);
+                $categoryKebab = namespace\to_kebab_case($rule['category']);
                 $overviewContent .= "- [`{$rule['code']}`](./rules/{$categoryKebab}#{$rule['code']})\n";
             }
         }
@@ -408,7 +445,7 @@ function create_category_markdown_content(string $category_name, array $rules, a
 
     foreach ($rules as $rule) {
         $rule_config = $linter_config['rules'][$rule['code']] ?? ['enabled' => true, 'level' => 'error'];
-        $content .= "\n" . generate_rule_docs_section($rule, $rule_config) . "\n\n";
+        $content .= "\n" . namespace\generate_rule_docs_section($rule, $rule_config) . "\n\n";
     }
 
     return $content;
@@ -442,7 +479,7 @@ function generate_rule_docs_section(array $rule, array $config): string
     $bad_example = trim($rule['bad_example']);
 
     if ('' === $good_example && '' === $bad_example) {
-        writeln('⚠️ ', 'Missing examples for rule: %s', $rule['code']);
+        namespace\writeln('⚠️ ', 'Missing examples for rule: %s', $rule['code']);
     }
 
     $requirements = $rule['requirements'];
@@ -582,7 +619,7 @@ function delete_directory(string $dir): void
 
     $files = array_diff($files, ['.', '..']);
     foreach ($files as $file) {
-        is_dir("{$dir}/{$file}") ? delete_directory("{$dir}/{$file}") : unlink("{$dir}/{$file}");
+        is_dir("{$dir}/{$file}") ? namespace\delete_directory("{$dir}/{$file}") : unlink("{$dir}/{$file}");
     }
 
     rmdir($dir);

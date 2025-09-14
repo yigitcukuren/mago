@@ -40,8 +40,8 @@ Contributing to open-source can be intimidating, but don't worry! We're here to 
     # Run all tests
     just test
 
-    # Check for linting issues
-    just lint
+    # Check for problems
+    just check
     ```
 
 7.  **Commit and push**. Commit your changes with a descriptive message and push them to your fork:

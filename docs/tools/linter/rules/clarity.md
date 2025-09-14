@@ -76,7 +76,7 @@ where the intent is often ambiguous without the parameter name.
 
 | Option | Type | Default |
 | :--- | :--- | :--- |
-| `enabled` | `boolean` | `false` |
+| `enabled` | `boolean` | `true` |
 | `level` | `string` | `"warning"` |
 
 ### Examples

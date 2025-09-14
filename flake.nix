@@ -48,7 +48,7 @@
             echo "[mago] nightly:   $(rustup run nightly rustc --version)"
             echo "[mago] php:       $(php -v | head -n1)"
             echo "[mago] composer:  $(composer --version)"
-            echo "[mago] Run: just build | just test | just lint | just fix | just build-wasm"
+            echo "[mago] Run: just build | just test | just check | just fix | just build-wasm"
           '';
         };
       });
