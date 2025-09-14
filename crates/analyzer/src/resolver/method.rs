@@ -155,7 +155,7 @@ pub fn resolve_method_targets<'ctx, 'ast, 'arena>(
                 continue;
             };
 
-            let resolved_call = resolve_method_from_object(
+            let resolved_magic_call_method = resolve_method_from_object(
                 context,
                 block_context,
                 object,
@@ -163,6 +163,7 @@ pub fn resolve_method_targets<'ctx, 'ast, 'arena>(
                 obj_type,
                 atom("__call"),
                 access_span,
+                true,
                 &mut result,
             );
 
@@ -175,12 +176,13 @@ pub fn resolve_method_targets<'ctx, 'ast, 'arena>(
                     obj_type,
                     *method_name,
                     access_span,
+                    !resolved_magic_call_method.is_empty(),
                     &mut result,
                 );
 
                 if resolved_methods.is_empty() {
                     if let Some(classname) = obj_type.get_name() {
-                        if resolved_call.is_empty() {
+                        if resolved_magic_call_method.is_empty() {
                             report_non_existent_method(context, object.span(), selector.span(), classname, method_name);
                         } else {
                             report_non_documented_method(
@@ -218,6 +220,7 @@ pub fn resolve_method_from_object<'ctx, 'ast, 'arena>(
     object_type: &TObject,
     method_name: Atom,
     access_span: Span,
+    has_magic_call: bool,
     result: &mut MethodResolutionResult,
 ) -> Vec<ResolvedMethod> {
     let mut resolved_methods = vec![];
@@ -231,6 +234,7 @@ pub fn resolve_method_from_object<'ctx, 'ast, 'arena>(
         object_type,
         method_name,
         access_span,
+        has_magic_call,
         result,
     );
 
@@ -282,6 +286,7 @@ pub fn get_method_ids_from_object<'ctx, 'ast, 'arena, 'object>(
     outer_object: &'object TObject,
     method_name: Atom,
     access_span: Span,
+    has_magic_call: bool,
     result: &mut MethodResolutionResult,
 ) -> Vec<(&'ctx ClassLikeMetadata, MethodIdentifier, &'object TObject, Atom)> {
     let mut ids = vec![];
@@ -308,7 +313,7 @@ pub fn get_method_ids_from_object<'ctx, 'ast, 'arena, 'object>(
         if !check_method_visibility(
             context,
             block_context,
-            method_id.get_class_name(),
+            &class_metadata.original_name,
             method_id.get_method_name(),
             access_span,
             Some(selector.span()),
@@ -323,9 +328,33 @@ pub fn get_method_ids_from_object<'ctx, 'ast, 'arena, 'object>(
             selector,
             class_metadata,
             function_like_metadata,
-            method_id.get_class_name(),
+            &class_metadata.original_name,
         ) {
             result.has_invalid_target = true;
+        }
+
+        if function_like_metadata.flags.is_magic_method() {
+            if function_like_metadata.flags.is_static() {
+                result.has_invalid_target = true;
+
+                report_dynamic_static_method_call(
+                    context,
+                    object.span(),
+                    selector.span(),
+                    &class_metadata.original_name,
+                    &method_name,
+                    has_magic_call,
+                );
+            } else if !has_magic_call {
+                report_magic_call_without_call_method(
+                    context,
+                    object.span(),
+                    selector.span(),
+                    &class_metadata.original_name,
+                    &method_name,
+                    false,
+                );
+            }
         }
 
         ids.push((class_metadata, method_id, outer_object, *name));
@@ -345,6 +374,7 @@ pub fn get_method_ids_from_object<'ctx, 'ast, 'arena, 'object>(
                         object_type,
                         method_name,
                         access_span,
+                        has_magic_call,
                         result,
                     ));
                 }
@@ -362,6 +392,7 @@ pub fn get_method_ids_from_object<'ctx, 'ast, 'arena, 'object>(
                                 object_type,
                                 method_name,
                                 access_span,
+                                has_magic_call,
                                 result,
                             ));
                         }
@@ -506,11 +537,100 @@ pub(super) fn report_non_documented_method(
 ) {
     context.collector.report_with_code(
         IssueCode::NonDocumentedMethod,
-        Issue::warning(format!("Method `{method_name}` may not exist on type `{classname}`."))
-            .with_annotation(Annotation::primary(selector_span).with_message("This method may not exist"))
+        Issue::warning(format!(
+            "Ambiguous method call to `{method_name}` on class `{classname}`."
+        ))
+        .with_annotation(
+            Annotation::primary(selector_span).with_message("This method is not explicitly defined"),
+        )
+        .with_annotation(
+            Annotation::secondary(obj_span).with_message(format!("On an object of type `{classname}`")),
+        )
+        .with_note(
+            "While this call might be handled by `__call()` or `__callStatic()`, Mago cannot verify its arguments or return type without a corresponding `@method` docblock tag.",
+        )
+        .with_help(format!(
+            "To enable full analysis, add a `@method` tag to the docblock of the `{classname}` class. For example: `/** @method returnType {method_name}(argType $argName) */`"
+        )),
+    );
+}
+
+pub(super) fn report_magic_call_without_call_method(
+    context: &mut Context,
+    obj_span: Span,
+    selector_span: Span,
+    classname: &Atom,
+    method_name: &Atom,
+    is_static: bool,
+) {
+    let magic_method_name = if is_static { "__callStatic" } else { "__call" };
+
+    context.collector.report_with_code(
+        IssueCode::MissingMagicMethod,
+        Issue::error(format!(
+            "Call to documented magic method `{}()` on a class that cannot handle it.",
+            method_name
+        ))
+        .with_annotation(
+            Annotation::primary(selector_span)
+                .with_message("This magic method is documented but cannot be called"),
+        )
+        .with_annotation(
+            Annotation::secondary(obj_span).with_message(format!("Class `{}` is missing the `{}` method", classname, magic_method_name)),
+        )
+        .with_note(
+            format!("The class `{classname}` has a `@method` tag for `{method_name}` but does not have a `{magic_method_name}` method to handle the call. This will cause a fatal `Error` at runtime.")
+        )
+        .with_help(
+            format!("Add a `{}` method to the `{}` class to handle calls to magic methods.", magic_method_name, classname)
+        ),
+    );
+}
+
+pub(super) fn report_dynamic_static_method_call(
+    context: &mut Context,
+    obj_span: Span,
+    selector_span: Span,
+    classname: &Atom,
+    method_name: &Atom,
+    has_magic_call: bool,
+) {
+    let mut issue =
+        Issue::error(format!("Cannot call magic static method `{}::{}` on an instance.", classname, method_name))
             .with_annotation(
-                Annotation::secondary(obj_span).with_message(format!("This expression has type `{classname}`")),
+                Annotation::primary(selector_span)
+                    .with_message("This magic method is static and must be called statically"),
             )
-            .with_help(format!("If you know the `{method_name}` method is defined in the `{classname}` class-like, document it with @method annotations.")),
+            .with_annotation(
+                Annotation::secondary(obj_span).with_message(format!("Called on an instance of `{}`", classname)),
+            );
+
+    if has_magic_call {
+        issue = issue
+            .with_note(format!(
+                "The magic method `{method_name}` is documented as `static` and is intended to be handled by `__callStatic()`."
+            ))
+            .with_note(
+                "However, because it's being called on an instance (`->`), the call will be routed to the existing `__call()` method instead."
+            )
+            .with_note(
+                "This is likely not the intended behavior and may lead to unexpected errors."
+            );
+    } else {
+        issue = issue
+            .with_note(
+                "Magic methods defined with `@method static` are handled by `__callStatic()`."
+            )
+            .with_note(
+                "When called on an instance (`->`), PHP attempts to route the call to a `__call()` method."
+            )
+            .with_note(format!(
+                "Since the class `{classname}` is missing a `__call()` method, this will cause a fatal `Error` at runtime."
+            ));
+    }
+
+    context.collector.report_with_code(
+        IssueCode::DynamicStaticMethodCall,
+        issue.with_help(format!("Call this method statically instead: `{}::{}`.", classname, method_name)),
     );
 }

@@ -1,6 +1,7 @@
 use mago_atom::Atom;
 use mago_atom::ascii_lowercase_atom;
 use mago_atom::atom;
+use mago_docblock::tag::Visibility as DocblockVisibility;
 use mago_names::scope::NamespaceScope;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -840,12 +841,13 @@ fn scan_class_like<'ctx, 'arena>(
 
             method_metadata.is_static = method_tag.method.is_static;
             method_metadata.visibility = match method_tag.method.visibility {
-                mago_docblock::tag::Visibility::Public => Visibility::Public,
-                mago_docblock::tag::Visibility::Protected => Visibility::Protected,
-                mago_docblock::tag::Visibility::Private => Visibility::Private,
+                DocblockVisibility::Public => Visibility::Public,
+                DocblockVisibility::Protected => Visibility::Protected,
+                DocblockVisibility::Private => Visibility::Private,
             };
 
             function_like_metadata.flags.set(MetadataFlags::STATIC, method_tag.method.is_static);
+            function_like_metadata.flags.set(MetadataFlags::MAGIC_METHOD, true);
 
             for argument in &method_tag.method.argument_list {
                 let mut function_parameter_metadata = FunctionLikeParameterMetadata::new(
@@ -917,14 +919,14 @@ fn scan_class_like<'ctx, 'arena>(
             if property.is_read && !property.is_write {
                 new_property.flags.set(MetadataFlags::READONLY, true);
             } else if !property.is_read && property.is_write {
-                new_property.flags.set(MetadataFlags::WRITEONLY_PROPERTY, true);
+                new_property.flags.set(MetadataFlags::WRITEONLY, true);
             }
 
             if let Some(type_metadata) = type_metadata {
                 new_property.type_metadata.replace(type_metadata);
             }
 
-            new_property.flags.set(MetadataFlags::VIRTUAL_PROPERTY, true);
+            new_property.flags.set(MetadataFlags::MAGIC_PROPERTY, true);
 
             class_like_metadata.add_property_metadata(new_property);
         }

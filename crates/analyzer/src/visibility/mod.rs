@@ -117,7 +117,7 @@ pub fn check_property_read_visibility<'ctx, 'arena>(
         return true;
     };
 
-    if property_metadata.flags.is_virtual_property() && property_metadata.flags.is_writeonly_property() {
+    if property_metadata.flags.is_magic_property() && property_metadata.flags.is_writeonly() {
         let class_name = &declaring_class_metadata.original_name;
 
         context.collector.report_with_code(

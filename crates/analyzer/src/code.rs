@@ -32,6 +32,7 @@ pub enum IssueCode {
     DuplicateCaughtType,
     DuplicateClosureUseVariable,
     DuplicateNamedArgument,
+    DynamicStaticMethodCall,
     EmptyMatchExpression,
     EnumInstantiation,
     EnumIteration,
@@ -122,6 +123,7 @@ pub enum IssueCode {
     MatchSubjectTypeIsNever,
     MethodAccessOnNull,
     MismatchedArrayIndex,
+    MissingMagicMethod,
     MissingOverrideAttribute,
     MissingRequiredInterface,
     MissingRequiredParent,
@@ -281,6 +283,7 @@ impl IssueCode {
             Self::DuplicateCaughtType => "duplicate-caught-type",
             Self::DuplicateClosureUseVariable => "duplicate-closure-use-variable",
             Self::DuplicateNamedArgument => "duplicate-named-argument",
+            Self::DynamicStaticMethodCall => "dynamic-static-method-call",
             Self::EmptyMatchExpression => "empty-match-expression",
             Self::EnumInstantiation => "enum-instantiation",
             Self::EnumIteration => "enum-iteration",
@@ -371,6 +374,7 @@ impl IssueCode {
             Self::MatchSubjectTypeIsNever => "match-subject-type-is-never",
             Self::MethodAccessOnNull => "method-access-on-null",
             Self::MismatchedArrayIndex => "mismatched-array-index",
+            Self::MissingMagicMethod => "missing-magic-method",
             Self::MissingOverrideAttribute => "missing-override-attribute",
             Self::MissingRequiredInterface => "missing-required-interface",
             Self::MissingRequiredParent => "missing-required-parent",
@@ -1009,14 +1013,16 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_method_issue_codes() -> [Self; 12] {
+    pub const fn get_method_issue_codes() -> [Self; 14] {
         [
             Self::AmbiguousObjectMethodAccess,
             Self::DeprecatedMethod,
+            Self::DynamicStaticMethodCall,
             Self::InvalidMethodAccess,
             Self::InvalidStaticMethodAccess,
             Self::InvalidStaticMethodCall,
             Self::MethodAccessOnNull,
+            Self::MissingMagicMethod,
             Self::MixedMethodAccess,
             Self::NonDocumentedMethod,
             Self::NonExistentMethod,
@@ -1026,14 +1032,16 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_method_issue_code_values() -> [&'static str; 12] {
+    pub const fn get_method_issue_code_values() -> [&'static str; 14] {
         [
             "ambiguous-object-method-access",
             "deprecated-method",
+            "dynamic-static-method-call",
             "invalid-method-access",
             "invalid-static-method-access",
             "invalid-static-method-call",
             "method-access-on-null",
+            "missing-magic-method",
             "mixed-method-access",
             "non-documented-method",
             "non-existent-method",
@@ -1110,6 +1118,7 @@ impl std::str::FromStr for IssueCode {
             "duplicate-caught-type" => Ok(Self::DuplicateCaughtType),
             "duplicate-closure-use-variable" => Ok(Self::DuplicateClosureUseVariable),
             "duplicate-named-argument" => Ok(Self::DuplicateNamedArgument),
+            "dynamic-static-method-call" => Ok(Self::DynamicStaticMethodCall),
             "empty-match-expression" => Ok(Self::EmptyMatchExpression),
             "enum-instantiation" => Ok(Self::EnumInstantiation),
             "enum-iteration" => Ok(Self::EnumIteration),
@@ -1200,6 +1209,7 @@ impl std::str::FromStr for IssueCode {
             "match-subject-type-is-never" => Ok(Self::MatchSubjectTypeIsNever),
             "method-access-on-null" => Ok(Self::MethodAccessOnNull),
             "mismatched-array-index" => Ok(Self::MismatchedArrayIndex),
+            "missing-magic-method" => Ok(Self::MissingMagicMethod),
             "missing-override-attribute" => Ok(Self::MissingOverrideAttribute),
             "missing-required-interface" => Ok(Self::MissingRequiredInterface),
             "missing-required-parent" => Ok(Self::MissingRequiredParent),

@@ -65,6 +65,8 @@ final class AnalyzerCodeModuleGenerator
         'impossible-array-assignment',
         'mixed-assignment',
         'impossible-assignment',
+        'missing-magic-method',
+        'dynamic-static-method-call',
         'impossible-key-check',
         'impossible-nonnull-entry-check',
         'impossible-null-type-comparison',

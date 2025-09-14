@@ -136,11 +136,7 @@ impl PropertyMetadata {
     /// Sets whether the property uses property hooks. Updates `is_asymmetric`.
     #[inline]
     pub fn set_is_virtual(&mut self, is_virtual: bool) {
-        if is_virtual {
-            self.flags |= MetadataFlags::VIRTUAL_PROPERTY;
-        } else {
-            self.flags &= !MetadataFlags::VIRTUAL_PROPERTY;
-        }
+        self.flags.set(MetadataFlags::VIRTUAL_PROPERTY, is_virtual);
 
         self.update_asymmetric();
     }

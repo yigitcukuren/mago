@@ -14,14 +14,11 @@ class T
     private A|int $x;
 }
 
-/**
- * @mago-expect analysis:invalid-property-write
- */
 function foo(): void
 {
     $t = new T();
     $c = $t->x;
-    $t->x = 10;
+    $t->x = 10; // @mago-expect analysis:invalid-property-write
 }
 
 function bar(): void
@@ -31,13 +28,10 @@ function bar(): void
     $t->y = 10;
 }
 
-/**
- * @mago-expect analysis:invalid-property-read
- * @mago-expect analysis:impossible-assignment
- */
 function baz(): void
 {
     $t = new T();
-    $c = $t->z;
+    // @mago-expect analysis:impossible-assignment
+    $c = $t->z; // @mago-expect analysis:invalid-property-read
     $t->z = 10;
 }

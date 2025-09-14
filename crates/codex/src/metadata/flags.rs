@@ -33,7 +33,9 @@ bitflags::bitflags! {
         const VIRTUAL_PROPERTY          = 1 << 30;
         const ASYMMETRIC_PROPERTY       = 1 << 31;
         const STATIC                    = 1 << 32;
-        const WRITEONLY_PROPERTY        = 1 << 33;
+        const WRITEONLY                 = 1 << 33;
+        const MAGIC_PROPERTY            = 1 << 34;
+        const MAGIC_METHOD              = 1 << 35;
     }
 }
 
@@ -105,8 +107,8 @@ impl MetadataFlags {
     }
 
     #[inline]
-    pub const fn is_writeonly_property(self) -> bool {
-        self.contains(Self::WRITEONLY_PROPERTY)
+    pub const fn is_writeonly(self) -> bool {
+        self.contains(Self::WRITEONLY)
     }
 
     #[inline]
@@ -177,6 +179,16 @@ impl MetadataFlags {
     #[inline]
     pub const fn is_virtual_property(self) -> bool {
         self.contains(Self::VIRTUAL_PROPERTY)
+    }
+
+    #[inline]
+    pub const fn is_magic_property(self) -> bool {
+        self.contains(Self::MAGIC_PROPERTY)
+    }
+
+    #[inline]
+    pub const fn is_magic_method(self) -> bool {
+        self.contains(Self::MAGIC_METHOD)
     }
 
     #[inline]

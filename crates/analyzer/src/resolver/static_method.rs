@@ -33,6 +33,7 @@ use crate::resolver::class_name::ResolvedClassname;
 use crate::resolver::class_name::resolve_classnames_from_expression;
 use crate::resolver::method::MethodResolutionResult;
 use crate::resolver::method::ResolvedMethod;
+use crate::resolver::method::report_magic_call_without_call_method;
 use crate::resolver::method::report_non_documented_method;
 use crate::resolver::method::report_non_existent_method;
 use crate::resolver::selector::resolve_member_selector;
@@ -119,6 +120,7 @@ fn resolve_method_from_classname<'ctx, 'arena>(
          from_instance: bool,
          from_class_string: bool,
          method_name: Atom,
+         has_magic_static_call: bool,
          result: Option<&mut MethodResolutionResult>| {
             let Some(defining_class_metadata) = get_class_like(context.codebase, &fq_class_id) else {
                 return (false, None);
@@ -151,6 +153,8 @@ fn resolve_method_from_classname<'ctx, 'arena>(
                 result,
                 selector,
                 access_span,
+                class_span,
+                has_magic_static_call,
             ) else {
                 return (false, None);
             };
@@ -184,16 +188,17 @@ fn resolve_method_from_classname<'ctx, 'arena>(
     let mut call_static_could_exist = false;
 
     if let Some(fq_class_id) = classname.fqcn {
-        let (_, call_static_resolved) = resolve_method_from_class_id(
+        let (_, resolved_call_static_method) = resolve_method_from_class_id(
             fq_class_id,
             classname.is_relative(),
             classname.is_object_instance(),
             classname.is_from_class_string(),
             atom("__callStatic"),
+            true,
             None,
         );
 
-        call_static_could_exist |= call_static_resolved.is_some();
+        call_static_could_exist |= resolved_call_static_method.is_some();
 
         let (could_method_exist, resolved_method) = resolve_method_from_class_id(
             fq_class_id,
@@ -201,6 +206,7 @@ fn resolve_method_from_classname<'ctx, 'arena>(
             classname.is_object_instance(),
             classname.is_from_class_string(),
             method_name,
+            resolved_call_static_method.is_some(),
             Some(result),
         );
 
@@ -217,16 +223,17 @@ fn resolve_method_from_classname<'ctx, 'arena>(
             continue;
         };
 
-        let (_, call_static_resolved) = resolve_method_from_class_id(
+        let (_, resolved_call_static_method) = resolve_method_from_class_id(
             fq_class_id,
             intersection.is_relative() || classname.is_relative(),
             intersection.is_object_instance() || classname.is_object_instance(),
             intersection.is_from_class_string(),
             atom("__callStatic"),
+            true,
             None,
         );
 
-        call_static_could_exist |= call_static_resolved.is_some();
+        call_static_could_exist |= resolved_call_static_method.is_some();
 
         let (could_method_exist, resolved_method) = resolve_method_from_class_id(
             fq_class_id,
@@ -234,6 +241,7 @@ fn resolve_method_from_classname<'ctx, 'arena>(
             intersection.is_object_instance() || classname.is_object_instance(),
             intersection.is_from_class_string(),
             method_name,
+            resolved_call_static_method.is_some(),
             Some(result),
         );
 
@@ -277,6 +285,8 @@ fn resolve_method_from_metadata<'ctx, 'arena>(
     result: Option<&mut MethodResolutionResult>,
     selector: &ClassLikeMemberSelector<'arena>,
     access_span: Span,
+    class_span: Span,
+    has_magic_static_call: bool,
 ) -> Option<ResolvedMethod> {
     let method_id = get_method_identifier(&defining_class_metadata.original_name, &method_name);
     let declaring_method_id = get_declaring_method_identifier(context.codebase, &method_id);
@@ -293,6 +303,17 @@ fn resolve_method_from_metadata<'ctx, 'arena>(
         )
     {
         result.has_invalid_target = true;
+    }
+
+    if function_like.flags.is_magic_method() && !has_magic_static_call {
+        report_magic_call_without_call_method(
+            context,
+            class_span,
+            selector.span(),
+            method_id.get_class_name(),
+            &method_name,
+            true,
+        );
     }
 
     let static_class_type = if let Some(current_class_metadata) = current_class_metadata
