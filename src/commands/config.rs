@@ -72,12 +72,10 @@ impl ConfigCommand {
                     }
                 }
             }
+        } else if self.default {
+            serde_json::to_string_pretty(&Configuration::from_workspace(CURRENT_DIR.clone()))?
         } else {
-            if self.default {
-                serde_json::to_string_pretty(&Configuration::from_workspace(CURRENT_DIR.clone()))?
-            } else {
-                serde_json::to_string_pretty(&configuration)?
-            }
+            serde_json::to_string_pretty(&configuration)?
         };
 
         println!("{}", json);

@@ -265,47 +265,66 @@ fn scrape_special_function_call_assertions(
         return if_types;
     };
 
-    let resolved_function_name = assertion_context.resolved_names.get(function_identifier);
+    let function_name = ascii_lowercase_atom(function_identifier.value());
+    let resolved_function_name = ascii_lowercase_atom(assertion_context.resolved_names.get(function_identifier));
+    let should_check_against_unresolved = { function_identifier.is_local() };
 
-    let (argument_variable_id_position, function_assertion) = match ascii_lowercase_atom(resolved_function_name)
-        .as_str()
-    {
-        "psl\\iter\\contains_key" => {
-            if let Some(array_key) = function_call
-                .argument_list
-                .arguments
-                .get(1)
-                .map(|argument| argument.value())
-                .and_then(|array_key| get_expression_array_key(artifacts, array_key))
-            {
-                (0, Assertion::HasArrayKey(array_key))
-            } else {
-                return if_types;
+    let (argument_variable_id_position, function_assertion) = if resolved_function_name.starts_with("psl\\") {
+        match resolved_function_name.as_str() {
+            "psl\\iter\\contains_key" => {
+                if let Some(array_key) = function_call
+                    .argument_list
+                    .arguments
+                    .get(1)
+                    .map(|argument| argument.value())
+                    .and_then(|array_key| get_expression_array_key(artifacts, array_key))
+                {
+                    (0, Assertion::HasArrayKey(array_key))
+                } else {
+                    return if_types;
+                }
             }
+            _ => return if_types,
         }
-        "array_key_exists" | "key_exists" => {
-            if let Some(array_key) = function_call
+    } else {
+        let get_builtin_assertion = |name: &str| match name {
+            "array_key_exists" | "key_exists" => function_call
                 .argument_list
                 .arguments
                 .first()
                 .map(|argument| argument.value())
                 .and_then(|array_key| get_expression_array_key(artifacts, array_key))
-            {
-                (1, Assertion::HasArrayKey(array_key))
-            } else {
-                return if_types;
-            }
+                .map(|key| (1, Assertion::HasArrayKey(key))),
+            "is_countable" => Some((0, Assertion::Countable)),
+            "ctype_digit" => Some((
+                0,
+                Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    true, false, false, false,
+                )))),
+            )),
+            "ctype_lower" => Some((
+                0,
+                Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(
+                    false, false, true, true,
+                )))),
+            )),
+            _ => None,
+        };
+
+        let mut result = None;
+        if should_check_against_unresolved {
+            result = get_builtin_assertion(&function_name);
         }
-        "is_countable" => (0, Assertion::Countable),
-        "ctype_digit" => (
-            0,
-            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(true, false, false, false)))),
-        ),
-        "ctype_lower" => (
-            0,
-            Assertion::IsType(TAtomic::Scalar(TScalar::String(TString::general_with_props(false, false, true, true)))),
-        ),
-        _ => return if_types,
+
+        if result.is_none() {
+            result = get_builtin_assertion(&resolved_function_name);
+        }
+
+        if let Some(found_assertion) = result {
+            found_assertion
+        } else {
+            return if_types;
+        }
     };
 
     let extract_expression_id = |argument_expression| {
@@ -1285,9 +1304,17 @@ fn is_count_or_size_of_call(expression: &Expression, assertion_context: Assertio
         return false;
     };
 
+    if function_identifier.value().eq_ignore_ascii_case("count")
+        || function_identifier.value().eq_ignore_ascii_case("sizeof")
+    {
+        return true;
+    }
+
     let resolved_function_name = assertion_context.resolved_names.get(function_identifier);
 
-    resolved_function_name.eq_ignore_ascii_case("count") || resolved_function_name.eq_ignore_ascii_case("sizeof")
+    resolved_function_name.eq_ignore_ascii_case("count")
+        || resolved_function_name.eq_ignore_ascii_case("sizeof")
+        || resolved_function_name.eq_ignore_ascii_case("Psl\\Iter\\count")
 }
 
 fn get_true_equality_assertions(

@@ -1849,23 +1849,21 @@ fn reconcile_has_array_key(
 
     for mut atomic in existing_var_types {
         match &mut atomic {
-            TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, parameters, .. })) => {
+            TAtomic::Array(TArray::Keyed(TKeyedArray { known_items, parameters, non_empty, .. })) => {
+                did_remove_type = true;
                 if let Some(known_items) = known_items {
                     if let Some(known_item) = known_items.get_mut(key_name) {
                         if known_item.0 {
+                            *non_empty = true;
                             *known_item = (false, known_item.1.clone());
-                            did_remove_type = true;
                         }
                     } else if let Some((_, value_param)) = parameters {
+                        *non_empty = true;
                         known_items.insert(*key_name, (false, (**value_param).clone()));
-                        did_remove_type = true;
                     } else {
-                        did_remove_type = true;
                         continue;
                     }
                 } else if let Some((key_param, value_param)) = parameters {
-                    did_remove_type = true;
-
                     if union_comparator::can_expression_types_be_identical(
                         context.codebase,
                         &key_name.to_general_union(),
@@ -1873,40 +1871,38 @@ fn reconcile_has_array_key(
                         false,
                         false,
                     ) {
+                        *non_empty = true;
                         *known_items = Some(BTreeMap::from([(*key_name, (false, (**value_param).clone()))]));
                     } else {
                         continue;
                     }
                 } else {
-                    did_remove_type = true;
                     continue;
                 }
 
                 acceptable_types.push(atomic);
             }
-            TAtomic::Array(TArray::List(TList { known_elements, element_type, .. })) => {
+            TAtomic::Array(TArray::List(TList { known_elements, element_type, non_empty, .. })) => {
+                did_remove_type = true;
                 if let ArrayKey::Integer(i) = key_name {
                     if let Some(known_elements) = known_elements {
                         if let Some(known_element) = known_elements.get_mut(&(*i as usize)) {
                             if known_element.0 {
+                                *non_empty = true;
                                 *known_element = (false, known_element.1.clone());
-                                did_remove_type = true;
                             }
                         } else if !element_type.is_never() {
+                            *non_empty = true;
                             known_elements.insert(*i as usize, (false, (**element_type).clone()));
-                            did_remove_type = true;
                         } else {
-                            did_remove_type = true;
                             continue;
                         }
                     } else if !element_type.is_never() {
+                        *non_empty = true;
                         *known_elements = Some(BTreeMap::from([(*i as usize, (false, (**element_type).clone()))]));
-                        did_remove_type = true;
                     }
 
                     acceptable_types.push(atomic);
-                } else {
-                    did_remove_type = true;
                 }
             }
             TAtomic::GenericParameter(TGenericParameter {

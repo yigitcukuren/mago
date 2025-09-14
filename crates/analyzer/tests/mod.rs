@@ -166,6 +166,8 @@ test_case!(static_anonymous_class);
 test_case!(private_static_method);
 test_case!(property_docblock);
 test_case!(untyped_property_docblock);
+test_case!(count);
+test_case!(array_key_exists);
 
 // Github Issues
 test_case!(issue_275);
