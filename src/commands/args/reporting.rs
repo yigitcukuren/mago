@@ -111,6 +111,11 @@ pub struct ReportingArgs {
     #[arg(long, help = "Specify a baseline file to ignore issues", value_name = "PATH", conflicts_with = "fix")]
     pub baseline: Option<PathBuf>,
 
+    /// Use content-based fingerprints for baseline matching instead of line numbers.
+    /// This makes baselines more stable when code is added/removed above existing issues.
+    #[arg(long, help = "Use content-based fingerprints for stable baseline matching", requires = "baseline")]
+    pub use_fingerprints: bool,
+
     #[clap(flatten)]
     pub pager_args: PagerArgs,
 }
@@ -198,9 +203,15 @@ impl ReportingArgs {
         if let Some(baseline_path) = &self.baseline {
             if self.generate_baseline {
                 tracing::info!("Generating baseline file...");
-                let baseline = baseline::generate_baseline_from_issues(issues, &read_database)?;
+                let baseline = baseline::generate_baseline_from_issues(issues, &read_database, self.use_fingerprints)?;
                 baseline::serialize_baseline(baseline_path, &baseline, self.backup_baseline)?;
-                tracing::info!("Baseline file successfully generated at `{}`.", baseline_path.display());
+
+                let mode = if self.use_fingerprints { "fingerprint-based" } else { "line-based" };
+                tracing::info!(
+                    "Baseline file successfully generated at `{}` using {} matching.",
+                    baseline_path.display(),
+                    mode
+                );
 
                 return Ok(ExitCode::SUCCESS);
             }
@@ -213,7 +224,7 @@ impl ReportingArgs {
             } else {
                 let baseline = baseline::unserialize_baseline(baseline_path)?;
                 let (filtered_issues, filtered_out_count, has_dead_issues) =
-                    baseline::filter_issues(&baseline, issues, &read_database)?;
+                    baseline::filter_issues(&baseline, issues, &read_database, self.use_fingerprints)?;
 
                 if has_dead_issues {
                     tracing::warn!(
@@ -222,10 +233,12 @@ impl ReportingArgs {
                 }
 
                 if filtered_out_count > 0 {
+                    let mode = if self.use_fingerprints { "fingerprint-based" } else { "line-based" };
                     tracing::info!(
-                        "Filtered out {} issues based on the baseline file at `{}`.",
+                        "Filtered out {} issues based on the baseline file at `{}` using {} matching.",
                         filtered_out_count,
-                        baseline_path.display()
+                        baseline_path.display(),
+                        mode
                     );
                 }
 
