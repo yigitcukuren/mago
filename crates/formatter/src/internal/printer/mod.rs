@@ -243,9 +243,7 @@ impl<'arena> Printer<'arena> {
 
     fn handle_indent_if_break(&mut self, indentation: Indentation<'arena>, mode: Mode, doc: IndentIfBreak<'arena>) {
         let IndentIfBreak { contents, group_id } = doc;
-        let Some(group_mode) = self.group_mode_map.get(&group_id).copied() else {
-            return;
-        };
+        let group_mode = self.group_mode_map.get(&group_id).copied().unwrap_or(mode);
 
         match group_mode {
             Mode::Flat => {
@@ -337,9 +335,7 @@ impl<'arena> Printer<'arena> {
 
     fn handle_if_break(&mut self, if_break: IfBreak<'arena>, indentation: Indentation<'arena>, mode: Mode) {
         let IfBreak { break_contents, flat_content, group_id } = if_break;
-        let Some(group_mode) = group_id.map_or(Some(mode), |id| self.group_mode_map.get(&id).copied()) else {
-            return;
-        };
+        let group_mode = group_id.map_or(Some(mode), |id| self.group_mode_map.get(&id).copied()).unwrap_or(mode);
 
         match group_mode {
             Mode::Flat => {
@@ -560,13 +556,13 @@ impl<'arena> Printer<'arena> {
         match doc {
             Document::BreakParent => true,
             Document::Group(group) => {
-                let mut should_break = false;
+                let mut should_break = *group.should_break.borrow();
+
                 if let Some(expanded_states) = &group.expanded_states {
-                    should_break = expanded_states.iter().rev().any(Self::propagate_breaks);
+                    should_break |= expanded_states.iter().rev().any(Self::propagate_breaks);
                 }
-                if !should_break {
-                    should_break = check_array(&group.contents);
-                }
+
+                should_break |= check_array(&group.contents);
 
                 if group.expanded_states.is_none() && should_break {
                     group.should_break.replace(should_break);

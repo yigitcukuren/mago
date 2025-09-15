@@ -152,7 +152,6 @@ pub(super) fn print_argument_list<'arena>(
                 if f.is_next_line_empty(element.span()) {
                     argument.push(Document::Line(Line::hard()));
                     argument.push(Document::Line(Line::hard()));
-                    argument.push(Document::BreakParent);
                 } else if should_break {
                     argument.push(Document::Line(Line::hard()));
                 } else {
@@ -291,50 +290,23 @@ pub(super) fn print_argument_list<'arena>(
         }
 
         let last_argument = clone_in_arena(f.arena, formatted_arguments.last().unwrap());
-        if will_break(&last_argument) {
-            return Document::Array(vec![
-                in f.arena;
-                Document::BreakParent,
-                Document::Group(Group::conditional(
-                    vec![
-                        in f.arena;
-                        clone_in_arena(f.arena, &left_parenthesis),
-                        Document::Array(first_arguments),
-                        Document::Group(Group::new(vec![in f.arena; last_argument]).with_break(true)),
-                        print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
-                    ],
-                    vec![
-                        in f.arena;
-                        all_arguments_broken_out(f),
-                    ],
-                )),
-            ]);
-        }
 
-        return Document::Array(vec![
+        return Document::Group(Group::new(vec![
             in f.arena;
-            Document::BreakParent,
             Document::Group(Group::conditional(
                 vec![
                     in f.arena;
                     clone_in_arena(f.arena, &left_parenthesis),
-                    Document::Array(clone_vec_in_arena(f.arena, &first_arguments)),
-                    clone_in_arena(f.arena, &last_argument),
+                    Document::Array(first_arguments),
+                    Document::Group(Group::new(vec![in f.arena; last_argument]).with_break(true)),
                     print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
                 ],
                 vec![
                     in f.arena;
-                    Document::Array(vec![
-                        in f.arena;
-                        clone_in_arena(f.arena, &left_parenthesis),
-                        Document::Array(first_arguments),
-                        Document::Group(Group::new(vec![in f.arena; last_argument]).with_break(true)),
-                        print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None),
-                    ]),
                     all_arguments_broken_out(f),
                 ],
             )),
-        ]);
+        ]));
     }
 
     let mut printed_arguments = get_printed_arguments(f, false, 0);
