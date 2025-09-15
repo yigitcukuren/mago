@@ -51,13 +51,14 @@ pub(super) fn print_call_arguments<'arena>(
         };
     }
 
-    print_argument_list(f, argument_list, expression.is_attribute())
+    print_argument_list(f, argument_list, expression.is_attribute(), !expression.is_phpunit_assertion_call())
 }
 
 pub(super) fn print_argument_list<'arena>(
     f: &mut FormatterState<'_, 'arena>,
     argument_list: &'arena ArgumentList<'arena>,
     for_attribute: bool,
+    can_expand_first_or_last: bool,
 ) -> Document<'arena> {
     let mut force_break = false;
     let left_parenthesis = {
@@ -87,8 +88,10 @@ pub(super) fn print_argument_list<'arena>(
     // First, run all the decision functions with unformatted arguments
     let should_break_all = force_break || should_break_all_arguments(f, argument_list, for_attribute);
     let should_inline = !force_break && should_inline_breaking_arguments(f, argument_list);
-    let should_expand_first = !force_break && should_expand_first_arg(f, argument_list, false);
-    let should_expand_last = !force_break && should_expand_last_arg(f, argument_list, false);
+    let should_expand_first =
+        can_expand_first_or_last && !force_break && should_expand_first_arg(f, argument_list, false);
+    let should_expand_last =
+        can_expand_first_or_last && !force_break && should_expand_last_arg(f, argument_list, false);
     let is_single_late_breaking_argument = !force_break && is_single_late_breaking_argument(f, argument_list);
 
     let arguments_count = argument_list.arguments.len();

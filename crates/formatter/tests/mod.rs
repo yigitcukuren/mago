@@ -163,6 +163,7 @@ test_case!(yield_kv_closure);
 
 // A special test case for regressions in the Psl codebase
 test_case!(psl_regressions);
+test_case!(psl_regressions_2);
 
 // GitHub issue test cases
 test_case!(issue_122);

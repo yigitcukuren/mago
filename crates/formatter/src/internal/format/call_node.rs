@@ -23,6 +23,34 @@ pub(super) enum CallLikeNode<'arena> {
 
 impl<'arena> CallLikeNode<'arena> {
     #[inline]
+    pub fn is_phpunit_assertion_call(&self) -> bool {
+        match self {
+            CallLikeNode::Call(Call::Method(MethodCall { object, method, .. })) => {
+                if let Expression::Variable(Variable::Direct(var)) = object
+                    && let ClassLikeMemberSelector::Identifier(method_id) = method
+                    && var.name.eq_ignore_ascii_case("$this")
+                    && method_id.value.starts_with("assert")
+                {
+                    true
+                } else {
+                    false
+                }
+            }
+            CallLikeNode::Call(Call::StaticMethod(StaticMethodCall { class, method, .. })) => {
+                if matches!(class, Expression::Static(_) | Expression::Parent(_) | Expression::Self_(_))
+                    && let ClassLikeMemberSelector::Identifier(method_id) = method
+                    && method_id.value.starts_with("assert")
+                {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
+    #[inline]
     pub const fn is_instantiation(&self) -> bool {
         matches!(self, CallLikeNode::Instantiation(_))
     }

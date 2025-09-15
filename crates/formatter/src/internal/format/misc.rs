@@ -17,6 +17,7 @@ use crate::internal::format::call_arguments::should_break_all_arguments;
 use crate::internal::format::format_token;
 use crate::internal::format::member_access::collect_member_access_chain;
 use crate::internal::format::statement::print_statement_sequence;
+use crate::internal::utils::string_width;
 use crate::settings::BraceStyle;
 
 use super::block::block_is_empty;
@@ -293,9 +294,20 @@ pub fn is_simple_single_line_expression<'arena>(
             && is_simple_single_line_expression(f, operation.rhs);
     }
 
-    if let Expression::Literal(Literal::String(literal_string)) = node {
-        return f.file.line_number(literal_string.span.start.offset)
-            == f.file.line_number(literal_string.span.end.offset);
+    if let Expression::Literal(literal) = node {
+        return match literal {
+            Literal::String(literal_string) => {
+                if let Some(v) = &literal_string.value
+                    && string_width(v) >= f.settings.print_width
+                {
+                    return false;
+                }
+
+                f.file.line_number(literal_string.span.start.offset)
+                    == f.file.line_number(literal_string.span.end.offset)
+            }
+            _ => true,
+        };
     }
 
     if let Expression::ArrayAccess(ArrayAccess { array, index, .. }) = node {

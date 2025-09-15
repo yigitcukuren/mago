@@ -11,6 +11,7 @@ use crate::document::Separator;
 use crate::internal::FormatterState;
 use crate::internal::format::call_arguments::should_break_all_arguments;
 use crate::internal::format::misc::is_breaking_expression;
+use crate::internal::format::misc::is_simple_single_line_expression;
 
 use super::format::call_arguments::should_expand_first_arg;
 use super::format::call_arguments::should_expand_last_arg;
@@ -165,7 +166,30 @@ pub fn could_expand_value<'arena>(
     nested_args: bool,
 ) -> bool {
     match value {
-        Expression::Array(expr) => !expr.elements.is_empty(),
+        Expression::Array(expr) => {
+            // If empty, we can't expand it.
+            if expr.elements.is_empty() {
+                return false;
+            }
+
+            // If we have more than 3 elements, we should expand it.
+            // This is a somewhat arbitrary limit, but it helps to keep things readable.
+            if expr.elements.len() >= 4 {
+                return true;
+            }
+
+            // If it has at least one key-value pair, we should expand it.
+            if expr.elements.iter().any(|element| element.is_key_value()) {
+                return true;
+            };
+
+            expr.elements.iter().any(|element| match element {
+                ArrayElement::Variadic(e) => !is_simple_single_line_expression(f, e.value),
+                ArrayElement::Value(e) => !is_simple_single_line_expression(f, e.value),
+                ArrayElement::KeyValue(key_value) => could_expand_value(f, key_value.value, nested_args),
+                _ => false,
+            })
+        }
         Expression::LegacyArray(expr) => !expr.elements.is_empty(),
         Expression::List(expr) => !expr.elements.is_empty(),
         Expression::AnonymousClass(_) => true,

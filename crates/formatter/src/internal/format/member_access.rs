@@ -521,7 +521,7 @@ pub(super) fn print_member_access_chain<'arena>(
         parts.push(selector.format(f));
         last_element_end = selector.span().end;
         if let Some(argument_list) = first_chain_link.get_arguments_list() {
-            let mut formatted_argument_list = vec![in f.arena; print_argument_list(f, argument_list, false)];
+            let mut formatted_argument_list = vec![in f.arena; print_argument_list(f, argument_list, false, true)];
             if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
                 formatted_argument_list.push(comments);
             }
@@ -558,7 +558,7 @@ pub(super) fn print_member_access_chain<'arena>(
         last_element_end = selector.span().end;
         contents.push(selector.format(f));
         if let Some(argument_list) = chain_link.get_arguments_list() {
-            let mut formatted_argument_list = vec![in f.arena; print_argument_list(f, argument_list, false)];
+            let mut formatted_argument_list = vec![in f.arena; print_argument_list(f, argument_list, false, true)];
             if let Some(comments) = f.print_trailing_comments(argument_list.span()) {
                 formatted_argument_list.push(comments);
             }

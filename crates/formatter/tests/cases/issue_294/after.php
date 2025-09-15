@@ -1,6 +1,9 @@
 <?php
 
-foo('
-', [
-    $a,
-]); // Comment
+foo(
+    '
+',
+    [
+        $a,
+    ],
+); // Comment

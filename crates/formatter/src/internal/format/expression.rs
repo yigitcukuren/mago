@@ -1370,7 +1370,7 @@ impl<'arena> Format<'arena> for AnonymousClass<'arena> {
 
             signature.push(self.class.format(f));
             if let Some(argument_list) = &self.argument_list {
-                signature.push(print_argument_list(f, argument_list, false));
+                signature.push(print_argument_list(f, argument_list, false, false));
             }
 
             if let Some(extends) = &self.extends {
