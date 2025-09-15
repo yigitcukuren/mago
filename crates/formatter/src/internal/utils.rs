@@ -9,6 +9,7 @@ use crate::document::Document;
 use crate::document::IndentIfBreak;
 use crate::document::Separator;
 use crate::internal::FormatterState;
+use crate::internal::format::call_arguments::should_break_all_arguments;
 use crate::internal::format::misc::is_breaking_expression;
 
 use super::format::call_arguments::should_expand_first_arg;
@@ -184,7 +185,13 @@ pub fn could_expand_value<'arena>(
                 return false;
             };
 
-            arguments.arguments.len() > 2
+            if arguments.arguments.len() <= 2 {
+                return false;
+            }
+
+            should_break_all_arguments(f, arguments, false)
+                || should_expand_first_arg(f, arguments, true)
+                || should_expand_last_arg(f, arguments, true)
         }
         Expression::Literal(Literal::String(literal_string)) => {
             literal_string.raw.contains('\n') || literal_string.raw.contains('\r')
@@ -198,7 +205,9 @@ pub fn could_expand_value<'arena>(
         Expression::Call(call) if !nested_args => {
             let argument_list = call.get_argument_list();
 
-            should_expand_first_arg(f, argument_list, true) || should_expand_last_arg(f, argument_list, true)
+            should_break_all_arguments(f, argument_list, false)
+                || should_expand_first_arg(f, argument_list, true)
+                || should_expand_last_arg(f, argument_list, true)
         }
         _ => false,
     }

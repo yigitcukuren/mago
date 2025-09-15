@@ -189,23 +189,28 @@ pub(super) fn print_argument_list<'arena>(
         let single_argument = formatted_arguments.remove(0);
         let right_parenthesis = print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None);
 
+        let group_id = f.next_id();
+
         return Document::IfBreak(IfBreak::new(
             f.arena,
-            Document::Group(Group::new(vec![
-                in f.arena;
-                clone_in_arena(f.arena, &left_parenthesis),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
+            Document::Group(
+                Group::new(vec![
                     in f.arena;
-                    Document::Line(Line::soft()),
-                    Document::Group(Group::new(vec![in f.arena; clone_in_arena(f.arena, &single_argument)])),
-                ])),
-                if f.settings.trailing_comma {
-                    Document::IfBreak(IfBreak::new(f.arena, Document::String(","), Document::empty()))
-                } else {
-                    Document::empty()
-                },
-                clone_in_arena(f.arena, &right_parenthesis)
-            ])),
+                    clone_in_arena(f.arena, &left_parenthesis),
+                    Document::IndentIfBreak(IndentIfBreak::new(group_id, vec![
+                        in f.arena;
+                        Document::Line(Line::soft()),
+                        Document::Group(Group::new(vec![in f.arena; clone_in_arena(f.arena, &single_argument)])),
+                    ])),
+                    if f.settings.trailing_comma {
+                        Document::IfBreak(IfBreak::new(f.arena, Document::String(","), Document::empty()))
+                    } else {
+                        Document::empty()
+                    },
+                    clone_in_arena(f.arena, &right_parenthesis)
+                ])
+                .with_id(group_id),
+            ),
             Document::Group(Group::new(vec![in f.arena; left_parenthesis, single_argument, right_parenthesis])),
         ));
     }
@@ -231,9 +236,8 @@ pub(super) fn print_argument_list<'arena>(
         let last_argument = clone_in_arena(f.arena, last_argument);
 
         if will_break(&first_argument) {
-            return Document::Array(vec![
+            return Document::Group(Group::new(vec![
                 in f.arena;
-                Document::BreakParent,
                 Document::Group(Group::conditional(
                     vec![
                         in f.arena;
@@ -245,12 +249,11 @@ pub(super) fn print_argument_list<'arena>(
                     ],
                     vec![in f.arena; all_arguments_broken_out(f)],
                 )),
-            ]);
+            ]));
         }
 
-        return Document::Array(vec![
+        return Document::Group(Group::new(vec![
             in f.arena;
-            Document::BreakParent,
             Document::Group(Group::conditional(
                 vec![
                     in f.arena;
@@ -273,7 +276,7 @@ pub(super) fn print_argument_list<'arena>(
                     all_arguments_broken_out(f),
                 ],
             )),
-        ]);
+        ]));
     }
 
     if should_expand_last {
@@ -336,14 +339,15 @@ pub(super) fn print_argument_list<'arena>(
 
     let mut printed_arguments = get_printed_arguments(f, false, 0);
 
+    let group_id = f.next_id();
     printed_arguments.insert(0, Document::Line(Line::soft()));
-    contents.push(Document::IndentIfBreak(IndentIfBreak::new(printed_arguments)));
+    contents.push(Document::IndentIfBreak(IndentIfBreak::new(group_id, printed_arguments)));
     if f.settings.trailing_comma {
         contents.push(Document::IfBreak(IfBreak::then(f.arena, Document::String(","))));
     }
     contents.push(print_right_parenthesis(f, dangling_comments.as_ref(), &right_parenthesis, None));
 
-    Document::Group(Group::new(contents))
+    Document::Group(Group::new(contents).with_id(group_id))
 }
 
 fn print_right_parenthesis<'arena>(
@@ -550,6 +554,13 @@ fn is_hopefully_short_call_argument(mut node: &Expression) -> bool {
         node = match node {
             Expression::Parenthesized(parenthesized) => parenthesized.expression,
             Expression::UnaryPrefix(operation) if !operation.operator.is_cast() => operation.operand,
+            Expression::Assignment(assignment) => {
+                if !assignment.operator.is_assign() || !is_simple_expression(assignment.lhs) {
+                    break;
+                }
+
+                assignment.rhs
+            }
             _ => break,
         };
     }

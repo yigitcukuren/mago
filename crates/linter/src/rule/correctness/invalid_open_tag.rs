@@ -101,7 +101,7 @@ impl LintRule for InvalidOpenTagRule {
 
             for tag_char in invalid_tag.chars() {
                 if let Some(content_char) = content_chars.next() {
-                    if tag_char.to_ascii_lowercase() != content_char.to_ascii_lowercase() {
+                    if !tag_char.eq_ignore_ascii_case(&content_char) {
                         matches = false;
                         break;
                     }

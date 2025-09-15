@@ -196,6 +196,27 @@ pub fn is_expandable_expression<'arena>(node: &'arena Expression<'arena>, includ
         return is_expandable_expression(inner.expression, include_calls);
     }
 
+    if let Expression::Throw(throw) = node {
+        return is_expandable_expression(throw.exception, include_calls);
+    }
+
+    if let Expression::Yield(r#yield) = node {
+        return match r#yield {
+            Yield::Value(yield_value) => {
+                if let Some(value) = yield_value.value {
+                    is_expandable_expression(value, include_calls)
+                } else {
+                    false
+                }
+            }
+            Yield::Pair(yield_pair) => {
+                is_expandable_expression(yield_pair.key, include_calls)
+                    || is_expandable_expression(yield_pair.value, include_calls)
+            }
+            Yield::From(yield_from) => is_expandable_expression(yield_from.iterator, include_calls),
+        };
+    }
+
     if let Expression::UnaryPrefix(operation) = node {
         return is_expandable_expression(operation.operand, include_calls);
     }
@@ -531,18 +552,23 @@ pub(super) fn print_condition<'arena>(
             format_token(f, right_parenthesis, ")"),
         ]))
     } else {
-        Document::Group(Group::new(vec![
-            in f.arena;
-            Document::space(),
-            format_token(f, left_parenthesis, "("),
-            Document::IndentIfBreak(IndentIfBreak::new(vec![
+        let group_id = f.next_id();
+
+        Document::Group(
+            Group::new(vec![
                 in f.arena;
+                Document::space(),
+                format_token(f, left_parenthesis, "("),
+                Document::IndentIfBreak(IndentIfBreak::new(group_id, vec![
+                    in f.arena;
+                    Document::Line(Line::soft()),
+                    condition.format(f),
+                ])),
                 Document::Line(Line::soft()),
-                condition.format(f),
-            ])),
-            Document::Line(Line::soft()),
-            format_token(f, right_parenthesis, ")"),
-        ]))
+                format_token(f, right_parenthesis, ")"),
+            ])
+            .with_id(group_id),
+        )
     };
 
     f.in_condition = was_in_condition;

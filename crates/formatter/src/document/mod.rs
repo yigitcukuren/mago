@@ -84,8 +84,8 @@ pub struct Group<'arena> {
 
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct IndentIfBreak<'arena> {
+    pub group_id: GroupIdentifier,
     pub contents: Vec<'arena, Document<'arena>>,
-    pub group_id: Option<GroupIdentifier>,
 }
 
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -167,13 +167,8 @@ impl<'arena> Group<'arena> {
 }
 
 impl<'arena> IndentIfBreak<'arena> {
-    pub fn new(contents: Vec<'arena, Document<'arena>>) -> Self {
-        Self { contents, group_id: None }
-    }
-
-    pub fn with_id(mut self, id: GroupIdentifier) -> Self {
-        self.group_id = Some(id);
-        self
+    pub fn new(group_id: GroupIdentifier, contents: Vec<'arena, Document<'arena>>) -> Self {
+        Self { contents, group_id }
     }
 }
 
@@ -358,19 +353,20 @@ pub(crate) fn print_document_to_string<'arena>(arena: &'arena Bump, document: &D
     ) {
         let mut printed = docs.iter().map(|d| print_document_to_string(arena, d)).collect_in::<Vec<_>>(arena);
 
-        if printed.len() != 1 {
+        let length = printed.len();
+        if length != 1 {
             buffer.push('[');
         }
 
         for (i, doc) in printed.iter_mut().enumerate() {
-            if i != 0 {
+            if i != 0 && i < length {
                 buffer.push_str(", ");
             }
 
             buffer.push_str(doc);
         }
 
-        if printed.len() != 1 {
+        if length != 1 {
             buffer.push(']');
         }
     }
@@ -390,17 +386,11 @@ pub(crate) fn print_document_to_string<'arena>(arena: &'arena Bump, document: &D
             buffer.push(')');
         }
         Document::IndentIfBreak(IndentIfBreak { contents, group_id }) => {
-            let mut options = Vec::new_in(arena);
-            if let Some(id) = group_id {
-                options.push(format!("groupId: {id}"));
-            }
-
-            let options_str =
-                if options.is_empty() { String::new() } else { format!(", {{ {} }}", options.join(", ")) };
-
             buffer.push_str("indentIfBreak(");
             write_documents_vec_to_buffer(&mut buffer, arena, contents);
-            buffer.push_str(&options_str);
+            buffer.push_str(", { groupId: ");
+            buffer.push_str(&format!("{group_id}"));
+            buffer.push('}');
             buffer.push(')');
         }
         Document::Group(Group { contents, should_break, expanded_states, id }) => {
@@ -408,6 +398,7 @@ pub(crate) fn print_document_to_string<'arena>(arena: &'arena Bump, document: &D
             if *should_break.borrow() {
                 options.push("shouldBreak: true".to_string());
             }
+
             if let Some(id) = id {
                 options.push(format!("id: {id}"));
             }
@@ -489,13 +480,7 @@ pub(crate) fn print_document_to_string<'arena>(arena: &'arena Bump, document: &D
             Trim::Newlines => buffer.push_str("trimNewlines"),
         },
         Document::DoNotTrim => buffer.push_str("doNotTrim"),
-        Document::Space(space) => {
-            if space.soft {
-                buffer.push_str("softSpace")
-            } else {
-                buffer.push_str("hardSpace")
-            }
-        }
+        Document::Space(_) => buffer.push_str("\" \""),
     }
 
     buffer

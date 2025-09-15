@@ -243,7 +243,7 @@ impl<'arena> Printer<'arena> {
 
     fn handle_indent_if_break(&mut self, indentation: Indentation<'arena>, mode: Mode, doc: IndentIfBreak<'arena>) {
         let IndentIfBreak { contents, group_id } = doc;
-        let Some(group_mode) = group_id.map_or(Some(mode), |id| self.group_mode_map.get(&id).copied()) else {
+        let Some(group_mode) = self.group_mode_map.get(&group_id).copied() else {
             return;
         };
 

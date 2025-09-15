@@ -69,7 +69,12 @@ impl<'arena> Format<'arena> for Program<'arena> {
         f.enter_node(Node::Program(self));
         let mut parts = vec![in f.arena];
         if let Some(doc) = block::print_block_body(f, &self.statements) {
-            parts.push(doc);
+            match doc {
+                Document::Array(arr) => {
+                    parts.extend(arr);
+                }
+                doc => parts.push(doc),
+            }
         }
 
         f.leave_node();

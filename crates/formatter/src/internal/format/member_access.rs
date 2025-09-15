@@ -16,6 +16,7 @@ use crate::internal::format::Format;
 use crate::internal::format::call_arguments::print_argument_list;
 use crate::internal::format::misc;
 use crate::internal::format::misc::is_breaking_expression;
+use crate::internal::format::misc::is_simple_expression;
 use crate::internal::format::misc::is_string_word_type;
 use crate::internal::utils::string_width;
 use crate::internal::utils::unwrap_parenthesized;
@@ -192,9 +193,17 @@ impl<'arena> MemberAccessChain<'arena> {
             match self.base {
                 Expression::Call(Call::Function(function_call)) => {
                     if function_call.argument_list.arguments.len() == 1
+                        && let Some(first_argument) = function_call.argument_list.arguments.first()
                         && matches!(self.accesses.last(), Some(MemberAccess::MethodCall(MethodCall { argument_list, .. }) | MemberAccess::NullSafeMethodCall(NullSafeMethodCall { argument_list, .. })) if !argument_list.arguments.is_empty())
                     {
-                        2
+                        if !matches!(function_call.function, Expression::Identifier(Identifier::Local(_)))
+                            || !first_argument.is_positional()
+                            || !is_simple_expression(first_argument.value())
+                        {
+                            2
+                        } else {
+                            3
+                        }
                     } else {
                         4
                     }
@@ -561,7 +570,7 @@ pub(super) fn print_member_access_chain<'arena>(
         if must_break {
             parts.push(Document::Indent(contents));
         } else {
-            parts.push(Document::IndentIfBreak(IndentIfBreak::new(contents).with_id(group_id)));
+            parts.push(Document::IndentIfBreak(IndentIfBreak::new(group_id, contents)));
         }
 
         let is_next_property = accesses_iter.peek().is_some_and(|(_, next)| next.is_property_access());

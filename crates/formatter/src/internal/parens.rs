@@ -22,25 +22,33 @@ impl<'ctx, 'arena> FormatterState<'ctx, 'arena> {
         has_leading_comments: bool,
     ) -> Document<'arena> {
         if has_leading_comments || self.should_indent(node) {
-            Document::Group(Group::new(vec![
-                in self.arena;
-                Document::String("("),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
+            let group_id = self.next_id();
+
+            Document::Group(
+                Group::new(vec![
                     in self.arena;
+                    Document::String("("),
+                    Document::IndentIfBreak(IndentIfBreak::new(
+                        group_id,
+                        vec![
+                            in self.arena;
+                            if self.settings.space_within_grouping_parenthesis {
+                                Document::Line(Line::default())
+                            } else {
+                                Document::Line(Line::soft())
+                            },
+                            document,
+                        ]
+                    )),
                     if self.settings.space_within_grouping_parenthesis {
                         Document::Line(Line::default())
                     } else {
                         Document::Line(Line::soft())
                     },
-                    document,
-                ])),
-                if self.settings.space_within_grouping_parenthesis {
-                    Document::Line(Line::default())
-                } else {
-                    Document::Line(Line::soft())
-                },
-                Document::String(")"),
-            ]))
+                    Document::String(")"),
+                ])
+                .with_id(group_id),
+            )
         } else {
             Document::Group(Group::new(vec![
                 in self.arena;

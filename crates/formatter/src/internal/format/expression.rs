@@ -896,17 +896,24 @@ impl<'arena> Format<'arena> for MatchExpressionArm<'arena> {
                 }
             }
 
-            contents.push(Document::IndentIfBreak(IndentIfBreak::new(vec![
-                in f.arena;
-                Document::Line(Line::default()),
-                format_token(f, self.arrow, "=> "),
-            ])));
+            let group_id = f.next_id();
+            contents.push(Document::IndentIfBreak(IndentIfBreak::new(
+                group_id,
+                vec![
+                    in f.arena;
+                    Document::Line(Line::default()),
+                    format_token(f, self.arrow, "=> "),
+                ],
+            )));
 
-            Document::Group(Group::new(vec![
-                in f.arena;
-                Document::Group(Group::new(contents)),
-                self.expression.format(f),
-            ]))
+            Document::Group(
+                Group::new(vec![
+                    in f.arena;
+                    Document::Group(Group::new(contents)),
+                    self.expression.format(f),
+                ])
+                .with_id(group_id),
+            )
         })
     }
 }
@@ -1225,19 +1232,24 @@ impl<'arena> Format<'arena> for YieldValue<'arena> {
 impl<'arena> Format<'arena> for YieldPair<'arena> {
     fn format(&'arena self, f: &mut FormatterState<'_, 'arena>) -> Document<'arena> {
         wrap!(f, self, YieldPair, {
-            Document::Group(Group::new(vec![
-                in f.arena;
-                self.r#yield.format(f),
-                Document::space(),
-                self.key.format(f),
-                Document::space(),
-                Document::String("=>"),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![
+            let group_id = f.next_id();
+
+            Document::Group(
+                Group::new(vec![
                     in f.arena;
-                    Document::Line(Line::default()),
-                    self.value.format(f),
-                ])),
-            ]))
+                    self.r#yield.format(f),
+                    Document::space(),
+                    self.key.format(f),
+                    Document::space(),
+                    Document::String("=>"),
+                    Document::IndentIfBreak(IndentIfBreak::new(group_id , vec![
+                        in f.arena;
+                        Document::Line(Line::default()),
+                        self.value.format(f),
+                    ])),
+                ])
+                .with_id(group_id),
+            )
         })
     }
 }

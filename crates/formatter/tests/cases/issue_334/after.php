@@ -1,27 +1,26 @@
 <?php
 
+// NOTE TO SELF: WE DOUBLE, AND TRIPLE CHECKED THAT THIS FORMATTING IS CORRECT
+// FUTURE MODIFICATIONS TO THE FORMATTER SHOULD NOT BREAK THIS
+
 const INT64_MIN = -1 << 63;
 
 $a = ((string) $f) ** 2;
 
 function getRunCommand(string $script): string
 {
-    return (
-        $this->getBinaryName() . ' ' . match ($this) {
-            self::BUN => $script,
-            self::NPM => "run {$script}",
-            self::YARN => $script,
-            self::PNPM => $script,
-        }
-    );
+    return $this->getBinaryName() . ' ' . match ($this) {
+        self::BUN => $script,
+        self::NPM => "run {$script}",
+        self::YARN => $script,
+        self::PNPM => $script,
+    };
 }
 
 function initializeStreamFactory(): StreamFactoryInterface
 {
-    return (
-        Discover::httpStreamFactory() ?? throw new RuntimeException(
-            'The PSR stream factory cannot be null. Please ensure that it is properly initialized.',
-        )
+    return Discover::httpStreamFactory() ?? throw new RuntimeException(
+        'The PSR stream factory cannot be null. Please ensure that it is properly initialized.',
     );
 }
 
@@ -108,14 +107,11 @@ $slack->send(new PostChatMessageRequest(
     username: $notam->identifier,
     channelId: $notamChannelId,
     blocks: Kit::message([
-        Kit::section(
-            $notam->structured->summary,
-            accessory: Kit::button(
-                text: 'Details',
-                actionId: OpenModal::class,
-                value: new OpenModalData(NotamModal::class, ['notamId' => $notam->id])->toJson(),
-            ),
-        ),
+        Kit::section($notam->structured->summary, accessory: Kit::button(
+            text: 'Details',
+            actionId: OpenModal::class,
+            value: new OpenModalData(NotamModal::class, ['notamId' => $notam->id])->toJson(),
+        )),
         Kit::context([
             Kit::mrkdwnText($notam->structured->severity->toEmoji() . ' ' . $notam->structured->severity->name()),
             Kit::mrkdwnText($notam->structured->category->toEmoji() . ' ' . $notam->structured->category->name()),

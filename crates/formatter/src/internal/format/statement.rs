@@ -88,7 +88,6 @@ fn print_statement_slice<'ctx, 'arena>(
                         alignment: f.as_str(&ws),
                         contents: {
                             formatted_statement.extend(print_statement_slice(f, stmts_to_format.as_slice()));
-
                             formatted_statement
                         },
                     })])));
@@ -125,7 +124,11 @@ fn format_statement_with_spacing<'ctx, 'arena>(
 
     let (should_add_new_line, should_add_space) = should_add_new_line_or_space_after_stmt(f, stmts, i, stmt);
 
-    statement_parts.push(stmt.format(f));
+    match stmt.format(f) {
+        Document::Array(arr) => statement_parts.extend(arr),
+        other => statement_parts.push(other),
+    }
+
     if should_add_space {
         let is_last = if let Some(index) = last_statement_index { i == index } else { i == stmts.len() - 1 };
         if !is_last {

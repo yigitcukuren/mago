@@ -95,17 +95,24 @@ pub(super) fn print_assignment<'arena>(
             operator,
             Document::Indent(vec![in f.arena; Document::Line(Line::hard()), rhs]),
         ])),
-        Layout::BreakAfterOperator => Document::Group(Group::new(vec![
-            in f.arena;
-            Document::Group(Group::new(vec![in f.arena; lhs])),
-            Document::space(),
-            operator,
-            Document::Group(Group::new(vec![in f.arena; Document::IndentIfBreak(IndentIfBreak::new(vec![
-                in f.arena;
-                Document::Line(Line::default()),
-                rhs,
-            ]))])),
-        ])),
+        Layout::BreakAfterOperator => {
+            let id = f.next_id();
+
+            Document::Group(
+                Group::new(vec![
+                    in f.arena;
+                    Document::Group(Group::new(vec![in f.arena; lhs])),
+                    Document::space(),
+                    operator,
+                    Document::Group(Group::new(vec![in f.arena; Document::IndentIfBreak(IndentIfBreak::new(id, vec![
+                        in f.arena;
+                        Document::Line(Line::default()),
+                        rhs,
+                    ]))])),
+                ])
+                .with_id(id),
+            )
+        }
         Layout::NeverBreakAfterOperator => Document::Group(Group::new(vec![
             in f.arena;
             Document::Group(Group::new(vec![in f.arena; lhs])),
@@ -136,7 +143,7 @@ pub(super) fn print_assignment<'arena>(
                         Document::Indent(vec![in f.arena; Document::Line(Line::default())])
                     ]).with_id(assignment_id),
                 ),
-                Document::IndentIfBreak(IndentIfBreak::new(vec![in f.arena; rhs]).with_id(assignment_id)),
+                Document::IndentIfBreak(IndentIfBreak::new(assignment_id, vec![in f.arena; rhs])),
             ]))
         }
     }

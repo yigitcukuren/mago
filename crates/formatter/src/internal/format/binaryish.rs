@@ -177,9 +177,11 @@ pub(super) fn print_binaryish_expression<'arena>(
     let mut head_parts = parts;
     let tail_parts = head_parts.split_off(split_index);
 
-    head_parts.push(Document::IndentIfBreak(IndentIfBreak::new(tail_parts)));
+    let group_id = f.next_id();
 
-    Document::Group(Group::new(head_parts))
+    head_parts.push(Document::IndentIfBreak(IndentIfBreak::new(group_id, tail_parts)));
+
+    Document::Group(Group::new(head_parts).with_id(group_id))
 }
 
 fn print_binaryish_expression_parts<'arena>(
