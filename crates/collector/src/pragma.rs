@@ -140,39 +140,57 @@ fn parse_pragmas_in_trivia<'arena>(
         let rest = rest.trim_start();
 
         let mut parts = rest.splitn(2, char::is_whitespace);
-        let Some(code) = parts.next() else {
+        let Some(codes_part) = parts.next() else {
             continue; // Malformed pragma, no code.
         };
 
         let description = parts.next().unwrap_or("").trim();
 
-        // Calculate the precise span for the code part of the pragma.
-        let code_start_offset = absolute_line_start + (code.as_ptr() as u32) - (line.as_ptr() as u32);
-        let code_span = Span::new(file.id, code_start_offset, code_start_offset + code.len() as u32);
+        // Split codes by comma and create a pragma for each code
+        let codes_start_offset = absolute_line_start + (codes_part.as_ptr() as u32) - (line.as_ptr() as u32);
 
-        let pragma_end_offset = pragma_start_offset + prefix.len() as u32 + content_with_leading_space.len() as u32;
-        let span = Span::new(file.id, pragma_start_offset, pragma_end_offset);
+        for (code_index, code) in codes_part.split(',').enumerate() {
+            let code = code.trim();
+            if code.is_empty() {
+                continue; // Skip empty codes
+            }
 
-        let start_line = file.line_number(trivia.span.start.offset);
-        let end_line = file.line_number(trivia.span.end.offset);
-        let line_start_offset = file.get_line_start_offset(start_line).unwrap_or(0);
-        let prefix_text = &file.contents[line_start_offset as usize..trivia.span.start.offset as usize];
-        let own_line = start_line == end_line && prefix_text.trim().is_empty();
+            // Calculate the precise span for this individual code
+            let code_start_in_codes_part = if code_index == 0 {
+                0
+            } else {
+                // Find the start of this code within the codes_part string
+                let prefix_end = codes_part.split(',').take(code_index).map(|s| s.len() + 1).sum::<usize>(); // +1 for comma
+                prefix_end + code.as_ptr() as usize - codes_part[prefix_end..].as_ptr() as usize
+            };
 
-        pragmas.push(Pragma {
-            kind,
-            span,
-            trivia_span: trivia.span,
-            code_span,
-            start_line,
-            end_line,
-            own_line,
-            category,
-            code,
-            description,
-            scope_span: None,
-            used: false,
-        });
+            let code_start_offset = codes_start_offset + code_start_in_codes_part as u32;
+            let code_span = Span::new(file.id, code_start_offset, code_start_offset + code.len() as u32);
+
+            let pragma_end_offset = pragma_start_offset + prefix.len() as u32 + content_with_leading_space.len() as u32;
+            let span = Span::new(file.id, pragma_start_offset, pragma_end_offset);
+
+            let start_line = file.line_number(trivia.span.start.offset);
+            let end_line = file.line_number(trivia.span.end.offset);
+            let line_start_offset = file.get_line_start_offset(start_line).unwrap_or(0);
+            let prefix_text = &file.contents[line_start_offset as usize..trivia.span.start.offset as usize];
+            let own_line = start_line == end_line && prefix_text.trim().is_empty();
+
+            pragmas.push(Pragma {
+                kind,
+                span,
+                trivia_span: trivia.span,
+                code_span,
+                start_line,
+                end_line,
+                own_line,
+                category,
+                code,
+                description,
+                scope_span: None,
+                used: false,
+            });
+        }
     }
 
     pragmas
