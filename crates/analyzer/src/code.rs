@@ -151,6 +151,7 @@ pub enum IssueCode {
     NoValue,
     NonClassUsedAsAttribute,
     NonDocumentedMethod,
+    NonDocumentedProperty,
     NonExistentAttributeClass,
     NonExistentCatchType,
     NonExistentClass,
@@ -402,6 +403,7 @@ impl IssueCode {
             Self::NoValue => "no-value",
             Self::NonClassUsedAsAttribute => "non-class-used-as-attribute",
             Self::NonDocumentedMethod => "non-documented-method",
+            Self::NonDocumentedProperty => "non-documented-property",
             Self::NonExistentAttributeClass => "non-existent-attribute-class",
             Self::NonExistentCatchType => "non-existent-catch-type",
             Self::NonExistentClass => "non-existent-class",
@@ -863,7 +865,7 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_property_issue_codes() -> [Self; 14] {
+    pub const fn get_property_issue_codes() -> [Self; 15] {
         [
             Self::AmbiguousObjectPropertyAccess,
             Self::IncompatiblePropertyType,
@@ -874,6 +876,7 @@ impl IssueCode {
             Self::InvalidStaticPropertyAccess,
             Self::MixedPropertyAccess,
             Self::MixedPropertyTypeCoercion,
+            Self::NonDocumentedProperty,
             Self::NonExistentProperty,
             Self::NullPropertyAccess,
             Self::OverriddenPropertyAccess,
@@ -882,7 +885,7 @@ impl IssueCode {
         ]
     }
 
-    pub const fn get_property_issue_code_values() -> [&'static str; 14] {
+    pub const fn get_property_issue_code_values() -> [&'static str; 15] {
         [
             "ambiguous-object-property-access",
             "incompatible-property-type",
@@ -893,6 +896,7 @@ impl IssueCode {
             "invalid-static-property-access",
             "mixed-property-access",
             "mixed-property-type-coercion",
+            "non-documented-property",
             "non-existent-property",
             "null-property-access",
             "overridden-property-access",
@@ -1237,6 +1241,7 @@ impl std::str::FromStr for IssueCode {
             "no-value" => Ok(Self::NoValue),
             "non-class-used-as-attribute" => Ok(Self::NonClassUsedAsAttribute),
             "non-documented-method" => Ok(Self::NonDocumentedMethod),
+            "non-documented-property" => Ok(Self::NonDocumentedProperty),
             "non-existent-attribute-class" => Ok(Self::NonExistentAttributeClass),
             "non-existent-catch-type" => Ok(Self::NonExistentCatchType),
             "non-existent-class" => Ok(Self::NonExistentClass),

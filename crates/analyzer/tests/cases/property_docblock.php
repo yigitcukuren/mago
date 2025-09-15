@@ -12,6 +12,15 @@ class A
 class T
 {
     private A|int $x;
+
+    public function __get(string $name): mixed
+    {
+        return $this->__get($name);
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+    }
 }
 
 function foo(): void

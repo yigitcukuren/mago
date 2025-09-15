@@ -201,6 +201,7 @@ fn find_static_property_in_class<'ctx, 'ast, 'arena>(
         property_name: *property_name,
         declaring_class_id,
         property_type,
+        is_magic: false,
     }))
 }
 

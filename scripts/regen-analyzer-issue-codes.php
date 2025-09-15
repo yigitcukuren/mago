@@ -300,6 +300,7 @@ final class AnalyzerCodeModuleGenerator
         'unused-parameter',
         'reference-reused-from-confusing-scope',
         'non-documented-method',
+        'non-documented-property',
     ];
 
     /**

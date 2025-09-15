@@ -11,6 +11,14 @@ class A
  */
 class T
 {
+    public function __get(string $name): mixed
+    {
+        return $this->__get($name);
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+    }
 }
 
 /**

@@ -6,6 +6,9 @@ use mago_atom::Atom;
 use mago_atom::concat_atom;
 use mago_codex::get_class_like;
 use mago_codex::get_declaring_class_for_property;
+use mago_codex::get_declaring_method_identifier;
+use mago_codex::get_method_by_id;
+use mago_codex::get_method_identifier;
 use mago_codex::metadata::class_like::ClassLikeMetadata;
 use mago_codex::misc::GenericParent;
 use mago_codex::ttype::TType;
@@ -47,6 +50,7 @@ pub struct ResolvedProperty {
     pub declaring_class_id: Atom,
     pub property_span: Option<Span>,
     pub property_type: TUnion,
+    pub is_magic: bool,
 }
 
 /// Holds the results of a property resolution attempt.
@@ -154,8 +158,13 @@ pub fn resolve_instance_properties<'ctx, 'ast, 'arena>(
             continue;
         };
 
+        let magic_method_name = if for_assignment { "__set" } else { "__get" };
+        let mut magic_method_identifier = get_method_identifier(classname, magic_method_name);
+        magic_method_identifier = get_declaring_method_identifier(context.codebase, &magic_method_identifier);
+        let magic_method = get_method_by_id(context.codebase, &magic_method_identifier);
+
         for prop_name in &property_names {
-            if let Some(resolved_property) = find_property_in_class(
+            let resolved_property = find_property_in_class(
                 context,
                 block_context,
                 classname,
@@ -166,17 +175,39 @@ pub fn resolve_instance_properties<'ctx, 'ast, 'arena>(
                 operator_span,
                 for_assignment,
                 &mut result,
-            )? {
-                artifacts.symbol_references.add_reference_for_property_access(
-                    &block_context.scope,
-                    resolved_property.declaring_class_id,
-                    resolved_property.property_name,
-                );
+                magic_method.is_some(),
+            )?;
 
-                result.properties.push(resolved_property);
-            } else {
+            let Some(resolved_property) = resolved_property else {
                 result.has_invalid_path = true;
+
+                continue;
+            };
+
+            if resolved_property.is_magic {
+                if magic_method.is_none() {
+                    report_magic_property_without_get_set_method(
+                        context,
+                        object_expression.span(),
+                        property_selector.span(),
+                        classname,
+                        prop_name,
+                        for_assignment,
+                    );
+                }
+
+                artifacts
+                    .symbol_references
+                    .add_reference_for_method_call(&block_context.scope, &magic_method_identifier);
             }
+
+            artifacts.symbol_references.add_reference_for_property_access(
+                &block_context.scope,
+                resolved_property.declaring_class_id,
+                resolved_property.property_name,
+            );
+
+            result.properties.push(resolved_property);
         }
     }
 
@@ -195,6 +226,7 @@ fn find_property_in_class<'ctx, 'ast, 'arena>(
     access_span: Span,
     for_assignment: bool,
     result: &mut PropertyResolutionResult,
+    has_magic_method: bool,
 ) -> Result<Option<ResolvedProperty>, AnalysisError> {
     let declaring_class_id =
         get_declaring_class_for_property(context.codebase, class_id, prop_name).unwrap_or(*class_id);
@@ -206,6 +238,25 @@ fn find_property_in_class<'ctx, 'ast, 'arena>(
     };
 
     let Some(property_metadata) = declaring_class_metadata.properties.get(prop_name) else {
+        if has_magic_method {
+            report_non_documented_property(
+                context,
+                object_expr.span(),
+                selector.span(),
+                &declaring_class_id,
+                prop_name,
+                for_assignment,
+            );
+
+            return Ok(Some(ResolvedProperty {
+                property_span: None,
+                property_name: *prop_name,
+                declaring_class_id,
+                property_type: get_mixed(),
+                is_magic: true,
+            }));
+        }
+
         result.has_invalid_path = true;
 
         if !declaring_class_metadata.flags.is_final()
@@ -284,6 +335,7 @@ fn find_property_in_class<'ctx, 'ast, 'arena>(
         property_name: *prop_name,
         declaring_class_id,
         property_type,
+        is_magic: property_metadata.flags.is_magic_property(),
     }))
 }
 
@@ -533,5 +585,66 @@ fn report_non_existent_property(
         Issue::error(format!("Property `{prop_name}` does not exist on {class_kind_str} `{classname}`."))
             .with_annotation(Annotation::primary(selector_span).with_message("Property not found here"))
             .with_annotation(Annotation::secondary(object_span).with_message(format!("On instance of `{classname}`"))),
+    );
+}
+
+pub(super) fn report_non_documented_property(
+    context: &mut Context,
+    obj_span: Span,
+    selector_span: Span,
+    classname: &Atom,
+    property_name: &Atom,
+    for_assignment: bool,
+) {
+    let magic_method = if for_assignment { "__set" } else { "__get" };
+    let access_type = if for_assignment { "write to" } else { "read from" };
+
+    context.collector.report_with_code(
+        IssueCode::NonDocumentedProperty,
+        Issue::warning(format!("Ambiguous property access: {property_name} on class `{classname}`."))
+        .with_annotation(
+            Annotation::primary(selector_span).with_message("This property is not explicitly defined"),
+        )
+        .with_annotation(
+            Annotation::secondary(obj_span).with_message(format!("On an object of type `{classname}`")),
+        )
+        .with_note(
+            format!("While this {access_type} might be handled by `{magic_method}()`, Mago cannot determine its type without a corresponding `@property` docblock tag."),
+        )
+        .with_help(format!(
+            "To enable type checking, add a `@property`, `@property-read`, or `@property-write` tag to the docblock of the `{classname}` class. For example: `/** @property string {property_name} */`",
+        )),
+    );
+}
+
+pub(super) fn report_magic_property_without_get_set_method(
+    context: &mut Context,
+    obj_span: Span,
+    selector_span: Span,
+    classname: &Atom,
+    property_name: &Atom,
+    for_assignment: bool,
+) {
+    let magic_method_name = if for_assignment { "__set" } else { "__get" };
+    let access_type = if for_assignment { "write to" } else { "read from" };
+
+    context.collector.report_with_code(
+        IssueCode::MissingMagicMethod,
+        Issue::error(format!(
+            "Access to documented magic property `{property_name}` on a class that cannot handle it.",
+        ))
+        .with_annotation(
+            Annotation::primary(selector_span)
+                .with_message("This magic property is documented but cannot be accessed"),
+        )
+        .with_annotation(
+            Annotation::secondary(obj_span).with_message(format!("Class `{classname}` is missing the `{magic_method_name}` method")),
+        )
+        .with_note(
+            format!("The class `{classname}` has a `@property` tag for `{property_name}` but is missing a `{magic_method_name}` method to handle the {access_type}. This will cause a fatal `Error` at runtime.")
+        )
+        .with_help(
+            format!("Add a `public function {magic_method_name}()` to the `{classname}` class to handle magic property access.")
+        ),
     );
 }

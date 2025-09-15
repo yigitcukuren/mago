@@ -170,6 +170,7 @@ test_case!(untyped_property_docblock);
 test_case!(count);
 test_case!(array_key_exists);
 test_case!(magic_methods);
+test_case!(magic_properties);
 
 // Github Issues
 test_case!(issue_275);
