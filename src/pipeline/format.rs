@@ -61,7 +61,9 @@ pub struct FormatContext {
 ///
 /// A `Result` containing the total number of files that were changed, or an [`Error`].
 pub fn run_format_pipeline(database: ReadDatabase, context: FormatContext, use_colors: bool) -> Result<usize, Error> {
-    StatelessParallelPipeline::new("✨ Formatting", database, context, Box::new(FormatReducer)).run(
+    let progress = !matches!(context.mode, FormatMode::DryRun);
+
+    StatelessParallelPipeline::new("✨ Formatting", database, context, Box::new(FormatReducer), progress).run(
         |context, arena, file| {
             let formatter = Formatter::new(arena, context.php_version, context.settings);
 

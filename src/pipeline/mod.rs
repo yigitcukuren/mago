@@ -83,6 +83,7 @@ pub struct StatelessParallelPipeline<T, I, R> {
     database: Arc<ReadDatabase>,
     shared_context: T,
     reducer: Box<dyn StatelessReducer<I, R> + Send + Sync>,
+    should_use_progress_bar: bool,
 }
 
 impl<T, I, R> ParallelPipeline<T, I, R>
@@ -207,8 +208,9 @@ where
         database: ReadDatabase,
         shared_context: T,
         reducer: Box<dyn StatelessReducer<I, R> + Send + Sync>,
+        should_use_progress_bar: bool,
     ) -> Self {
-        Self { task_name, database: Arc::new(database), shared_context, reducer }
+        Self { task_name, database: Arc::new(database), shared_context, reducer, should_use_progress_bar }
     }
 
     /// Executes the pipeline with a given map function on all `Host` files.
@@ -227,22 +229,38 @@ where
             return self.reducer.reduce(Vec::new());
         }
 
-        let progress_bar = create_progress_bar(host_files.len(), self.task_name, ProgressBarTheme::Yellow);
+        let results = if !self.should_use_progress_bar {
+            host_files
+                .into_par_iter()
+                .map_init(Bump::new, |arena, file| {
+                    let context = self.shared_context.clone();
+                    let result = map_function(context, arena, file)?;
 
-        let results: Vec<I> = host_files
-            .into_par_iter()
-            .map_init(Bump::new, |arena, file| {
-                let context = self.shared_context.clone();
-                let result = map_function(context, arena, file)?;
+                    arena.reset();
 
-                arena.reset();
-                progress_bar.inc(1);
+                    Ok(result)
+                })
+                .collect::<Result<Vec<I>, Error>>()?
+        } else {
+            let progress_bar = create_progress_bar(host_files.len(), self.task_name, ProgressBarTheme::Yellow);
 
-                Ok(result)
-            })
-            .collect::<Result<Vec<I>, Error>>()?;
+            let results: Vec<I> = host_files
+                .into_par_iter()
+                .map_init(Bump::new, |arena, file| {
+                    let context = self.shared_context.clone();
+                    let result = map_function(context, arena, file)?;
 
-        remove_progress_bar(progress_bar);
+                    arena.reset();
+                    progress_bar.inc(1);
+
+                    Ok(result)
+                })
+                .collect::<Result<Vec<I>, Error>>()?;
+
+            remove_progress_bar(progress_bar);
+
+            results
+        };
 
         self.reducer.reduce(results)
     }

@@ -70,7 +70,7 @@ pub fn run_lint_pipeline(database: ReadDatabase, context: LintContext) -> Result
 /// This pipeline compiles a global `CodebaseMetadata` and provides it to each
 /// linting task, enabling rules that require cross-file awareness.
 fn run_full_pipeline(database: ReadDatabase, context: LintContext) -> Result<IssueCollection, Error> {
-    StatelessParallelPipeline::new(PROGRESS_BAR_THEME, database, context, Box::new(LintResultReducer)).run(
+    StatelessParallelPipeline::new(PROGRESS_BAR_THEME, database, context, Box::new(LintResultReducer), true).run(
         |context, arena, file| {
             let (program, parsing_error) = parse_file(arena, &file);
             let resolved_names = NameResolver::new(arena).resolve(program);
@@ -96,7 +96,7 @@ fn run_full_pipeline(database: ReadDatabase, context: LintContext) -> Result<Iss
 /// This pipeline does not compile a global `CodebaseMetadata`, making it much
 /// faster. It is suitable for quick, syntax-aware checks.
 fn run_semantics_pipeline(database: ReadDatabase, context: LintContext) -> Result<IssueCollection, Error> {
-    StatelessParallelPipeline::new(PROGRESS_BAR_THEME, database, context, Box::new(LintResultReducer)).run(
+    StatelessParallelPipeline::new(PROGRESS_BAR_THEME, database, context, Box::new(LintResultReducer), true).run(
         |context, arena, file| {
             let (program, parsing_error) = parse_file(arena, &file);
             let resolved_names = NameResolver::new(arena).resolve(program);
