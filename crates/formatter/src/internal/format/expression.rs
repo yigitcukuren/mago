@@ -1234,19 +1234,21 @@ impl<'arena> Format<'arena> for YieldPair<'arena> {
         wrap!(f, self, YieldPair, {
             let group_id = f.next_id();
 
+            let yield_keyword = self.r#yield.format(f);
+            let key_document = self.key.format(f);
+
             Document::Group(
                 Group::new(vec![
                     in f.arena;
-                    self.r#yield.format(f),
+                    yield_keyword,
                     Document::space(),
-                    self.key.format(f),
-                    Document::space(),
-                    Document::String("=>"),
-                    Document::IndentIfBreak(IndentIfBreak::new(group_id , vec![
-                        in f.arena;
-                        Document::Line(Line::default()),
-                        self.value.format(f),
-                    ])),
+                    print_assignment(
+                        f,
+                        AssignmentLikeNode::YieldPair(self),
+                        key_document,
+                        Document::String("=>"),
+                        self.value,
+                    ),
                 ])
                 .with_id(group_id),
             )

@@ -49,6 +49,11 @@ pub(super) enum AssignmentLikeNode<'arena> {
     /// - `$a => $b` in `array($a => $b)`
     /// - `$a => $b` in `list($a => $b)`
     KeyValueArrayElement(&'arena KeyValueArrayElement<'arena>),
+
+    /// Represents a yield pair in a generator function.
+    ///
+    /// - `yield $a => $b` in `function gen() { yield $a => $b; }`
+    YieldPair(&'arena YieldPair<'arena>),
 }
 
 #[derive(Debug)]
@@ -318,6 +323,14 @@ fn is_property_like_with_short_key<'arena>(
         AssignmentLikeNode::ConstantItem(constant_item) => &constant_item.name.value,
         AssignmentLikeNode::EnumCaseBackedItem(enum_case_backed_item) => &enum_case_backed_item.name.value,
         AssignmentLikeNode::PropertyConcreteItem(property_item) => &property_item.variable.name,
+        AssignmentLikeNode::YieldPair(yield_pair) => match yield_pair.key {
+            Expression::Variable(Variable::Direct(variable)) => &variable.name,
+            Expression::Identifier(Identifier::Local(local_identifier)) => &local_identifier.value,
+            Expression::Literal(Literal::String(string_literal)) => &string_literal.raw,
+            _ => {
+                return false;
+            }
+        },
         AssignmentLikeNode::KeyValueArrayElement(element) => match element.key {
             Expression::Variable(Variable::Direct(variable)) => &variable.name,
             Expression::Identifier(Identifier::Local(local_identifier)) => &local_identifier.value,
@@ -380,6 +393,16 @@ fn should_break_after_operator<'arena>(
         }
         Expression::AnonymousClass(anonymous_class) => {
             if !anonymous_class.attribute_lists.is_empty() {
+                return true;
+            }
+        }
+        Expression::Closure(closure) => {
+            if !closure.attribute_lists.is_empty() {
+                return true;
+            }
+        }
+        Expression::ArrowFunction(arrow_func) => {
+            if !arrow_func.attribute_lists.is_empty() {
                 return true;
             }
         }

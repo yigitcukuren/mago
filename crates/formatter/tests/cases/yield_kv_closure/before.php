@@ -88,5 +88,77 @@ final readonly class JoinFunction implements FunctionInterface
            
             return new StringValue(Str\join($strings, $separator->value));
         };
+        
+        yield $foo => $bar;
+        yield $foo => [
+        static Function (CallExpression $call, array $arguments): StringValue {
+            /** @var ListValue $list */
+            $list = $arguments[0];
+
+            $strings = [];
+            foreach ($list->value as $item) {
+                if (!$item instanceof StringValue) {
+                    throw new RuntimeException('join() expects a list of strings', $call->getSpan());
+                }
+                $strings[] = $item->value;
+            }
+
+            return new StringValue(Str\join($strings, ''));
+        },
+        static Function (CallExpression $call, array $arguments): StringValue {
+            /** @var ListValue $list */
+            $list = $arguments[0];
+            /** @var StringValue $separator */
+            $separator = $arguments[1];
+
+            $strings = [];
+            foreach ($list->value as $item) {
+                if (!$item instanceof StringValue) {
+                    throw new RuntimeException('join() expects a list of strings', $call->getSpan());
+                }
+
+                $strings[] = $item->value;
+            }
+
+            return new StringValue(Str\join($strings, $separator->value));
+        }
+        ];
+        
+        
+        yield $foo => some_func( // trailing comma
+            
+        
+        static function (CallExpression $call, array $arguments): StringValue {
+                /** @var ListValue $list */
+                $list = $arguments[0];
+
+                $strings = [];
+                foreach ($list->value as $item) {
+                    if (!$item instanceof StringValue) {
+                        throw new RuntimeException('join() expects a list of strings', $call->getSpan());
+                    }
+                    $strings[] = $item->value;
+                }
+
+                return new StringValue(Str\join($strings, ''));
+            },
+            static function (CallExpression $call, array $arguments): StringValue {
+                /** @var ListValue $list */
+                $list = $arguments[0];
+                /** @var StringValue $separator */
+                $separator = $arguments[1];
+
+                $strings = [];
+                foreach ($list->value as $item) {
+                    if (!$item instanceof StringValue) {
+                        throw new RuntimeException('join() expects a list of strings', $call->getSpan());
+                    }
+
+                    $strings[] = $item->value;
+                }
+
+                return new StringValue(Str\join($strings, $separator->value));
+            },
+        );
     }
 }
