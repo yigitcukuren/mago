@@ -95,24 +95,38 @@ impl LintRule for InvalidOpenTagRule {
         let trimmed_content = content.trim_start();
 
         for &invalid_tag in INVALID_TAGS {
-            let invalid_tag_len = invalid_tag.len();
-            if trimmed_content.len() < invalid_tag_len {
-                continue;
+            let mut content_chars = trimmed_content.chars();
+            let mut matches = true;
+            let mut prefix_byte_len = 0;
+
+            for tag_char in invalid_tag.chars() {
+                if let Some(content_char) = content_chars.next() {
+                    if tag_char.to_ascii_lowercase() != content_char.to_ascii_lowercase() {
+                        matches = false;
+                        break;
+                    }
+
+                    prefix_byte_len += content_char.len_utf8();
+                } else {
+                    matches = false;
+                    break;
+                }
             }
 
-            let prefix_to_check = &trimmed_content[..invalid_tag_len];
-
-            if prefix_to_check.eq_ignore_ascii_case(invalid_tag) {
+            if matches {
                 let start_offset = content.len() - trimmed_content.len();
-                let invalid_tag_span = inline_stmt.span().subspan(start_offset as u32, invalid_tag_len as u32);
+                let invalid_tag_span = inline_stmt.span().subspan(start_offset as u32, prefix_byte_len as u32);
 
-                let issue = Issue::new(self.cfg.level(), format!("Misspelled PHP opening tag `{}`.", invalid_tag))
-                    .with_code(self.meta.code)
-                    .with_annotation(
-                        Annotation::primary(invalid_tag_span).with_message("This looks like a typo for `<?php`."),
-                    )
-                    .with_note("Code following a misspelled tag will be treated as plain text and output directly.")
-                    .with_help("Replace this with the correct `<?php` opening tag.");
+                let issue = Issue::new(
+                    self.cfg.level(),
+                    format!("Misspelled PHP opening tag `{}`.", &trimmed_content[..prefix_byte_len]),
+                )
+                .with_code(self.meta.code)
+                .with_annotation(
+                    Annotation::primary(invalid_tag_span).with_message("This looks like a typo for `<?php`."),
+                )
+                .with_note("Code following a misspelled tag will be treated as plain text and output directly.")
+                .with_help("Replace this with the correct `<?php` opening tag.");
 
                 ctx.collector.propose(issue, |plan| {
                     plan.replace(invalid_tag_span.to_range(), "<?php", SafetyClassification::PotentiallyUnsafe);
