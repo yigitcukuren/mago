@@ -14,6 +14,7 @@ use crate::requirements::RuleRequirements;
 use crate::rule::Config;
 use crate::rule::LintRule;
 use crate::rule::utils::call::function_call_matches;
+use crate::rule::utils::call::function_call_matches_any;
 use crate::rule::utils::consts::DEBUG_FUNCTIONS;
 use crate::rule_meta::RuleMeta;
 use crate::settings::RuleSettings;
@@ -90,6 +91,13 @@ impl LintRule for NoDebugSymbolsRule {
         let Node::FunctionCall(function_call) = node else {
             return;
         };
+
+        // Allow `var_export` and `print_r` if they have the second argument
+        if function_call_matches_any(ctx, function_call, &["var_export", "print_r"]).is_some()
+            && function_call.argument_list.arguments.len() > 1
+        {
+            return;
+        }
 
         for debug_function in DEBUG_FUNCTIONS.iter() {
             if !function_call_matches(ctx, function_call, debug_function) {
