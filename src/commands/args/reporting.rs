@@ -94,6 +94,12 @@ pub struct ReportingArgs {
     #[arg(long, short = 'm', help = "Set minimum issue level for failure (e.g., error, warning)", default_value_t = Level::Error, value_parser = enum_variants!(Level), conflicts_with = "fix")]
     pub minimum_fail_level: Level,
 
+    /// Set the minimum issue level to be reported.
+    ///
+    /// Issues below this level will be ignored in the report.
+    #[arg(long, help = "Set minimum issue level to be reported (e.g., error, warning)", value_parser = enum_variants!(Level))]
+    pub minimum_report_level: Option<Level>,
+
     /// Generate a baseline file to ignore existing issues.
     #[arg(
         long,
@@ -131,11 +137,22 @@ impl ReportingArgs {
     /// or an `Error` if an unrecoverable problem occurs.
     pub fn process_issues(
         self,
-        issues: IssueCollection,
+        mut issues: IssueCollection,
         configuration: Configuration,
         should_use_colors: bool,
         database: Database,
     ) -> Result<ExitCode, Error> {
+        if let Some(min_level) = self.minimum_report_level {
+            let unfiltered_count = issues.len();
+            issues = issues.with_minimum_level(min_level);
+
+            tracing::debug!(
+                "Filtered out {} issues below the minimum report level of {:?}.",
+                unfiltered_count - issues.len(),
+                min_level
+            );
+        }
+
         if self.fix {
             self.handle_fix_mode(issues, configuration, should_use_colors, database)
         } else {
