@@ -15,3 +15,4 @@ too-many-enum-cases = { threshold = 30 }
 
 [analyzer]
 allow-possibly-undefined-array-keys = false
+find-unused-expressions = true

@@ -64,6 +64,10 @@ impl TGenericParameter {
         self.constraint.is_mixed()
     }
 
+    pub fn is_constrained_as_vanilla_mixed(&self) -> bool {
+        self.constraint.is_mixed()
+    }
+
     pub fn is_constrained_as_objecty(&self) -> bool {
         self.constraint.is_objecty()
     }

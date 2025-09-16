@@ -495,7 +495,15 @@ impl TUnion {
             return false;
         }
 
-        matches!(&self.types[0], TAtomic::Mixed(mixed) if mixed.is_vanilla())
+        self.types[0].is_vanilla_mixed()
+    }
+
+    pub fn is_templated_as_vanilla_mixed(&self) -> bool {
+        if self.types.len() != 1 {
+            return false;
+        }
+
+        self.types[0].is_templated_as_vanilla_mixed()
     }
 
     pub fn has_template_or_static(&self) -> bool {

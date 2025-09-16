@@ -12,6 +12,8 @@ use mago_codex::ttype::atomic::callable::TCallable;
 use mago_codex::ttype::expander::TypeExpansionOptions;
 use mago_codex::ttype::expander::get_signature_of_function_like_metadata;
 use mago_codex::ttype::get_mixed;
+use mago_codex::ttype::get_never;
+use mago_codex::ttype::get_void;
 use mago_codex::ttype::union::TUnion;
 use mago_reporting::Annotation;
 use mago_reporting::Issue;
@@ -161,32 +163,35 @@ impl<'ast, 'arena> Analyzable<'ast, 'arena> for Closure<'arena> {
 
         let function_identifier = FunctionLikeIdentifier::Closure(s.file_id, s.start);
 
-        let resulting_closure =
-            if function_metadata.template_types.is_empty() && !inner_artifacts.inferred_return_types.is_empty() {
-                let mut signature = get_signature_of_function_like_metadata(
-                    &function_identifier,
-                    function_metadata,
+        let mut signature = get_signature_of_function_like_metadata(
+            &function_identifier,
+            function_metadata,
+            context.codebase,
+            &TypeExpansionOptions::default(),
+        );
+
+        if function_metadata.template_types.is_empty() {
+            let mut inferred_return_type = None;
+            for inferred_return in inner_artifacts.inferred_return_types {
+                inferred_return_type = Some(add_optional_union_type(
+                    (*inferred_return).clone(),
+                    inferred_return_type.as_ref(),
                     context.codebase,
-                    &TypeExpansionOptions::default(),
-                );
+                ));
+            }
 
-                let mut inferred_return_type = None;
-                for inferred_return in inner_artifacts.inferred_return_types {
-                    inferred_return_type = Some(add_optional_union_type(
-                        (*inferred_return).clone(),
-                        inferred_return_type.as_ref(),
-                        context.codebase,
-                    ));
+            if let Some(inferred_return_type) = inferred_return_type {
+                signature.return_type = Some(Box::new(inferred_return_type));
+            } else if !function_metadata.flags.has_yield() {
+                if !inner_block_context.has_returned {
+                    signature.return_type = Some(Box::new(get_void()));
+                } else {
+                    signature.return_type = Some(Box::new(get_never()));
                 }
+            }
+        }
 
-                if let Some(inferred_return_type) = inferred_return_type {
-                    signature.return_type = Some(Box::new(inferred_return_type));
-                }
-
-                TUnion::from_atomic(TAtomic::Callable(TCallable::Signature(signature)))
-            } else {
-                TUnion::from_atomic(TAtomic::Callable(TCallable::Alias(function_identifier)))
-            };
+        let resulting_closure = TUnion::from_atomic(TAtomic::Callable(TCallable::Signature(signature)));
 
         artifacts.set_expression_type(self, resulting_closure);
 
