@@ -173,6 +173,7 @@ test_case!(magic_methods);
 test_case!(magic_properties);
 test_case!(magic_methods_args);
 test_case!(array_shape_access);
+test_case!(closure_wrap);
 
 // Github Issues
 test_case!(issue_275);

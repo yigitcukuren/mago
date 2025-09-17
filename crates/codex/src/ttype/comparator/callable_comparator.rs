@@ -94,7 +94,10 @@ pub(crate) fn is_contained_by(
         return true;
     };
 
-    if container_return_type.is_void() {
+    if container_return_type.is_void()
+        || container_return_type.is_vanilla_mixed()
+        || container_return_type.is_templated_as_vanilla_mixed()
+    {
         return true;
     }
 
@@ -105,7 +108,7 @@ pub(crate) fn is_contained_by(
         return false;
     };
 
-    if input_return_type.is_void() && container_return_type.is_nullable() {
+    if input_return_type.is_void() && container_return_type.accepts_null() {
         return true;
     }
 

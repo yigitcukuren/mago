@@ -90,6 +90,10 @@ impl TAtomic {
         matches!(self, TAtomic::Mixed(_))
     }
 
+    pub const fn is_vanilla_mixed(&self) -> bool {
+        matches!(self, TAtomic::Mixed(_))
+    }
+
     pub const fn is_mixed_isset_from_loop(&self) -> bool {
         matches!(self, TAtomic::Mixed(mixed) if mixed.is_isset_from_loop())
     }
@@ -104,6 +108,10 @@ impl TAtomic {
 
     pub fn is_templated_as_mixed(&self) -> bool {
         matches!(self, TAtomic::GenericParameter(parameter) if parameter.is_constrained_as_mixed())
+    }
+
+    pub fn is_templated_as_vanilla_mixed(&self) -> bool {
+        matches!(self, TAtomic::GenericParameter(parameter) if parameter.is_constrained_as_vanilla_mixed())
     }
 
     pub fn map_generic_parameter_constraint<F, T>(&self, f: F) -> Option<T>

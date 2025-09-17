@@ -78,6 +78,21 @@ pub fn is_contained_by(
         }
     }
 
+    if container_type_part.is_vanilla_mixed() || container_type_part.is_templated_as_vanilla_mixed() {
+        return true;
+    }
+
+    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed() {
+        if matches!(container_type_part, TAtomic::Mixed(mixed) if mixed.is_non_null())
+            && (matches!(input_type_part, TAtomic::Null)
+                || matches!(input_type_part, TAtomic::Mixed(mixed) if !mixed.is_non_null()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     if input_type_part.is_derived() || container_type_part.is_derived() {
         return derived_comparator::is_contained_by(
             codebase,
@@ -102,17 +117,6 @@ pub fn is_contained_by(
                 atomic_comparison_result,
             );
         }
-    }
-
-    if container_type_part.is_mixed() || container_type_part.is_templated_as_mixed() {
-        if matches!(container_type_part, TAtomic::Mixed(mixed) if mixed.is_non_null())
-            && (matches!(input_type_part, TAtomic::Null)
-                || matches!(input_type_part, TAtomic::Mixed(mixed) if !mixed.is_non_null()))
-        {
-            return false;
-        }
-
-        return true;
     }
 
     if matches!(container_type_part, TAtomic::Placeholder) {
