@@ -880,7 +880,9 @@ fn scrape_type_properties(
             if let TAtomic::Scalar(TScalar::String(existing_string_type)) = existing_string_type {
                 *existing_string_type = combine_string_scalars(existing_string_type, string_scalar);
             };
-        } else if let Some(value) = string_scalar.get_known_literal_value() {
+        } else if let Some(value) =
+            string_scalar.get_known_literal_value().filter(|_| combination.literal_strings.len() <= 100)
+        {
             combination.literal_strings.insert(atom(value));
         } else {
             if string_scalar.is_truthy || string_scalar.is_non_empty || string_scalar.is_numeric {
